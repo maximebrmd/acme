@@ -21,6 +21,8 @@ import {
   exchanged,
 } from "#channels/infrastructure/platforms/oauth-exchange.ts";
 import type { AuthorizerHttp } from "#channels/infrastructure/platforms/oauth-exchange.ts";
+import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 
 /** Where Google's sign-in and the YouTube Data API are. */
 export interface YouTubeEndpoints extends GoogleOAuthEndpoints {
@@ -109,12 +111,17 @@ const accountOf = (
  * A YouTube channel, through Google's OAuth (`googleOAuth`): an owner of
  * brand accounts picks the channel on Google's chooser, and the token is
  * that channel's. Disconnecting a channel revokes its tokens at Google.
+ * Where the inbox reads YouTube (`inbox`), the sign-in also asks for
+ * `youtubeCommentScope`, as optional: an owner who unticks it connects,
+ * and the inbox does not read that channel's comments. Off, it asks what
+ * it asked before, byte for byte.
  */
 export const youtubeAuthorizer = Effect.fn("YouTubeAuthorizer.make")(
   function* youtubeAuthorizer(options: {
     readonly client: OAuthClient;
     readonly endpoints: YouTubeEndpoints;
     readonly http: AuthorizerHttp;
+    readonly inbox: InboxPlatforms;
     readonly publicUrl: string;
   }) {
     const { endpoints, http } = options;
@@ -124,6 +131,7 @@ export const youtubeAuthorizer = Effect.fn("YouTubeAuthorizer.make")(
       endpoints,
       http,
       needed: neededScopes,
+      optionalScopes: options.inbox.has("youtube") ? [youtubeCommentScope] : [],
       redirectUri: new URL(youtubeCallbackPath, options.publicUrl).href,
       scopes: youtubeScopes,
       settings: "YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET",

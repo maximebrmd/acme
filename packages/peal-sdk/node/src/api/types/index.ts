@@ -277,6 +277,7 @@ export * from "./InboxActionUnavailableEncoded.js";
 export * from "./InboxAuthor.js";
 export * from "./InboxCollectionEnd.js";
 export * from "./InboxComment.js";
+export * from "./InboxCommentForgotten.js";
 export * from "./InboxCommentGoneEncoded.js";
 export * from "./InboxCommentNotFoundEncoded.js";
 export * from "./InboxCommentState.js";

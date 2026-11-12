@@ -27,6 +27,7 @@ import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authoriz
 import { youtubeAuthorizer } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import type { YouTubeEndpoints } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import type { PinterestHosts } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
@@ -215,8 +216,14 @@ export const xAuthorizerOn = (endpoints: XEndpoints) =>
     Effect.provide(AuthorizerServicesTest)
   );
 
-/** The YouTube authorizer with the synthetic Google client, on the fake. */
-export const youtubeAuthorizerOn = (endpoints: YouTubeEndpoints) =>
+/**
+ * The YouTube authorizer with the synthetic Google client, on the fake,
+ * for a server whose inbox reads `inbox`'s optional platforms.
+ */
+export const youtubeAuthorizerOn = (
+  endpoints: YouTubeEndpoints,
+  inbox: InboxPlatforms = new Set()
+) =>
   publicHttpClient.pipe(
     Effect.flatMap((http) =>
       youtubeAuthorizer({
@@ -226,6 +233,7 @@ export const youtubeAuthorizerOn = (endpoints: YouTubeEndpoints) =>
         },
         endpoints,
         http,
+        inbox,
         publicUrl: testPublicUrl,
       })
     ),

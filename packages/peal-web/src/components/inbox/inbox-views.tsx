@@ -15,6 +15,7 @@ import type {
   InboxComment,
   InboxReply,
   InboxThread,
+  Platform,
 } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
@@ -415,18 +416,25 @@ export const CommentView = ({
   actions,
   children,
   comment,
+  platform,
   replies,
   replyBox,
 }: {
   readonly actions?: ReactNode;
   readonly children?: ReactNode;
   readonly comment: InboxComment;
+  /** The thread's platform, which a comment forgotten for its age names. */
+  readonly platform?: Platform | null;
   readonly replies?: ReactNode;
   readonly replyBox?: ReactNode;
 }) => {
   const t = useTranslations("Inbox.comment");
+  const tPosts = useTranslations("Posts");
   const instant = useInstant();
   const deleted = comment.state === "deleted";
+  // Forgotten because its platform bounds how long Peal keeps a comment
+  // without reading it again: not the same as gone from the platform.
+  const expired = deleted && comment.forgotten === "expired";
 
   return (
     <li className="flex flex-col gap-3 rounded-lg border p-4">
@@ -437,12 +445,21 @@ export const CommentView = ({
             <Badge variant="outline">{t("liked")}</Badge>
           ) : null}
           <Badge variant={stateVariants[comment.state]}>
-            {t("state", { state: comment.state })}
+            {expired ? t("expiredState") : t("state", { state: comment.state })}
           </Badge>
         </span>
       </div>
       {deleted ? (
-        <p className="text-muted-foreground text-sm italic">{t("deleted")}</p>
+        <p className="text-muted-foreground text-sm italic">
+          {expired
+            ? t("expired", {
+                platform:
+                  platform === undefined || platform === null
+                    ? t("somePlatform")
+                    : tPosts("platform", { platform }),
+              })
+            : t("deleted")}
+        </p>
       ) : (
         <p dir="auto" className="break-words whitespace-pre-wrap">
           {comment.text}

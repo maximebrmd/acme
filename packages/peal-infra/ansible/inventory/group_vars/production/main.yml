@@ -121,8 +121,11 @@ peal_settings:
   # them (the registry's inbox entry, then the legal pages, through
   # counsel), and one comment was read, answered, hidden and withdrawn on a
   # test Page and a test Instagram account, a feed video's among them (the
-  # engagement context's guide).
-  # PEAL_INBOX_PLATFORMS: facebook,instagram
+  # engagement context's guide). YouTube's: off until Google verified the
+  # app for the youtube.force-ssl scope, the privacy policy names YouTube,
+  # one comment was read, answered, hidden and withdrawn on a test channel,
+  # and the quota was watched for a day (comment reads take half of it).
+  # PEAL_INBOX_PLATFORMS: facebook,instagram,youtube
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"

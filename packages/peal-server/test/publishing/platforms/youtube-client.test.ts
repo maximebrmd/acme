@@ -4,10 +4,6 @@ import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import {
-  quotaDayOf,
-  untilQuotaReset,
-} from "#publishing/infrastructure/platforms/youtube/quota-day.ts";
-import {
   thumbnailsBucket,
   uploadsBucket,
 } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
@@ -15,6 +11,10 @@ import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
+import {
+  quotaDayOf,
+  untilQuotaReset,
+} from "#shared/infrastructure/platforms/youtube-quota-day.ts";
 import { fakeYouTubeApi } from "#test/publishing/fakes/fake-youtube-api.ts";
 import type { Processing } from "#test/publishing/fakes/fake-youtube-api.ts";
 import {

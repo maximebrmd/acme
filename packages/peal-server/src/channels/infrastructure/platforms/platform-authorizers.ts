@@ -164,12 +164,17 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
+    // Where the inbox reads Facebook's, Instagram's or YouTube's comments,
+    // their sign-ins ask for its permissions too, as optional.
+    const inbox = yield* CurrentInboxPlatforms;
+
     const youtube = Option.isSome(settings.youtube)
       ? Option.some(
           yield* youtubeAuthorizer({
             client: settings.youtube.value,
             endpoints: youtubeEndpoints,
             http,
+            inbox,
             publicUrl: settings.publicUrl,
           })
         )
@@ -185,10 +190,6 @@ export const PlatformAuthorizersLive = Layer.effect(
           })
         )
       : Option.none<PlatformAuthorizer>();
-
-    // Where the inbox reads Facebook's or Instagram's comments, their
-    // sign-ins ask for its permissions too, as optional.
-    const inbox = yield* CurrentInboxPlatforms;
 
     const metaOptions = (app: MetaApp) => ({
       app,

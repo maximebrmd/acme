@@ -67,8 +67,38 @@ const EngagementRetentionCron = ClusterCron.make({
   skipIfOlderThan: Duration.hours(12),
 });
 
-/** The comments collection and the retention. */
+/**
+ * Every hour at minute 51: forgets the comments of threads whose platform
+ * bounds how long a comment is kept without being read again, and that no
+ * read reached in time (`PurgeEngagement.forgetExpired`). Hourly, so a
+ * comment outlives its bound by an hour at most, which the bounds leave
+ * room for (29 days of YouTube's 30). A failed run is logged and the next
+ * hour's catches up.
+ */
+const EngagementRefreshBoundCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("51 * * * *", "UTC"),
+  execute: PurgeEngagement.use((purging) => purging.forgetExpired).pipe(
+    Effect.tap((threads) =>
+      threads > 0
+        ? Effect.logInfo(
+            "Forgot the comments of threads not read again within their platform's bound"
+          ).pipe(Effect.annotateLogs({ threads }))
+        : Effect.void
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning(
+        "Forgetting the comments past their platform's bound failed",
+        cause
+      )
+    )
+  ),
+  name: "engagement.refresh-bound",
+  skipIfOlderThan: Duration.minutes(50),
+});
+
+/** The comments collection, the refresh bound and the retention. */
 export const EngagementCronsLive = Layer.mergeAll(
   CollectCommentsCron,
+  EngagementRefreshBoundCron,
   EngagementRetentionCron
 );

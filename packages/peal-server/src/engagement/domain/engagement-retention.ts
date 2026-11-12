@@ -1,4 +1,4 @@
-import { DateTime, Duration } from "effect";
+import { DateTime, Duration, Option } from "effect";
 
 // Comments are written by people who are not Peal's users: Peal keeps them
 // to show and answer them, and no longer than that takes.
@@ -16,3 +16,25 @@ export const keptAfterCollection = Duration.days(30);
  */
 export const purgedBefore = (now: DateTime.Utc): DateTime.Utc =>
   DateTime.subtractDuration(now, keptAfterCollection);
+
+/**
+ * When the comments a read found must be read again, or be forgotten:
+ * the read's instant plus the bound its platform sets on keeping what it
+ * gave without reading it again (`refreshWithin`, which travels with the
+ * read, since a thread does not know its platform). None on a platform
+ * that bounds nothing but the thread's own retention.
+ */
+export const refreshDeadline = (
+  readAt: DateTime.Utc,
+  refreshWithin: Option.Option<Duration.Duration>
+): Option.Option<DateTime.Utc> =>
+  refreshWithin.pipe(
+    Option.map((bound) => DateTime.addDuration(readAt, bound))
+  );
+
+/** Whether a thread's comments must be forgotten at `now`. */
+export const isPastRefresh = (
+  refreshBy: Option.Option<DateTime.Utc>,
+  now: DateTime.Utc
+): boolean =>
+  Option.exists(refreshBy, (by) => DateTime.isGreaterThanOrEqualTo(now, by));

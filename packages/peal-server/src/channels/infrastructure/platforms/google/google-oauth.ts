@@ -70,6 +70,12 @@ export interface GoogleOAuthOptions {
    * scopes: its own, or a broader one the account granted instead.
    */
   readonly needed: readonly (readonly string[])[];
+  /**
+   * Scopes the consent page asks for after `scopes`, which Peal does not
+   * need to connect: an owner who unticks one still connects, and the
+   * channel holds what Google says was granted. None unless given.
+   */
+  readonly optionalScopes?: readonly string[];
   /** Where Google sends the owner back, registered on the client. */
   readonly redirectUri: string;
   /** The scopes the consent page asks for. */
@@ -84,7 +90,10 @@ export interface GoogleOAuthOptions {
  * in the form. `access_type` offline asks for a refresh token, and `prompt`
  * consent makes Google give one at every sign-in, with the account chooser
  * first. Granular consent lets the owner untick a scope: a sign-in that
- * withheld one Peal needs is refused.
+ * withheld one Peal needs is refused, and one that withheld an optional
+ * scope connects without it. Peal asks for everything each time and never
+ * sends `include_granted_scopes`, so a reconnection records what that
+ * consent granted, not what an earlier one did.
  *
  * Access tokens last an hour. Refresh tokens do not rotate: a refresh
  * answers an access token, and a new refresh token only rarely, which then
@@ -144,7 +153,7 @@ export const googleOAuth = Effect.fn("GoogleOAuth.make")(function* googleOAuth(
         prompt: "select_account consent",
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: options.scopes.join(" "),
+        scope: [...options.scopes, ...(options.optionalScopes ?? [])].join(" "),
         state,
       }).toString();
 

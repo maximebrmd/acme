@@ -55,6 +55,12 @@ export interface ThreadCursor {
   readonly waiting: boolean;
 }
 
+/** A thread whose refresh bound passed, and when it did. */
+export interface ExpiringThread {
+  readonly refreshBy: DateTime.Utc;
+  readonly threadId: ThreadId;
+}
+
 /** An idempotency key a reply came with, and since when it counts. */
 export interface ReplyKey {
   readonly key: string;
@@ -193,6 +199,26 @@ export class EngagementStore extends Context.Service<
      */
     readonly claimCall: (
       replyId: ReplyId,
+      at: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Up to `limit` threads whose comments must be read again by `at` or
+     * be forgotten (their `refreshBy` passed), the longest past first,
+     * after `after` in that order.
+     */
+    readonly expiring: (
+      at: DateTime.Utc,
+      limit: number,
+      after: Option.Option<ExpiringThread>
+    ) => Effect.Effect<readonly ExpiringThread[], DatabaseError>;
+    /**
+     * Takes the thread's refresh bound off if it passed at `at`, and says
+     * whether it did: false when a read moved it meanwhile, and the
+     * comments are kept. In the transaction that forgets them, after
+     * `lockThread`.
+     */
+    readonly clearRefresh: (
+      threadId: ThreadId,
       at: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;
     /**

@@ -176,6 +176,65 @@ describe("what a channel can do about comments", () => {
     ]);
   });
 
+  it("reads, answers, withdraws and hides on YouTube with the comment scope alone, where the server reads YouTube", () => {
+    const youtube: InboxPlatforms = new Set(["youtube"]);
+
+    const posting = [
+      "https://www.googleapis.com/auth/youtube.upload",
+      "https://www.googleapis.com/auth/youtube.readonly",
+    ];
+
+    expect(
+      abilitiesOf(
+        "youtube",
+        [...posting, "https://www.googleapis.com/auth/youtube.force-ssl"],
+        youtube
+      )
+    ).toStrictEqual({
+      delete: "unsupported",
+      hide: "available",
+      like: "unsupported",
+      read: "available",
+      reply: "available",
+      withdraw: "available",
+    });
+    // A channel connected before the server read YouTube's comments, or
+    // whose owner unticked the scope: connecting again asks for it.
+    expect(abilitiesOf("youtube", posting, youtube)).toStrictEqual({
+      delete: "unsupported",
+      hide: "reconnect",
+      like: "unsupported",
+      read: "reconnect",
+      reply: "reconnect",
+      withdraw: "reconnect",
+    });
+    // The discovery document lists `youtube.force-ssl` alone for comments.
+    expect(
+      abilitiesOf(
+        "youtube",
+        ["https://www.googleapis.com/auth/youtube"],
+        youtube
+      ).read
+    ).toBe("reconnect");
+    expect(askedAtSignIn("youtube", youtube)).toStrictEqual([
+      "read",
+      "reply",
+      "withdraw",
+      "hide",
+    ]);
+  });
+
+  it("does nothing on YouTube where the server does not read it", () => {
+    const granted = ["https://www.googleapis.com/auth/youtube.force-ssl"];
+
+    expect(
+      Object.values(abilitiesOf("youtube", granted, both)).every(
+        (standing) => standing === "unsupported"
+      )
+    ).toBeTruthy();
+    expect(askedAtSignIn("youtube", both)).toStrictEqual([]);
+  });
+
   it("does nothing on the platforms Peal reads no comments on", () => {
     for (const platform of platforms.filter((name) => !isEngaged(name))) {
       expect(

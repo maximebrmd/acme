@@ -4,8 +4,10 @@ import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
+import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { SentReplyRecord } from "#shared/application/personal-data.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
@@ -105,7 +107,75 @@ export const DrizzleEngagementRecords = Layer.effect(
         .where(and(eq(threads.targetId, targetId), isNull(threads.endedAt)))
         .pipe(Effect.asVoid, Effect.mapError(failed));
 
+    // On a platform that bounds keeping, every thread of the channel, read
+    // or not, is taken first, as every writer of a thread's comments
+    // takes it, and ends; its comments then keep their ids
+    // and nothing their authors wrote or are, as `expireComment` leaves
+    // them, and its counts follow.
+    const channelGone = Effect.fn("EngagementRecords.channelGone")(
+      function* channelGone(
+        channelId: string,
+        platform: Platform,
+        at: DateTime.Utc
+      ) {
+        if (!boundsKeeping(platform)) {
+          return;
+        }
+
+        const instant = DateTime.formatIso(at);
+
+        yield* sql
+          .withTransaction(
+            Effect.gen(function* forgetting() {
+              const held = yield* sql<{ readonly id: string }>`
+                SELECT id FROM engagement.threads
+                WHERE channel_id = ${channelId}::uuid
+                ORDER BY id
+                FOR UPDATE
+              `;
+
+              if (held.length === 0) {
+                return;
+              }
+
+              const ids = held.map(({ id }) => id).join(",");
+
+              yield* sql`
+                UPDATE engagement.comments
+                SET text = '',
+                    author_platform_id = NULL,
+                    author_handle = NULL,
+                    author_display_name = NULL,
+                    permalink = NULL,
+                    liked = false,
+                    state = 'deleted',
+                    expired_at = ${instant}::timestamptz
+                WHERE thread_id = ANY(string_to_array(${ids}, ',')::uuid[])
+                  AND state <> 'deleted'
+              `;
+
+              yield* sql`
+                UPDATE engagement.threads
+                SET comment_count = 0,
+                    unanswered_count = 0,
+                    last_comment_at = NULL,
+                    refresh_by = NULL,
+                    -- Ended at once: a read on its way when the channel
+                    -- left finds it ended under its lock, and keeps
+                    -- nothing (CollectComments' record).
+                    next_collection_at = NULL,
+                    ended_at = COALESCE(ended_at, ${instant}::timestamptz),
+                    end_reason = COALESCE(end_reason, 'disconnected')
+                WHERE id = ANY(string_to_array(${ids}, ',')::uuid[])
+              `;
+            })
+          )
+          .pipe(Effect.mapError(failed));
+      }
+    );
+
     return EngagementRecords.of({
+      channelGone,
       eraseWorkspace,
       exportUser,
       forgetUser,

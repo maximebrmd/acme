@@ -424,6 +424,7 @@ const CommentItem = ({
   return (
     <CommentView
       comment={comment}
+      platform={detail.platform}
       {...(mayReply && present
         ? { actions: <CommentActions comment={comment} context={context} /> }
         : {})}

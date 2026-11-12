@@ -26,6 +26,12 @@ import type {
   EngagementPlatform,
   OutgoingReply,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import {
+  foundAmong,
+  unanswered,
+  undecided,
+} from "#engagement/infrastructure/platforms/resumed-reply.ts";
+import type { ListedReply } from "#engagement/infrastructure/platforms/resumed-reply.ts";
 import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { facebookCommentScopes } from "#shared/domain/inbox-platform.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
@@ -35,7 +41,6 @@ import {
   commentsPerPage,
   confirmedAction,
   defaultDeadline,
-  foundAmong,
   instantOf,
   isSuccess,
   madeOf,
@@ -47,10 +52,8 @@ import {
   PagingSchema,
   pastUsageCeiling,
   requestsWith,
-  unanswered,
-  undecided,
 } from "./meta-comments.ts";
-import type { ListedReply, MetaEngagementOptions } from "./meta-comments.ts";
+import type { MetaEngagementOptions } from "./meta-comments.ts";
 
 // A Page's comments, from Meta's pages (read 2026-11-12):
 //

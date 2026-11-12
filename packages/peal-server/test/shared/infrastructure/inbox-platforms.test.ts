@@ -17,6 +17,11 @@ const instagramApp = {
   INSTAGRAM_APP_SECRET: "synthetic-instagram-secret",
 };
 
+const youtubeApp = {
+  YOUTUBE_CLIENT_ID: "1234-synthetic.apps.googleusercontent.example",
+  YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+};
+
 const read = (env: Record<string, string>) =>
   inboxPlatformsConfig.pipe(
     Effect.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
@@ -43,6 +48,10 @@ describe("the inbox's optional platforms", () => {
           PEAL_INBOX_PLATFORMS: "facebook, instagram",
         }),
         Result.succeed(["facebook", "instagram"])
+      );
+      assert.deepStrictEqual(
+        yield* read({ ...youtubeApp, PEAL_INBOX_PLATFORMS: "youtube" }),
+        Result.succeed(["youtube"])
       );
       // Instagram's own app is a way in of its own.
       assert.deepStrictEqual(
@@ -78,6 +87,30 @@ describe("the inbox's optional platforms", () => {
       assert.isTrue(
         Result.isFailure(yield* read({ PEAL_INBOX_PLATFORMS: "instagram" }))
       );
+      // YouTube's comments need YouTube's own client, its secret included.
+      assert.isTrue(
+        Result.isFailure(
+          yield* read({ ...metaApp, PEAL_INBOX_PLATFORMS: "youtube" })
+        )
+      );
+      assert.isTrue(
+        Result.isFailure(
+          yield* read({
+            PEAL_INBOX_PLATFORMS: "youtube",
+            YOUTUBE_CLIENT_ID: youtubeApp.YOUTUBE_CLIENT_ID,
+          })
+        )
+      );
+    })
+  );
+
+  it.effect("name every platform they take when they refuse one", () =>
+    Effect.gen(function* refusal() {
+      const refused = yield* read({ PEAL_INBOX_PLATFORMS: "threads" }).pipe(
+        Effect.map(Result.match({ onFailure: String, onSuccess: String }))
+      );
+
+      assert.include(refused, "facebook, instagram and youtube");
     })
   );
 });
