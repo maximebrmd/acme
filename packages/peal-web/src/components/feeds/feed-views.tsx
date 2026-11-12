@@ -163,6 +163,7 @@ export const FeedPreviewView = ({
           {preview.items.map((item, place) => (
             <li
               key={item.link ?? `${String(place)}-${item.title ?? ""}`}
+              dir="auto"
               className="bg-muted/40 rounded-md p-3 text-sm whitespace-pre-wrap"
             >
               {item.text ?? t("nothingToPost")}

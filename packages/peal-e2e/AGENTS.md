@@ -46,6 +46,13 @@
   tagged post "<time>, <status>: <text> Tag: <name>.", so a locator for one
   ends with its tags. A menu or popover that stays open after a choice is
   closed with `press("Escape")` before the page behind it is read.
+- `tests/composer-comforts.e2e.ts` seeds three channels, selects them all
+  and none, inserts an emoji from the picker, reads the previews, opens
+  **Publish now** and leaves it ("Not now": nothing goes out), finds the
+  saved draft among **All posts**, filters it out by status and back, then
+  discards it, and reads a pending invitation's **Copy link**. Pasting
+  files is tested below the pages (`#posts/paste.ts`): the runner offers
+  no clipboard.
 - `tests/queues.e2e.ts` adds a queue with two slots late today (the
   test's weekday), adds two posts to it from the composer's **Add to
   queue**, reads that they took 23:57 then 23:58, swaps the 23:57 slot

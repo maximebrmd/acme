@@ -38,6 +38,7 @@ const DraftItem = ({
     <DraftItemView post={post} tags={tagsOf(post.tagIds, tags)}>
       <Link
         href={`/app/${workspaceId}/posts/${post.id}`}
+        dir="auto"
         className="line-clamp-2 font-medium underline-offset-4 hover:underline"
       >
         {title}

@@ -5,6 +5,8 @@ import { Atom } from "effect/reactivity";
 import { PealApi } from "#api/client.ts";
 
 import type { LookupItems } from "./lookup-choices.ts";
+import { filtersOf, queryOf, searchOf } from "./post-list-filter.ts";
+import type { PostListFilters } from "./post-list-filter.ts";
 
 // The queries and mutations of the composer and the calendar. A mutation
 // passes `reactivityKeys: postsKeys`, which refreshes every posts query.
@@ -196,9 +198,50 @@ const draftPages = Atom.family((key: string) => {
 export const draftPage = (workspaceId: string, cursor: Option.Option<string>) =>
   draftPages(draftPageKey(workspaceId, cursor));
 
+// A search's key: the workspace, then the filters and the cursor as a
+// query string, which reads them back.
+const searchPageKey = (
+  workspaceId: string,
+  filters: PostListFilters,
+  cursor: Option.Option<string>
+) => {
+  const query = new URLSearchParams(queryOf(filters));
+
+  if (Option.isSome(cursor)) {
+    query.set("cursor", cursor.value);
+  }
+
+  return `${workspaceId}?${query.toString()}`;
+};
+
+const searchPages = Atom.family((key: string) => {
+  const [workspaceId = "", rest = ""] = key.split("?");
+  const query = new URLSearchParams(rest);
+
+  return PealApi.query("posts", "search", {
+    params: { workspaceId },
+    query: searchOf(filtersOf(query), query.get("cursor") ?? undefined),
+    reactivityKeys: postsKeys,
+  });
+});
+
+/**
+ * A page of the workspace's posts, whatever their state, as the filters
+ * keep and order them: the first, or the one at `cursor`, which holds only
+ * with the same filters and sort.
+ */
+export const postSearchPage = (
+  workspaceId: string,
+  filters: PostListFilters,
+  cursor: Option.Option<string>
+) => searchPages(searchPageKey(workspaceId, filters, cursor));
+
 export const createPost = PealApi.mutation("posts", "create");
 
 export const updatePost = PealApi.mutation("posts", "update");
+
+/** Checks a post without making it: the composer's previews. */
+export const validatePost = PealApi.mutation("posts", "validate");
 
 export const schedulePost = PealApi.mutation("posts", "schedule");
 

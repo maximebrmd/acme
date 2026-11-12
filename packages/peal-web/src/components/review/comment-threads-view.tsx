@@ -59,7 +59,10 @@ const About = ({ channelNames, comment }: CommentViewProps) => {
           { channel }
         )}
       </figcaption>
-      <blockquote className="border-l-2 pl-3 text-sm whitespace-pre-wrap">
+      <blockquote
+        dir="auto"
+        className="border-l-2 pl-3 text-sm whitespace-pre-wrap"
+      >
         {anchor.selection.quote}
       </blockquote>
     </figure>
@@ -93,7 +96,9 @@ const CommentView = ({ channelNames, comment }: CommentViewProps) => {
         )}
       </header>
       <About channelNames={channelNames} comment={comment} />
-      <p className="text-sm break-words whitespace-pre-wrap">{comment.text}</p>
+      <p dir="auto" className="text-sm break-words whitespace-pre-wrap">
+        {comment.text}
+      </p>
     </article>
   );
 };

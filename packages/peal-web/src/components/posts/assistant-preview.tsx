@@ -144,7 +144,10 @@ const SuggestionOf = ({
       <figcaption className="text-muted-foreground text-xs">
         {t("suggestionLabel")}
       </figcaption>
-      <blockquote className="max-h-72 overflow-y-auto rounded-lg border p-3 text-sm whitespace-pre-wrap">
+      <blockquote
+        dir="auto"
+        className="max-h-72 overflow-y-auto rounded-lg border p-3 text-sm whitespace-pre-wrap"
+      >
         {suggestion.text}
       </blockquote>
       <div>

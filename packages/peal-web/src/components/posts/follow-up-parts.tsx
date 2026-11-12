@@ -1,5 +1,6 @@
 "use client";
 
+import type { Editor } from "@tiptap/core";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
@@ -21,6 +22,7 @@ import {
 import { useId, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
+import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";
@@ -48,6 +50,7 @@ interface PartEditorProps {
   readonly disabled: boolean;
   /** The post can still be written. */
   readonly editable: boolean;
+  readonly onEditorFocus: ((editor: Editor) => void) | undefined;
   readonly onParts: SetParts;
   /** The options the post has on its channels, some counted with a text. */
   readonly options: readonly ChannelOptions[];
@@ -65,6 +68,7 @@ const PartEditor = ({
   count,
   disabled,
   editable,
+  onEditorFocus,
   onParts,
   options,
   part,
@@ -80,6 +84,11 @@ const PartEditor = ({
   const attached = useAttachedMedia(workspaceId, part.media);
   const named = { position };
   const locked = disabled || !editable;
+  // Files pasted into the part's texts join the part's own media.
+  const uploader = useRef<MediaUploaderHandle>(null);
+
+  const pasteFiles = (files: readonly File[]) =>
+    uploader.current?.add(files) ?? false;
 
   const change = (changes: Partial<Omit<PartDraft, "key">>) => {
     onParts((current) => updatePart(current, part.key, changes));
@@ -177,6 +186,8 @@ const PartEditor = ({
         onChange={(text) => {
           change({ text });
         }}
+        onEditorFocus={onEditorFocus}
+        onPasteFiles={pasteFiles}
       />
       <p id={`${id}-hint`} className="sr-only">
         {t("textHint", named)}
@@ -209,6 +220,8 @@ const PartEditor = ({
                   ),
                 });
               }}
+              onEditorFocus={onEditorFocus}
+              onPasteFiles={pasteFiles}
             />
             <p
               id={`${id}-own-${channel.id}-hint`}
@@ -277,6 +290,7 @@ const PartEditor = ({
           platforms={selected.flatMap(({ id: channelId, platform }) =>
             showsAltText(platform, optionsOn(channelId)) ? [platform] : []
           )}
+          uploader={uploader}
           workspaceId={workspaceId}
           onChange={changeMedia}
         />
@@ -291,6 +305,8 @@ interface FollowUpPartsProps {
   /** The post can still be written: a draft the member may change. */
   readonly editable: boolean;
   readonly onChange: SetParts;
+  /** Hears a part's text take the focus: where an emoji chosen goes. */
+  readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** The options the post has on its channels. */
   readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
@@ -311,6 +327,7 @@ export const FollowUpParts = ({
   disabled,
   editable,
   onChange,
+  onEditorFocus,
   options,
   parts,
   permissions,
@@ -353,6 +370,7 @@ export const FollowUpParts = ({
               position={index + 2}
               selected={selected}
               workspaceId={workspaceId}
+              onEditorFocus={onEditorFocus}
               onParts={onChange}
             />
           ))}

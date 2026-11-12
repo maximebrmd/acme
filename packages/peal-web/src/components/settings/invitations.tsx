@@ -3,7 +3,7 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import { useFormatter, useNow, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useNow, useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,7 @@ import { workspaceInvitations } from "#settings/atoms.ts";
 import type { WorkspaceInvitation } from "#settings/atoms.ts";
 import { settingsErrorKey } from "#settings/errors.ts";
 import type { SettingsErrorKey } from "#settings/errors.ts";
+import { invitationLink } from "#settings/invitation-link.ts";
 import { invite } from "#settings/invite.ts";
 import { RoleSchema } from "#settings/member-rules.ts";
 import type { Role } from "#settings/member-rules.ts";
@@ -143,9 +144,43 @@ interface InvitationRowProps {
   readonly workspaceId: string;
 }
 
+// Copies the link the invitation's email holds, in the inviter's language,
+// on this page's origin: Better Auth lets only a session of the invited
+// address accept it.
+const CopyInvitationLink = ({
+  email,
+  invitationId,
+}: {
+  readonly email: string;
+  readonly invitationId: string;
+}) => {
+  const t = useTranslations("WorkspaceSettings.invitations");
+  const locale = useLocale();
+
+  const handleCopy = () => {
+    void navigator.clipboard
+      .writeText(invitationLink(window.location.origin, locale, invitationId))
+      .then(
+        () => toast.success(t("linkCopied", { email })),
+        () => toast.error(t("copyFailed"))
+      );
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      aria-label={t("copyLinkFor", { email })}
+      onClick={handleCopy}
+    >
+      {t("copyLink")}
+    </Button>
+  );
+};
+
 // One pending invitation: who, as what, until when (Better Auth keeps an
-// expired one pending, until it is sent again); sending it again, and
-// revoking it once confirmed.
+// expired one pending, until it is sent again); copying its link while it
+// works, sending it again, and revoking it once confirmed.
 const InvitationRow = ({
   invitation,
   mayCancel,
@@ -215,6 +250,9 @@ const InvitationRow = ({
       </div>
       <Badge variant="outline">{roleLabel("role", { role })}</Badge>
       <div className="flex gap-2">
+        {mayResend && !expired ? (
+          <CopyInvitationLink email={email} invitationId={invitation.id} />
+        ) : null}
         {mayResend ? (
           <Button
             variant="outline"
@@ -290,18 +328,23 @@ const LoadedInvitations = ({
       return pending.length === 0 ? (
         <p className="text-muted-foreground">{t("empty")}</p>
       ) : (
-        <ul className="divide-y">
-          {pending.map((invitation) => (
-            <InvitationRow
-              key={invitation.id}
-              invitation={invitation}
-              mayCancel={mayCancel}
-              mayResend={mayResend}
-              workspaceId={workspaceId}
-              onChanged={reload}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="divide-y">
+            {pending.map((invitation) => (
+              <InvitationRow
+                key={invitation.id}
+                invitation={invitation}
+                mayCancel={mayCancel}
+                mayResend={mayResend}
+                workspaceId={workspaceId}
+                onChanged={reload}
+              />
+            ))}
+          </ul>
+          {mayResend ? (
+            <p className="text-muted-foreground text-sm">{t("linkNote")}</p>
+          ) : null}
+        </>
       );
     },
   });

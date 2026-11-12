@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import type { Channel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -14,10 +15,14 @@ import {
 } from "peal-ui/components/dialog";
 import type { ReactNode } from "react";
 
+import { PublishNowButton } from "#components/posts/publish-now.tsx";
+import type { PublishNow } from "#posts/publish-now.ts";
+
 /** What the composer is doing. */
 export type ComposerAction =
   | "cancel"
   | "discard"
+  | "publishNow"
   | "reschedule"
   | "save"
   | "schedule"
@@ -32,11 +37,15 @@ interface ComposerActionsProps {
   readonly canSave: boolean;
   readonly canSchedule: boolean;
   readonly canUnschedule: boolean;
+  /** The channels the post goes to, which "Publish now" lists. */
+  readonly channels?: readonly Channel[];
   /** Another action shown with these, such as copying the post. */
   readonly extra?: ReactNode;
   readonly onAction: (action: ComposerAction) => void;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
+  /** Whether "Publish now" shows, and beside which action. */
+  readonly publishNow?: PublishNow;
   /**
    * Whether the API takes what the post holds now, which a draft needs
    * too: false while an option filled in is one it would refuse.
@@ -86,8 +95,12 @@ const DiscardDraft = ({
   );
 };
 
-// Save, schedule, move, take back to draft, discard or cancel, as the
-// post's status and the member's role allow. Buttons stay focusable while
+const notOffered: PublishNow = { _tag: "none" };
+
+const noChannels: readonly Channel[] = [];
+
+// Save, schedule, publish now, move, take back to draft, discard or cancel,
+// as the post's status and the member's role allow. Buttons stay focusable while
 // something runs.
 export const ComposerActions = ({
   busy,
@@ -97,14 +110,28 @@ export const ComposerActions = ({
   canSave,
   canSchedule,
   canUnschedule,
+  channels = noChannels,
   extra,
   onAction,
   publishable,
+  publishNow = notOffered,
   savable = true,
   willWait,
 }: ComposerActionsProps) => {
   const t = useTranslations("Posts.Composer");
   const running = busy !== null;
+
+  const now = (from: "draft" | "scheduled") =>
+    publishNow._tag === "offered" && publishNow.from === from ? (
+      <PublishNowButton
+        busy={busy === "publishNow"}
+        channels={channels}
+        enabled={publishNow.enabled}
+        onConfirm={() => {
+          onAction("publishNow");
+        }}
+      />
+    ) : null;
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -133,6 +160,7 @@ export const ComposerActions = ({
             : t(willWait ? "askApproval" : "schedule")}
         </Button>
       ) : null}
+      {now("draft")}
       {canReschedule ? (
         <Button
           disabled={running}
@@ -144,6 +172,7 @@ export const ComposerActions = ({
           {busy === "reschedule" ? t("rescheduling") : t("reschedule")}
         </Button>
       ) : null}
+      {now("scheduled")}
       {canUnschedule ? (
         <Button
           variant="outline"

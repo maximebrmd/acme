@@ -38,7 +38,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
-  `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
+  `…/drafts`, `…/posts` (every post, whatever its state, for post:read
+  and channel:read), `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
@@ -236,6 +237,50 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `SignaturePause`, a status region, asks to check them and choose
   Schedule again, which asks for no signature. Never schedule text the
   counters did not count.
+- The composer's comforts, each in a component of its own:
+  `PublishNowButton` (`#posts/publish-now.ts`) schedules a draft, or
+  moves a scheduled post, to the instant the person confirms, through the
+  same path as Schedule (save, signature pause, failures); it is never
+  offered where `willWait`, as an approval after the post's time
+  publishes nothing, nor before the workspace's approval policy is
+  known. The composer runs one action at a time (`#posts/one-at-a-time.ts`,
+  refused synchronously): a dialog's confirm button stays clickable while
+  it closes, and `posts.create` and `posts.schedule` take no idempotency
+  key. While a scheduled post is due, for ten minutes after its time
+  (`isDue`), `ComposerScreen` reads it again until it is publishing.
+  `PlainTextEditor`'s `onPasteFiles` hands files pasted into a text to
+  the `MediaUploader` of the post or of the part (`ref`, a
+  `MediaUploaderHandle`), which refuses them while disabled. Files are
+  taken only when the clipboard holds no text or HTML: a spreadsheet puts
+  a picture beside its cells, which paste as text (`#posts/paste.ts`). `EmojiMenu` (peal-ui's
+  `emoji-picker`, on frimousse) inserts at the caret of the editor that
+  last had the focus (`useEmojiTarget`) through Tiptap's commands. Its
+  data is emojibase-data's, served by the app itself at
+  `/emoji-data/<locale>/<file>` (a static route handler, prerendered at
+  build): never point the picker at another host. Categories are named
+  from the catalogues (`withCategoryGroups`). `ChannelPicker` offers
+  **Select all** (`everyChannel`: never a channel off or to reconnect)
+  from three channels up. Every place that shows a post's text as text
+  gives its element `dir="auto"`, and the editor `textDirection: "auto"`.
+- `PostPreviews`, beside the composer's text, asks `posts.validate`
+  (`validatePost`) for the request a save sends (`previewRequestOf` of the
+  composer's one `draft`, tags left out: a test fails when the draft and
+  the check's request part ways), a second after the last change and only
+  while the post can be written, goes to a channel and its options are
+  taken. `previewed` lets the latest request win and `previewOf` dims the
+  last answer from the moment the post changes; a failure offers "Try
+  again", a `Forbidden` hides the previews. It draws the text with
+  `PreviewedText`, as the review page does, and repeats no violation: it
+  marks the channel and points down to the counters. Never imitate a platform's look.
+- The posts list (`…/posts`, `PostList`, views in `post-list-views.tsx`)
+  keeps its filters in the query string (`#posts/post-list-filter.ts`:
+  `filtersOf`, `queryOf`, `withFilter`), so a link shows the same list,
+  and asks `posts.search` (`postSearchPage`) with them; "Show more"
+  passes the page's cursor with the same filters and sort, as the API
+  requires. An outcome is a filter on finished posts only.
+- A pending invitation's **Copy link** (`#settings/invitation-link.ts`)
+  copies the emailed link, which Better Auth lets only a session of the
+  invited, verified address accept: there is no open invitation link.
 - The calendar filters the posts it loaded in the browser
   (`#posts/calendar-filter.ts`, `CalendarFilters`), and links each day and
   each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`
