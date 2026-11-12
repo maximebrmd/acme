@@ -1,10 +1,13 @@
 // What the server writes about a request never holds a credential: a
 // connect link's token, a review link's, a partner key, the token of a
 // link that applies a request to cancel, the value of a header a webhook
-// endpoint's deliveries carry, or two-step verification's key, codes and
-// recovery codes. The app runs here as production
+// endpoint's deliveries carry, two-step verification's key, codes and
+// recovery codes, or the image provider's key (nor the prompt sent to it). The app runs here as production
 // runs it, logging each request and tracing it, and everything a log line
 // or a span would export is searched for each secret.
+import { once } from "node:events";
+import { createServer } from "node:http";
+
 import { assert, layer } from "@effect/vitest";
 import {
   Cause,
@@ -17,6 +20,7 @@ import {
   Schema,
   Tracer,
 } from "effect";
+import sharp from "sharp";
 
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import {
@@ -47,6 +51,7 @@ import {
   signedUp,
   TestApp,
   unconfirmedEmails,
+  workspaceOf,
 } from "#test/workspace/integration/harness.ts";
 import {
   bearer,
@@ -383,3 +388,124 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
       }).pipe(Effect.scoped)
   );
 });
+
+// The image provider's key, and the prompt, which the server never writes:
+// a loopback provider that refuses a prompt naming "refused" with 401, and
+// answers any other with an image.
+const imageKey = "sk_test_synthetic_image_provider_key";
+const inPrompt = "synthetic-prompt-marker-in-a-secret-test";
+
+const imageProvider = Effect.acquireRelease(
+  Effect.promise(async () => {
+    const png = await sharp({
+      create: { background: "#224466", channels: 3, height: 16, width: 16 },
+    })
+      .png()
+      .toBuffer();
+
+    const server = createServer((request, response) => {
+      const chunks: Buffer[] = [];
+
+      request.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+      request.on("end", () => {
+        const refused = Buffer.concat(chunks)
+          .toString("utf-8")
+          .includes("refused");
+
+        response.writeHead(refused ? 401 : 200, {
+          "content-type": "application/json",
+        });
+        response.end(
+          JSON.stringify(
+            refused
+              ? { error: { message: `Invalid key ${imageKey}` } }
+              : { created: 1, data: [{ b64_json: png.toString("base64") }] }
+          )
+        );
+      });
+    });
+
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+
+    return {
+      server,
+      url: `http://127.0.0.1:${String(decodePort(server.address()).port)}/v1`,
+    };
+  }),
+  ({ server }) =>
+    Effect.promise(async () => {
+      server.closeAllConnections();
+      server.close();
+      await once(server, "close");
+    })
+);
+
+const decodePort = Schema.decodeUnknownSync(
+  Schema.Struct({ port: Schema.Number })
+);
+
+const ImagesTest = Layer.unwrap(
+  imageProvider.pipe(
+    Effect.map(({ url }) =>
+      Layer.mergeAll(
+        TestApp.layerWith(
+          {
+            ...unconfirmedEmails,
+            PEAL_AI_IMAGE_API_KEY: imageKey,
+            PEAL_AI_IMAGE_BASE_URL: url,
+            PEAL_AI_IMAGE_MODEL: "synthetic-image-model",
+            PEAL_AI_IMAGE_PROVIDER: "openai-compatible",
+          },
+          Layer.merge(capture, Layer.succeed(Tracer.Tracer, tracer))
+        ),
+        MigratedSqlLive
+      )
+    )
+  )
+);
+
+const MadeSchema = Schema.Struct({ id: Schema.String });
+
+layer(ImagesTest, { excludeTestServices: true, timeout: "180 seconds" })(
+  "what the server writes about images",
+  (it) => {
+    it.effect("holds neither the image provider's key nor the prompt", () =>
+      Effect.gen(function* images() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("secrets-images");
+        const workspaceId = yield* workspaceOf(owner, "Images");
+        const headers = { cookie: owner.cookies };
+        const path = `/api/workspaces/${workspaceId}/assistant/images`;
+
+        const made = yield* app.request(path, {
+          body: { aspect: "square", prompt: `A lighthouse. ${inPrompt}` },
+          headers,
+        });
+
+        assert.strictEqual(made.status, 201);
+
+        const refused = yield* app.request(path, {
+          body: { aspect: "square", prompt: `It is refused. ${inPrompt}` },
+          headers,
+        });
+
+        assert.strictEqual(refused.status, 503);
+
+        const { id } = yield* bodyOf(MadeSchema, made);
+
+        yield* app.request(`/api/workspaces/${workspaceId}/media/${id}`, {
+          headers,
+          method: "DELETE",
+        });
+
+        // The refusal is told to the operator, by its status alone.
+        assert.include(written(), "refused the server's credentials");
+        assert.notInclude(written(), imageKey);
+        assert.notInclude(written(), inPrompt);
+      })
+    );
+  }
+);
