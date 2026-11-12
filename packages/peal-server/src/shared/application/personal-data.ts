@@ -133,6 +133,19 @@ export interface SavedItemsRecord {
     /** As stored: plain JSON, options by channel. */
     readonly options: unknown;
   }[];
+  readonly feeds: readonly {
+    readonly attachPicture: boolean;
+    readonly channelIds: readonly string[];
+    readonly channelSetId: string | null;
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly mode: string;
+    readonly queueId: string | null;
+    readonly status: string;
+    readonly stopReason: string | null;
+    readonly template: string;
+    readonly url: string;
+  }[];
   readonly queues: readonly {
     readonly channelIds: readonly string[];
     readonly channelSetId: string | null;
@@ -625,6 +638,11 @@ export type NoticeEventRecord =
       readonly network: string;
     }
   | {
+      readonly _tag: "FeedStopped";
+      readonly feedId: string;
+      readonly reason: string;
+    }
+  | {
       readonly _tag: "RecyclingEnded";
       readonly reason: string;
       readonly ruleId: string;
@@ -654,6 +672,7 @@ export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
     readonly comments: boolean;
+    readonly feedStopped: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
     readonly postReview: boolean;

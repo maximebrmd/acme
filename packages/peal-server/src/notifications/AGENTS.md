@@ -28,7 +28,8 @@
   notice reaches the app; `NotificationPreferences` say which are also
   emailed (failed and unconfirmed posts, channels to reconnect and
   deliveries failing on a webhook endpoint, `webhookFailing`, and a
-  recycling rule that ended, `recyclingEnded`, by default,
+  recycling rule that ended, `recyclingEnded`, and a feed that stopped,
+  `feedStopped`, by default,
   not published posts; billing's and a webhook endpoint turned off always,
   as no preference covers them). A preferences change writes only what it names.
 - `Notify.resolve(key)` says an event was dealt with: its notices are marked

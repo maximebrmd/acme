@@ -199,6 +199,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.FeedStopped"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.FeedStopped value)
+    {
+        Type = "FeedStopped";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -308,6 +317,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "RecyclingEnded"
     /// </summary>
     public bool IsRecyclingEnded => Type == "RecyclingEnded";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "FeedStopped"
+    /// </summary>
+    public bool IsFeedStopped => Type == "FeedStopped";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -497,6 +511,15 @@ public record NoticeEvent
             ? (Peal.NoticeEventRecyclingEnded)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'RecyclingEnded'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventFeedStopped"/> if <see cref="Type"/> is 'FeedStopped', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FeedStopped'.</exception>
+    public Peal.NoticeEventFeedStopped AsFeedStopped() =>
+        IsFeedStopped
+            ? (Peal.NoticeEventFeedStopped)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'FeedStopped'");
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
@@ -518,6 +541,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventAdBoostChanged, T> onAdBoostChanged,
         Func<Peal.NoticeEventAdConnectionReconnectRequired, T> onAdConnectionReconnectRequired,
         Func<Peal.NoticeEventRecyclingEnded, T> onRecyclingEnded,
+        Func<Peal.NoticeEventFeedStopped, T> onFeedStopped,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -545,6 +569,7 @@ public record NoticeEvent
                 AsAdConnectionReconnectRequired()
             ),
             "RecyclingEnded" => onRecyclingEnded(AsRecyclingEnded()),
+            "FeedStopped" => onFeedStopped(AsFeedStopped()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -570,6 +595,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventAdBoostChanged> onAdBoostChanged,
         Action<Peal.NoticeEventAdConnectionReconnectRequired> onAdConnectionReconnectRequired,
         Action<Peal.NoticeEventRecyclingEnded> onRecyclingEnded,
+        Action<Peal.NoticeEventFeedStopped> onFeedStopped,
         Action<string, object?> onUnknown_
     )
     {
@@ -634,6 +660,9 @@ public record NoticeEvent
                 break;
             case "RecyclingEnded":
                 onRecyclingEnded(AsRecyclingEnded());
+                break;
+            case "FeedStopped":
+                onFeedStopped(AsFeedStopped());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -923,6 +952,20 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventFeedStopped"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsFeedStopped(out Peal.NoticeEventFeedStopped? value)
+    {
+        if (Type == "FeedStopped")
+        {
+            value = (Peal.NoticeEventFeedStopped)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -975,6 +1018,8 @@ public record NoticeEvent
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.RecyclingEnded value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.FeedStopped value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<NoticeEvent>
@@ -1135,6 +1180,9 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventRecyclingEnded"
                         ),
+                "FeedStopped" => jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventFeedStopped?>(
+                    options
+                ) ?? throw new JsonException("Failed to deserialize Peal.NoticeEventFeedStopped"),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -1181,6 +1229,7 @@ public record NoticeEvent
                         options
                     ),
                     "RecyclingEnded" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FeedStopped" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -1605,6 +1654,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.RecyclingEnded(
             Peal.NoticeEventRecyclingEnded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for FeedStopped
+    /// </summary>
+    [Serializable]
+    public struct FeedStopped
+    {
+        public FeedStopped(Peal.NoticeEventFeedStopped value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventFeedStopped Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.FeedStopped(
+            Peal.NoticeEventFeedStopped value
         ) => new(value);
     }
 }

@@ -33,6 +33,7 @@
 //! - **channelSets**
 //! - **queues**
 //! - **recycling**
+//! - **feeds**
 //! - **channelDefaults**
 
 use crate::{ApiError, ClientConfig};
@@ -48,6 +49,7 @@ pub mod channel_defaults;
 pub mod channel_sets;
 pub mod channels;
 pub mod connect_links;
+pub mod feeds;
 pub mod inbox;
 pub mod invitations;
 pub mod lookups;
@@ -102,6 +104,7 @@ pub struct PealClient {
     pub channel_sets: ChannelSetsClient,
     pub queues: QueuesClient,
     pub recycling: RecyclingClient,
+    pub feeds: FeedsClient,
     pub channel_defaults: ChannelDefaultsClient,
 }
 
@@ -140,6 +143,7 @@ impl PealClient {
             channel_sets: ChannelSetsClient::new(config.clone())?,
             queues: QueuesClient::new(config.clone())?,
             recycling: RecyclingClient::new(config.clone())?,
+            feeds: FeedsClient::new(config.clone())?,
             channel_defaults: ChannelDefaultsClient::new(config.clone())?,
         })
     }
@@ -156,6 +160,7 @@ pub use channel_defaults::ChannelDefaultsClient;
 pub use channel_sets::ChannelSetsClient;
 pub use channels::ChannelsClient;
 pub use connect_links::ConnectLinksClient;
+pub use feeds::FeedsClient;
 pub use inbox::InboxClient;
 pub use invitations::InvitationsClient;
 pub use lookups::LookupsClient;

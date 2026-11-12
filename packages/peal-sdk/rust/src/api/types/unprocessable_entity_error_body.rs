@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum UnprocessableEntityErrorBody {
     #[non_exhaustive]
-    RecyclingEndsTooSoon {
+    FeedAddressRefused {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,13 +13,11 @@ pub enum UnprocessableEntityErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
-        #[serde(rename = "firstDueAt")]
-        #[serde(default)]
-        first_due_at: String,
+        reason: FeedAddressRefusedEncodedReason,
     },
 
     #[non_exhaustive]
-    RecyclingVariantsInvalid {
+    FeedTemplateInvalid {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -27,8 +25,27 @@ pub enum UnprocessableEntityErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
-        #[serde(default)]
-        variants: Vec<RecyclingVariantsInvalidEncodedVariantsItem>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        placeholder: Option<String>,
+        reason: FeedTemplateInvalidEncodedReason,
+    },
+
+    #[non_exhaustive]
+    FeedUnreadable {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        reason: FeedUnreadableEncodedReason,
+    },
+
+    #[non_exhaustive]
+    UnknownChannels {
+        #[serde(flatten)]
+        data: UnknownChannelsEncoded,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -39,107 +56,183 @@ pub enum UnprocessableEntityErrorBody {
 }
 
 impl UnprocessableEntityErrorBody {
-    pub fn recycling_ends_too_soon(first_due_at: String) -> Self {
-        Self::RecyclingEndsTooSoon {
+    pub fn feed_address_refused(reason: FeedAddressRefusedEncodedReason) -> Self {
+        Self::FeedAddressRefused {
             code: None,
             message: None,
             request_id: None,
-            first_due_at,
+            reason,
         }
     }
 
-    pub fn recycling_variants_invalid(
-        variants: Vec<RecyclingVariantsInvalidEncodedVariantsItem>,
-    ) -> Self {
-        Self::RecyclingVariantsInvalid {
+    pub fn feed_template_invalid(reason: FeedTemplateInvalidEncodedReason) -> Self {
+        Self::FeedTemplateInvalid {
             code: None,
             message: None,
             request_id: None,
-            variants,
+            placeholder: None,
+            reason,
         }
     }
 
-    pub fn recycling_ends_too_soon_with_code(
+    pub fn feed_unreadable(reason: FeedUnreadableEncodedReason) -> Self {
+        Self::FeedUnreadable {
+            code: None,
+            message: None,
+            request_id: None,
+            reason,
+        }
+    }
+
+    pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
+        Self::UnknownChannels { data }
+    }
+
+    pub fn feed_address_refused_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        first_due_at: String,
+        reason: FeedAddressRefusedEncodedReason,
     ) -> Self {
-        Self::RecyclingEndsTooSoon {
+        Self::FeedAddressRefused {
             code: Some(code),
             message,
             request_id,
-            first_due_at,
+            reason,
         }
     }
 
-    pub fn recycling_ends_too_soon_with_message(
+    pub fn feed_address_refused_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        first_due_at: String,
+        reason: FeedAddressRefusedEncodedReason,
     ) -> Self {
-        Self::RecyclingEndsTooSoon {
+        Self::FeedAddressRefused {
             code,
             message: Some(message),
             request_id,
-            first_due_at,
+            reason,
         }
     }
 
-    pub fn recycling_ends_too_soon_with_request_id(
+    pub fn feed_address_refused_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        first_due_at: String,
+        reason: FeedAddressRefusedEncodedReason,
     ) -> Self {
-        Self::RecyclingEndsTooSoon {
+        Self::FeedAddressRefused {
             code,
             message,
             request_id: Some(request_id),
-            first_due_at,
+            reason,
         }
     }
 
-    pub fn recycling_variants_invalid_with_code(
+    pub fn feed_template_invalid_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        variants: Vec<RecyclingVariantsInvalidEncodedVariantsItem>,
+        placeholder: Option<String>,
+        reason: FeedTemplateInvalidEncodedReason,
     ) -> Self {
-        Self::RecyclingVariantsInvalid {
+        Self::FeedTemplateInvalid {
             code: Some(code),
             message,
             request_id,
-            variants,
+            placeholder,
+            reason,
         }
     }
 
-    pub fn recycling_variants_invalid_with_message(
+    pub fn feed_template_invalid_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        variants: Vec<RecyclingVariantsInvalidEncodedVariantsItem>,
+        placeholder: Option<String>,
+        reason: FeedTemplateInvalidEncodedReason,
     ) -> Self {
-        Self::RecyclingVariantsInvalid {
+        Self::FeedTemplateInvalid {
             code,
             message: Some(message),
             request_id,
-            variants,
+            placeholder,
+            reason,
         }
     }
 
-    pub fn recycling_variants_invalid_with_request_id(
+    pub fn feed_template_invalid_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        variants: Vec<RecyclingVariantsInvalidEncodedVariantsItem>,
+        placeholder: Option<String>,
+        reason: FeedTemplateInvalidEncodedReason,
     ) -> Self {
-        Self::RecyclingVariantsInvalid {
+        Self::FeedTemplateInvalid {
             code,
             message,
             request_id: Some(request_id),
-            variants,
+            placeholder,
+            reason,
+        }
+    }
+
+    pub fn feed_template_invalid_with_placeholder(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: Option<String>,
+        placeholder: String,
+        reason: FeedTemplateInvalidEncodedReason,
+    ) -> Self {
+        Self::FeedTemplateInvalid {
+            code,
+            message,
+            request_id,
+            placeholder: Some(placeholder),
+            reason,
+        }
+    }
+
+    pub fn feed_unreadable_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        reason: FeedUnreadableEncodedReason,
+    ) -> Self {
+        Self::FeedUnreadable {
+            code: Some(code),
+            message,
+            request_id,
+            reason,
+        }
+    }
+
+    pub fn feed_unreadable_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        reason: FeedUnreadableEncodedReason,
+    ) -> Self {
+        Self::FeedUnreadable {
+            code,
+            message: Some(message),
+            request_id,
+            reason,
+        }
+    }
+
+    pub fn feed_unreadable_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        reason: FeedUnreadableEncodedReason,
+    ) -> Self {
+        Self::FeedUnreadable {
+            code,
+            message,
+            request_id: Some(request_id),
+            reason,
         }
     }
 

@@ -17,6 +17,9 @@ public record NotificationPreferencesEmail : IJsonOnDeserialized
     [JsonPropertyName("comments")]
     public required bool Comments { get; set; }
 
+    [JsonPropertyName("feedStopped")]
+    public required bool FeedStopped { get; set; }
+
     [JsonPropertyName("postFailed")]
     public required bool PostFailed { get; set; }
 

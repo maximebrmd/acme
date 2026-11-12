@@ -7,6 +7,9 @@ pub struct NotificationPreferencesEmail {
     pub channel_reconnect: bool,
     #[serde(default)]
     pub comments: bool,
+    #[serde(rename = "feedStopped")]
+    #[serde(default)]
+    pub feed_stopped: bool,
     #[serde(rename = "postFailed")]
     #[serde(default)]
     pub post_failed: bool,
@@ -38,6 +41,7 @@ impl NotificationPreferencesEmail {
 pub struct NotificationPreferencesEmailBuilder {
     channel_reconnect: Option<bool>,
     comments: Option<bool>,
+    feed_stopped: Option<bool>,
     post_failed: Option<bool>,
     post_published: Option<bool>,
     post_review: Option<bool>,
@@ -54,6 +58,11 @@ impl NotificationPreferencesEmailBuilder {
 
     pub fn comments(mut self, value: bool) -> Self {
         self.comments = Some(value);
+        self
+    }
+
+    pub fn feed_stopped(mut self, value: bool) -> Self {
+        self.feed_stopped = Some(value);
         self
     }
 
@@ -91,6 +100,7 @@ impl NotificationPreferencesEmailBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`channel_reconnect`](NotificationPreferencesEmailBuilder::channel_reconnect)
     /// - [`comments`](NotificationPreferencesEmailBuilder::comments)
+    /// - [`feed_stopped`](NotificationPreferencesEmailBuilder::feed_stopped)
     /// - [`post_failed`](NotificationPreferencesEmailBuilder::post_failed)
     /// - [`post_published`](NotificationPreferencesEmailBuilder::post_published)
     /// - [`post_review`](NotificationPreferencesEmailBuilder::post_review)
@@ -105,6 +115,9 @@ impl NotificationPreferencesEmailBuilder {
             comments: self
                 .comments
                 .ok_or_else(|| BuildError::missing_field("comments"))?,
+            feed_stopped: self
+                .feed_stopped
+                .ok_or_else(|| BuildError::missing_field("feed_stopped"))?,
             post_failed: self
                 .post_failed
                 .ok_or_else(|| BuildError::missing_field("post_failed"))?,

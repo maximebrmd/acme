@@ -74,6 +74,19 @@ export const RecyclingEndReasonSchema = Schema.Literals([
 
 export type RecyclingEndReason = typeof RecyclingEndReasonSchema.Type;
 
+/**
+ * Why a feed stopped, as publishing records it: what members are told.
+ */
+export const FeedStopReasonSchema = Schema.Literals([
+  "unreachable",
+  "notAFeed",
+  "gone",
+  "starterGone",
+  "queueGone",
+]);
+
+export type FeedStopReason = typeof FeedStopReasonSchema.Type;
+
 // A post's channel is none when it was disconnected before the notice was
 // made: the notice still says what happened to the post.
 const postOn = {
@@ -224,6 +237,13 @@ export const NoticeEventSchema = Schema.Union([
     ruleId: Uuid7Schema,
     sourcePostId: PostIdSchema,
   }),
+  // A feed stopped making posts, and why: those who expected it to go on
+  // hear it once each time it stops. Its id only: what a feed says is
+  // other people's text, which no notice holds.
+  Schema.TaggedStruct("FeedStopped", {
+    feedId: Uuid7Schema,
+    reason: FeedStopReasonSchema,
+  }),
   // An ad network refused a member's sign-in: the ad accounts it connects
   // are no longer read until they sign in again.
   Schema.TaggedStruct("AdConnectionReconnectRequired", {
@@ -261,6 +281,7 @@ export type EmailKind =
   | "postPublished"
   | "postReview"
   | "postUnconfirmed"
+  | "feedStopped"
   | "recyclingEnded"
   | "webhookFailing";
 
@@ -279,6 +300,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
     ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
     CommentsReceived: () => Option.some<EmailKind>("comments"),
+    FeedStopped: () => Option.some<EmailKind>("feedStopped"),
     PostApprovalRequested: () => Option.some<EmailKind>("postReview"),
     PostApproved: () => Option.some<EmailKind>("postReview"),
     PostChangesRequested: () => Option.some<EmailKind>("postReview"),
@@ -313,6 +335,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     ChannelReconnectRequired: (): Permission => "channel:connect",
     ChannelReconnectSoon: (): Permission => "channel:connect",
     CommentsReceived: (): Permission => "engagement:reply",
+    FeedStopped: (): Permission => "post:schedule",
     PostApprovalRequested: (): Permission => "post:approve",
     PostApproved: (): Permission => "post:schedule",
     PostChangesRequested: (): Permission => "post:schedule",
@@ -338,6 +361,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     ChannelReconnectRequired: () => false,
     ChannelReconnectSoon: () => false,
     CommentsReceived: () => true,
+    FeedStopped: () => true,
     PostApprovalRequested: () => true,
     PostApproved: () => true,
     PostChangesRequested: () => true,
@@ -458,6 +482,8 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
     CommentsReceived: ({ threadId }) => `/app/${workspaceId}/inbox/${threadId}`,
+    FeedStopped: ({ feedId }) =>
+      `/app/${workspaceId}/settings/feeds?feed=${feedId}`,
     PostApprovalRequested: ({ postId }) =>
       `/app/${workspaceId}/posts/${postId}`,
     PostApproved: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,

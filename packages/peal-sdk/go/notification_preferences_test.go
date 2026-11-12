@@ -169,6 +169,14 @@ func TestSettersNotificationPreferencesEmail(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFeedStopped", func(t *testing.T) {
+		obj := &NotificationPreferencesEmail{}
+		var fernTestValueFeedStopped bool
+		obj.SetFeedStopped(fernTestValueFeedStopped)
+		assert.Equal(t, fernTestValueFeedStopped, obj.FeedStopped)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPostFailed", func(t *testing.T) {
 		obj := &NotificationPreferencesEmail{}
 		var fernTestValuePostFailed bool
@@ -264,6 +272,29 @@ func TestGettersNotificationPreferencesEmail(t *testing.T) {
 			}
 		}()
 		_ = obj.GetComments() // Should return zero value
+	})
+
+	t.Run("GetFeedStopped", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesEmail{}
+		var expected bool
+		obj.FeedStopped = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFeedStopped(), "getter should return the property value")
+	})
+
+	t.Run("GetFeedStopped_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NotificationPreferencesEmail
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFeedStopped() // Should return zero value
 	})
 
 	t.Run("GetPostFailed", func(t *testing.T) {
@@ -446,6 +477,37 @@ func TestSettersMarkExplicitNotificationPreferencesEmail(t *testing.T) {
 
 		// Act
 		obj.SetComments(fernTestValueComments)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFeedStopped_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesEmail{}
+		var fernTestValueFeedStopped bool
+
+		// Act
+		obj.SetFeedStopped(fernTestValueFeedStopped)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -674,6 +736,14 @@ func TestSettersNotificationPreferencesChangeEmail(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFeedStopped", func(t *testing.T) {
+		obj := &NotificationPreferencesChangeEmail{}
+		var fernTestValueFeedStopped *bool
+		obj.SetFeedStopped(fernTestValueFeedStopped)
+		assert.Equal(t, fernTestValueFeedStopped, obj.FeedStopped)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPostFailed", func(t *testing.T) {
 		obj := &NotificationPreferencesChangeEmail{}
 		var fernTestValuePostFailed *bool
@@ -789,6 +859,39 @@ func TestGettersNotificationPreferencesChangeEmail(t *testing.T) {
 			}
 		}()
 		_ = obj.GetComments() // Should return zero value
+	})
+
+	t.Run("GetFeedStopped", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		var expected *bool
+		obj.FeedStopped = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFeedStopped(), "getter should return the property value")
+	})
+
+	t.Run("GetFeedStopped_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		obj.FeedStopped = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetFeedStopped(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetFeedStopped_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NotificationPreferencesChangeEmail
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFeedStopped() // Should return zero value
 	})
 
 	t.Run("GetPostFailed", func(t *testing.T) {
@@ -1031,6 +1134,37 @@ func TestSettersMarkExplicitNotificationPreferencesChangeEmail(t *testing.T) {
 
 		// Act
 		obj.SetComments(fernTestValueComments)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFeedStopped_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		var fernTestValueFeedStopped *bool
+
+		// Act
+		obj.SetFeedStopped(fernTestValueFeedStopped)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

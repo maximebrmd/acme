@@ -6,6 +6,7 @@ import { AdsToolsLive } from "#app/mcp/ads-handlers.ts";
 import { CapabilityToolsLive } from "#app/mcp/capabilities-handlers.ts";
 import { findTools, scopesLetCall, summaryOf } from "#app/mcp/catalogue.ts";
 import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
+import { FeedToolsLive } from "#app/mcp/feeds-handlers.ts";
 import { InboxToolsLive } from "#app/mcp/inbox-handlers.ts";
 import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
@@ -321,5 +322,6 @@ export const PealToolsLive = Layer.mergeAll(
   WebhookToolsLive,
   ConnectToolsLive,
   InboxToolsLive,
-  AdsToolsLive
+  AdsToolsLive,
+  FeedToolsLive
 );

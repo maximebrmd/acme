@@ -226,8 +226,8 @@ peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T
 
 A timetable rather than a time ("add this to the queue") is `--queue <name>`
 or `--default-queue` instead of `--at`, and a post to repeat ("every two
-weeks") `peal recycling start`: see [references/saved.md](references/saved.md)
-(queues, repeating posts).
+weeks") `peal recycling start`, and posting what a blog publishes `peal feeds
+add`: see [references/saved.md](references/saved.md) (queues, repeating posts, feeds).
 
 A thread is a post with parts after it: each `--then` adds one, in order,
 sent as a reply to the part before it where the platform has threads (a

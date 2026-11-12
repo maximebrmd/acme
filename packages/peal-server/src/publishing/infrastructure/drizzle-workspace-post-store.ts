@@ -19,6 +19,8 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import {
   channelDefaults,
   channelSets,
+  feedReads,
+  feeds,
   queues,
   recyclingRules,
   idempotencyKeys,
@@ -342,6 +344,14 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .where(eq(recyclingRules.startedBy, userId))
           .pipe(Effect.mapError(failed));
 
+        // Nor that they added a feed: the next run stops it, as its
+        // starter is gone.
+        yield* db
+          .update(feeds)
+          .set({ startedBy: null })
+          .where(eq(feeds.startedBy, userId))
+          .pipe(Effect.mapError(failed));
+
         // Nor that they asked to change one once live.
         yield* db
           .update(livePostChanges)
@@ -373,6 +383,23 @@ export const DrizzleWorkspacePostStore = Layer.effect(
             .from(channelSets)
             .where(eq(channelSets.workspaceId, workspaceId))
             .orderBy(asc(channelSets.id))).map(dated),
+          feeds: (yield* db
+            .select({
+              attachPicture: feeds.attachPicture,
+              channelIds: feeds.channelIds,
+              channelSetId: feeds.channelSetId,
+              createdAt: feeds.createdAt,
+              id: feeds.id,
+              mode: feeds.mode,
+              queueId: feeds.queueId,
+              status: feeds.status,
+              stopReason: feeds.stopReason,
+              template: feeds.template,
+              url: feeds.url,
+            })
+            .from(feeds)
+            .where(eq(feeds.workspaceId, workspaceId))
+            .orderBy(asc(feeds.id))).map(dated),
           queues: (yield* db
             .select({
               channelIds: queues.channelIds,
@@ -442,10 +469,22 @@ export const DrizzleWorkspacePostStore = Layer.effect(
     const deleteAll = Effect.fn("WorkspacePostStore.deleteAll")(
       function* deleteAll(workspaceId: string) {
         // The rules that repeat its posts first, under their rows' locks,
-        // which a run making an occurrence takes before any post's.
+        // which a run making an occurrence takes before any post's; then
+        // the feeds that make them, with what they read.
         yield* db
           .delete(recyclingRules)
           .where(eq(recyclingRules.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .delete(feeds)
+          .where(eq(feeds.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // And what its members had read for it this past day.
+        yield* db
+          .delete(feedReads)
+          .where(eq(feedReads.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
 
         yield* db

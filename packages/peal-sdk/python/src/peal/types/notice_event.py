@@ -11,6 +11,7 @@ from ..core.serialization import FieldMetadata
 from .billing_interval import BillingInterval
 from .excess import Excess
 from .failure_reason import FailureReason
+from .feed_stop_reason import FeedStopReason
 from .money import Money
 from .notice_channel import NoticeChannel
 from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
@@ -385,6 +386,23 @@ class NoticeEvent_RecyclingEnded(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_FeedStopped(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["FeedStopped"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FeedStopped"
+    feed_id: typing_extensions.Annotated[str, FieldMetadata(alias="feedId"), pydantic.Field(alias="feedId")]
+    reason: FeedStopReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -407,6 +425,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_AdBoostChanged,
         NoticeEvent_AdConnectionReconnectRequired,
         NoticeEvent_RecyclingEnded,
+        NoticeEvent_FeedStopped,
     ],
     pydantic.Field(discriminator="type"),
 ]

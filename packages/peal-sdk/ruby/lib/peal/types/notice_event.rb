@@ -48,6 +48,8 @@ module Peal
       member -> { Peal::Types::NoticeEventAdConnectionReconnectRequired }, key: "AD_CONNECTION_RECONNECT_REQUIRED"
 
       member -> { Peal::Types::NoticeEventRecyclingEnded }, key: "RECYCLING_ENDED"
+
+      member -> { Peal::Types::NoticeEventFeedStopped }, key: "FEED_STOPPED"
     end
   end
 end

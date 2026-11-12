@@ -230,6 +230,31 @@
     "tag": "ExternalIdTaken"
   },
   {
+    "code": "feed_address_refused",
+    "status": 422,
+    "tag": "FeedAddressRefused"
+  },
+  {
+    "code": "feed_not_found",
+    "status": 404,
+    "tag": "FeedNotFound"
+  },
+  {
+    "code": "feed_reads_limited",
+    "status": 429,
+    "tag": "FeedReadsLimited"
+  },
+  {
+    "code": "feed_template_invalid",
+    "status": 422,
+    "tag": "FeedTemplateInvalid"
+  },
+  {
+    "code": "feed_unreadable",
+    "status": 422,
+    "tag": "FeedUnreadable"
+  },
+  {
     "code": "forbidden",
     "status": 403,
     "tag": "Forbidden"
@@ -633,6 +658,11 @@
     "code": "too_many_contract_requests",
     "status": 429,
     "tag": "TooManyContractRequests"
+  },
+  {
+    "code": "too_many_feeds",
+    "status": 409,
+    "tag": "TooManyFeeds"
   },
   {
     "code": "too_many_invitations",

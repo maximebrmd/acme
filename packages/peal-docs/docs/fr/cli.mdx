@@ -378,6 +378,25 @@ peal posts list --recycling <rule-id>
 - `peal recycling list` affiche 50 règles par page (`--limit`, 100 au plus) et une ligne `More:` avec le `--cursor` de la suivante.
 - `peal posts list --recycling` liste les publications créées par une règle.
 
+## Flux [#feeds]
+
+```sh
+peal feeds preview https://blog.example/feed.xml --template "Nouveau sur le blog : {title}"
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'{title}\n\n{link}'
+peal feeds add https://blog.example/feed.xml --mode queue --queue Semaine
+peal feeds list
+peal feeds show <feed-id>
+peal feeds items <feed-id>
+peal feeds update <feed-id> --template "{title} : {link}"
+peal feeds pause <feed-id>
+peal feeds resume <feed-id>
+peal feeds remove <feed-id>
+```
+
+- `peal feeds add` suit un [flux](/fr/scheduling#feeds) : ce qu’il contient alors n’est jamais publié, et chaque élément qui paraît ensuite devient un brouillon, ou avec `--mode queue` une publication sur le prochain créneau libre de la file (`--queue`, par nom ou identifiant ; la file par défaut sinon), sans que personne ne le lise avant. `--channel` (répété, ou des identifiants séparés par des virgules) et `--set` disent où vont ses publications, `--template` ce qu’elles disent (`{title}`, `{link}`, `{summary}`), et `--picture` joint l’image de chaque élément, importée dans la médiathèque.
+- `peal feeds preview` lit une adresse et affiche ses trois éléments les plus récents tels que le modèle les écrirait, sans rien garder. `peal feeds items` affiche ce que sont devenus ses 50 éléments les plus récents, jamais ce qu’ils disaient.
+- `peal feeds update` change les canaux, le mode, la file (`--default-queue` prend la file par défaut de l’espace de travail, et l’une ou l’autre va avec `--mode queue` ou un flux déjà sur une file), le groupe (`--no-set` le retire), le modèle ou l’adresse (lue aussitôt) ; `pause` et `resume` l’arrêtent et le relancent, `resume` le lisant aussitôt. `remove` cesse de le suivre ; ses brouillons et publications restent.
+
 ## Options par défaut [#default-options]
 
 ```sh

@@ -24,6 +24,8 @@ public final class NotificationPreferencesChangeEmail {
 
     private final Optional<Boolean> comments;
 
+    private final Optional<Boolean> feedStopped;
+
     private final Optional<Boolean> postFailed;
 
     private final Optional<Boolean> postPublished;
@@ -41,6 +43,7 @@ public final class NotificationPreferencesChangeEmail {
     private NotificationPreferencesChangeEmail(
             Optional<Boolean> channelReconnect,
             Optional<Boolean> comments,
+            Optional<Boolean> feedStopped,
             Optional<Boolean> postFailed,
             Optional<Boolean> postPublished,
             Optional<Boolean> postReview,
@@ -50,6 +53,7 @@ public final class NotificationPreferencesChangeEmail {
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
         this.comments = comments;
+        this.feedStopped = feedStopped;
         this.postFailed = postFailed;
         this.postPublished = postPublished;
         this.postReview = postReview;
@@ -67,6 +71,11 @@ public final class NotificationPreferencesChangeEmail {
     @JsonProperty("comments")
     public Optional<Boolean> getComments() {
         return comments;
+    }
+
+    @JsonProperty("feedStopped")
+    public Optional<Boolean> getFeedStopped() {
+        return feedStopped;
     }
 
     @JsonProperty("postFailed")
@@ -114,6 +123,7 @@ public final class NotificationPreferencesChangeEmail {
     private boolean equalTo(NotificationPreferencesChangeEmail other) {
         return channelReconnect.equals(other.channelReconnect)
                 && comments.equals(other.comments)
+                && feedStopped.equals(other.feedStopped)
                 && postFailed.equals(other.postFailed)
                 && postPublished.equals(other.postPublished)
                 && postReview.equals(other.postReview)
@@ -127,6 +137,7 @@ public final class NotificationPreferencesChangeEmail {
         return Objects.hash(
                 this.channelReconnect,
                 this.comments,
+                this.feedStopped,
                 this.postFailed,
                 this.postPublished,
                 this.postReview,
@@ -150,6 +161,8 @@ public final class NotificationPreferencesChangeEmail {
 
         private Optional<Boolean> comments = Optional.empty();
 
+        private Optional<Boolean> feedStopped = Optional.empty();
+
         private Optional<Boolean> postFailed = Optional.empty();
 
         private Optional<Boolean> postPublished = Optional.empty();
@@ -169,6 +182,7 @@ public final class NotificationPreferencesChangeEmail {
         public Builder from(NotificationPreferencesChangeEmail other) {
             channelReconnect(other.getChannelReconnect());
             comments(other.getComments());
+            feedStopped(other.getFeedStopped());
             postFailed(other.getPostFailed());
             postPublished(other.getPostPublished());
             postReview(other.getPostReview());
@@ -197,6 +211,17 @@ public final class NotificationPreferencesChangeEmail {
 
         public Builder comments(Boolean comments) {
             this.comments = Optional.ofNullable(comments);
+            return this;
+        }
+
+        @JsonSetter(value = "feedStopped", nulls = Nulls.SKIP)
+        public Builder feedStopped(Optional<Boolean> feedStopped) {
+            this.feedStopped = feedStopped;
+            return this;
+        }
+
+        public Builder feedStopped(Boolean feedStopped) {
+            this.feedStopped = Optional.ofNullable(feedStopped);
             return this;
         }
 
@@ -270,6 +295,7 @@ public final class NotificationPreferencesChangeEmail {
             return new NotificationPreferencesChangeEmail(
                     channelReconnect,
                     comments,
+                    feedStopped,
                     postFailed,
                     postPublished,
                     postReview,
@@ -283,6 +309,7 @@ public final class NotificationPreferencesChangeEmail {
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelReconnect")
                     || key.equalsIgnoreCase("comments")
+                    || key.equalsIgnoreCase("feedStopped")
                     || key.equalsIgnoreCase("postFailed")
                     || key.equalsIgnoreCase("postPublished")
                     || key.equalsIgnoreCase("postReview")

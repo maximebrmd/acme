@@ -140,7 +140,7 @@
   (`test/engagement/infrastructure/*-engagement.test.ts`). Bluesky's
   session, DPoP sender, record keys and facets are in
   `#shared/infrastructure/platforms/bluesky/`, for publishing and
-  engagement both. Mastodon's HTML becomes plain text (`html-text.ts`):
+  engagement both. Mastodon's HTML becomes plain text (`#shared/domain/html-text.ts`, which feeds share):
   clients render a comment as text, never as markup.
 - The workspace is told through `EngagementOutcomes`, in the transaction
   that records the fact: `comment.received` once per comment and

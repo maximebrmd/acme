@@ -26,16 +26,16 @@ public final class TooManyRequestsErrorBody {
         return value.visit(visitor);
     }
 
-    public static TooManyRequestsErrorBody tooManyConnectLinks(TooManyConnectLinksEncoded value) {
-        return new TooManyRequestsErrorBody(new TooManyConnectLinksValue(value));
+    public static TooManyRequestsErrorBody feedReadsLimited(FeedReadsLimitedEncoded value) {
+        return new TooManyRequestsErrorBody(new FeedReadsLimitedValue(value));
     }
 
     public static TooManyRequestsErrorBody tooManyRequests(TooManyRequestsEncoded value) {
         return new TooManyRequestsErrorBody(new TooManyRequestsValue(value));
     }
 
-    public boolean isTooManyConnectLinks() {
-        return value instanceof TooManyConnectLinksValue;
+    public boolean isFeedReadsLimited() {
+        return value instanceof FeedReadsLimitedValue;
     }
 
     public boolean isTooManyRequests() {
@@ -46,9 +46,9 @@ public final class TooManyRequestsErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<TooManyConnectLinksEncoded> getTooManyConnectLinks() {
-        if (isTooManyConnectLinks()) {
-            return Optional.of(((TooManyConnectLinksValue) value).value);
+    public Optional<FeedReadsLimitedEncoded> getFeedReadsLimited() {
+        if (isFeedReadsLimited()) {
+            return Optional.of(((FeedReadsLimitedValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +89,7 @@ public final class TooManyRequestsErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitTooManyConnectLinks(TooManyConnectLinksEncoded tooManyConnectLinks);
+        T visitFeedReadsLimited(FeedReadsLimitedEncoded feedReadsLimited);
 
         T visitTooManyRequests(TooManyRequestsEncoded tooManyRequests);
 
@@ -97,38 +97,38 @@ public final class TooManyRequestsErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(TooManyConnectLinksValue.class), @JsonSubTypes.Type(TooManyRequestsValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(FeedReadsLimitedValue.class), @JsonSubTypes.Type(TooManyRequestsValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("TooManyConnectLinks")
+    @JsonTypeName("FeedReadsLimited")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyConnectLinksValue implements Value {
+    private static final class FeedReadsLimitedValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyConnectLinksEncoded value;
+        private FeedReadsLimitedEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyConnectLinksValue() {}
+        private FeedReadsLimitedValue() {}
 
-        private TooManyConnectLinksValue(TooManyConnectLinksEncoded value) {
+        private FeedReadsLimitedValue(FeedReadsLimitedEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyConnectLinks(value);
+            return visitor.visitFeedReadsLimited(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyConnectLinksValue && equalTo((TooManyConnectLinksValue) other);
+            return other instanceof FeedReadsLimitedValue && equalTo((FeedReadsLimitedValue) other);
         }
 
-        private boolean equalTo(TooManyConnectLinksValue other) {
+        private boolean equalTo(FeedReadsLimitedValue other) {
             return value.equals(other.value);
         }
 

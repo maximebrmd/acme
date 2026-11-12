@@ -1,7 +1,11 @@
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import type { TwoStepChange } from "./auth-email.ts";
-import type { PostFailureReason, RecyclingEndReason } from "./notice-event.ts";
+import type {
+  FeedStopReason,
+  PostFailureReason,
+  RecyclingEndReason,
+} from "./notice-event.ts";
 
 /**
  * The words of each email in one language. `{name}` stands for a value the
@@ -207,6 +211,12 @@ export interface EmailCatalog {
   };
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
+  /**
+   * A feed of `{workspaceName}` stopped making posts, for `{reason}`, one
+   * of `feedStopReasons`.
+   */
+  readonly feedStopped: EmailMessages;
+  readonly feedStopReasons: Readonly<Record<FeedStopReason, string>>;
   /**
    * A recycling rule of `{workspaceName}` stopped repeating its post, for
    * `{reason}`, one of `recyclingEndReasons`.

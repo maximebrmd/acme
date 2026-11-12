@@ -106,6 +106,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new RecyclingEndedValue(value));
     }
 
+    public static NoticeEvent feedStopped(NoticeEventFeedStopped value) {
+        return new NoticeEvent(new FeedStoppedValue(value));
+    }
+
     public boolean isPostPublished() {
         return value instanceof PostPublishedValue;
     }
@@ -184,6 +188,10 @@ public final class NoticeEvent {
 
     public boolean isRecyclingEnded() {
         return value instanceof RecyclingEndedValue;
+    }
+
+    public boolean isFeedStopped() {
+        return value instanceof FeedStoppedValue;
     }
 
     public boolean _isUnknown() {
@@ -330,6 +338,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventFeedStopped> getFeedStopped() {
+        if (isFeedStopped()) {
+            return Optional.of(((FeedStoppedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -399,6 +414,8 @@ public final class NoticeEvent {
 
         T visitRecyclingEnded(NoticeEventRecyclingEnded recyclingEnded);
 
+        T visitFeedStopped(NoticeEventFeedStopped feedStopped);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -423,7 +440,8 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(WebhookDeliveriesFailingValue.class),
         @JsonSubTypes.Type(AdBoostChangedValue.class),
         @JsonSubTypes.Type(AdConnectionReconnectRequiredValue.class),
-        @JsonSubTypes.Type(RecyclingEndedValue.class)
+        @JsonSubTypes.Type(RecyclingEndedValue.class),
+        @JsonSubTypes.Type(FeedStoppedValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -1217,6 +1235,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(RecyclingEndedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("FeedStopped")
+    @JsonIgnoreProperties("_tag")
+    private static final class FeedStoppedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventFeedStopped value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private FeedStoppedValue() {}
+
+        private FeedStoppedValue(NoticeEventFeedStopped value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitFeedStopped(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof FeedStoppedValue && equalTo((FeedStoppedValue) other);
+        }
+
+        private boolean equalTo(FeedStoppedValue other) {
             return value.equals(other.value);
         }
 
