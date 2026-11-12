@@ -502,3 +502,45 @@ export const tellTwoStepChange = async (
     tell({ kind: "turnedOn", userId });
   }
 };
+
+// The prefix of the records the plugin keeps of trusted browsers, in
+// `verification`, valued with the user's id.
+const trustedBrowserPrefix = "trust-device-";
+
+/**
+ * Part of Better Auth's after hook: once two-step verification is turned
+ * off, forgets every browser the account trusted, not only the one that
+ * turned it off as the plugin does, so a later enrolment asks each of them
+ * for a code again.
+ */
+export const forgetTrustedBrowsers = async (
+  ctx: GenericEndpointContext
+): Promise<void> => {
+  const { request } = ctx;
+
+  if (
+    request === undefined ||
+    ctx.path !== disableRoute ||
+    isRefusal(ctx.context)
+  ) {
+    return;
+  }
+
+  const sender = senders.get(request);
+
+  if (sender === undefined) {
+    return;
+  }
+
+  await ctx.context.adapter.deleteMany({
+    model: "verification",
+    where: [
+      { field: "value", value: sender.userId },
+      {
+        field: "identifier",
+        operator: "starts_with",
+        value: trustedBrowserPrefix,
+      },
+    ],
+  });
+};

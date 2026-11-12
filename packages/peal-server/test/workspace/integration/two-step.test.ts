@@ -525,6 +525,69 @@ layer(TwoStepLive, { excludeTestServices: true, timeout: "180 seconds" })(
     );
 
     it.effect(
+      "forgets every browser it trusted once turned off, whichever browser turns it off",
+      () =>
+        Effect.gen(function* forgotten() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const person = yield* signedUp("untrusted");
+          const { key } = yield* enrolled(person);
+
+          yield* signedOut(person);
+
+          // A browser trusted for 30 days.
+          const trustedBrowser = withCookies(
+            "",
+            yield* passwordStep(person.email)
+          );
+
+          const trustedStep = yield* secondStep(trustedBrowser, {
+            code: yield* now(key),
+            route: "verify-totp",
+            trustDevice: true,
+          });
+
+          const trusted = withCookies(trustedBrowser, trustedStep);
+
+          // Another browser turns it off.
+          const otherBrowser = withCookies(
+            "",
+            yield* passwordStep(person.email)
+          );
+
+          const otherStep = yield* secondStep(otherBrowser, {
+            code: yield* now(key),
+            route: "verify-totp",
+          });
+
+          const other = withCookies(otherBrowser, otherStep);
+
+          const off = yield* app.request("/api/auth/two-factor/disable", {
+            body: { password },
+            headers: { cookie: other },
+          });
+
+          assert.strictEqual(off.status, 200, JSON.stringify(off.body));
+
+          const records =
+            yield* sql`SELECT identifier FROM auth.verification WHERE value = ${person.id} AND identifier LIKE 'trust-device-%'`.pipe(
+              Effect.orDie
+            );
+
+          assert.lengthOf(records, 0);
+
+          // Turned on again, the browser trusted before is asked a code.
+          yield* enrolled({ ...person, cookies: withCookies(other, off) });
+
+          const signIn = yield* passwordStep(person.email, {
+            cookies: trusted,
+          });
+
+          yield* bodyOf(ChallengeSchema, signIn);
+        })
+    );
+
+    it.effect(
       "resumes an MCP client's authorization after the second step only",
       () =>
         Effect.gen(function* authorization() {

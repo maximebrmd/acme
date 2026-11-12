@@ -49,6 +49,7 @@ import {
 import type { AuthConfiguration } from "./settings.ts";
 import {
   guardTwoStepChanges,
+  forgetTrustedBrowsers,
   noteTwoStepSender,
   refuseLockedOutMembers,
   tellTwoStepChange,
@@ -442,6 +443,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
         await recordWorkspaceChange(ctx, hooks.workspaceChange);
+        await forgetTrustedBrowsers(ctx);
         await tellTwoStepChange(ctx, hooks.twoStepChanged);
       }),
       before: beforeEveryRoute(hooks),

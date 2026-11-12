@@ -294,6 +294,9 @@ The staff context follows these rules too. What the law has a host keep is in
   clients alike; keys are never concerned. Match `AccessDenied` with
   `answerAccessDenied`, every case named: `TwoStepRequired` is "wait", not
   "gone".
+- Turning two-step verification off forgets every browser the account
+  trusted (`forgetTrustedBrowsers`, the after hook): the plugin forgets
+  only the browser that asked.
 - Better Auth's `/organization/*` and `/subscription/*` routes, which never
   pass `WorkspaceAccess`, are guarded in its before hook
   (`refuseLockedOutMembers`, `auth/two-step.ts`: 403 `TWO_STEP_REQUIRED`)
