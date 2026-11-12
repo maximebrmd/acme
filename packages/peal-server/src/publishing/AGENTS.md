@@ -704,7 +704,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   its key already made) and makes nothing unless all are valid. A time of
   its own on each channel is several items: a post has one schedule. Media
   of its own on a channel is not built: a post has one media list. The web
-  app has no bulk screen yet: it would call these.
+  app's import page (`…/posts/import`) calls `posts.import`, a dry run
+  then the import; it has no bulk screen.
 - `PostAttention` counts several workspaces' posts at once for the
   overview across workspaces (scheduled in the next 7 days, awaiting an
   approval, finished in the last 7 days `failed` or `partiallyPublished`,

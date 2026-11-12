@@ -213,14 +213,18 @@ const LoadedList = ({
 /**
  * The workspace's posts, whatever their state, a page at a time, as the
  * filters in the page's query string keep and order them, so a link shows
- * the same list; with a way to write a new post for members who may.
+ * the same list; with a way to write a new post, and to import posts from
+ * a CSV file, for members who may.
  */
 export const PostList = ({
   canCreate,
+  canImport,
   query,
   workspaceId,
 }: {
   readonly canCreate: boolean;
+  /** Whether the member may schedule posts, as an import does. */
+  readonly canImport: boolean;
   /** The page's query string, which holds the filters. */
   readonly query: string;
   readonly workspaceId: string;
@@ -232,13 +236,25 @@ export const PostList = ({
 
   return (
     <section className="flex flex-col gap-4">
-      {canCreate ? (
-        <Link
-          href={`/app/${workspaceId}/posts/new`}
-          className="self-start text-sm underline-offset-4 hover:underline"
-        >
-          {t("newPost")}
-        </Link>
+      {canCreate || canImport ? (
+        <div className="flex flex-wrap gap-4">
+          {canCreate ? (
+            <Link
+              href={`/app/${workspaceId}/posts/new`}
+              className="text-sm underline-offset-4 hover:underline"
+            >
+              {t("newPost")}
+            </Link>
+          ) : null}
+          {canImport ? (
+            <Link
+              href={`/app/${workspaceId}/posts/import`}
+              className="text-sm underline-offset-4 hover:underline"
+            >
+              {t("importPosts")}
+            </Link>
+          ) : null}
+        </div>
       ) : null}
       {hydrated ? (
         <LoadedList
