@@ -56,3 +56,16 @@ export const exportUrl = (
   `/api/workspaces/${encodeURIComponent(workspaceId)}/analytics/export?${new URLSearchParams(
     { ...range, format: "csv", kind }
   ).toString()}`;
+
+/** When one channel's posts did best over the last `days`, in the zone. */
+export const bestTimes = (
+  workspaceId: string,
+  channelId: string,
+  days: 30 | 90 | 180,
+  timeZone: string
+) =>
+  PealApi.query("analytics", "bestTimes", {
+    params: { workspaceId },
+    query: { channelId, days, timeZone },
+    reactivityKeys: analyticsKeys,
+  });

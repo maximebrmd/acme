@@ -85,6 +85,28 @@
       "description": "Les mêmes chiffres en fichiers CSV, à ouvrir dans un tableur. Un chiffre qu’une plateforme ne fournit pas reste vide.",
       "posts": "Publications de la période",
       "accounts": "Comptes, jour par jour"
+    },
+    "bestTimes": {
+      "title": "Quand les publications de ce canal ont le mieux marché",
+      "description": "Par jour de la semaine et par heure dans votre fuseau horaire : combien de publications du canal sont parues à chaque heure, et la médiane des j’aime, partages, réponses et citations que chacune a reçus. Cela montre ce qui s’est passé, pas ce qui se passera : les comptes de plateformes différentes ne sont jamais comparés.",
+      "channel": "Canal",
+      "days": "{days, plural, other {# derniers jours}}",
+      "daysLabel": "Période",
+      "loading": "Chargement des meilleures heures…",
+      "loadFailed": "Les meilleures heures n’ont pas pu être chargées.",
+      "retry": "Réessayer",
+      "notCounted": "{platform} ne donne ni j’aime, ni partages, ni réponses, ni citations : il n’y a rien à peser.",
+      "notEnough": "{posts, plural, one {# publication} other {# publications}} sur la période : il en faut {minimum} pour classer ses heures.",
+      "best": "Meilleures heures",
+      "none": "Aucune heure n’a encore {minimum} publications.",
+      "slot": "{weekday, select, monday {Lundi} tuesday {Mardi} wednesday {Mercredi} thursday {Jeudi} friday {Vendredi} saturday {Samedi} sunday {Dimanche} other {{weekday}}} à {hour} h",
+      "weekday": "{weekday, select, monday {lun.} tuesday {mar.} wednesday {mer.} thursday {jeu.} friday {ven.} saturday {sam.} sunday {dim.} other {{weekday}}}",
+      "tableCaption": "Chaque heure qui a une publication : combien, et leur médiane, qu’une heure de moins de {minimum} publications n’a pas.",
+      "hour": "Heure",
+      "posts": "Publications",
+      "median": "Médiane",
+      "bestMark": "Meilleure",
+      "footnote": "{recent, plural, =0 {} one {# publication de moins de 48 heures est laissée de côté, ses comptes bougent encore. } other {# publications de moins de 48 heures sont laissées de côté, leurs comptes bougent encore. }}Jours couverts : du {from} au {to}."
     }
   },
   "Ads": {

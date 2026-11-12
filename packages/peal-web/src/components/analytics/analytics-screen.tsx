@@ -31,6 +31,7 @@ import {
 import type { Range } from "#analytics/report.ts";
 import { AccountNumbers } from "#components/analytics/account-numbers.tsx";
 import { AnalyticsSummaryView } from "#components/analytics/analytics-summary.tsx";
+import { BestTimesCard } from "#components/analytics/best-times.tsx";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import { workspaceChannels } from "#posts/api.ts";
 import { useMounted } from "#posts/use-mounted.ts";
@@ -116,6 +117,11 @@ const AnalyticsView = ({
           <AnalyticsSummaryView
             channels={channels.value}
             summary={summary.value}
+            workspaceId={workspaceId}
+          />
+          <BestTimesCard
+            channels={channels.value}
+            timeZone={timeZone}
             workspaceId={workspaceId}
           />
         </div>

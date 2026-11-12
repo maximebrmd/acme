@@ -85,6 +85,28 @@
       "description": "The same numbers as CSV files, to open in a spreadsheet. A number a platform does not give is left empty.",
       "posts": "Posts of the range",
       "accounts": "Accounts, day by day"
+    },
+    "bestTimes": {
+      "title": "When this channel's posts did best",
+      "description": "By weekday and hour in your time zone: how many of the channel's posts went live in each hour, and the median of the likes, reposts, replies and quotes each was given. It shows what happened, not what will: counts of different platforms are never compared.",
+      "channel": "Channel",
+      "days": "{days, plural, other {Last # days}}",
+      "daysLabel": "Range",
+      "loading": "Loading when the posts did best…",
+      "loadFailed": "When the posts did best could not be loaded.",
+      "retry": "Try again",
+      "notCounted": "{platform} gives no likes, reposts, replies or quotes, so there is nothing to weigh.",
+      "notEnough": "{posts, plural, one {# post} other {# posts}} in the range: {minimum} are needed to rank its hours.",
+      "best": "Best hours",
+      "none": "No hour has {minimum} posts yet.",
+      "slot": "{weekday, select, monday {Monday} tuesday {Tuesday} wednesday {Wednesday} thursday {Thursday} friday {Friday} saturday {Saturday} sunday {Sunday} other {{weekday}}} at {hour}:00",
+      "weekday": "{weekday, select, monday {Mon} tuesday {Tue} wednesday {Wed} thursday {Thu} friday {Fri} saturday {Sat} sunday {Sun} other {{weekday}}}",
+      "tableCaption": "Each hour with a post: how many, and their median, which an hour with fewer than {minimum} posts has none of.",
+      "hour": "Hour",
+      "posts": "Posts",
+      "median": "Median",
+      "bestMark": "Best",
+      "footnote": "{recent, plural, =0 {} one {# post less than 48 hours old is left out, as its counts still move. } other {# posts less than 48 hours old are left out, as their counts still move. }}Days covered: {from} to {to}."
     }
   },
   "Ads": {

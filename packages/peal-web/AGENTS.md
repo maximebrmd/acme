@@ -280,6 +280,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   a table, behind **Chart** and **Table** tabs; the chart itself is
   `aria-hidden`. Write calendar days, such as a summary's, in UTC
   (`#analytics/report.ts` `dayDate`), and instants in the reader's zone.
+- The analytics page ends with `BestTimesCard`
+  (`components/analytics/best-times.tsx`, view in `best-times-view.tsx`):
+  one channel at a time, picked, over 30, 90 or 180 days, the best hours,
+  a weekday by hour grid (`aria-hidden`) and the same figures as a table,
+  in words that say it is the channel's past, never a prediction, and
+  that nothing is ranked under the floor (`Analytics.bestTimes`).
 - A post's page (`PostMetrics`) names the platforms this server counts
   from its capabilities (`GET …/platforms/capabilities`,
   `analytics.perPost`: `countedOn`), never from the contract's
