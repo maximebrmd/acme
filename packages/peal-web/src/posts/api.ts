@@ -240,6 +240,9 @@ export const createPost = PealApi.mutation("posts", "create");
 
 export const updatePost = PealApi.mutation("posts", "update");
 
+/** Checks a post without making it: the composer's previews. */
+export const validatePost = PealApi.mutation("posts", "validate");
+
 export const schedulePost = PealApi.mutation("posts", "schedule");
 
 export const reschedulePost = PealApi.mutation("posts", "reschedule");

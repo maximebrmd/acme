@@ -1374,6 +1374,21 @@
       "channels": "Channels",
       "noChannel": "No channel yet",
       "tags": "Tags"
+    },
+    "Preview": {
+      "title": "Previews",
+      "description": "What each channel will receive, as plain text. Each platform lays the post out its own way.",
+      "nothingSelected": "Pick a channel to see what it will receive.",
+      "updating": "Updating the previews…",
+      "failed": "The previews could not be updated. Writing and saving still work.",
+      "retry": "Try again",
+      "refused": "Would be refused as it is: see the lengths and options above.",
+      "noText": "No text on this channel.",
+      "textNotSent": "This format goes out without the text.",
+      "part": "Part {position}",
+      "media": "Images and videos on {channel}",
+      "partMedia": "Images and videos of part {position}",
+      "shortLinks": "Links show as written: they are shortened when the post goes out."
     }
   },
   "Drafts": {

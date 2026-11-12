@@ -10,6 +10,7 @@ import type {
   Permission,
   Post,
   PostContent,
+  PostDraft,
   PostSchedule,
   PostStatus,
 } from "peal-contract";
@@ -49,6 +50,7 @@ import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
 import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostPreviews } from "#components/posts/post-previews.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import {
   PostQueueLine,
@@ -384,6 +386,16 @@ export const Composer = ({
   // a new post takes the workspace's default.
   const optionsTaken = savableWith(linking, optionProblems.length === 0);
 
+  // What a save sends, which the previews check too.
+  const draft: PostDraft = {
+    channelIds,
+    content,
+    options,
+    tagIds,
+    ...signing.payload,
+    ...linking.payload,
+  };
+
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
 
@@ -518,14 +530,7 @@ export const Composer = ({
       return;
     }
 
-    const saved = await requests.save(postId, {
-      channelIds,
-      content,
-      options,
-      tagIds,
-      ...signing.payload,
-      ...linking.payload,
-    });
+    const saved = await requests.save(postId, draft);
 
     if (Option.isSome(saved)) {
       toast.success(t("saved"));
@@ -551,14 +556,7 @@ export const Composer = ({
       return;
     }
 
-    const saved = await requests.save(postId, {
-      channelIds,
-      content,
-      options,
-      tagIds,
-      ...signing.payload,
-      ...linking.payload,
-    });
+    const saved = await requests.save(postId, draft);
 
     const [first, ...rest] = channelIds;
 
@@ -704,9 +702,9 @@ export const Composer = ({
   };
 
   const unschedule = async (id: string) => {
-    const draft = await requests.unschedule(id);
+    const unscheduled = await requests.unschedule(id);
 
-    if (Option.isSome(draft)) {
+    if (Option.isSome(unscheduled)) {
       toast.success(t("unscheduled"));
     }
   };
@@ -831,67 +829,78 @@ export const Composer = ({
             />
           </fieldset>
           <Separator />
-          <fieldset className="flex flex-col gap-3">
-            <legend className="mb-3 text-sm font-medium">
-              {t("textLegend")}
-            </legend>
-            <AssistantMenu
-              disabled={locked}
-              permissions={permissions}
-              platforms={selected.map(({ platform }) => platform)}
-              text={text}
-              workspaceId={workspaceId}
-              onAccept={(suggested) => {
-                setText(suggested);
-                setAccepted((count) => count + 1);
-              }}
-            />
-            <EmojiMenu disabled={locked} target={emoji.target} />
-            <SignatureMenu
-              channels={selected}
-              disabled={locked}
-              workspaceId={workspaceId}
-              onInsert={(channelId, signature) => {
-                // A post of several parts is signed under its last.
-                const signed = withSignatureUnderLastPart(
-                  { overrides, parts, text },
-                  channelId,
-                  signature
-                );
+          <div className="grid gap-6 lg:grid-cols-2">
+            <fieldset className="flex min-w-0 flex-col gap-3">
+              <legend className="mb-3 text-sm font-medium">
+                {t("textLegend")}
+              </legend>
+              <AssistantMenu
+                disabled={locked}
+                permissions={permissions}
+                platforms={selected.map(({ platform }) => platform)}
+                text={text}
+                workspaceId={workspaceId}
+                onAccept={(suggested) => {
+                  setText(suggested);
+                  setAccepted((count) => count + 1);
+                }}
+              />
+              <EmojiMenu disabled={locked} target={emoji.target} />
+              <SignatureMenu
+                channels={selected}
+                disabled={locked}
+                workspaceId={workspaceId}
+                onInsert={(channelId, signature) => {
+                  // A post of several parts is signed under its last.
+                  const signed = withSignatureUnderLastPart(
+                    { overrides, parts, text },
+                    channelId,
+                    signature
+                  );
 
-                setText(signed.text);
-                setOverrides(signed.overrides);
-                setParts(signed.parts);
-                setAccepted((count) => count + 1);
-              }}
+                  setText(signed.text);
+                  setOverrides(signed.overrides);
+                  setParts(signed.parts);
+                  setAccepted((count) => count + 1);
+                }}
+              />
+              <TextTabs
+                key={accepted}
+                selected={selected}
+                text={text}
+                overrides={overrides}
+                readOnly={locked}
+                onEditorFocus={emoji.handleFocus}
+                onMainEditor={emoji.handleMain}
+                onPasteFiles={(files) => uploader.current?.add(files) ?? false}
+                onText={setText}
+                onOverride={(channelId, own) => {
+                  setOverrides((current) =>
+                    withOverride(current, channelId, own)
+                  );
+                }}
+              />
+              <LinkWarnings
+                texts={[text, ...content.overrides.map((own) => own.text)]}
+              />
+              <DefaultSignatures disabled={locked} signing={signing} />
+              <ShortenLinks
+                disabled={locked}
+                linking={linking}
+                platforms={selected.map(({ platform }) => platform)}
+                texts={textsOf(content)}
+              />
+            </fieldset>
+            <PostPreviews
+              channels={channels}
+              draft={draft}
+              media={media}
+              optionsTaken={optionsTaken}
+              parts={parts}
+              workspaceId={workspaceId}
+              writable={canWrite}
             />
-            <TextTabs
-              key={accepted}
-              selected={selected}
-              text={text}
-              overrides={overrides}
-              readOnly={locked}
-              onEditorFocus={emoji.handleFocus}
-              onMainEditor={emoji.handleMain}
-              onPasteFiles={(files) => uploader.current?.add(files) ?? false}
-              onText={setText}
-              onOverride={(channelId, own) => {
-                setOverrides((current) =>
-                  withOverride(current, channelId, own)
-                );
-              }}
-            />
-            <LinkWarnings
-              texts={[text, ...content.overrides.map((own) => own.text)]}
-            />
-            <DefaultSignatures disabled={locked} signing={signing} />
-            <ShortenLinks
-              disabled={locked}
-              linking={linking}
-              platforms={selected.map(({ platform }) => platform)}
-              texts={textsOf(content)}
-            />
-          </fieldset>
+          </div>
           <section
             aria-labelledby="counters-title"
             className="flex flex-col gap-3"

@@ -1374,6 +1374,21 @@
       "channels": "Canaux",
       "noChannel": "Aucun canal pour l’instant",
       "tags": "Étiquettes"
+    },
+    "Preview": {
+      "title": "Aperçus",
+      "description": "Ce que chaque canal recevra, en texte brut. Chaque plateforme met la publication en page à sa façon.",
+      "nothingSelected": "Choisissez un canal pour voir ce qu’il recevra.",
+      "updating": "Mise à jour des aperçus…",
+      "failed": "Les aperçus n’ont pas pu être mis à jour. Rédiger et enregistrer fonctionnent toujours.",
+      "retry": "Réessayer",
+      "refused": "Serait refusée en l’état : voyez les longueurs et les options plus haut.",
+      "noText": "Pas de texte sur ce canal.",
+      "textNotSent": "Ce format part sans le texte.",
+      "part": "Partie {position}",
+      "media": "Images et vidéos sur {channel}",
+      "partMedia": "Images et vidéos de la partie {position}",
+      "shortLinks": "Les liens apparaissent tels qu’écrits : ils sont raccourcis quand la publication part."
     }
   },
   "Drafts": {
