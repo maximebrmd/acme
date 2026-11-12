@@ -13,6 +13,7 @@ import type { FeedSource } from "#publishing/application/feed-source.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import type { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
+import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import {
   FeedsUnused,
   publishingBehind,
@@ -76,7 +77,9 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // Who a recycling rule's starter is, and who hears it ended.
   recycling: Layer.Layer<RecyclingActors | RecyclingNotices> = RecyclingUnused,
   // What reads feeds, and who hears one stopped.
-  feeds: Layer.Layer<FeedNotices | FeedPictures | FeedSource> = FeedsUnused
+  feeds: Layer.Layer<FeedNotices | FeedPictures | FeedSource> = FeedsUnused,
+  // The workspaces' short links default: by default, off everywhere.
+  defaults: Layer.Layer<ShortLinkDefaults> = ShortLinkDefaults.none
 ) =>
   publishingWorkers(
     FakePlatformPublisher,
@@ -87,7 +90,7 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
     Layer.provideMerge(
       publishingBehind(
         gate,
-        Layer.mergeAll(ListedWorkspaceChannels, media, allowance),
+        Layer.mergeAll(ListedWorkspaceChannels, media, allowance, defaults),
         events,
         // Changes of live posts: the channels' rows say whether one can be
         // used, and FakeRemovals deletes, holds and hears.

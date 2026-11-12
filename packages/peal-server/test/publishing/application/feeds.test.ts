@@ -10,6 +10,7 @@ import { Feeds } from "#publishing/application/feeds.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { Queues } from "#publishing/application/queues.ts";
+import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import type { FeedId } from "#publishing/domain/feed-id.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -85,7 +86,8 @@ const forgetFeeds = Effect.gen(function* forgetFeeds() {
 
 const serverWith = (
   gate: Layer.Layer<ApprovalGate> = ApprovalGate.open,
-  allowance: ReturnType<typeof postAllowance> = postAllowance()
+  allowance: ReturnType<typeof postAllowance> = postAllowance(),
+  defaults: Layer.Layer<ShortLinkDefaults> = ShortLinkDefaults.none
 ) =>
   postsServerBehind(
     gate,
@@ -93,8 +95,19 @@ const serverWith = (
     allowance,
     PostEvents.none,
     FakeRecycling,
-    FakeFeeds
+    FakeFeeds,
+    defaults
   );
+
+// Every workspace's new posts ask for short links unless they say.
+const ShorteningFeedsServer = serverWith(
+  ApprovalGate.open,
+  postAllowance(),
+  Layer.succeed(
+    ShortLinkDefaults,
+    ShortLinkDefaults.of({ byDefault: () => Effect.succeed(true) })
+  )
+);
 
 const FeedsServer = serverWith();
 
@@ -142,6 +155,7 @@ interface PostRow {
   readonly id: string;
   readonly queueId: string | null;
   readonly scheduledAt: Date | null;
+  readonly shortenLinks: boolean;
   readonly status: string;
   readonly text: string;
 }
@@ -149,7 +163,7 @@ interface PostRow {
 const postsOf = (workspaceId: WorkspaceId) =>
   SqlClient.SqlClient.use(
     (sql) =>
-      sql<PostRow>`SELECT id, author_id AS "authorId", queue_id AS "queueId", scheduled_at AS "scheduledAt", status, text FROM publishing.posts WHERE workspace_id = ${workspaceId} ORDER BY id`
+      sql<PostRow>`SELECT id, author_id AS "authorId", queue_id AS "queueId", scheduled_at AS "scheduledAt", shorten_links AS "shortenLinks", status, text FROM publishing.posts WHERE workspace_id = ${workspaceId} ORDER BY id`
   ).pipe(Effect.orDie);
 
 const itemsOf = (workspaceId: WorkspaceId, feedId: FeedId) =>
@@ -344,6 +358,31 @@ describe("a feed in draft mode", () => {
             { digest: digestOf(2), outcome: "made", reason: undefined }
           );
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "makes its drafts as the workspace's short links default says",
+    () =>
+      onServer(
+        Effect.gen(function* shortensByDefault() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* serveItems(blog, []);
+          yield* created(workspaceId);
+          yield* serveItems(blog, [
+            { link: "https://blog.example/shortened", n: 1, title: "Linked" },
+          ]);
+          yield* later();
+          yield* poll;
+
+          const [draft] = yield* postsOf(workspaceId);
+
+          assert.strictEqual(draft?.status, "draft");
+          assert.isTrue(draft?.shortenLinks);
+        }),
+        ShorteningFeedsServer
       ),
     timeout
   );

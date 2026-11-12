@@ -21,6 +21,7 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
+import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
@@ -71,7 +72,12 @@ import {
 // Publishing as the server runs it, with no media to attach: these posts
 // carry none, so the media context's library is not needed.
 const PublishingTest = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, attachableMedia(), postAllowance())
+  Layer.mergeAll(
+    ListedWorkspaceChannels,
+    attachableMedia(),
+    postAllowance(),
+    ShortLinkDefaults.none
+  )
 ).pipe(
   Layer.provideMerge(
     NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))
