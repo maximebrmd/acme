@@ -4,6 +4,37 @@ import { textOfHtml } from "#shared/domain/html-text.ts";
 
 // HTML as plain text: what a comment or a feed's item says, never markup.
 
+// The fastest of a few readings of the same HTML, in milliseconds: a
+// loaded machine slows some readings, rarely all of them.
+const fastest = (html: string): number => {
+  let best = Number.POSITIVE_INFINITY;
+
+  for (let reading = 0; reading < 7; reading += 1) {
+    const started = performance.now();
+
+    textOfHtml(html);
+    best = Math.min(best, performance.now() - started);
+  }
+
+  return best;
+};
+
+// How much longer HTML sixteen times as long takes to read: about 16 when
+// the time is linear in the length, 256 when it is quadratic. A ratio,
+// never a duration, so the same on an idle machine and a loaded one.
+const growth = (html: (times: number) => string): number => {
+  const short = html(16_384);
+  const long = html(16 * 16_384);
+
+  // Compiled before it is timed.
+  fastest(long);
+
+  return fastest(long) / fastest(short);
+};
+
+// Four times what linear time takes, and a quarter of what quadratic does.
+const linearAtMost = 64;
+
 describe(textOfHtml, () => {
   it("keeps paragraphs and line breaks, and drops every tag", () => {
     expect(
@@ -41,19 +72,17 @@ describe(textOfHtml, () => {
   });
 
   it("reads a long run of unclosed scripts in linear time", () => {
-    const started = performance.now();
-
-    textOfHtml("<script>".repeat(200_000));
-
-    expect(performance.now() - started).toBeLessThan(2000);
+    expect(growth((times) => "<script>".repeat(times))).toBeLessThan(
+      linearAtMost
+    );
+    expect(textOfHtml("<script>".repeat(200_000))).toBe("");
   });
 
   it("strips tags in linear time, however many open without closing", () => {
     const hostile = "<".repeat(2 * 1024 * 1024);
-    const started = performance.now();
 
+    expect(growth((times) => "<".repeat(times))).toBeLessThan(linearAtMost);
     expect(textOfHtml(hostile)).toBe(hostile);
-    expect(performance.now() - started).toBeLessThan(200);
   });
 
   it("still makes a paragraph break between paragraphs, and drops other tags", () => {
