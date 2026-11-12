@@ -67,8 +67,9 @@ services:
       - -c
       - archive_timeout=300
       # Memory, each defaulting to PostgreSQL 18's own value; the docs'
-      # environment variables page says how to size them. shared_buffers is
-      # read only at start, and is not in /dev/shm, so shm_size stays.
+      # environment variables page says how to size them. Given here, they
+      # override ALTER SYSTEM and postgresql.conf for these four.
+      # shared_buffers is read only at start, and is not in /dev/shm.
       - -c
       - shared_buffers=${PEAL_POSTGRES_SHARED_BUFFERS:-128MB}
       - -c
@@ -106,7 +107,9 @@ services:
       PGBACKREST_START_FAST: "y"
       PGBACKREST_LOG_LEVEL_CONSOLE: info
       PGBACKREST_LOG_LEVEL_FILE: "off"
-    shm_size: 256m
+    # /dev/shm: the dynamic shared memory of parallel queries, and of a
+    # parallel vacuum, up to maintenance_work_mem. Keep it above that.
+    shm_size: 1g
     # The socket folder, and /tmp, where pgBackRest keeps its locks.
     tmpfs: [/tmp:size=64m, /var/run/postgresql:size=1m]
     volumes:

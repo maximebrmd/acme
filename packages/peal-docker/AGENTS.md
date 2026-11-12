@@ -20,8 +20,11 @@ under Development stack.
   server would read as set, and names every server setting the docs'
   environment variables page lists: a container sees no other. A setting
   inside a `command` (Postgres's `PEAL_POSTGRES_*`) needs a default there:
-  PostgreSQL's own, so a server that sets none runs as before, and a change
-  to one recreates Postgres at the next release. Every service
+  PostgreSQL's own, and a change to one recreates Postgres at the next
+  release. A `-c` flag overrides `ALTER SYSTEM` and `postgresql.conf`, so a
+  value set there for those four is lost once Compose passes the flag: the
+  docs tell operators to move it to the variable. Keep `shm_size` above
+  `maintenance_work_mem`, which a parallel vacuum may take in `/dev/shm`. Every service
   runs `read_only` with `no-new-privileges`, writing to its volumes and tmpfs
   mounts only. The same test covers it, the web, static and
   Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and

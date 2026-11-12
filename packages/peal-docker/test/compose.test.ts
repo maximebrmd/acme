@@ -37,6 +37,7 @@ const ServiceSchema = Schema.Struct({
   read_only: Schema.optionalKey(Schema.Boolean),
   restart: Schema.optionalKey(Schema.String),
   security_opt: Schema.optionalKey(Schema.Array(Schema.String)),
+  shm_size: Schema.optionalKey(Schema.String),
   stop_grace_period: Schema.optionalKey(Schema.String),
   volumes: Schema.optionalKey(Schema.Array(Volume)),
 });
@@ -243,6 +244,15 @@ describe("compose.production.yaml", () => {
         fallback("random_page_cost", "RANDOM_PAGE_COST", "4"),
       ])
     );
+  });
+
+  // /dev/shm holds the dynamic shared memory of parallel queries and of a
+  // parallel vacuum, which may take up to maintenance_work_mem: production
+  // sets 512MB.
+  it("gives Postgres more shared memory than a vacuum may take", () => {
+    const postgres = production.find(([name]) => name === "postgres")?.[1];
+
+    expect(postgres?.shm_size).toBe("1g");
   });
 
   it.each(production)(
