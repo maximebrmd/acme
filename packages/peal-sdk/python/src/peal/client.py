@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
     from .channel_sets.client import AsyncChannelSetsClient, ChannelSetsClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
+    from .credential.client import AsyncCredentialClient, CredentialClient
     from .feeds.client import AsyncFeedsClient, FeedsClient
     from .inbox.client import AsyncInboxClient, InboxClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
@@ -133,6 +134,7 @@ class Peal:
         )
         self._system: typing.Optional[SystemClient] = None
         self._session: typing.Optional[SessionClient] = None
+        self._credential: typing.Optional[CredentialClient] = None
         self._api_keys: typing.Optional[ApiKeysClient] = None
         self._channels: typing.Optional[ChannelsClient] = None
         self._posts: typing.Optional[PostsClient] = None
@@ -182,6 +184,14 @@ class Peal:
 
             self._session = SessionClient(client_wrapper=self._client_wrapper)
         return self._session
+
+    @property
+    def credential(self):
+        if self._credential is None:
+            from .credential.client import CredentialClient  # noqa: E402
+
+            self._credential = CredentialClient(client_wrapper=self._client_wrapper)
+        return self._credential
 
     @property
     def api_keys(self):
@@ -555,6 +565,7 @@ class AsyncPeal:
         )
         self._system: typing.Optional[AsyncSystemClient] = None
         self._session: typing.Optional[AsyncSessionClient] = None
+        self._credential: typing.Optional[AsyncCredentialClient] = None
         self._api_keys: typing.Optional[AsyncApiKeysClient] = None
         self._channels: typing.Optional[AsyncChannelsClient] = None
         self._posts: typing.Optional[AsyncPostsClient] = None
@@ -604,6 +615,14 @@ class AsyncPeal:
 
             self._session = AsyncSessionClient(client_wrapper=self._client_wrapper)
         return self._session
+
+    @property
+    def credential(self):
+        if self._credential is None:
+            from .credential.client import AsyncCredentialClient  # noqa: E402
+
+            self._credential = AsyncCredentialClient(client_wrapper=self._client_wrapper)
+        return self._credential
 
     @property
     def api_keys(self):

@@ -2,7 +2,7 @@
 title: Intégrer Peal
 description: Utilisez Peal dans votre propre produit. Donnez à chacun de vos clients un espace de travail par l’API, laissez-les connecter leurs comptes sociaux sur une page hébergée sans compte Peal, publiez pour eux, et apprenez ce qui s’est passé.
 sidebar:
-  order: 19
+  order: 20
 ---
 
 Un de vos produits peut publier sur les plateformes sociales pour ses propres clients à travers Peal, sans qu’aucun d’eux ait un compte Peal ni voie l’application de Peal. Vous détenez un **compte partenaire** ; chacun de vos clients est un **espace de travail** qu’il possède ; votre serveur agit dans ces espaces avec une **clé partenaire** ; vos clients connectent leurs comptes sociaux sur une **page hébergée** vers laquelle vous les envoyez ; et Peal dit à votre serveur ce qui se passe par des [webhooks](/webhooks).
@@ -366,7 +366,7 @@ const usage = await peal.partnerUsage.get({
 | Voir quels clients demandent votre attention              | `GET /api/partner/overview`, avec la clé ; `partner.overview` dans les SDK ; `peal partner overview` et **Paramètres**, puis **Partenaire**, en tant que personne ([Santé](#health))     |
 | Créer un lien à la main pour un de vos espaces de travail | `peal links create` ([ligne de commande](/cli#links)), ou l’outil MCP `create_connect_link` ([MCP](/mcp#tools))                                                                          |
 
-La [référence de l’API](/reference) liste chaque point d’accès avec ses erreurs. Les SDK sont générés depuis le même contrat, dans huit langages.
+La [référence de l’API](/reference) liste chaque point d’accès avec ses erreurs. Les [SDK](/sdks) sont générés depuis le même contrat, dans huit langages ; une clé partenaire se vérifie avec `GET /api/credential` (`credential.get`), qui nomme son partenaire, ses portées et ses permissions, jamais ses espaces de travail.
 
 ### Sans compte partenaire [#agencies]
 

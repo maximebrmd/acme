@@ -52,7 +52,7 @@ Un agent qui tourne à heure fixe ou sur un serveur n’a pas de navigateur pour
 - sur l’[API HTTP](#api), le même en-tête ;
 - sur la [ligne de commande](#cli), dans la variable `PEAL_API_KEY`, jamais dans une option, avec l’espace de travail nommé par son identifiant ([La lancer avec une clé d’API](/cli#api-key)).
 
-Une clé n’a pas de scope : ce qu’elle peut faire, c’est la liste de ses permissions, que répond `whoami`. Elle ne fait partir des publications que si elle porte `post:schedule`, et les outils réservés à une personne, comme inviter quelqu’un, la refusent. Gardez la clé parmi les secrets de l’agent, et révoquez-la, sous **Clés d’API**, le jour où l’agent s’arrête.
+Une clé n’a pas de scope : ce qu’elle peut faire, c’est la liste de ses permissions, que répond `whoami`, et `GET /api/credential` en HTTP ([SDK](/sdks#credential)). Elle ne fait partir des publications que si elle porte `post:schedule`, et les outils réservés à une personne, comme inviter quelqu’un, la refusent. Gardez la clé parmi les secrets de l’agent, et révoquez-la, sous **Clés d’API**, le jour où l’agent s’arrête.
 
 ## Ce que permet chaque permission [#scopes]
 
@@ -314,7 +314,7 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
 - La même clé avec un autre corps répond 409 `idempotency_key_reused`, et ne fait rien : envoyez une nouvelle requête sous une nouvelle clé.
 - Une fois cette publication supprimée, la clé répond 404 `post_not_found`. Les clés sont gardées par espace de travail.
 
-[Publier par l’API](/posting-api) montre les autres requêtes avec des exemples : vérifier une publication sans la créer, attendre le résultat d’une publication qui part maintenant, envoyer plusieurs publications d’un coup, les importer depuis un fichier CSV, le refus des doublons, et lister les publications avec des filtres.
+Les [SDK](/sdks) font ces appels dans huit langages. [Publier par l’API](/posting-api) montre les autres requêtes avec des exemples : vérifier une publication sans la créer, attendre le résultat d’une publication qui part maintenant, envoyer plusieurs publications d’un coup, les importer depuis un fichier CSV, le refus des doublons, et lister les publications avec des filtres.
 
 `POST …/media/import` prend `{ "url": "https://files.example/printemps/couverture.jpg", "altText": "…" }` et répond le média, comme `import_media`. Il demande `media:upload`.
 

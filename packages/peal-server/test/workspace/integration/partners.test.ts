@@ -886,6 +886,15 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             assert.strictEqual(reply.status, 403, path);
           }
 
+          // Unlike /api/me, it may ask who it is: its partner, never its
+          // partner's workspaces.
+          const credential = yield* app.request("/api/credential", {
+            headers: bearer(alphaKey),
+          });
+
+          assert.strictEqual(credential.status, 200);
+          assert.notInclude(JSON.stringify(credential.body), ofAlpha.id);
+
           const deleted = yield* app.request(`/api/workspaces/${ofAlpha.id}`, {
             body: { name: "Alpha customer" },
             headers: bearer(alphaKey),

@@ -240,6 +240,7 @@ export const authWithoutDatabase = () =>
           planWithRoom: null,
         }),
       resetPassword: ignore,
+      signUp: async () => await Promise.resolve(true),
       subscriptionChanged: nothing,
       twoStep: {
         lockedOut: async () => await Promise.resolve(false),

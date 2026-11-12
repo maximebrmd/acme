@@ -72,6 +72,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  Credential,
   CustomerHealth,
   ImageProvider,
   Feed,
@@ -3051,6 +3052,39 @@ export const studioGroupsLive = (studio: Studio) =>
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
+      })
+    ),
+    // A key names itself and its workspace; a person, their id and the
+    // command line's grant.
+    HttpApiBuilder.group(Api, "credential", (handlers) =>
+      handlers.handleAll({
+        get: () =>
+          CurrentPrincipal.pipe(
+            Effect.map((principal): Credential => {
+              if (principal._tag !== "apiKey") {
+                return {
+                  _tag: "user",
+                  application: null,
+                  impersonatedBy: null,
+                  userId: studio.me.user.id,
+                };
+              }
+
+              const key = studio.keys.find(
+                ({ id }) => id === principal.apiKeyId
+              );
+
+              return {
+                _tag: "apiKey",
+                expiresAt: null,
+                id: principal.apiKeyId,
+                name: "Synthetic script",
+                permissions: principal.permissions,
+                start: key?.key.slice(0, 10) ?? null,
+                workspace: { id: principal.workspaceId, name: "Studio" },
+              };
+            })
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "channels", (handlers) =>

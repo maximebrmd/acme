@@ -11,6 +11,7 @@ import { ChannelDefaultsClient } from "./api/resources/channelDefaults/client/Cl
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
 import { ChannelSetsClient } from "./api/resources/channelSets/client/Client.js";
 import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
+import { CredentialClient } from "./api/resources/credential/client/Client.js";
 import { FeedsClient } from "./api/resources/feeds/client/Client.js";
 import { InboxClient } from "./api/resources/inbox/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
@@ -51,6 +52,7 @@ export class PealClient {
     protected readonly _options: NormalizedClientOptionsWithAuth<PealClient.Options>;
     protected _system: SystemClient | undefined;
     protected _session: SessionClient | undefined;
+    protected _credential: CredentialClient | undefined;
     protected _apiKeys: ApiKeysClient | undefined;
     protected _channels: ChannelsClient | undefined;
     protected _posts: PostsClient | undefined;
@@ -96,6 +98,10 @@ export class PealClient {
 
     public get session(): SessionClient {
         return (this._session ??= new SessionClient(this._options));
+    }
+
+    public get credential(): CredentialClient {
+        return (this._credential ??= new CredentialClient(this._options));
     }
 
     public get apiKeys(): ApiKeysClient {

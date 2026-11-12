@@ -4,6 +4,7 @@ public partial interface IPealClient
 {
     public ISystemClient System { get; }
     public ISessionClient Session { get; }
+    public ICredentialClient Credential { get; }
     public IApiKeysClient ApiKeys { get; }
     public IChannelsClient Channels { get; }
     public IPostsClient Posts { get; }

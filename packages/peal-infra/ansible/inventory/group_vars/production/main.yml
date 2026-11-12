@@ -99,6 +99,15 @@ peal_backup_path: /production
 peal_settings:
   OTEL_TRACES_SAMPLER: parentbased_traceidratio
   OTEL_TRACES_SAMPLER_ARG: "0.1"
+  # Postgres's memory (the docs' environment variables page). The server
+  # has 32 GiB and also runs the server, the web app and the telemetry
+  # stack, so Postgres takes an eighth for its buffers and counts on 12 GiB
+  # of file cache; both disks are solid-state. A change restarts Postgres
+  # at the next release; read `SHOW shared_buffers;` after it.
+  PEAL_POSTGRES_SHARED_BUFFERS: 4GB
+  PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE: 12GB
+  PEAL_POSTGRES_MAINTENANCE_WORK_MEM: 512MB
+  PEAL_POSTGRES_RANDOM_PAGE_COST: "1.1"
   # Where the web app sends people who need more than the largest plan
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.

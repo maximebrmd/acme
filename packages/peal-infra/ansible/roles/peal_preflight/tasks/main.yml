@@ -44,3 +44,29 @@
          + (['peal_settings.PEAL_SHORT_LINK_BASE']
             if 'PEAL_SHORT_LINK_BASE' in peal_settings | default({})
             else []) }}
+
+# Postgres's memory (compose.production.yaml's PEAL_POSTGRES_*): a value
+# Postgres cannot read stops it at start, and the release has stopped the
+# server by then. Checked here, before anything stops: a size is a whole
+# number with one of Postgres's units (kB, MB, GB, TB, case as written),
+# the page cost a number.
+- name: Refuse Postgres memory settings Postgres would refuse
+  ansible.builtin.assert:
+    that: peal_preflight_postgres_refused | length == 0
+    fail_msg: >-
+      Change {{ peal_preflight_postgres_refused | join(', ') }}: a size is a
+      whole number and kB, MB, GB or TB, such as 4GB, and
+      PEAL_POSTGRES_RANDOM_PAGE_COST a number, such as 1.1.
+    quiet: true
+  vars:
+    peal_preflight_postgres_refused: >-
+      {{ (peal_settings | default({}) | dict2items
+          | selectattr('key', 'in', ['PEAL_POSTGRES_SHARED_BUFFERS', 'PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE',
+                                      'PEAL_POSTGRES_MAINTENANCE_WORK_MEM'])
+          | rejectattr('value', 'match', '^[0-9]+(kB|MB|GB|TB)\Z')
+          | map(attribute='key') | list)
+         + (['PEAL_POSTGRES_RANDOM_PAGE_COST']
+            if 'PEAL_POSTGRES_RANDOM_PAGE_COST' in peal_settings | default({})
+               and peal_settings.PEAL_POSTGRES_RANDOM_PAGE_COST | string
+                   is not match('^[0-9]+(\.[0-9]+)?\Z')
+            else []) }}

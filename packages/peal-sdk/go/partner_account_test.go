@@ -2064,42 +2064,6 @@ func TestStringPartnerStanding(t *testing.T) {
 	})
 }
 
-func TestEnumPartnerScope(t *testing.T) {
-	t.Run("NewFromString_workspaces_read", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPartnerScopeFromString("workspaces:read")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PartnerScope("workspaces:read"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_workspaces_write", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPartnerScopeFromString("workspaces:write")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PartnerScope("workspaces:write"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_workspaces_delete", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPartnerScopeFromString("workspaces:delete")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PartnerScope("workspaces:delete"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewPartnerScopeFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewPartnerScopeFromString("workspaces:read")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestExtraPropertiesCreatedPartnerKey(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()

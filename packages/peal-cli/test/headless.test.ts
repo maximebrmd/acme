@@ -106,7 +106,8 @@ describe("an API key in PEAL_API_KEY", () => {
       yield* session.printed(["drafts", "list", ...inStudio]);
       yield* session.printed(["doctor", "--json", ...inStudio]);
       yield* session.printed(["doctor", ...inStudio]);
-      yield* session.refused(["whoami"]);
+      yield* session.printed(["whoami"]);
+      yield* session.printed(["whoami", "--json"]);
       yield* session.refused(["posts", "unschedule", scheduledId, ...inStudio]);
       yield* session.refused(["drafts", "list", "--workspace", shopId]);
       yield* session.refused(["drafts", "list", "--json"]);
@@ -157,12 +158,35 @@ describe("an API key in PEAL_API_KEY", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "says which key it is, its workspace and its permissions, through the credential check",
+    () =>
+      Effect.gen(function* whoami() {
+        const session = yield* headless();
+        const prose = yield* session.printed(["whoami"]);
+
+        assert.include(
+          prose,
+          `The API key in PEAL_API_KEY is "Synthetic script" (${draftingKey.key.slice(0, 10)}…), of the workspace Studio (${studioId})`
+        );
+        assert.include(
+          prose,
+          "Permissions: channel:read, post:read, post:create, post:update."
+        );
+        assert.include(prose, "It never expires.");
+
+        const json = yield* session.printed(["whoami", "--json"]);
+
+        assert.include(json, '"_tag": "apiKey"');
+        assert.notInclude(`${prose}${json}`, draftingKey.key);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("cannot do what only a person does, and asks no server", () =>
     Effect.gen(function* person() {
       const session = yield* headless();
 
       for (const args of [
-        ["whoami"],
         ["login"],
         ["account", "apps"],
         ["account", "export"],
@@ -181,7 +205,8 @@ describe("an API key in PEAL_API_KEY", () => {
 
       assert.deepStrictEqual(changes, []);
       assert.strictEqual(
-        failureOf(yield* session.refused(["whoami", "--json"])).error.code,
+        failureOf(yield* session.refused(["account", "apps", "--json"])).error
+          .code,
         "person_required"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))

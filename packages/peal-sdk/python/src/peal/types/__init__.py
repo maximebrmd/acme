@@ -292,7 +292,22 @@ if typing.TYPE_CHECKING:
     from .created_feed import CreatedFeed
     from .created_partner_key import CreatedPartnerKey
     from .created_review_link import CreatedReviewLink
-    from .customer_health import CustomerHealth
+    from .credential import Credential, Credential_ApiKey, Credential_PartnerKey, Credential_User
+    from .credential_api_key import CredentialApiKey
+    from .credential_application import CredentialApplication
+    from .credential_binding import (
+        CredentialBinding,
+        CredentialBinding_Bound,
+        CredentialBinding_Left,
+        CredentialBinding_Unbound,
+    )
+    from .credential_binding_bound import CredentialBindingBound
+    from .credential_binding_left import CredentialBindingLeft
+    from .credential_binding_unbound import CredentialBindingUnbound
+    from .credential_partner import CredentialPartner
+    from .credential_partner_key import CredentialPartnerKey
+    from .credential_user import CredentialUser
+    from .credential_workspace import CredentialWorkspace
     from .customer_workspace import CustomerWorkspace
     from .customer_workspace_page import CustomerWorkspacePage
     from .dashboard_day import DashboardDay
@@ -581,8 +596,6 @@ if typing.TYPE_CHECKING:
     from .partner_detail_field import PartnerDetailField
     from .partner_details_invalid_encoded import PartnerDetailsInvalidEncoded
     from .partner_details_invalid_encoded_tag import PartnerDetailsInvalidEncodedTag
-    from .partner_health import PartnerHealth
-    from .partner_health_account import PartnerHealthAccount
     from .partner_holdings import PartnerHoldings
     from .partner_key import PartnerKey
     from .partner_key_not_found_encoded import PartnerKeyNotFoundEncoded
@@ -1199,7 +1212,23 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CreatedFeed": ".created_feed",
     "CreatedPartnerKey": ".created_partner_key",
     "CreatedReviewLink": ".created_review_link",
-    "CustomerHealth": ".customer_health",
+    "Credential": ".credential",
+    "CredentialApiKey": ".credential_api_key",
+    "CredentialApplication": ".credential_application",
+    "CredentialBinding": ".credential_binding",
+    "CredentialBindingBound": ".credential_binding_bound",
+    "CredentialBindingLeft": ".credential_binding_left",
+    "CredentialBindingUnbound": ".credential_binding_unbound",
+    "CredentialBinding_Bound": ".credential_binding",
+    "CredentialBinding_Left": ".credential_binding",
+    "CredentialBinding_Unbound": ".credential_binding",
+    "CredentialPartner": ".credential_partner",
+    "CredentialPartnerKey": ".credential_partner_key",
+    "CredentialUser": ".credential_user",
+    "CredentialWorkspace": ".credential_workspace",
+    "Credential_ApiKey": ".credential",
+    "Credential_PartnerKey": ".credential",
+    "Credential_User": ".credential",
     "CustomerWorkspace": ".customer_workspace",
     "CustomerWorkspacePage": ".customer_workspace_page",
     "DashboardDay": ".dashboard_day",
@@ -1474,8 +1503,6 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PartnerDetailField": ".partner_detail_field",
     "PartnerDetailsInvalidEncoded": ".partner_details_invalid_encoded",
     "PartnerDetailsInvalidEncodedTag": ".partner_details_invalid_encoded_tag",
-    "PartnerHealth": ".partner_health",
-    "PartnerHealthAccount": ".partner_health_account",
     "PartnerHoldings": ".partner_holdings",
     "PartnerKey": ".partner_key",
     "PartnerKeyNotFoundEncoded": ".partner_key_not_found_encoded",
@@ -2117,7 +2144,23 @@ __all__ = [
     "CreatedFeed",
     "CreatedPartnerKey",
     "CreatedReviewLink",
-    "CustomerHealth",
+    "Credential",
+    "CredentialApiKey",
+    "CredentialApplication",
+    "CredentialBinding",
+    "CredentialBindingBound",
+    "CredentialBindingLeft",
+    "CredentialBindingUnbound",
+    "CredentialBinding_Bound",
+    "CredentialBinding_Left",
+    "CredentialBinding_Unbound",
+    "CredentialPartner",
+    "CredentialPartnerKey",
+    "CredentialUser",
+    "CredentialWorkspace",
+    "Credential_ApiKey",
+    "Credential_PartnerKey",
+    "Credential_User",
     "CustomerWorkspace",
     "CustomerWorkspacePage",
     "DashboardDay",
@@ -2392,8 +2435,6 @@ __all__ = [
     "PartnerDetailField",
     "PartnerDetailsInvalidEncoded",
     "PartnerDetailsInvalidEncodedTag",
-    "PartnerHealth",
-    "PartnerHealthAccount",
     "PartnerHoldings",
     "PartnerKey",
     "PartnerKeyNotFoundEncoded",

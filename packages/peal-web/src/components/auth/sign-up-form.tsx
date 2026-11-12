@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { signUpInvitationHeader } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
@@ -16,11 +17,18 @@ import { getPathname } from "#i18n/navigation.ts";
 
 // Creates the account, in the page's language, which its emails will use.
 // The confirmation link signs the new user in on the verify-email page.
-// With a Turnstile site key, the server wants the widget's token too.
+// With a Turnstile site key, the server wants the widget's token too; from
+// an invitation's page, the invitation's id goes with it.
 export const SignUpForm = ({
   captchaSiteKey,
+  invitationId,
 }: {
   readonly captchaSiteKey: string | null;
+  /**
+   * The invitation the visitor came from, which a server where accounts are
+   * made by invitation needs with the address it went to.
+   */
+  readonly invitationId: string | null;
 }) => {
   const t = useTranslations("SignUpPage");
   const fields = useTranslations("Auth");
@@ -36,11 +44,17 @@ export const SignUpForm = ({
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const headers = new Headers(captcha.headers);
+
+    if (invitationId !== null) {
+      headers.set(signUpInvitationHeader, invitationId);
+    }
+
     startTransition(async () => {
       const result = await authClient.signUp.email({
         callbackURL: getPathname({ href: "/verify-email", locale }),
         email,
-        fetchOptions: { headers: captcha.headers },
+        fetchOptions: { headers },
         locale,
         name,
         password,

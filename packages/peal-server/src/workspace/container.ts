@@ -5,6 +5,7 @@ import { AccountHandlers } from "#workspace/api/account.ts";
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
 import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import { ConnectedAppsHandlers } from "#workspace/api/connected-apps.ts";
+import { CredentialHandlers } from "#workspace/api/credential.ts";
 import {
   InvitationsHandlers,
   MembersHandlers,
@@ -26,6 +27,7 @@ import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
+import { CredentialCheck } from "#workspace/application/credential-check.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
@@ -39,6 +41,7 @@ import { PartnerTenants } from "#workspace/application/partner-tenants.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
+import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
@@ -72,6 +75,7 @@ import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { DrizzlePartnerStore } from "#workspace/infrastructure/drizzle-partner-store.ts";
 import { SecurityPoliciesLive } from "#workspace/infrastructure/drizzle-security-policies.ts";
+import { DrizzleSignUpStore } from "#workspace/infrastructure/drizzle-sign-up-store.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
 import { LoggedActivityJournal } from "#workspace/infrastructure/logged-activity-journal.ts";
@@ -79,6 +83,7 @@ import { PartnerSettingsLive } from "#workspace/infrastructure/partner-settings.
 import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
 import { RandomPartnerKeyTokens } from "#workspace/infrastructure/random-partner-key-tokens.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
+import { SignUpSettingsLive } from "#workspace/infrastructure/sign-up-settings.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
 import { StaffSettingsLive } from "#workspace/infrastructure/staff-settings.ts";
 
@@ -121,6 +126,9 @@ const UseCasesLive = Layer.mergeAll(
   Accounts.layer,
   AccountStanding.layer,
   ApiKeys.layer,
+  CredentialCheck.layer.pipe(
+    Layer.provide(Layer.merge(Accounts.layer, ResolveMember.layer))
+  ),
   // A bearer token may be a partner key, which the partner's keys check.
   Authenticate.layer.pipe(Layer.provideMerge(PartnerKeys.layer)),
   PartnerAccounts.layer,
@@ -195,6 +203,10 @@ export const WorkspaceLive = Layer.mergeAll(
   // hooks and the workspace's settings read, and the account's emails,
   // which its hooks send when two-step verification changes.
   Layer.provideMerge(SecurityPoliciesLive),
+  // Who may sign up, which Better Auth's hooks ask on each sign-up and
+  // the captcha's answer tells the sign-up page.
+  Layer.provideMerge(SignUpGate.layer.pipe(Layer.provide(DrizzleSignUpStore))),
+  Layer.provideMerge(SignUpSettingsLive),
   Layer.provideMerge(EmailedAccountMail),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
@@ -308,6 +320,7 @@ export const WorkspaceCronsLive = Layer.mergeAll(
  */
 export const WorkspaceApiLive = Layer.mergeAll(
   SessionHandlers,
+  CredentialHandlers,
   ApiKeysHandlers,
   WorkspacesHandlers,
   AccountHandlers,

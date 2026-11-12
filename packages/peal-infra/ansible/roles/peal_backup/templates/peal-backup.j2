@@ -2,8 +2,9 @@
 # Managed by Ansible (peal-infra). Backs the database up to the bucket with
 # pgBackRest, in the Postgres container: `peal-backup full`, `diff` or `incr`.
 # The timers run it; run it by hand with `sudo systemctl start
-# peal-backup@full`. Once the backup is stored, it tells the collector when,
-# which Grafana's alert on stale backups reads.
+# peal-backup@full`. It then tells the collector when the backup finished,
+# or failed, which Grafana's backup rules read: a failure alerts at once,
+# until a backup succeeds.
 set -eu
 
 type="${1:?usage: peal-backup full|diff|incr}"
@@ -12,31 +13,43 @@ pgbackrest() {
   {{ peal_compose_bin }} exec -T --user postgres postgres pgbackrest "$@"
 }
 
-# Creates the stanza the first time; afterwards, checks that it still matches
-# the database.
-pgbackrest stanza-create
-pgbackrest backup --type="$type"
-
-finished="$(date +%s)"
-metrics="$(cat <<JSON
+# Posts one gauge, now, to the collector: `report <name> <description>`.
+report() {
+  now="$(date +%s)"
+  metrics="$(cat <<JSON
 {"resourceMetrics": [{
   "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "peal-backup"}}]},
   "scopeMetrics": [{"scope": {"name": "peal-backup"}, "metrics": [{
-    "name": "peal_backup_last_success_timestamp",
+    "name": "$1",
     "unit": "s",
-    "description": "When the last database backup finished",
+    "description": "$2",
     "gauge": {"dataPoints": [{
-      "timeUnixNano": "${finished}000000000",
-      "asInt": "${finished}",
+      "timeUnixNano": "${now}000000000",
+      "asInt": "${now}",
       "attributes": [{"key": "type", "value": {"stringValue": "${type}"}}]
     }]}
   }]}]
 }]}
 JSON
 )"
+  curl --fail --silent --show-error --max-time 10 \
+    --retry {{ peal_backup_report_retries }} --retry-delay {{ peal_backup_report_retry_delay }} --retry-all-errors \
+    --header 'Content-Type: application/json' --data "$metrics" \
+    http://127.0.0.1:{{ peal_ports.otlp_http }}/v1/metrics > /dev/null
+}
 
-if ! curl --fail --silent --show-error --max-time 10 \
-  --header 'Content-Type: application/json' --data "$metrics" \
-  http://127.0.0.1:{{ peal_ports.otlp_http }}/v1/metrics > /dev/null; then
-  echo "peal-backup: the backup is stored, but the collector did not record it" >&2
+# Creates the stanza the first time; afterwards, checks that it still matches
+# the database. A database started over no longer does (pgBackRest's error
+# 028): runbooks/restore-database.md says what to do then.
+status=0
+pgbackrest stanza-create && pgbackrest backup --type="$type" || status=$?
+
+if [ "$status" -ne 0 ]; then
+  report peal_backup_last_failure_timestamp "When the last database backup failed" ||
+    echo "peal-backup: the collector did not record the failure" >&2
+  echo "peal-backup: the $type backup failed (pgBackRest exited $status)" >&2
+  exit "$status"
 fi
+
+report peal_backup_last_success_timestamp "When the last database backup finished" ||
+  echo "peal-backup: the backup is stored, but the collector did not record it" >&2

@@ -2,7 +2,7 @@
 title: Posting through the API
 description: Check a post before sending it, publish now and wait for the outcome, send several posts in one request, import them from a CSV file, understand the duplicate refusal, and list a workspace's posts with filters.
 sidebar:
-  order: 17
+  order: 18
 ---
 
 A script or an agent that posts through the [HTTP API](/api-overview) can check a post before it sends it, wait for the outcome of a post that goes out now, send up to 50 posts in one request, import posts from a CSV file, and list the workspace's posts with filters. This page shows each request with an example. The [API reference](/reference) has every field.
@@ -263,6 +263,8 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/bulk \
 An `Idempotency-Key` header makes the whole request safe to send again within 24 hours. Each item is kept under the key and its place: the same request sent again answers the posts it made, with `replayed` true, and makes those that were not made the first time if they now can be. An item that changed under the same key is refused with `IdempotencyKeyReused`. An item may carry an `idempotencyKey` of its own, which is used instead of the header's for that item.
 
 ## Import posts from a CSV file [#import]
+
+In the web app, [Import from a file](/scheduling#import-screen) checks a file and imports it through this endpoint.
 
 `POST …/posts/import` creates and sends the posts a CSV file lists, one per row. The file's first line names the columns, in any order:
 

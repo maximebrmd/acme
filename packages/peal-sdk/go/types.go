@@ -14798,6 +14798,25 @@ func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
 	return &n
 }
 
+type OverviewRefusal string
+
+const (
+	OverviewRefusalTwoStepRequired OverviewRefusal = "twoStepRequired"
+)
+
+func NewOverviewRefusalFromString(s string) (OverviewRefusal, error) {
+	switch s {
+	case "twoStepRequired":
+		return OverviewRefusalTwoStepRequired, nil
+	}
+	var t OverviewRefusal
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (o OverviewRefusal) Ptr() *OverviewRefusal {
+	return &o
+}
+
 var (
 	overviewChannelsFieldConnected   = big.NewInt(1 << 0)
 	overviewChannelsFieldOff         = big.NewInt(1 << 1)
@@ -16575,6 +16594,32 @@ func NewPartnerOwnsWorkspacesEncodedTagFromString(s string) (PartnerOwnsWorkspac
 }
 
 func (p PartnerOwnsWorkspacesEncodedTag) Ptr() *PartnerOwnsWorkspacesEncodedTag {
+	return &p
+}
+
+// What a partner key may do with its partner's workspaces.
+type PartnerScope string
+
+const (
+	PartnerScopeWorkspacesRead   PartnerScope = "workspaces:read"
+	PartnerScopeWorkspacesWrite  PartnerScope = "workspaces:write"
+	PartnerScopeWorkspacesDelete PartnerScope = "workspaces:delete"
+)
+
+func NewPartnerScopeFromString(s string) (PartnerScope, error) {
+	switch s {
+	case "workspaces:read":
+		return PartnerScopeWorkspacesRead, nil
+	case "workspaces:write":
+		return PartnerScopeWorkspacesWrite, nil
+	case "workspaces:delete":
+		return PartnerScopeWorkspacesDelete, nil
+	}
+	var t PartnerScope
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PartnerScope) Ptr() *PartnerScope {
 	return &p
 }
 

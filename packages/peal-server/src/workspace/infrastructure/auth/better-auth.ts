@@ -24,6 +24,7 @@ import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { SecurityPolicies } from "#workspace/application/security-policies.ts";
+import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
@@ -281,6 +282,7 @@ export const BetterAuthLive = Layer.effect(
     const directory = yield* MemberDirectory;
     const policies = yield* SecurityPolicies;
     const accountMail = yield* AccountMail;
+    const signUps = yield* SignUpGate;
 
     // The instance, once made: the email of a recovery code used says how
     // many are left, which only the instance reads.
@@ -367,6 +369,11 @@ export const BetterAuthLive = Layer.effect(
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
       },
+      // Awaited on each sign-up. A database failure refuses it.
+      signUp: async (email, invitationId) =>
+        await runPromise(
+          signUps.mayRegister(email, Option.fromNullishOr(invitationId))
+        ),
       // Awaited: the webhook answers an error until the event is recorded,
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {

@@ -114,6 +114,38 @@
       "postServeActions": []
     },
     {
+      "id": "bfba20ae-8cbc-4673-a866-70c67b47be8d",
+      "name": "Check the credential - default",
+      "request": {
+        "urlPathTemplate": "/api/credential",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"application\": {\n    \"binding\": {\n      \"_tag\": \"unbound\"\n    },\n    \"clientId\": \"clientId\",\n    \"scopes\": [\n      \"scopes\"\n    ]\n  },\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"userId\": \"userId\",\n  \"_tag\": \"user\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "bfba20ae-8cbc-4673-a866-70c67b47be8d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "56689693-bb24-454a-9822-9af707ec0061",
       "name": "List API keys - default",
       "request": {
@@ -4927,38 +4959,6 @@
       "postServeActions": []
     },
     {
-      "id": "e3e9acc8-5ae2-479f-98f5-c24f3f0837bc",
-      "name": "See which customers need attention - default",
-      "request": {
-        "urlPathTemplate": "/api/partner/overview",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"account\": {\n    \"overPlan\": true\n  },\n  \"next\": \"next\",\n  \"total\": 1,\n  \"workspaces\": [\n    {\n      \"channels\": {\n        \"connected\": 1,\n        \"off\": 1,\n        \"toReconnect\": 1\n      },\n      \"externalId\": \"externalId\",\n      \"id\": \"id\",\n      \"inbox\": {\n        \"unanswered\": 1\n      },\n      \"name\": \"name\",\n      \"posts\": {\n        \"awaitingApproval\": 1,\n        \"failedLast7Days\": 1,\n        \"mayApprove\": true,\n        \"scheduledNext7Days\": 1,\n        \"unconfirmedLast7Days\": 1\n      }\n    }\n  ]\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "e3e9acc8-5ae2-479f-98f5-c24f3f0837bc",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
       "id": "afa66519-b545-4dbb-8346-1964e45108b2",
       "name": "List the partner's workspaces - default",
       "request": {
@@ -5405,42 +5405,6 @@
         }
       },
       "uuid": "f1132860-22b7-4b22-aa7e-b4ae3c4966fa",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "7e547746-dffd-46d9-853a-19956739f992",
-      "name": "See which of the partner's customers need attention - default",
-      "request": {
-        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner/overview",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "workspaceId": {
-            "equalTo": "workspaceId"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"account\": {\n    \"overPlan\": true\n  },\n  \"next\": \"next\",\n  \"total\": 1,\n  \"workspaces\": [\n    {\n      \"channels\": {\n        \"connected\": 1,\n        \"off\": 1,\n        \"toReconnect\": 1\n      },\n      \"externalId\": \"externalId\",\n      \"id\": \"id\",\n      \"inbox\": {\n        \"unanswered\": 1\n      },\n      \"name\": \"name\",\n      \"posts\": {\n        \"awaitingApproval\": 1,\n        \"failedLast7Days\": 1,\n        \"mayApprove\": true,\n        \"scheduledNext7Days\": 1,\n        \"unconfirmedLast7Days\": 1\n      }\n    }\n  ]\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "7e547746-dffd-46d9-853a-19956739f992",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -7536,6 +7500,6 @@
     }
   ],
   "meta": {
-    "total": 201
+    "total": 200
   }
 }

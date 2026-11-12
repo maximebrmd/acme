@@ -1,0 +1,6 @@
+---
+# peal-backup asks the collector again this many times, this many seconds
+# apart, when it does not take a report: for a minute, as while the stack
+# starts after a boot or a release.
+peal_backup_report_retries: 6
+peal_backup_report_retry_delay: 10

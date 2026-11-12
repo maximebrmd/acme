@@ -39,7 +39,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
   `…/drafts`, `…/posts` (every post, whatever its state, for post:read
-  and channel:read), `…/posts/new`, `…/posts/[postId]`, which opens
+  and channel:read), `…/posts/import` (a CSV file's posts, for
+  post:schedule, post:read and channel:read), `…/posts/new`,
+  `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
@@ -302,6 +304,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and asks `posts.search` (`postSearchPage`) with them; "Show more"
   passes the page's cursor with the same filters and sort, as the API
   requires. An outcome is a filter on finished posts only.
+- The CSV import (`…/posts/import`, `PostImport`, views in
+  `post-import-views.tsx`, states in `#posts/import-state.ts`) never
+  parses the file: the browser reads it as text (`#posts/import-file.ts`,
+  the CLI's bounds, a leading BOM dropped) and the server is the one
+  reader of CSV, so the check and the import cannot disagree. Choosing a
+  file sends it with `dryRun`; **Import** is offered only once every row
+  is valid, asks once, and sends the same file under the
+  `Idempotency-Key` made when that check passed, kept for a retry and new
+  for each check, one request at a time (`oneAtATime`). A row's refusal
+  and a file's problem get their words from `#posts/import-refusal.ts`,
+  matched exhaustively, so a refusal the contract adds needs words to
+  compile; never show the server's English `message`. A
+  `PlanLimitReached` among the rows opens the upgrade dialog
+  (`OfferUpgrade`), as it comes inside a 200 answer.
 - A pending invitation's **Copy link** (`#settings/invitation-link.ts`)
   copies the emailed link, which Better Auth lets only a session of the
   invited, verified address accept: there is no open invitation link.
@@ -422,6 +438,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
   resets it after every call, since a token works once.
+- The sign-up and sign-in pages read who may sign up at request time
+  (`signUpSettings()`, the same answer's `signUp`, `open` when it says
+  nothing). By invitation, the sign-up page shows the form only to a
+  visitor the invitation page sent (`?invitation=<id>`,
+  `signUpFormShown`), whose form sends the id in `signUpInvitationHeader`
+  (`invitationOf`), `SignUpByInvitation` otherwise, and the sign-in page
+  hides its link to sign up (`offersSignUp`). The server answers `open`
+  while it has no account, so the first one can be made. The server decides: its
+  `SIGN_UP_BY_INVITATION` reads from `Auth.errors`.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the

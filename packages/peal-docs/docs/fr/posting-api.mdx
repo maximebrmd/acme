@@ -2,7 +2,7 @@
 title: Publier par l’API
 description: Vérifiez une publication avant de l’envoyer, publiez maintenant en attendant le résultat, envoyez plusieurs publications en une requête, importez-les depuis un fichier CSV, comprenez le refus des doublons et listez les publications d’un espace de travail avec des filtres.
 sidebar:
-  order: 17
+  order: 18
 ---
 
 Un script ou un agent qui publie par l’[API HTTP](/api-overview) peut vérifier une publication avant de l’envoyer, attendre le résultat d’une publication qui part maintenant, envoyer jusqu’à 50 publications en une requête, importer des publications depuis un fichier CSV, et lister les publications de l’espace de travail avec des filtres. Cette page montre chaque requête avec un exemple. La [référence de l’API](/reference) donne tous les champs.
@@ -263,6 +263,8 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/bulk \
 Un en-tête `Idempotency-Key` permet de renvoyer toute la requête sans risque pendant 24 heures. Chaque élément est gardé sous la clé et sa place : la même requête renvoyée répond les publications qu’elle a créées, avec `replayed` à vrai, et crée celles qui ne l’avaient pas été la première fois si elles peuvent l’être désormais. Un élément modifié sous la même clé est refusé avec `IdempotencyKeyReused`. Un élément peut porter sa propre `idempotencyKey`, utilisée pour lui à la place de celle de l’en-tête.
 
 ## Importer des publications depuis un fichier CSV [#import]
+
+Dans l’application web, [Importer depuis un fichier](/scheduling#import-screen) vérifie un fichier et l’importe par ce point de terminaison.
 
 `POST …/posts/import` crée et envoie les publications que liste un fichier CSV, une par ligne. La première ligne du fichier nomme les colonnes, dans n’importe quel ordre :
 
