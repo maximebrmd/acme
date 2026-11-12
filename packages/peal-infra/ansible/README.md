@@ -214,7 +214,11 @@ change here (`swap_size_mb` sizes the swap file when the role makes it,
 and never resizes one that exists). A dedicated server does not resize: move to a new one
 ([the runbook](runbooks/restore-database.md#a-planned-move)). Production is
 a dedicated server of the second size, 12 threads and 32 GB, which reuses
-the 8 GB swap file its installer made (`swap_file`).
+the 8 GB swap file its installer made (`swap_file`). Postgres's memory is
+set in `peal_settings` (the `PEAL_POSTGRES_*` settings of the docs'
+environment variables page): production gives it 4 GB of buffers and counts
+on 12 GB of file cache, as it shares the server with the rest of the stack;
+the sandbox keeps PostgreSQL's defaults.
 
 Move up when one of these holds for days:
 

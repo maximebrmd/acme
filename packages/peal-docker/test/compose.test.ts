@@ -28,6 +28,7 @@ const Volume = Schema.Union([Schema.String, Mount]);
 
 const ServiceSchema = Schema.Struct({
   build: Schema.optionalKey(Schema.Struct({ dockerfile: Schema.String })),
+  command: Schema.optionalKey(Schema.Array(Schema.String)),
   depends_on: Schema.optionalKey(
     Schema.Record(Schema.String, Schema.Struct({ condition: Schema.String }))
   ),
@@ -44,6 +45,7 @@ const ServiceSchema = Schema.Struct({
   read_only: Schema.optionalKey(Schema.Boolean),
   restart: Schema.optionalKey(Schema.String),
   security_opt: Schema.optionalKey(Schema.Array(Schema.String)),
+  shm_size: Schema.optionalKey(Schema.String),
   stop_grace_period: Schema.optionalKey(Schema.String),
   volumes: Schema.optionalKey(Schema.Array(Volume)),
 });
@@ -97,6 +99,10 @@ const isPinned = (image: string): boolean => {
 // A tag for reading, then the digest that fixes the bytes.
 const isPinnedByDigest = (image: string): boolean =>
   /^[^@\s]+:[^@\s]+@sha256:[\da-f]{64}$/u.test(image);
+
+// `setting=${PEAL_POSTGRES_<VARIABLE>:-<default>}` in Compose's syntax.
+const fallback = (setting: string, variable: string, value: string): string =>
+  `${setting}=\${PEAL_POSTGRES_${variable}:-${value}}`;
 
 // Docker mounts an image's files when it creates the container, and not
 // again when the daemon restarts: the container then restarts on an empty
@@ -312,6 +318,34 @@ describe("compose.production.yaml", () => {
           !["HOSTNAME", "NODE_ENV", "PORT"].includes(name)
       )
     ).toStrictEqual([]);
+  });
+
+  // Each memory setting falls back to PostgreSQL 18's own default, so a
+  // server that sets none runs as Postgres would alone.
+  it("gives Postgres its memory settings, with PostgreSQL's defaults", () => {
+    const postgres = production.find(([name]) => name === "postgres")?.[1];
+
+    const settings = (postgres?.command ?? []).filter(
+      (_argument, index, command) => command[index - 1] === "-c"
+    );
+
+    expect(settings).toStrictEqual(
+      expect.arrayContaining([
+        fallback("shared_buffers", "SHARED_BUFFERS", "128MB"),
+        fallback("effective_cache_size", "EFFECTIVE_CACHE_SIZE", "4GB"),
+        fallback("maintenance_work_mem", "MAINTENANCE_WORK_MEM", "64MB"),
+        fallback("random_page_cost", "RANDOM_PAGE_COST", "4"),
+      ])
+    );
+  });
+
+  // /dev/shm holds the dynamic shared memory of parallel queries and of a
+  // parallel vacuum, which may take up to maintenance_work_mem: production
+  // sets 512MB.
+  it("gives Postgres more shared memory than a vacuum may take", () => {
+    const postgres = production.find(([name]) => name === "postgres")?.[1];
+
+    expect(postgres?.shm_size).toBe("1g");
   });
 
   it.each(production)(

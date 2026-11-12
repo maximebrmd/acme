@@ -54,6 +54,10 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   `uptime_environments`). Each environment's Pulumi stack makes its record
   in the peal.link zone; never `cloudflared tunnel route dns`, which can
   put it in peal.social's.
+- `peal_preflight` checks the `PEAL_POSTGRES_*` memory settings in
+  `peal_settings` (a whole number with `kB`, `MB`, `GB` or `TB`; a number
+  for the page cost) before `release.yml` stops anything: Postgres stops at
+  start on a value it cannot read.
 - Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
   there; Docker's own rules would otherwise bypass ufw.
 - A separate server checks uptime (`uptime.yml`, inventory group

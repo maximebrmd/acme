@@ -150,6 +150,26 @@ def test_the_sandbox_samples_every_trace(rendered: Path) -> None:
     assert "OTEL_TRACES_SAMPLER_ARG" not in host_env
 
 
+_POSTGRES_MEMORY = {
+    "PEAL_POSTGRES_SHARED_BUFFERS": "4GB",
+    "PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE": "12GB",
+    "PEAL_POSTGRES_MAINTENANCE_WORK_MEM": "512MB",
+    "PEAL_POSTGRES_RANDOM_PAGE_COST": "1.1",
+}
+
+
+def test_production_gives_postgres_its_memory(rendered: Path) -> None:
+    host_env = _host_env(rendered, "production")
+
+    assert {name: host_env.get(name) for name in _POSTGRES_MEMORY} == _POSTGRES_MEMORY
+
+
+def test_the_sandbox_runs_postgres_on_its_defaults(rendered: Path) -> None:
+    host_env = _host_env(rendered, "sandbox")
+
+    assert [name for name in _POSTGRES_MEMORY if name in host_env] == []
+
+
 def test_the_sandbox_sends_none(rendered: Path) -> None:
     host_env = _host_env(rendered, "sandbox")
 
@@ -313,3 +333,29 @@ def test_the_media_endpoint_is_a_url_and_the_backup_endpoint_a_host() -> None:
     assert _misplaced("s3.eu-store.test", "s3.eu-store.test", STORE) == ["peal_media_endpoint"]
     assert _misplaced("http://s3.eu-store.test", "s3.eu-store.test", STORE) == ["peal_media_endpoint"]
     assert _misplaced("https://s3.eu-store.test", "https://s3.eu-store.test", STORE) == ["peal_backup_endpoint"]
+
+
+def _unreadable_memory(peal_settings: dict[str, Any]) -> list[str]:
+    """The Postgres memory settings the preflight refuses, by name."""
+    found = task("peal_preflight", "Refuse Postgres memory settings Postgres would refuse")
+    return ansible_render(found["vars"]["peal_preflight_postgres_refused"], peal_settings=peal_settings)
+
+
+def test_the_preflight_takes_productions_postgres_memory() -> None:
+    assert _unreadable_memory(settings("production")["peal_settings"]) == []
+    assert _unreadable_memory({}) == []
+
+
+@pytest.mark.parametrize("value", ["4G", "4 GB", "4GiB", "4gb", "", "-1MB", "large", 4096])
+def test_the_preflight_refuses_a_size_postgres_would_not_read(value: Any) -> None:
+    assert _unreadable_memory({"PEAL_POSTGRES_SHARED_BUFFERS": value}) == ["PEAL_POSTGRES_SHARED_BUFFERS"]
+
+
+@pytest.mark.parametrize("value", ["1.1", 1.1, 4, "4"])
+def test_the_preflight_takes_a_page_cost(value: Any) -> None:
+    assert _unreadable_memory({"PEAL_POSTGRES_RANDOM_PAGE_COST": value}) == []
+
+
+@pytest.mark.parametrize("value", ["1,1", "fast", "", "-1"])
+def test_the_preflight_refuses_a_page_cost_postgres_would_not_read(value: str) -> None:
+    assert _unreadable_memory({"PEAL_POSTGRES_RANDOM_PAGE_COST": value}) == ["PEAL_POSTGRES_RANDOM_PAGE_COST"]
