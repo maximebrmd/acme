@@ -7,6 +7,8 @@ After=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/peal-backup %i
+# The full and the differential backups are two units: one waits for the
+# other rather than meet pgBackRest's lock and report a failure.
+ExecStart=/usr/bin/flock /run/peal-backup.lock /usr/local/sbin/peal-backup %i
 Nice=10
 IOSchedulingClass=idle

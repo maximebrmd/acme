@@ -33,6 +33,7 @@ report() {
 JSON
 )"
   curl --fail --silent --show-error --max-time 10 \
+    --retry {{ peal_backup_report_retries }} --retry-delay {{ peal_backup_report_retry_delay }} --retry-all-errors \
     --header 'Content-Type: application/json' --data "$metrics" \
     http://127.0.0.1:{{ peal_ports.otlp_http }}/v1/metrics > /dev/null
 }
