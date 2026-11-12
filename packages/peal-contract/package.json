@@ -16,6 +16,7 @@
     "./data-processing": "./src/data-processing.ts",
     "./errors": "./src/error-catalogue.ts",
     "./openapi-document": "./src/openapi-document.ts",
+    "./path-spelling": "./src/path-spelling.ts",
     "./post-text": "./src/post-text.ts"
   },
   "dependencies": {
