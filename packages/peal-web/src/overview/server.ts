@@ -1,15 +1,13 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
 import { Api } from "peal-contract";
-import type { Overview, WorkspaceOverview } from "peal-contract";
+import type { WorkspaceOverview } from "peal-contract";
 
 import { serverUrl } from "#api/server-url.ts";
 
-// A person in more workspaces than this many pages hold sees the cards
-// after them as they were before the overview: links, and no figure.
-const mostPages = 20;
+import { overviewPages } from "./pages.ts";
 
 const nothing = new Map<string, WorkspaceOverview>();
 
@@ -23,33 +21,23 @@ const overviewEffect = Effect.fn("overview")(function* overview(
     ),
   });
 
-  const found = new Map<string, WorkspaceOverview>();
-  let cursor: string | null = null;
-
-  for (let page = 0; page < mostPages; page += 1) {
-    const answered: Overview = yield* client.overview.get({
-      query: cursor === null ? {} : { cursor },
-    });
-
-    for (const workspace of answered.workspaces) {
-      found.set(workspace.id, workspace);
-    }
-
-    cursor = answered.nextCursor;
-
-    if (cursor === null) {
-      break;
-    }
-  }
-
-  return found;
+  return yield* overviewPages((cursor) =>
+    client.overview.get({
+      query: Option.match(cursor, {
+        onNone: () => ({}),
+        onSome: (after) => ({ cursor: after }),
+      }),
+    })
+  );
 }, Effect.provide(FetchHttpClient.layer));
 
 /**
  * For the signed-in home, on the server: what needs attention in each of
  * the visitor's workspaces, read from GET /api/me/overview with the
- * request's cookies, by workspace id. Empty when it cannot be read, which
- * is logged: the cards then show as they did without it.
+ * request's cookies, by workspace id, a page at a time
+ * (`overviewPages`). The pages read before one that fails are kept; none
+ * when even the client cannot be made, which is logged: the cards then
+ * show as they did without it.
  */
 export const overviewOrNothing = async (): Promise<
   ReadonlyMap<string, WorkspaceOverview>
@@ -63,7 +51,6 @@ export const overviewOrNothing = async (): Promise<
 
   return await Effect.runPromise(
     overviewEffect(cookie).pipe(
-      Effect.timeout("5 seconds"),
       Effect.catchCause((cause) =>
         Effect.logWarning("The overview could not be read", cause).pipe(
           Effect.as(nothing)
