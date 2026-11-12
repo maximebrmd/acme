@@ -26,8 +26,10 @@ import { Separator } from "peal-ui/components/separator";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { canGenerateImages } from "#assistant/permissions.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
+import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { ChannelSetPicker } from "#components/posts/channel-set-picker.tsx";
@@ -58,6 +60,7 @@ import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
+import { useAiLabels } from "#components/posts/use-ai-labels.ts";
 import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
 import { useAttachedMedia } from "#posts/attached-media.ts";
@@ -346,6 +349,14 @@ export const Composer = ({
   );
 
   const optionsTaken = optionProblems.length === 0;
+
+  const aiLabels = useAiLabels({
+    attached,
+    optionValues,
+    post,
+    selected,
+    setOptionValues,
+  });
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
@@ -814,6 +825,7 @@ export const Composer = ({
             failure={requests.failure}
             valuesOf={valuesOn}
             onChange={(channelId, values) => {
+              aiLabels.changed(channelId, values);
               setOptionValues((current) => ({
                 ...current,
                 [channelId]: values,
@@ -828,6 +840,7 @@ export const Composer = ({
             <MediaAttachments
               attached={attached}
               canBrowse={permissions.includes("media:read")}
+              canGenerate={canGenerateImages(permissions)}
               canUpload={permissions.includes("media:upload")}
               disabled={locked}
               editable={canWrite}
@@ -837,6 +850,7 @@ export const Composer = ({
               workspaceId={workspaceId}
               onChange={setMedia}
             />
+            <AiLabelsNotice labels={aiLabels} />
           </fieldset>
           <Separator />
           <FollowUpParts

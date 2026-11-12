@@ -362,6 +362,38 @@
     "retry": "Réessayer",
     "close": "Fermer",
     "accepted": "Suggestion appliquée.",
+    "images": {
+      "open": "Générer une image",
+      "title": "Générer une image",
+      "description": "Décrivez l’image souhaitée. Votre description part chez le fournisseur d’images qu’utilise ce serveur Peal, et l’image est ajoutée à la médiathèque, marquée comme créée par IA.",
+      "prompt": "Description",
+      "promptHint": "Ce que l’image doit montrer : le sujet, le décor, le style. Jusqu’à {maxLength, number} caractères.",
+      "aspect": "Format",
+      "aspects": "{aspect, select, square {Carré} landscape {Paysage} portrait {Portrait} other {{aspect}}}",
+      "cost": "Une image coûte {cost, plural, one {# demande} other {# demandes}} des demandes à l’assistant du jour. {remaining, plural, =0 {Plus aucune aujourd’hui.} one {# restante aujourd’hui.} other {# restantes aujourd’hui.}}",
+      "notEnough": "Il ne reste pas assez de demandes aujourd’hui pour une image.",
+      "generate": "Générer",
+      "generating": "Génération de l’image… Cela peut prendre jusqu’à une minute et demie.",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "retry": "Réessayer",
+      "generated": "L’image est dans la médiathèque.",
+      "errors": {
+        "unavailable": "Ce serveur ne génère pas d’images.",
+        "quota": "Il ne reste pas assez de demandes à l’assistant aujourd’hui à votre espace de travail pour une image.",
+        "storage": "Le stockage des médias de votre espace de travail est plein : il n’y a pas de place pour une nouvelle image.",
+        "empty": "Décrivez d’abord l’image.",
+        "tooLong": "La description dépasse les {maxLength, number} caractères autorisés.",
+        "unreachable": "Le fournisseur d’images est injoignable. Rien n’a été décompté : réessayez dans un instant.",
+        "timedOut": "Le fournisseur d’images a mis trop de temps à répondre. Réessayez.",
+        "declined": "Le fournisseur d’images a refusé cette description. Essayez-en une autre.",
+        "invalidAnswer": "La réponse du fournisseur d’images est inutilisable. Réessayez.",
+        "busy": "Deux images sont déjà en cours de génération dans votre espace de travail. Réessayez quand l’une d’elles sera terminée.",
+        "storeDown": "Le stockage des médias est injoignable. Réessayez dans quelques minutes.",
+        "forbidden": "Votre rôle ne vous permet pas de générer des images.",
+        "generic": "Une erreur est survenue. Réessayez."
+      }
+    },
     "errors": {
       "unavailable": "L’assistant de rédaction n’est pas disponible sur ce serveur.",
       "quota": "{dailyLimit, plural, =0 {Votre espace de travail ne peut envoyer aucune demande à l’assistant.} one {Votre espace de travail a utilisé sa # demande à l’assistant pour aujourd’hui. Vous pourrez en envoyer une nouvelle à partir du {resetsAt}.} other {Votre espace de travail a utilisé ses # demandes à l’assistant pour aujourd’hui. Vous pourrez en envoyer de nouvelles à partir du {resetsAt}.}}",
@@ -1441,6 +1473,7 @@
       "typeMismatch": "Le fichier n’était pas du type déclaré, et a été supprimé."
     },
     "library": {
+      "aiGenerated": "Créé par IA",
       "title": "Médiathèque",
       "empty": "Aucun média pour l’instant. Importez des images ou des vidéos pour les utiliser dans vos publications.",
       "loading": "Chargement des médias…",
@@ -1471,6 +1504,8 @@
     }
   },
   "PostMedia": {
+    "aiLabelsPreset": "Cette publication montre un média créé par IA : Peal a activé la mention IA sur {platforms}. Vous pouvez la désactiver dans les options de chaque canal.",
+    "aiMediaNoLabel": "Cette publication montre un média créé par IA. Là où une plateforme le demande, indiquez-le dans la publication.",
     "count": "{count, plural, =0 {Aucune image ni vidéo pour l’instant} one {# image ou vidéo} other {# images ou vidéos}}, {maximum} au plus.",
     "list": "Images et vidéos, dans l’ordre où la publication les montre",
     "item": "{kind, select, image {Image {position}} video {Vidéo {position}} document {Document {position}} other {Média {position}}}",
@@ -1490,6 +1525,7 @@
     "notReady": "Le fichier a été envoyé, mais il ne peut pas aller dans une publication avant d’être traité.",
     "format": "{format, select, gif {GIF} jpeg {JPEG} png {PNG} webp {WebP} mp4 {MP4} quicktime {QuickTime} other {{format}}}",
     "picker": {
+      "aiGenerated": "Créé par IA",
       "open": "Choisir dans la médiathèque",
       "title": "Choisir des images et des vidéos",
       "description": "Choisissez des médias prêts de l’espace de travail, dans l’ordre où la publication les montre.",

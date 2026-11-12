@@ -362,6 +362,38 @@
     "retry": "Try again",
     "close": "Close",
     "accepted": "Suggestion applied.",
+    "images": {
+      "open": "Generate an image",
+      "title": "Generate an image",
+      "description": "Describe the picture you want. Your description goes to the image provider this Peal server uses, and the image is added to the media library, marked as made by AI.",
+      "prompt": "Description",
+      "promptHint": "What the image should show: the subject, the setting, the style. Up to {maxLength, number} characters.",
+      "aspect": "Shape",
+      "aspects": "{aspect, select, square {Square} landscape {Landscape} portrait {Portrait} other {{aspect}}}",
+      "cost": "An image costs {cost, plural, one {# request} other {# requests}} of today's assistant requests. {remaining, plural, =0 {None left today.} one {# left today.} other {# left today.}}",
+      "notEnough": "Not enough requests left today for an image.",
+      "generate": "Generate",
+      "generating": "Generating the image… This can take up to a minute and a half.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "retry": "Try again",
+      "generated": "The image is in the media library.",
+      "errors": {
+        "unavailable": "This server makes no images.",
+        "quota": "Your workspace does not have enough assistant requests left today for an image.",
+        "storage": "Your workspace's media storage is full: there is no room for a new image.",
+        "empty": "Describe the image first.",
+        "tooLong": "The description is longer than the {maxLength, number} characters it may have.",
+        "unreachable": "The image provider could not be reached. Nothing was spent: try again in a moment.",
+        "timedOut": "The image provider took too long to answer. Try again.",
+        "declined": "The image provider declined this description. Try another one.",
+        "invalidAnswer": "The image provider's answer could not be used. Try again.",
+        "busy": "Two images are already being made in your workspace. Try again once one has finished.",
+        "storeDown": "The media storage could not be reached. Try again in a few minutes.",
+        "forbidden": "Your role does not let you generate images.",
+        "generic": "Something went wrong. Try again."
+      }
+    },
     "errors": {
       "unavailable": "The writing assistant is not available on this server.",
       "quota": "{dailyLimit, plural, =0 {Your workspace cannot send the assistant any requests.} one {Your workspace has used its # assistant request for today. You can ask again from {resetsAt}.} other {Your workspace has used its # assistant requests for today. You can ask again from {resetsAt}.}}",
@@ -1441,6 +1473,7 @@
       "typeMismatch": "The file was not of its declared type, and was deleted."
     },
     "library": {
+      "aiGenerated": "Made by AI",
       "title": "Library",
       "empty": "No media yet. Upload images or videos to use them in posts.",
       "loading": "Loading the media…",
@@ -1471,6 +1504,8 @@
     }
   },
   "PostMedia": {
+    "aiLabelsPreset": "This post shows media made by AI: Peal turned on the AI label on {platforms}. You can turn it off in each channel's options.",
+    "aiMediaNoLabel": "This post shows media made by AI. Where a platform asks, say so in the post.",
     "count": "{count, plural, =0 {No image or video yet} one {# image or video} other {# images or videos}}, at most {maximum}.",
     "list": "Images and videos, in the order the post shows them",
     "item": "{kind, select, image {Image {position}} video {Video {position}} document {Document {position}} other {Media {position}}}",
@@ -1490,6 +1525,7 @@
     "notReady": "The file was uploaded, but it cannot go into posts until it is processed.",
     "format": "{format, select, gif {GIF} jpeg {JPEG} png {PNG} webp {WebP} mp4 {MP4} quicktime {QuickTime} other {{format}}}",
     "picker": {
+      "aiGenerated": "Made by AI",
       "open": "Choose from the library",
       "title": "Choose images and videos",
       "description": "Pick ready media of the workspace, in the order the post shows them.",
