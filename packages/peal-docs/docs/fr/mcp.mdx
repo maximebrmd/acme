@@ -227,6 +227,8 @@ Un espace de travail enregistre trois choses pour écrire ses publications, et `
 
 **Files d’attente.** `create_post`, `create_posts` et `validate_post` acceptent `when: { "_tag": "queue", "queue": "…" }` à côté de `now` et `at` : la publication prend le prochain créneau libre de la file nommée par son identifiant ou son nom, ou de la file par défaut sans `queue`, décidé à la réception de l’appel ; sans `channelIds` ni `channelSets`, elle va sur les canaux de la file. `validate_post` répond ce créneau dans `queueSlot` ([Files d’attente](/fr/scheduling#queues)).
 
+**Publications répétées.** `recycle_post` [répète](/fr/scheduling#recycling) une publication programmée ou en ligne (`every`, `count` ou `until`, `variants`, `queueId`) : elle repart, en public, sans que personne ne soit sollicité à chaque fois, donc un client ne l’appelle que si vous avez demandé que la publication se répète. `update_recycling_rule` modifie ou met en pause une règle et `resume_recycling_rule` la relance ; les trois demandent `workspace:publish`. `list_recycling_rules` et `get_recycling_rule` lisent les règles, avec leurs prochaines publications, et `stop_recycling_rule` en arrête une (`workspace:publish` aussi) ; `list_posts` prend `recyclingId`.
+
 Les annotations sont des indications qu’un client peut vous montrer ; les vérifications de droits sont celles du serveur.
 
 ### Commentaires [#inbox-tools]

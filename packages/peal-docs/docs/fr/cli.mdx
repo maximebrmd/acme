@@ -360,6 +360,23 @@ peal posts list --queue Weekdays
 - `peal post --queue <nom-ou-identifiant>` place une publication sur le prochain créneau libre de cette file (`--queue=<nom-ou-identifiant>` aussi), et `peal post --default-queue` sur celui de la file par défaut. Chacune est l’une de `--at`, `--now`, `--queue` et `--default-queue`, et sans `--channel` ni `--set` la publication va sur les canaux de la file. Avec `--dry-run`, la commande affiche le créneau qu’elle prendrait.
 - `peal posts queue` place un brouillon, ou une publication programmée, sur le prochain créneau libre d’une file (`--queue`, ou celle par défaut). `peal posts list --queue` liste les publications placées par une file.
 
+## Publications répétées [#recycling]
+
+```sh
+peal recycling start <post-id> --every 2w --count 6 --variant "Ouvert tout l’été, comme avant."
+peal recycling list --status active
+peal recycling show <rule-id>
+peal recycling update <rule-id> --until 2026-12-31 --variant "Une autre façon de le dire"
+peal recycling pause <rule-id>
+peal recycling resume <rule-id>
+peal recycling end <rule-id>
+peal posts list --recycling <rule-id>
+```
+
+- `peal recycling start` [répète](/scheduling#recycling) une publication programmée ou en ligne : `--every` prend un nombre et `d`, `w` ou `m` (1d à 365d, 1w à 52w, 1m à 12m) ; `--count` le nombre de publications en tout, celle-ci comprise (2 à 100) ; `--until` le dernier jour ; `--variant`, répété, les textes dits à tour de rôle après celui de la publication, 10 au plus ; `--queue` une file d’attente, par nom ou identifiant. La commande affiche les trois prochaines publications et la variante de chacune.
+- `peal recycling update` change le nombre (`--no-count` le retire), la date de fin (`--no-until`) ou les variantes (`--variant` les remplace toutes). `pause` et `resume` l’arrêtent et la relancent ; `resume` relance aussi une règle terminée faute de place dans l’offre, pour un texte refusé, ses canaux ou les créneaux de sa file. `end` l’arrête pour de bon ; les publications créées restent.
+- `peal posts list --recycling` liste les publications créées par une règle.
+
 ## Options par défaut [#default-options]
 
 ```sh

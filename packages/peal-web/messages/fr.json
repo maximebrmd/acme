@@ -1614,10 +1614,11 @@
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu.",
       "AdBoostChanged": "{change, select, started {Une mise en avant a démarré dans {workspace} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement du compte publicitaire, jusqu’au {endsAt, date, long}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.} ended {Une mise en avant dans {workspace}, d’un budget de {budget}, a atteint sa date de fin ({endsAt, date, long}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication.} failed {Une mise en avant dans {workspace}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.} budgetReached {Une mise en avant dans {workspace} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.} unconfirmed {Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspace}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée.} other {Une mise en avant de {workspace} a changé.}}",
-      "AdConnectionReconnectRequired": "{network} a refusé la connexion qui relie des comptes publicitaires à {workspace}. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau."
+      "AdConnectionReconnectRequired": "{network} a refusé la connexion qui relie des comptes publicitaires à {workspace}. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau.",
+      "RecyclingEnded": "Une publication de {workspace} ne se répète plus : {reason, select, sourceGone {la publication qu’elle répète a été supprimée.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’a plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}"
     },
     "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez le canal, sur la page Canaux, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
-    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} other {Ouvrir les canaux}}",
+    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} recycling {Ouvrir les répétitions} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
       "many": "99+",
@@ -1660,7 +1661,8 @@
       "saveFailed": "Les préférences n’ont pas pu être enregistrées. Réessayez.",
       "loading": "Chargement de vos préférences…",
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
-      "reload": "Réessayer"
+      "reload": "Réessayer",
+      "recyclingEnded": "Une publication cesse de se répéter"
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
@@ -2008,7 +2010,8 @@
       "signatures": "Signatures",
       "channelSets": "Groupes de canaux",
       "queues": "Files d’attente",
-      "security": "Sécurité"
+      "security": "Sécurité",
+      "recycling": "Répétitions"
     },
     "general": {
       "title": "Nom",
@@ -3314,5 +3317,64 @@
     "staffResetDone": "La validation en deux étapes est désactivée pour {name}, déconnecté partout.",
     "staffResetTitle": "Réinitialiser la validation en deux étapes de {name} ?",
     "staffConsoleRequires": "Ce serveur exige que l’équipe ait activé la validation en deux étapes pour utiliser la console."
+  },
+  "Recycling": {
+    "title": "Publications répétées",
+    "description": "Des règles qui répètent une publication : une nouvelle publication à chaque intervalle, à la même heure, jusqu’à un nombre de publications ou une date, avec le texte de la publication ou, à tour de rôle, ses variantes. Chaque nouvelle publication est ordinaire, avec son propre résultat, et se déplace ou s’annule comme toute autre.",
+    "readOnly": "Vous pouvez lire les règles : les modifier demande un rôle qui programme des publications.",
+    "empty": "Aucune publication ne se répète dans cet espace de travail. Ouvrez une publication programmée ou en ligne, puis choisissez Répéter.",
+    "repeat": "Répéter",
+    "repeatPost": "Répéter cette publication",
+    "every": "{unit, select, days {{count, plural, one {Tous les jours} other {Tous les # jours}}} weeks {{count, plural, one {Toutes les semaines} other {Toutes les # semaines}}} other {{count, plural, one {Tous les mois} other {Tous les # mois}}}}",
+    "until": "Jusqu’au {date}",
+    "count": "{count} fois",
+    "made": "{made, plural, one {# publication créée} other {# publications créées}}",
+    "madeOf": "{made} sur {count}",
+    "status": "{status, select, active {Active} paused {En pause} other {Terminée}}",
+    "ended": "Règle terminée : {reason}",
+    "reason": "{reason, select, completed {elle a créé toutes les publications demandées.} stopped {quelqu’un l’a arrêtée.} sourceGone {la publication qu’elle répète a été supprimée.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’avait plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}",
+    "variants": "Variantes de texte",
+    "coming": "Prochaines occurrences",
+    "comingItem": "{at}{variant, select, 0 {} other {, avec la variante {variant}}}",
+    "repeats": "Se répète : {every}, {progress}",
+    "openRule": "Voir la règle",
+    "source": "La publication répétée",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "stop": "Arrêter",
+    "stopConfirm": "Arrêter cette règle ? Elle ne crée plus de publication et ne peut pas être reprise ; les publications créées restent telles quelles.",
+    "stopped": "La règle est arrêtée.",
+    "paused": "La règle est en pause.",
+    "resumed": "La règle reprend.",
+    "started": "La publication se répète.",
+    "failed": "Cela n’a pas fonctionné. Réessayez.",
+    "errors": {
+      "notRecyclable": "{reason, select, draft {Un brouillon ne peut pas se répéter : programmez-le d’abord.} awaitingApproval {La publication attend une approbation : elle pourra se répéter une fois programmée.} cancelled {Une publication annulée ne peut pas se répéter.} repeating {Une autre règle répète déjà cette publication.} occurrence {Une règle a créé cette publication : répétez plutôt sa source.} other {Aucun des canaux de la publication n’est plus connecté.}}",
+      "tooMany": "L’espace de travail a {allowed} règles en cours, le maximum permis : arrêtez-en une d’abord.",
+      "endsTooSoon": "Cette fin ne laisse aucune publication à créer : choisissez une date plus tardive ou plus de publications.",
+      "variantsInvalid": "{count, plural, one {Une variante enfreint} other {# variantes enfreignent}} les règles des canaux de la publication : raccourcissez-les, ou vérifiez ce que chaque plateforme accepte.",
+      "ended": "La règle est terminée et ne change plus.",
+      "forbidden": "Votre rôle ne le permet pas.",
+      "notFound": "La règle ou sa publication n’existe plus."
+    },
+    "form": {
+      "every": "Tous les",
+      "unit": "Unité",
+      "units": "{unit, select, days {jours} weeks {semaines} other {mois}}",
+      "ending": "Fin",
+      "endings": "{ending, select, count {Après un nombre de publications} until {À une date} other {Après {max} publications au plus}}",
+      "count": "Publications en tout, celle-ci comprise",
+      "until": "Dernier jour",
+      "queue": "Quand",
+      "ownTime": "À l’heure de la publication",
+      "variantsHint": "Des textes dits à la place de celui de la publication, à tour de rôle après lui, {max} au plus. Ses médias et options restent. Certaines plateformes refusent deux fois le même texte : les variantes sont faites pour cela.",
+      "variant": "Variante {number}",
+      "characters": "{count, plural, one {# caractère} other {# caractères}}",
+      "addVariant": "Ajouter une variante",
+      "removeVariant": "Retirer la variante {number}",
+      "inPublic": "Elle repart, en public, sans que personne ne soit sollicité à chaque fois, sauf si l’espace de travail demande des approbations : chaque publication en attend alors une.",
+      "start": "Répéter",
+      "cancel": "Annuler"
+    }
   }
 }

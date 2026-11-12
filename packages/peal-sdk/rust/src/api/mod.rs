@@ -16,7 +16,7 @@ pub use resources::{
     CapabilitiesClient, ChannelDefaultsClient, ChannelSetsClient, ChannelsClient,
     ConnectLinksClient, InboxClient, InvitationsClient, LookupsClient, MediaClient, MembersClient,
     NoticesClient, NotificationPreferencesClient, PartnerAccountClient, PartnerClient, PealClient,
-    PostsClient, QueuesClient, ReviewClient, SessionClient, SignaturesClient, SystemClient,
-    TagsClient, TiktokClient, UsageClient, WebhooksClient,
+    PostsClient, QueuesClient, RecyclingClient, ReviewClient, SessionClient, SignaturesClient,
+    SystemClient, TagsClient, TiktokClient, UsageClient, WebhooksClient,
 };
 pub use types::*;

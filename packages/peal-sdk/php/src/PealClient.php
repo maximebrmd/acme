@@ -31,6 +31,7 @@ use Peal\Tags\TagsClient;
 use Peal\Signatures\SignaturesClient;
 use Peal\ChannelSets\ChannelSetsClient;
 use Peal\Queues\QueuesClient;
+use Peal\Recycling\RecyclingClient;
 use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
@@ -183,6 +184,11 @@ class PealClient
     public QueuesClient $queues;
 
     /**
+     * @var RecyclingClient $recycling
+     */
+    public RecyclingClient $recycling;
+
+    /**
      * @var ChannelDefaultsClient $channelDefaults
      */
     public ChannelDefaultsClient $channelDefaults;
@@ -267,6 +273,7 @@ class PealClient
         $this->signatures = new SignaturesClient($this->client, $this->options);
         $this->channelSets = new ChannelSetsClient($this->client, $this->options);
         $this->queues = new QueuesClient($this->client, $this->options);
+        $this->recycling = new RecyclingClient($this->client, $this->options);
         $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
     }
 }

@@ -1,15 +1,10 @@
 import { Context, Effect, Layer, Option } from "effect";
 
-import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { checkDraft } from "#publishing/domain/content-rules.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
-import {
-  keepingMedia,
-  referencedMedia,
-} from "#publishing/domain/named-media.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
-import { PostContent } from "#publishing/domain/post-content.ts";
-import { PostPart } from "#publishing/domain/post-part.ts";
+import type { PostContent } from "#publishing/domain/post-content.ts";
 import {
   authorOf,
   createDraft,
@@ -31,8 +26,9 @@ import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
-import { AttachableMedia } from "./attachable-media.ts";
+import type { AttachableMedia } from "./attachable-media.ts";
 import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
+import { copyOf } from "./post-copies.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
@@ -45,11 +41,10 @@ import { TagStore } from "./tag-store.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { UnknownTags } from "./unknown-tags.ts";
-import { WorkspaceChannels } from "./workspace-channels.ts";
+import type { WorkspaceChannels } from "./workspace-channels.ts";
 import {
   findInWorkspace,
   lockInWorkspace,
-  optionsOfTargets,
   targetsOn,
 } from "./workspace-posts.ts";
 
@@ -310,82 +305,13 @@ export class PostDrafts extends Context.Service<
           withPorts
         );
 
-        const targets = yield* posts.targets(postId);
-        const { content } = post;
+        const copy = yield* copyOf(
+          actor,
+          post,
+          yield* posts.targets(postId)
+        ).pipe(withPorts);
 
-        // What the workspace still has of what the post refers to.
-        const refers = Effect.gen(function* stillThere() {
-          const channels = yield* WorkspaceChannels.use((workspace) =>
-            workspace.lookUp(
-              actor,
-              targets.map(({ channelId }) => channelId)
-            )
-          );
-
-          // Every file it depends on: those it shows, in any of its parts,
-          // and those its options name.
-          const referenced = referencedMedia(
-            content,
-            optionsOfTargets(
-              targets,
-              targets.map(({ channelId }) => channelId)
-            )
-          );
-
-          const media =
-            referenced.length === 0
-              ? []
-              : yield* AttachableMedia.use((attachable) =>
-                  attachable.lookUp(actor, referenced)
-                );
-
-          const tags = yield* TagStore.use((store) =>
-            store.list(actor.workspaceId)
-          );
-
-          return {
-            channelIds: channels.map(({ channelId }) => channelId),
-            mediaIds: new Set<string>(media.map(({ mediaId }) => mediaId)),
-            tagIds: new Set<string>(tags.map(({ id }) => id)),
-          };
-        }).pipe(withPorts);
-
-        const { channelIds, mediaIds, tagIds } = yield* refers;
-
-        // Each part's media and texts, of what the workspace still has.
-        const kept = (part: Pick<PostContent, "media" | "overrides">) => ({
-          media: part.media.filter(({ mediaId }) => mediaIds.has(mediaId)),
-          overrides: part.overrides.filter(({ channelId }) =>
-            channelIds.includes(channelId)
-          ),
-        });
-
-        return yield* create(actor, {
-          channelIds,
-          content: new PostContent({
-            ...kept(content),
-            followUps: content.followUps.map(
-              (part) =>
-                new PostPart({
-                  ...kept(part),
-                  delaySeconds: part.delaySeconds,
-                  text: part.text,
-                })
-            ),
-            text: content.text,
-          }),
-          // An option naming a file gone since is left out.
-          options: optionsOfTargets(targets, channelIds).map(
-            (chosen) =>
-              new ChannelOptions({
-                channelId: chosen.channelId,
-                options: keepingMedia(chosen.options, (mediaId) =>
-                  mediaIds.has(mediaId)
-                ),
-              })
-          ),
-          tagIds: post.tagIds.filter((tagId) => tagIds.has(tagId)),
-        }).pipe(
+        return yield* create(actor, copy).pipe(
           // Checked a moment ago: gone since, they are the server's to
           // answer for, not the request's.
           Effect.catchTags({

@@ -12,6 +12,7 @@ export type SettingsSection =
   | "members"
   | "partner"
   | "queues"
+  | "recycling"
   | "security"
   | "signatures"
   | "tags"
@@ -25,6 +26,7 @@ const paths: Readonly<Record<SettingsSection, string>> = {
   members: "/members",
   partner: "/partner",
   queues: "/queues",
+  recycling: "/recycling",
   security: "/security",
   signatures: "/signatures",
   tags: "/tags",

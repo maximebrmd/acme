@@ -24,9 +24,13 @@ class Post(UniversalBaseModel):
         typing.Optional[PostOrigin], FieldMetadata(alias="createdVia"), pydantic.Field(alias="createdVia")
     ] = None
     id: str
+    occurrence: typing.Optional[int] = None
     outcome: typing.Optional[PostOutcome] = None
     queue_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="queueId"), pydantic.Field(alias="queueId")
+    ] = None
+    recycling_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="recyclingId"), pydantic.Field(alias="recyclingId")
     ] = None
     schedule: typing.Optional[PostSchedule] = None
     scheduled_by: typing_extensions.Annotated[

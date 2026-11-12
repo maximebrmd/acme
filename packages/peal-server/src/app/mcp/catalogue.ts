@@ -70,14 +70,18 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "moderate_comment",
   "publish_post",
   "queue_post",
+  "recycle_post",
   "reply_to_comment",
   "repost_target",
   "request_changes",
   "reschedule_post",
   "reshuffle_queue",
+  "resume_recycling_rule",
   "schedule_post",
+  "stop_recycling_rule",
   "unpublish_post",
   "unschedule_post",
+  "update_recycling_rule",
   "withdraw_comment_reply",
 ]);
 

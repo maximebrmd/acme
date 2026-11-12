@@ -44,6 +44,8 @@ public final class SearchPostsRequest {
 
     private final Optional<String> queueId;
 
+    private final Optional<String> recyclingId;
+
     private final Optional<SearchPostsRequestRemoved> removed;
 
     private final Optional<PostSort> sort;
@@ -66,6 +68,7 @@ public final class SearchPostsRequest {
             Optional<PostOutcome> outcome,
             Optional<Platform> platform,
             Optional<String> queueId,
+            Optional<String> recyclingId,
             Optional<SearchPostsRequestRemoved> removed,
             Optional<PostSort> sort,
             Optional<PostStatus> status,
@@ -81,6 +84,7 @@ public final class SearchPostsRequest {
         this.outcome = outcome;
         this.platform = platform;
         this.queueId = queueId;
+        this.recyclingId = recyclingId;
         this.removed = removed;
         this.sort = sort;
         this.status = status;
@@ -134,6 +138,11 @@ public final class SearchPostsRequest {
         return queueId;
     }
 
+    @JsonProperty("recyclingId")
+    public Optional<String> getRecyclingId() {
+        return recyclingId;
+    }
+
     @JsonProperty("removed")
     public Optional<SearchPostsRequestRemoved> getRemoved() {
         return removed;
@@ -180,6 +189,7 @@ public final class SearchPostsRequest {
                 && outcome.equals(other.outcome)
                 && platform.equals(other.platform)
                 && queueId.equals(other.queueId)
+                && recyclingId.equals(other.recyclingId)
                 && removed.equals(other.removed)
                 && sort.equals(other.sort)
                 && status.equals(other.status)
@@ -199,6 +209,7 @@ public final class SearchPostsRequest {
                 this.outcome,
                 this.platform,
                 this.queueId,
+                this.recyclingId,
                 this.removed,
                 this.sort,
                 this.status,
@@ -235,6 +246,8 @@ public final class SearchPostsRequest {
 
         private Optional<String> queueId = Optional.empty();
 
+        private Optional<String> recyclingId = Optional.empty();
+
         private Optional<SearchPostsRequestRemoved> removed = Optional.empty();
 
         private Optional<PostSort> sort = Optional.empty();
@@ -259,6 +272,7 @@ public final class SearchPostsRequest {
             outcome(other.getOutcome());
             platform(other.getPlatform());
             queueId(other.getQueueId());
+            recyclingId(other.getRecyclingId());
             removed(other.getRemoved());
             sort(other.getSort());
             status(other.getStatus());
@@ -366,6 +380,17 @@ public final class SearchPostsRequest {
             return this;
         }
 
+        @JsonSetter(value = "recyclingId", nulls = Nulls.SKIP)
+        public Builder recyclingId(Optional<String> recyclingId) {
+            this.recyclingId = recyclingId;
+            return this;
+        }
+
+        public Builder recyclingId(String recyclingId) {
+            this.recyclingId = Optional.ofNullable(recyclingId);
+            return this;
+        }
+
         @JsonSetter(value = "removed", nulls = Nulls.SKIP)
         public Builder removed(Optional<SearchPostsRequestRemoved> removed) {
             this.removed = removed;
@@ -432,6 +457,7 @@ public final class SearchPostsRequest {
                     outcome,
                     platform,
                     queueId,
+                    recyclingId,
                     removed,
                     sort,
                     status,
@@ -451,6 +477,7 @@ public final class SearchPostsRequest {
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("queueId")
+                    || key.equalsIgnoreCase("recyclingId")
                     || key.equalsIgnoreCase("removed")
                     || key.equalsIgnoreCase("sort")
                     || key.equalsIgnoreCase("status")

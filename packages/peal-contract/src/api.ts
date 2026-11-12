@@ -33,6 +33,7 @@ import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
 import { QueuesApi } from "./queues.ts";
+import { RecyclingApi } from "./recycling.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
@@ -168,6 +169,60 @@ export { QueueNameTaken } from "./queue-name-taken.ts";
 export { QueueNotFound } from "./queue-not-found.ts";
 
 export { TooManyQueues } from "./too-many-queues.ts";
+
+export {
+  defaultRecyclingPageSize,
+  maxOccurrences,
+  maxRecyclingInterval,
+  maxRecyclingPageSize,
+  maxRecyclingRulesPerWorkspace,
+  maxRecyclingVariants,
+  minOccurrences,
+  NewRecyclingRuleSchema,
+  RecyclingApi,
+  RecyclingComingSchema,
+  RecyclingEndReasonSchema,
+  RecyclingIntervalSchema,
+  RecyclingResumeSchema,
+  RecyclingRuleChangeSchema,
+  RecyclingRulePageSchema,
+  RecyclingRuleSchema,
+  RecyclingStatusSchema,
+  RecyclingUnitSchema,
+  RecyclingVariantSchema,
+  recyclingComingShown,
+} from "./recycling.ts";
+
+export type {
+  NewRecyclingRule,
+  RecyclingComing,
+  RecyclingEndReason,
+  RecyclingInterval,
+  RecyclingResume,
+  RecyclingRule,
+  RecyclingRuleChange,
+  RecyclingRulePage,
+  RecyclingStatus,
+  RecyclingUnit,
+  RecyclingVariant,
+} from "./recycling.ts";
+
+export {
+  NotRecyclableReasonSchema,
+  PostNotRecyclable,
+} from "./post-not-recyclable.ts";
+
+export type { NotRecyclableReason } from "./post-not-recyclable.ts";
+
+export { RecyclingEndsTooSoon } from "./recycling-ends-too-soon.ts";
+
+export { RecyclingRuleEnded } from "./recycling-rule-ended.ts";
+
+export { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
+
+export { RecyclingVariantsInvalid } from "./recycling-variants-invalid.ts";
+
+export { TooManyRecyclingRules } from "./too-many-recycling-rules.ts";
 
 export {
   ActivityActorSchema,
@@ -775,6 +830,7 @@ export {
   NoticePageSchema,
   NoticeSchema,
   NoticesApi,
+  RecyclingNoticeReasonSchema,
   UnreadNoticesSchema,
   WebhookTurnOffReasonSchema,
 } from "./notices.ts";
@@ -785,6 +841,7 @@ export type {
   NoticeChannel,
   NoticeEvent,
   NoticePage,
+  RecyclingNoticeReason,
   UnreadNotices,
   WebhookTurnOffReason,
 } from "./notices.ts";
@@ -1817,6 +1874,7 @@ export class Api extends HttpApi.make("peal")
   .add(SignaturesApi)
   .add(ChannelSetsApi)
   .add(QueuesApi)
+  .add(RecyclingApi)
   .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.

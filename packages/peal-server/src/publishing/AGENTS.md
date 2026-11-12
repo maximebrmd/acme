@@ -860,3 +860,32 @@ publishing's schema, naming nobody: each goes with its workspace
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.
+- A recycling rule (`domain/recycling-rule.ts`, `Recycling`,
+  `publishing.recycling_rules`) makes a source post (scheduled, publishing
+  or finished, unpublished since or not) repeat. Its due instants count
+  from the source's time (`anchorAt`) in its zone (`recycling-interval.ts`:
+  `dueAt`, a month shorter than the day on its last day), never from the
+  step before; a missed one is skipped (`plannedAt`). The next post is
+  made once the latest one's time (`lastDueAt`) passed: one ahead. Each
+  occurrence is a new post (`posts.recycling_id` and `occurrence`, unique
+  together), copied with `copyOf` (`post-copies.ts`, which `duplicate`
+  shares) and sent by `PostScheduling.sendOccurrence`: no preset, signature
+  or default option filled in, `remember` instead of the duplicate refusal,
+  a queue's slot at or after the due instant (from a millisecond before),
+  the rule's lock (`claimed`) first in the transaction and the rule written
+  after the insert (`made`), so a send that rolls back leaves the rule as
+  it was. It acts as the starter now (`RecyclingActors`, backed by the
+  workspace context's `ActorsNow`): gone, or no longer able to ask, ends
+  the rule `starterGone`; `lockedOut` waits. Any other refusal ends it with
+  its reason and `RecyclingNotices` (`RecyclingEnded`, keyed by the rule
+  and its `resumptions`), in one transaction under the rule's lock.
+  `makeDue` (cron `publishing.recycling`, every ten minutes from 4) pages
+  by `(last_due_at, id)`, makes one occurrence a rule a run, skips a rule
+  another run holds (`FOR UPDATE SKIP LOCKED`), and the cron sets
+  `peal.publishing.recycling.overdue` (rules due over 30 minutes ago),
+  which an alert watches. Lock order: the rule's row, then the queue, the
+  post's row, the gate, the month and the duplicate guard's advisory lock;
+  nothing locks a rule after those. Deleting a queue leaves its rules
+  alone: the next run ends them `queueGone`. Erasure deletes rules before
+  posts; `forgetAuthor` clears `started_by`, and the next run ends the
+  rule.

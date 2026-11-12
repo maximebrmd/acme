@@ -32,6 +32,13 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
+- `ActorsNow` (`application/actors-now.ts`) is who someone a job acts for
+  is now, from the ids it kept (a member, an application's grant read with
+  `ConnectedAppStore.grantIn`, a workspace's or a partner's key, expiry
+  checked), resolved through `ResolveMember`: publishing's recycling rules
+  act through it. `standingAfter` there is the one place that says what
+  each `AccessDenied` reason means to such a job (gone, or `lockedOut`,
+  which waits).
 - API keys belong to workspaces, never carry more than their creator holds
   nor what only a person in their own session uses (`personOnlyPermissions`:
   `ads:authorize` and `organization:secure`, refused with

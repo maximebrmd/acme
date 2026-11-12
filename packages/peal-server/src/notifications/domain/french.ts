@@ -293,6 +293,24 @@ export const french: EmailCatalog = {
     one: "Il vous reste {count} code de secours.",
     other: "Il vous reste {count} codes de secours.",
   },
+  recyclingEndReasons: {
+    contentRejected:
+      "une plateforme refuse ce que dirait la prochaine publication.",
+    noChannels: "aucun de ses canaux n’est plus connecté.",
+    planLimit: "l’offre n’a plus de place pour des publications ce mois-là.",
+    queueFull: "sa file d’attente n’a plus de créneau libre.",
+    queueGone: "sa file d’attente a été supprimée.",
+    sourceGone: "la publication qu’elle répète a été supprimée.",
+    starterGone:
+      "la personne qui l’a lancée ne peut plus y programmer de publications.",
+  },
+  recyclingEnded: {
+    action: "Ouvrir les répétitions",
+    body: "Une publication de {workspaceName} ne se répète plus : {reason} Les publications déjà créées restent telles quelles. Une fois le problème réglé, reprenez la répétition ou relancez-la depuis les répétitions, dans les réglages de l’espace de travail.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez lancé cette répétition dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Une publication ne se répète plus",
+  },
   renewalDeadline: "Date limite de non-reconduction : {renewsAt}",
   resetPassword: {
     action: "Choisir un nouveau mot de passe",

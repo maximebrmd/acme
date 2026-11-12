@@ -98,8 +98,10 @@ public class EnqueueTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -317,8 +319,10 @@ public class EnqueueTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"

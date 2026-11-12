@@ -8,19 +8,20 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .recycling_variants_invalid_encoded_variants_item import RecyclingVariantsInvalidEncodedVariantsItem
 
 
-class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
+class UnprocessableEntityErrorBody_RecyclingEndsTooSoon(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["UnknownChannels"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "UnknownChannels"
+        typing.Literal["RecyclingEndsTooSoon"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "RecyclingEndsTooSoon"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    channel_ids: typing_extensions.Annotated[
-        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    first_due_at: typing_extensions.Annotated[
+        str, FieldMetadata(alias="firstDueAt"), pydantic.Field(alias="firstDueAt")
     ]
 
     if IS_PYDANTIC_V2:
@@ -33,16 +34,16 @@ class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class UnprocessableEntityErrorBody_InvalidTimeZone(UniversalBaseModel):
+class UnprocessableEntityErrorBody_RecyclingVariantsInvalid(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["InvalidTimeZone"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "InvalidTimeZone"
+        typing.Literal["RecyclingVariantsInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "RecyclingVariantsInvalid"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    time_zone: typing_extensions.Annotated[str, FieldMetadata(alias="timeZone"), pydantic.Field(alias="timeZone")]
+    variants: typing.List[RecyclingVariantsInvalidEncodedVariantsItem]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -55,6 +56,8 @@ class UnprocessableEntityErrorBody_InvalidTimeZone(UniversalBaseModel):
 
 
 UnprocessableEntityErrorBody = typing_extensions.Annotated[
-    typing.Union[UnprocessableEntityErrorBody_UnknownChannels, UnprocessableEntityErrorBody_InvalidTimeZone],
+    typing.Union[
+        UnprocessableEntityErrorBody_RecyclingEndsTooSoon, UnprocessableEntityErrorBody_RecyclingVariantsInvalid
+    ],
     pydantic.Field(discriminator="type"),
 ]

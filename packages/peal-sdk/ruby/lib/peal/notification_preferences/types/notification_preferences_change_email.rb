@@ -18,6 +18,8 @@ module Peal
 
         field :post_unconfirmed, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "postUnconfirmed"
 
+        field :recycling_ended, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "recyclingEnded"
+
         field :webhook_failing, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "webhookFailing"
       end
     end

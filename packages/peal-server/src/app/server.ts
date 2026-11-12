@@ -87,6 +87,7 @@ import {
   PostsApiLive,
   PublishingLive,
   QueuesApiLive,
+  RecyclingApiLive,
   SignaturesApiLive,
   TagsApiLive,
   TikTokApiLive,
@@ -156,6 +157,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   SignaturesApiLive,
   ChannelSetsApiLive,
   QueuesApiLive,
+  RecyclingApiLive,
   ChannelDefaultsApiLive,
   AdsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));

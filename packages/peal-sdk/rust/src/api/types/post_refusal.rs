@@ -19,8 +19,16 @@ pub enum PostRefusal {
 
     #[non_exhaustive]
     UnknownChannels {
-        #[serde(flatten)]
-        data: UnknownChannelsEncoded,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(rename = "channelIds")]
+        #[serde(default)]
+        channel_ids: Vec<String>,
     },
 
     #[non_exhaustive]
@@ -50,8 +58,16 @@ pub enum PostRefusal {
 
     #[non_exhaustive]
     InvalidTimeZone {
-        #[serde(flatten)]
-        data: InvalidTimeZoneEncoded,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(rename = "timeZone")]
+        #[serde(default)]
+        time_zone: String,
     },
 
     #[non_exhaustive]
@@ -180,8 +196,13 @@ impl PostRefusal {
         }
     }
 
-    pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
-        Self::UnknownChannels { data }
+    pub fn unknown_channels(channel_ids: Vec<String>) -> Self {
+        Self::UnknownChannels {
+            code: None,
+            message: None,
+            request_id: None,
+            channel_ids,
+        }
     }
 
     pub fn unknown_media(media_ids: Vec<String>) -> Self {
@@ -201,8 +222,13 @@ impl PostRefusal {
         }
     }
 
-    pub fn invalid_time_zone(data: InvalidTimeZoneEncoded) -> Self {
-        Self::InvalidTimeZone { data }
+    pub fn invalid_time_zone(time_zone: String) -> Self {
+        Self::InvalidTimeZone {
+            code: None,
+            message: None,
+            request_id: None,
+            time_zone,
+        }
     }
 
     pub fn plan_limit_reached(data: PlanLimitReachedEncoded) -> Self {
@@ -323,6 +349,48 @@ impl PostRefusal {
         }
     }
 
+    pub fn unknown_channels_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code: Some(code),
+            message,
+            request_id,
+            channel_ids,
+        }
+    }
+
+    pub fn unknown_channels_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code,
+            message: Some(message),
+            request_id,
+            channel_ids,
+        }
+    }
+
+    pub fn unknown_channels_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code,
+            message,
+            request_id: Some(request_id),
+            channel_ids,
+        }
+    }
+
     pub fn unknown_media_with_code(
         code: String,
         message: Option<String>,
@@ -398,6 +466,48 @@ impl PostRefusal {
             code,
             message,
             request_id: Some(request_id),
+        }
+    }
+
+    pub fn invalid_time_zone_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code: Some(code),
+            message,
+            request_id,
+            time_zone,
+        }
+    }
+
+    pub fn invalid_time_zone_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code,
+            message: Some(message),
+            request_id,
+            time_zone,
+        }
+    }
+
+    pub fn invalid_time_zone_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code,
+            message,
+            request_id: Some(request_id),
+            time_zone,
         }
     }
 

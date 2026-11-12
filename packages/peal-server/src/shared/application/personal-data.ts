@@ -115,8 +115,9 @@ export interface AuthoredPostRecord extends PostRecord {
 
 /**
  * What a workspace saved to write and file its posts: its tags, its
- * signatures, its channel sets, its channels' default options and its
- * queues. Workspace content, naming nobody.
+ * signatures, its channel sets, its channels' default options, its queues
+ * and the rules that repeat its posts, with their text variants.
+ * Workspace content, naming nobody.
  */
 export interface SavedItemsRecord {
   readonly channelDefaults: readonly {
@@ -142,6 +143,25 @@ export interface SavedItemsRecord {
     /** As stored: plain JSON, weekdays and wall-clock times. */
     readonly slots: unknown;
     readonly timeZone: string;
+  }[];
+  readonly recyclingRules: readonly {
+    readonly anchorAt: DateTime.Utc;
+    readonly count: number | null;
+    readonly createdAt: DateTime.Utc;
+    readonly endedReason: string | null;
+    readonly id: string;
+    /** As stored: plain JSON, a count of days, weeks or months. */
+    readonly interval: unknown;
+    readonly lastDueAt: DateTime.Utc;
+    readonly made: number;
+    readonly nextDueAt: DateTime.Utc | null;
+    readonly queueId: string | null;
+    readonly sourcePostId: string;
+    readonly status: string;
+    readonly timeZone: string;
+    readonly until: string | null;
+    /** As stored: plain JSON, each variant's text and texts by channel. */
+    readonly variants: unknown;
   }[];
   readonly signatures: readonly {
     readonly createdAt: DateTime.Utc;
@@ -601,6 +621,12 @@ export type NoticeEventRecord =
   | {
       readonly _tag: "AdConnectionReconnectRequired";
       readonly network: string;
+    }
+  | {
+      readonly _tag: "RecyclingEnded";
+      readonly reason: string;
+      readonly ruleId: string;
+      readonly sourcePostId: string;
     };
 
 /** An amount in cents of its currency. */
@@ -630,6 +656,7 @@ export interface PreferencesRecord {
     readonly postPublished: boolean;
     readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
+    readonly recyclingEnded: boolean;
     readonly webhookFailing: boolean;
   };
   readonly everyPost: boolean;

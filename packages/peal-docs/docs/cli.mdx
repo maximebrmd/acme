@@ -360,6 +360,23 @@ peal posts list --queue Weekdays
 - `peal post --queue <name-or-id>` puts a post on that queue's next free slot (`--queue=<name-or-id>` too), and `peal post --default-queue` on the default queue's. Each is one of `--at`, `--now`, `--queue` and `--default-queue`, and without `--channel` or `--set` the post goes to the queue's channels. With `--dry-run` it prints the slot it would take.
 - `peal posts queue` puts a draft, or a scheduled post, on a queue's next free slot (`--queue`, or the default). `peal posts list --queue` lists the posts a queue placed.
 
+## Repeating posts [#recycling]
+
+```sh
+peal recycling start <post-id> --every 2w --count 6 --variant "Open all summer, as before."
+peal recycling list --status active
+peal recycling show <rule-id>
+peal recycling update <rule-id> --until 2026-12-31 --variant "Another way to say it"
+peal recycling pause <rule-id>
+peal recycling resume <rule-id>
+peal recycling end <rule-id>
+peal posts list --recycling <rule-id>
+```
+
+- `peal recycling start` makes a scheduled or published post [repeat](/scheduling#recycling): `--every` takes a count and `d`, `w` or `m` (1d to 365d, 1w to 52w, 1m to 12m); `--count` the posts in all, this one counted (2 to 100); `--until` the last day; `--variant`, repeated, the texts said in turn after the post's, 10 at most; `--queue` a queue, by name or id. It prints the next three posts and the variant each says.
+- `peal recycling update` changes the count (`--no-count` takes it away), the end date (`--no-until`) or the variants (`--variant` replaces them all). `pause` and `resume` stop and restart it; `resume` also restarts a rule that ended for the plan's room, a refused text, its channels or its queue's slots. `end` stops it for good; the posts it made stay.
+- `peal posts list --recycling` lists the posts a rule made.
+
 ## Default options [#default-options]
 
 ```sh

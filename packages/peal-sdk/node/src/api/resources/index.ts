@@ -44,6 +44,8 @@ export * from "./posts/client/requests/index.js";
 export * from "./posts/types/index.js";
 export * as queues from "./queues/index.js";
 export * from "./queues/client/requests/index.js";
+export * as recycling from "./recycling/index.js";
+export * from "./recycling/client/requests/index.js";
 export * as review from "./review/index.js";
 export * from "./review/client/requests/index.js";
 export * as session from "./session/index.js";

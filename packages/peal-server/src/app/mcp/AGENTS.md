@@ -147,3 +147,10 @@
   none a header's value: `create_webhook` and `update_webhook` take
   `headers` (write-only, the whole list replaced), and answer
   `headerNames`.
+- Repeating posts: `recycle_post`, `update_recycling_rule` and
+  `resume_recycling_rule` (`PostTools`, `openWorld`, in `publishingTools`:
+  a rule publishes again without anyone being asked) and
+  `list_recycling_rules`, `get_recycling_rule` and `stop_recycling_rule`
+  (`SavedTools`; stopping takes post:schedule, so it is in
+  `publishingTools` too), their refusals in `recycling-refusals.ts`;
+  `list_posts` takes `recyclingId`. The CLI's are `peal recycling`.

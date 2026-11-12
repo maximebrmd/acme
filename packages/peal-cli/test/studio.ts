@@ -94,6 +94,7 @@ import type {
   Partner,
   Permission,
   Post,
+  RecyclingRule,
   PostContent,
   PostDraft,
   PostOrigin,
@@ -138,6 +139,7 @@ import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
 import type { StudioQueue } from "./studio-queues.ts";
+import { studioRecyclingOf } from "./studio-recycling.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -458,8 +460,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic draft about the spring catalogue."),
     createdVia: null,
     id: draftId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: null,
     scheduledBy: null,
     scheduledVia: null,
@@ -472,8 +476,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that goes out next week."),
     createdVia: null,
     id: scheduledId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -486,8 +492,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that waits. Out on Friday."),
     createdVia: null,
     id: awaitingId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: contributorId,
     scheduledVia: null,
@@ -500,8 +508,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that went out yesterday."),
     createdVia: null,
     id: finishedId,
+    occurrence: null,
     outcome: "failed",
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-08T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -760,6 +770,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postPublished: false,
       postReview: true,
       postUnconfirmed: true,
+      recyclingEnded: true,
       webhookFailing: true,
     },
     everyPost: false,
@@ -1074,6 +1085,8 @@ export interface StudioState {
   readonly media: readonly Media[];
   readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
+  /** The workspace's recycling rules, oldest first. */
+  readonly recyclingRules: readonly RecyclingRule[];
   /** The workspace's queues, oldest first. */
   readonly queues: readonly StudioQueue[];
   /** The posts made under an idempotency key, with the request's body. */
@@ -1171,6 +1184,7 @@ export const makeStudio = (
       policy: "contributorsAndApplications",
       posts,
       queues: studioQueues(mastodonId),
+      recyclingRules: [],
       sent: {},
       signatures,
       signingKeys: true,
@@ -2188,6 +2202,14 @@ const duplicatesOf = (
           .map((other) => ({ channelId, postId: other.id }))
       );
 
+// The studio's recycling rules, over its posts.
+const recyclingOfStudio = studioRecyclingOf({
+  allowed,
+  now: studioNow,
+  record,
+  workspaceId: studioId,
+});
+
 // The studio's queues, over what the rest of it holds.
 const queuesOfStudio = studioQueuesOf({
   allowed,
@@ -2347,8 +2369,10 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       content: written.content,
       createdVia: viaCommandLine,
       id,
+      occurrence: null,
       outcome: null,
       queueId: onQueue.queueId,
+      recyclingId: null,
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
@@ -2825,6 +2849,7 @@ export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
     queuesOfStudio.groupLive(studio),
+    recyclingOfStudio.groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
@@ -3035,8 +3060,10 @@ export const studioGroupsLive = (studio: Studio) =>
               content: written.content,
               createdVia: null,
               id,
+              occurrence: null,
               outcome: null,
               queueId: null,
+              recyclingId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -3130,8 +3157,10 @@ export const studioGroupsLive = (studio: Studio) =>
               },
               createdVia: null,
               id,
+              occurrence: null,
               outcome: null,
               queueId: null,
+              recyclingId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,

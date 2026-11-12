@@ -34,9 +34,13 @@ public final class Post {
 
     private final String id;
 
+    private final Optional<Integer> occurrence;
+
     private final Optional<PostOutcome> outcome;
 
     private final Optional<String> queueId;
+
+    private final Optional<String> recyclingId;
 
     private final Optional<PostSchedule> schedule;
 
@@ -59,8 +63,10 @@ public final class Post {
             PostContent content,
             Optional<PostOrigin> createdVia,
             String id,
+            Optional<Integer> occurrence,
             Optional<PostOutcome> outcome,
             Optional<String> queueId,
+            Optional<String> recyclingId,
             Optional<PostSchedule> schedule,
             Optional<String> scheduledBy,
             Optional<PostOrigin> scheduledVia,
@@ -73,8 +79,10 @@ public final class Post {
         this.content = content;
         this.createdVia = createdVia;
         this.id = id;
+        this.occurrence = occurrence;
         this.outcome = outcome;
         this.queueId = queueId;
+        this.recyclingId = recyclingId;
         this.schedule = schedule;
         this.scheduledBy = scheduledBy;
         this.scheduledVia = scheduledVia;
@@ -112,6 +120,14 @@ public final class Post {
     }
 
     @JsonIgnore
+    public Optional<Integer> getOccurrence() {
+        if (occurrence == null) {
+            return Optional.empty();
+        }
+        return occurrence;
+    }
+
+    @JsonIgnore
     public Optional<PostOutcome> getOutcome() {
         if (outcome == null) {
             return Optional.empty();
@@ -125,6 +141,14 @@ public final class Post {
             return Optional.empty();
         }
         return queueId;
+    }
+
+    @JsonIgnore
+    public Optional<String> getRecyclingId() {
+        if (recyclingId == null) {
+            return Optional.empty();
+        }
+        return recyclingId;
     }
 
     @JsonIgnore
@@ -184,6 +208,12 @@ public final class Post {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("occurrence")
+    private Optional<Integer> _getOccurrence() {
+        return occurrence;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("outcome")
     private Optional<PostOutcome> _getOutcome() {
         return outcome;
@@ -193,6 +223,12 @@ public final class Post {
     @JsonProperty("queueId")
     private Optional<String> _getQueueId() {
         return queueId;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("recyclingId")
+    private Optional<String> _getRecyclingId() {
+        return recyclingId;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -229,8 +265,10 @@ public final class Post {
                 && content.equals(other.content)
                 && createdVia.equals(other.createdVia)
                 && id.equals(other.id)
+                && occurrence.equals(other.occurrence)
                 && outcome.equals(other.outcome)
                 && queueId.equals(other.queueId)
+                && recyclingId.equals(other.recyclingId)
                 && schedule.equals(other.schedule)
                 && scheduledBy.equals(other.scheduledBy)
                 && scheduledVia.equals(other.scheduledVia)
@@ -247,8 +285,10 @@ public final class Post {
                 this.content,
                 this.createdVia,
                 this.id,
+                this.occurrence,
                 this.outcome,
                 this.queueId,
+                this.recyclingId,
                 this.schedule,
                 this.scheduledBy,
                 this.scheduledVia,
@@ -300,6 +340,12 @@ public final class Post {
 
         _FinalStage createdVia(Nullable<PostOrigin> createdVia);
 
+        _FinalStage occurrence(Optional<Integer> occurrence);
+
+        _FinalStage occurrence(Integer occurrence);
+
+        _FinalStage occurrence(Nullable<Integer> occurrence);
+
         _FinalStage outcome(Optional<PostOutcome> outcome);
 
         _FinalStage outcome(PostOutcome outcome);
@@ -311,6 +357,12 @@ public final class Post {
         _FinalStage queueId(String queueId);
 
         _FinalStage queueId(Nullable<String> queueId);
+
+        _FinalStage recyclingId(Optional<String> recyclingId);
+
+        _FinalStage recyclingId(String recyclingId);
+
+        _FinalStage recyclingId(Nullable<String> recyclingId);
 
         _FinalStage schedule(Optional<PostSchedule> schedule);
 
@@ -367,9 +419,13 @@ public final class Post {
 
         private Optional<PostSchedule> schedule = Optional.empty();
 
+        private Optional<String> recyclingId = Optional.empty();
+
         private Optional<String> queueId = Optional.empty();
 
         private Optional<PostOutcome> outcome = Optional.empty();
+
+        private Optional<Integer> occurrence = Optional.empty();
 
         private Optional<PostOrigin> createdVia = Optional.empty();
 
@@ -385,8 +441,10 @@ public final class Post {
             content(other.getContent());
             createdVia(other.getCreatedVia());
             id(other.getId());
+            occurrence(other.getOccurrence());
             outcome(other.getOutcome());
             queueId(other.getQueueId());
+            recyclingId(other.getRecyclingId());
             schedule(other.getSchedule());
             scheduledBy(other.getScheduledBy());
             scheduledVia(other.getScheduledVia());
@@ -555,6 +613,31 @@ public final class Post {
         }
 
         @java.lang.Override
+        public _FinalStage recyclingId(Nullable<String> recyclingId) {
+            if (recyclingId.isNull()) {
+                this.recyclingId = null;
+            } else if (recyclingId.isEmpty()) {
+                this.recyclingId = Optional.empty();
+            } else {
+                this.recyclingId = Optional.of(recyclingId.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage recyclingId(String recyclingId) {
+            this.recyclingId = Optional.ofNullable(recyclingId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "recyclingId", nulls = Nulls.SKIP)
+        public _FinalStage recyclingId(Optional<String> recyclingId) {
+            this.recyclingId = recyclingId;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage queueId(Nullable<String> queueId) {
             if (queueId.isNull()) {
                 this.queueId = null;
@@ -601,6 +684,31 @@ public final class Post {
         @JsonSetter(value = "outcome", nulls = Nulls.SKIP)
         public _FinalStage outcome(Optional<PostOutcome> outcome) {
             this.outcome = outcome;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage occurrence(Nullable<Integer> occurrence) {
+            if (occurrence.isNull()) {
+                this.occurrence = null;
+            } else if (occurrence.isEmpty()) {
+                this.occurrence = Optional.empty();
+            } else {
+                this.occurrence = Optional.of(occurrence.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage occurrence(Integer occurrence) {
+            this.occurrence = Optional.ofNullable(occurrence);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "occurrence", nulls = Nulls.SKIP)
+        public _FinalStage occurrence(Optional<Integer> occurrence) {
+            this.occurrence = occurrence;
             return this;
         }
 
@@ -661,8 +769,10 @@ public final class Post {
                     content,
                     createdVia,
                     id,
+                    occurrence,
                     outcome,
                     queueId,
+                    recyclingId,
                     schedule,
                     scheduledBy,
                     scheduledVia,
@@ -679,8 +789,10 @@ public final class Post {
                     || key.equalsIgnoreCase("content")
                     || key.equalsIgnoreCase("createdVia")
                     || key.equalsIgnoreCase("id")
+                    || key.equalsIgnoreCase("occurrence")
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("queueId")
+                    || key.equalsIgnoreCase("recyclingId")
                     || key.equalsIgnoreCase("schedule")
                     || key.equalsIgnoreCase("scheduledBy")
                     || key.equalsIgnoreCase("scheduledVia")

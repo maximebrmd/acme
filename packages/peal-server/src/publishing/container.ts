@@ -36,6 +36,9 @@ import { PostTags } from "#publishing/application/post-tags.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { Queues } from "#publishing/application/queues.ts";
+import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
+import { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
+import { Recycling } from "#publishing/application/recycling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
@@ -51,6 +54,10 @@ import {
   UnreadComments,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import {
+  IdempotencyRetentionCron,
+  RecyclingCron,
+} from "#publishing/infrastructure/crons.ts";
 import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
 import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
@@ -64,6 +71,7 @@ import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-p
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
 import { DrizzleQueueStore } from "#publishing/infrastructure/drizzle-queue-store.ts";
 import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
+import { DrizzleRecyclingStore } from "#publishing/infrastructure/drizzle-recycling-store.ts";
 import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signature-store.ts";
 import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
@@ -77,6 +85,7 @@ import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
+import { NotifiedRecyclingNotices } from "#publishing/infrastructure/notified-recycling-notices.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
@@ -94,6 +103,7 @@ import { ChangeLivePostV1Live } from "#publishing/infrastructure/workflows/chang
 import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { WorkspaceRecyclingActors } from "#publishing/infrastructure/workspace-recycling-actors.ts";
 import { XThreadsLive } from "#publishing/infrastructure/x-threads.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
@@ -103,6 +113,19 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 // holds a post (a boost), who hears how a change ended, and the channels'
 // credentials, which say whether a channel can be used.
 type LiveServices = LivePostEvents | LivePostHolds | PlatformCredentials;
+
+// What recycling rules need beside publishing's own adapters: who a rule's
+// starter is now, and who hears that a rule ended.
+type RecyclingServices = RecyclingActors | RecyclingNotices;
+
+/**
+ * For tests that make no occurrence: every starter is gone, and nobody
+ * hears that a rule ended.
+ */
+export const RecyclingUnused = Layer.merge(
+  RecyclingActors.none,
+  RecyclingNotices.none
+);
 
 /**
  * For tests that change no live post: nothing holds a post, nobody hears,
@@ -115,7 +138,7 @@ export const LivePostsUnused = Layer.mergeAll(
   PlatformCredentials.unusable
 );
 
-const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5>(
+const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
@@ -124,10 +147,11 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5>(
   accounts: Layer.Layer<AccountRules, E2, R2>,
   origins: Layer.Layer<PostOrigins, E3, R3>,
   events: Layer.Layer<PostEvents | H, never, R4>,
-  live: Layer.Layer<LiveServices, never, R5>
+  live: Layer.Layer<LiveServices, never, R5>,
+  recycling: Layer.Layer<RecyclingServices, never, R6>
 ) =>
   Layer.mergeAll(
-    PostBatches.layer.pipe(
+    Layer.merge(PostBatches.layer, Recycling.layer).pipe(
       Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
     ),
     PostDrafts.layer,
@@ -158,6 +182,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5>(
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
         DrizzleQueueStore,
+        DrizzleRecyclingStore,
         DrizzleSignatureStore,
         DrizzleTagStore,
         DrizzleWorkspacePostStore,
@@ -166,6 +191,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5>(
         WorkflowPublicationScheduler,
         WorkflowLivePostJobs,
         live,
+        recycling,
         references,
         accounts,
         origins,
@@ -203,6 +229,7 @@ export const publishingWith = <
   R3 = never,
   R4 = never,
   R5 = never,
+  R6 = never,
 >(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
@@ -212,9 +239,10 @@ export const publishingWith = <
   accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
   origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
   events: Layer.Layer<PostEvents, never, R4> = PostEvents.none,
-  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused
+  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
+  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused
 ) =>
-  publishingOver(references, accounts, origins, events, live).pipe(
+  publishingOver(references, accounts, origins, events, live, recycling).pipe(
     Layer.provideMerge(ApprovalGate.open)
   );
 
@@ -224,7 +252,17 @@ export const publishingWith = <
  * posts, and may bring what a test reads that with too; `live` is what
  * changes of live posts need (by default, nothing can change one).
  */
-export const publishingBehind = <G, E3, R3, E, R, H, R4, R5 = never>(
+export const publishingBehind = <
+  G,
+  E3,
+  R3,
+  E,
+  R,
+  H,
+  R4,
+  R5 = never,
+  R6 = never,
+>(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
@@ -232,14 +270,16 @@ export const publishingBehind = <G, E3, R3, E, R, H, R4, R5 = never>(
     R
   >,
   events: Layer.Layer<PostEvents | H, never, R4>,
-  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused
+  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
+  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused
 ) =>
   publishingOver(
     references,
     AccountRules.none,
     PostOrigins.unnamed,
     events,
-    live
+    live,
+    recycling
   ).pipe(Layer.provideMerge(gate));
 
 /**
@@ -276,7 +316,14 @@ export const PublishingLive = publishingOver(
   // Changes of live posts: the channels context says whether a channel
   // can be used, the ads context which posts a boost shows, and the
   // webhooks, analytics and the inbox hear how a change ended.
-  Layer.mergeAll(ChannelAccessCredentials, AdsLivePostHolds, ToldLivePostEvents)
+  Layer.mergeAll(
+    ChannelAccessCredentials,
+    AdsLivePostHolds,
+    ToldLivePostEvents
+  ),
+  // Recycling rules: the workspace context says who a starter is now, and
+  // the notices tell that a rule ended.
+  Layer.merge(WorkspaceRecyclingActors, NotifiedRecyclingNotices)
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.
   Layer.provide(XThreadsLive),
@@ -333,6 +380,8 @@ export { SignaturesHandlers as SignaturesApiLive } from "#publishing/api/signatu
 export { ChannelSetsHandlers as ChannelSetsApiLive } from "#publishing/api/channel-sets.ts";
 
 export { QueuesHandlers as QueuesApiLive } from "#publishing/api/queues.ts";
+
+export { RecyclingHandlers as RecyclingApiLive } from "#publishing/api/recycling.ts";
 
 export { ChannelDefaultsHandlers as ChannelDefaultsApiLive } from "#publishing/api/channel-defaults.ts";
 
@@ -465,5 +514,11 @@ export {
   UnreadComments,
 } from "#publishing/infrastructure/channel-gate.ts";
 
-/** The idempotency keys' daily retention. Needs PostScheduling. */
-export { IdempotencyRetentionCron as PublishingCronsLive } from "#publishing/infrastructure/crons.ts";
+/**
+ * The idempotency keys' daily retention, and the recycling rules'
+ * occurrences every ten minutes. Needs PostScheduling and Recycling.
+ */
+export const PublishingCronsLive = Layer.merge(
+  IdempotencyRetentionCron,
+  RecyclingCron
+);

@@ -43,7 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
-  `channel-sets`, `queues`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  `channel-sets`, `queues`, `recycling`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -178,6 +178,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   the default preselected), and puts the saved draft or the scheduled post
   on the queue with `posts.enqueue`; the calendar marks queued posts and
   filters by queue, and `PostQueueLine` names a post's queue.
+- Repeating posts have a settings page (`…/settings/recycling`, read with
+  post:read, paused, resumed and stopped with post:schedule; `?rule=`
+  marks the rule a `RecyclingEnded` notice opened it for), views in
+  `components/recycling/recycling-views.tsx`, atoms in
+  `#recycling/atoms.ts`, the form's request in `#recycling/rules.ts`.
+  `PostRepeat`, on a post's page (scheduled in the composer, or out in
+  `PostDetail`), shows the rule that repeats or made the post, or offers
+  Repeat to a member with post:schedule; a new post repeats once it is
+  scheduled, from its page. Refusals are explained from the
+  `Recycling.errors` catalogue (`#recycling/rule-error.ts`).
 - The composer takes them through components of their own, each wired
   with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
   which leaves out and counts the channels disconnected since),

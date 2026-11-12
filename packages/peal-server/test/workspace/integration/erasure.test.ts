@@ -180,6 +180,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.queues": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.queues WHERE workspace_id = ${id}`,
+  "publishing.recycling_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.recycling_rules WHERE workspace_id = ${id}`,
   "publishing.signatures": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.signatures WHERE workspace_id = ${id}`,
   "publishing.tags": (sql, id) =>
@@ -309,6 +311,10 @@ const userRows = {
   // them.
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
+  // The rules they started stay with the workspace, without them: the
+  // next run ends each, its starter gone.
+  "publishing.recycling_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.recycling_rules WHERE started_by = ${id}`,
   // What they wrote and decided in reviews stays with its workspace,
   // without them, as do the links and the policy they made.
   "review.approval_requests": (sql, id) =>
@@ -458,6 +464,10 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO publishing.queues (id, workspace_id, name, name_key, time_zone, slots, channel_ids, is_default, created_at)
     VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', 'Europe/Paris', '[{"day":"monday","time":{"hour":9,"minute":0}}]'::jsonb, ARRAY[${savedChannel}]::uuid[], true, now())`;
+
+  // A rule that repeats the post, started by the person.
+  yield* sql`INSERT INTO publishing.recycling_rules (id, workspace_id, source_post_id, interval, time_zone, anchor_at, variants, status, made, last_due_at, next_due_at, started_by, started_via, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, '{"count":1,"unit":"weeks"}'::jsonb, 'Europe/Paris', now(), '[{"overrides":[],"text":"A synthetic variant"}]'::jsonb, 'active', 1, now(), now() + interval '7 days', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
 
   // The key of the request that made it, as `posts.send` keeps it.
   yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)

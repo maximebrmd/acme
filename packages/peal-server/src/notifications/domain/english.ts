@@ -286,6 +286,22 @@ export const english: EmailCatalog = {
     one: "You have {count} recovery code left.",
     other: "You have {count} recovery codes left.",
   },
+  recyclingEndReasons: {
+    contentRejected: "a platform refuses what the next post would say.",
+    noChannels: "none of its channels is connected any more.",
+    planLimit: "the plan has no room left for posts that month.",
+    queueFull: "its queue has no free slot.",
+    queueGone: "its queue was deleted.",
+    sourceGone: "the post it repeats was deleted.",
+    starterGone: "whoever started it can no longer schedule posts there.",
+  },
+  recyclingEnded: {
+    action: "Open the repeating posts",
+    body: "A post of {workspaceName} no longer repeats: {reason} The posts it already made stay as they are. Once that is put right, resume it or start it again from the repeating posts in the workspace’s settings.",
+    ignore:
+      "You receive this email because you started this repeat in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A post no longer repeats",
+  },
   renewalDeadline: "Last day to refuse the renewal: {renewsAt}",
   resetPassword: {
     action: "Choose a new password",

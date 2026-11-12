@@ -584,6 +584,32 @@ const ExportedSavedItemsSchema = Schema.Struct({
       timeZone: Schema.String,
     })
   ),
+  // The rules that repeat a post: the source, the interval and ending,
+  // the text variants they take turns with, where they are, and when the
+  // next post is due. Who started one is not said.
+  recyclingRules: Schema.Array(
+    Schema.Struct({
+      anchorAt: instant,
+      count: nullable(Schema.Int),
+      createdAt: instant,
+      endedReason: nullable(Schema.String),
+      id: Schema.String,
+      // As stored: a count of days, weeks or months.
+      interval: Schema.Unknown,
+      lastDueAt: instant,
+      made: Schema.Int,
+      nextDueAt: nullable(instant),
+      queueId: nullable(Schema.String),
+      sourcePostId: Schema.String,
+      // `active`, `paused` or `ended`.
+      status: Schema.String,
+      timeZone: Schema.String,
+      // A date, as YYYY-MM-DD.
+      until: nullable(Schema.String),
+      // As stored: each variant's text and its texts by channel.
+      variants: Schema.Unknown,
+    })
+  ),
   signatures: Schema.Array(
     Schema.Struct({
       createdAt: instant,
@@ -678,7 +704,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
-  // Its tags, signatures, channel sets, queues and channels' default options.
+  // Its tags, signatures, channel sets, queues, recycling rules and
+  // channels' default options.
   saved: ExportedSavedItemsSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),

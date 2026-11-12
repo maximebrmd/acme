@@ -422,6 +422,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_post: [true, false, true, false],
           get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
+          get_recycling_rule: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           get_usage: [true, false, true, false],
           import_media: [false, false, false, true],
@@ -443,6 +444,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_post_changes: [true, false, true, false],
           list_posts: [true, false, true, false],
           list_queues: [true, false, true, false],
+          list_recycling_rules: [true, false, true, false],
           list_signatures: [true, false, true, false],
           list_tags: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
@@ -456,6 +458,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           publish_post: [false, false, false, true],
           queue_post: [false, true, true, true],
           quote_boost: [true, false, true, false],
+          recycle_post: [false, false, false, true],
           // It takes the place of the name the channel had.
           // Peal calls receivers outside it again.
           redeliver_webhooks: [false, false, false, true],
@@ -467,6 +470,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           reschedule_post: [false, true, true, true],
           reshuffle_queue: [false, false, true, false],
           resume_boost: [false, true, true, true],
+          resume_recycling_rule: [false, false, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
@@ -477,6 +481,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // They replace the options the channel had.
           set_channel_defaults: [false, true, true, false],
           stop_boost: [false, true, true, true],
+          stop_recycling_rule: [false, true, true, false],
           // The same tags again change nothing more, and remove nothing
           // but a label.
           tag_post: [false, false, true, false],
@@ -486,6 +491,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
           update_queue: [false, true, true, false],
+          update_recycling_rule: [false, false, true, true],
           update_signature: [false, true, true, false],
           update_tag: [false, true, true, false],
           // Its address may name another server outside Peal.
@@ -605,6 +611,9 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["create_queue", "workspace:write"],
               ["update_queue", "workspace:write"],
               ["delete_queue", "workspace:write"],
+              ["list_recycling_rules", "workspace:read"],
+              ["get_recycling_rule", "workspace:read"],
+              ["stop_recycling_rule", "workspace:publish"],
             ]
           );
 
@@ -725,6 +734,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             moderate_comment: { action: "like", commentId: postId },
             publish_post: { postId },
             queue_post: { postId },
+            recycle_post: { every: { count: 1, unit: "weeks" }, postId },
             reply_to_comment: { commentId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
             request_changes: { ...decision, comment: "Never read." },
@@ -734,13 +744,16 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               timeZone: "Europe/Paris",
             },
             reshuffle_queue: { queue: postId },
+            resume_recycling_rule: { ruleId: postId },
             schedule_post: {
               at: "2030-01-01T10:00:00Z",
               postId,
               timeZone: "Europe/Paris",
             },
+            stop_recycling_rule: { ruleId: postId },
             unpublish_post: { postId },
             unschedule_post: { postId },
+            update_recycling_rule: { paused: true, ruleId: postId },
             withdraw_comment_reply: { replyId: postId },
           } satisfies Record<string, ToolArguments>;
 

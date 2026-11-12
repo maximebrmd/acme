@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type UnprocessableEntityErrorBody = 
-    | Peal.UnprocessableEntityErrorBody.UnknownChannels
-    | Peal.UnprocessableEntityErrorBody.InvalidTimeZone;
+    | Peal.UnprocessableEntityErrorBody.RecyclingEndsTooSoon
+    | Peal.UnprocessableEntityErrorBody.RecyclingVariantsInvalid;
 
 export namespace UnprocessableEntityErrorBody {
-    export interface UnknownChannels extends Peal.UnknownChannelsEncoded {
-        _tag: "UnknownChannels";
+    export interface RecyclingEndsTooSoon extends Peal.RecyclingEndsTooSoonEncoded {
+        _tag: "RecyclingEndsTooSoon";
     }
 
-    export interface InvalidTimeZone extends Peal.InvalidTimeZoneEncoded {
-        _tag: "InvalidTimeZone";
+    export interface RecyclingVariantsInvalid extends Peal.RecyclingVariantsInvalidEncoded {
+        _tag: "RecyclingVariantsInvalid";
     }
 }

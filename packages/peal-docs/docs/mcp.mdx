@@ -226,6 +226,8 @@ A workspace saves three things to write its posts with, and `create_draft`, `upd
 
 **Queues.** `create_post`, `create_posts` and `validate_post` take `when: { "_tag": "queue", "queue": "…" }` beside `now` and `at`: the post takes the next free slot of the queue named by its id or its name, or of the default queue when `queue` is left out, decided when the call is received; with no `channelIds` and no `channelSets`, it goes to the queue's channels. `validate_post` answers that slot in `queueSlot` ([Queues](/scheduling#queues)).
 
+**Repeating posts.** `recycle_post` makes a scheduled or published post [repeat](/scheduling#recycling) (`every`, `count` or `until`, `variants`, `queueId`): it publishes again, in public, without anyone being asked each time, so a client calls it only when you asked for the post to repeat. `update_recycling_rule` changes or pauses a rule and `resume_recycling_rule` sets one going again; all three take `workspace:publish`. `list_recycling_rules` and `get_recycling_rule` read the rules, with their next posts, and `stop_recycling_rule` ends one (`workspace:publish` too); `list_posts` takes `recyclingId`.
+
 Annotations are hints a client may show you; the permission checks are the server's.
 
 ### Comments [#inbox-tools]

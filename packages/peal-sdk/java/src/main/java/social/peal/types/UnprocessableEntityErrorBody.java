@@ -26,36 +26,36 @@ public final class UnprocessableEntityErrorBody {
         return value.visit(visitor);
     }
 
-    public static UnprocessableEntityErrorBody unknownChannels(UnknownChannelsEncoded value) {
-        return new UnprocessableEntityErrorBody(new UnknownChannelsValue(value));
+    public static UnprocessableEntityErrorBody recyclingEndsTooSoon(RecyclingEndsTooSoonEncoded value) {
+        return new UnprocessableEntityErrorBody(new RecyclingEndsTooSoonValue(value));
     }
 
-    public static UnprocessableEntityErrorBody invalidTimeZone(InvalidTimeZoneEncoded value) {
-        return new UnprocessableEntityErrorBody(new InvalidTimeZoneValue(value));
+    public static UnprocessableEntityErrorBody recyclingVariantsInvalid(RecyclingVariantsInvalidEncoded value) {
+        return new UnprocessableEntityErrorBody(new RecyclingVariantsInvalidValue(value));
     }
 
-    public boolean isUnknownChannels() {
-        return value instanceof UnknownChannelsValue;
+    public boolean isRecyclingEndsTooSoon() {
+        return value instanceof RecyclingEndsTooSoonValue;
     }
 
-    public boolean isInvalidTimeZone() {
-        return value instanceof InvalidTimeZoneValue;
+    public boolean isRecyclingVariantsInvalid() {
+        return value instanceof RecyclingVariantsInvalidValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<UnknownChannelsEncoded> getUnknownChannels() {
-        if (isUnknownChannels()) {
-            return Optional.of(((UnknownChannelsValue) value).value);
+    public Optional<RecyclingEndsTooSoonEncoded> getRecyclingEndsTooSoon() {
+        if (isRecyclingEndsTooSoon()) {
+            return Optional.of(((RecyclingEndsTooSoonValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<InvalidTimeZoneEncoded> getInvalidTimeZone() {
-        if (isInvalidTimeZone()) {
-            return Optional.of(((InvalidTimeZoneValue) value).value);
+    public Optional<RecyclingVariantsInvalidEncoded> getRecyclingVariantsInvalid() {
+        if (isRecyclingVariantsInvalid()) {
+            return Optional.of(((RecyclingVariantsInvalidValue) value).value);
         }
         return Optional.empty();
     }
@@ -90,46 +90,49 @@ public final class UnprocessableEntityErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitUnknownChannels(UnknownChannelsEncoded unknownChannels);
+        T visitRecyclingEndsTooSoon(RecyclingEndsTooSoonEncoded recyclingEndsTooSoon);
 
-        T visitInvalidTimeZone(InvalidTimeZoneEncoded invalidTimeZone);
+        T visitRecyclingVariantsInvalid(RecyclingVariantsInvalidEncoded recyclingVariantsInvalid);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(UnknownChannelsValue.class), @JsonSubTypes.Type(InvalidTimeZoneValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(RecyclingEndsTooSoonValue.class),
+        @JsonSubTypes.Type(RecyclingVariantsInvalidValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("UnknownChannels")
+    @JsonTypeName("RecyclingEndsTooSoon")
     @JsonIgnoreProperties("_tag")
-    private static final class UnknownChannelsValue implements Value {
+    private static final class RecyclingEndsTooSoonValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private UnknownChannelsEncoded value;
+        private RecyclingEndsTooSoonEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private UnknownChannelsValue() {}
+        private RecyclingEndsTooSoonValue() {}
 
-        private UnknownChannelsValue(UnknownChannelsEncoded value) {
+        private RecyclingEndsTooSoonValue(RecyclingEndsTooSoonEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitUnknownChannels(value);
+            return visitor.visitRecyclingEndsTooSoon(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof UnknownChannelsValue && equalTo((UnknownChannelsValue) other);
+            return other instanceof RecyclingEndsTooSoonValue && equalTo((RecyclingEndsTooSoonValue) other);
         }
 
-        private boolean equalTo(UnknownChannelsValue other) {
+        private boolean equalTo(RecyclingEndsTooSoonValue other) {
             return value.equals(other.value);
         }
 
@@ -144,32 +147,32 @@ public final class UnprocessableEntityErrorBody {
         }
     }
 
-    @JsonTypeName("InvalidTimeZone")
+    @JsonTypeName("RecyclingVariantsInvalid")
     @JsonIgnoreProperties("_tag")
-    private static final class InvalidTimeZoneValue implements Value {
+    private static final class RecyclingVariantsInvalidValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private InvalidTimeZoneEncoded value;
+        private RecyclingVariantsInvalidEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private InvalidTimeZoneValue() {}
+        private RecyclingVariantsInvalidValue() {}
 
-        private InvalidTimeZoneValue(InvalidTimeZoneEncoded value) {
+        private RecyclingVariantsInvalidValue(RecyclingVariantsInvalidEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitInvalidTimeZone(value);
+            return visitor.visitRecyclingVariantsInvalid(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof InvalidTimeZoneValue && equalTo((InvalidTimeZoneValue) other);
+            return other instanceof RecyclingVariantsInvalidValue && equalTo((RecyclingVariantsInvalidValue) other);
         }
 
-        private boolean equalTo(InvalidTimeZoneValue other) {
+        private boolean equalTo(RecyclingVariantsInvalidValue other) {
             return value.equals(other.value);
         }
 

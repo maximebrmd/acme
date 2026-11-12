@@ -224,10 +224,10 @@ each channel would receive and everything that would refuse it. With it,
 peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T09:00:00Z --dry-run --json
 ```
 
-When the user keeps a timetable rather than a time ("add this to the
-queue"), put the post on a queue's next free slot with `--queue <name>` or
-`--default-queue` (see
-[references/saved.md](references/saved.md#queues)) instead of `--at`.
+A timetable rather than a time ("add this to the queue") is `--queue <name>`
+or `--default-queue` instead of `--at`, and a post to repeat ("every two
+weeks") `peal recycling start`: see [references/saved.md](references/saved.md)
+(queues, repeating posts).
 
 A thread is a post with parts after it: each `--then` adds one, in order,
 sent as a reply to the part before it where the platform has threads (a

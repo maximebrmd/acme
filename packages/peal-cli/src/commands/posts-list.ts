@@ -127,6 +127,13 @@ export const list = Command.make(
       ),
       Flag.optional
     ),
+    recycling: Flag.String("recycling").pipe(
+      Flag.withMetavar("<rule-id>"),
+      Flag.withDescription(
+        "Only the posts this recycling rule made, by its id, as peal recycling list shows them."
+      ),
+      Flag.optional
+    ),
     removed: Flag.Boolean("removed").pipe(
       Flag.withDescription(
         "Only the posts Peal deleted from at least one channel's platform (peal posts unpublish)."
@@ -200,6 +207,7 @@ export const list = Command.make(
           ...given(input.outcome, (outcome) => ({ outcome })),
           ...given(input.platform, (platform) => ({ platform })),
           ...given(queueId, (placedBy) => ({ queueId: placedBy })),
+          ...given(input.recycling, (recyclingId) => ({ recyclingId })),
           ...given(
             input.removed ? Option.some("true" as const) : Option.none(),
             (removed) => ({ removed })

@@ -469,6 +469,23 @@ Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, wit
 
 `remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved, or a post added to it on a slot not yet reached, meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
 
+## Repeat a post [#recycling]
+
+`POST …/recycling`, with `{ "postId", "every": { "count", "unit" }, "count"?, "until"?, "variants"?, "queueId"? }`, makes a post that is scheduled, publishing or out repeat ([how](/scheduling#recycling)): `unit` is `days` (1 to 365), `weeks` (1 to 52) or `months` (1 to 12); `count` is the number of posts in all, the source counted (2 to 100); `until` the last day, as `YYYY-MM-DD` in the source's zone; each variant is `{ "text", "overrides"? }`, 10 at most. It answers 201 with the rule, whose `coming` lists its next three posts and the variant each says. Starting, changing, pausing, resuming and stopping a rule needs post:schedule (or post:create where posts wait for an approval, for starting), never staff acting as a member; reading, post:read.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Open all summer, as before."}]}'
+```
+
+`GET …/recycling` lists the rules, oldest first (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` reads one, `PATCH` changes its `variants`, `count` or `until` (null takes them away) or pauses it (`paused`), `POST …/recycling/{ruleId}/resume` with `{ "variants"? }` sets a paused rule going again, or one that ended for `planLimit`, `contentRejected`, `noChannels` or `queueFull`, and `DELETE` stops it: the posts it made stay. Each post a rule makes carries `recyclingId` and `occurrence` (its place, the source being 1), and `GET …/posts/search?recyclingId=…` lists them. Each post acts as the rule's starter as they are then: a key's rule stops once the key is revoked.
+
+- A post that cannot repeat answers 409 `post_not_recyclable`, with `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`.
+- Variants that break the source's channels' rules answer 422 `recycling_variants_invalid`, each by its place from 1 with its violations; an ending that leaves no post to make, 422 `recycling_ends_too_soon`.
+- 100 rules going on answer 409 `too_many_recycling_rules`; a change to an ended rule, 409 `recycling_rule_ended`.
+
 ## Unpublish a post [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` deletes a published post from one channel's platform, for everyone, every part of a thread, the last first ([Unpublish a post](/scheduling#unpublish)); `POST …/posts/{postId}/unpublish` asks it of every channel the post is on, and answers each channel's change (`changes`) beside why the others could not (`refused`): one channel that cannot never fails the whole request. Both need post:publish, and an OAuth client the scope `workspace:publish`. It cannot be undone.

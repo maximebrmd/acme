@@ -1,4 +1,4 @@
-# Tags, signatures, channel sets, queues and channels' names
+# Tags, signatures, channel sets, queues, repeating posts and channels' names
 
 What a workspace saves to file and write its posts with, from the command
 line. Read [SKILL.md](../SKILL.md) first: its rules about drafts,
@@ -94,3 +94,38 @@ peal posts list --queue Weekdays --json
   now are, only when the user asks, and
   answers `moved`, `unchanged`, `remaining` and `stoppedBy`: run it again
   after `changed`, tell the user after `planLimit` or `full`.
+
+## Repeating posts
+
+A recycling rule makes a scheduled or published post repeat: a new post
+each interval, at the same time of day, until a number of posts or a day,
+saying its text, then each variant in turn. Every new post goes out in
+public, without anyone being asked each time: start one only when the user
+asked for that post to repeat, and say back the next posts it will make.
+
+```sh
+peal recycling start <post-id> --every 2w --count 6 --variant "Open all summer, as before." --json
+peal recycling list --json
+peal recycling show <rule-id> --json
+peal recycling update <rule-id> --until 2026-12-31 --json
+peal recycling pause <rule-id> --json
+peal recycling resume <rule-id> --json
+peal recycling end <rule-id> --json
+peal posts list --recycling <rule-id> --json
+```
+
+- `--every` is a count and `d`, `w` or `m` (1d to 365d, 1w to 52w, 1m to
+  12m); `--count` counts the source (2 to 100); without `--count` or
+  `--until`, it stops after 100 posts. `--variant` texts replace the first
+  part's text: a platform may refuse the same text twice, so offer variants
+  for a short interval.
+- Each post acts as whoever started the rule, as they are then; it is an
+  ordinary post, which the user moves or cancels as any other, and the
+  rule goes on. The answer's `coming` lists the next three posts and the
+  variant each says.
+- `post_not_recyclable` names why (`draft`, `repeating`…);
+  `recycling_variants_invalid` gives each variant's violations, fix them
+  and start again; `recycling_rule_ended` means resume it (`planLimit`,
+  `contentRejected`, `noChannels`, `queueFull`) or start a new one.
+- A rule that ended on its own is told to the user as a notification: read
+  `peal recycling show` for `endedReason` before resuming it.

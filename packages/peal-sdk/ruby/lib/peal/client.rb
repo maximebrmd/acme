@@ -165,6 +165,11 @@ module Peal
       @queues ||= Peal::Queues::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Recycling::Client]
+    def recycling
+      @recycling ||= Peal::Recycling::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::ChannelDefaults::Client]
     def channel_defaults
       @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)

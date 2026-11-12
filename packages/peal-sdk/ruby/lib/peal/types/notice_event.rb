@@ -46,6 +46,8 @@ module Peal
       member -> { Peal::Types::NoticeEventAdBoostChanged }, key: "AD_BOOST_CHANGED"
 
       member -> { Peal::Types::NoticeEventAdConnectionReconnectRequired }, key: "AD_CONNECTION_RECONNECT_REQUIRED"
+
+      member -> { Peal::Types::NoticeEventRecyclingEnded }, key: "RECYCLING_ENDED"
     end
   end
 end

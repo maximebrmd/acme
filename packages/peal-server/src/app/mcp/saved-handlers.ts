@@ -7,6 +7,7 @@ import {
   maxSignaturesPerWorkspace,
 } from "peal-contract";
 
+import { noRule, ruleIdFrom } from "#app/mcp/recycling-refusals.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { SavedTools } from "#app/mcp/saved-tools.ts";
 import { channelSetView } from "#publishing/api/channel-set-view.ts";
@@ -21,6 +22,7 @@ import {
   queueView,
 } from "#publishing/api/queue-view.ts";
 import { queueDetailsFrom, queueIdFrom } from "#publishing/api/queues.ts";
+import { ruleView } from "#publishing/api/recycling-view.ts";
 import { signatureView } from "#publishing/api/signature-view.ts";
 import {
   signatureDetailsFrom,
@@ -29,9 +31,12 @@ import {
 import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { Queues } from "#publishing/application/queues.ts";
+import { Recycling } from "#publishing/application/recycling.ts";
+import type { ListedRule } from "#publishing/application/recycling.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
 // The domain's options, as plain values the contract describes.
@@ -128,6 +133,7 @@ export const SavedToolsLive = SavedTools.toLayer(
     const sets = yield* ChannelSets;
     const defaults = yield* ChannelDefaults;
     const queues = yield* Queues;
+    const recycling = yield* Recycling;
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return SavedTools.of({
@@ -257,6 +263,20 @@ export const SavedToolsLive = SavedTools.toLayer(
             options: kept.pipe(Option.map(encodeOptions), Option.getOrNull),
           };
         }),
+      get_recycling_rule: ({ ruleId }) =>
+        Effect.gen(function* get() {
+          const listed = yield* recycling
+            .get(yield* actor, yield* ruleIdFrom(ruleId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read recycling rules"),
+                RecyclingRuleNotFound: noRule,
+              })
+            );
+
+          return ruleView(listed);
+        }),
       list_channel_sets: () =>
         Effect.gen(function* list() {
           const found = yield* sets.list(yield* actor).pipe(
@@ -278,6 +298,33 @@ export const SavedToolsLive = SavedTools.toLayer(
           );
 
           return { queues: found.map(queueView) };
+        }),
+      list_recycling_rules: ({ status }) =>
+        Effect.gen(function* list() {
+          const member = yield* actor;
+          const found: ListedRule[] = [];
+
+          // Every page: a workspace keeps few rules.
+          for (;;) {
+            const page = yield* recycling
+              .list(member, {
+                after: Option.fromUndefinedOr(found.at(-1)?.rule.id),
+                limit: 100,
+                status: Option.fromUndefinedOr(status),
+              })
+              .pipe(
+                Effect.catchTags({
+                  DatabaseError: Effect.die,
+                  MissingPermission: notAllowed("read recycling rules"),
+                })
+              );
+
+            found.push(...page);
+
+            if (page.length < 100) {
+              return { rules: found.map(ruleView) };
+            }
+          }
         }),
       list_signatures: () =>
         Effect.gen(function* list() {
@@ -327,6 +374,28 @@ export const SavedToolsLive = SavedTools.toLayer(
             );
 
           return { options: encodeOptions(kept) };
+        }),
+      stop_recycling_rule: ({ ruleId }) =>
+        Effect.gen(function* stop() {
+          const member = yield* actor;
+
+          // Said before the rule is read: it takes a role that schedules.
+          yield* Effect.fromResult(authorize(member, "post:schedule")).pipe(
+            Effect.catchTag(
+              "MissingPermission",
+              notAllowed("stop recycling rules")
+            )
+          );
+
+          yield* recycling.stop(member, yield* ruleIdFrom(ruleId)).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("stop recycling rules"),
+              RecyclingRuleNotFound: noRule,
+            })
+          );
+
+          return { stopped: ruleId };
         }),
       update_channel_set: ({ channelIds, channelSetId, name, options }) =>
         Effect.gen(function* update() {

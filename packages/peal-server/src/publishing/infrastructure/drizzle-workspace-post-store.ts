@@ -20,6 +20,7 @@ import {
   channelDefaults,
   channelSets,
   queues,
+  recyclingRules,
   idempotencyKeys,
   livePostChanges,
   postTargets,
@@ -333,6 +334,14 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .where(eq(posts.scheduledBy, userId))
           .pipe(Effect.mapError(failed));
 
+        // Nor that they started a rule that repeats one: the next run ends
+        // it, as its starter is gone.
+        yield* db
+          .update(recyclingRules)
+          .set({ startedBy: null })
+          .where(eq(recyclingRules.startedBy, userId))
+          .pipe(Effect.mapError(failed));
+
         // Nor that they asked to change one once live.
         yield* db
           .update(livePostChanges)
@@ -378,6 +387,27 @@ export const DrizzleWorkspacePostStore = Layer.effect(
             .from(queues)
             .where(eq(queues.workspaceId, workspaceId))
             .orderBy(asc(queues.id))).map(dated),
+          recyclingRules: (yield* db
+            .select()
+            .from(recyclingRules)
+            .where(eq(recyclingRules.workspaceId, workspaceId))
+            .orderBy(asc(recyclingRules.id))).map((rule) => ({
+            anchorAt: DateTime.fromDateUnsafe(rule.anchorAt),
+            count: rule.count,
+            createdAt: DateTime.fromDateUnsafe(rule.createdAt),
+            endedReason: rule.endedReason,
+            id: rule.id,
+            interval: rule.interval,
+            lastDueAt: DateTime.fromDateUnsafe(rule.lastDueAt),
+            made: rule.made,
+            nextDueAt: utcOrNull(rule.nextDueAt),
+            queueId: rule.queueId,
+            sourcePostId: rule.sourcePostId,
+            status: rule.status,
+            timeZone: rule.timeZone,
+            until: rule.until,
+            variants: rule.variants,
+          })),
           signatures: (yield* db
             .select({
               createdAt: signatures.createdAt,
@@ -411,6 +441,13 @@ export const DrizzleWorkspacePostStore = Layer.effect(
 
     const deleteAll = Effect.fn("WorkspacePostStore.deleteAll")(
       function* deleteAll(workspaceId: string) {
+        // The rules that repeat its posts first, under their rows' locks,
+        // which a run making an occurrence takes before any post's.
+        yield* db
+          .delete(recyclingRules)
+          .where(eq(recyclingRules.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
         yield* db
           .delete(posts)
           .where(eq(posts.workspaceId, workspaceId))

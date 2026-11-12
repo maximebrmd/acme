@@ -1,7 +1,7 @@
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import type { TwoStepChange } from "./auth-email.ts";
-import type { PostFailureReason } from "./notice-event.ts";
+import type { PostFailureReason, RecyclingEndReason } from "./notice-event.ts";
 
 /**
  * The words of each email in one language. `{name}` stands for a value the
@@ -207,6 +207,12 @@ export interface EmailCatalog {
   };
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
+  /**
+   * A recycling rule of `{workspaceName}` stopped repeating its post, for
+   * `{reason}`, one of `recyclingEndReasons`.
+   */
+  readonly recyclingEnded: EmailMessages;
+  readonly recyclingEndReasons: Readonly<Record<RecyclingEndReason, string>>;
   /**
    * Peal turned off the webhook endpoint at `{host}` in `{workspaceName}`,
    * for `{reason}`, one of `webhookTurnOffReasons`.
