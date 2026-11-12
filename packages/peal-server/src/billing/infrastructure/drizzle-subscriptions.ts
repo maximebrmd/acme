@@ -25,6 +25,7 @@ import type { SubscriptionChange } from "#billing/domain/subscription-change.ts"
 import { lifecycleStage, Subscription } from "#billing/domain/subscription.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import {
@@ -103,6 +104,34 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           ),
           Effect.withSpan("Subscriptions.ofWorkspace")
         );
+
+    const ofWorkspaces = (workspaceIds: readonly WorkspaceId[]) =>
+      workspaceIds.length === 0
+        ? Effect.succeed(new Map<WorkspaceId, readonly Subscription[]>())
+        : db
+            .select()
+            .from(subscriptions)
+            .where(anyUuid(subscriptions.workspaceId, workspaceIds))
+            .orderBy(asc(subscriptions.stripeSubscriptionId))
+            .pipe(
+              Effect.mapError(failed),
+              Effect.flatMap((rows) =>
+                Effect.all(rows.map((row) => toSubscription(row)))
+              ),
+              Effect.map((found) => {
+                const of = new Map<WorkspaceId, Subscription[]>();
+
+                for (const subscription of found) {
+                  const held = of.get(subscription.workspaceId) ?? [];
+
+                  held.push(subscription);
+                  of.set(subscription.workspaceId, held);
+                }
+
+                return of;
+              }),
+              Effect.withSpan("Subscriptions.ofWorkspaces")
+            );
 
     const remindable = (now: DateTime.Utc) =>
       db
@@ -318,6 +347,7 @@ export const DrizzleSubscriptionsLive = Layer.effect(
       eraseWorkspace,
       forgetUser,
       ofWorkspace,
+      ofWorkspaces,
       record,
       remindable,
     });

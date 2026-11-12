@@ -1,13 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import {
-  DateTime,
-  Duration,
-  Effect,
-  Layer,
-  Metric,
-  Schema,
-  Tracer,
-} from "effect";
+import { DateTime, Duration, Effect, Layer, Metric, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import {
@@ -29,6 +21,7 @@ import {
   forgetWorkspace,
 } from "#test/analytics/support.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { statementsOf } from "#test/shared/support.ts";
 
 // The hourly collection on Postgres, with readers that answer at once:
 // what the store and the run cost, platforms left out.
@@ -71,32 +64,6 @@ const postsPerChannel = 5;
 // A run of the collection at an instant no other suite uses, so only these
 // posts are due.
 const at = DateTime.makeUnsafe("1985-01-01T11:07:00.000Z");
-
-// The statements a run sends to Postgres: each is a span that carries its
-// text. Counted rather than timed, the run's cost is the same on an idle
-// machine and on a loaded one.
-const statementsOf = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.gen(function* counted() {
-    const spans: Tracer.NativeSpan[] = [];
-
-    const tracer = Tracer.make({
-      span: (options) => {
-        const span = new Tracer.NativeSpan(options);
-
-        spans.push(span);
-
-        return span;
-      },
-    });
-
-    const result = yield* effect.pipe(Effect.withTracer(tracer));
-
-    const statements = spans.filter((span) =>
-      span.attributes.has("db.query.text")
-    ).length;
-
-    return { result, statements };
-  });
 
 const decodeCount = Schema.decodeUnknownEffect(
   Schema.Tuple([Schema.Struct({ rows: Schema.Number })])

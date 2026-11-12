@@ -40,6 +40,7 @@ const allowancesWith = (
         ChannelUsage,
         ChannelUsage.of({
           connected: () => Effect.succeed(4),
+          connectedAcross: () => Effect.die("not read here"),
           connectedIn: () => Effect.succeed(new Map()),
         })
       )
@@ -50,6 +51,7 @@ const allowancesWith = (
         WorkspaceSeats.of({
           page: () => Effect.succeed([]),
           taken: () => Effect.succeed(3),
+          takenIn: () => Effect.die("not read here"),
         })
       )
     ),
@@ -144,6 +146,7 @@ describe("the plan allowances", () => {
                           ),
                         })
                       ),
+                    ofEach: () => Effect.die("not read here"),
                   })
                 )
               )

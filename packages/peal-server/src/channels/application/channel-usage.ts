@@ -28,6 +28,16 @@ export class ChannelUsage extends Context.Service<
     readonly connectedIn: (
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DatabaseError>;
+    /**
+     * What `connected` answers, for each of these workspaces, every one
+     * of them: the pools they are in read at once, then the channels of
+     * every workspace among them in one count, each pool's once however
+     * many of its workspaces are asked. It holds no pool, so it reports
+     * how they stand and decides nothing.
+     */
+    readonly connectedAcross: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DatabaseError>;
   }
 >()("peal-server/channels/application/ChannelUsage") {
   static readonly layer = Layer.effect(
@@ -47,6 +57,28 @@ export class ChannelUsage extends Context.Service<
             ),
             Effect.withSpan("ChannelUsage.connected")
           ),
+        connectedAcross: (workspaceIds) =>
+          Effect.gen(function* connectedAcross() {
+            if (workspaceIds.length === 0) {
+              return new Map<WorkspaceId, number>();
+            }
+
+            const shared = yield* allowance.sharingIn(workspaceIds);
+
+            const held = yield* channels.countIn([
+              ...new Set([...workspaceIds, ...[...shared.values()].flat()]),
+            ]);
+
+            return new Map(
+              workspaceIds.map((workspaceId) => [
+                workspaceId,
+                [workspaceId, ...(shared.get(workspaceId) ?? [])].reduce(
+                  (sum, id) => sum + (held.get(id) ?? 0),
+                  0
+                ),
+              ])
+            );
+          }).pipe(Effect.withSpan("ChannelUsage.connectedAcross")),
         connectedIn: (workspaceIds) =>
           channels
             .countIn(workspaceIds)

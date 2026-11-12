@@ -19,6 +19,22 @@ export const PartnerPlanHoldersLive = Layer.effect(
             })
           )
         ),
+      holdersOf: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map())
+          : ownership
+              .ownersIn(workspaceIds)
+              .pipe(
+                Effect.map(
+                  (owners) =>
+                    new Map(
+                      workspaceIds.map((workspaceId) => [
+                        workspaceId,
+                        owners.get(workspaceId)?.homeWorkspaceId ?? workspaceId,
+                      ])
+                    )
+                )
+              ),
     });
   })
 );

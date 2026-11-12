@@ -21,6 +21,15 @@ const HoldersTest = Layer.succeed(
   PlanHolders.of({
     holderOf: (workspaceId) =>
       Effect.succeed(workspaceId === owned ? home : workspaceId),
+    holdersOf: (workspaceIds) =>
+      Effect.succeed(
+        new Map(
+          workspaceIds.map((workspaceId) => [
+            workspaceId,
+            workspaceId === owned ? home : workspaceId,
+          ])
+        )
+      ),
   })
 );
 

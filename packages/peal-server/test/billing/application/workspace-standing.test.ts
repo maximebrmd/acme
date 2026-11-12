@@ -58,6 +58,7 @@ const run = <A, E>(
     const usage = Layer.succeed(
       WorkspaceUsage,
       WorkspaceUsage.of({
+        heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(state).pipe(
             Effect.map(({ channels, members }) => ({

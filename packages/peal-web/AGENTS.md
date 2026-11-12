@@ -70,7 +70,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   meta tag.
 - The signed-in home (`app`) reads `GET /api/me/overview` on the server
   with the request's cookies (`overviewOrNothing`, `#overview/server.ts`,
-  as `currentUser()` reads `/api/me`); when it fails the cards show their
+  as `currentUser()` reads `/api/me`), a page at a time, 20 at most, each
+  within 5 seconds (`overviewPages`, `#overview/pages.ts`): the pages read
+  before one that fails are kept, and the cards the others hold show their
   links alone, never an error. Each card gains what needs attention
   (`WorkspaceAttentionView`, `components/overview/overview-views.tsx`,
   links as props), from `attentionOf` (`#overview/attention.ts`): a link

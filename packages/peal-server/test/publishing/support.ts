@@ -82,6 +82,7 @@ export const postAllowance = (
         ChannelUsage,
         ChannelUsage.of({
           connected: () => Effect.succeed(connected),
+          connectedAcross: () => Effect.die("not read here"),
           connectedIn: () => Effect.succeed(new Map()),
         })
       )
@@ -92,6 +93,7 @@ export const postAllowance = (
         WorkspaceSeats.of({
           page: () => Effect.succeed([]),
           taken: () => Effect.succeed(1),
+          takenIn: () => Effect.die("not read here"),
         })
       )
     )
