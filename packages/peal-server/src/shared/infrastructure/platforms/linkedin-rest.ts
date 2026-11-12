@@ -2,6 +2,9 @@ import { Effect, Schema } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
+// LinkedIn's versioned REST API, as every context that calls it does
+// (publishing, analytics, engagement).
+
 /**
  * A call to LinkedIn's versioned REST API with the channel's token: every
  * one names the API version (`Linkedin-Version`, without which LinkedIn
@@ -30,14 +33,6 @@ export const encodedUrn = (urn: string): string => encodeURIComponent(urn);
 /** Whether the account is a company page: its id is the page's URN. */
 export const isOrganization = (accountId: string): boolean =>
   accountId.startsWith("urn:li:organization:");
-
-/**
- * The URN a channel's posts and uploads are by: a page's own, which the
- * channels context keeps as the account's id, or the person URN a member's
- * OpenID Connect subject takes.
- */
-export const authorUrnOf = (accountId: string): string =>
-  isOrganization(accountId) ? accountId : `urn:li:person:${accountId}`;
 
 // LinkedIn's errors are JSON that repeats the HTTP status.
 const LinkedInErrorSchema = Schema.Struct({ status: Schema.Number });
