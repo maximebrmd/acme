@@ -11,4 +11,5 @@ enum RecyclingNoticeReason: string
     case PlanLimit = "planLimit";
     case QueueGone = "queueGone";
     case QueueFull = "queueFull";
+    case SourceWithdrawn = "sourceWithdrawn";
 }

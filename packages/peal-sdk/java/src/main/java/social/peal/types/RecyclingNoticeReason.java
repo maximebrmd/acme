@@ -19,6 +19,9 @@ public final class RecyclingNoticeReason {
     public static final RecyclingNoticeReason STARTER_GONE =
             new RecyclingNoticeReason(Value.STARTER_GONE, "starterGone");
 
+    public static final RecyclingNoticeReason SOURCE_WITHDRAWN =
+            new RecyclingNoticeReason(Value.SOURCE_WITHDRAWN, "sourceWithdrawn");
+
     public static final RecyclingNoticeReason NO_CHANNELS = new RecyclingNoticeReason(Value.NO_CHANNELS, "noChannels");
 
     public static final RecyclingNoticeReason QUEUE_FULL = new RecyclingNoticeReason(Value.QUEUE_FULL, "queueFull");
@@ -66,6 +69,8 @@ public final class RecyclingNoticeReason {
                 return visitor.visitSourceGone();
             case STARTER_GONE:
                 return visitor.visitStarterGone();
+            case SOURCE_WITHDRAWN:
+                return visitor.visitSourceWithdrawn();
             case NO_CHANNELS:
                 return visitor.visitNoChannels();
             case QUEUE_FULL:
@@ -89,6 +94,8 @@ public final class RecyclingNoticeReason {
                 return SOURCE_GONE;
             case "starterGone":
                 return STARTER_GONE;
+            case "sourceWithdrawn":
+                return SOURCE_WITHDRAWN;
             case "noChannels":
                 return NO_CHANNELS;
             case "queueFull":
@@ -113,6 +120,8 @@ public final class RecyclingNoticeReason {
 
         QUEUE_FULL,
 
+        SOURCE_WITHDRAWN,
+
         UNKNOWN
     }
 
@@ -130,6 +139,8 @@ public final class RecyclingNoticeReason {
         T visitQueueGone();
 
         T visitQueueFull();
+
+        T visitSourceWithdrawn();
 
         T visitUnknown(String unknownType);
     }

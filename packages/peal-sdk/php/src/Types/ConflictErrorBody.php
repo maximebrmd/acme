@@ -10,6 +10,7 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @var (
      *    'PostNotRecyclable'
+     *   |'RecyclingRuleEnded'
      *   |'TooManyRecyclingRules'
      *   |'_unknown'
      * ) $type
@@ -19,6 +20,7 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @var (
      *    PostNotRecyclableEncoded
+     *   |RecyclingRuleEndedEncoded
      *   |TooManyRecyclingRulesEncoded
      *   |mixed
      * ) $value
@@ -29,11 +31,13 @@ class ConflictErrorBody extends JsonSerializableType
      * @param array{
      *   type: (
      *    'PostNotRecyclable'
+     *   |'RecyclingRuleEnded'
      *   |'TooManyRecyclingRules'
      *   |'_unknown'
      * ),
      *   value: (
      *    PostNotRecyclableEncoded
+     *   |RecyclingRuleEndedEncoded
      *   |TooManyRecyclingRulesEncoded
      *   |mixed
      * ),
@@ -55,6 +59,18 @@ class ConflictErrorBody extends JsonSerializableType
         return new ConflictErrorBody([
             'type' => 'PostNotRecyclable',
             'value' => $postNotRecyclable,
+        ]);
+    }
+
+    /**
+     * @param RecyclingRuleEndedEncoded $recyclingRuleEnded
+     * @return ConflictErrorBody
+     */
+    public static function recyclingRuleEnded(RecyclingRuleEndedEncoded $recyclingRuleEnded): ConflictErrorBody
+    {
+        return new ConflictErrorBody([
+            'type' => 'RecyclingRuleEnded',
+            'value' => $recyclingRuleEnded,
         ]);
     }
 
@@ -86,6 +102,28 @@ class ConflictErrorBody extends JsonSerializableType
         if (!($this->value instanceof PostNotRecyclableEncoded && $this->type === 'PostNotRecyclable')) {
             throw new Exception(
                 "Expected PostNotRecyclable; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRecyclingRuleEnded(): bool
+    {
+        return $this->value instanceof RecyclingRuleEndedEncoded && $this->type === 'RecyclingRuleEnded';
+    }
+
+    /**
+     * @return RecyclingRuleEndedEncoded
+     */
+    public function asRecyclingRuleEnded(): RecyclingRuleEndedEncoded
+    {
+        if (!($this->value instanceof RecyclingRuleEndedEncoded && $this->type === 'RecyclingRuleEnded')) {
+            throw new Exception(
+                "Expected RecyclingRuleEnded; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -138,6 +176,10 @@ class ConflictErrorBody extends JsonSerializableType
                 $value = $this->asPostNotRecyclable()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'RecyclingRuleEnded':
+                $value = $this->asRecyclingRuleEnded()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'TooManyRecyclingRules':
                 $value = $this->asTooManyRecyclingRules()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -180,6 +222,9 @@ class ConflictErrorBody extends JsonSerializableType
         switch ($type) {
             case 'PostNotRecyclable':
                 $args['value'] = PostNotRecyclableEncoded::jsonDeserialize($data);
+                break;
+            case 'RecyclingRuleEnded':
+                $args['value'] = RecyclingRuleEndedEncoded::jsonDeserialize($data);
                 break;
             case 'TooManyRecyclingRules':
                 $args['value'] = TooManyRecyclingRulesEncoded::jsonDeserialize($data);

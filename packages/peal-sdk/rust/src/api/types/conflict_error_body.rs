@@ -20,6 +20,19 @@ pub enum ConflictErrorBody {
     },
 
     #[non_exhaustive]
+    RecyclingRuleEnded {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(default)]
+        reason: String,
+    },
+
+    #[non_exhaustive]
     TooManyRecyclingRules {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
@@ -46,6 +59,15 @@ impl ConflictErrorBody {
             message: None,
             request_id: None,
             post_id,
+            reason,
+        }
+    }
+
+    pub fn recycling_rule_ended(reason: String) -> Self {
+        Self::RecyclingRuleEnded {
+            code: None,
+            message: None,
+            request_id: None,
             reason,
         }
     }
@@ -103,6 +125,48 @@ impl ConflictErrorBody {
             message,
             request_id: Some(request_id),
             post_id,
+            reason,
+        }
+    }
+
+    pub fn recycling_rule_ended_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        reason: String,
+    ) -> Self {
+        Self::RecyclingRuleEnded {
+            code: Some(code),
+            message,
+            request_id,
+            reason,
+        }
+    }
+
+    pub fn recycling_rule_ended_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        reason: String,
+    ) -> Self {
+        Self::RecyclingRuleEnded {
+            code,
+            message: Some(message),
+            request_id,
+            reason,
+        }
+    }
+
+    pub fn recycling_rule_ended_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        reason: String,
+    ) -> Self {
+        Self::RecyclingRuleEnded {
+            code,
+            message,
+            request_id: Some(request_id),
             reason,
         }
     }

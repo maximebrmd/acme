@@ -9660,6 +9660,39 @@ func TestGettersConflictErrorBody(t *testing.T) {
 		_ = obj.GetPostNotRecyclable() // Should return zero value
 	})
 
+	t.Run("GetRecyclingRuleEnded", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConflictErrorBody{}
+		var expected *RecyclingRuleEndedEncoded
+		obj.RecyclingRuleEnded = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetRecyclingRuleEnded(), "getter should return the property value")
+	})
+
+	t.Run("GetRecyclingRuleEnded_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConflictErrorBody{}
+		obj.RecyclingRuleEnded = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetRecyclingRuleEnded(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetRecyclingRuleEnded_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ConflictErrorBody
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetRecyclingRuleEnded() // Should return zero value
+	})
+
 	t.Run("GetTooManyRecyclingRules", func(t *testing.T) {
 		t.Parallel()
 		// Arrange

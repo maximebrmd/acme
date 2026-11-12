@@ -12,6 +12,7 @@ pub enum RecyclingEndReason {
     PlanLimit,
     QueueGone,
     QueueFull,
+    SourceWithdrawn,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -29,6 +30,7 @@ impl Serialize for RecyclingEndReason {
             Self::PlanLimit => serializer.serialize_str("planLimit"),
             Self::QueueGone => serializer.serialize_str("queueGone"),
             Self::QueueFull => serializer.serialize_str("queueFull"),
+            Self::SourceWithdrawn => serializer.serialize_str("sourceWithdrawn"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -47,6 +49,7 @@ impl<'de> Deserialize<'de> for RecyclingEndReason {
             "planLimit" => Ok(Self::PlanLimit),
             "queueGone" => Ok(Self::QueueGone),
             "queueFull" => Ok(Self::QueueFull),
+            "sourceWithdrawn" => Ok(Self::SourceWithdrawn),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -64,6 +67,7 @@ impl fmt::Display for RecyclingEndReason {
             Self::PlanLimit => write!(f, "planLimit"),
             Self::QueueGone => write!(f, "queueGone"),
             Self::QueueFull => write!(f, "queueFull"),
+            Self::SourceWithdrawn => write!(f, "sourceWithdrawn"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

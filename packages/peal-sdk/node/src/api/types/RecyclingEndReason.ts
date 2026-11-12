@@ -9,6 +9,7 @@ export const RecyclingEndReason = {
         ContentRejected: "contentRejected",
         PlanLimit: "planLimit",
         QueueGone: "queueGone",
-        QueueFull: "queueFull"
+        QueueFull: "queueFull",
+        SourceWithdrawn: "sourceWithdrawn"
     } as const;
 export type RecyclingEndReason = typeof RecyclingEndReason[keyof typeof RecyclingEndReason];

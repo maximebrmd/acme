@@ -33,6 +33,27 @@ class ConflictErrorBody_PostNotRecyclable(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class ConflictErrorBody_RecyclingRuleEnded(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["RecyclingRuleEnded"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "RecyclingRuleEnded"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    reason: str
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class ConflictErrorBody_TooManyRecyclingRules(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["TooManyRecyclingRules"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -55,6 +76,10 @@ class ConflictErrorBody_TooManyRecyclingRules(UniversalBaseModel):
 
 
 ConflictErrorBody = typing_extensions.Annotated[
-    typing.Union[ConflictErrorBody_PostNotRecyclable, ConflictErrorBody_TooManyRecyclingRules],
+    typing.Union[
+        ConflictErrorBody_PostNotRecyclable,
+        ConflictErrorBody_RecyclingRuleEnded,
+        ConflictErrorBody_TooManyRecyclingRules,
+    ],
     pydantic.Field(discriminator="type"),
 ]

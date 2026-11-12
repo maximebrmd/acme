@@ -436,14 +436,14 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> delete(String workspaceId, String ruleId) {
         return delete(workspaceId, ruleId, DeleteRecyclingRequest.builder().build());
     }
 
     /**
-     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> delete(
             String workspaceId, String ruleId, RequestOptions requestOptions) {
@@ -451,7 +451,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> delete(
             String workspaceId, String ruleId, DeleteRecyclingRequest request) {
@@ -459,7 +459,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+     * Stops a rule: it makes no more posts and ends <code>stopped</code>; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> delete(
             String workspaceId, String ruleId, DeleteRecyclingRequest request, RequestOptions requestOptions) {
@@ -560,14 +560,14 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> update(String workspaceId, String ruleId) {
         return update(workspaceId, ruleId, RecyclingRuleChange.builder().build());
     }
 
     /**
-     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> update(
             String workspaceId, String ruleId, RequestOptions requestOptions) {
@@ -575,7 +575,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> update(
             String workspaceId, String ruleId, RecyclingRuleChange request) {
@@ -583,7 +583,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+     * Changes a rule's variants, its <code>count</code> or <code>until</code> (null takes it away), or pauses it (<code>paused</code> true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> update(
             String workspaceId, String ruleId, RecyclingRuleChange request, RequestOptions requestOptions) {
@@ -698,14 +698,14 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>, <code>sourceWithdrawn</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable <code>draft</code>, <code>awaitingApproval</code> or <code>cancelled</code> otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable <code>repeating</code>, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> resume(String workspaceId, String ruleId) {
         return resume(workspaceId, ruleId, RecyclingResume.builder().build());
     }
 
     /**
-     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>, <code>sourceWithdrawn</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable <code>draft</code>, <code>awaitingApproval</code> or <code>cancelled</code> otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable <code>repeating</code>, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> resume(
             String workspaceId, String ruleId, RequestOptions requestOptions) {
@@ -713,7 +713,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>, <code>sourceWithdrawn</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable <code>draft</code>, <code>awaitingApproval</code> or <code>cancelled</code> otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable <code>repeating</code>, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> resume(
             String workspaceId, String ruleId, RecyclingResume request) {
@@ -721,7 +721,7 @@ public class AsyncRawRecyclingClient {
     }
 
     /**
-     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+     * Sets a paused rule going again, or one that ended for a reason that can be put right (<code>planLimit</code>, <code>contentRejected</code>, <code>noChannels</code>, <code>queueFull</code>, <code>sourceWithdrawn</code>), with other <code>variants</code> if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable <code>draft</code>, <code>awaitingApproval</code> or <code>cancelled</code> otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable <code>repeating</code>, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
      */
     public CompletableFuture<PealClientHttpResponse<RecyclingRule>> resume(
             String workspaceId, String ruleId, RecyclingResume request, RequestOptions requestOptions) {

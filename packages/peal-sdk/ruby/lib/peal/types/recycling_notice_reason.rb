@@ -14,6 +14,7 @@ module Peal
       PLAN_LIMIT = "planLimit"
       QUEUE_GONE = "queueGone"
       QUEUE_FULL = "queueFull"
+      SOURCE_WITHDRAWN = "sourceWithdrawn"
     end
   end
 end

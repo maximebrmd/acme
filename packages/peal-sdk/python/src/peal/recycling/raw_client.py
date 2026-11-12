@@ -389,7 +389,7 @@ class RawRecyclingClient:
         self, workspace_id: str, rule_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[None]:
         """
-        Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+        Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------
@@ -477,7 +477,7 @@ class RawRecyclingClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[RecyclingRule]:
         """
-        Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+        Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------
@@ -615,7 +615,7 @@ class RawRecyclingClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[RecyclingRule]:
         """
-        Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+        Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`, `sourceWithdrawn`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable `draft`, `awaitingApproval` or `cancelled` otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable `repeating`, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------
@@ -1094,7 +1094,7 @@ class AsyncRawRecyclingClient:
         self, workspace_id: str, rule_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[None]:
         """
-        Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+        Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------
@@ -1182,7 +1182,7 @@ class AsyncRawRecyclingClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[RecyclingRule]:
         """
-        Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+        Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------
@@ -1320,7 +1320,7 @@ class AsyncRawRecyclingClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[RecyclingRule]:
         """
-        Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+        Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`, `sourceWithdrawn`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable `draft`, `awaitingApproval` or `cancelled` otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable `repeating`, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.
 
         Parameters
         ----------

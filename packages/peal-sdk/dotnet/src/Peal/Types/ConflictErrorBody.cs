@@ -28,6 +28,15 @@ public record ConflictErrorBody
     }
 
     /// <summary>
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.RecyclingRuleEnded"/>.
+    /// </summary>
+    public ConflictErrorBody(ConflictErrorBody.RecyclingRuleEnded value)
+    {
+        Type = "RecyclingRuleEnded";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyRecyclingRules"/>.
     /// </summary>
     public ConflictErrorBody(ConflictErrorBody.TooManyRecyclingRules value)
@@ -53,6 +62,11 @@ public record ConflictErrorBody
     public bool IsPostNotRecyclable => Type == "PostNotRecyclable";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "RecyclingRuleEnded"
+    /// </summary>
+    public bool IsRecyclingRuleEnded => Type == "RecyclingRuleEnded";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "TooManyRecyclingRules"
     /// </summary>
     public bool IsTooManyRecyclingRules => Type == "TooManyRecyclingRules";
@@ -69,6 +83,17 @@ public record ConflictErrorBody
             );
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.RecyclingRuleEndedEncoded"/> if <see cref="Type"/> is 'RecyclingRuleEnded', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingRuleEnded'.</exception>
+    public Peal.RecyclingRuleEndedEncoded AsRecyclingRuleEnded() =>
+        IsRecyclingRuleEnded
+            ? (Peal.RecyclingRuleEndedEncoded)Value!
+            : throw new global::System.Exception(
+                "ConflictErrorBody.Type is not 'RecyclingRuleEnded'"
+            );
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.TooManyRecyclingRulesEncoded"/> if <see cref="Type"/> is 'TooManyRecyclingRules', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyRecyclingRules'.</exception>
@@ -81,6 +106,7 @@ public record ConflictErrorBody
 
     public T Match<T>(
         Func<Peal.PostNotRecyclableEncoded, T> onPostNotRecyclable,
+        Func<Peal.RecyclingRuleEndedEncoded, T> onRecyclingRuleEnded,
         Func<Peal.TooManyRecyclingRulesEncoded, T> onTooManyRecyclingRules,
         Func<string, object?, T> onUnknown_
     )
@@ -88,6 +114,7 @@ public record ConflictErrorBody
         return Type switch
         {
             "PostNotRecyclable" => onPostNotRecyclable(AsPostNotRecyclable()),
+            "RecyclingRuleEnded" => onRecyclingRuleEnded(AsRecyclingRuleEnded()),
             "TooManyRecyclingRules" => onTooManyRecyclingRules(AsTooManyRecyclingRules()),
             _ => onUnknown_(Type, Value),
         };
@@ -95,6 +122,7 @@ public record ConflictErrorBody
 
     public void Visit(
         Action<Peal.PostNotRecyclableEncoded> onPostNotRecyclable,
+        Action<Peal.RecyclingRuleEndedEncoded> onRecyclingRuleEnded,
         Action<Peal.TooManyRecyclingRulesEncoded> onTooManyRecyclingRules,
         Action<string, object?> onUnknown_
     )
@@ -103,6 +131,9 @@ public record ConflictErrorBody
         {
             case "PostNotRecyclable":
                 onPostNotRecyclable(AsPostNotRecyclable());
+                break;
+            case "RecyclingRuleEnded":
+                onRecyclingRuleEnded(AsRecyclingRuleEnded());
                 break;
             case "TooManyRecyclingRules":
                 onTooManyRecyclingRules(AsTooManyRecyclingRules());
@@ -128,6 +159,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.RecyclingRuleEndedEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsRecyclingRuleEnded(out Peal.RecyclingRuleEndedEncoded? value)
+    {
+        if (Type == "RecyclingRuleEnded")
+        {
+            value = (Peal.RecyclingRuleEndedEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.TooManyRecyclingRulesEncoded"/> and returns true if successful.
     /// </summary>
     public bool TryAsTooManyRecyclingRules(out Peal.TooManyRecyclingRulesEncoded? value)
@@ -144,6 +189,9 @@ public record ConflictErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotRecyclable value) =>
+        new(value);
+
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.RecyclingRuleEnded value) =>
         new(value);
 
     public static implicit operator ConflictErrorBody(
@@ -196,6 +244,10 @@ public record ConflictErrorBody
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.PostNotRecyclableEncoded"
                         ),
+                "RecyclingRuleEnded" => json.Deserialize<Peal.RecyclingRuleEndedEncoded?>(options)
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.RecyclingRuleEndedEncoded"
+                    ),
                 "TooManyRecyclingRules" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.TooManyRecyclingRulesEncoded?>(
                         options
@@ -218,6 +270,7 @@ public record ConflictErrorBody
                 value.Type switch
                 {
                     "PostNotRecyclable" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "RecyclingRuleEnded" => JsonSerializer.SerializeToNode(value.Value, options),
                     "TooManyRecyclingRules" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -264,6 +317,26 @@ public record ConflictErrorBody
 
         public static implicit operator ConflictErrorBody.PostNotRecyclable(
             Peal.PostNotRecyclableEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for RecyclingRuleEnded
+    /// </summary>
+    [Serializable]
+    public struct RecyclingRuleEnded
+    {
+        public RecyclingRuleEnded(Peal.RecyclingRuleEndedEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.RecyclingRuleEndedEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ConflictErrorBody.RecyclingRuleEnded(
+            Peal.RecyclingRuleEndedEncoded value
         ) => new(value);
     }
 

@@ -30,12 +30,20 @@ public final class ConflictErrorBody {
         return new ConflictErrorBody(new PostNotRecyclableValue(value));
     }
 
+    public static ConflictErrorBody recyclingRuleEnded(RecyclingRuleEndedEncoded value) {
+        return new ConflictErrorBody(new RecyclingRuleEndedValue(value));
+    }
+
     public static ConflictErrorBody tooManyRecyclingRules(TooManyRecyclingRulesEncoded value) {
         return new ConflictErrorBody(new TooManyRecyclingRulesValue(value));
     }
 
     public boolean isPostNotRecyclable() {
         return value instanceof PostNotRecyclableValue;
+    }
+
+    public boolean isRecyclingRuleEnded() {
+        return value instanceof RecyclingRuleEndedValue;
     }
 
     public boolean isTooManyRecyclingRules() {
@@ -49,6 +57,13 @@ public final class ConflictErrorBody {
     public Optional<PostNotRecyclableEncoded> getPostNotRecyclable() {
         if (isPostNotRecyclable()) {
             return Optional.of(((PostNotRecyclableValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<RecyclingRuleEndedEncoded> getRecyclingRuleEnded() {
+        if (isRecyclingRuleEnded()) {
+            return Optional.of(((RecyclingRuleEndedValue) value).value);
         }
         return Optional.empty();
     }
@@ -91,6 +106,8 @@ public final class ConflictErrorBody {
     public interface Visitor<T> {
         T visitPostNotRecyclable(PostNotRecyclableEncoded postNotRecyclable);
 
+        T visitRecyclingRuleEnded(RecyclingRuleEndedEncoded recyclingRuleEnded);
+
         T visitTooManyRecyclingRules(TooManyRecyclingRulesEncoded tooManyRecyclingRules);
 
         T _visitUnknown(Object unknownType);
@@ -99,6 +116,7 @@ public final class ConflictErrorBody {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
     @JsonSubTypes({
         @JsonSubTypes.Type(PostNotRecyclableValue.class),
+        @JsonSubTypes.Type(RecyclingRuleEndedValue.class),
         @JsonSubTypes.Type(TooManyRecyclingRulesValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -132,6 +150,46 @@ public final class ConflictErrorBody {
         }
 
         private boolean equalTo(PostNotRecyclableValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ConflictErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("RecyclingRuleEnded")
+    @JsonIgnoreProperties("_tag")
+    private static final class RecyclingRuleEndedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private RecyclingRuleEndedEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private RecyclingRuleEndedValue() {}
+
+        private RecyclingRuleEndedValue(RecyclingRuleEndedEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitRecyclingRuleEnded(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof RecyclingRuleEndedValue && equalTo((RecyclingRuleEndedValue) other);
+        }
+
+        private boolean equalTo(RecyclingRuleEndedValue other) {
             return value.equals(other.value);
         }
 

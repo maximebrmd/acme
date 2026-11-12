@@ -7,6 +7,7 @@ export const RecyclingNoticeReason = {
         ContentRejected: "contentRejected",
         PlanLimit: "planLimit",
         QueueGone: "queueGone",
-        QueueFull: "queueFull"
+        QueueFull: "queueFull",
+        SourceWithdrawn: "sourceWithdrawn"
     } as const;
 export type RecyclingNoticeReason = typeof RecyclingNoticeReason[keyof typeof RecyclingNoticeReason];

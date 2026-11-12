@@ -3,6 +3,15 @@
 import typing
 
 RecyclingNoticeReason = typing.Union[
-    typing.Literal["sourceGone", "starterGone", "noChannels", "contentRejected", "planLimit", "queueGone", "queueFull"],
+    typing.Literal[
+        "sourceGone",
+        "starterGone",
+        "noChannels",
+        "contentRejected",
+        "planLimit",
+        "queueGone",
+        "queueFull",
+        "sourceWithdrawn",
+    ],
     typing.Any,
 ]

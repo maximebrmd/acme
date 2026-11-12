@@ -3513,6 +3513,7 @@ const (
 	RecyclingNoticeReasonPlanLimit       RecyclingNoticeReason = "planLimit"
 	RecyclingNoticeReasonQueueGone       RecyclingNoticeReason = "queueGone"
 	RecyclingNoticeReasonQueueFull       RecyclingNoticeReason = "queueFull"
+	RecyclingNoticeReasonSourceWithdrawn RecyclingNoticeReason = "sourceWithdrawn"
 )
 
 func NewRecyclingNoticeReasonFromString(s string) (RecyclingNoticeReason, error) {
@@ -3531,6 +3532,8 @@ func NewRecyclingNoticeReasonFromString(s string) (RecyclingNoticeReason, error)
 		return RecyclingNoticeReasonQueueGone, nil
 	case "queueFull":
 		return RecyclingNoticeReasonQueueFull, nil
+	case "sourceWithdrawn":
+		return RecyclingNoticeReasonSourceWithdrawn, nil
 	}
 	var t RecyclingNoticeReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

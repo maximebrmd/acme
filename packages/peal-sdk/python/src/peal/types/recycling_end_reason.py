@@ -13,6 +13,7 @@ RecyclingEndReason = typing.Union[
         "planLimit",
         "queueGone",
         "queueFull",
+        "sourceWithdrawn",
     ],
     typing.Any,
 ]

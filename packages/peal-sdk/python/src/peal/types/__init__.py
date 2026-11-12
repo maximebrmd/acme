@@ -198,6 +198,7 @@ if typing.TYPE_CHECKING:
     from .conflict_error_body import (
         ConflictErrorBody,
         ConflictErrorBody_PostNotRecyclable,
+        ConflictErrorBody_RecyclingRuleEnded,
         ConflictErrorBody_TooManyRecyclingRules,
     )
     from .connect_failed_encoded import ConnectFailedEncoded
@@ -1028,6 +1029,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CommentSelectionLocated": ".comment_selection_located",
     "ConflictErrorBody": ".conflict_error_body",
     "ConflictErrorBody_PostNotRecyclable": ".conflict_error_body",
+    "ConflictErrorBody_RecyclingRuleEnded": ".conflict_error_body",
     "ConflictErrorBody_TooManyRecyclingRules": ".conflict_error_body",
     "ConnectFailedEncoded": ".connect_failed_encoded",
     "ConnectFailedEncodedTag": ".connect_failed_encoded_tag",
@@ -1868,6 +1870,7 @@ __all__ = [
     "CommentSelectionLocated",
     "ConflictErrorBody",
     "ConflictErrorBody_PostNotRecyclable",
+    "ConflictErrorBody_RecyclingRuleEnded",
     "ConflictErrorBody_TooManyRecyclingRules",
     "ConnectFailedEncoded",
     "ConnectFailedEncodedTag",

@@ -5031,6 +5031,7 @@ func (c CommentProblem) Ptr() *CommentProblem {
 type ConflictErrorBody struct {
 	Type                  string
 	PostNotRecyclable     *PostNotRecyclableEncoded
+	RecyclingRuleEnded    *RecyclingRuleEndedEncoded
 	TooManyRecyclingRules *TooManyRecyclingRulesEncoded
 
 	rawJSON json.RawMessage
@@ -5048,6 +5049,13 @@ func (c *ConflictErrorBody) GetPostNotRecyclable() *PostNotRecyclableEncoded {
 		return nil
 	}
 	return c.PostNotRecyclable
+}
+
+func (c *ConflictErrorBody) GetRecyclingRuleEnded() *RecyclingRuleEndedEncoded {
+	if c == nil {
+		return nil
+	}
+	return c.RecyclingRuleEnded
 }
 
 func (c *ConflictErrorBody) GetTooManyRecyclingRules() *TooManyRecyclingRulesEncoded {
@@ -5075,6 +5083,12 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.PostNotRecyclable = value
+	case "RecyclingRuleEnded":
+		value := new(RecyclingRuleEndedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.RecyclingRuleEnded = value
 	case "TooManyRecyclingRules":
 		value := new(TooManyRecyclingRulesEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -5093,6 +5107,9 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if c.PostNotRecyclable != nil {
 		return internal.MarshalJSONWithExtraProperty(c.PostNotRecyclable, "_tag", "PostNotRecyclable")
 	}
+	if c.RecyclingRuleEnded != nil {
+		return internal.MarshalJSONWithExtraProperty(c.RecyclingRuleEnded, "_tag", "RecyclingRuleEnded")
+	}
 	if c.TooManyRecyclingRules != nil {
 		return internal.MarshalJSONWithExtraProperty(c.TooManyRecyclingRules, "_tag", "TooManyRecyclingRules")
 	}
@@ -5104,12 +5121,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 
 type ConflictErrorBodyVisitor interface {
 	VisitPostNotRecyclable(*PostNotRecyclableEncoded) error
+	VisitRecyclingRuleEnded(*RecyclingRuleEndedEncoded) error
 	VisitTooManyRecyclingRules(*TooManyRecyclingRulesEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
 	if c.PostNotRecyclable != nil {
 		return visitor.VisitPostNotRecyclable(c.PostNotRecyclable)
+	}
+	if c.RecyclingRuleEnded != nil {
+		return visitor.VisitRecyclingRuleEnded(c.RecyclingRuleEnded)
 	}
 	if c.TooManyRecyclingRules != nil {
 		return visitor.VisitTooManyRecyclingRules(c.TooManyRecyclingRules)
@@ -5124,6 +5145,9 @@ func (c *ConflictErrorBody) validate() error {
 	var fields []string
 	if c.PostNotRecyclable != nil {
 		fields = append(fields, "PostNotRecyclable")
+	}
+	if c.RecyclingRuleEnded != nil {
+		fields = append(fields, "RecyclingRuleEnded")
 	}
 	if c.TooManyRecyclingRules != nil {
 		fields = append(fields, "TooManyRecyclingRules")

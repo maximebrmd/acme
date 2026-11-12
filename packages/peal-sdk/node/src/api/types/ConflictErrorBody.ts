@@ -4,11 +4,16 @@ import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
     | Peal.ConflictErrorBody.PostNotRecyclable
+    | Peal.ConflictErrorBody.RecyclingRuleEnded
     | Peal.ConflictErrorBody.TooManyRecyclingRules;
 
 export namespace ConflictErrorBody {
     export interface PostNotRecyclable extends Peal.PostNotRecyclableEncoded {
         _tag: "PostNotRecyclable";
+    }
+
+    export interface RecyclingRuleEnded extends Peal.RecyclingRuleEndedEncoded {
+        _tag: "RecyclingRuleEnded";
     }
 
     export interface TooManyRecyclingRules extends Peal.TooManyRecyclingRulesEncoded {

@@ -22,6 +22,8 @@ public readonly record struct RecyclingNoticeReason : IStringEnum
 
     public static readonly RecyclingNoticeReason QueueFull = new(Values.QueueFull);
 
+    public static readonly RecyclingNoticeReason SourceWithdrawn = new(Values.SourceWithdrawn);
+
     public RecyclingNoticeReason(string value)
     {
         Value = value;
@@ -131,5 +133,7 @@ public readonly record struct RecyclingNoticeReason : IStringEnum
         public const string QueueGone = "queueGone";
 
         public const string QueueFull = "queueFull";
+
+        public const string SourceWithdrawn = "sourceWithdrawn";
     }
 }
