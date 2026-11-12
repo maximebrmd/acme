@@ -584,6 +584,9 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   use cases and workflows on an in-memory cluster. `AppLive` gives publishing
   an engine that runs no job, so scheduling through it fails. Only
   `test/app/cluster.test.ts` runs a SQL runner.
+- Test files share one database and run together: a test that runs a
+  purge of every workspace (`forgetExpiredKeys`) does so at virtual days
+  well before every other test's (2025), so it deletes nothing of theirs.
 - A time asked for is judged as of when the request came (`asReceived`):
   account-rule checks that take minutes never turn "now" into
   `ScheduleInPast`.

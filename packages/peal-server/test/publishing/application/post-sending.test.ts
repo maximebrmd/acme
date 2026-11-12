@@ -71,6 +71,11 @@ const request = (
   timeZone: paris,
 });
 
+// The retention test's own days, well before every other test's: its
+// purge deletes the keys of every workspace made a day before its time,
+// and other files share the database.
+const retentionStart = "2025-01-06T07:00:00Z";
+
 describe("PostScheduling.send", () => {
   it.effect(
     "publishes now, through the rules a scheduled post goes through",
@@ -197,7 +202,7 @@ describe("PostScheduling.send", () => {
     "forgets a key a day later, and when its retention runs",
     () =>
       onPostsServerAt(
-        start,
+        retentionStart,
         Effect.gen(function* expires() {
           const scheduling = yield* PostScheduling;
           const workspaceId = yield* freshWorkspace;
@@ -212,36 +217,36 @@ describe("PostScheduling.send", () => {
 
           const first = yield* scheduling.send(
             actor,
-            keyed("2026-06-20T08:00:00Z")
+            keyed("2025-01-11T08:00:00Z")
           );
 
           // A day on, less a minute: still the first request's key.
-          yield* setTime("2026-06-16T06:59:00Z");
+          yield* setTime("2025-01-07T06:59:00Z");
 
           const reused = yield* scheduling
-            .send(actor, keyed("2026-06-27T08:00:00Z"))
+            .send(actor, keyed("2025-01-18T08:00:00Z"))
             .pipe(Effect.flip);
 
           assert.strictEqual(reused._tag, "IdempotencyKeyReused");
 
           // A day on: the key is free again, whether or not the retention
           // ran meanwhile.
-          yield* setTime("2026-06-16T07:00:00Z");
+          yield* setTime("2025-01-07T07:00:00Z");
 
           const second = yield* scheduling.send(
             actor,
-            keyed("2026-06-27T08:00:00Z")
+            keyed("2025-01-18T08:00:00Z")
           );
 
           assert.isFalse(second.replayed);
           assert.notStrictEqual(second.post.id, first.post.id);
 
-          yield* setTime("2026-06-17T07:00:00Z");
+          yield* setTime("2025-01-08T07:00:00Z");
           assert.isAtLeast(yield* scheduling.forgetExpiredKeys, 1);
 
           const third = yield* scheduling.send(
             actor,
-            keyed("2026-07-04T08:00:00Z")
+            keyed("2025-01-25T08:00:00Z")
           );
 
           assert.isFalse(third.replayed);
