@@ -52,7 +52,11 @@ The staff context follows these rules too. What the law has a host keep is in
   `anyUuid` parameter) and billing's `WorkspaceStanding`, which has no
   form across workspaces and is asked per workspace of the page (50 at
   most). Workspaces page by name then id (`workspacePage`), the agenda by
-  time then id, 31 days at most; cursors are opaque.
+  time then id, 31 days at most; cursors are opaque. `Overview.report`
+  passes analytics the actors with `analytics:read` alone
+  (`AnalyticsQueries.acrossWorkspaces`); its CSV (`/api/me/report/export`)
+  is written with the shared `csvLine` (`#shared/api/csv.ts`), the
+  analytics export's, a page of workspaces at a time.
 - `ActorsNow` (`application/actors-now.ts`) is who someone a job acts for
   is now, from the ids it kept (a member, an application's grant read with
   `ConnectedAppStore.grantIn`, a workspace's or a partner's key, expiry

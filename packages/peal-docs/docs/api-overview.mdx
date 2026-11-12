@@ -106,7 +106,7 @@ Rather than asking the API again and again, have Peal call your server when some
 
 ## Your account [#me]
 
-What belongs to you rather than to a workspace lives under `/api/me`: who you are (`GET /api/me`), your [notifications](/notifications#api) under `/api/me/notices`, and which of them are emailed, under `/api/me/notification-preferences`; what needs attention in each of your workspaces (`GET /api/me/overview`) and what goes out across them (`GET /api/me/agenda`), as far as your role in each may read ([Across your workspaces](/settings#across-workspaces)). These endpoints answer 403 to API keys, which belong to a workspace, and to OAuth tokens bound to one workspace, such as an MCP client's.
+What belongs to you rather than to a workspace lives under `/api/me`: who you are (`GET /api/me`), your [notifications](/notifications#api) under `/api/me/notices`, and which of them are emailed, under `/api/me/notification-preferences`; what needs attention in each of your workspaces (`GET /api/me/overview`) what goes out across them (`GET /api/me/agenda`) and how it did (`GET /api/me/report`), as far as your role in each may read ([Across your workspaces](/settings#across-workspaces)). These endpoints answer 403 to API keys, which belong to a workspace, and to OAuth tokens bound to one workspace, such as an MCP client's.
 
 A copy of your data (`GET /api/me/export`), deleting your account (`DELETE /api/me`) and your connected applications (`/api/me/connected-apps`) answer only your own session in the web app: API keys, OAuth tokens and staff acting as you get 403 ([Workspaces and your account](/settings#api)).
 
