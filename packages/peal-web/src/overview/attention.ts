@@ -21,7 +21,7 @@ export interface AttentionItem {
  * What needs attention in a workspace, most pressing first, each with the
  * page that shows it: nothing where the person may not read a section, or
  * where the workspace refuses them. Failed and unconfirmed posts open the
- * calendar, where a post's own page shows each channel.
+ * posts list filtered on that outcome.
  */
 export const attentionOf = (workspace: WorkspaceOverview): AttentionItem[] => {
   const { channels, inbox, overPlan, posts } = workspace;
@@ -32,13 +32,13 @@ export const attentionOf = (workspace: WorkspaceOverview): AttentionItem[] => {
       posts.failedLast7Days > 0 && {
         count: posts.failedLast7Days,
         kind: "failed",
-        page: "calendar",
+        page: "posts?status=finished&outcome=failed",
       },
     posts !== null &&
       posts.unconfirmedLast7Days > 0 && {
         count: posts.unconfirmedLast7Days,
         kind: "unconfirmed",
-        page: "calendar",
+        page: "posts?status=finished&outcome=unconfirmed",
       },
     posts !== null &&
       posts.awaitingApproval > 0 && {

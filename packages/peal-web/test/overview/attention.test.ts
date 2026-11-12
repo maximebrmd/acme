@@ -54,8 +54,16 @@ describe(attentionOf, () => {
   it("lists what needs attention, most pressing first, each with its page", () => {
     expect(attentionOf(busy)).toStrictEqual([
       { count: 1, kind: "overPlan", page: "billing" },
-      { count: 1, kind: "failed", page: "calendar" },
-      { count: 3, kind: "unconfirmed", page: "calendar" },
+      {
+        count: 1,
+        kind: "failed",
+        page: "posts?status=finished&outcome=failed",
+      },
+      {
+        count: 3,
+        kind: "unconfirmed",
+        page: "posts?status=finished&outcome=unconfirmed",
+      },
       { count: 2, kind: "awaitingApproval", page: "approvals" },
       { count: 2, kind: "toReconnect", page: "channels" },
       { count: 1, kind: "channelsOff", page: "channels" },

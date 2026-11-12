@@ -63,7 +63,7 @@ describe(WorkspaceAttentionView, () => {
     );
 
     expect(html).toContain(
-      `<a href="/app/${workspace.id}/calendar">1 post failed on a channel in the last 7 days</a>`
+      `<a href="/app/${workspace.id}/posts?status=finished&amp;outcome=failed">1 post failed on a channel in the last 7 days</a>`
     );
     expect(html).toContain(
       `<a href="/app/${workspace.id}/approvals">2 posts wait for your approval</a>`
