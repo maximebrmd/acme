@@ -5,6 +5,7 @@ import { AssistantUnavailable } from "#assistant/application/assistant-unavailab
 import type { ImageFailed } from "#assistant/application/image-failed.ts";
 import { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import { ImagesBusy } from "#assistant/application/images-busy.ts";
+import { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import { GeneratedImages } from "#assistant/application/ports/generated-images.ts";
@@ -12,9 +13,13 @@ import { ImageModel } from "#assistant/application/ports/image-model.ts";
 import { ImageProviders } from "#assistant/application/ports/image-providers.ts";
 import type { OpenedImageProvider } from "#assistant/application/ports/image-providers.ts";
 import { ImageSlots } from "#assistant/application/ports/image-slots.ts";
+import { OwnImageCounts } from "#assistant/application/ports/own-image-counts.ts";
 import { OwnImageModel } from "#assistant/application/ports/own-image-model.ts";
 import type { ImageAspect } from "#assistant/domain/image-aspect.ts";
-import { imageRequestCost } from "#assistant/domain/image-limits.ts";
+import {
+  imageRequestCost,
+  ownImagesPerDay,
+} from "#assistant/domain/image-limits.ts";
 import { checkImagePrompt } from "#assistant/domain/image-prompt.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -30,8 +35,10 @@ export interface ImageGenerationRequest {
 /**
  * Makes an image with the workspace's own provider and keeps it in its
  * media library: the prompt checked, room for the largest image, one of
- * the images made at once. Nothing of the day's requests is read or
- * counted, whatever the plan (a trial and the free plan included), and the
+ * the images made at once (slots of their own), and one of the
+ * `ownImagesPerDay` the workspace's provider is asked for each day, which
+ * counts whatever the call ends with. Nothing of Peal's daily requests is
+ * read or counted, whatever the plan (a trial and the free plan included), and the
  * server's model is never asked, not even when the workspace's provider
  * fails, nor when its key no longer opens.
  */
@@ -55,10 +62,29 @@ const ownImage = Effect.fn("WritingAssistant.generateOwnImage")(
 
     yield* images.roomFor(actor);
 
-    // The same slots: an image of the workspace's provider holds the same
-    // memory here.
-    if (!(yield* ImageSlots.use((slots) => slots.take(actor.workspaceId)))) {
+    // Slots of their own: an endpoint that never answers holds none of
+    // those the server's model makes images in.
+    if (
+      !(yield* ImageSlots.use((slots) =>
+        slots.take(actor.workspaceId, "workspace")
+      ))
+    ) {
       return yield* new ImagesBusy();
+    }
+
+    // Every request counts, whatever it ends with: what bounds a
+    // workspace's hold on the server, since Peal's allowance does not.
+    const window = usageWindowAt(yield* DateTime.now);
+
+    const counted = yield* OwnImageCounts.use((counts) =>
+      counts.claim(actor.workspaceId, window.day, ownImagesPerDay)
+    );
+
+    if (Option.isNone(counted)) {
+      return yield* new OwnImagesExhausted({
+        dailyLimit: ownImagesPerDay,
+        resetsAt: window.resetsAt,
+      });
     }
 
     const made = yield* OwnImageModel.use((model) =>
@@ -116,7 +142,9 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
 
     // One of the images the workspace and the server make at once, for as
     // long as this one takes.
-    if (!(yield* ImageSlots.use((slots) => slots.take(workspaceId)))) {
+    if (
+      !(yield* ImageSlots.use((slots) => slots.take(workspaceId, "server")))
+    ) {
       return yield* new ImagesBusy();
     }
 

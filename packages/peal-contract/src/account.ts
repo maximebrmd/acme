@@ -744,6 +744,17 @@ const ExportedWorkspaceSchema = Schema.Struct({
   assistantImageProvider: Schema.optionalKey(
     Schema.NullOr(ExportedImageProviderSchema)
   ),
+  // How many images it asked that provider for each UTC day; absent from
+  // exports made before workspaces could bring one.
+  assistantOwnImages: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        // A UTC day, as YYYY-MM-DD.
+        day: Schema.String,
+        images: Schema.Int,
+      })
+    )
+  ),
   assistantUsage: Schema.Array(ExportedUsageSchema),
   billing: ExportedBillingSchema,
   channels: Schema.Array(ExportedChannelSchema),

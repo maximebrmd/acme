@@ -13,6 +13,7 @@ import type {
   ContractsRecord,
   IdentificationRecord,
   ImageProviderRecord,
+  OwnImagesRecord,
   LegalHoldRecord,
   LegalRemainsRecord,
   MediaRecord,
@@ -59,6 +60,8 @@ export interface WorkspaceContent {
   readonly analytics: readonly AnalyticsRecord[];
   /** The image provider it brought, without its key; null when none. */
   readonly assistantImageProvider: ImageProviderRecord | null;
+  /** How many images it asked that provider for, by day. */
+  readonly assistantOwnImages: readonly OwnImagesRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];

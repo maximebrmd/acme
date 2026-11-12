@@ -1090,6 +1090,8 @@ export { ImageProviderKeyRequired } from "./image-provider-key-required.ts";
 
 export { ImageProviderRefused } from "./image-provider-refused.ts";
 
+export { OwnImageLimitReached } from "./own-image-limit-reached.ts";
+
 export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
 
 export type { ImportProblem } from "./import-unreadable.ts";

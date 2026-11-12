@@ -5,6 +5,7 @@ import sharp from "sharp";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import type { ImageAsked } from "#assistant/application/writing-assistant.ts";
+import { ownImagesPerDay } from "#assistant/domain/image-limits.ts";
 import { maxImagePromptLength } from "#assistant/domain/image-prompt.ts";
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
@@ -644,6 +645,77 @@ layer(ImagesTest, { timeout: "60 seconds" })(
           }).pipe(Effect.flip);
 
           assert.strictEqual(after._tag, "ImageFailed");
+        }).pipe(Effect.provide(imagesTest()))
+    );
+
+    it.effect(
+      "keeps slots of its own: workspaces whose provider never answers starve nobody else",
+      () =>
+        Effect.gen(function* starvation() {
+          const own = yield* FakeOwnImageModel;
+
+          const held = yield* Effect.forEach(
+            [1, 2, 3, 4],
+            () => freshWorkspace
+          );
+
+          yield* Effect.all(
+            held.map((workspaceId) => bringProvider(workspaceId))
+          );
+          yield* own.replyWith({ _tag: "held" });
+
+          // Each holds both its slots at a provider that never answers.
+          const waiting = yield* Effect.forEach(
+            held.flatMap((workspaceId) => [workspaceId, workspaceId]),
+            (workspaceId) =>
+              WritingAssistant.use((assistant) =>
+                assistant.generateImage(actorIn(workspaceId), lighthouse)
+              ).pipe(Effect.flip, Effect.forkChild)
+          );
+
+          yield* own.arrived(8);
+
+          // A workspace on Peal's model still makes its image.
+          const other = yield* freshWorkspace;
+
+          yield* cleanedUp(other);
+
+          const made = yield* ask(other, image(yield* madePng));
+
+          assert.strictEqual(made.kind, "image");
+
+          yield* own.release({ _tag: "failure", reason: "unreachable" });
+          yield* Effect.all(waiting.map(Fiber.join));
+        }).pipe(Effect.provide(imagesTest()))
+    );
+
+    it.effect(
+      "makes at most ownImagesPerDay images a day with the workspace's provider, whatever they end with",
+      () =>
+        Effect.gen(function* capped() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* bringProvider(workspaceId);
+
+          for (let made = 0; made < ownImagesPerDay; made += 1) {
+            yield* askOwn(workspaceId, {
+              _tag: "failure",
+              reason: "unreachable",
+            }).pipe(Effect.flip);
+          }
+
+          const refused = yield* askOwn(workspaceId, {
+            _tag: "failure",
+            reason: "unreachable",
+          }).pipe(Effect.flip);
+
+          assert.deepInclude(refused, {
+            _tag: "OwnImagesExhausted",
+            dailyLimit: ownImagesPerDay,
+          });
+          assert.lengthOf(yield* ownCalls, ownImagesPerDay);
+          // Peal's allowance never moved.
+          assert.strictEqual(yield* remainingIn(workspaceId), 10);
         }).pipe(Effect.provide(imagesTest()))
     );
 

@@ -9,6 +9,7 @@ import type {
   ImageProviderRefused,
   MediaImportBusy,
   MediaStoreUnavailable,
+  OwnImageLimitReached,
   PlanLimitReached,
   TooManyRequests,
   Unauthenticated,
@@ -25,6 +26,7 @@ export type ImageFailure =
   | ImageProviderRefused
   | MediaImportBusy
   | MediaStoreUnavailable
+  | OwnImageLimitReached
   | PlanLimitReached
   | TooManyRequests
   | Unauthenticated
@@ -48,6 +50,7 @@ export type ImageFailureKey =
   | "forbidden"
   | "generic"
   | "invalidAnswer"
+  | "ownLimit"
   | "providerAddress"
   | "providerKey"
   | "providerRefused"
@@ -73,6 +76,7 @@ export const imageFailureKey = (failure: ImageFailure): ImageFailureKey =>
     ImageProviderRefused: ({ reason }): ImageFailureKey => providerKeys[reason],
     MediaImportBusy: (): ImageFailureKey => "busy",
     MediaStoreUnavailable: (): ImageFailureKey => "storeDown",
+    OwnImageLimitReached: (): ImageFailureKey => "ownLimit",
     PlanLimitReached: (): ImageFailureKey => "storage",
     TooManyRequests: (): ImageFailureKey => "generic",
     Unauthenticated: (): ImageFailureKey => "generic",

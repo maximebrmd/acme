@@ -1,10 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
+import { DateTime } from "effect";
 import {
   AssistantFailed,
   AssistantInputRejected,
   AssistantUnavailable,
   ImageProviderRefused,
   MediaImportBusy,
+  OwnImageLimitReached,
   MediaStoreUnavailable,
 } from "peal-contract";
 
@@ -50,6 +52,17 @@ describe(imageFailureKey, () => {
           )
       )
     ).toStrictEqual(["providerRefused", "providerAddress", "providerKey"]);
+  });
+
+  it("says the workspace asked its own provider for all a day allows", () => {
+    expect(
+      imageFailureKey(
+        new OwnImageLimitReached({
+          dailyLimit: 50,
+          resetsAt: DateTime.makeUnsafe("2026-11-13T00:00:00Z"),
+        })
+      )
+    ).toBe("ownLimit");
   });
 
   it("offers to try again only where it may work", () => {

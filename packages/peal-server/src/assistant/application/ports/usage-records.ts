@@ -4,6 +4,7 @@ import type { Effect } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   ImageProviderRecord,
+  OwnImagesRecord,
   UsageRecord,
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -28,6 +29,13 @@ export class UsageRecords extends Context.Service<
     readonly exportImageProvider: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<ImageProviderRecord | null, DatabaseError>;
+    /**
+     * How many images the workspace asked its own provider for, by UTC
+     * day, oldest first.
+     */
+    readonly exportOwnImages: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly OwnImagesRecord[], DatabaseError>;
     /** Deletes the counts and the image provider, its key with it. */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId

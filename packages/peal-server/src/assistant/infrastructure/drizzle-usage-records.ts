@@ -6,7 +6,7 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import type { ImageProviderRecord } from "#shared/application/personal-data.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { dailyUsage, imageProviders } from "./schema.ts";
+import { dailyUsage, imageProviders, ownImageDays } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -22,6 +22,10 @@ export const DrizzleUsageRecordsLive = Layer.effect(
           yield* db
             .delete(dailyUsage)
             .where(eq(dailyUsage.workspaceId, workspaceId))
+            .pipe(Effect.mapError(failed));
+          yield* db
+            .delete(ownImageDays)
+            .where(eq(ownImageDays.workspaceId, workspaceId))
             .pipe(Effect.mapError(failed));
           yield* db
             .delete(imageProviders)
@@ -55,6 +59,16 @@ export const DrizzleUsageRecordsLive = Layer.effect(
             }),
             Effect.mapError(failed),
             Effect.withSpan("UsageRecords.exportImageProvider")
+          ),
+      exportOwnImages: (workspaceId) =>
+        db
+          .select({ day: ownImageDays.day, images: ownImageDays.images })
+          .from(ownImageDays)
+          .where(eq(ownImageDays.workspaceId, workspaceId))
+          .orderBy(asc(ownImageDays.day))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.withSpan("UsageRecords.exportOwnImages")
           ),
       exportWorkspace: (workspaceId) =>
         db

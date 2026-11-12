@@ -14,6 +14,7 @@ import {
   ImageProviderRefused,
   MediaImportBusy,
   MediaStoreUnavailable,
+  OwnImageLimitReached,
 } from "peal-contract";
 
 import type { ImageFailed } from "#assistant/application/image-failed.ts";
@@ -119,6 +120,8 @@ export const AssistantHandlers = HttpApiBuilder.group(
                 Effect.fail(new ImageProviderRefused({ reason, status })),
               ImagesBusy: () => Effect.fail(new MediaImportBusy()),
               MissingPermission: forbidden,
+              OwnImagesExhausted: ({ dailyLimit, resetsAt }) =>
+                Effect.fail(new OwnImageLimitReached({ dailyLimit, resetsAt })),
               PlanLimitReached: limitReached,
             })
           );

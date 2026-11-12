@@ -13,6 +13,7 @@ import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
 import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-image-providers.ts";
+import { DrizzleOwnImageCountsLive } from "#assistant/infrastructure/drizzle-own-image-counts.ts";
 import { GuardedProviderAddressCheck } from "#assistant/infrastructure/guarded-provider-address-check.ts";
 import { languageModelWritingModel } from "#assistant/infrastructure/language-model-writing-model.ts";
 import { LibraryGeneratedImagesLive } from "#assistant/infrastructure/library-generated-images.ts";
@@ -197,6 +198,7 @@ const SealedImageProviders = DrizzleImageProvidersLive.pipe(
 
 export const ImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
+  DrizzleOwnImageCountsLive,
   GuardedProviderAddressCheck.pipe(
     Layer.provide(
       OutboundGuard.layer.pipe(
@@ -217,6 +219,7 @@ export const ImageProvidersTest = Layer.mergeAll(
  */
 export const LoopbackImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
+  DrizzleOwnImageCountsLive,
   GuardedProviderAddressCheck.pipe(
     Layer.provide(OpenOutboundGuard),
     Layer.orDie
@@ -294,6 +297,9 @@ export const freshWorkspace = Effect.gen(function* freshWorkspace() {
     sql`DELETE FROM assistant.daily_usage WHERE workspace_id = ${workspaceId}`.pipe(
       Effect.andThen(
         sql`DELETE FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`
+      ),
+      Effect.andThen(
+        sql`DELETE FROM assistant.own_image_days WHERE workspace_id = ${workspaceId}`
       ),
       Effect.ignore
     )

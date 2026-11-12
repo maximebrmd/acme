@@ -445,6 +445,11 @@
     "tag": "OAuthClientNotPublished"
   },
   {
+    "code": "own_image_limit_reached",
+    "status": 429,
+    "tag": "OwnImageLimitReached"
+  },
+  {
     "code": "partner_accounts_closed",
     "status": 403,
     "tag": "PartnerAccountsClosed"

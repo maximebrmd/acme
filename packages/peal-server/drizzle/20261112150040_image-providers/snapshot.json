@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "4a8f7523-3486-40e6-ada2-e2ecb38f3457",
+  "id": "cf6801e4-d84f-4308-ae19-f023df231ee7",
   "prevIds": [
     "de972dd5-7f93-489e-86be-40e1950c4624"
   ],
@@ -25,6 +25,25 @@
       "reads": [
         "n|sch|assistant"
       ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "assistant",
+        "own_image_days"
+      ],
+      "writes": [
+        "s|tbl|assistant.own_image_days",
+        "n|tbl|assistant.own_image_days",
+        "e|tbl|assistant.own_image_days",
+        "n|rel|assistant.own_image_days",
+        "n|type|assistant.own_image_days",
+        "n|rel|assistant.own_image_days_pkey"
+      ],
+      "reads": [
+        "n|sch|assistant"
+      ]
     }
   ],
   "deltas": [
@@ -33,6 +52,15 @@
       "row": {
         "schema": "assistant",
         "name": "image_providers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "name": "own_image_days",
         "isRlsEnabled": false,
         "entityType": "tables"
       }
@@ -153,6 +181,68 @@
       "op": "create",
       "row": {
         "schema": "assistant",
+        "table": "own_image_days",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_image_days",
+        "name": "images",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_image_days",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_image_days",
+        "name": "own_image_days_pkey",
+        "columns": [
+          "workspace_id",
+          "day"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
         "table": "image_providers",
         "name": "image_providers_pkey",
         "columns": [
@@ -160,6 +250,16 @@
         ],
         "nameExplicit": false,
         "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_image_days",
+        "name": "own_image_days_images",
+        "value": "\"images\" >= 0",
+        "entityType": "checks"
       }
     }
   ]

@@ -6,6 +6,7 @@ import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
 import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-image-providers.ts";
+import { DrizzleOwnImageCountsLive } from "#assistant/infrastructure/drizzle-own-image-counts.ts";
 import { DrizzleUsageRecordsLive } from "#assistant/infrastructure/drizzle-usage-records.ts";
 import { GuardedProviderAddressCheck } from "#assistant/infrastructure/guarded-provider-address-check.ts";
 import { ImageModelLive } from "#assistant/infrastructure/image-model-live.ts";
@@ -44,6 +45,7 @@ export const AssistantLive = Layer.mergeAll(
         WritingModelLive,
         ImageModelLive,
         OwnImageModelLive,
+        DrizzleOwnImageCountsLive,
         DrizzleImageProvidersLive.pipe(Layer.provide(CipherProviderSecrets)),
         GuardedProviderAddressCheck.pipe(Layer.provide(OutboundGuard.layer)),
         CountedImageSlots,

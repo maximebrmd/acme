@@ -459,6 +459,13 @@ export interface ImageProviderRecord {
   readonly updatedAt: DateTime.Utc;
 }
 
+/** How many images a workspace asked its own provider for one UTC day. */
+export interface OwnImagesRecord {
+  /** YYYY-MM-DD. */
+  readonly day: string;
+  readonly images: number;
+}
+
 /** How many requests a workspace sent the writing assistant one UTC day. */
 export interface UsageRecord {
   /** YYYY-MM-DD. */

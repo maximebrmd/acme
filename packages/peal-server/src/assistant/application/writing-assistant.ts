@@ -8,6 +8,7 @@ import type { ImageNotStored } from "#assistant/application/image-not-stored.ts"
 import type { ImageProviderKeyRequired } from "#assistant/application/image-provider-key-required.ts";
 import type { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import type { ImagesBusy } from "#assistant/application/images-busy.ts";
+import type { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
 import type { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import type { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import type {
@@ -17,6 +18,7 @@ import type {
 import type { ImageModel } from "#assistant/application/ports/image-model.ts";
 import type { ImageProviders } from "#assistant/application/ports/image-providers.ts";
 import type { ImageSlots } from "#assistant/application/ports/image-slots.ts";
+import type { OwnImageCounts } from "#assistant/application/ports/own-image-counts.ts";
 import type { OwnImageModel } from "#assistant/application/ports/own-image-model.ts";
 import type { PlatformLimits } from "#assistant/application/ports/platform-limits.ts";
 import type { ProviderAddressCheck } from "#assistant/application/ports/provider-address-check.ts";
@@ -56,6 +58,7 @@ type AssistantPorts =
   | ImageModel
   | ImageProviders
   | ImageSlots
+  | OwnImageCounts
   | OwnImageModel
   | PlatformLimits
   | ProviderAddressCheck
@@ -76,6 +79,7 @@ export type GenerateImageFailure =
   | ImageProviderRefused
   | ImagesBusy
   | MissingPermission
+  | OwnImagesExhausted
   | PlanLimitReached;
 
 export type SaveImageProviderFailure =

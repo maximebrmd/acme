@@ -215,6 +215,10 @@ const GenerateDialog = ({
               <Alert variant="destructive">
                 <AlertTitle>
                   {t(`errors.${imageFailureKey(failure)}`, {
+                    dailyLimit:
+                      failure._tag === "OwnImageLimitReached"
+                        ? failure.dailyLimit
+                        : 0,
                     maxLength: images.maxPromptLength,
                   })}
                 </AlertTitle>

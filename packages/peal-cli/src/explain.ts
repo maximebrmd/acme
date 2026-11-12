@@ -633,6 +633,10 @@ const reasonOf =
         refused(
           `The ${kind} weighs ${size(byteSize)}, and Peal stores ${kind}s up to ${size(maxByteSize)}.`
         ),
+      OwnImageLimitReached: ({ dailyLimit }) =>
+        refused(
+          `The workspace asked its own image provider for ${String(dailyLimit)} images today, the most a day allows: nothing was made, and none of Peal's requests were spent. Ask again after midnight UTC.`
+        ),
       PartnerNotFound: () =>
         refused(
           "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."

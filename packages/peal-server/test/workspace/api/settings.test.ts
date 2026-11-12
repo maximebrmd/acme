@@ -265,6 +265,7 @@ const PortsLive = Layer.mergeAll(
               model: "synthetic-image-model",
               updatedAt: at,
             },
+            assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
               meteredPosts: [
@@ -960,6 +961,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           body.workspaces.map(
             ({
               assistantImageProvider,
+              assistantOwnImages,
               assistantUsage,
               billing,
               name,
@@ -967,6 +969,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
               webhooks,
             }) => ({
               assistantImageProvider,
+              assistantOwnImages,
               assistantUsage,
               name,
               plan: billing.plan,
@@ -993,6 +996,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                 model: "synthetic-image-model",
                 updatedAt: at,
               },
+              assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",

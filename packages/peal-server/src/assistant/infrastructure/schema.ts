@@ -49,3 +49,19 @@ export const imageProviders = assistant.table("image_providers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });
+
+// How many images each workspace asked its own provider for each UTC day,
+// bounded by `ownImagesPerDay`: counts only, apart from Peal's requests,
+// which billing reads.
+export const ownImageDays = assistant.table(
+  "own_image_days",
+  {
+    day: date("day", { mode: "string" }).notNull(),
+    images: integer("images").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.day] }),
+    check("own_image_days_images", sql`${table.images} >= 0`),
+  ]
+);

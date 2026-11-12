@@ -162,6 +162,10 @@ export const MediaToolsLive = MediaTools.toLayer(
                     "The workspace already has two images being made, or the server as many as it makes together: nothing was asked. Call again in a moment, once one has finished."
                   ),
                 MissingPermission: notAllowed("make an image into the media"),
+                OwnImagesExhausted: ({ dailyLimit }) =>
+                  refuse(
+                    `The workspace asked its own image provider for ${String(dailyLimit)} images today, the most a day allows, whatever each ended with: nothing was made. Ask again after midnight UTC.`
+                  ),
                 PlanLimitReached: refusedByPlan(
                   maker.workspaceId,
                   "Nothing was made."
