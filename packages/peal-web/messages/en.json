@@ -1382,7 +1382,7 @@
       "updating": "Updating the previews…",
       "failed": "The previews could not be updated. Writing and saving still work.",
       "retry": "Try again",
-      "refused": "Would be refused as it is: see the lengths and options above.",
+      "refused": "Would be refused as it is: see the lengths and options below.",
       "noText": "No text on this channel.",
       "textNotSent": "This format goes out without the text.",
       "part": "Part {position}",

@@ -267,7 +267,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   last answer from the moment the post changes; a failure offers "Try
   again", a `Forbidden` hides the previews. It draws the text with
   `PreviewedText`, as the review page does, and repeats no violation: it
-  marks the channel and points up. Never imitate a platform's look.
+  marks the channel and points down to the counters. Never imitate a platform's look.
 - The posts list (`…/posts`, `PostList`, views in `post-list-views.tsx`)
   keeps its filters in the query string (`#posts/post-list-filter.ts`:
   `filtersOf`, `queryOf`, `withFilter`), so a link shows the same list,
