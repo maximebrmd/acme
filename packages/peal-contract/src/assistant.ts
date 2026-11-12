@@ -51,20 +51,30 @@ export type TranslationLanguage = typeof TranslationLanguageSchema.Type;
  * - `shorten`: the post cut down to fit `platform`'s limits.
  * - `translate`: the post in another `language`.
  * - `hashtags`: hashtags that suit the post, to add to it.
+ * - `write`: a first post from a subject: the request's `text` says what
+ *   the post is about, in the person's words. Optionally in a `tone`, in a
+ *   `language` (else the subject's own), and within the limits of a
+ *   `platform`.
  */
 export const AssistantActionSchema = Schema.Union([
   Schema.TaggedStruct("rewrite", { tone: AssistantToneSchema }),
   Schema.TaggedStruct("shorten", { platform: PlatformSchema }),
   Schema.TaggedStruct("translate", { language: TranslationLanguageSchema }),
   Schema.TaggedStruct("hashtags", {}),
+  Schema.TaggedStruct("write", {
+    language: Schema.optionalKey(TranslationLanguageSchema),
+    platform: Schema.optionalKey(PlatformSchema),
+    tone: Schema.optionalKey(AssistantToneSchema),
+  }),
 ]).annotate({ identifier: "AssistantAction" });
 
 export type AssistantAction = typeof AssistantActionSchema.Type;
 
 export const SuggestionRequestSchema = Schema.Struct({
   action: AssistantActionSchema,
-  // The post's text, as plain text. The assistant takes at most the
-  // status's `maxTextLength`; this bounds what the request can carry.
+  // The post's text, as plain text, or for `write` the post's subject. The
+  // assistant takes at most the status's `maxTextLength`; this bounds what
+  // the request can carry.
   text: Schema.String.check(Schema.isMaxLength(maxPostTextLength)),
 }).annotate({ identifier: "SuggestionRequest" });
 
@@ -132,7 +142,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
+          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
         summary: "Suggest a change to a post's text",
       })
     )

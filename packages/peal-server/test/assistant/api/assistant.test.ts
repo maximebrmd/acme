@@ -93,6 +93,30 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
     }).pipe(Effect.provide(assistantTest({ dailyRequests: 2 })))
   );
 
+  it.effect("write a post from a subject", () =>
+    Effect.gen(function* writes() {
+      const workspaceId = yield* freshWorkspace;
+      const client = yield* as(workspaceId);
+
+      yield* FakeModel.use((model) =>
+        model.replyWith(answer({ text: "Nos soldes de printemps commencent." }))
+      );
+
+      const suggestion = yield* client.assistant.suggest({
+        params: { workspaceId },
+        payload: {
+          action: { _tag: "write", language: "fr", platform: "bluesky" },
+          text: "Our spring sale starts today.",
+        },
+      });
+
+      assert.deepStrictEqual(suggestion, {
+        _tag: "text",
+        text: "Nos soldes de printemps commencent.",
+      });
+    }).pipe(Effect.provide(assistantTest()))
+  );
+
   it.effect("answer a typed error past the quota", () =>
     Effect.gen(function* quota() {
       const workspaceId = yield* freshWorkspace;

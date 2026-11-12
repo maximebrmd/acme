@@ -23,18 +23,25 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 /** What to do with which text, for a workspace. */
 export interface SuggestionRequest {
   readonly action: AssistantAction;
-  /** The post's text, as its author wrote it. */
+  /** The post's text, as its author wrote it; for `write`, the subject. */
   readonly text: string;
   readonly workspaceId: WorkspaceId;
 }
 
 const noLimits: readonly TextLimit[] = [];
 
-// The limits a shortened post must fit; the other actions have none.
-const limitsFor = (action: AssistantAction) =>
-  action._tag === "shorten"
-    ? PlatformLimits.use((limits) => limits.textLimitsOf(action.platform))
-    : Effect.succeed(noLimits);
+// The limits of the platform a post is shortened or written for; the other
+// actions have none.
+const limitsFor = (action: AssistantAction) => {
+  const platform =
+    action._tag === "shorten" || action._tag === "write"
+      ? action.platform
+      : undefined;
+
+  return platform === undefined
+    ? Effect.succeed(noLimits)
+    : PlatformLimits.use((limits) => limits.textLimitsOf(platform));
+};
 
 /**
  * Asks the model for a suggestion on a post's text, and checks what it

@@ -1,7 +1,9 @@
 # Writing assistant
 
 - The assistant suggests a change to a post's text (rewrite in a tone,
-  shorten to fit a platform, translate, suggest hashtags) through the
+  shorten to fit a platform, translate, suggest hashtags), or writes a
+  first post from a subject (`write`, optionally in a tone, a language and
+  a platform's limits), through the
   `WritingModel` port: Anthropic (`@effect/ai-anthropic`) or any
   OpenAI-compatible endpoint that serves `/chat/completions`
   (`@effect/ai-openai-compat`: `@effect/ai-openai` calls `/responses`
@@ -11,7 +13,8 @@
   `available: false`.
 - Drafts are data, never instructions. The system message depends on the
   action alone (`assistant/domain/writing-prompt.ts`); the draft goes in the
-  user message as the single field of a JSON document. Never put a draft's
+  user message as the single field of a JSON document (`draft`, or
+  `subject` for `write`, the plan's `field`). Never put a draft's
   text, or anything a member typed, in the instructions.
 - The model answers in a shape Schema decodes, and the domain checks it
   (`suggestion.ts`) before anyone sees it. Answers are returned whole, never

@@ -89,10 +89,17 @@ const TitleOf = ({ action }: { readonly action: AssistantAction }) => {
       t("translateTitle", {
         language: languageNames(locale).of(language) ?? language,
       }),
+    write: () => t("writeTitle"),
   });
 };
 
-// How the shortened text fits the platform it was cut for.
+// The platform a text was shortened or written for, if any.
+const fittedTo = (action: AssistantAction) =>
+  action._tag === "shorten" || action._tag === "write"
+    ? action.platform
+    : undefined;
+
+// How the text fits the platform it was shortened or written for.
 const FitOf = ({
   action,
   text,
@@ -103,18 +110,20 @@ const FitOf = ({
   const t = useTranslations("Assistant");
   const tPosts = useTranslations("Posts");
 
-  if (action._tag !== "shorten") {
+  const platform = fittedTo(action);
+
+  if (platform === undefined) {
     return null;
   }
 
-  const { tightest } = fitOn(action.platform, text, 0);
+  const { tightest } = fitOn(platform, text, 0);
 
   return tightest === undefined ? null : (
     <Badge variant={tightest.remaining < 0 ? "destructive" : "outline"}>
       {t("fit", {
         length: tightest.length,
         maximum: tightest.maximum,
-        platform: tPosts("platform", { platform: action.platform }),
+        platform: tPosts("platform", { platform }),
         unit: tightest.unit,
       })}
     </Badge>
