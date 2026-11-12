@@ -803,8 +803,12 @@ export class Feeds extends Context.Service<
               return Option.none<Feed>();
             }
 
+            // Held from when it is taken, not from when the run began: a
+            // feed taken late in a run keeps its whole lease.
+            const takenAt = yield* DateTime.now;
+
             yield* store.update(
-              leaseFeed(locked.value, DateTime.addDuration(now, readLease))
+              leaseFeed(locked.value, DateTime.addDuration(takenAt, readLease))
             );
 
             return Option.some(locked.value);
