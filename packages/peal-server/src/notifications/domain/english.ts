@@ -281,6 +281,29 @@ export const english: EmailCatalog = {
       "You receive this email because you wrote this post in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
+  recoveryCodesLeft: {
+    none: "You have no recovery code left: make new ones in your account settings.",
+    one: "You have {count} recovery code left.",
+    other: "You have {count} recovery codes left.",
+  },
+  recyclingEndReasons: {
+    contentRejected: "a platform refuses what the next post would say.",
+    noChannels: "none of its channels is connected any more.",
+    planLimit: "the plan has no room left for posts that month.",
+    queueFull: "its queue has no free slot.",
+    queueGone: "its queue was deleted.",
+    sourceGone: "the post it repeats was deleted.",
+    sourceWithdrawn:
+      "the post it repeats was cancelled or taken back to draft: schedule it again, then resume the repeat.",
+    starterGone: "whoever started it can no longer schedule posts there.",
+  },
+  recyclingEnded: {
+    action: "Open the repeating posts",
+    body: "A post of {workspaceName} no longer repeats: {reason} The posts it already made stay as they are. Once that is put right, resume it or start it again from the repeating posts in the workspace’s settings.",
+    ignore:
+      "You receive this email because you started this repeat in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A post no longer repeats",
+  },
   renewalDeadline: "Last day to refuse the renewal: {renewsAt}",
   resetPassword: {
     action: "Choose a new password",
@@ -342,6 +365,43 @@ export const english: EmailCatalog = {
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial has started: it ends on {endsAt}",
+  },
+  twoStepChanged: {
+    recoveryCodeUsed: {
+      action: "Open my account settings",
+      body: "A recovery code was just used to sign in to your Peal account, in place of a code from your authenticator app. It works no more. {left}",
+      ignore:
+        "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
+      subject: "A recovery code was used to sign in to Peal",
+    },
+    recoveryCodesRenewed: {
+      action: "Open my account settings",
+      body: "New recovery codes were just made for your Peal account’s two-step verification. The codes you had before no longer work.",
+      ignore:
+        "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
+      subject: "New recovery codes for your Peal account",
+    },
+    resetByStaff: {
+      action: "Open my account settings",
+      body: "The people who run this Peal server turned off two-step verification on your account: its authenticator and recovery codes are deleted, the browsers it trusted are forgotten, and every session is signed out. Sign in with your password, then turn it on again in your account settings.",
+      ignore:
+        "If you did not ask for it, change your password at once, turn two-step verification on again, and tell whoever runs this Peal server.",
+      subject: "Two-step verification was reset on your Peal account",
+    },
+    turnedOff: {
+      action: "Open my account settings",
+      body: "Two-step verification was just turned off for your Peal account: signing in asks for your password alone.",
+      ignore:
+        "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
+      subject: "Two-step verification is off for your Peal account",
+    },
+    turnedOn: {
+      action: "Open my account settings",
+      body: "Two-step verification was just turned on for your Peal account: signing in asks for a code from your authenticator app after your password. Keep your recovery codes somewhere safe.",
+      ignore:
+        "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
+      subject: "Two-step verification is on for your Peal account",
+    },
   },
   unknownChannel: "a disconnected channel",
   verifyEmail: {

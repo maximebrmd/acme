@@ -9,7 +9,9 @@
   records the workspace's id in `analytics.erased_workspaces`, and `track`
   passes those over, under a transaction advisory lock erasures share and
   following holds alone, so a run that listed a workspace's posts before
-  it was erased follows none of them after.
+  it was erased follows none of them after. Stories are not followed:
+  `PublishingPublishedPosts` asks the listing to leave them out in its
+  query (`without`), so a page is never short before the end.
 - TikTok reads public posts' counts with the Display API's video query, 20
   ids a call, with the channel's token when its scopes include
   `video.list`; a post known by its `publish_id` (not digits) is missing

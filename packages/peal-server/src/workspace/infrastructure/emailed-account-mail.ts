@@ -54,6 +54,18 @@ export const EmailedAccountMail = Layer.effect(
             via,
           })
         ).pipe(Effect.asVoid),
+      twoStepChanged: ({ email, kind, locale, recoveryCodesLeft }) =>
+        FiberSet.run(
+          fibers,
+          emails.send({
+            _tag: "TwoStepChanged",
+            kind,
+            locale,
+            recoveryCodesLeft,
+            to: email,
+            url: `${home(locale)}/app/account`,
+          })
+        ).pipe(Effect.asVoid),
       workspaceDeleted: ({
         email,
         locale,

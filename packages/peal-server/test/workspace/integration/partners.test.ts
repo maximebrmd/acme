@@ -125,6 +125,7 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/review/settings`,
   `/api/workspaces/${workspaceId}/connect-links`,
   `/api/workspaces/${workspaceId}/queues`,
+  `/api/workspaces/${workspaceId}/recycling`,
   // The numbers and their exports, and the comments under its posts.
   `/api/workspaces/${workspaceId}/analytics/dashboard?days=7&timeZone=Europe/Paris`,
   `/api/workspaces/${workspaceId}/analytics/export?kind=posts&days=7&timeZone=Europe/Paris`,
@@ -738,6 +739,26 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             const reply = yield* app.request(
               `/api/workspaces/${workspaceId}/queues/0190f3a0-0000-7000-8000-00000000c0de/reshuffle`,
               { headers: bearer(alphaKey), method: "POST" }
+            );
+
+            assert.strictEqual(reply.status, 404, workspaceId);
+            assert.deepInclude(reply.body, { _tag: tag }, workspaceId);
+          }
+
+          // A live post is edited in its partner's workspaces alone: the
+          // post is looked for there, and nowhere else.
+          for (const [workspaceId, tag] of [
+            [ofAlpha.id, "PostNotFound"],
+            [ofBeta.id, "WorkspaceNotFound"],
+            [ordinary, "WorkspaceNotFound"],
+          ] as const) {
+            const reply = yield* app.request(
+              `/api/workspaces/${workspaceId}/posts/0190f3a0-0000-7000-8000-00000000c0de/targets/0190f3a0-0000-7000-8000-00000000c0df/edit`,
+              {
+                body: { text: "Corrected" },
+                headers: bearer(alphaKey),
+                method: "POST",
+              }
             );
 
             assert.strictEqual(reply.status, 404, workspaceId);

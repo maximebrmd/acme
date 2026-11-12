@@ -62,6 +62,7 @@ public partial class PealClient : IPealClient
         Signatures = new SignaturesClient(_client);
         ChannelSets = new ChannelSetsClient(_client);
         Queues = new QueuesClient(_client);
+        Recycling = new RecyclingClient(_client);
         ChannelDefaults = new ChannelDefaultsClient(_client);
     }
 
@@ -122,6 +123,8 @@ public partial class PealClient : IPealClient
     public IChannelSetsClient ChannelSets { get; }
 
     public IQueuesClient Queues { get; }
+
+    public IRecyclingClient Recycling { get; }
 
     public IChannelDefaultsClient ChannelDefaults { get; }
 }

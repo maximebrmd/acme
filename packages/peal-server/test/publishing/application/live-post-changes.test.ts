@@ -135,7 +135,10 @@ const deletedOn = (channelId: ChannelId) =>
   FakeRemovals.use((removals) => removals.calls).pipe(
     Effect.map((calls) =>
       calls
-        .filter(({ request }) => request.channelId === channelId)
+        .filter(
+          ({ kind, request }) =>
+            kind === "remove" && request.channelId === channelId
+        )
         .map(({ request }) => request.platformPostId)
     )
   );

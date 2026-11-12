@@ -10,6 +10,8 @@ public readonly record struct LivePostChangeKind : IStringEnum
 {
     public static readonly LivePostChangeKind Unpublish = new(Values.Unpublish);
 
+    public static readonly LivePostChangeKind Edit = new(Values.Edit);
+
     public LivePostChangeKind(string value)
     {
         Value = value;
@@ -107,5 +109,7 @@ public readonly record struct LivePostChangeKind : IStringEnum
     public static class Values
     {
         public const string Unpublish = "unpublish";
+
+        public const string Edit = "edit";
     }
 }

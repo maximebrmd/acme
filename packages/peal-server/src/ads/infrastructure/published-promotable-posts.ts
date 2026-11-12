@@ -4,12 +4,18 @@ import { PromotablePosts } from "#ads/application/ports/promotable-posts.ts";
 import type { PublishedOn } from "#ads/application/ports/promotable-posts.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
+import type { PublishedTarget } from "#publishing/application/published-targets.ts";
+
+// A boost promotes a Page's post: a story leaves after a day, and a reel
+// is known by its video's id, which no ad promotes. Only feed posts are
+// offered.
+const isFeedPost = (target: PublishedTarget) => Option.isNone(target.format);
 
 /**
  * The workspace's published posts as publishing lists them, each with its
  * channel's account as the channels context holds it. A target whose
  * channel was disconnected since is left out: nothing says which account
- * published it.
+ * published it, and so is a story or a reel (`isFeedPost`).
  */
 export const PublishedPromotablePosts = Layer.effect(
   PromotablePosts,
@@ -25,10 +31,12 @@ export const PublishedPromotablePosts = Layer.effect(
             Effect.map(
               (targets) =>
                 new Map(
-                  targets.map(
-                    ({ platformPostId, postId, targetId }) =>
-                      [String(platformPostId), { postId, targetId }] as const
-                  )
+                  targets
+                    .filter(isFeedPost)
+                    .map(
+                      ({ platformPostId, postId, targetId }) =>
+                        [String(platformPostId), { postId, targetId }] as const
+                    )
                 )
             )
           ),
@@ -37,7 +45,7 @@ export const PublishedPromotablePosts = Layer.effect(
           const targets = yield* published.ofPost(workspaceId, postId);
           const found: PublishedOn[] = [];
 
-          for (const target of targets) {
+          for (const target of targets.filter(isFeedPost)) {
             const channel = yield* channels.findById(
               workspaceId,
               target.channelId

@@ -13,10 +13,15 @@ pub struct Post {
     #[serde(default)]
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outcome: Option<PostOutcome>,
     #[serde(rename = "queueId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_id: Option<String>,
+    #[serde(rename = "recyclingId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recycling_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<PostSchedule>,
     #[serde(rename = "scheduledBy")]
@@ -48,8 +53,10 @@ pub struct PostBuilder {
     content: Option<PostContent>,
     created_via: Option<PostOrigin>,
     id: Option<String>,
+    occurrence: Option<i64>,
     outcome: Option<PostOutcome>,
     queue_id: Option<String>,
+    recycling_id: Option<String>,
     schedule: Option<PostSchedule>,
     scheduled_by: Option<String>,
     scheduled_via: Option<PostOrigin>,
@@ -80,6 +87,11 @@ impl PostBuilder {
         self
     }
 
+    pub fn occurrence(mut self, value: i64) -> Self {
+        self.occurrence = Some(value);
+        self
+    }
+
     pub fn outcome(mut self, value: PostOutcome) -> Self {
         self.outcome = Some(value);
         self
@@ -87,6 +99,11 @@ impl PostBuilder {
 
     pub fn queue_id(mut self, value: impl Into<String>) -> Self {
         self.queue_id = Some(value.into());
+        self
+    }
+
+    pub fn recycling_id(mut self, value: impl Into<String>) -> Self {
+        self.recycling_id = Some(value.into());
         self
     }
 
@@ -140,8 +157,10 @@ impl PostBuilder {
                 .ok_or_else(|| BuildError::missing_field("content"))?,
             created_via: self.created_via,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
+            occurrence: self.occurrence,
             outcome: self.outcome,
             queue_id: self.queue_id,
+            recycling_id: self.recycling_id,
             schedule: self.schedule,
             scheduled_by: self.scheduled_by,
             scheduled_via: self.scheduled_via,

@@ -9,8 +9,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'UnknownChannels'
-     *   |'InvalidTimeZone'
+     *    'RecyclingEndsTooSoon'
+     *   |'RecyclingVariantsInvalid'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    UnknownChannelsEncoded
-     *   |InvalidTimeZoneEncoded
+     *    RecyclingEndsTooSoonEncoded
+     *   |RecyclingVariantsInvalidEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'UnknownChannels'
-     *   |'InvalidTimeZone'
+     *    'RecyclingEndsTooSoon'
+     *   |'RecyclingVariantsInvalid'
      *   |'_unknown'
      * ),
      *   value: (
-     *    UnknownChannelsEncoded
-     *   |InvalidTimeZoneEncoded
+     *    RecyclingEndsTooSoonEncoded
+     *   |RecyclingVariantsInvalidEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param UnknownChannelsEncoded $unknownChannels
+     * @param RecyclingEndsTooSoonEncoded $recyclingEndsTooSoon
      * @return UnprocessableEntityErrorBody
      */
-    public static function unknownChannels(UnknownChannelsEncoded $unknownChannels): UnprocessableEntityErrorBody
+    public static function recyclingEndsTooSoon(RecyclingEndsTooSoonEncoded $recyclingEndsTooSoon): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'UnknownChannels',
-            'value' => $unknownChannels,
+            'type' => 'RecyclingEndsTooSoon',
+            'value' => $recyclingEndsTooSoon,
         ]);
     }
 
     /**
-     * @param InvalidTimeZoneEncoded $invalidTimeZone
+     * @param RecyclingVariantsInvalidEncoded $recyclingVariantsInvalid
      * @return UnprocessableEntityErrorBody
      */
-    public static function invalidTimeZone(InvalidTimeZoneEncoded $invalidTimeZone): UnprocessableEntityErrorBody
+    public static function recyclingVariantsInvalid(RecyclingVariantsInvalidEncoded $recyclingVariantsInvalid): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'InvalidTimeZone',
-            'value' => $invalidTimeZone,
+            'type' => 'RecyclingVariantsInvalid',
+            'value' => $recyclingVariantsInvalid,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isUnknownChannels(): bool
+    public function isRecyclingEndsTooSoon(): bool
     {
-        return $this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels';
+        return $this->value instanceof RecyclingEndsTooSoonEncoded && $this->type === 'RecyclingEndsTooSoon';
     }
 
     /**
-     * @return UnknownChannelsEncoded
+     * @return RecyclingEndsTooSoonEncoded
      */
-    public function asUnknownChannels(): UnknownChannelsEncoded
+    public function asRecyclingEndsTooSoon(): RecyclingEndsTooSoonEncoded
     {
-        if (!($this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels')) {
+        if (!($this->value instanceof RecyclingEndsTooSoonEncoded && $this->type === 'RecyclingEndsTooSoon')) {
             throw new Exception(
-                "Expected UnknownChannels; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected RecyclingEndsTooSoon; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isInvalidTimeZone(): bool
+    public function isRecyclingVariantsInvalid(): bool
     {
-        return $this->value instanceof InvalidTimeZoneEncoded && $this->type === 'InvalidTimeZone';
+        return $this->value instanceof RecyclingVariantsInvalidEncoded && $this->type === 'RecyclingVariantsInvalid';
     }
 
     /**
-     * @return InvalidTimeZoneEncoded
+     * @return RecyclingVariantsInvalidEncoded
      */
-    public function asInvalidTimeZone(): InvalidTimeZoneEncoded
+    public function asRecyclingVariantsInvalid(): RecyclingVariantsInvalidEncoded
     {
-        if (!($this->value instanceof InvalidTimeZoneEncoded && $this->type === 'InvalidTimeZone')) {
+        if (!($this->value instanceof RecyclingVariantsInvalidEncoded && $this->type === 'RecyclingVariantsInvalid')) {
             throw new Exception(
-                "Expected InvalidTimeZone; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected RecyclingVariantsInvalid; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'UnknownChannels':
-                $value = $this->asUnknownChannels()->jsonSerialize();
+            case 'RecyclingEndsTooSoon':
+                $value = $this->asRecyclingEndsTooSoon()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'InvalidTimeZone':
-                $value = $this->asInvalidTimeZone()->jsonSerialize();
+            case 'RecyclingVariantsInvalid':
+                $value = $this->asRecyclingVariantsInvalid()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'UnknownChannels':
-                $args['value'] = UnknownChannelsEncoded::jsonDeserialize($data);
+            case 'RecyclingEndsTooSoon':
+                $args['value'] = RecyclingEndsTooSoonEncoded::jsonDeserialize($data);
                 break;
-            case 'InvalidTimeZone':
-                $args['value'] = InvalidTimeZoneEncoded::jsonDeserialize($data);
+            case 'RecyclingVariantsInvalid':
+                $args['value'] = RecyclingVariantsInvalidEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

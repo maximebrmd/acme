@@ -1,6 +1,6 @@
 import { Option } from "effect";
-import type { Media, MediaKind, Platform } from "peal-contract";
-import { measureText, platformRules } from "peal-contract/post-text";
+import type { Media, MediaKind, Platform, TargetOptions } from "peal-contract";
+import { measureText, rulesFor } from "peal-contract/post-text";
 import type { FormatLimits, MediaRules } from "peal-contract/post-text";
 
 // What each platform would refuse in the post's images and videos, checked
@@ -241,14 +241,18 @@ const fileProblems = (
 /**
  * How the attached media fits `platform`: each file's type, size, duration,
  * dimensions and alt text, whether a file that goes alone has company, then
- * how many videos there are and whether they come with images. Media not described yet is checked once it is; how
- * many the platform shows is the text's fit (see character-count.ts).
+ * how many videos there are and whether they come with images, by the
+ * rules of the format the channel's `options` choose (a story, a reel:
+ * `rulesFor`). Media not described yet is checked once it is; how many the
+ * platform shows is the text's fit (see character-count.ts).
  */
 export const mediaFitOn = (
   platform: Platform,
-  attached: readonly AttachedMedia[]
+  attached: readonly AttachedMedia[],
+  options?: TargetOptions
 ): MediaFit => {
-  const rules = platformRules[platform].media;
+  const inForce = rulesFor(platform, options);
+  const rules = inForce.media;
 
   // A platform whose media rules are not known may take images and videos
   // nobody can check here; a document goes only where the rules say so.
@@ -286,7 +290,7 @@ export const mediaFitOn = (
 
   // A file that takes fewer companions than the platform's own count, as
   // X's GIFs, which go alone. Past that count, the text's fit says so.
-  const { maxMedia } = platformRules[platform];
+  const { maxMedia } = inForce;
 
   const fewest = Math.min(
     ...known.map(
@@ -337,6 +341,11 @@ export const mediaFitOn = (
 /** Whether the platform would take the post's media as it is. */
 export const mediaFits = (fit: MediaFit): boolean => fit.problems.length === 0;
 
-/** Where a platform shows alt text to people who need it. */
-export const showsAltText = (platform: Platform): boolean =>
-  platformRules[platform].media?.showsAltText ?? false;
+/**
+ * Where a platform shows alt text to people who need it, with the
+ * channel's `options`: a story keeps none.
+ */
+export const showsAltText = (
+  platform: Platform,
+  options?: TargetOptions
+): boolean => rulesFor(platform, options).media?.showsAltText ?? false;

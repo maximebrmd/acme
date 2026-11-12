@@ -14,6 +14,9 @@ pub struct MeUser {
     pub locale: MeUserLocale,
     #[serde(default)]
     pub name: String,
+    #[serde(rename = "twoStepEnabled")]
+    #[serde(default)]
+    pub two_step_enabled: bool,
 }
 
 impl MeUser {
@@ -31,6 +34,7 @@ pub struct MeUserBuilder {
     image: Option<String>,
     locale: Option<MeUserLocale>,
     name: Option<String>,
+    two_step_enabled: Option<bool>,
 }
 
 impl MeUserBuilder {
@@ -64,6 +68,11 @@ impl MeUserBuilder {
         self
     }
 
+    pub fn two_step_enabled(mut self, value: bool) -> Self {
+        self.two_step_enabled = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`MeUser`].
     /// This method will fail if any of the following fields are not set:
     /// - [`email`](MeUserBuilder::email)
@@ -71,6 +80,7 @@ impl MeUserBuilder {
     /// - [`id`](MeUserBuilder::id)
     /// - [`locale`](MeUserBuilder::locale)
     /// - [`name`](MeUserBuilder::name)
+    /// - [`two_step_enabled`](MeUserBuilder::two_step_enabled)
     pub fn build(self) -> Result<MeUser, BuildError> {
         Ok(MeUser {
             email: self
@@ -85,6 +95,9 @@ impl MeUserBuilder {
                 .locale
                 .ok_or_else(|| BuildError::missing_field("locale"))?,
             name: self.name.ok_or_else(|| BuildError::missing_field("name"))?,
+            two_step_enabled: self
+                .two_step_enabled
+                .ok_or_else(|| BuildError::missing_field("two_step_enabled"))?,
         })
     }
 }

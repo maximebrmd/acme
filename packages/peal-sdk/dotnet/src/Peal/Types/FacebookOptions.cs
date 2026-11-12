@@ -5,7 +5,7 @@ using Peal.Core;
 namespace Peal;
 
 /// <summary>
-/// How a post goes out on a Facebook Page. Scheduling needs none of them; `videoTitle` is for a post of a video.
+/// How a post goes out on a Facebook Page. Scheduling needs none of them; `format` makes it a `story`, sent without the post's text, or a `reel`; `videoTitle` is for a post of a video or a reel.
 /// </summary>
 [Serializable]
 public record FacebookOptions : IJsonOnDeserialized
@@ -13,6 +13,9 @@ public record FacebookOptions : IJsonOnDeserialized
     [JsonExtensionData]
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
+
+    [JsonPropertyName("format")]
+    public FacebookFormat? Format { get; set; }
 
     [JsonPropertyName("videoTitle")]
     public string? VideoTitle { get; set; }

@@ -24,6 +24,7 @@ import type {
 import type {
   FormatLimits,
   MediaRules,
+  PlatformRules,
 } from "#publishing/domain/platform-rules.ts";
 
 // Absent values are null in what clients read.
@@ -50,11 +51,10 @@ const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
  * alike.
  */
 // What Peal can do to a post once it is live, as clients read it: each
-// action, and why not, when it is known. Editing is not built yet: it is
-// false everywhere, with the reason only where the platform stops it.
+// action, and why not where Peal cannot.
 const livePostView = (ability: PlatformCapabilities["livePost"]) => ({
-  edit: false,
-  ...Option.match(ability.editBlockedBy, {
+  edit: Option.isNone(ability.edit),
+  ...Option.match(ability.edit, {
     onNone: () => ({}),
     onSome: (blocker) => ({ editBlockedBy: blocker }),
   }),
@@ -101,6 +101,23 @@ const formatsView = (media: MediaRules): readonly MediaFormatView[] =>
     return limits === undefined ? [] : [formatView(contentType, limits)];
   });
 
+// What the rules take of a post's images and videos, with the most files
+// and the longest alt text Peal takes there.
+const mediaView = (
+  rules: PlatformRules,
+  limits: { readonly maxAltTextLength: number; readonly maxMedia: number }
+): PlatformCapabilitiesView["media"] => ({
+  altText: {
+    maxLength: limits.maxAltTextLength,
+    shown: orNull(rules.media?.showsAltText),
+  },
+  formats: rules.media === undefined ? null : formatsView(rules.media),
+  maxCount: limits.maxMedia,
+  maxVideos: orNull(rules.media?.maxVideos),
+  mixesKinds: orNull(rules.media?.mixesKinds),
+  required: rules.mediaRequired,
+});
+
 const isPostCount = Schema.is(Schema.Literals(postCountNames));
 
 const isAccountNumber = Schema.is(Schema.Literals(accountNumberNames));
@@ -114,7 +131,7 @@ export const platformCapabilitiesView = (
 ): PlatformCapabilitiesView => {
   const { rules } = capabilities;
 
-  return {
+  const view: PlatformCapabilitiesView = {
     analytics: {
       accountNumbers: capabilities.counted.account.filter(isAccountNumber),
       perPost: capabilities.countsPosts,
@@ -126,17 +143,7 @@ export const platformCapabilitiesView = (
         : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
     livePost: livePostView(capabilities.livePost),
     lookups: capabilities.lookups.map(lookupDescriptionView),
-    media: {
-      altText: {
-        maxLength: capabilities.maxAltTextLength,
-        shown: orNull(rules.media?.showsAltText),
-      },
-      formats: rules.media === undefined ? null : formatsView(rules.media),
-      maxCount: capabilities.maxMedia,
-      maxVideos: orNull(rules.media?.maxVideos),
-      mixesKinds: orNull(rules.media?.mixesKinds),
-      required: rules.mediaRequired,
-    },
+    media: mediaView(rules, capabilities),
     options: {
       constraints: capabilities.optionConstraints,
       fields: capabilities.options.map(fieldView),
@@ -151,6 +158,20 @@ export const platformCapabilitiesView = (
     },
     version: capabilities.version,
   };
+
+  const formats = capabilities.postFormats;
+
+  return formats === undefined
+    ? view
+    : {
+        ...view,
+        postFormats: formats.map((format) => ({
+          description: format.description,
+          media: mediaView(format.rules, format),
+          name: format.name,
+          sendsText: format.rules.sendsText !== false,
+        })),
+      };
 };
 
 const standingView = (account: AccountStanding): AccountStandingView =>

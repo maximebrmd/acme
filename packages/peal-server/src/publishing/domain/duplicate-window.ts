@@ -1,10 +1,13 @@
-import { DateTime, Duration, Schema } from "effect";
+import { DateTime, Duration, Option, Schema } from "effect";
 
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
+import { rulesFor } from "./platform-rules.ts";
 import { partsOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
+import { postFormatOf } from "./post-format.ts";
+import type { TargetOptions } from "./target-options.ts";
 
 /**
  * How close two posts with the same content on one channel must be, by the
@@ -26,7 +29,12 @@ export const duplicateRange = (at: DateTime.Utc) => ({
  * its public would see the same post: the text it has there, without the
  * spaces around it and in one Unicode form, and its media, in order. Alt
  * text and options are left out: the same video under another title is
- * the same video.
+ * the same video. The one option kept is the format, when the options
+ * choose one (a story, a reel), as its public sees a story apart from a
+ * feed post of the same file: a feed post, `feed` chosen or not, reads as
+ * it did before formats, so the digests kept still match. A format that
+ * sends no text (a story) is read without it: two stories of one file are
+ * the same story, whatever text the post holds.
  *
  * A post of several parts is all of them, in order, each read the same
  * way: two threads that open alike and go on differently are two posts,
@@ -37,15 +45,26 @@ export const duplicateRange = (at: DateTime.Utc) => ({
  */
 export const contentOn = (
   content: PostContent,
-  channelId: ChannelId
+  channelId: ChannelId,
+  options: Option.Option<TargetOptions> = Option.none()
 ): string => {
+  const sendsText = Option.match(options, {
+    onNone: () => true,
+    onSome: (chosen) => rulesFor(chosen.platform, options).sendsText !== false,
+  });
+
   const [first, ...later] = partsOn(content, channelId).map((part) => ({
     media: part.media.map(({ mediaId }) => mediaId),
-    text: part.text.normalize("NFC").trim(),
+    text: sendsText ? part.text.normalize("NFC").trim() : "",
   }));
 
+  const read = later.length === 0 ? first : { ...first, parts: later };
+
   return JSON.stringify(
-    later.length === 0 ? first : { ...first, parts: later }
+    Option.match(postFormatOf(options), {
+      onNone: () => read,
+      onSome: (format) => ({ ...read, format }),
+    })
   );
 };
 

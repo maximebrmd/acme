@@ -21,6 +21,13 @@ import { PostTools } from "#app/mcp/posts-tools.ts";
 import type { ToolTiming } from "#app/mcp/posts-tools.ts";
 import { queueReferenced } from "#app/mcp/queue-reference.ts";
 import {
+  changeRefusals,
+  dateOf,
+  ruleIdFrom,
+  startRefusals,
+  variantsFrom,
+} from "#app/mcp/recycling-refusals.ts";
+import {
   livePostRefusals,
   notAllowed,
   planRefusal,
@@ -47,6 +54,7 @@ import {
   postIdFrom,
   postIdOption,
   presetsFrom,
+  queueIdOf,
   scheduleFrom,
   sendRequestFrom,
   targetIdFrom,
@@ -55,6 +63,7 @@ import { toldRefusal } from "#publishing/api/post-refusal.ts";
 import { pageView, searchRequestFrom } from "#publishing/api/post-search.ts";
 import { attemptView, postView } from "#publishing/api/post-view.ts";
 import { reshuffleView } from "#publishing/api/queue-view.ts";
+import { ruleView } from "#publishing/api/recycling-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
@@ -67,8 +76,11 @@ import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
 import { Queues } from "#publishing/application/queues.ts";
+import { Recycling } from "#publishing/application/recycling.ts";
+import type { ChangeRequest } from "#publishing/application/recycling.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { livePostChangePermission } from "#publishing/domain/live-post-change.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { queueKeyOf } from "#publishing/domain/queue.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -169,6 +181,7 @@ export const PostToolsLive = PostTools.toLayer(
     const actor = CurrentMember.pipe(Effect.map(actorOf));
     const live = yield* LivePostChanges;
     const queues = yield* Queues;
+    const recycling = yield* Recycling;
 
     // A post's time as the API takes it: a queue named by its id or its
     // name, found among the workspace's, or a refusal saying which.
@@ -557,6 +570,53 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(copy);
         }).pipe(Effect.catchTags(malformedPost)),
+      edit_published_post: ({ channelId, part, postId, targetId, text }) =>
+        Effect.gen(function* editPublishedPost() {
+          // One channel of the post, named one way: never whichever of two
+          // names comes first.
+          if ((channelId === undefined) === (targetId === undefined)) {
+            return yield* refuse(
+              "Give channelId or targetId, exactly one: nothing was edited."
+            );
+          }
+
+          const member = yield* actor;
+
+          // Before the post is read: a connection that may not publish is
+          // told so, whatever it names.
+          yield* Effect.fromResult(
+            authorize(member, livePostChangePermission)
+          ).pipe(
+            Effect.catchTag(
+              "MissingPermission",
+              notAllowed("edit published posts")
+            )
+          );
+
+          const id = yield* postIdFrom(postId);
+
+          const target = yield* targetNamed(member, id, {
+            channelId,
+            targetId,
+          });
+
+          const change = yield* live
+            .editTarget(member, id, target, { part: part ?? 0, text })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                LivePostNotChangeable: ({ reason }) =>
+                  refuse(
+                    `The post was not edited on that channel: ${livePostRefusals[reason]}.`
+                  ),
+                MissingPermission: notAllowed("edit published posts"),
+                PostContentRejected: contentRejected,
+                PostNotFound: notFound,
+              })
+            );
+
+          return livePostChangeView(change);
+        }).pipe(Effect.catchTags(malformedPost)),
       get_post: ({ postId }) =>
         Effect.gen(function* get() {
           const found = yield* queries
@@ -735,6 +795,28 @@ export const PostToolsLive = PostTools.toLayer(
             UnknownChannels: unknownChannels,
           })
         ),
+      recycle_post: ({ count, every, postId, queueId, until, variants = [] }) =>
+        Effect.gen(function* recycle() {
+          const member = yield* publisher;
+          const source = yield* postIdFrom(postId);
+
+          const queue = yield* queueIdOf(queueId).pipe(
+            Effect.catchTag("QueueNotFound", startRefusals.QueueNotFound)
+          );
+
+          const listed = yield* recycling
+            .start(member, {
+              count: Option.fromUndefinedOr(count),
+              interval: every,
+              postId: source,
+              queueId: queue,
+              until: Option.fromUndefinedOr(until).pipe(Option.map(dateOf)),
+              variants: yield* variantsFrom(variants),
+            })
+            .pipe(Effect.catchTags(startRefusals));
+
+          return ruleView(listed);
+        }).pipe(Effect.catchTags(malformedPost)),
       repost_target: ({ postId, targetId }) =>
         Effect.gen(function* repost() {
           const reposted = yield* followUp
@@ -792,6 +874,26 @@ export const PostToolsLive = PostTools.toLayer(
           );
 
           return reshuffleView(done);
+        }),
+      resume_recycling_rule: ({ ruleId, variants }) =>
+        Effect.gen(function* resume() {
+          const member = yield* publisher;
+          const id = yield* ruleIdFrom(ruleId);
+
+          const given =
+            variants === undefined
+              ? Option.none()
+              : Option.some(yield* variantsFrom(variants));
+
+          const listed = yield* recycling.resume(member, id, given).pipe(
+            Effect.catchTags({
+              ...changeRefusals,
+              PostNotRecyclable: startRefusals.PostNotRecyclable,
+              TooManyRecyclingRules: startRefusals.TooManyRecyclingRules,
+            })
+          );
+
+          return ruleView(listed);
         }),
       schedule_post: ({ at, channelIds, postId, timeZone }) =>
         Effect.gen(function* schedule() {
@@ -940,6 +1042,37 @@ export const PostToolsLive = PostTools.toLayer(
             UnknownTags: unknownTags,
           })
         ),
+      update_recycling_rule: ({ count, paused, ruleId, until, variants }) =>
+        Effect.gen(function* update() {
+          const member = yield* publisher;
+          const id = yield* ruleIdFrom(ruleId);
+
+          const change: {
+            -readonly [K in keyof ChangeRequest]: ChangeRequest[K];
+          } = {};
+
+          if (count !== undefined) {
+            change.count = Option.fromNullOr(count);
+          }
+
+          if (paused !== undefined) {
+            change.paused = paused;
+          }
+
+          if (until !== undefined) {
+            change.until = Option.fromNullOr(until).pipe(Option.map(dateOf));
+          }
+
+          if (variants !== undefined) {
+            change.variants = yield* variantsFrom(variants);
+          }
+
+          const listed = yield* recycling
+            .change(member, id, change)
+            .pipe(Effect.catchTags(changeRefusals));
+
+          return ruleView(listed);
+        }),
       validate_post: ({ when, ...post }) =>
         Effect.gen(function* validatePost() {
           const read = yield* checkRequestFrom(

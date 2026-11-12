@@ -31,6 +31,7 @@ import { AccountData } from "#workspace/application/account-data.ts";
 import { AccountMail } from "#workspace/application/account-mail.ts";
 import { AccountStore } from "#workspace/application/account-store.ts";
 import type { AccountRecords } from "#workspace/application/account-store.ts";
+import { Accounts } from "#workspace/application/accounts.ts";
 import { ApiKeyIssuer } from "#workspace/application/api-key-issuer.ts";
 import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
@@ -44,6 +45,7 @@ import { PasswordCheck } from "#workspace/application/password-check.ts";
 import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
+import { WorkspaceSecurity } from "#workspace/application/workspace-security.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
 import { undeclared } from "#workspace/domain/operator-declaration.ts";
@@ -110,6 +112,7 @@ const records: AccountRecords = {
     image: null,
     locale: "fr",
     name: "Ana",
+    twoStepEnabled: true,
     updatedAt: at,
   },
 };
@@ -241,6 +244,7 @@ const PortsLive = Layer.mergeAll(
                 postPublished: false,
                 postReview: true,
                 postUnconfirmed: true,
+                recyclingEnded: true,
                 webhookFailing: true,
               },
               everyPost: false,
@@ -304,6 +308,25 @@ const PortsLive = Layer.mergeAll(
                   name: "Weekdays",
                   slots: [{ day: "monday", time: "09:30" }],
                   timeZone: "Europe/Paris",
+                },
+              ],
+              recyclingRules: [
+                {
+                  anchorAt: at,
+                  count: 10,
+                  createdAt: at,
+                  endedReason: null,
+                  id: "019a6f10-0000-7000-8000-0000000000d1",
+                  interval: { count: 2, unit: "weeks" },
+                  lastDueAt: at,
+                  made: 3,
+                  nextDueAt: at,
+                  queueId: null,
+                  sourcePostId: "019a6f10-0000-7000-8000-0000000000d2",
+                  status: "active",
+                  timeZone: "Europe/Paris",
+                  until: null,
+                  variants: [{ overrides: [], text: "Open all summer" }],
                 },
               ],
               signatures: [],
@@ -399,6 +422,7 @@ const PortsLive = Layer.mergeAll(
       const fakes = yield* Fakes;
 
       return ConnectedAppStore.of({
+        grantIn: () => Effect.succeedNone,
         list: () =>
           Effect.succeed([
             {
@@ -435,6 +459,8 @@ const PortsLive = Layer.mergeAll(
           ).pipe(provide),
         exported: ({ email, locale, via }) =>
           record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
+        twoStepChanged: ({ email, kind }) =>
+          record(`mail:twoStep:${email}:${kind}`).pipe(provide),
         workspaceDeleted: ({
           email,
           locale,
@@ -501,7 +527,22 @@ const UseCasesLive = Layer.mergeAll(
   AccountData.layer,
   CloseAccount.layer,
   ConnectedApps.layer,
-  DeleteWorkspace.layer
+  DeleteWorkspace.layer,
+  // Accounts and security policies are tested on the whole server.
+  Layer.succeed(
+    Accounts,
+    Accounts.of({
+      current: () => Effect.die("not used"),
+      twoStep: () => Effect.die("not used"),
+    })
+  ),
+  Layer.succeed(
+    WorkspaceSecurity,
+    WorkspaceSecurity.of({
+      read: () => Effect.die("not used"),
+      require: () => Effect.die("not used"),
+    })
+  )
 ).pipe(Layer.provide(PortsLive));
 
 const HandlersLive = Layer.mergeAll(
@@ -908,6 +949,10 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                 queue,
                 slots,
               })),
+              // The rules that repeat its posts, with their variants.
+              recycling: saved.recyclingRules.map(
+                ({ interval, made, variants }) => ({ interval, made, variants })
+              ),
               statuses: billing.subscriptions.map(({ status }) => status),
               usage: billing.usage,
               // Where the workspace is told, never the secret that signs it.
@@ -924,6 +969,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                   isDefault: true,
                   queue: "Weekdays",
                   slots: [{ day: "monday", time: "09:30" }],
+                },
+              ],
+              recycling: [
+                {
+                  interval: { count: 2, unit: "weeks" },
+                  made: 3,
+                  variants: [{ overrides: [], text: "Open all summer" }],
                 },
               ],
               statuses: ["active"],

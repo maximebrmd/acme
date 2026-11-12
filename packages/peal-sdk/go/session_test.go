@@ -283,6 +283,14 @@ func TestSettersMeUser(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetTwoStepEnabled", func(t *testing.T) {
+		obj := &MeUser{}
+		var fernTestValueTwoStepEnabled bool
+		obj.SetTwoStepEnabled(fernTestValueTwoStepEnabled)
+		assert.Equal(t, fernTestValueTwoStepEnabled, obj.TwoStepEnabled)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestGettersMeUser(t *testing.T) {
@@ -432,6 +440,29 @@ func TestGettersMeUser(t *testing.T) {
 			}
 		}()
 		_ = obj.GetName() // Should return zero value
+	})
+
+	t.Run("GetTwoStepEnabled", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MeUser{}
+		var expected bool
+		obj.TwoStepEnabled = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTwoStepEnabled(), "getter should return the property value")
+	})
+
+	t.Run("GetTwoStepEnabled_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MeUser
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTwoStepEnabled() // Should return zero value
 	})
 
 }
@@ -623,6 +654,37 @@ func TestSettersMarkExplicitMeUser(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetTwoStepEnabled_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MeUser{}
+		var fernTestValueTwoStepEnabled bool
+
+		// Act
+		obj.SetTwoStepEnabled(fernTestValueTwoStepEnabled)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 }
 
 func TestSettersMembership(t *testing.T) {
@@ -663,6 +725,14 @@ func TestSettersMembership(t *testing.T) {
 		var fernTestValueSlug string
 		obj.SetSlug(fernTestValueSlug)
 		assert.Equal(t, fernTestValueSlug, obj.Slug)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetTwoStepRequired", func(t *testing.T) {
+		obj := &Membership{}
+		var fernTestValueTwoStepRequired bool
+		obj.SetTwoStepRequired(fernTestValueTwoStepRequired)
+		assert.Equal(t, fernTestValueTwoStepRequired, obj.TwoStepRequired)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -792,6 +862,29 @@ func TestGettersMembership(t *testing.T) {
 			}
 		}()
 		_ = obj.GetSlug() // Should return zero value
+	})
+
+	t.Run("GetTwoStepRequired", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &Membership{}
+		var expected bool
+		obj.TwoStepRequired = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTwoStepRequired(), "getter should return the property value")
+	})
+
+	t.Run("GetTwoStepRequired_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *Membership
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTwoStepRequired() // Should return zero value
 	})
 
 }
@@ -929,6 +1022,37 @@ func TestSettersMarkExplicitMembership(t *testing.T) {
 
 		// Act
 		obj.SetSlug(fernTestValueSlug)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTwoStepRequired_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &Membership{}
+		var fernTestValueTwoStepRequired bool
+
+		// Act
+		obj.SetTwoStepRequired(fernTestValueTwoStepRequired)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

@@ -15,6 +15,10 @@ import type { OAuthGrant } from "#workspace/domain/oauth-grant.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
+// An account without two-step verification, in a workspace that does not
+// require it.
+const noTwoStep = { enabled: false, required: false };
+
 const now = DateTime.makeUnsafe("2026-11-09T12:00:00Z");
 
 const studio = WorkspaceIdSchema.make("5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60");
@@ -23,7 +27,11 @@ const shop = WorkspaceIdSchema.make("0d3f6b1a-2c4e-4f5a-8b6c-7d8e9f0a1b2c");
 
 const userId = UserIdSchema.make("7c9e6679-7425-40de-944b-e07fc1f90ae7");
 
-const owner: Membership = { ban: Option.none(), role: "owner" };
+const owner: Membership = {
+  ban: Option.none(),
+  role: "owner",
+  twoStep: noTwoStep,
+};
 
 const grant = (
   scopes: readonly string[],

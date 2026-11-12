@@ -15,6 +15,7 @@ from .money import Money
 from .notice_channel import NoticeChannel
 from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
 from .paid_plan import PaidPlan
+from .recycling_notice_reason import RecyclingNoticeReason
 from .review_party import ReviewParty
 from .webhook_turn_off_reason import WebhookTurnOffReason
 
@@ -364,6 +365,26 @@ class NoticeEvent_AdConnectionReconnectRequired(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_RecyclingEnded(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["RecyclingEnded"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "RecyclingEnded"
+    reason: RecyclingNoticeReason
+    rule_id: typing_extensions.Annotated[str, FieldMetadata(alias="ruleId"), pydantic.Field(alias="ruleId")]
+    source_post_id: typing_extensions.Annotated[
+        str, FieldMetadata(alias="sourcePostId"), pydantic.Field(alias="sourcePostId")
+    ]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -385,6 +406,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_WebhookDeliveriesFailing,
         NoticeEvent_AdBoostChanged,
         NoticeEvent_AdConnectionReconnectRequired,
+        NoticeEvent_RecyclingEnded,
     ],
     pydantic.Field(discriminator="type"),
 ]

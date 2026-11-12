@@ -59,6 +59,7 @@ const toChange = Effect.fnUntraced(function* toChange(row: ChangeRow) {
     requestedVia: Option.fromNullOr(requestedVia),
     status: row.status,
     targetId: row.targetId,
+    text: Option.fromNullOr(row.text),
     workspaceId: row.workspaceId,
   });
 }, Effect.orDie);
@@ -79,6 +80,8 @@ const changeColumns = (change: LivePostChange) => ({
   finishedAt: change.finishedAt.pipe(Option.map(date), Option.getOrNull),
   partsLeft: encodeParts(change.partsLeft),
   status: change.status,
+  // An edit's text while it is pending: a change that ends clears it.
+  text: Option.getOrNull(change.text),
 });
 
 const decodeOpen = Schema.decodeUnknownEffect(
@@ -157,11 +160,16 @@ export const DrizzleLivePostChangeStore = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length === 1)
           ),
-      latestOf: (targetId) =>
+      latestOf: (targetId, kind) =>
         db
           .select()
           .from(livePostChanges)
-          .where(eq(livePostChanges.targetId, targetId))
+          .where(
+            and(
+              eq(livePostChanges.targetId, targetId),
+              kind === undefined ? undefined : eq(livePostChanges.kind, kind)
+            )
+          )
           .orderBy(desc(livePostChanges.id))
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(changeFrom)),

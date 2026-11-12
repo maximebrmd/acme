@@ -80,6 +80,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const recycling = (ruleId: string, text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/recycling?rule=${ruleId}`,
+      open: t("open", { page: "recycling" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
@@ -158,6 +164,8 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         post(postId, t("event.PostPublished", { channel, workspace })),
       PostUnconfirmed: ({ postId }) =>
         post(postId, t("event.PostUnconfirmed", { channel, workspace })),
+      RecyclingEnded: ({ reason, ruleId }) =>
+        recycling(ruleId, t("event.RecyclingEnded", { reason, workspace })),
       SubscriptionCancelled: ({ endsAt, plan: name }) =>
         billing(
           t("event.SubscriptionCancelled", {

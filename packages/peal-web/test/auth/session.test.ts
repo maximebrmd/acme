@@ -17,6 +17,7 @@ const me = {
     image: null,
     locale: "fr",
     name: "Ada",
+    twoStepEnabled: false,
   },
   workspaces: [],
 };

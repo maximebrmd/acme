@@ -19,6 +19,7 @@ public class ListTest : BaseMockServerTest
                 "joinedAt": "joinedAt",
                 "name": "name",
                 "role": "role",
+                "twoStepEnabled": true,
                 "userId": "userId"
               },
               {
@@ -26,6 +27,7 @@ public class ListTest : BaseMockServerTest
                 "joinedAt": "joinedAt",
                 "name": "name",
                 "role": "role",
+                "twoStepEnabled": true,
                 "userId": "userId"
               }
             ]
@@ -61,6 +63,7 @@ public class ListTest : BaseMockServerTest
                 "joinedAt": "joinedAt",
                 "name": "name",
                 "role": "role",
+                "twoStepEnabled": true,
                 "userId": "userId"
               }
             ]

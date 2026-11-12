@@ -11,11 +11,11 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  * A member's role in a workspace, from most to least trusted:
  *
  * - `owner`: everything, including deleting the workspace, reading its
- *   activity log (who changed what, through which application), and
- *   turning ad spending on with its monthly ceiling. Whoever creates a
- *   workspace owns it.
+ *   activity log (who changed what, through which application), turning
+ *   ad spending on with its monthly ceiling, and requiring two-step
+ *   verification of every member. Whoever creates a workspace owns it.
  * - `admin`: everything but deleting the workspace, reading its activity
- *   log and deciding what ads may spend. Owners and admins alone manage
+ *   log, deciding what ads may spend and requiring two-step verification. Owners and admins alone manage
  *   members, API keys, billing, webhooks and ad accounts, and spend on ads
  *   within the ceiling an owner set.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
@@ -35,9 +35,9 @@ export const RoleSchema = Schema.Literals([
 
 export type Role = typeof RoleSchema.Type;
 
-// What owners alone hold: the workspace itself, the log of what its
-// members, keys and applications changed, which answers to them, and the
-// decision that ads may spend, and how much.
+// What owners alone hold: the workspace itself and its access rules, the
+// log of what its members, keys and applications changed, which answers to
+// them, and the decision that ads may spend, and how much.
 const { activity, ads, organization, ...shared } = statements;
 
 export const roleGrants: Readonly<Record<Role, Grant>> = {

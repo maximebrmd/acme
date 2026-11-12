@@ -4,7 +4,13 @@ import typing
 
 ForbiddenReason = typing.Union[
     typing.Literal[
-        "missingScope", "missingPermission", "personRequired", "wrongWorkspace", "suspended", "untrustedOrigin"
+        "missingScope",
+        "missingPermission",
+        "personRequired",
+        "wrongWorkspace",
+        "suspended",
+        "untrustedOrigin",
+        "twoStepRequired",
     ],
     typing.Any,
 ]

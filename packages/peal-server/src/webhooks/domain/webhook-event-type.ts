@@ -14,6 +14,8 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "post.finished",
   "post.unpublished",
   "post.unpublish_failed",
+  "post.edited",
+  "post.edit_failed",
   "post.approval_requested",
   "post.approved",
   "post.changes_requested",

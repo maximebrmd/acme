@@ -13,6 +13,9 @@ class WorkspaceMember(UniversalBaseModel):
     joined_at: typing_extensions.Annotated[str, FieldMetadata(alias="joinedAt"), pydantic.Field(alias="joinedAt")]
     name: str
     role: str
+    two_step_enabled: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="twoStepEnabled"), pydantic.Field(alias="twoStepEnabled")
+    ] = None
     user_id: typing_extensions.Annotated[str, FieldMetadata(alias="userId"), pydantic.Field(alias="userId")]
 
     if IS_PYDANTIC_V2:

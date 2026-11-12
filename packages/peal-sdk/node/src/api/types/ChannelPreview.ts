@@ -12,5 +12,6 @@ export interface ChannelPreview {
     platform: Peal.Platform;
     text: string;
     textCounts: Peal.TextCount[];
+    textNotSent?: boolean | undefined;
     violations: Peal.ContentViolation[];
 }

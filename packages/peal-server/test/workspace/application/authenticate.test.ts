@@ -34,6 +34,7 @@ const gateway = Effect.gen(function* makeGateway() {
           apiToken: () => counted.pipe(Effect.andThen(Effect.die("unused"))),
           isTrustedOrigin: (origin) => origin === "https://app.example.test",
           mcpToken: () => counted.pipe(Effect.andThen(Effect.die("unused"))),
+          recoveryCodesLeft: () => Effect.die("unused"),
           session: (cookies) =>
             counted.pipe(
               Effect.as(

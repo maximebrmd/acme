@@ -5,5 +5,6 @@ export interface WorkspaceMember {
     joinedAt: string;
     name: string;
     role: string;
+    twoStepEnabled?: boolean | undefined;
     userId: string;
 }

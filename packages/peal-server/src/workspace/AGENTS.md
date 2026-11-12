@@ -32,10 +32,17 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
+- `ActorsNow` (`application/actors-now.ts`) is who someone a job acts for
+  is now, from the ids it kept (a member, an application's grant read with
+  `ConnectedAppStore.grantIn`, a workspace's or a partner's key, expiry
+  checked), resolved through `ResolveMember`: publishing's recycling rules
+  act through it. `standingAfter` there is the one place that says what
+  each `AccessDenied` reason means to such a job (gone, or `lockedOut`,
+  which waits).
 - API keys belong to workspaces, never carry more than their creator holds
   nor what only a person in their own session uses (`personOnlyPermissions`:
-  `ads:authorize`, refused with `PermissionNotGrantable`, 403
-  `personRequired`), and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
+  `ads:authorize` and `organization:secure`, refused with
+  `PermissionNotGrantable`, 403 `personRequired`), and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
 - Staff (Better Auth's admin role) act through the staff context's use
   cases only (`StaffActions`): each checks `mayAct`
@@ -271,6 +278,60 @@ The staff context follows these rules too. What the law has a host keep is in
   entries it cannot decode and counts them (`unreadable`); the replay then
   exits non-zero. Replaying an account's erasure runs `planClosure` on what
   the restore brought back, and refuses with `LastOwner`.
+
+## Two-step verification
+
+- Better Auth's two-factor plugin, always on with the library's defaults
+  and `Peal` as the issuer (an authenticator app's codes, ten recovery
+  codes, a 30-day trusted browser; no emailed or SMS codes: never set
+  `otpOptions`). It is registered before the OAuth server: plugins' after
+  hooks run in that order, and on a sign-in during an authorization its
+  hook must delete the password's session before the OAuth server resumes
+  with it (`test/workspace/infrastructure/auth-plugins.test.ts`). It gates
+  password sign-ins, Peal's only kind; the second step's routes resume an
+  authorization themselves (`test/workspace/integration/two-step.test.ts`).
+- A workspace's requirement is `workspace.security_policies` (no row:
+  none), changed through `WorkspaceSecurity` by an owner in person
+  (`organization:secure`, in `personOnlyPermissions` and
+  `withheldWhileImpersonating`, never a partner key's) whose own account
+  has it on. `MemberDirectory.membership` reads it with the account's flag
+  in its one query, from the database, never from a session's cached user,
+  and `actorFor` refuses a person without it (`TwoStepRequired`, 403
+  `twoStepRequired`): sessions, OAuth clients, the command line and MCP
+  clients alike; keys are never concerned. Match `AccessDenied` with
+  `answerAccessDenied`, every case named: `TwoStepRequired` is "wait", not
+  "gone".
+- Turning two-step verification off forgets every browser the account
+  trusted (`forgetTrustedBrowsers`, the after hook): the plugin forgets
+  only the browser that asked.
+- Better Auth's `/organization/*` and `/subscription/*` routes, which never
+  pass `WorkspaceAccess`, are guarded in its before hook
+  (`refuseLockedOutMembers`, `auth/two-step.ts`: 403 `TWO_STEP_REQUIRED`)
+  for every workspace a request names (id, slug, invitation, `referenceId`;
+  `INVALID_ID` for one it cannot read), and for the session's active one
+  when no field the route reads holds a value or what they hold names no
+  workspace, as the route then falls back to it (`accept-invitation` and
+  the OAuth picker make the active workspace one that may require it).
+  `guarded` gives each route the naming fields it reads, body or query, as
+  Better Auth's routes and the Stripe plugin read them; any other is
+  refused (400 `WORKSPACE_FIELD_NOT_READ`), so no decoy is checked in place
+  of the workspace acted on. Recheck the fields on a Better Auth upgrade.
+  The picker, invitations, leaving and creating stay open. Every route of
+  the two prefixes is placed in `exempt` or `guarded`
+  (`two-step-routes.test.ts`); one in neither is guarded. Turning it on
+  waits for a confirmed address; turning it off is refused while a
+  workspace of the user requires it. Staff acting as someone are refused
+  every `/two-factor/*` route.
+- The account is emailed each change (`AccountMail.twoStepChanged`, from
+  Better Auth's hooks). Recovery codes never leave the auth adapter: only
+  their count (`AuthGateway.recoveryCodesLeft`, the plugin's server-only
+  `viewBackupCodes`). A staff reset (`AccountModeration.resetTwoStep`)
+  deletes the `two_factor` row, clears the flag and deletes the
+  `trust-device-` and `2fa-` rows of `auth.verification` (the library's
+  prefixes, which a test pins) in one transaction, then ends every session
+  and emails the account. Closing an account deletes the same rows.
+  `PEAL_STAFF_TWO_STEP` (`StaffSettings`) refuses the console to staff
+  without it (403), never telling anyone else it is there.
 
 ## Partner accounts
 

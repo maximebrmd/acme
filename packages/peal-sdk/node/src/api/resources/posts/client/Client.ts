@@ -233,7 +233,7 @@ export class PostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
      *
      * @param {Peal.SearchPostsRequest} request
      * @param {PostsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -256,7 +256,7 @@ export class PostsClient {
     }
 
     private async __search(request: Peal.SearchPostsRequest, requestOptions?: PostsClient.RequestOptions): Promise<core.WithRawResponse<Peal.PostPage>> {
-        const { workspaceId, authorId, channelId, createdVia, cursor, "from": from_, limit, outcome, platform, queueId, removed, sort, status, tagId, to } = request;
+        const { workspaceId, authorId, channelId, createdVia, cursor, "from": from_, limit, outcome, platform, queueId, recyclingId, removed, sort, status, tagId, to } = request;
         const _queryParams: Record<string, unknown> = {
             authorId,
             channelId,
@@ -267,6 +267,7 @@ export class PostsClient {
             outcome: outcome != null ? outcome : undefined,
             platform: platform != null ? platform : undefined,
             queueId,
+            recyclingId,
             removed: removed != null ? removed : undefined,
             sort: sort != null ? sort : undefined,
             status: status != null ? status : undefined,
@@ -1524,6 +1525,77 @@ export class PostsClient {
     }
 
     /**
+     * Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     *
+     * @param {Peal.LivePostEdit} request
+     * @param {PostsClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.posts.editTarget({
+     *         workspaceId: "workspaceId",
+     *         postId: "postId",
+     *         targetId: "targetId",
+     *         text: "text"
+     *     })
+     */
+    public editTarget(request: Peal.LivePostEdit, requestOptions?: PostsClient.RequestOptions): core.HttpResponsePromise<Peal.LivePostChange> {
+        return core.HttpResponsePromise.fromPromise(this.__editTarget(request, requestOptions));
+    }
+
+    private async __editTarget(request: Peal.LivePostEdit, requestOptions?: PostsClient.RequestOptions): Promise<core.WithRawResponse<Peal.LivePostChange>> {
+        const { workspaceId, postId, targetId, wait, ..._body } = request;
+        const _queryParams: Record<string, unknown> = {
+            wait
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/posts/${core.url.encodePathParam(postId, errors.PealError)}/targets/${core.url.encodePathParam(targetId, errors.PealError)}/edit`),
+            method: "POST",
+            headers: _headers,
+            contentType: "application/json",
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            requestType: "json",
+            body: mergeAdditionalBodyParameters(_body, requestOptions?.additionalBodyParameters),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: 0,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.LivePostChange, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "POST", "/api/workspaces/{workspaceId}/posts/{postId}/targets/{targetId}/edit");
+    }
+
+    /**
      * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (`changes`) and, beside them, why it could not be on the others (`refused`, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
      *
      * @param {Peal.UnpublishPostsRequest} request
@@ -1583,7 +1655,7 @@ export class PostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
      *
      * @param {Peal.ChangesPostsRequest} request
      * @param {PostsClient.RequestOptions} requestOptions - Request-specific configuration.

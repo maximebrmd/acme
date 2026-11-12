@@ -37,6 +37,10 @@ export const StaffActionSchema = Schema.Literals([
   // event's workspace is the account's home workspace, and it names no
   // account of a person.
   "grantPartner",
+  // Turned off the account's two-step verification for its person, who lost
+  // their phone and recovery codes: deleted its authenticator, codes and
+  // trusted browsers, and signed it out everywhere.
+  "resetTwoStep",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

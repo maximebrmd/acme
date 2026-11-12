@@ -58,6 +58,11 @@ class SearchPostsRequest extends JsonSerializableType
     public ?string $queueId;
 
     /**
+     * @var ?string $recyclingId
+     */
+    public ?string $recyclingId;
+
+    /**
      * @var ?value-of<SearchPostsRequestRemoved> $removed
      */
     public ?string $removed;
@@ -93,6 +98,7 @@ class SearchPostsRequest extends JsonSerializableType
      *   outcome?: ?value-of<PostOutcome>,
      *   platform?: ?value-of<Platform>,
      *   queueId?: ?string,
+     *   recyclingId?: ?string,
      *   removed?: ?value-of<SearchPostsRequestRemoved>,
      *   sort?: ?value-of<PostSort>,
      *   status?: ?value-of<PostStatus>,
@@ -112,6 +118,7 @@ class SearchPostsRequest extends JsonSerializableType
         $this->outcome = $values['outcome'] ?? null;
         $this->platform = $values['platform'] ?? null;
         $this->queueId = $values['queueId'] ?? null;
+        $this->recyclingId = $values['recyclingId'] ?? null;
         $this->removed = $values['removed'] ?? null;
         $this->sort = $values['sort'] ?? null;
         $this->status = $values['status'] ?? null;

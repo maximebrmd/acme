@@ -23,11 +23,17 @@ public record Post : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    [JsonPropertyName("occurrence")]
+    public int? Occurrence { get; set; }
+
     [JsonPropertyName("outcome")]
     public PostOutcome? Outcome { get; set; }
 
     [JsonPropertyName("queueId")]
     public string? QueueId { get; set; }
+
+    [JsonPropertyName("recyclingId")]
+    public string? RecyclingId { get; set; }
 
     [JsonPropertyName("schedule")]
     public PostSchedule? Schedule { get; set; }

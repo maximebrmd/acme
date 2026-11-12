@@ -25,6 +25,8 @@ import {
   SignatureDetailsSchema,
   SignatureSchema,
   SignatureScopeSchema,
+  RecyclingRuleSchema,
+  RecyclingStatusSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -356,10 +358,51 @@ export const DeleteQueue = Tool.make("delete_queue", {
   )
   .annotate(Tool.Title, "Delete a queue");
 
+const ruleId = Schema.String.annotate({
+  description: "The recycling rule's id, as list_recycling_rules answers it.",
+});
+
+const repeats = `A recycling rule makes a post repeat: a new post one interval after the one before, at the same wall-clock time in the source's zone (or on a queue's first free slot from then), until \`count\` posts in all or the day \`until\`, saying the source's text then each variant in turn. Each is an ordinary post, which list_posts finds by \`recyclingId\`, and acts as whoever started the rule, as they are when it is made.`;
+
+export const ListRecyclingRules = Tool.make("list_recycling_rules", {
+  dependencies: [CurrentMember],
+  description: `Lists the workspace's recycling rules, oldest first, those with \`status\` alone when given (\`active\`, \`paused\`, \`ended\`): each with its source post, interval, ending, variants, how many posts it made, why it ended if it did, and its next posts to come (\`coming\`), with the variant each will say. ${repeats}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    status: Schema.optionalKey(RecyclingStatusSchema),
+  }),
+  success: Schema.Struct({ rules: Schema.Array(RecyclingRuleSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List recycling rules");
+
+export const GetRecyclingRule = Tool.make("get_recycling_rule", {
+  dependencies: [CurrentMember],
+  description: `Answers a recycling rule of the workspace, with its next posts to come and the variant each will say. ${repeats}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ ruleId }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get a recycling rule");
+
+export const StopRecyclingRule = Tool.make("stop_recycling_rule", {
+  dependencies: [CurrentMember],
+  description:
+    "Ends a recycling rule for good: it makes no more posts, and ends `stopped`. The posts it made stay as they are, scheduled ones included (cancel_post cancels one). A stopped rule cannot be resumed; recycle_post starts a new one on the same post. Do it only when the user asked for the post to stop repeating. Needs a role that schedules posts.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ ruleId }),
+  success: Schema.Struct({ stopped: Schema.String }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Stop a recycling rule");
+
 /**
  * The tools that read and change what a workspace saves to write its posts
  * with: its signatures, its channel sets, its channels' default options
- * and its queues.
+ * and its queues, and reads and stops the rules that repeat its posts.
  */
 export const SavedTools = Toolkit.make(
   ListSignatures,
@@ -377,5 +420,8 @@ export const SavedTools = Toolkit.make(
   PreviewQueue,
   CreateQueue,
   UpdateQueue,
-  DeleteQueue
+  DeleteQueue,
+  ListRecyclingRules,
+  GetRecyclingRule,
+  StopRecyclingRule
 );

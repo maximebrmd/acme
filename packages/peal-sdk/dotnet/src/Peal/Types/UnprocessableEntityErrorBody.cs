@@ -19,20 +19,20 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.UnknownChannels"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.RecyclingEndsTooSoon"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.UnknownChannels value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.RecyclingEndsTooSoon value)
     {
-        Type = "UnknownChannels";
+        Type = "RecyclingEndsTooSoon";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.InvalidTimeZone"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.RecyclingVariantsInvalid"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.InvalidTimeZone value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.RecyclingVariantsInvalid value)
     {
-        Type = "InvalidTimeZone";
+        Type = "RecyclingVariantsInvalid";
         Value = value.Value;
     }
 
@@ -48,64 +48,64 @@ public record UnprocessableEntityErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "UnknownChannels"
+    /// Returns true if <see cref="Type"/> is "RecyclingEndsTooSoon"
     /// </summary>
-    public bool IsUnknownChannels => Type == "UnknownChannels";
+    public bool IsRecyclingEndsTooSoon => Type == "RecyclingEndsTooSoon";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "InvalidTimeZone"
+    /// Returns true if <see cref="Type"/> is "RecyclingVariantsInvalid"
     /// </summary>
-    public bool IsInvalidTimeZone => Type == "InvalidTimeZone";
+    public bool IsRecyclingVariantsInvalid => Type == "RecyclingVariantsInvalid";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.UnknownChannelsEncoded"/> if <see cref="Type"/> is 'UnknownChannels', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.RecyclingEndsTooSoonEncoded"/> if <see cref="Type"/> is 'RecyclingEndsTooSoon', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'UnknownChannels'.</exception>
-    public Peal.UnknownChannelsEncoded AsUnknownChannels() =>
-        IsUnknownChannels
-            ? (Peal.UnknownChannelsEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingEndsTooSoon'.</exception>
+    public Peal.RecyclingEndsTooSoonEncoded AsRecyclingEndsTooSoon() =>
+        IsRecyclingEndsTooSoon
+            ? (Peal.RecyclingEndsTooSoonEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'UnknownChannels'"
+                "UnprocessableEntityErrorBody.Type is not 'RecyclingEndsTooSoon'"
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.InvalidTimeZoneEncoded"/> if <see cref="Type"/> is 'InvalidTimeZone', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.RecyclingVariantsInvalidEncoded"/> if <see cref="Type"/> is 'RecyclingVariantsInvalid', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'InvalidTimeZone'.</exception>
-    public Peal.InvalidTimeZoneEncoded AsInvalidTimeZone() =>
-        IsInvalidTimeZone
-            ? (Peal.InvalidTimeZoneEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingVariantsInvalid'.</exception>
+    public Peal.RecyclingVariantsInvalidEncoded AsRecyclingVariantsInvalid() =>
+        IsRecyclingVariantsInvalid
+            ? (Peal.RecyclingVariantsInvalidEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'InvalidTimeZone'"
+                "UnprocessableEntityErrorBody.Type is not 'RecyclingVariantsInvalid'"
             );
 
     public T Match<T>(
-        Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
-        Func<Peal.InvalidTimeZoneEncoded, T> onInvalidTimeZone,
+        Func<Peal.RecyclingEndsTooSoonEncoded, T> onRecyclingEndsTooSoon,
+        Func<Peal.RecyclingVariantsInvalidEncoded, T> onRecyclingVariantsInvalid,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "UnknownChannels" => onUnknownChannels(AsUnknownChannels()),
-            "InvalidTimeZone" => onInvalidTimeZone(AsInvalidTimeZone()),
+            "RecyclingEndsTooSoon" => onRecyclingEndsTooSoon(AsRecyclingEndsTooSoon()),
+            "RecyclingVariantsInvalid" => onRecyclingVariantsInvalid(AsRecyclingVariantsInvalid()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.UnknownChannelsEncoded> onUnknownChannels,
-        Action<Peal.InvalidTimeZoneEncoded> onInvalidTimeZone,
+        Action<Peal.RecyclingEndsTooSoonEncoded> onRecyclingEndsTooSoon,
+        Action<Peal.RecyclingVariantsInvalidEncoded> onRecyclingVariantsInvalid,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "UnknownChannels":
-                onUnknownChannels(AsUnknownChannels());
+            case "RecyclingEndsTooSoon":
+                onRecyclingEndsTooSoon(AsRecyclingEndsTooSoon());
                 break;
-            case "InvalidTimeZone":
-                onInvalidTimeZone(AsInvalidTimeZone());
+            case "RecyclingVariantsInvalid":
+                onRecyclingVariantsInvalid(AsRecyclingVariantsInvalid());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -114,13 +114,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.UnknownChannelsEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.RecyclingEndsTooSoonEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsUnknownChannels(out Peal.UnknownChannelsEncoded? value)
+    public bool TryAsRecyclingEndsTooSoon(out Peal.RecyclingEndsTooSoonEncoded? value)
     {
-        if (Type == "UnknownChannels")
+        if (Type == "RecyclingEndsTooSoon")
         {
-            value = (Peal.UnknownChannelsEncoded)Value!;
+            value = (Peal.RecyclingEndsTooSoonEncoded)Value!;
             return true;
         }
         value = null;
@@ -128,13 +128,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.InvalidTimeZoneEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.RecyclingVariantsInvalidEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsInvalidTimeZone(out Peal.InvalidTimeZoneEncoded? value)
+    public bool TryAsRecyclingVariantsInvalid(out Peal.RecyclingVariantsInvalidEncoded? value)
     {
-        if (Type == "InvalidTimeZone")
+        if (Type == "RecyclingVariantsInvalid")
         {
-            value = (Peal.InvalidTimeZoneEncoded)Value!;
+            value = (Peal.RecyclingVariantsInvalidEncoded)Value!;
             return true;
         }
         value = null;
@@ -144,11 +144,11 @@ public record UnprocessableEntityErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.UnknownChannels value
+        UnprocessableEntityErrorBody.RecyclingEndsTooSoon value
     ) => new(value);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.InvalidTimeZone value
+        UnprocessableEntityErrorBody.RecyclingVariantsInvalid value
     ) => new(value);
 
     [Serializable]
@@ -184,12 +184,26 @@ public record UnprocessableEntityErrorBody
                 discriminatorElement.GetString()
                 ?? throw new JsonException("Discriminator property '_tag' is null");
 
+            // Strip the discriminant property to prevent it from leaking into AdditionalProperties
+            var jsonObject = System.Text.Json.Nodes.JsonObject.Create(json);
+            jsonObject?.Remove("_tag");
+            var jsonWithoutDiscriminator =
+                jsonObject != null ? JsonSerializer.SerializeToElement(jsonObject, options) : json;
+
             var value = discriminator switch
             {
-                "UnknownChannels" => json.Deserialize<Peal.UnknownChannelsEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.UnknownChannelsEncoded"),
-                "InvalidTimeZone" => json.Deserialize<Peal.InvalidTimeZoneEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.InvalidTimeZoneEncoded"),
+                "RecyclingEndsTooSoon" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.RecyclingEndsTooSoonEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.RecyclingEndsTooSoonEncoded"
+                        ),
+                "RecyclingVariantsInvalid" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.RecyclingVariantsInvalidEncoded?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.RecyclingVariantsInvalidEncoded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new UnprocessableEntityErrorBody(discriminator, value);
@@ -204,8 +218,11 @@ public record UnprocessableEntityErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "UnknownChannels" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "InvalidTimeZone" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "RecyclingEndsTooSoon" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "RecyclingVariantsInvalid" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -235,42 +252,42 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for UnknownChannels
+    /// Discriminated union type for RecyclingEndsTooSoon
     /// </summary>
     [Serializable]
-    public struct UnknownChannels
+    public struct RecyclingEndsTooSoon
     {
-        public UnknownChannels(Peal.UnknownChannelsEncoded value)
+        public RecyclingEndsTooSoon(Peal.RecyclingEndsTooSoonEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.UnknownChannelsEncoded Value { get; set; }
+        internal Peal.RecyclingEndsTooSoonEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.UnknownChannels(
-            Peal.UnknownChannelsEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.RecyclingEndsTooSoon(
+            Peal.RecyclingEndsTooSoonEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for InvalidTimeZone
+    /// Discriminated union type for RecyclingVariantsInvalid
     /// </summary>
     [Serializable]
-    public struct InvalidTimeZone
+    public struct RecyclingVariantsInvalid
     {
-        public InvalidTimeZone(Peal.InvalidTimeZoneEncoded value)
+        public RecyclingVariantsInvalid(Peal.RecyclingVariantsInvalidEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.InvalidTimeZoneEncoded Value { get; set; }
+        internal Peal.RecyclingVariantsInvalidEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.InvalidTimeZone(
-            Peal.InvalidTimeZoneEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.RecyclingVariantsInvalid(
+            Peal.RecyclingVariantsInvalidEncoded value
         ) => new(value);
     }
 }

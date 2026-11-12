@@ -28,6 +28,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'WebhookDeliveriesFailing'
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
+     *   |'RecyclingEnded'
      *   |'_unknown'
      * ) $type
      */
@@ -54,6 +55,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventWebhookDeliveriesFailing
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
+     *   |NoticeEventRecyclingEnded
      *   |mixed
      * ) $value
      */
@@ -81,6 +83,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'WebhookDeliveriesFailing'
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
+     *   |'RecyclingEnded'
      *   |'_unknown'
      * ),
      *   value: (
@@ -103,6 +106,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventWebhookDeliveriesFailing
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
+     *   |NoticeEventRecyclingEnded
      *   |mixed
      * ),
      * } $values
@@ -339,6 +343,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'AdConnectionReconnectRequired',
             'value' => $adConnectionReconnectRequired,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventRecyclingEnded $recyclingEnded
+     * @return NoticeEvent
+     */
+    public static function recyclingEnded(NoticeEventRecyclingEnded $recyclingEnded): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'RecyclingEnded',
+            'value' => $recyclingEnded,
         ]);
     }
 
@@ -761,6 +777,28 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isRecyclingEnded(): bool
+    {
+        return $this->value instanceof NoticeEventRecyclingEnded && $this->type === 'RecyclingEnded';
+    }
+
+    /**
+     * @return NoticeEventRecyclingEnded
+     */
+    public function asRecyclingEnded(): NoticeEventRecyclingEnded
+    {
+        if (!($this->value instanceof NoticeEventRecyclingEnded && $this->type === 'RecyclingEnded')) {
+            throw new Exception(
+                "Expected RecyclingEnded; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -856,6 +894,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asAdConnectionReconnectRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'RecyclingEnded':
+                $value = $this->asRecyclingEnded()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case '_unknown':
             default:
                 if (is_null($this->value)) {
@@ -948,6 +990,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'AdConnectionReconnectRequired':
                 $args['value'] = NoticeEventAdConnectionReconnectRequired::jsonDeserialize($data);
+                break;
+            case 'RecyclingEnded':
+                $args['value'] = NoticeEventRecyclingEnded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

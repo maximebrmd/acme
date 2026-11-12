@@ -9,6 +9,7 @@ import {
   ChannelSetReferencesSchema,
   duplicateWindowHours,
   idempotencyKeyLifetimeHours,
+  LivePostChangeSchema,
   LivePostChangesSchema,
   maxBulkPosts,
   maxDraftPageSize,
@@ -33,6 +34,14 @@ import {
   QueueReshuffleSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
+  CalendarDaySchema,
+  maxOccurrences,
+  maxRecyclingInterval,
+  maxRecyclingVariants,
+  minOccurrences,
+  RecyclingIntervalSchema,
+  RecyclingRuleSchema,
+  RecyclingVariantSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -55,7 +64,7 @@ const channelIds = Schema.Array(Schema.String).annotate({
 // The API's draft options, each channel's once.
 const options = PostDraftSchema.fields.options.schema.annotate({
   description:
-    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers, containsSyntheticMedia, license, embeddable, publicStatsViewable, defaultLanguage (a BCP 47 tag), recordingDate (as 2026-11-27) and thumbnailMediaId (a ready JPEG or PNG of the workspace's media, set once the video is up; a channel YouTube does not allow it is published without it, with `thumbnailNotSet`); TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent, aiGenerated, a video's videoCoverTimestampMs, and a photo post's photoTitle, autoAddMusic and photoCoverIndex; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle; Mastodon's, Bluesky's, Threads' and X's reply, language, label and disclosure settings; Instagram's collaborators (up to 3 usernames of other accounts, each of which receives an invitation: set it only for accounts the user named) and, for a post of one video (a reel), shareToFeed, coverMediaId (a ready JPEG of the workspace's media), thumbOffsetMs, audioName and trialReel; Facebook's videoTitle, for a post of a video. Set an option only when the user chose it. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
+    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers, containsSyntheticMedia, license, embeddable, publicStatsViewable, defaultLanguage (a BCP 47 tag), recordingDate (as 2026-11-27) and thumbnailMediaId (a ready JPEG or PNG of the workspace's media, set once the video is up; a channel YouTube does not allow it is published without it, with `thumbnailNotSet`); TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent, aiGenerated, a video's videoCoverTimestampMs, and a photo post's photoTitle, autoAddMusic and photoCoverIndex; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle; Mastodon's, Bluesky's, Threads' and X's reply, language, label and disclosure settings; Instagram's format (story: one image or video shown for 24 hours, sent without the post's text, taking none of the other options; a feed post when left out), collaborators (up to 3 usernames of other accounts, each of which receives an invitation: set it only for accounts the user named) and, for a post of one video (a reel), shareToFeed, coverMediaId (a ready JPEG of the workspace's media), thumbOffsetMs, audioName and trialReel; Facebook's format (story, sent without the post's text, or reel: one vertical video; a feed post when left out) and videoTitle, for a post of a video or a reel. Choose a format only when the user asked for a story or a reel: it is never guessed from the file. Set an option only when the user chose it. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
 });
 
 // The API's tags of a post, by id.
@@ -250,10 +259,42 @@ export const UnpublishPost = Tool.make("unpublish_post", {
   )
   .annotate(Tool.Title, "Unpublish a post");
 
+export const EditPublishedPost = Tool.make("edit_published_post", {
+  dependencies: [CurrentMember],
+  description:
+    "Replaces the text of a post that is already published, on one channel's platform, for everyone who can see it: the change is public at once. Only the text changes, never the media, the options, the audience or the time. Peal edits on Mastodon and Google Business Profile; get_channel_capabilities says where (`livePost.edit`) and why not elsewhere (`editBlockedBy`). Call it only when the user asked for this edit, and say first which post and channel it changes. Give `channelId` or `targetId` (as get_post answers it), exactly one; `part` is the part of a thread, from 0 (the post itself, the default). The text is checked as the channel's text is when a post is scheduled: a refused text lists every violation. The edit runs in the background: the answer is the change (`pending`, then `done` or `failed` with its `code`, which list_post_changes reads; `postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll); once done, the text is that part's own on that channel in Peal, and the target has its `editedAt`. Refused before anything is sent where it is not live there, removed, not editable on that platform, being changed already, its channel cannot be used, or the user's posts need an approval (approvalRequired: an approver makes it). Needs the scope workspace:publish.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "The channel to edit it on, as list_channels answers its id.",
+      })
+    ),
+    part: Schema.optionalKey(
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).annotate({
+        description:
+          "The part of a thread to edit, from 0, the post itself; left out, 0.",
+      })
+    ),
+    postId,
+    targetId: Schema.optionalKey(targetId),
+    text: Schema.String.check(Schema.isNonEmpty()).annotate({
+      description:
+        "The new text of that part on that channel, which replaces the old one there for everyone.",
+    }),
+  }),
+  success: LivePostChangeSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Edit a published post");
+
 export const ListPostChanges = Tool.make("list_post_changes", {
   dependencies: [CurrentMember],
   description:
-    "Lists what was asked of a post once it was live (removing it from a channel's platform), newest first: each change with where it stands (`pending`, `done`, or `failed` with its `code`, after which unpublish_post may be called again to remove what is left) and how many parts are left.",
+    "Lists what was asked of a post once it was live (removing it from a channel's platform, or editing its text there), newest first: each change with its `kind` (`unpublish` or `edit`) and where it stands (`pending`, `done`, or `failed` with its `code`, after which unpublish_post may be called again to remove what is left, or edit_published_post to edit again) and how many parts are left.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: LivePostChangesSchema,
@@ -337,7 +378,7 @@ const waitsForOutcome = `It answers while the post publishes, unless \`waitSecon
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag), \`queueId\` (the posts that queue placed) and \`removed\` (the posts removed from a channel's platform, or from none). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag), \`queueId\` (the posts that queue placed), \`recyclingId\` (the posts that recycling rule made) and \`removed\` (the posts removed from a channel's platform, or from none). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     authorId: Schema.optionalKey(Schema.String),
@@ -356,6 +397,12 @@ export const ListPosts = Tool.make("list_posts", {
       Schema.String.annotate({
         description:
           "Only the posts this queue placed, as list_queues answers its id.",
+      })
+    ),
+    recyclingId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "Only the posts this recycling rule made, as list_recycling_rules answers its id.",
       })
     ),
     removed: Schema.optionalKey(
@@ -577,6 +624,87 @@ export const AwaitPost = Tool.make("await_post", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "Wait for a post's outcome");
 
+const variants = Schema.Array(RecyclingVariantSchema)
+  .check(Schema.isMaxLength(maxRecyclingVariants))
+  .annotate({
+    description: `Texts the posts say instead of the source's, in turn after it: each replaces the first part's text and, given \`overrides\`, its texts on some channels; media, later parts and options stay the source's. ${String(maxRecyclingVariants)} at most, each checked as the source saying it would be. Platforms may refuse the same text published twice: variants are for that.`,
+  });
+
+const ruleCount = Schema.Int.check(
+  Schema.isBetween({ maximum: maxOccurrences, minimum: minOccurrences })
+).annotate({
+  description: `How many posts in all, the source counted: ${String(minOccurrences)} to ${String(maxOccurrences)}. Left out, at most ${String(maxOccurrences)}.`,
+});
+
+const ruleUntil = CalendarDaySchema.annotate({
+  description:
+    "The last day a post is made for, as YYYY-MM-DD in the source's time zone.",
+});
+
+const repeatsInPublic =
+  "It publishes again, in public, on the source's channels, without anyone being asked each time (unless the workspace's approvals hold the starter's posts: then each waits for an approval), until it ends or stop_recycling_rule stops it.";
+
+export const RecyclePost = Tool.make("recycle_post", {
+  dependencies: [CurrentMember],
+  description: `Makes a post repeat: a recycling rule makes a new post from it every \`every\` (1 to ${String(maxRecyclingInterval.days)} days, ${String(maxRecyclingInterval.weeks)} weeks or ${String(maxRecyclingInterval.months)} months), at the same wall-clock time in its zone or on a queue's first free slot from then (\`queueId\`), until \`count\` posts or the day \`until\`. The post must be scheduled, publishing or already out; one rule at a time repeats it. Each new post is copied from the source with what the workspace still has, checked and sent as any post, and acts as you, with what you may do when it is made. ${repeatsInPublic} Do it only when the user asked for this post to repeat. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    count: Schema.optionalKey(ruleCount),
+    every: RecyclingIntervalSchema,
+    postId,
+    queueId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "A queue the posts take the first free slot of, from each due time, as list_queues answers its id.",
+      })
+    ),
+    until: Schema.optionalKey(ruleUntil),
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Make a post repeat");
+
+const recyclingRuleId = Schema.String.annotate({
+  description: "The recycling rule's id, as list_recycling_rules answers it.",
+});
+
+export const UpdateRecyclingRule = Tool.make("update_recycling_rule", {
+  dependencies: [CurrentMember],
+  description: `Changes a recycling rule: its \`variants\` (all replaced), its \`count\` or \`until\` (null takes it away), or pauses it (\`paused\` true) or sets it going again (false). What is left out stays; posts it made keep what they say. An ended rule changes no more: resume_recycling_rule. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    count: Schema.optionalKey(Schema.NullOr(ruleCount)),
+    paused: Schema.optionalKey(Schema.Boolean),
+    ruleId: recyclingRuleId,
+    until: Schema.optionalKey(Schema.NullOr(ruleUntil)),
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Update a recycling rule");
+
+export const ResumeRecyclingRule = Tool.make("resume_recycling_rule", {
+  dependencies: [CurrentMember],
+  description: `Sets a paused recycling rule going again, or one that ended for a reason that can be put right (\`planLimit\`, \`contentRejected\` with other \`variants\`, \`noChannels\`, \`queueFull\`, \`sourceWithdrawn\` once its post is scheduled again): its next post is due at the first due time from now, unless another rule repeats the post or the workspace has its limit of rules going. ${repeatsInPublic} ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    ruleId: recyclingRuleId,
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Resume a recycling rule");
+
 /** The tools that read and change the workspace's posts. */
 export const PostTools = Toolkit.make(
   ListDrafts,
@@ -602,5 +730,9 @@ export const PostTools = Toolkit.make(
   RepostTarget,
   ConfirmTarget,
   UnpublishPost,
-  ListPostChanges
+  EditPublishedPost,
+  ListPostChanges,
+  RecyclePost,
+  UpdateRecyclingRule,
+  ResumeRecyclingRule
 );

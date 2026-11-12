@@ -13,6 +13,8 @@ enum SubscribableWebhookEventType: string
     case PostFinished = "post.finished";
     case PostUnpublished = "post.unpublished";
     case PostUnpublishFailed = "post.unpublish_failed";
+    case PostEdited = "post.edited";
+    case PostEditFailed = "post.edit_failed";
     case PostApprovalRequested = "post.approval_requested";
     case PostApproved = "post.approved";
     case PostChangesRequested = "post.changes_requested";

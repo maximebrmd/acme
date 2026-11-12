@@ -9,7 +9,9 @@ import { errorEnvelope } from "./error-envelope.ts";
  * - `staff`: staff do not impersonate other staff.
  * - `verified`: the address is confirmed already.
  * - `expired`: a ban must end in the future;
- * - `banned`: a banned account cannot be signed in as, by staff either.
+ * - `banned`: a banned account cannot be signed in as, by staff either;
+ * - `twoStepOff`: two-step verification is off on the account, so there
+ *   is nothing to reset.
  */
 export const StaffRefusalSchema = Schema.Literals([
   "self",
@@ -17,6 +19,7 @@ export const StaffRefusalSchema = Schema.Literals([
   "verified",
   "expired",
   "banned",
+  "twoStepOff",
 ]).annotate({ identifier: "StaffRefusal" });
 
 export type StaffRefusal = typeof StaffRefusalSchema.Type;
@@ -27,7 +30,7 @@ export class StaffActionRefused extends Schema.TaggedError<StaffActionRefused>()
   { ...errorEnvelope, reason: StaffRefusalSchema },
   {
     description:
-      "The action does not apply to this account: staff acting on themselves, impersonating other staff, an address already confirmed, a ban that would end in the past, or acting as a banned account.",
+      "The action does not apply to this account: staff acting on themselves, impersonating other staff, an address already confirmed, a ban that would end in the past, acting as a banned account, or resetting two-step verification an account does not have on (`twoStepOff`).",
     httpApiStatus: 409,
   }
 ) {}

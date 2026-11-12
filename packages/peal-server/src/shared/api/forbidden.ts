@@ -13,6 +13,8 @@ const messages: Readonly<Record<ForbiddenReason, string>> = {
   personRequired:
     "Only a person signed in to Peal does this, in the web app: not an API key, an application acting for them, or staff acting as them.",
   suspended: "This account is suspended. Write to the people who run Peal.",
+  twoStepRequired:
+    "This workspace requires two-step verification. Turn it on in your Peal account settings, then try again.",
   untrustedOrigin:
     "This request came with the session's cookie from a site Peal does not trust. Scripts and servers send an API key or an OAuth token instead.",
   wrongWorkspace:
@@ -31,6 +33,7 @@ const reasons = new Map<string, ForbiddenReason>([
   ["PersonRequired", "personRequired"],
   ["RoleNotInvitable", "missingPermission"],
   ["SessionRequired", "personRequired"],
+  ["TwoStepRequired", "twoStepRequired"],
   ["UserRequired", "personRequired"],
   ["WorkspaceMismatch", "wrongWorkspace"],
 ]);

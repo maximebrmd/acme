@@ -8,6 +8,7 @@ export const StaffErrorKeySchema = Schema.Literals([
   "notStaff",
   "self",
   "staff",
+  "twoStepOff",
   "unknown",
   "verified",
   "workspaceGone",
@@ -17,7 +18,14 @@ export type StaffErrorKey = typeof StaffErrorKeySchema.Type;
 
 const RefusedSchema = Schema.Struct({
   _tag: Schema.Literal("StaffActionRefused"),
-  reason: Schema.Literals(["banned", "expired", "self", "staff", "verified"]),
+  reason: Schema.Literals([
+    "banned",
+    "expired",
+    "self",
+    "staff",
+    "twoStepOff",
+    "verified",
+  ]),
 });
 
 const decodeRefused = Schema.decodeUnknownOption(RefusedSchema);

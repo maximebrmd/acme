@@ -10,6 +10,7 @@ import { Skeleton } from "peal-ui/components/skeleton";
 import { Composer } from "#components/posts/composer.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
+import { PostRepeat } from "#components/recycling/post-repeat.tsx";
 import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { workspaceChannels, workspacePost } from "#posts/api.ts";
@@ -102,6 +103,11 @@ const ExistingPost = ({
           userId={userId}
           workspaceId={workspaceId}
         />
+        <PostRepeat
+          permissions={permissions}
+          post={post}
+          workspaceId={workspaceId}
+        />
         <PostReviewSection
           permissions={permissions}
           post={post}
@@ -131,6 +137,11 @@ const ExistingPost = ({
           permissions={permissions}
           post={post}
           userId={userId}
+          workspaceId={workspaceId}
+        />
+        <PostRepeat
+          permissions={permissions}
+          post={post}
           workspaceId={workspaceId}
         />
         <PostReviewSection

@@ -7,7 +7,9 @@ import { Schema } from "effect";
  * - `staff`: staff do not impersonate other staff;
  * - `verified`: the address is confirmed already;
  * - `expired`: a ban must end in the future;
- * - `banned`: a banned account cannot be signed in as, by staff either.
+ * - `banned`: a banned account cannot be signed in as, by staff either;
+ * - `twoStepOff`: two-step verification is off on the account, so there
+ *   is nothing to reset.
  */
 export const StaffRefusalSchema = Schema.Literals([
   "self",
@@ -15,6 +17,7 @@ export const StaffRefusalSchema = Schema.Literals([
   "verified",
   "expired",
   "banned",
+  "twoStepOff",
 ]);
 
 export type StaffRefusal = typeof StaffRefusalSchema.Type;

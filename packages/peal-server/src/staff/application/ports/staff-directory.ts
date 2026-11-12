@@ -31,10 +31,14 @@ export interface UserMembership {
   readonly slug: string;
 }
 
-/** An account, its workspaces and how many sessions it has open. */
+/**
+ * An account, its workspaces, how many sessions it has open and whether
+ * two-step verification is on.
+ */
 export interface UserProfile extends UserSummary {
   readonly locale: Locale;
   readonly sessions: number;
+  readonly twoStepEnabled: boolean;
   readonly workspaces: readonly UserMembership[];
 }
 
@@ -55,13 +59,14 @@ export interface WorkspaceMember {
   readonly userId: UserId;
 }
 
-/** A workspace and its members. */
+/** A workspace, its members, and whether it requires two-step verification. */
 export interface WorkspaceProfile {
   readonly createdAt: DateTime.Utc;
   readonly id: WorkspaceId;
   readonly members: readonly WorkspaceMember[];
   readonly name: string;
   readonly slug: string;
+  readonly twoStepRequired: boolean;
 }
 
 /** Who an id names. */

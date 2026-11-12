@@ -16,6 +16,8 @@ public readonly record struct UnconfirmedReason : IStringEnum
 
     public static readonly UnconfirmedReason AdapterFailure = new(Values.AdapterFailure);
 
+    public static readonly UnconfirmedReason StillProcessing = new(Values.StillProcessing);
+
     public UnconfirmedReason(string value)
     {
         Value = value;
@@ -119,5 +121,7 @@ public readonly record struct UnconfirmedReason : IStringEnum
         public const string Interrupted = "interrupted";
 
         public const string AdapterFailure = "adapterFailure";
+
+        public const string StillProcessing = "stillProcessing";
     }
 }

@@ -1,14 +1,22 @@
-import { and, eq, isNotNull, or } from "drizzle-orm";
+import { and, eq, isNotNull, like, or } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
 
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { defaultLocale } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
+import { AccountMail } from "#workspace/application/account-mail.ts";
 import { AccountModeration } from "#workspace/application/account-moderation.ts";
 import type { EndedImpersonation } from "#workspace/application/account-moderation.ts";
 import { AuthUnavailable } from "#workspace/application/auth-unavailable.ts";
-import { session } from "#workspace/infrastructure/auth-schema.generated.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import {
+  session,
+  twoFactor,
+  user,
+  verification,
+} from "#workspace/infrastructure/auth-schema.generated.ts";
 
 import { attempt } from "./attempt.ts";
 import { BetterAuth } from "./better-auth.ts";
@@ -31,6 +39,44 @@ export const AccountModerationLive = Layer.effect(
   Effect.gen(function* AccountModerationLive() {
     const auth = yield* BetterAuth;
     const db = yield* Drizzle;
+    const transactions = yield* TransactionRunner;
+    const directory = yield* MemberDirectory;
+    const mail = yield* AccountMail;
+
+    const unavailable = Effect.mapError(
+      (cause: unknown) => new AuthUnavailable({ cause })
+    );
+
+    // Two-step verification gone from the account, at once: its flag, its
+    // authenticator and recovery codes, the browsers it trusted and the
+    // second steps of sign-ins in progress. The identifiers' prefixes are
+    // the plugin's (a test pins the trusted browsers').
+    const forgetTwoStep = (userId: UserId, now: DateTime.Utc) =>
+      transactions.transaction(
+        Effect.gen(function* forget() {
+          yield* db.delete(twoFactor).where(eq(twoFactor.userId, userId));
+
+          yield* db
+            .update(user)
+            .set({
+              twoFactorEnabled: false,
+              updatedAt: DateTime.toDateUtc(now),
+            })
+            .where(eq(user.id, userId));
+
+          yield* db
+            .delete(verification)
+            .where(
+              and(
+                eq(verification.value, userId),
+                or(
+                  like(verification.identifier, "trust-device-%"),
+                  like(verification.identifier, "2fa-%")
+                )
+              )
+            );
+        })
+      );
 
     // The sessions the user opened as staff to act as someone else. Better
     // Auth ends only the user's own when it bans them or signs them out
@@ -130,6 +176,38 @@ export const AccountModerationLive = Layer.effect(
           Effect.asVoid,
           Effect.withSpan("AccountModeration.resendVerification")
         ),
+      resetTwoStep: Effect.fn("AccountModeration.resetTwoStep")(
+        function* resetTwoStep({ staffSession, userId }) {
+          // Read first, then signed out, then forgotten, then told: a
+          // failure before the authenticator is forgotten leaves its second
+          // step on, which the same reset, tried again, completes; after
+          // it, only the email is left, which cannot fail.
+          const account = yield* directory.account(userId).pipe(unavailable);
+          const ending = yield* impersonationsOf(userId);
+
+          yield* attempt(
+            async () =>
+              await auth.api.revokeUserSessions({
+                body: { userId },
+                headers: headersOf(staffSession),
+              })
+          );
+
+          yield* endImpersonations(userId);
+          yield* forgetTwoStep(userId, yield* DateTime.now).pipe(unavailable);
+
+          if (Option.isSome(account)) {
+            yield* mail.twoStepChanged({
+              email: account.value.email,
+              kind: "resetByStaff",
+              locale: account.value.locale,
+              recoveryCodesLeft: null,
+            });
+          }
+
+          return ending;
+        }
+      ),
       revokeSessions: Effect.fn("AccountModeration.revokeSessions")(
         function* revokeSessions({ staffSession, userId }) {
           const ending = yield* impersonationsOf(userId);

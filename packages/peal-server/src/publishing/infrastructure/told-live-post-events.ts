@@ -23,8 +23,9 @@ const neverStopping = <R>(
 /**
  * LivePostEvents that tell, in the transaction that settles a change, the
  * workspace's webhook endpoints (`post.unpublished`,
- * `post.unpublish_failed`: ids, codes and instants, never what the post
- * says), and, once a post is off its platform, analytics and the inbox,
+ * `post.unpublish_failed`, `post.edited`, `post.edit_failed`: ids, codes,
+ * places and instants, never what the post says), and, once a post is off
+ * its platform, analytics and the inbox,
  * which stop following it and keep what they read
  * (`AnalyticsRecords.postRemoved`, `EngagementRecords.postRemoved`).
  */
@@ -94,6 +95,52 @@ export const ToldLivePostEvents = Layer.effect(
         })
       );
 
-    return LivePostEvents.of({ unpublishFailed, unpublished });
+    // An edit changes nothing analytics or the inbox read: the webhooks
+    // alone hear of it.
+    const edited = (change: LivePostChange, target: PostTarget, part: number) =>
+      neverStopping(
+        Effect.gen(function* tell() {
+          yield* webhooks.publish({
+            event: {
+              data: {
+                ...(yield* refOf(change, target)),
+                editedAt: Option.getOrThrow(change.finishedAt),
+                part,
+              },
+              type: "post.edited",
+            },
+            key: `live-post-change:${change.id}:done`,
+          });
+        })
+      );
+
+    const editFailed = (
+      change: LivePostChange,
+      target: PostTarget,
+      part: number
+    ) =>
+      neverStopping(
+        Effect.gen(function* tell() {
+          yield* webhooks.publish({
+            event: {
+              data: {
+                ...(yield* refOf(change, target)),
+                code: Option.getOrElse(change.failureCode, () => "unknown"),
+                failedAt: Option.getOrThrow(change.finishedAt),
+                part,
+              },
+              type: "post.edit_failed",
+            },
+            key: `live-post-change:${change.id}:failed`,
+          });
+        })
+      );
+
+    return LivePostEvents.of({
+      editFailed,
+      edited,
+      unpublishFailed,
+      unpublished,
+    });
   })
 );

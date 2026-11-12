@@ -34,7 +34,9 @@
   after it leaves it ended.
 - `CollectComments` runs on the `engagement.collect-comments` cron, every
   ten minutes from minute 2: it follows publishing's `PublishedTargets` (`FollowedPosts`)
-  as analytics does, then reads the threads due, the channels that waited
+  as analytics does, stories left out by the listing's query (they leave
+  after a day, and Peal reads none of their replies), then reads the
+  threads due, the channels that waited
   longest first, 10 threads a call (`CommentSource`, through the channel's
   gate: `ReadComments`), 30 threads a channel a run, 8 channels at once
   (`PEAL_ENGAGEMENT_CONCURRENCY`), and starts no read 8 minutes after the

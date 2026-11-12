@@ -1,4 +1,4 @@
-# Take a live post down
+# Take a live post down, or correct it
 
 Unpublishing deletes a post from its platforms **for everyone**, every
 part of a thread, the last first. It cannot be undone, from Peal or on the
@@ -33,9 +33,31 @@ Where it is refused, `live_post_not_changeable` says why in `reason`:
 | `changeInProgress`   | Read `peal posts changes`, then wait.                      |
 | `channelUnavailable` | The channel must be reconnected or turned back on first.   |
 | `boostRunning`       | A boost shows it: the user stops the boost first.          |
+| `approvalRequired`   | Posts need approval: an approver makes the edit.           |
 
 Which platforms let Peal delete: `peal channels capabilities <channel>
 --json`, `livePost.unpublish` (and `unpublishBlockedBy` where not).
+
+## Correct a live post's text
+
+Editing replaces the text of one part of a post on one channel, **for
+everyone, at once**: only the text, never media, options or the time. Peal
+edits on Mastodon and Google Business Profile only (`livePost.edit` in the
+capabilities, `editBlockedBy` where not). Do it only when the user asked
+for that edit, and say which post and channel it changes.
+
+```sh
+peal posts edit <post-id> --channel <channel-id> --text "The corrected text." --wait 30 --json
+peal posts edit <post-id> --channel <channel-id> --part 1 --text "The second part, corrected." --json
+```
+
+`--part` counts from 0, the post itself. The text is checked as the
+channel's is at scheduling (`post_content_invalid` lists what to fix). The
+change is `kind: edit`; once `done`, Peal's text for that part on that
+channel is the new one and the target has `editedAt`; `failed` has a `code`
+(`postGone`: the post is gone from the platform; `pollNotEditable`: a
+Mastodon post with a poll, which an edit would remove; `permissionDenied`:
+the Mastodon channel must be reconnected). Peal keeps no earlier text.
 
 Over HTTP:
 
@@ -44,6 +66,9 @@ curl -sS -X POST -H "Authorization: Bearer $PEAL_API_KEY" \
   "$PEAL_API_URL/api/workspaces/$PEAL_WORKSPACE/posts/<post-id>/targets/<target-id>/unpublish?wait=30"
 curl -sS -X POST -H "Authorization: Bearer $PEAL_API_KEY" \
   "$PEAL_API_URL/api/workspaces/$PEAL_WORKSPACE/posts/<post-id>/unpublish"
+curl -sS -X POST -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" -d '{"text": "The corrected text.", "part": 0}' \
+  "$PEAL_API_URL/api/workspaces/$PEAL_WORKSPACE/posts/<post-id>/targets/<target-id>/edit?wait=30"
 curl -sS -H "Authorization: Bearer $PEAL_API_KEY" \
   "$PEAL_API_URL/api/workspaces/$PEAL_WORKSPACE/posts/<post-id>/changes"
 ```

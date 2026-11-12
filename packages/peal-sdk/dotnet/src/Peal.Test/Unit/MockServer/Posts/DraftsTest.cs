@@ -96,8 +96,10 @@ public class DraftsTest : BaseMockServerTest
                     "via": "web"
                   },
                   "id": "id",
+                  "occurrence": 1,
                   "outcome": "published",
                   "queueId": "queueId",
+                  "recyclingId": "recyclingId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
@@ -116,6 +118,7 @@ public class DraftsTest : BaseMockServerTest
                   "targets": [
                     {
                       "channelId": "channelId",
+                      "editedAt": "editedAt",
                       "failureReason": "contentRejected",
                       "id": "id",
                       "keptPrivate": true,
@@ -165,6 +168,7 @@ public class DraftsTest : BaseMockServerTest
                     },
                     {
                       "channelId": "channelId",
+                      "editedAt": "editedAt",
                       "failureReason": "contentRejected",
                       "id": "id",
                       "keptPrivate": true,
@@ -315,8 +319,10 @@ public class DraftsTest : BaseMockServerTest
                     "via": "web"
                   },
                   "id": "id",
+                  "occurrence": 1,
                   "outcome": "published",
                   "queueId": "queueId",
+                  "recyclingId": "recyclingId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
@@ -335,6 +341,7 @@ public class DraftsTest : BaseMockServerTest
                   "targets": [
                     {
                       "channelId": "channelId",
+                      "editedAt": "editedAt",
                       "failureReason": "contentRejected",
                       "id": "id",
                       "keptPrivate": true,
@@ -384,6 +391,7 @@ public class DraftsTest : BaseMockServerTest
                     },
                     {
                       "channelId": "channelId",
+                      "editedAt": "editedAt",
                       "failureReason": "contentRejected",
                       "id": "id",
                       "keptPrivate": true,
@@ -505,8 +513,10 @@ public class DraftsTest : BaseMockServerTest
                     "via": "web"
                   },
                   "id": "id",
+                  "occurrence": 1,
                   "outcome": "published",
                   "queueId": "queueId",
+                  "recyclingId": "recyclingId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"

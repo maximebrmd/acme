@@ -49,7 +49,7 @@ import {
   maxPinterestLinkLength,
   maxPinterestTitleLength,
 } from "#publishing/domain/pinterest-options.ts";
-import { platformRules } from "#publishing/domain/platform-rules.ts";
+import { platformRules, rulesFor } from "#publishing/domain/platform-rules.ts";
 import {
   maxMediaPerPost,
   PostContent,
@@ -84,6 +84,7 @@ import {
   youTubeThumbnailTypes,
 } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
+import { platforms } from "#shared/domain/platform.ts";
 import {
   linkCases,
   weightedCases,
@@ -638,6 +639,18 @@ const options: readonly unknown[] = [
   { platform: "facebook", videoTitle: "A synthetic title" },
   { platform: "facebook", videoTitle: "a".repeat(256) },
   { platform: "facebook", videoTitle: ["A title"] },
+  { format: "story", platform: "instagram" },
+  { format: "feed", platform: "instagram" },
+  { format: "reel", platform: "instagram" },
+  {
+    collaborators: ["synthetic.friend"],
+    format: "story",
+    platform: "instagram",
+  },
+  { format: "story", platform: "facebook" },
+  { format: "reel", platform: "facebook", videoTitle: "A synthetic title" },
+  { format: "feed", platform: "facebook" },
+  { format: "carousel", platform: "facebook" },
 ];
 
 describe("the contract's longest wait for an outcome", () => {
@@ -756,6 +769,26 @@ describe("the contract's target options", () => {
           Option.getOrUndefined(contract)
         )
       ).toBe(countedText("Some text", server));
+    }
+  });
+
+  it("hold the rules the server applies to each platform's formats", () => {
+    const formatted = [
+      undefined,
+      ...options.flatMap((input) =>
+        Option.toArray(Schema.decodeUnknownOption(ContractOptionsSchema)(input))
+      ),
+    ];
+
+    for (const platform of platforms) {
+      for (const chosen of formatted) {
+        const server = rulesFor(
+          platform,
+          Schema.decodeUnknownOption(TargetOptionsSchema)(chosen)
+        );
+
+        expect(ContractText.rulesFor(platform, chosen)).toStrictEqual(server);
+      }
     }
   });
 

@@ -39,6 +39,7 @@ import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
+import { Recycling } from "#publishing/application/recycling.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { createTarget } from "#publishing/domain/post-target.ts";
@@ -295,6 +296,43 @@ const ChannelJobsTest = Layer.mergeAll(
   )
 );
 
+// The publishing crons' work, done on nothing: on the real clock, a run
+// would make the occurrences of the rules other suites keep in this
+// database, and a purge delete their idempotency keys.
+const PublishingCronWorkTest = Layer.mergeAll(
+  Layer.effect(
+    Recycling,
+    Recycling.use((rules) =>
+      Effect.succeed(
+        Recycling.of({
+          ...rules,
+          makeDue: Effect.succeed({
+            ended: 0,
+            left: 0,
+            made: 0,
+            waitingSince: [],
+          }),
+          overdue: () => Effect.succeed(0),
+        })
+      )
+    )
+  ),
+  Layer.effect(
+    PostScheduling,
+    PostScheduling.use((scheduling) =>
+      Effect.succeed(
+        PostScheduling.of({
+          ...scheduling,
+          forgetExpiredKeys: Effect.succeed(0),
+        })
+      )
+    )
+  )
+);
+
+// The server's crons, their work as `PublishingCronWorkTest` does it.
+const CronsTest = CronsLive.pipe(Layer.provide(PublishingCronWorkTest));
+
 const serverWith = <E, R>(
   platforms: Layer.Layer<Layer.Success<typeof FakePlatformPublisher>, E, R>,
   crons: Layer.Layer<
@@ -302,9 +340,10 @@ const serverWith = <E, R>(
     never,
     | Layer.Success<typeof ChannelJobsTest>
     | PostScheduling
+    | Recycling
     | Sharding.Sharding
     | SqlClient.SqlClient
-  > = CronsLive
+  > = CronsTest
 ) =>
   Layer.mergeAll(publishingWorkers(platforms), crons).pipe(
     Layer.provideMerge(publishingWith(ReferencesTest)),
@@ -641,7 +680,7 @@ describe("the cluster on Postgres", () => {
           );
         }).pipe(
           Effect.provide(
-            serverWith(FakePlatformPublisher, Layer.merge(CronsLive, Ticks))
+            serverWith(FakePlatformPublisher, Layer.merge(CronsTest, Ticks))
           ),
           // Once the server has stopped.
           Effect.ensuring(Effect.orDie(forgetTicks)),

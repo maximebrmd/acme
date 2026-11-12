@@ -118,7 +118,8 @@ var (
 	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 3)
 	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 4)
 	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
-	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 6)
+	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 6)
+	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 7)
 )
 
 type NotificationPreferencesEmail struct {
@@ -128,6 +129,7 @@ type NotificationPreferencesEmail struct {
 	PostPublished    bool `json:"postPublished" url:"postPublished"`
 	PostReview       bool `json:"postReview" url:"postReview"`
 	PostUnconfirmed  bool `json:"postUnconfirmed" url:"postUnconfirmed"`
+	RecyclingEnded   bool `json:"recyclingEnded" url:"recyclingEnded"`
 	WebhookFailing   bool `json:"webhookFailing" url:"webhookFailing"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -177,6 +179,13 @@ func (n *NotificationPreferencesEmail) GetPostUnconfirmed() bool {
 		return false
 	}
 	return n.PostUnconfirmed
+}
+
+func (n *NotificationPreferencesEmail) GetRecyclingEnded() bool {
+	if n == nil {
+		return false
+	}
+	return n.RecyclingEnded
 }
 
 func (n *NotificationPreferencesEmail) GetWebhookFailing() bool {
@@ -244,6 +253,13 @@ func (n *NotificationPreferencesEmail) SetPostUnconfirmed(postUnconfirmed bool) 
 	n.require(notificationPreferencesEmailFieldPostUnconfirmed)
 }
 
+// SetRecyclingEnded sets the RecyclingEnded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetRecyclingEnded(recyclingEnded bool) {
+	n.RecyclingEnded = recyclingEnded
+	n.require(notificationPreferencesEmailFieldRecyclingEnded)
+}
+
 // SetWebhookFailing sets the WebhookFailing field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NotificationPreferencesEmail) SetWebhookFailing(webhookFailing bool) {
@@ -300,7 +316,8 @@ var (
 	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 3)
 	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 4)
 	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
-	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 6)
+	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 6)
+	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 7)
 )
 
 type NotificationPreferencesChangeEmail struct {
@@ -310,6 +327,7 @@ type NotificationPreferencesChangeEmail struct {
 	PostPublished    *bool `json:"postPublished,omitempty" url:"postPublished,omitempty"`
 	PostReview       *bool `json:"postReview,omitempty" url:"postReview,omitempty"`
 	PostUnconfirmed  *bool `json:"postUnconfirmed,omitempty" url:"postUnconfirmed,omitempty"`
+	RecyclingEnded   *bool `json:"recyclingEnded,omitempty" url:"recyclingEnded,omitempty"`
 	WebhookFailing   *bool `json:"webhookFailing,omitempty" url:"webhookFailing,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -359,6 +377,13 @@ func (n *NotificationPreferencesChangeEmail) GetPostUnconfirmed() *bool {
 		return nil
 	}
 	return n.PostUnconfirmed
+}
+
+func (n *NotificationPreferencesChangeEmail) GetRecyclingEnded() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.RecyclingEnded
 }
 
 func (n *NotificationPreferencesChangeEmail) GetWebhookFailing() *bool {
@@ -424,6 +449,13 @@ func (n *NotificationPreferencesChangeEmail) SetPostReview(postReview *bool) {
 func (n *NotificationPreferencesChangeEmail) SetPostUnconfirmed(postUnconfirmed *bool) {
 	n.PostUnconfirmed = postUnconfirmed
 	n.require(notificationPreferencesChangeEmailFieldPostUnconfirmed)
+}
+
+// SetRecyclingEnded sets the RecyclingEnded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetRecyclingEnded(recyclingEnded *bool) {
+	n.RecyclingEnded = recyclingEnded
+	n.require(notificationPreferencesChangeEmailFieldRecyclingEnded)
 }
 
 // SetWebhookFailing sets the WebhookFailing field and marks it as non-optional;

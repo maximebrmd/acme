@@ -192,6 +192,17 @@ pub enum NoticeEvent {
         network: String,
     },
 
+    #[non_exhaustive]
+    RecyclingEnded {
+        reason: RecyclingNoticeReason,
+        #[serde(rename = "ruleId")]
+        #[serde(default)]
+        rule_id: String,
+        #[serde(rename = "sourcePostId")]
+        #[serde(default)]
+        source_post_id: String,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -341,6 +352,18 @@ impl NoticeEvent {
 
     pub fn ad_connection_reconnect_required(network: String) -> Self {
         Self::AdConnectionReconnectRequired { network }
+    }
+
+    pub fn recycling_ended(
+        reason: RecyclingNoticeReason,
+        rule_id: String,
+        source_post_id: String,
+    ) -> Self {
+        Self::RecyclingEnded {
+            reason,
+            rule_id,
+            source_post_id,
+        }
     }
 
     pub fn post_published_with_channel(

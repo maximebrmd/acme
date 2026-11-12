@@ -138,6 +138,7 @@ export const syntheticMe: Me = {
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -146,6 +147,7 @@ export const syntheticMe: Me = {
       permissions: ["post:read"],
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
   ],
 };
@@ -234,7 +236,11 @@ const signedInGroupsLive = (
       })
     ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
-      handlers.handleAll({ delete: () => refusing })
+      handlers.handleAll({
+        delete: () => refusing,
+        secure: () => refusing,
+        security: () => refusing,
+      })
     ),
     HttpApiBuilder.group(Api, "partner", (handlers) =>
       handlers.handleAll({
@@ -284,6 +290,7 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
     impersonate: () => notStaff,
     partner: () => notStaff,
     resendVerification: () => notStaff,
+    resetTwoStep: () => notStaff,
     revokeSessions: () => notStaff,
     session: () => notStaff,
     system: () => notStaff,

@@ -26,6 +26,7 @@ import { ExecutionIdSchema } from "#publishing/application/publication-scheduler
 import type { ExecutionId } from "#publishing/application/publication-scheduler.ts";
 import { LivePartSchema } from "#publishing/domain/live-part.ts";
 import type { LivePart } from "#publishing/domain/live-part.ts";
+import { withTextOn } from "#publishing/domain/post-content.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
@@ -103,6 +104,10 @@ const toStored = (row: PostRow) =>
         text: row.text,
       },
       id: row.id,
+      occurrence:
+        row.recyclingId === null || row.occurrence === null
+          ? Option.none()
+          : Option.some({ number: row.occurrence, ruleId: row.recyclingId }),
       queueId: Option.fromNullOr(row.queueId),
       scheduleRevision: row.scheduleRevision,
       status: postStatusOf(row),
@@ -129,10 +134,15 @@ const targetStatusOf = (row: TargetRow) => {
   // A published target's notes, each only when it holds: a status is
   // decoded from this, and keeps no note it lacks.
   let noted: typeof status & {
+    readonly editedAt?: DateTime.Utc;
     readonly keptPrivate?: true;
     readonly removedAt?: DateTime.Utc;
     readonly thumbnailNotSet?: true;
   } = status;
+
+  if (row.editedAt !== null) {
+    noted = { ...noted, editedAt: DateTime.fromDateUnsafe(row.editedAt) };
+  }
 
   if (row.keptPrivate) {
     noted = { ...noted, keptPrivate: true };
@@ -257,6 +267,7 @@ const postColumns = (post: Post) => {
 const targetColumns = (status: PostTargetStatus) => {
   const cleared = {
     cancelRequested: false,
+    editedAt: null,
     failureCode: null,
     failureReason: null,
     finishedAt: null,
@@ -284,6 +295,7 @@ const targetColumns = (status: PostTargetStatus) => {
     }),
     pending: () => cleared,
     published: ({
+      editedAt,
       keptPrivate,
       permalink,
       platformPostId,
@@ -292,6 +304,7 @@ const targetColumns = (status: PostTargetStatus) => {
       thumbnailNotSet,
     }) => ({
       ...cleared,
+      editedAt: editedAt === undefined ? null : date(editedAt),
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
       // Listed for the contexts that follow publications from when it
@@ -450,6 +463,42 @@ export const DrizzlePostRepository = Layer.effect(
       });
 
     return PostRepository.of({
+      amendText: (postId, index, channelId, text) =>
+        Effect.gen(function* amendText() {
+          const stored = yield* selectPost(postId).pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(storedFrom)
+          );
+
+          if (Option.isNone(stored)) {
+            return Option.none();
+          }
+
+          const { post } = stored.value;
+
+          const amended = new Post({
+            attribution: post.attribution,
+            authorId: post.authorId,
+            content: withTextOn(post.content, index, channelId, text),
+            id: post.id,
+            queueId: post.queueId,
+            scheduleRevision: post.scheduleRevision,
+            status: post.status,
+            tagIds: post.tagIds,
+            workspaceId: post.workspaceId,
+          });
+
+          const { followUps, textOverrides } = contentColumns(amended);
+
+          // The part's texts by channel, and nothing else of the post.
+          yield* db
+            .update(posts)
+            .set(index === 0 ? { textOverrides } : { followUps })
+            .where(eq(posts.id, postId))
+            .pipe(Effect.mapError(failed));
+
+          return Option.some(amended);
+        }),
       channelsUsed: (workspaceId) =>
         db
           .selectDistinct({ channelId: postTargets.channelId })
@@ -528,6 +577,13 @@ export const DrizzlePostRepository = Layer.effect(
             ...postColumns(post),
             authorId: Option.getOrNull(post.authorId),
             id: post.id,
+            ...Option.match(post.occurrence, {
+              onNone: () => ({}),
+              onSome: ({ number, ruleId }) => ({
+                occurrence: number,
+                recyclingId: ruleId,
+              }),
+            }),
             queueId: Option.getOrNull(post.queueId),
             tagIds: [...post.tagIds],
             workspaceId: post.workspaceId,
@@ -602,6 +658,22 @@ export const DrizzlePostRepository = Layer.effect(
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toTarget))
+          ),
+      markEdited: (targetId, editedAt) =>
+        db
+          .update(postTargets)
+          .set({ editedAt: date(editedAt) })
+          .where(
+            and(
+              eq(postTargets.id, targetId),
+              eq(postTargets.status, "published"),
+              isNull(postTargets.removedAt)
+            )
+          )
+          .returning({ id: postTargets.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length === 1)
           ),
       markRemoved: (targetId, removedAt) =>
         db

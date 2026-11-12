@@ -78,7 +78,7 @@ const UnpublishDialog = ({
  * What a member who may remove a live post sees of it on one channel: the
  * action, with its confirmation, a removal under way, one that failed with
  * a way to ask again, or why the platform does not let Peal. Nothing once
- * it was removed: the channel's card says when.
+ * it was removed (the channel's card says when), nor while an edit runs.
  */
 export const LivePostView = (props: LivePostViewProps) => {
   const t = useTranslations("Posts.Live");
@@ -90,6 +90,8 @@ export const LivePostView = (props: LivePostViewProps) => {
         {t("blocked", { by: by ?? "other", platform })}
       </p>
     ),
+    // An edit is under way: the edit's own view says so.
+    editing: () => null,
     failed: ({ code }) => (
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-destructive text-sm">

@@ -574,9 +574,21 @@ export const InstagramTrialReelSchema = Schema.Literals([
 export type InstagramTrialReel = typeof InstagramTrialReelSchema.Type;
 
 /**
+ * What kind of post goes out on an Instagram account: a `story`, or a
+ * `feed` post, as when left out (a post of one video being a reel).
+ */
+export const InstagramFormatSchema = Schema.Literals([
+  "feed",
+  "story",
+]).annotate({ identifier: "InstagramFormat" });
+
+export type InstagramFormat = typeof InstagramFormatSchema.Type;
+
+/**
  * A post on an Instagram account: its caption is the post's text there.
  * The reel's settings are for a post of one video, which Instagram makes a
- * reel.
+ * reel. A story is sent without the post's text, and takes none of the
+ * other options.
  */
 export const InstagramOptionsSchema = Schema.Struct({
   // A reel: the name of its audio, on one line, at most
@@ -594,6 +606,9 @@ export const InstagramOptionsSchema = Schema.Struct({
   // `maxInstagramCoverByteSize` bytes, as its cover. It wins over
   // `thumbOffsetMs`.
   coverMediaId: Schema.optionalKey(MediaIdSchema),
+  // `story`: one image or video, shown for 24 hours, sent without the
+  // post's text. A feed post when left out or `feed`.
+  format: Schema.optionalKey(InstagramFormatSchema),
   platform: Schema.Literal("instagram"),
   // A reel: shown in the feed too, besides the Reels tab. Instagram
   // decides when left out.
@@ -608,7 +623,7 @@ export const InstagramOptionsSchema = Schema.Struct({
   trialReel: Schema.optionalKey(InstagramTrialReelSchema),
 }).annotate({
   description:
-    "How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.",
+    "How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.",
   identifier: "InstagramOptions",
 });
 
@@ -617,15 +632,34 @@ export type InstagramOptions = typeof InstagramOptionsSchema.Type;
 /** The longest title of a Facebook Page's video: Peal's ceiling. */
 export const maxFacebookVideoTitleLength = 255;
 
-/** A post on a Facebook Page: its text is the post's text there. */
+/**
+ * What kind of post goes out on a Facebook Page: a `story`, a `reel`, or
+ * a `feed` post, as when left out.
+ */
+export const FacebookFormatSchema = Schema.Literals([
+  "feed",
+  "story",
+  "reel",
+]).annotate({ identifier: "FacebookFormat" });
+
+export type FacebookFormat = typeof FacebookFormatSchema.Type;
+
+/**
+ * A post on a Facebook Page: its text is the post's text there, but on a
+ * story, which is sent without it.
+ */
 export const FacebookOptionsSchema = Schema.Struct({
+  // `story`: one image or video, shown for 24 hours, sent without the
+  // post's text; `reel`: one vertical video. A feed post when left out or
+  // `feed`.
+  format: Schema.optionalKey(FacebookFormatSchema),
   platform: Schema.Literal("facebook"),
   // A video's title, on one line, at most `maxFacebookVideoTitleLength`
-  // characters: for a post of a video only.
+  // characters: for a post of a video or a reel only.
   videoTitle: Schema.optionalKey(OptionTextSchema),
 }).annotate({
   description:
-    "How a post goes out on a Facebook Page. Scheduling needs none of them; `videoTitle` is for a post of a video.",
+    "How a post goes out on a Facebook Page. Scheduling needs none of them; `format` makes it a `story`, sent without the post's text, or a `reel`; `videoTitle` is for a post of a video or a reel.",
   identifier: "FacebookOptions",
 });
 

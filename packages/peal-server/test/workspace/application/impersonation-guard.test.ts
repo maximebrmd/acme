@@ -24,6 +24,7 @@ type Standing = Option.Option<{
   readonly ban: Option.Option<Ban>;
   readonly legal: boolean;
   readonly staff: boolean;
+  readonly twoStepEnabled: boolean;
 }>;
 
 /** What the guard's ports were asked. */
@@ -110,6 +111,7 @@ const asStaff: Standing = Option.some({
   ban: Option.none(),
   legal: false,
   staff: true,
+  twoStepEnabled: false,
 });
 
 const outcome = <E extends { readonly _tag: string }>(
@@ -161,7 +163,12 @@ describe(ImpersonationGuard, () => {
   it.effect.each([
     {
       name: "no longer staff",
-      standing: Option.some({ ban: Option.none(), legal: false, staff: false }),
+      standing: Option.some({
+        ban: Option.none(),
+        legal: false,
+        staff: false,
+        twoStepEnabled: false,
+      }),
     },
     {
       name: "banned",
@@ -169,6 +176,7 @@ describe(ImpersonationGuard, () => {
         ban: Option.some({ expiresAt: Option.none() }),
         legal: false,
         staff: true,
+        twoStepEnabled: false,
       }),
     },
     { name: "gone", standing: Option.none() },

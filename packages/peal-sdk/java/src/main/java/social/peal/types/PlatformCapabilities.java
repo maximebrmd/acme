@@ -40,6 +40,8 @@ public final class PlatformCapabilities {
 
     private final Platform platform;
 
+    private final Optional<List<PostFormatCapabilities>> postFormats;
+
     private final TextCapabilities text;
 
     private final int version;
@@ -54,6 +56,7 @@ public final class PlatformCapabilities {
             MediaCapabilities media,
             PlatformCapabilitiesOptions options,
             Platform platform,
+            Optional<List<PostFormatCapabilities>> postFormats,
             TextCapabilities text,
             int version,
             Map<String, Object> additionalProperties) {
@@ -64,6 +67,7 @@ public final class PlatformCapabilities {
         this.media = media;
         this.options = options;
         this.platform = platform;
+        this.postFormats = postFormats;
         this.text = text;
         this.version = version;
         this.additionalProperties = additionalProperties;
@@ -107,6 +111,11 @@ public final class PlatformCapabilities {
         return platform;
     }
 
+    @JsonProperty("postFormats")
+    public Optional<List<PostFormatCapabilities>> getPostFormats() {
+        return postFormats;
+    }
+
     @JsonProperty("text")
     public TextCapabilities getText() {
         return text;
@@ -142,6 +151,7 @@ public final class PlatformCapabilities {
                 && media.equals(other.media)
                 && options.equals(other.options)
                 && platform.equals(other.platform)
+                && postFormats.equals(other.postFormats)
                 && text.equals(other.text)
                 && version == other.version;
     }
@@ -156,6 +166,7 @@ public final class PlatformCapabilities {
                 this.media,
                 this.options,
                 this.platform,
+                this.postFormats,
                 this.text,
                 this.version);
     }
@@ -217,6 +228,10 @@ public final class PlatformCapabilities {
         _FinalStage addLookups(LookupDescription lookups);
 
         _FinalStage addAllLookups(List<LookupDescription> lookups);
+
+        _FinalStage postFormats(Optional<List<PostFormatCapabilities>> postFormats);
+
+        _FinalStage postFormats(List<PostFormatCapabilities> postFormats);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -243,6 +258,8 @@ public final class PlatformCapabilities {
 
         private int version;
 
+        private Optional<List<PostFormatCapabilities>> postFormats = Optional.empty();
+
         private List<LookupDescription> lookups = new ArrayList<>();
 
         private Optional<FollowUpCapabilities> followUps = Optional.empty();
@@ -260,6 +277,7 @@ public final class PlatformCapabilities {
             media(other.getMedia());
             options(other.getOptions());
             platform(other.getPlatform());
+            postFormats(other.getPostFormats());
             text(other.getText());
             version(other.getVersion());
             return this;
@@ -311,6 +329,19 @@ public final class PlatformCapabilities {
         @JsonSetter("version")
         public _FinalStage version(int version) {
             this.version = version;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage postFormats(List<PostFormatCapabilities> postFormats) {
+            this.postFormats = Optional.ofNullable(postFormats);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "postFormats", nulls = Nulls.SKIP)
+        public _FinalStage postFormats(Optional<List<PostFormatCapabilities>> postFormats) {
+            this.postFormats = postFormats;
             return this;
         }
 
@@ -373,6 +404,7 @@ public final class PlatformCapabilities {
                     media,
                     options,
                     platform,
+                    postFormats,
                     text,
                     version,
                     additionalProperties);
@@ -387,6 +419,7 @@ public final class PlatformCapabilities {
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("options")
                     || key.equalsIgnoreCase("platform")
+                    || key.equalsIgnoreCase("postFormats")
                     || key.equalsIgnoreCase("text")
                     || key.equalsIgnoreCase("version")) {
                 return;

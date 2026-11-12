@@ -1,0 +1,1410 @@
+[
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "unverified"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "None"
+      }
+    },
+    "lookups": [],
+    "maxAltTextLength": 1000,
+    "maxMedia": 4,
+    "optionConstraints": [
+      {
+        "_tag": "neededWith",
+        "field": "communityId",
+        "other": "shareWithFollowers",
+        "values": ["true"]
+      }
+    ],
+    "options": [
+      {
+        "pattern": "^[0-9]{1,19}$",
+        "name": "communityId",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "madeWithAi",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "paidPartnership",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "name": "replySettings",
+        "required": false,
+        "type": "choice",
+        "values": ["following", "mentionedUsers", "subscribers", "verified"]
+      },
+      {
+        "ifLeftOut": false,
+        "name": "shareWithFollowers",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      }
+    ],
+    "platform": "x",
+    "rules": {
+      "followUps": {
+        "kind": "thread",
+        "maximum": 24
+      },
+      "maxMedia": 4,
+      "media": {
+        "formats": {
+          "image/gif": {
+            "maxByteSize": 15728640,
+            "maxMediaWith": 1
+          },
+          "image/jpeg": {
+            "maxByteSize": 5242880
+          },
+          "image/png": {
+            "maxByteSize": 5242880
+          },
+          "image/webp": {
+            "maxByteSize": 5242880
+          },
+          "video/mp4": {
+            "maxByteSize": 536870912,
+            "maxDurationMs": 140000,
+            "minDurationMs": 500
+          },
+          "video/quicktime": {
+            "maxByteSize": 536870912,
+            "maxDurationMs": 140000,
+            "minDurationMs": 500
+          }
+        },
+        "maxAltTextLength": 1000,
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": true
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 280,
+          "unit": "weighted"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 280,
+        "unit": "weighted"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "unverified"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "unverified"
+      }
+    },
+    "lookups": [
+      {
+        "input": [
+          {
+            "pattern": "^[^\\s/?#]{1,100}$",
+            "name": "vanityName",
+            "required": true,
+            "type": "text",
+            "values": []
+          }
+        ],
+        "name": "linkedinOrganizations",
+        "paged": false,
+        "platform": "linkedin",
+        "fills": ["mentions"]
+      }
+    ],
+    "maxAltTextLength": 4086,
+    "maxMedia": 20,
+    "optionConstraints": [],
+    "options": [
+      {
+        "ifLeftOut": false,
+        "name": "disableReshare",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "maxLength": 400,
+        "name": "documentTitle",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 4000,
+        "name": "linkDescription",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 400,
+        "name": "linkTitle",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 2000,
+        "pattern": "^[Hh][Tt][Tt][Pp][Ss]?://.+",
+        "name": "linkUrl",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "lookup": "linkedinOrganizations",
+        "maximum": 30,
+        "name": "mentions",
+        "required": false,
+        "type": "mentionList",
+        "values": []
+      },
+      {
+        "ifLeftOut": "public",
+        "name": "visibility",
+        "required": false,
+        "type": "choice",
+        "values": ["public", "connections", "loggedIn"]
+      }
+    ],
+    "platform": "linkedin",
+    "rules": {
+      "maxMedia": 20,
+      "media": {
+        "formats": {
+          "application/pdf": {
+            "maxByteSize": 104857600,
+            "maxMediaWith": 1
+          },
+          "image/gif": {
+            "maxPixels": 36152320
+          },
+          "image/jpeg": {
+            "maxPixels": 36152320
+          },
+          "image/png": {
+            "maxPixels": 36152320
+          },
+          "video/mp4": {
+            "maxByteSize": 524288000,
+            "maxDurationMs": 1800000,
+            "minByteSize": 75000,
+            "minDurationMs": 3000
+          }
+        },
+        "maxAltTextLength": 4086,
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": true
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 3000,
+          "unit": "codePoints"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 3000,
+        "unit": "codePoints"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "noApi"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "None"
+      }
+    },
+    "lookups": [],
+    "maxAltTextLength": 5000,
+    "maxMedia": 4,
+    "optionConstraints": [
+      {
+        "_tag": "onlyWith",
+        "field": "replyFollowers",
+        "other": "replies",
+        "values": ["limited"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "replyFollowing",
+        "other": "replies",
+        "values": ["limited"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "replyMentioned",
+        "other": "replies",
+        "values": ["limited"]
+      }
+    ],
+    "options": [
+      {
+        "name": "contentLabel",
+        "required": false,
+        "type": "choice",
+        "values": ["sexual", "nudity", "porn", "graphic-media"]
+      },
+      {
+        "ifLeftOut": false,
+        "name": "disableQuotes",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "maximum": 3,
+        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z\\d]{5,8}|\\d[A-Za-z\\d]{3}))*(?:-[\\dA-WY-Za-wy-z](?:-[A-Za-z\\d]{2,8})+)*(?:-[Xx](?:-[A-Za-z\\d]{1,8})+)?$",
+        "name": "languages",
+        "required": false,
+        "type": "textList",
+        "values": []
+      },
+      {
+        "ifLeftOut": "everyone",
+        "name": "replies",
+        "required": false,
+        "type": "choice",
+        "values": ["everyone", "nobody", "limited"]
+      },
+      {
+        "ifLeftOut": false,
+        "name": "replyFollowers",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "replyFollowing",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "replyMentioned",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      }
+    ],
+    "platform": "bluesky",
+    "rules": {
+      "followUps": {
+        "kind": "thread",
+        "maximum": 24
+      },
+      "maxMedia": 4,
+      "media": {
+        "formats": {
+          "image/gif": {
+            "maxByteSize": 2000000
+          },
+          "image/jpeg": {
+            "maxByteSize": 2000000
+          },
+          "image/png": {
+            "maxByteSize": 2000000
+          },
+          "image/webp": {
+            "maxByteSize": 2000000
+          },
+          "video/mp4": {
+            "maxByteSize": 300000000,
+            "maxDurationMs": 180000
+          }
+        },
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": true
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 300,
+          "unit": "graphemes"
+        },
+        {
+          "maximum": 3000,
+          "unit": "utf8Bytes"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 300,
+        "unit": "graphemes"
+      },
+      {
+        "maximum": 3000,
+        "unit": "utf8Bytes"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "None"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "None"
+      }
+    },
+    "lookups": [],
+    "maxAltTextLength": 1500,
+    "maxMedia": 4,
+    "optionConstraints": [
+      {
+        "_tag": "onlyWith",
+        "field": "quotePolicy",
+        "other": "visibility",
+        "values": ["public", "unlisted"]
+      }
+    ],
+    "options": [
+      {
+        "forbiddenCharacters": ["\n", "\r"],
+        "maxLength": 500,
+        "name": "contentWarning",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "pattern": "^[a-z]{2,3}$",
+        "name": "language",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "name": "quotePolicy",
+        "required": false,
+        "type": "choice",
+        "values": ["public", "followers", "nobody"]
+      },
+      {
+        "name": "sensitive",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "name": "visibility",
+        "required": false,
+        "type": "choice",
+        "values": ["public", "unlisted", "private"]
+      }
+    ],
+    "platform": "mastodon",
+    "rules": {
+      "followUps": {
+        "kind": "thread",
+        "maximum": 24
+      },
+      "maxMedia": 4,
+      "media": {
+        "formats": {
+          "image/gif": {
+            "maxByteSize": 16777216,
+            "maxPixels": 33177600
+          },
+          "image/jpeg": {
+            "maxByteSize": 16777216,
+            "maxPixels": 33177600
+          },
+          "image/png": {
+            "maxByteSize": 16777216,
+            "maxPixels": 33177600
+          },
+          "image/webp": {
+            "maxByteSize": 16777216,
+            "maxPixels": 33177600
+          },
+          "video/mp4": {
+            "maxByteSize": 103809024,
+            "maxPixels": 8294400
+          },
+          "video/quicktime": {
+            "maxByteSize": 103809024,
+            "maxPixels": 8294400
+          }
+        },
+        "maxAltTextLength": 1500,
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": true
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 500,
+          "unit": "codePoints"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 500,
+        "unit": "codePoints"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "noApi"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "permission"
+      }
+    },
+    "lookups": [],
+    "maxAltTextLength": 1000,
+    "maxMedia": 20,
+    "optionConstraints": [],
+    "options": [
+      {
+        "maxLength": 2048,
+        "pattern": "^[Hh][Tt][Tt][Pp][Ss]:\\/\\/\\S+$",
+        "name": "linkAttachment",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "ifLeftOut": "everyone",
+        "name": "replyControl",
+        "required": false,
+        "type": "choice",
+        "values": [
+          "everyone",
+          "accounts_you_follow",
+          "mentioned_only",
+          "parent_post_author_only",
+          "followers_only"
+        ]
+      },
+      {
+        "forbiddenCharacters": [".", "&", "\n", "\r"],
+        "maxLength": 50,
+        "name": "topicTag",
+        "required": false,
+        "type": "text",
+        "values": []
+      }
+    ],
+    "platform": "threads",
+    "rules": {
+      "maxLinks": 5,
+      "maxMedia": 20,
+      "media": {
+        "formats": {
+          "image/jpeg": {
+            "aspectRatio": {
+              "maximum": 10,
+              "minimum": 0.1
+            },
+            "maxByteSize": 8388608
+          },
+          "image/png": {
+            "aspectRatio": {
+              "maximum": 10,
+              "minimum": 0.1
+            },
+            "maxByteSize": 8388608
+          },
+          "video/mp4": {
+            "aspectRatio": {
+              "maximum": 10,
+              "minimum": 0.01
+            },
+            "maxByteSize": 1073741824,
+            "maxDurationMs": 300000
+          },
+          "video/quicktime": {
+            "aspectRatio": {
+              "maximum": 10,
+              "minimum": 0.01
+            },
+            "maxByteSize": 1073741824,
+            "maxDurationMs": 300000
+          }
+        },
+        "maxAltTextLength": 1000,
+        "mixesKinds": true,
+        "showsAltText": true
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 500,
+          "unit": "emojiBytes"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 500,
+        "unit": "emojiBytes"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "noApi"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "noApi"
+      }
+    },
+    "lookups": [
+      {
+        "input": [],
+        "name": "tiktokCreator",
+        "paged": false,
+        "platform": "tiktok",
+        "fills": ["privacyLevel"]
+      }
+    ],
+    "maxAltTextLength": 5000,
+    "maxMedia": 20,
+    "optionConstraints": [
+      {
+        "_tag": "needsOneOf",
+        "field": "commercialContent",
+        "oneOf": ["brandOrganic", "brandContent"]
+      },
+      {
+        "_tag": "notWith",
+        "field": "brandContent",
+        "other": "privacyLevel",
+        "value": "SELF_ONLY"
+      }
+    ],
+    "options": [
+      {
+        "ifLeftOut": false,
+        "name": "aiGenerated",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "autoAddMusic",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "brandContent",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "brandOrganic",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "commercialContent",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": true,
+        "name": "disableComment",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": true,
+        "name": "disableDuet",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": true,
+        "name": "disableStitch",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": 0,
+        "minimum": 0,
+        "name": "photoCoverIndex",
+        "required": false,
+        "type": "integer",
+        "values": []
+      },
+      {
+        "maxLength": 90,
+        "name": "photoTitle",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "lookup": "tiktokCreator",
+        "name": "privacyLevel",
+        "required": true,
+        "type": "choice",
+        "values": [
+          "PUBLIC_TO_EVERYONE",
+          "MUTUAL_FOLLOW_FRIENDS",
+          "FOLLOWER_OF_CREATOR",
+          "SELF_ONLY"
+        ]
+      },
+      {
+        "ifLeftOut": 0,
+        "minimum": 0,
+        "name": "videoCoverTimestampMs",
+        "required": false,
+        "type": "integer",
+        "values": []
+      }
+    ],
+    "platform": "tiktok",
+    "rules": {
+      "maxMedia": 35,
+      "media": {
+        "formats": {
+          "image/jpeg": {
+            "maxByteSize": 20971520,
+            "maxPixels": 2073600
+          },
+          "image/webp": {
+            "maxByteSize": 20971520,
+            "maxPixels": 2073600
+          },
+          "video/mp4": {
+            "maxByteSize": 4294967296,
+            "maxDurationMs": 600000,
+            "sideRange": {
+              "maximum": 4096,
+              "minimum": 360
+            }
+          },
+          "video/quicktime": {
+            "maxByteSize": 4294967296,
+            "maxDurationMs": 600000,
+            "sideRange": {
+              "maximum": 4096,
+              "minimum": 360
+            }
+          }
+        },
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": false
+      },
+      "mediaRequired": true,
+      "textLimits": [
+        {
+          "maximum": 2200,
+          "unit": "utf16Units"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 2200,
+        "unit": "utf16Units"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "permission"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "permission"
+      }
+    },
+    "lookups": [
+      {
+        "input": [
+          {
+            "pattern": "^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$",
+            "name": "language",
+            "required": false,
+            "type": "text",
+            "values": []
+          },
+          {
+            "ifLeftOut": "US",
+            "pattern": "^[A-Z]{2}$",
+            "name": "regionCode",
+            "required": false,
+            "type": "text",
+            "values": []
+          }
+        ],
+        "name": "youtubeVideoCategories",
+        "paged": false,
+        "platform": "youtube",
+        "fills": ["categoryId"]
+      },
+      {
+        "input": [
+          {
+            "maxLength": 512,
+            "name": "cursor",
+            "required": false,
+            "type": "text",
+            "values": []
+          },
+          {
+            "ifLeftOut": 25,
+            "maximum": 50,
+            "minimum": 1,
+            "name": "limit",
+            "required": false,
+            "type": "integer",
+            "values": []
+          }
+        ],
+        "name": "youtubePlaylists",
+        "paged": true,
+        "platform": "youtube",
+        "fills": []
+      }
+    ],
+    "maxAltTextLength": 5000,
+    "maxMedia": 1,
+    "optionConstraints": [],
+    "options": [
+      {
+        "lookup": "youtubeVideoCategories",
+        "pattern": "^\\d+$",
+        "name": "categoryId",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "ifLeftOut": false,
+        "name": "containsSyntheticMedia",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z\\d]{5,8}|\\d[A-Za-z\\d]{3}))*(?:-[\\dA-WY-Za-wy-z](?:-[A-Za-z\\d]{2,8})+)*(?:-[Xx](?:-[A-Za-z\\d]{1,8})+)?$",
+        "name": "defaultLanguage",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "name": "embeddable",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "name": "license",
+        "required": false,
+        "type": "choice",
+        "values": ["youtube", "creativeCommon"]
+      },
+      {
+        "name": "madeForKids",
+        "required": true,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": true,
+        "name": "notifySubscribers",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "ifLeftOut": "public",
+        "name": "privacy",
+        "required": false,
+        "type": "choice",
+        "values": ["public", "unlisted", "private"]
+      },
+      {
+        "name": "publicStatsViewable",
+        "required": false,
+        "type": "boolean",
+        "values": []
+      },
+      {
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "name": "recordingDate",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "forbiddenCharacters": [","],
+        "maxLength": 500,
+        "name": "tags",
+        "required": false,
+        "type": "textList",
+        "values": []
+      },
+      {
+        "contentTypes": ["image/jpeg", "image/png"],
+        "maxByteSize": 8388608,
+        "name": "thumbnailMediaId",
+        "required": false,
+        "type": "media",
+        "values": []
+      },
+      {
+        "forbiddenCharacters": ["<", ">"],
+        "maxLength": 100,
+        "name": "title",
+        "required": true,
+        "type": "text",
+        "values": []
+      }
+    ],
+    "platform": "youtube",
+    "rules": {
+      "forbiddenCharacters": ["<", ">"],
+      "maxMedia": 1,
+      "media": {
+        "formats": {
+          "video/mp4": {
+            "maxByteSize": 274877906944,
+            "maxDurationMs": 43200000
+          },
+          "video/quicktime": {
+            "maxByteSize": 274877906944,
+            "maxDurationMs": 43200000
+          }
+        },
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": false
+      },
+      "mediaRequired": true,
+      "textLimits": [
+        {
+          "maximum": 5000,
+          "unit": "utf8Bytes"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 5000,
+        "unit": "utf8Bytes"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "Some",
+        "value": "unverified"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "None"
+      }
+    },
+    "lookups": [
+      {
+        "input": [
+          {
+            "maxLength": 512,
+            "name": "cursor",
+            "required": false,
+            "type": "text",
+            "values": []
+          },
+          {
+            "ifLeftOut": 25,
+            "maximum": 50,
+            "minimum": 1,
+            "name": "limit",
+            "required": false,
+            "type": "integer",
+            "values": []
+          }
+        ],
+        "name": "pinterestBoards",
+        "paged": true,
+        "platform": "pinterest",
+        "fills": ["boardId"]
+      },
+      {
+        "input": [
+          {
+            "lookup": "pinterestBoards",
+            "pattern": "^\\d+$",
+            "name": "boardId",
+            "required": true,
+            "type": "text",
+            "values": []
+          },
+          {
+            "maxLength": 512,
+            "name": "cursor",
+            "required": false,
+            "type": "text",
+            "values": []
+          },
+          {
+            "ifLeftOut": 25,
+            "maximum": 50,
+            "minimum": 1,
+            "name": "limit",
+            "required": false,
+            "type": "integer",
+            "values": []
+          }
+        ],
+        "name": "pinterestBoardSections",
+        "paged": true,
+        "platform": "pinterest",
+        "fills": ["boardSectionId"]
+      }
+    ],
+    "maxAltTextLength": 500,
+    "maxMedia": 5,
+    "optionConstraints": [],
+    "options": [
+      {
+        "lookup": "pinterestBoards",
+        "pattern": "^\\d+$",
+        "name": "boardId",
+        "required": true,
+        "type": "text",
+        "values": []
+      },
+      {
+        "lookup": "pinterestBoardSections",
+        "pattern": "^\\d+$",
+        "name": "boardSectionId",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "ifLeftOut": 0,
+        "minimum": 0,
+        "name": "coverSecond",
+        "required": false,
+        "type": "integer",
+        "values": []
+      },
+      {
+        "pattern": "^#[\\dA-Fa-f]{6}$",
+        "name": "dominantColor",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 2048,
+        "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:\\/\\/\\S+$",
+        "name": "link",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 100,
+        "name": "title",
+        "required": false,
+        "type": "text",
+        "values": []
+      }
+    ],
+    "platform": "pinterest",
+    "rules": {
+      "maxMedia": 5,
+      "media": {
+        "formats": {
+          "image/jpeg": {
+            "maxByteSize": 20971520
+          },
+          "image/png": {
+            "maxByteSize": 20971520
+          },
+          "video/mp4": {
+            "aspectRatio": {
+              "maximum": 1.91,
+              "minimum": 0.5
+            },
+            "maxByteSize": 2147483648,
+            "maxDurationMs": 900000,
+            "minDurationMs": 4000
+          },
+          "video/quicktime": {
+            "aspectRatio": {
+              "maximum": 1.91,
+              "minimum": 0.5
+            },
+            "maxByteSize": 2147483648,
+            "maxDurationMs": 900000,
+            "minDurationMs": 4000
+          }
+        },
+        "maxAltTextLength": 500,
+        "maxVideos": 1,
+        "mixesKinds": false,
+        "showsAltText": true
+      },
+      "mediaRequired": true,
+      "textLimits": [
+        {
+          "maximum": 800,
+          "unit": "codePoints"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 800,
+        "unit": "codePoints"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  },
+  {
+    "counted": {
+      "account": [],
+      "post": []
+    },
+    "countsPosts": true,
+    "livePost": {
+      "edit": {
+        "_id": "Option",
+        "_tag": "None"
+      },
+      "unpublish": {
+        "_id": "Option",
+        "_tag": "None"
+      }
+    },
+    "lookups": [],
+    "maxAltTextLength": 5000,
+    "maxMedia": 20,
+    "optionConstraints": [
+      {
+        "_tag": "neededWith",
+        "field": "title",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "title",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "neededWith",
+        "field": "startsAt",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "startsAt",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "neededWith",
+        "field": "endsAt",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "endsAt",
+        "other": "postType",
+        "values": ["event", "offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "callToAction",
+        "other": "postType",
+        "values": ["standard", "event"]
+      },
+      {
+        "_tag": "neededWith",
+        "field": "callToActionUrl",
+        "other": "callToAction",
+        "values": ["book", "order", "shop", "learnMore", "signUp"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "callToActionUrl",
+        "other": "callToAction",
+        "values": ["book", "order", "shop", "learnMore", "signUp"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "couponCode",
+        "other": "postType",
+        "values": ["offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "redeemUrl",
+        "other": "postType",
+        "values": ["offer"]
+      },
+      {
+        "_tag": "onlyWith",
+        "field": "terms",
+        "other": "postType",
+        "values": ["offer"]
+      }
+    ],
+    "options": [
+      {
+        "name": "callToAction",
+        "required": false,
+        "type": "choice",
+        "values": ["book", "order", "shop", "learnMore", "signUp", "call"]
+      },
+      {
+        "name": "callToActionUrl",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "name": "couponCode",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "pattern": "^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hours>\\d{2}):(?<minutes>\\d{2})$",
+        "name": "endsAt",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "ifLeftOut": "standard",
+        "name": "postType",
+        "required": false,
+        "type": "choice",
+        "values": ["standard", "event", "offer"]
+      },
+      {
+        "name": "redeemUrl",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "pattern": "^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hours>\\d{2}):(?<minutes>\\d{2})$",
+        "name": "startsAt",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "name": "terms",
+        "required": false,
+        "type": "text",
+        "values": []
+      },
+      {
+        "maxLength": 58,
+        "name": "title",
+        "required": false,
+        "type": "text",
+        "values": []
+      }
+    ],
+    "platform": "googleBusiness",
+    "rules": {
+      "media": {
+        "formats": {
+          "image/jpeg": {
+            "maxByteSize": 5242880,
+            "minByteSize": 10240
+          },
+          "image/png": {
+            "maxByteSize": 5242880,
+            "minByteSize": 10240
+          }
+        },
+        "mixesKinds": false,
+        "showsAltText": false
+      },
+      "mediaRequired": false,
+      "textLimits": [
+        {
+          "maximum": 1500,
+          "unit": "codePoints"
+        }
+      ]
+    },
+    "textLimits": [
+      {
+        "maximum": 1500,
+        "unit": "codePoints"
+      },
+      {
+        "maximum": 65536,
+        "unit": "utf16Units"
+      }
+    ],
+    "version": 1
+  }
+]

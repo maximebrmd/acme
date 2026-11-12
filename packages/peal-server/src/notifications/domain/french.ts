@@ -288,6 +288,31 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Vérifiez {channel} : une publication est peut-être partie",
   },
+  recoveryCodesLeft: {
+    none: "Il ne vous reste aucun code de secours : créez-en de nouveaux dans les paramètres de votre compte.",
+    one: "Il vous reste {count} code de secours.",
+    other: "Il vous reste {count} codes de secours.",
+  },
+  recyclingEndReasons: {
+    contentRejected:
+      "une plateforme refuse ce que dirait la prochaine publication.",
+    noChannels: "aucun de ses canaux n’est plus connecté.",
+    planLimit: "l’offre n’a plus de place pour des publications ce mois-là.",
+    queueFull: "sa file d’attente n’a plus de créneau libre.",
+    queueGone: "sa file d’attente a été supprimée.",
+    sourceGone: "la publication qu’elle répète a été supprimée.",
+    sourceWithdrawn:
+      "la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez la répétition.",
+    starterGone:
+      "la personne qui l’a lancée ne peut plus y programmer de publications.",
+  },
+  recyclingEnded: {
+    action: "Ouvrir les répétitions",
+    body: "Une publication de {workspaceName} ne se répète plus : {reason} Les publications déjà créées restent telles quelles. Une fois le problème réglé, reprenez la répétition ou relancez-la depuis les répétitions, dans les réglages de l’espace de travail.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez lancé cette répétition dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Une publication ne se répète plus",
+  },
   renewalDeadline: "Date limite de non-reconduction : {renewsAt}",
   resetPassword: {
     action: "Choisir un nouveau mot de passe",
@@ -349,6 +374,46 @@ export const french: EmailCatalog = {
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre essai {plan} a commencé : il prend fin le {endsAt}",
+  },
+  twoStepChanged: {
+    recoveryCodeUsed: {
+      action: "Ouvrir les paramètres de mon compte",
+      body: "Un code de secours vient d’être utilisé pour vous connecter à votre compte Peal, à la place d’un code de votre application d’authentification. Il ne fonctionne plus. {left}",
+      ignore:
+        "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
+      subject: "Un code de secours a servi à vous connecter à Peal",
+    },
+    recoveryCodesRenewed: {
+      action: "Ouvrir les paramètres de mon compte",
+      body: "De nouveaux codes de secours viennent d’être créés pour la validation en deux étapes de votre compte Peal. Les codes que vous aviez ne fonctionnent plus.",
+      ignore:
+        "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
+      subject: "Nouveaux codes de secours pour votre compte Peal",
+    },
+    resetByStaff: {
+      action: "Ouvrir les paramètres de mon compte",
+      body: "Les personnes qui gèrent ce serveur Peal ont désactivé la validation en deux étapes de votre compte : son application d’authentification et ses codes de secours sont supprimés, les navigateurs de confiance oubliés, et toutes les sessions déconnectées. Connectez-vous avec votre mot de passe, puis réactivez-la dans les paramètres de votre compte.",
+      ignore:
+        "Si vous ne l’avez pas demandé, changez votre mot de passe tout de suite, réactivez la validation en deux étapes, et prévenez la personne qui gère ce serveur Peal.",
+      subject:
+        "La validation en deux étapes de votre compte Peal a été réinitialisée",
+    },
+    turnedOff: {
+      action: "Ouvrir les paramètres de mon compte",
+      body: "La validation en deux étapes vient d’être désactivée pour votre compte Peal : la connexion ne demande plus que votre mot de passe.",
+      ignore:
+        "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
+      subject:
+        "La validation en deux étapes est désactivée pour votre compte Peal",
+    },
+    turnedOn: {
+      action: "Ouvrir les paramètres de mon compte",
+      body: "La validation en deux étapes vient d’être activée pour votre compte Peal : après votre mot de passe, la connexion demande un code de votre application d’authentification. Conservez vos codes de secours en lieu sûr.",
+      ignore:
+        "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
+      subject:
+        "La validation en deux étapes est activée pour votre compte Peal",
+    },
   },
   unknownChannel: "un canal déconnecté",
   verifyEmail: {

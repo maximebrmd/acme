@@ -16,6 +16,8 @@ module Peal
       POST_FINISHED = "post.finished"
       POST_UNPUBLISHED = "post.unpublished"
       POST_UNPUBLISH_FAILED = "post.unpublish_failed"
+      POST_EDITED = "post.edited"
+      POST_EDIT_FAILED = "post.edit_failed"
       POST_APPROVAL_REQUESTED = "post.approval_requested"
       POST_APPROVED = "post.approved"
       POST_CHANGES_REQUESTED = "post.changes_requested"

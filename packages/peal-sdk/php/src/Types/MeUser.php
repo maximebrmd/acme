@@ -44,12 +44,19 @@ class MeUser extends JsonSerializableType
     public string $name;
 
     /**
+     * @var bool $twoStepEnabled
+     */
+    #[JsonProperty('twoStepEnabled')]
+    public bool $twoStepEnabled;
+
+    /**
      * @param array{
      *   email: string,
      *   emailVerified: bool,
      *   id: string,
      *   locale: value-of<MeUserLocale>,
      *   name: string,
+     *   twoStepEnabled: bool,
      *   image?: ?string,
      * } $values
      */
@@ -62,6 +69,7 @@ class MeUser extends JsonSerializableType
         $this->image = $values['image'] ?? null;
         $this->locale = $values['locale'];
         $this->name = $values['name'];
+        $this->twoStepEnabled = $values['twoStepEnabled'];
     }
 
     /**

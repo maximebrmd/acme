@@ -43,7 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
-  `channel-sets`, `queues`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  `channel-sets`, `queues`, `recycling`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -144,7 +144,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and `channelOptionsOf`; every field shows while one is being read): like
   one hidden by `shownWith`, it is not sent. The counter takes the
   channel's options (`fitOn`'s fourth argument), as a Mastodon content
-  warning counts with the text. On a Bluesky channel,
+  warning counts with the text, and so do `mediaFitOn`, `showsAltText`
+  and `partsTaken`, which read the contract's `rulesFor`: a `format`
+  (Instagram's and Facebook's first field, a feed post when nothing is
+  chosen) gives a story or a reel its own media rules, and a story no text
+  (`textNotSent`, said under the counters). A feed post's own fields have
+  `shownWith` on `format` (`feedPost`), so a story sends none. On a Bluesky channel,
   `BlueskyChannelOptions` reads the channel's capabilities
   (`channelCapabilities`) and closes each gate its
   account must be reconnected to set (`optionNeedsReconnect`,
@@ -173,6 +178,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   the default preselected), and puts the saved draft or the scheduled post
   on the queue with `posts.enqueue`; the calendar marks queued posts and
   filters by queue, and `PostQueueLine` names a post's queue.
+- Repeating posts have a settings page (`…/settings/recycling`, read with
+  post:read, paused, resumed and stopped with post:schedule; `?rule=`
+  marks the rule a `RecyclingEnded` notice opened it for), views in
+  `components/recycling/recycling-views.tsx`, atoms in
+  `#recycling/atoms.ts`, the form's request in `#recycling/rules.ts`.
+  `PostRepeat`, on a post's page (scheduled in the composer, or out in
+  `PostDetail`), shows the rule that repeats or made the post, or offers
+  Repeat to a member with post:schedule; a new post repeats once it is
+  scheduled, from its page. Refusals are explained from the
+  `Recycling.errors` catalogue (`#recycling/rule-error.ts`).
 - The composer takes them through components of their own, each wired
   with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
   which leaves out and counts the channels disconnected since),
@@ -348,7 +363,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   confirmation that names the channel and says it cannot be undone;
   `TargetView` shows when a channel was removed and strikes its address
   through, and the calendar dims a post removed from every channel it went
-  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`.
+  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`. Beside it,
+  `LivePostEditView` offers **Edit** where the platform takes it
+  (`editStateOf`), on that part's text on the channel (`partTextOn`) with
+  the channel's counter (`fitOn` and the target's options), and says
+  when the channel was last edited; `liveStateOf` is `editing` while an
+  edit runs, so nothing else is offered then.
 - `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
   columns, organic and paid: never add them up. Pause and stop take
   ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks
@@ -368,3 +388,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   changed, the whole list, a saved row without a value by its name alone
   (the server keeps its value). Values are typed in password fields. Every
   string is in the `Webhooks` namespace, en and fr.
+- Two-step verification (`TwoStep` catalogue): the sign-in form asks for
+  the second step in place (`TwoStepChallengeView`, its state in
+  `sign-in-form.tsx`) when the answer has `twoFactorRedirect`, so an OAuth
+  authorization's signed query is kept: never set the client plugin's
+  `twoFactorPage`. The account page's `TwoStepSection` draws the key's QR
+  code in the browser (`qrcode.react`, SVG) beside the key as text; the
+  URI and the recovery codes stay in component state, sent nowhere but to
+  Better Auth's routes, never logged. A workspace that requires it shows
+  `TwoStepRequiredNotice` instead of its pages to a member without it
+  (`app/[workspaceId]/layout.tsx`); a 403 `twoStepRequired` met later is
+  read once, in the API client (`#two-step/refusals.ts`), and
+  `TwoStepRefusalWatch` reads the page again. The owners' switch is
+  `settings/security`.

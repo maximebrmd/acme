@@ -38,6 +38,9 @@ public record ChannelPreview : IJsonOnDeserialized
     [JsonPropertyName("textCounts")]
     public IEnumerable<TextCount> TextCounts { get; set; } = new List<TextCount>();
 
+    [JsonPropertyName("textNotSent")]
+    public bool? TextNotSent { get; set; }
+
     [JsonPropertyName("violations")]
     public IEnumerable<ContentViolation> Violations { get; set; } = new List<ContentViolation>();
 

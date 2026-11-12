@@ -5,6 +5,7 @@ import { LivePostChangeIdSchema } from "./live-post-change-id.ts";
 /** The transitions of `./live-post-change.ts`, by name. */
 export const ChangeActionSchema = Schema.Literals([
   "removePart",
+  "editPart",
   "finish",
   "fail",
 ]);

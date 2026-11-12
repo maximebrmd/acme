@@ -11,6 +11,10 @@ import type { Membership } from "#workspace/domain/membership.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
+// An account without two-step verification, in a workspace that does not
+// require it.
+const noTwoStep = { enabled: false, required: false };
+
 const now = DateTime.makeUnsafe("2026-11-09T12:00:00Z");
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -27,7 +31,18 @@ const staffId = UserIdSchema.make("1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b");
 
 const user = new UserPrincipal({ impersonatedBy: Option.none(), userId });
 
-const editor: Membership = { ban: Option.none(), role: "editor" };
+const editor: Membership = {
+  ban: Option.none(),
+  role: "editor",
+  twoStep: noTwoStep,
+};
+
+// An owner of a workspace that requires two-step verification.
+const required = (enabled: boolean): Membership => ({
+  ban: Option.none(),
+  role: "owner",
+  twoStep: { enabled, required: true },
+});
 
 const failureOf = (result: ReturnType<typeof actorFor>) =>
   Result.isFailure(result) ? result.failure._tag : "allowed";
@@ -52,6 +67,7 @@ describe(actorFor, () => {
     const banned: Membership = {
       ban: Option.some({ expiresAt: Option.none() }),
       role: "owner",
+      twoStep: noTwoStep,
     };
 
     const result = actorFor(user, workspaceId, Option.some(banned), now);
@@ -69,7 +85,7 @@ describe(actorFor, () => {
       actorFor(
         impersonated,
         workspaceId,
-        Option.some({ ban: Option.none(), role: "owner" }),
+        Option.some({ ban: Option.none(), role: "owner", twoStep: noTwoStep }),
         now
       )
     );
@@ -117,5 +133,97 @@ describe(actorFor, () => {
     const result = actorFor(key, workspaceId, Option.none(), now);
 
     assert.strictEqual(failureOf(result), "WorkspaceMismatch");
+  });
+
+  describe("in a workspace that requires two-step verification", () => {
+    it("refuses a member whose account does not have it on", () => {
+      const result = actorFor(
+        user,
+        workspaceId,
+        Option.some(required(false)),
+        now
+      );
+
+      assert.strictEqual(failureOf(result), "TwoStepRequired");
+    });
+
+    it("lets in a member whose account has it on", () => {
+      const result = actorFor(
+        user,
+        workspaceId,
+        Option.some(required(true)),
+        now
+      );
+
+      assert.strictEqual(failureOf(result), "allowed");
+    });
+
+    it("refuses the member through an application acting for them", () => {
+      const client = new UserPrincipal({
+        impersonatedBy: Option.none(),
+        oauth: Option.some({
+          clientId: "synthetic-client",
+          scopes: ["workspace:write"],
+          workspaceId: Option.some(workspaceId),
+        }),
+        userId,
+      });
+
+      const result = actorFor(
+        client,
+        workspaceId,
+        Option.some(required(false)),
+        now
+      );
+
+      assert.strictEqual(failureOf(result), "TwoStepRequired");
+    });
+
+    it("lets staff acting as the member in or not as the member's account says", () => {
+      const impersonated = new UserPrincipal({
+        impersonatedBy: Option.some(staffId),
+        userId,
+      });
+
+      assert.strictEqual(
+        failureOf(
+          actorFor(impersonated, workspaceId, Option.some(required(false)), now)
+        ),
+        "TwoStepRequired"
+      );
+      assert.strictEqual(
+        failureOf(
+          actorFor(impersonated, workspaceId, Option.some(required(true)), now)
+        ),
+        "allowed"
+      );
+    });
+
+    it("tells a banned member they are banned first", () => {
+      const banned: Membership = {
+        ...required(false),
+        ban: Option.some({ expiresAt: Option.none() }),
+      };
+
+      assert.strictEqual(
+        failureOf(actorFor(user, workspaceId, Option.some(banned), now)),
+        "BannedUser"
+      );
+    });
+
+    it("leaves the workspace's API keys alone", () => {
+      const key = new ApiKeyPrincipal({
+        apiKeyId: "key-1",
+        permissions: ["post:read"],
+        workspaceId,
+      });
+
+      assert.strictEqual(
+        failureOf(
+          actorFor(key, workspaceId, Option.some(required(false)), now)
+        ),
+        "allowed"
+      );
+    });
   });
 });

@@ -10,7 +10,9 @@ import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.t
 import {
   failChange,
   finishChange,
+  partEdited,
   partRemoved,
+  requestEdit,
   requestUnpublish,
 } from "#publishing/domain/live-post-change.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
@@ -174,6 +176,95 @@ layer(EventsTest)("the changes of live posts told", (it) => {
         `analytics:${target.id}`,
         `engagement:${target.id}`,
       ]);
+    })
+  );
+
+  it.effect("tell an edit to the webhooks alone, with its part", () =>
+    Effect.gen(function* toldEdit() {
+      const events = yield* LivePostEvents;
+      const heard = yield* Heard;
+      const workspaceId = yield* freshWorkspace;
+
+      const channel = yield* freshChannel(workspaceId, {
+        platform: "mastodon",
+      });
+
+      yield* ChannelRepository.use((channels) =>
+        channels.insert(channel, syntheticCredentials(channel))
+      );
+
+      const target = new PostTarget({
+        channelId: channel.id,
+        id: yield* newId(PostTargetIdSchema),
+        liveParts: [],
+        options: Option.none(),
+        postId: yield* newId(PostIdSchema),
+        round: 1,
+        status: {
+          _tag: "published",
+          editedAt: at,
+          permalink: Option.none(),
+          platformPostId: Option.some(PlatformPostIdSchema.make("1")),
+          publishedAt: at,
+        },
+      });
+
+      const change = requestEdit({
+        channelId: channel.id,
+        id: yield* newId(LivePostChangeIdSchema),
+        now: at,
+        part: { index: 1, platformPostId: PlatformPostIdSchema.make("2") },
+        postId: target.postId,
+        requestedBy: Option.none(),
+        requestedVia: Option.none(),
+        targetId: target.id,
+        text: "A corrected synthetic part",
+        workspaceId,
+      });
+
+      const done = yield* Effect.fromResult(
+        Result.flatMap(partEdited(change, 1), (edited) =>
+          finishChange(edited, at)
+        )
+      );
+
+      const failed = yield* Effect.fromResult(
+        failChange(change, "postGone", at)
+      );
+
+      const before = (yield* heard.events).length;
+
+      yield* events.edited(done, target, 1);
+      yield* events.editFailed(failed, target, 1);
+
+      const ref = {
+        channelId: channel.id,
+        platform: "mastodon" as const,
+        postId: target.postId,
+        targetId: target.id,
+        workspaceId,
+      };
+
+      assert.deepStrictEqual((yield* heard.events).slice(before), [
+        {
+          event: {
+            data: { ...ref, editedAt: at, part: 1 },
+            type: "post.edited",
+          },
+          key: `live-post-change:${change.id}:done`,
+        },
+        {
+          event: {
+            data: { ...ref, code: "postGone", failedAt: at, part: 1 },
+            type: "post.edit_failed",
+          },
+          key: `live-post-change:${change.id}:failed`,
+        },
+      ]);
+      assert.notInclude(JSON.stringify(yield* heard.events), "corrected");
+      assert.isFalse(
+        (yield* heard.stopped).some((stopped) => stopped.endsWith(target.id))
+      );
     })
   );
 });

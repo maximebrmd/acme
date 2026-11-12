@@ -29,7 +29,7 @@ class NotificationPreferencesClient:
 
     def get(self, *, request_options: typing.Optional[RequestOptions] = None) -> NotificationPreferences:
         """
-        Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, and channels to reconnect, but not published posts, are emailed; and they hear only about the posts they wrote.
+        Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed; and they hear only about the posts they wrote.
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class AsyncNotificationPreferencesClient:
 
     async def get(self, *, request_options: typing.Optional[RequestOptions] = None) -> NotificationPreferences:
         """
-        Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, and channels to reconnect, but not published posts, are emailed; and they hear only about the posts they wrote.
+        Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed; and they hear only about the posts they wrote.
 
         Parameters
         ----------

@@ -2,10 +2,13 @@ import { and, eq, inArray } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Order, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { UserId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { ConnectedAppStore } from "#workspace/application/connected-app-store.ts";
-import type { ConnectedAppRecord } from "#workspace/application/connected-app-store.ts";
+import type {
+  ClientGrant,
+  ConnectedAppRecord,
+} from "#workspace/application/connected-app-store.ts";
 
 import {
   oauthAccessToken,
@@ -55,7 +58,8 @@ export const DrizzleConnectedAppStore = Layer.effect(
   Effect.gen(function* DrizzleConnectedAppStore() {
     const db = yield* Drizzle;
 
-    const list = Effect.fn("ConnectedAppStore.list")(function* list(
+    // The user's consents, and their refresh tokens, live or not.
+    const grantsOf = Effect.fn("ConnectedAppStore.grantsOf")(function* grantsOf(
       userId: UserId,
       now: DateTime.Utc
     ) {
@@ -104,6 +108,15 @@ export const DrizzleConnectedAppStore = Layer.effect(
           scopes: token.scopes,
         })),
       ];
+
+      return grants;
+    });
+
+    const list = Effect.fn("ConnectedAppStore.list")(function* list(
+      userId: UserId,
+      now: DateTime.Utc
+    ) {
+      const grants = yield* grantsOf(userId, now);
 
       const clientIds = [
         ...new Set(
@@ -182,6 +195,29 @@ export const DrizzleConnectedAppStore = Layer.effect(
       return apps.toSorted(byNewest);
     });
 
+    const grantIn = Effect.fn("ConnectedAppStore.grantIn")(function* grantIn(
+      userId: UserId,
+      clientId: string,
+      workspaceId: WorkspaceId,
+      now: DateTime.Utc
+    ) {
+      const live = (yield* grantsOf(userId, now)).filter(
+        (grant) =>
+          grant.live &&
+          grant.clientId === clientId &&
+          (grant.referenceId === null || grant.referenceId === workspaceId)
+      );
+
+      if (live.length === 0) {
+        return Option.none<ClientGrant>();
+      }
+
+      return Option.some<ClientGrant>({
+        bound: live.some(({ referenceId }) => referenceId === workspaceId),
+        scopes: [...new Set(live.flatMap(({ scopes }) => scopes))].toSorted(),
+      });
+    });
+
     const revoke = Effect.fn("ConnectedAppStore.revoke")(function* revoke(
       userId: UserId,
       clientId: string,
@@ -216,6 +252,6 @@ export const DrizzleConnectedAppStore = Layer.effect(
       return known.some((app) => app.clientId === clientId);
     });
 
-    return ConnectedAppStore.of({ list, revoke });
+    return ConnectedAppStore.of({ grantIn, list, revoke });
   })
 );

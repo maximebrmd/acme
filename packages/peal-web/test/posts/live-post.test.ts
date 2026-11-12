@@ -3,15 +3,19 @@ import { DateTime, Option } from "effect";
 import type { LivePostChange, PostTarget } from "peal-contract";
 
 import {
+  editStateOf,
+  endedSince,
   isRemovedEverywhere,
   isRemoving,
   liveStateOf,
+  partTextOn,
 } from "#posts/live-post.ts";
 
 const at = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
 
 const target = (fields: Partial<PostTarget> = {}): PostTarget => ({
   channelId: "c1",
+  editedAt: null,
   failureReason: null,
   id: "t1",
   options: null,
@@ -28,12 +32,13 @@ const target = (fields: Partial<PostTarget> = {}): PostTarget => ({
 const change = (
   id: string,
   status: LivePostChange["status"],
-  code: string | null = null
+  code: string | null = null,
+  kind: LivePostChange["kind"] = "unpublish"
 ): LivePostChange => ({
   code,
   finishedAt: status === "pending" ? null : at,
   id,
-  kind: "unpublish",
+  kind,
   partsLeft: status === "done" ? 0 : 1,
   postId: "p1",
   requestedAt: at,
@@ -88,6 +93,40 @@ describe("where a channel of a live post stands", () => {
   });
 });
 
+// The changes as a read of them answered them.
+const read = (changes: readonly LivePostChange[]) => Option.some(changes);
+
+describe("a change of the channel that ended since the page last read the changes", () => {
+  it("is one that was pending and no longer is, whatever its kind", () => {
+    const before = read([change("1", "pending", null, "edit")]);
+
+    expect(
+      endedSince(before, [change("1", "done", null, "edit")], "t1")
+    ).toBeTruthy();
+    expect(
+      endedSince(before, [change("1", "failed", "postGone", "edit")], "t1")
+    ).toBeTruthy();
+    expect(
+      endedSince(read([change("2", "pending")]), [change("2", "done")], "t1")
+    ).toBeTruthy();
+  });
+
+  it("is one that ended before the page ever saw it pending", () => {
+    expect(endedSince(read([]), [change("1", "done")], "t1")).toBeTruthy();
+  });
+
+  it("is none while it is pending, before the first read, or on another channel", () => {
+    expect(
+      endedSince(read([change("1", "pending")]), [change("1", "pending")], "t1")
+    ).toBeFalsy();
+    expect(endedSince(Option.none(), [change("1", "done")], "t1")).toBeFalsy();
+    expect(
+      endedSince(read([change("1", "done")]), [change("1", "done")], "t1")
+    ).toBeFalsy();
+    expect(endedSince(read([]), [change("1", "done")], "t2")).toBeFalsy();
+  });
+});
+
 const post = (targets: readonly PostTarget[]) => ({ targets });
 
 describe("a post removed everywhere", () => {
@@ -103,5 +142,83 @@ describe("a post removed everywhere", () => {
     expect(
       isRemovedEverywhere(post([target({ status: "failed" })]))
     ).toBeFalsy();
+  });
+});
+
+const edits = Option.some({ edit: true, unpublish: true });
+
+describe("where an edit of a channel of a live post stands", () => {
+  it("offers an edit where the platform lets Peal edit", () => {
+    expect(editStateOf(target(), [], edits)).toStrictEqual({
+      _tag: "offered",
+    });
+    expect(
+      editStateOf(
+        target(),
+        [],
+        Option.some({
+          edit: false,
+          editBlockedBy: "unverified",
+          unpublish: true,
+        })
+      )
+    ).toStrictEqual({ _tag: "blocked", by: "unverified" });
+  });
+
+  it("follows an edit: pending, failed, then offered again", () => {
+    expect(
+      editStateOf(target(), [change("2", "pending", null, "edit")], edits)
+    ).toStrictEqual({ _tag: "editing" });
+    expect(
+      editStateOf(target(), [change("2", "failed", "postGone", "edit")], edits)
+    ).toStrictEqual({ _tag: "failed", code: "postGone" });
+    expect(
+      editStateOf(target(), [change("2", "done", null, "edit")], edits)
+    ).toStrictEqual({ _tag: "offered" });
+  });
+
+  it("waits while any change is pending, and offers nothing once removed", () => {
+    expect(
+      editStateOf(target(), [change("2", "pending")], edits)
+    ).toStrictEqual({ _tag: "busy" });
+    expect(editStateOf(target({ removedAt: at }), [], edits)).toStrictEqual({
+      _tag: "none",
+    });
+    expect(editStateOf(target({ status: "failed" }), [], edits)).toStrictEqual({
+      _tag: "none",
+    });
+  });
+
+  it("keeps the removal's own state apart from an edit's", () => {
+    expect(
+      liveStateOf(target(), [change("2", "pending", null, "edit")], deletes)
+    ).toStrictEqual({ _tag: "editing" });
+    // A failed edit leaves removal offered.
+    expect(
+      liveStateOf(target(), [change("2", "failed", "x", "edit")], deletes)
+    ).toStrictEqual({ _tag: "offered" });
+  });
+});
+
+describe("a part's text on a channel", () => {
+  const content = {
+    followUps: [
+      {
+        delaySeconds: 0,
+        media: [],
+        overrides: [{ channelId: "c1", text: "Second, there" }],
+        text: "Second",
+      },
+    ],
+    media: [],
+    overrides: [],
+    text: "First",
+  };
+
+  it("is its override there, or its own", () => {
+    expect(partTextOn(content, 0, "c1")).toBe("First");
+    expect(partTextOn(content, 1, "c1")).toBe("Second, there");
+    expect(partTextOn(content, 1, "c2")).toBe("Second");
+    expect(partTextOn(content, 2, "c1")).toBe("");
   });
 });

@@ -3,7 +3,12 @@ import { Duration, Effect, Fiber, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import { TestClock } from "effect/testing";
-import { Api, LivePostNotChangeable, PostNotFound } from "peal-contract";
+import {
+  Api,
+  LivePostNotChangeable,
+  PostContentInvalid,
+  PostNotFound,
+} from "peal-contract";
 import type { Member, Permission } from "peal-contract";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
@@ -348,5 +353,194 @@ describe("the unpublishing endpoints", () => {
         assert.strictEqual(change.partsLeft, 0);
       })
     )
+  );
+});
+
+describe("the editing endpoint", () => {
+  it.effect(
+    "edits a channel's text, refuses who may not and what does not fit, and shows the target edited",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* edits() {
+          const workspaceId = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+          const viewer = yield* clientAs(yield* freshId, workspaceId, "viewer");
+
+          const contributor = yield* clientAs(
+            yield* freshId,
+            workspaceId,
+            "contributor"
+          );
+
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const other = yield* connect(workspaceId, "mastodon");
+          const bluesky = yield* connect(workspaceId, "bluesky");
+
+          const sent = yield* sentOn(
+            editor,
+            workspaceId,
+            [mastodon, other, bluesky],
+            "Live with a typo"
+          );
+
+          const on = (channelId: string) => {
+            const found = sent.targets.find(
+              (target) => target.channelId === channelId
+            );
+
+            assert(found !== undefined);
+
+            return {
+              postId: sent.id,
+              targetId: found.id,
+              workspaceId,
+            };
+          };
+
+          assert.strictEqual(sent.targets[0]?.editedAt, null);
+
+          const fix = { text: "Live, corrected" };
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              viewer.posts
+                .editTarget({ params: on(mastodon), payload: fix, query: {} })
+                .pipe(Effect.flip),
+              contributor.posts
+                .editTarget({ params: on(mastodon), payload: fix, query: {} })
+                .pipe(Effect.flip),
+            ]),
+            [
+              forbiddenFor("missingPermission", "post:publish"),
+              forbiddenFor("missingPermission", "post:publish"),
+            ]
+          );
+
+          assert.deepStrictEqual(
+            yield* editor.posts
+              .editTarget({ params: on(bluesky), payload: fix, query: {} })
+              .pipe(Effect.flip),
+            new LivePostNotChangeable({ reason: "notSupported" })
+          );
+
+          const tooLong = yield* editor.posts
+            .editTarget({
+              params: on(mastodon),
+              payload: { text: "x".repeat(501) },
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          assert.isTrue(
+            tooLong instanceof PostContentInvalid &&
+              tooLong.violations.map(({ _tag }) => _tag).join(",") ===
+                "textTooLong"
+          );
+
+          const change = yield* editor.posts.editTarget({
+            params: on(mastodon),
+            payload: { part: 0, text: "Live, corrected" },
+            query: {},
+          });
+
+          assert.strictEqual(change.kind, "edit");
+          assert.strictEqual(change.partsLeft, 1);
+          assert.notProperty(change, "text");
+
+          yield* eventually(
+            "the edit is done",
+            viewer.posts
+              .changes({ params: { postId: sent.id, workspaceId } })
+              .pipe(
+                Effect.map(({ items }) =>
+                  items.some(({ status }) => status === "done")
+                )
+              )
+          );
+
+          const after = yield* viewer.posts.get({
+            params: { postId: sent.id, workspaceId },
+          });
+
+          const edited = after.targets.find(
+            ({ channelId }) => channelId === mastodon
+          );
+
+          assert.isNotNull(edited?.editedAt ?? null);
+          assert.strictEqual(edited?.status, "published");
+          assert.strictEqual(
+            after.targets.find(({ channelId }) => channelId === other)
+              ?.editedAt,
+            null
+          );
+          assert.deepStrictEqual(after.content.overrides, [
+            { channelId: mastodon, text: "Live, corrected" },
+          ]);
+          assert.strictEqual(after.content.text, "Live with a typo");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "finds no target of another post, nor a post of another workspace",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* scoped() {
+          const workspaceId = yield* freshId;
+          const elsewhere = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+
+          const stranger = yield* clientAs(yield* freshId, elsewhere, "editor");
+
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const first = yield* sentOn(editor, workspaceId, [mastodon], "First");
+
+          const second = yield* sentOn(
+            editor,
+            workspaceId,
+            [mastodon],
+            "Second"
+          );
+
+          const [ofSecond] = second.targets;
+
+          assert(ofSecond !== undefined);
+
+          const fix = { text: "Corrected" };
+
+          const otherPost = yield* editor.posts
+            .editTarget({
+              params: { postId: first.id, targetId: ofSecond.id, workspaceId },
+              payload: fix,
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          const otherWorkspace = yield* stranger.posts
+            .editTarget({
+              params: {
+                postId: second.id,
+                targetId: ofSecond.id,
+                workspaceId: elsewhere,
+              },
+              payload: fix,
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(otherPost, PostNotFound);
+          assert.instanceOf(otherWorkspace, PostNotFound);
+
+          const changes = yield* editor.posts.changes({
+            params: { postId: second.id, workspaceId },
+          });
+
+          assert.lengthOf(changes.items, 0);
+        })
+      ),
+    timeout
   );
 });

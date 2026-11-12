@@ -62,7 +62,8 @@ export const StaffReasonSchema = Schema.Trim.check(
  * reference as the reason; and a request to cancel a contract or withdraw
  * from one that staff applied to a workspace's contract or closed
  * (`applyContractRequest`, `closeContractRequest`), its id among the
- * object ids.
+ * object ids; and an account's two-step verification turned off for its
+ * person, who lost their phone and codes (`resetTwoStep`).
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -77,6 +78,7 @@ export const StaffActionSchema = Schema.Literals([
   "applyContractRequest",
   "closeContractRequest",
   "grantPartner",
+  "resetTwoStep",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -144,6 +146,8 @@ export const StaffUserSchema = Schema.Struct({
   // The sessions the account signed in itself that have not expired.
   sessions: Schema.Int,
   staff: Schema.Boolean,
+  // Whether two-step verification is on.
+  twoStepEnabled: Schema.Boolean,
   workspaces: Schema.Array(StaffMembershipSchema),
 }).annotate({ identifier: "StaffUser" });
 
@@ -277,6 +281,8 @@ export const StaffWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: StaffPostCountsSchema,
   slug: Schema.String,
+  // Whether its owners require two-step verification of every member.
+  twoStepRequired: Schema.Boolean,
   webhooks: Schema.Array(StaffWebhookSchema),
 }).annotate({ identifier: "StaffWorkspace" });
 
@@ -416,8 +422,10 @@ const userAction = <const Name extends string, const Path extends `/${string}`>(
 /**
  * The staff console, for the people who run the server: accounts,
  * workspaces, the system's health, and the audit log of what staff did.
- * Every endpoint answers 404 to anyone but staff in their own session. Every
- * action is recorded in the audit log before it is carried out.
+ * Every endpoint answers 404 to anyone but staff in their own session, and
+ * 403 `twoStepRequired` to staff whose account lacks the two-step
+ * verification the server requires of them. Every action is recorded in
+ * the audit log before it is carried out.
  */
 export class StaffApi extends HttpApiGroup.make("staff")
   .add(
@@ -478,6 +486,12 @@ export class StaffApi extends HttpApiGroup.make("staff")
       "/resend-verification",
       "Send the confirmation email again",
       "Emails the account a new link to confirm its address, in its language. Answers 409 when the address is confirmed already."
+    ),
+    userAction(
+      "resetTwoStep",
+      "/two-step/reset",
+      "Reset two-step verification",
+      "Turns two-step verification off on the account, for its person who lost their phone and their recovery codes: deletes its authenticator and recovery codes, forgets the browsers it trusted, signs it out everywhere and emails it. They then sign in with the password alone, and may turn it on again. Check who is asking first: an email from the account's address is not proof, as the mailbox may be what was taken."
     ),
     userAction(
       "impersonate",

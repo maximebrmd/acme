@@ -66,6 +66,7 @@ const targetView = (target: PostTarget, count: number): TargetView => {
 
   const view: TargetView = {
     channelId,
+    editedAt: status._tag === "published" ? (status.editedAt ?? null) : null,
     failureReason: status._tag === "failed" ? status.reason : null,
     id,
     options: options.pipe(Option.map(encodeOptions), Option.getOrNull),
@@ -154,8 +155,16 @@ export const postView = ({
     },
     createdVia: originOrNull(post.attribution.createdVia),
     id: post.id,
+    occurrence: post.occurrence.pipe(
+      Option.map(({ number }) => number),
+      Option.getOrNull
+    ),
     outcome: post.status._tag === "finished" ? post.status.outcome : null,
     queueId: Option.getOrNull(post.queueId),
+    recyclingId: post.occurrence.pipe(
+      Option.map(({ ruleId }): string => ruleId),
+      Option.getOrNull
+    ),
     schedule: scheduleOf(post.status),
     scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
     scheduledVia: originOrNull(post.attribution.scheduledVia),

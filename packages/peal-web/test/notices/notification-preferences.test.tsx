@@ -13,6 +13,7 @@ const preferences = {
     postPublished: false,
     postReview: true,
     postUnconfirmed: true,
+    recyclingEnded: true,
     webhookFailing: true,
   },
   everyPost: false,
@@ -72,6 +73,7 @@ describe(PreferencesFields, () => {
           "A post waits for my approval, or a post I follow is commented on, approved or sent back",
           { checked: true, labelled: true },
         ],
+        ["A post stops repeating", { checked: true, labelled: true }],
         [
           "A channel must be reconnected, now or soon",
           { checked: true, labelled: true },

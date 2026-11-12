@@ -11,4 +11,5 @@ enum LivePostRefusal: string
     case ChangeInProgress = "changeInProgress";
     case ChannelUnavailable = "channelUnavailable";
     case BoostRunning = "boostRunning";
+    case ApprovalRequired = "approvalRequired";
 }

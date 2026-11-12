@@ -3,7 +3,10 @@ import type { Redacted } from "effect";
 
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
-import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import type {
+  OutgoingPost,
+  PlatformClient,
+} from "#publishing/application/platform-client.ts";
 import {
   defaultStepTiming,
   sequenced,
@@ -15,6 +18,7 @@ import type {
 } from "#publishing/application/publication-steps.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { postFormatOf } from "#publishing/domain/post-format.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -28,6 +32,7 @@ import {
   publishedOf,
 } from "./container-publishing.ts";
 import type { ListedPost } from "./container-publishing.ts";
+import { facebookFormatSteps, videoStepTiming } from "./facebook-formats.ts";
 import {
   formPost,
   graphCalls,
@@ -110,7 +115,8 @@ const listedOf = (
  * public URL. Facebook keeps no idempotency key: an unknown outcome is
  * settled by finding the post among the Page's published posts since the
  * attempt started, by its text; when it is not there, the post is left
- * unconfirmed for the member to check.
+ * unconfirmed for the member to check. A reel and a story, which the
+ * options' `format` chooses, follow the steps of `./facebook-formats.ts`.
  */
 export const facebookClient = Effect.fn("FacebookClient.make")(
   function* facebookClient(options: {
@@ -124,9 +130,8 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
     const media = yield* MediaForPublishing;
     const { api, hosts, uploads } = options;
 
-    const { commit: commitCall, step } = yield* graphCalls({
-      appSecret: options.appSecret,
-    });
+    const calls = yield* graphCalls({ appSecret: options.appSecret });
+    const { commit: commitCall, step } = calls;
 
     const page = (post: OutgoingPost, path: string) =>
       graphUrl(hosts, `/${encodeURIComponent(post.accountId)}${path}`);
@@ -325,6 +330,37 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
       prepare,
     };
 
-    return sequenced(steps, options.timing ?? defaultStepTiming);
+    const timing = options.timing ?? defaultStepTiming;
+    const feed = sequenced(steps, timing);
+
+    const formatSteps = facebookFormatSteps({
+      api,
+      calls,
+      described,
+      graph: (path) => graphUrl(hosts, path),
+      hosts,
+      page,
+      uploads,
+    });
+
+    // A reel's and a video story's publishing is read on after the finish,
+    // over `videoPublishingWait`; a test's timing stays its own.
+    const formatTiming = options.timing ?? videoStepTiming(defaultStepTiming);
+    const reel = sequenced(formatSteps.reel, formatTiming);
+    const story = sequenced(formatSteps.story, formatTiming);
+
+    // The client of the format the post's options choose: a feed post's
+    // without one.
+    const clientOf = (post: OutgoingPost): PlatformClient =>
+      Option.match(postFormatOf(post.options), {
+        onNone: () => feed,
+        onSome: (format) => (format === "reel" ? reel : story),
+      });
+
+    return {
+      platform: "facebook",
+      publish: (post) => clientOf(post).publish(post),
+      resume: (post) => clientOf(post).resume(post),
+    } satisfies PlatformClient;
   }
 );

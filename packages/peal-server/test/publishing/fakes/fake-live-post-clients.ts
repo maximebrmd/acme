@@ -3,6 +3,8 @@ import { Context, DateTime, Effect, Latch, Layer, Option, Ref } from "effect";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import type {
+  EditOutcome,
+  EditRequest,
   RemovalFailure,
   RemovalOutcome,
   RemovalRequest,
@@ -23,17 +25,21 @@ import type { ChannelId } from "#shared/domain/ids.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 
-/** How the fake platform answers one deletion. */
+/**
+ * How the fake platform answers one call: a deletion's `answer` is its
+ * outcome, an edit's is `edited` whatever it names.
+ */
 export type RemovalBehaviour =
   | { readonly _tag: "answer"; readonly outcome: RemovalOutcome }
   | { readonly _tag: "fail"; readonly failure: RemovalFailure }
   // The answer comes once the test calls `release`, if ever.
   | { readonly _tag: "hang" };
 
-/** A deletion the fake platform received. */
+/** A deletion, or an edit, the fake platform received. */
 export interface RemovalCall {
   readonly at: DateTime.Utc;
-  readonly request: RemovalRequest;
+  readonly kind: "edit" | "remove";
+  readonly request: EditRequest | RemovalRequest;
 }
 
 /**
@@ -62,7 +68,9 @@ export class FakeRemovals extends Context.Service<
 /** A change LivePostEvents was told of. */
 export interface ToldChange {
   readonly change: LivePostChange;
-  readonly event: "unpublishFailed" | "unpublished";
+  readonly event: "editFailed" | "edited" | "unpublishFailed" | "unpublished";
+  /** The part an edit changed; none for a removal. */
+  readonly part?: number;
   readonly target: PostTarget;
 }
 
@@ -107,18 +115,22 @@ export const FakeLivePostClients = Layer.effectContext(
         ] as const;
       });
 
-    const remove = (
-      request: RemovalRequest
-    ): Effect.Effect<RemovalOutcome, RemovalFailure> =>
-      Effect.gen(function* removing() {
+    // The answer scripted for the call, or `fallback` once none is.
+    const answer = <A>(
+      kind: RemovalCall["kind"],
+      request: EditRequest | RemovalRequest,
+      fallback: A,
+      answered: (outcome: RemovalOutcome) => A
+    ): Effect.Effect<A, RemovalFailure> =>
+      Effect.gen(function* answering() {
         const at = yield* DateTime.now;
 
-        yield* Ref.update(calls, (all) => [...all, { at, request }]);
+        yield* Ref.update(calls, (all) => [...all, { at, kind, request }]);
 
         const behaviour = yield* nextBehaviour(request.channelId);
 
         if (Option.isNone(behaviour)) {
-          return "removed" as const;
+          return fallback;
         }
 
         const chosen = behaviour.value;
@@ -130,13 +142,26 @@ export const FakeLivePostClients = Layer.effectContext(
         if (chosen._tag === "hang") {
           yield* (yield* latchOf(request.channelId)).await;
 
-          return "removed" as const;
+          return fallback;
         }
 
-        return chosen.outcome;
+        return answered(chosen.outcome);
       });
 
-    return Context.make(LivePostClients, LivePostClients.of({ remove })).pipe(
+    const remove = (
+      request: RemovalRequest
+    ): Effect.Effect<RemovalOutcome, RemovalFailure> =>
+      answer("remove", request, "removed" as const, (outcome) => outcome);
+
+    const edit = (
+      request: EditRequest
+    ): Effect.Effect<EditOutcome, RemovalFailure> =>
+      answer("edit", request, "edited" as const, () => "edited" as const);
+
+    return Context.make(
+      LivePostClients,
+      LivePostClients.of({ edit, remove })
+    ).pipe(
       Context.add(
         FakeRemovals,
         FakeRemovals.of({
@@ -187,6 +212,10 @@ export const RecordedLiveEvents = Layer.effect(
   FakeRemovals.use((removals) =>
     Effect.succeed(
       LivePostEvents.of({
+        editFailed: (change, target, part) =>
+          removals.tell({ change, event: "editFailed", part, target }),
+        edited: (change, target, part) =>
+          removals.tell({ change, event: "edited", part, target }),
         unpublishFailed: (change, target) =>
           removals.tell({ change, event: "unpublishFailed", target }),
         unpublished: (change, target) =>

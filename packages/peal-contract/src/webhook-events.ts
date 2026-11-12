@@ -23,6 +23,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "post.finished",
   "post.unpublished",
   "post.unpublish_failed",
+  "post.edited",
+  "post.edit_failed",
   "post.approval_requested",
   "post.approved",
   "post.changes_requested",
@@ -336,6 +338,37 @@ export const WebhookPayloadSchema = Schema.Union([
       failedAt: Schema.DateTimeUtc,
     }),
     type: Schema.Literal("post.unpublish_failed"),
+  }),
+  // Peal replaced the text of the post's part at `part` (from 0) on the
+  // channel's platform, at a member's request: that part's text on the
+  // channel is the new one in Peal too, and the target has its
+  // `editedAt`. The text itself is never sent: read the post.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      ...WebhookTargetSchema.fields,
+      editedAt: Schema.DateTimeUtc,
+      part: Schema.Int,
+    }),
+    type: Schema.Literal("post.edited"),
+  }),
+  // Peal could not edit the post's part on the channel's platform: `code`
+  // says why (as the change's `code`, `postGone` when the platform no
+  // longer has it); Peal's text is unchanged, and the post most likely
+  // says what it said before (after `unavailable` or `rateLimited`, an
+  // answer may have been lost, and the platform may show the new text);
+  // a member may ask again.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      ...WebhookTargetSchema.fields,
+      code: Schema.String,
+      failedAt: Schema.DateTimeUtc,
+      part: Schema.Int,
+    }),
+    type: Schema.Literal("post.edit_failed"),
   }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent

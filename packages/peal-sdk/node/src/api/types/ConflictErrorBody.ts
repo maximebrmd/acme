@@ -3,15 +3,20 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.QueueNameTaken
-    | Peal.ConflictErrorBody.TooManyQueues;
+    | Peal.ConflictErrorBody.PostNotRecyclable
+    | Peal.ConflictErrorBody.RecyclingRuleEnded
+    | Peal.ConflictErrorBody.TooManyRecyclingRules;
 
 export namespace ConflictErrorBody {
-    export interface QueueNameTaken extends Peal.QueueNameTakenEncoded {
-        _tag: "QueueNameTaken";
+    export interface PostNotRecyclable extends Peal.PostNotRecyclableEncoded {
+        _tag: "PostNotRecyclable";
     }
 
-    export interface TooManyQueues extends Peal.TooManyQueuesEncoded {
-        _tag: "TooManyQueues";
+    export interface RecyclingRuleEnded extends Peal.RecyclingRuleEndedEncoded {
+        _tag: "RecyclingRuleEnded";
+    }
+
+    export interface TooManyRecyclingRules extends Peal.TooManyRecyclingRulesEncoded {
+        _tag: "TooManyRecyclingRules";
     }
 }

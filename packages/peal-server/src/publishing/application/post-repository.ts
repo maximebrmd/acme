@@ -108,6 +108,27 @@ export class PostRepository extends Context.Service<
       removedAt: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
+     * Records that the text of a part of a published target was replaced
+     * on its platform at `editedAt`, and nothing else of it: false when it
+     * is not published, or was removed.
+     */
+    readonly markEdited: (
+      targetId: PostTargetId,
+      editedAt: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Makes `text` the channel's own text on the part at `index` of the
+     * post (`withTextOn`), and writes nothing else of it, whatever its
+     * status: the post as it now is, none when it is gone. Run under the
+     * post's lock.
+     */
+    readonly amendText: (
+      postId: PostId,
+      index: number,
+      channelId: ChannelId,
+      text: string
+    ) => Effect.Effect<Option.Option<Post>, DatabaseError>;
+    /**
      * Files the post under these tags, instead of those it had. Nothing
      * else of the post is written, whatever its status.
      */

@@ -68,6 +68,9 @@ peal_settings:
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.
   # PEAL_CONTACT_URL: https://peal.social/contact/
+  # Refuses the staff console to staff whose own account does not have
+  # two-step verification on: set once every staff account has it on.
+  # PEAL_STAFF_TWO_STEP: "true"
 
 # Read when the static image is built.
 peal_static_build_args:

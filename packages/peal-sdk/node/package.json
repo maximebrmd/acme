@@ -337,6 +337,17 @@
       },
       "default": "./dist/cjs/api/resources/queues/exports.js"
     },
+    "./recycling": {
+      "import": {
+        "types": "./dist/esm/api/resources/recycling/exports.d.mts",
+        "default": "./dist/esm/api/resources/recycling/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/recycling/exports.d.ts",
+        "default": "./dist/cjs/api/resources/recycling/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/recycling/exports.js"
+    },
     "./channelDefaults": {
       "import": {
         "types": "./dist/esm/api/resources/channelDefaults/exports.d.mts",

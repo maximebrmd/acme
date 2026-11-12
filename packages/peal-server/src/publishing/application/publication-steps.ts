@@ -28,7 +28,10 @@ export type LookUp =
   // The platform answered that it has no such post.
   | { readonly _tag: "absent" }
   // No answer settled it.
-  | { readonly _tag: "unknown" };
+  | { readonly _tag: "unknown" }
+  // The platform said it refused the post, which never goes live (a video
+  // its processing refused after it was sent): the attempt fails.
+  | { readonly _tag: "refused"; readonly failure: PublishFailure };
 
 /**
  * How a platform tells whether an attempt's post went out:
@@ -227,6 +230,10 @@ export const sequenced = <P>(
               return Effect.succeed(settled(Result.succeed(found.published)));
             }
 
+            if (found._tag === "refused") {
+              return Effect.succeed(settled(Result.fail(found.failure)));
+            }
+
             return found._tag === "absent"
               ? resend(post, prepared)
               : Effect.succeed(unsettled);
@@ -336,6 +343,10 @@ export const sequenced = <P>(
       Effect.flatMap((found): Effect.Effect<PublishResult, PublishFailure> => {
         if (found._tag === "found") {
           return Effect.succeed(found.published);
+        }
+
+        if (found._tag === "refused") {
+          return Effect.fail(found.failure);
         }
 
         // Not there: the earlier run never made it, and the key keeps this

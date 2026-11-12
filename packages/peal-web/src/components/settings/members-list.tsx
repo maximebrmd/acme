@@ -28,6 +28,7 @@ import { useId, useTransition } from "react";
 import { toast } from "sonner";
 
 import { authClient } from "#auth/client.ts";
+import { membersOf } from "#billing/members.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { workspaceMembers } from "#settings/atoms.ts";
 import type { WorkspaceMember } from "#settings/atoms.ts";
@@ -49,6 +50,8 @@ interface MemberRowProps {
   readonly member: WorkspaceMember;
   readonly onChanged: () => void;
   readonly owners: number;
+  /** Whether their account has two-step verification on, to a manager. */
+  readonly twoStepEnabled: boolean | null;
   readonly workspaceId: string;
 }
 
@@ -59,8 +62,10 @@ const MemberRow = ({
   member,
   onChanged,
   owners,
+  twoStepEnabled,
   workspaceId,
 }: MemberRowProps) => {
+  const twoStep = useTranslations("TwoStep");
   const t = useTranslations("WorkspaceSettings.members");
   const roleLabel = useTranslations("WorkspaceSettings");
   const settings = useTranslations("Settings");
@@ -122,6 +127,11 @@ const MemberRow = ({
         </span>
         <span className="text-muted-foreground truncate text-sm">{email}</span>
       </div>
+      {twoStepEnabled === null ? null : (
+        <Badge variant={twoStepEnabled ? "secondary" : "outline"}>
+          {`${twoStep("memberColumn")}: ${twoStep("enabledBadge", { enabled: String(twoStepEnabled) })}`}
+        </Badge>
+      )}
       {roles.length === 0 || !isRole(member.role) ? (
         <Badge variant="outline">
           {roleLabel("role", { role: member.role })}
@@ -188,16 +198,22 @@ const MemberRow = ({
   );
 };
 
-/** The members, as the list shows them once loaded. */
+/**
+ * The members, as the list shows them once loaded, and, to a reader who
+ * manages members, whether each one's account has two-step verification
+ * on (`twoStep`, by user id; null for anyone else).
+ */
 export const MembersView = ({
   manager,
   members,
   onChanged,
+  twoStep = null,
   workspaceId,
 }: {
   readonly manager: Manager;
   readonly members: readonly WorkspaceMember[];
   readonly onChanged: () => void;
+  readonly twoStep?: ReadonlyMap<string, boolean> | null;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("WorkspaceSettings.members");
@@ -215,6 +231,9 @@ export const MembersView = ({
             manager={manager}
             member={member}
             owners={owners}
+            twoStepEnabled={
+              twoStep === null ? null : (twoStep.get(member.userId) ?? null)
+            }
             workspaceId={workspaceId}
             onChanged={onChanged}
           />
@@ -234,6 +253,22 @@ const LoadedMembers = ({
   const atom = workspaceMembers(workspaceId);
   const result = useAtomValue(atom);
   const reload = useAtomRefresh(atom);
+  // Peal's own list says who has two-step verification on, to who may
+  // manage members alone.
+  const listed = useAtomValue(membersOf(workspaceId));
+
+  const twoStep = manager.mayUpdate
+    ? AsyncResult.match(listed, {
+        onFailure: () => null,
+        onInitial: () => null,
+        onSuccess: ({ value }) =>
+          new Map(
+            value.flatMap(({ twoStepEnabled, userId }) =>
+              twoStepEnabled === undefined ? [] : [[userId, twoStepEnabled]]
+            )
+          ),
+      })
+    : null;
 
   return AsyncResult.match(result, {
     onFailure: () => <SettingsLoadFailed onRetry={reload} />,
@@ -242,6 +277,7 @@ const LoadedMembers = ({
       <MembersView
         manager={manager}
         members={value.members}
+        twoStep={twoStep}
         workspaceId={workspaceId}
         onChanged={reload}
       />

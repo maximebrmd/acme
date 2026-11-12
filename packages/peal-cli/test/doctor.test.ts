@@ -7,7 +7,7 @@ import { DoctorFailed } from "#doctor-failed.ts";
 
 import { draftingKey, filesLayer, signedIn } from "./signed-in.ts";
 import type { Runs } from "./signed-in.ts";
-import { studioId } from "./studio.ts";
+import { studioId, studioMe } from "./studio.ts";
 import { cliEnvironment, fetching, output } from "./support.ts";
 
 // peal doctor, against the in-memory server: what it reports for each way
@@ -260,5 +260,38 @@ describe("peal doctor", () => {
         "peal_test_"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "names a workspace that refuses the account for want of two-step verification",
+    () =>
+      Effect.gen(function* twoStep() {
+        const session = yield* signedIn({
+          me: {
+            ...studioMe,
+            workspaces: studioMe.workspaces.map((workspace) => ({
+              ...workspace,
+              twoStepRequired: workspace.slug === "shop",
+            })),
+          },
+        });
+
+        const text = yield* failingReport(session, [
+          "doctor",
+          "--json",
+          "--workspace",
+          "shop",
+        ]);
+
+        assert.strictEqual(statuses(text)["workspace"], "failing");
+        assert.include(
+          check(text, "workspace").detail,
+          "requires two-step verification, which your account does not have on"
+        );
+        assert.strictEqual(
+          check(text, "workspace").fix,
+          "Turn it on at http://localhost:3000/app/account, then run the command again."
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

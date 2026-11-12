@@ -32,6 +32,9 @@ public record PlatformCapabilities : IJsonOnDeserialized
     [JsonPropertyName("platform")]
     public required Platform Platform { get; set; }
 
+    [JsonPropertyName("postFormats")]
+    public IEnumerable<PostFormatCapabilities>? PostFormats { get; set; }
+
     [JsonPropertyName("text")]
     public required TextCapabilities Text { get; set; }
 

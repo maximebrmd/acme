@@ -44,6 +44,12 @@ class NotificationPreferencesEmail extends JsonSerializableType
     public bool $postUnconfirmed;
 
     /**
+     * @var bool $recyclingEnded
+     */
+    #[JsonProperty('recyclingEnded')]
+    public bool $recyclingEnded;
+
+    /**
      * @var bool $webhookFailing
      */
     #[JsonProperty('webhookFailing')]
@@ -57,6 +63,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
      *   postPublished: bool,
      *   postReview: bool,
      *   postUnconfirmed: bool,
+     *   recyclingEnded: bool,
      *   webhookFailing: bool,
      * } $values
      */
@@ -69,6 +76,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
         $this->postPublished = $values['postPublished'];
         $this->postReview = $values['postReview'];
         $this->postUnconfirmed = $values['postUnconfirmed'];
+        $this->recyclingEnded = $values['recyclingEnded'];
         $this->webhookFailing = $values['webhookFailing'];
     }
 

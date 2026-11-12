@@ -3,15 +3,19 @@ import { DateTime, Option, Result } from "effect";
 
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
+  editable,
   failChange,
   finishChange,
   LivePostChange,
+  partEdited,
   partRemoved,
   removable,
+  requestEdit,
   requestUnpublish,
 } from "#publishing/domain/live-post-change.ts";
 import type { PartToRemove } from "#publishing/domain/live-post-change.ts";
 import {
+  editBlocker,
   livePostSupport,
   unpublishBlocker,
 } from "#publishing/domain/live-post-support.ts";
@@ -228,6 +232,66 @@ describe("the parts a removal takes", () => {
   });
 });
 
+describe("the parts a removal takes after an edit", () => {
+  it("takes up the parts the last failed removal left, past an edit made since", () => {
+    const target = targetWith(published, [
+      livePart(0, Option.some("1")),
+      livePart(1, Option.some("2")),
+    ]);
+
+    const failed = Result.getOrThrow(
+      failChange(
+        Result.getOrThrow(
+          partRemoved(
+            request([
+              { index: 1, platformPostId: id("2") },
+              { index: 0, platformPostId: id("1") },
+            ]),
+            1,
+            false
+          )
+        ),
+        "unavailable",
+        now
+      )
+    );
+
+    const edited = Result.getOrThrow(
+      finishChange(
+        Result.getOrThrow(
+          partEdited(
+            requestEdit({
+              channelId,
+              id: LivePostChangeIdSchema.make(
+                "00000000-0000-7000-8000-000000000005"
+              ),
+              now,
+              part: { index: 0, platformPostId: id("1") },
+              postId,
+              requestedBy: Option.none(),
+              requestedVia: Option.none(),
+              targetId,
+              text: "Corrected",
+              workspaceId,
+            }),
+            0
+          )
+        ),
+        now
+      )
+    );
+
+    expect(
+      removable(
+        target,
+        Option.some("mastodon"),
+        Option.some(edited),
+        Option.some(failed)
+      )
+    ).toStrictEqual(Result.succeed([{ index: 0, platformPostId: id("1") }]));
+  });
+});
+
 describe("a live post change", () => {
   const parts = [
     { index: 1, platformPostId: id("2") },
@@ -325,5 +389,184 @@ describe("live post support", () => {
       "pinterest",
       "googleBusiness",
     ]);
+  });
+});
+
+const editRequest = (part: PartToRemove, text = "Corrected") =>
+  requestEdit({
+    channelId,
+    id: changeId,
+    now,
+    part,
+    postId,
+    requestedBy: Option.none(),
+    requestedVia: Option.none(),
+    targetId,
+    text,
+    workspaceId,
+  });
+
+describe("the part an edit takes", () => {
+  const thread = targetWith(published, [
+    livePart(0, Option.some("1")),
+    livePart(1, Option.some("2")),
+  ]);
+
+  it("answers the part asked for, with its id", () => {
+    expect(
+      editable(thread, Option.some("mastodon"), 1, Option.none())
+    ).toStrictEqual(Result.succeed({ index: 1, platformPostId: id("2") }));
+
+    expect(
+      editable(targetWith(published), Option.some("mastodon"), 0, Option.none())
+    ).toStrictEqual(Result.succeed({ index: 0, platformPostId: id("1") }));
+  });
+
+  it("refuses a target that is not published, or removed", () => {
+    expect(
+      editable(
+        targetWith({ _tag: "pending" }),
+        Option.some("mastodon"),
+        0,
+        Option.none()
+      )
+    ).toStrictEqual(Result.fail("notPublished"));
+
+    expect(
+      editable(
+        targetWith({ ...published, removedAt: now }),
+        Option.some("mastodon"),
+        0,
+        Option.none()
+      )
+    ).toStrictEqual(Result.fail("alreadyRemoved"));
+  });
+
+  it("refuses while a change of the target is pending", () => {
+    expect(
+      editable(
+        thread,
+        Option.some("mastodon"),
+        0,
+        Option.some(editRequest({ index: 0, platformPostId: id("1") }))
+      )
+    ).toStrictEqual(Result.fail("changeInProgress"));
+  });
+
+  it("refuses a channel that cannot be used now", () => {
+    expect(editable(thread, Option.none(), 0, Option.none())).toStrictEqual(
+      Result.fail("channelUnavailable")
+    );
+  });
+
+  it("refuses a platform where Peal cannot edit posts", () => {
+    for (const platform of platforms) {
+      const expected = Option.isSome(editBlocker(platform))
+        ? Result.fail("notSupported")
+        : Result.succeed({ index: 0, platformPostId: id("1") });
+
+      expect(
+        editable(targetWith(published), Option.some(platform), 0, Option.none())
+      ).toStrictEqual(expected);
+    }
+  });
+
+  it("refuses a part Peal has no id for, or that is not live", () => {
+    expect(
+      editable(
+        targetWith({ ...published, platformPostId: Option.none() }),
+        Option.some("mastodon"),
+        0,
+        Option.none()
+      )
+    ).toStrictEqual(Result.fail("noPlatformId"));
+
+    expect(
+      editable(thread, Option.some("mastodon"), 2, Option.none())
+    ).toStrictEqual(Result.fail("noPlatformId"));
+  });
+
+  it("edits a target whose removal failed: it is still live", () => {
+    const failed = Result.getOrThrow(
+      failChange(
+        request([{ index: 0, platformPostId: id("1") }]),
+        "unavailable",
+        now
+      )
+    );
+
+    expect(
+      editable(thread, Option.some("mastodon"), 0, Option.some(failed))
+    ).toStrictEqual(Result.succeed({ index: 0, platformPostId: id("1") }));
+  });
+
+  it("does not take up a failed edit's part for a removal", () => {
+    const failedEdit = Result.getOrThrow(
+      failChange(editRequest({ index: 1, platformPostId: id("2") }), "x", now)
+    );
+
+    expect(
+      removable(thread, Option.some("mastodon"), Option.some(failedEdit))
+    ).toStrictEqual(
+      Result.succeed([
+        { index: 1, platformPostId: id("2") },
+        { index: 0, platformPostId: id("1") },
+      ])
+    );
+  });
+});
+
+describe("an edit of a live post", () => {
+  const part = { index: 1, platformPostId: id("2") };
+
+  it("starts pending, with its part and its text", () => {
+    const change = editRequest(part);
+
+    expect(change.kind).toBe("edit");
+    expect(change.status).toBe("pending");
+    expect(change.partsLeft).toStrictEqual([part]);
+    expect(change.text).toStrictEqual(Option.some("Corrected"));
+  });
+
+  it("is done once its part is edited, and keeps no text", () => {
+    const edited = Result.getOrThrow(partEdited(editRequest(part), 1));
+
+    expect(edited.partsLeft).toStrictEqual([]);
+    expect(edited.text).toStrictEqual(Option.some("Corrected"));
+    expect(Result.getOrThrow(partEdited(edited, 1))).toStrictEqual(edited);
+
+    const done = Result.getOrThrow(finishChange(edited, now));
+
+    expect(done.status).toBe("done");
+    expect(done.text).toStrictEqual(Option.none());
+  });
+
+  it("keeps no text once it failed", () => {
+    const failed = Result.getOrThrow(
+      failChange(editRequest(part), "postGone", now)
+    );
+
+    expect(failed.text).toStrictEqual(Option.none());
+    expect(failed.partsLeft).toStrictEqual([part]);
+    expect(Result.isFailure(partEdited(failed, 1))).toBeTruthy();
+  });
+
+  it("is never a removal's part", () => {
+    expect(
+      Result.isFailure(partRemoved(editRequest(part), 1, false))
+    ).toBeTruthy();
+    expect(
+      Result.isFailure(
+        partEdited(request([{ index: 0, platformPostId: id("1") }]), 0)
+      )
+    ).toBeTruthy();
+  });
+});
+
+describe("live post editing support", () => {
+  it("edits only where the platform and Peal's permissions allow", () => {
+    expect(
+      platforms.filter((platform) => Option.isNone(editBlocker(platform)))
+    ).toStrictEqual(["mastodon", "googleBusiness"]);
   });
 });

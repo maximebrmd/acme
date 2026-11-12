@@ -8,15 +8,20 @@ describe(permissionsFor, () => {
     expect(permissionsFor("owner")).toStrictEqual(PermissionSchema.literals);
   });
 
-  it("gives an admin everything but deleting the workspace, reading its activity log and deciding what ads may spend", () => {
+  it("gives an admin everything but deleting the workspace, reading its activity log, deciding what ads may spend and requiring two-step verification", () => {
     expect(permissionsFor("admin")).toStrictEqual(
       PermissionSchema.literals.filter(
         (permission) =>
           permission !== "organization:delete" &&
+          permission !== "organization:secure" &&
           permission !== "activity:read" &&
           permission !== "ads:authorize"
       )
     );
+  });
+
+  it("lets owners alone require two-step verification", () => {
+    expect(permissionsFor("owner")).toContain("organization:secure");
   });
 
   it("lets an editor publish but not manage the workspace", () => {

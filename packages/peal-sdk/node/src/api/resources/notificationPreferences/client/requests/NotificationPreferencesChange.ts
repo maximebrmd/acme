@@ -17,6 +17,7 @@ export namespace NotificationPreferencesChange {
         postPublished?: boolean | undefined;
         postReview?: boolean | undefined;
         postUnconfirmed?: boolean | undefined;
+        recyclingEnded?: boolean | undefined;
         webhookFailing?: boolean | undefined;
     }
 }

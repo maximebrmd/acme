@@ -20,7 +20,8 @@ public class MeTest : BaseMockServerTest
                 "id": "id",
                 "image": "image",
                 "locale": "en",
-                "name": "name"
+                "name": "name",
+                "twoStepEnabled": true
               },
               "workspaces": [
                 {
@@ -31,7 +32,8 @@ public class MeTest : BaseMockServerTest
                     "activity:read"
                   ],
                   "role": "role",
-                  "slug": "slug"
+                  "slug": "slug",
+                  "twoStepRequired": true
                 },
                 {
                   "id": "id",
@@ -41,7 +43,8 @@ public class MeTest : BaseMockServerTest
                     "activity:read"
                   ],
                   "role": "role",
-                  "slug": "slug"
+                  "slug": "slug",
+                  "twoStepRequired": true
                 }
               ]
             }
@@ -72,7 +75,8 @@ public class MeTest : BaseMockServerTest
                 "id": "id",
                 "image": "image",
                 "locale": "en",
-                "name": "name"
+                "name": "name",
+                "twoStepEnabled": true
               },
               "workspaces": [
                 {
@@ -82,7 +86,8 @@ public class MeTest : BaseMockServerTest
                     "activity:read"
                   ],
                   "role": "role",
-                  "slug": "slug"
+                  "slug": "slug",
+                  "twoStepRequired": true
                 }
               ]
             }

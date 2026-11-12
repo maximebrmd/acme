@@ -27,28 +27,28 @@ public class MembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public List<WorkspaceMember> list(String workspaceId) {
         return this.rawClient.list(workspaceId).body();
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public List<WorkspaceMember> list(String workspaceId, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, requestOptions).body();
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public List<WorkspaceMember> list(String workspaceId, ListMembersRequest request) {
         return this.rawClient.list(workspaceId, request).body();
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public List<WorkspaceMember> list(String workspaceId, ListMembersRequest request, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, request, requestOptions).body();

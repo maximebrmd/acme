@@ -480,6 +480,7 @@ type NoticeEvent struct {
 	WebhookDeliveriesFailing      *NoticeEventWebhookDeliveriesFailing
 	AdBoostChanged                *NoticeEventAdBoostChanged
 	AdConnectionReconnectRequired *NoticeEventAdConnectionReconnectRequired
+	RecyclingEnded                *NoticeEventRecyclingEnded
 
 	rawJSON json.RawMessage
 }
@@ -624,6 +625,13 @@ func (n *NoticeEvent) GetAdConnectionReconnectRequired() *NoticeEventAdConnectio
 	return n.AdConnectionReconnectRequired
 }
 
+func (n *NoticeEvent) GetRecyclingEnded() *NoticeEventRecyclingEnded {
+	if n == nil {
+		return nil
+	}
+	return n.RecyclingEnded
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -750,6 +758,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.AdConnectionReconnectRequired = value
+	case "RecyclingEnded":
+		value := new(NoticeEventRecyclingEnded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.RecyclingEnded = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -816,6 +830,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.AdConnectionReconnectRequired != nil {
 		return internal.MarshalJSONWithExtraProperty(n.AdConnectionReconnectRequired, "_tag", "AdConnectionReconnectRequired")
 	}
+	if n.RecyclingEnded != nil {
+		return internal.MarshalJSONWithExtraProperty(n.RecyclingEnded, "_tag", "RecyclingEnded")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -842,6 +859,7 @@ type NoticeEventVisitor interface {
 	VisitWebhookDeliveriesFailing(*NoticeEventWebhookDeliveriesFailing) error
 	VisitAdBoostChanged(*NoticeEventAdBoostChanged) error
 	VisitAdConnectionReconnectRequired(*NoticeEventAdConnectionReconnectRequired) error
+	VisitRecyclingEnded(*NoticeEventRecyclingEnded) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -901,6 +919,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.AdConnectionReconnectRequired != nil {
 		return visitor.VisitAdConnectionReconnectRequired(n.AdConnectionReconnectRequired)
+	}
+	if n.RecyclingEnded != nil {
+		return visitor.VisitRecyclingEnded(n.RecyclingEnded)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -966,6 +987,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.AdConnectionReconnectRequired != nil {
 		fields = append(fields, "AdConnectionReconnectRequired")
+	}
+	if n.RecyclingEnded != nil {
+		fields = append(fields, "RecyclingEnded")
 	}
 	if len(fields) == 0 {
 		if n.Type != "" {
@@ -2410,6 +2434,124 @@ func (n *NoticeEventPostUnconfirmed) String() string {
 }
 
 var (
+	noticeEventRecyclingEndedFieldReason       = big.NewInt(1 << 0)
+	noticeEventRecyclingEndedFieldRuleID       = big.NewInt(1 << 1)
+	noticeEventRecyclingEndedFieldSourcePostID = big.NewInt(1 << 2)
+)
+
+type NoticeEventRecyclingEnded struct {
+	Reason       RecyclingNoticeReason `json:"reason" url:"reason"`
+	RuleID       string                `json:"ruleId" url:"ruleId"`
+	SourcePostID string                `json:"sourcePostId" url:"sourcePostId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventRecyclingEnded) GetReason() RecyclingNoticeReason {
+	if n == nil {
+		return ""
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventRecyclingEnded) GetRuleID() string {
+	if n == nil {
+		return ""
+	}
+	return n.RuleID
+}
+
+func (n *NoticeEventRecyclingEnded) GetSourcePostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.SourcePostID
+}
+
+func (n *NoticeEventRecyclingEnded) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventRecyclingEnded) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventRecyclingEnded) SetReason(reason RecyclingNoticeReason) {
+	n.Reason = reason
+	n.require(noticeEventRecyclingEndedFieldReason)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventRecyclingEnded) SetRuleID(ruleID string) {
+	n.RuleID = ruleID
+	n.require(noticeEventRecyclingEndedFieldRuleID)
+}
+
+// SetSourcePostID sets the SourcePostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventRecyclingEnded) SetSourcePostID(sourcePostID string) {
+	n.SourcePostID = sourcePostID
+	n.require(noticeEventRecyclingEndedFieldSourcePostID)
+}
+
+func (n *NoticeEventRecyclingEnded) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventRecyclingEnded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventRecyclingEnded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventRecyclingEnded) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventRecyclingEnded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventRecyclingEnded) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
 	noticeEventSubscriptionCancelledFieldEndsAt = big.NewInt(1 << 0)
 	noticeEventSubscriptionCancelledFieldPlan   = big.NewInt(1 << 1)
 )
@@ -3359,6 +3501,46 @@ func (n *NoticePage) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", n)
+}
+
+type RecyclingNoticeReason string
+
+const (
+	RecyclingNoticeReasonSourceGone      RecyclingNoticeReason = "sourceGone"
+	RecyclingNoticeReasonStarterGone     RecyclingNoticeReason = "starterGone"
+	RecyclingNoticeReasonNoChannels      RecyclingNoticeReason = "noChannels"
+	RecyclingNoticeReasonContentRejected RecyclingNoticeReason = "contentRejected"
+	RecyclingNoticeReasonPlanLimit       RecyclingNoticeReason = "planLimit"
+	RecyclingNoticeReasonQueueGone       RecyclingNoticeReason = "queueGone"
+	RecyclingNoticeReasonQueueFull       RecyclingNoticeReason = "queueFull"
+	RecyclingNoticeReasonSourceWithdrawn RecyclingNoticeReason = "sourceWithdrawn"
+)
+
+func NewRecyclingNoticeReasonFromString(s string) (RecyclingNoticeReason, error) {
+	switch s {
+	case "sourceGone":
+		return RecyclingNoticeReasonSourceGone, nil
+	case "starterGone":
+		return RecyclingNoticeReasonStarterGone, nil
+	case "noChannels":
+		return RecyclingNoticeReasonNoChannels, nil
+	case "contentRejected":
+		return RecyclingNoticeReasonContentRejected, nil
+	case "planLimit":
+		return RecyclingNoticeReasonPlanLimit, nil
+	case "queueGone":
+		return RecyclingNoticeReasonQueueGone, nil
+	case "queueFull":
+		return RecyclingNoticeReasonQueueFull, nil
+	case "sourceWithdrawn":
+		return RecyclingNoticeReasonSourceWithdrawn, nil
+	}
+	var t RecyclingNoticeReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RecyclingNoticeReason) Ptr() *RecyclingNoticeReason {
+	return &r
 }
 
 type ReviewParty string

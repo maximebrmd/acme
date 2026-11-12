@@ -179,6 +179,7 @@ On **Instagram**:
 
 | Option                           | API name        | Values                                                       | Left out             |
 | -------------------------------- | --------------- | ------------------------------------------------------------ | -------------------- |
+| **Format**                       | `format`        | `story` (see [stories and reels](#formats)), or `feed`       | A feed post          |
 | **Also share to the feed**       | `shareToFeed`   | A reel: yes or no                                            | As Instagram decides |
 | **Cover image**                  | `coverMediaId`  | A reel: a JPEG image of the library, 8 MiB at most           | The cover frame      |
 | **Cover frame, in milliseconds** | `thumbOffsetMs` | A reel: its frame, in milliseconds from its start, within it | The first frame      |
@@ -186,17 +187,34 @@ On **Instagram**:
 | **Trial reel**                   | `trialReel`     | A reel: `manual` or `performance`                            | Not a trial          |
 | **Collaborators**                | `collaborators` | One to three Instagram usernames                             | None                 |
 
-A reel is a post of one video. A cover image wins over a cover frame: only the image is sent then. Instagram renames a reel's audio once. A trial reel is shown to accounts that do not follow yours first, and reaches your followers when you share it in the app (`manual`) or by itself when it does well (`performance`). Each collaborator is another account, which receives an invitation to be named as a co-author: name only accounts you mean to invite. Instagram does not document collaborators for accounts connected with Instagram Login: when Instagram refuses such a post, the channel reads **Failed** with Meta's own code. Instagram also shows the alt text of a post's images, up to 1,000 characters, and none on a video.
+On Instagram, a reel is a feed post of one video; a story takes none of these options. A cover image wins over a cover frame: only the image is sent then. Instagram renames a reel's audio once. A trial reel is shown to accounts that do not follow yours first, and reaches your followers when you share it in the app (`manual`) or by itself when it does well (`performance`). Each collaborator is another account, which receives an invitation to be named as a co-author: name only accounts you mean to invite. Instagram does not document collaborators for accounts connected with Instagram Login: when Instagram refuses such a post, the channel reads **Failed** with Meta's own code. Instagram also shows the alt text of a post's images, up to 1,000 characters, and none on a video.
 
 On **Facebook**:
 
-| Option          | API name     | Values                                    | Left out |
-| --------------- | ------------ | ----------------------------------------- | -------- |
-| **Video title** | `videoTitle` | A video: one line, 255 characters at most | No title |
+| Option          | API name     | Values                                                           | Left out    |
+| --------------- | ------------ | ---------------------------------------------------------------- | ----------- |
+| **Format**      | `format`     | `story` or `reel` (see [stories and reels](#formats)), or `feed` | A feed post |
+| **Video title** | `videoTitle` | A video or a reel: one line, 255 characters at most              | No title    |
 
 A thumbnail or a cover is a file of the library that the post does not show: it must be ready and the workspace's, it cannot be deleted while a post that goes out names it, a draft loses it when it is deleted, and a copy of the post leaves it out once it is gone. A channel set or a channel's default options cannot name one.
 
 Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube, TikTok or Pinterest, give it its options in the draft first.
+
+### Stories and reels [#formats]
+
+On Instagram and Facebook, **Format** chooses what kind of post a channel receives. Peal never guesses it from the file: a vertical video stays a feed post (a reel, on Instagram) unless you choose **Story**, or **Reel** on Facebook.
+
+| Format    | Where     | What it takes                                                                                                                 | The post's text |
+| --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Story** | Instagram | One JPEG image of 8 MiB at most, or one MP4 or QuickTime video of 3 to 60 seconds and 100 MiB at most                         | Not sent        |
+| **Story** | Facebook  | One JPEG, PNG or GIF image of 10 MiB at most, or one vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 60 seconds | Not sent        |
+| **Reel**  | Facebook  | One vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 90 seconds                                                  | Its description |
+
+A story is sent without the post's text: the composer says so under the counters and counts nothing there, and a check through the API answers `textNotSent` for that channel. A story takes no other option (no collaborators, none of a reel's settings, no title) and a story or a reel has no parts after it. A Facebook reel's title is the **Video title**. A story and the feed post of the same file and text are not taken for duplicates of each other; two stories of the same file are, whatever text the posts hold, as a story shows none.
+
+A story disappears after 24 hours. Peal keeps no link to it and reads no statistics or comments of it, and neither a story nor a reel can be boosted from Peal; each counts in the month's posts as any other. Meta asks a reel's and a video story's video to run at 24 to 60 frames a second, which Peal does not check: Meta refuses a video outside it, or below 540p, while it processes it. A reel or a video story reads **Published** only once Meta says it is published: Peal reads Meta's status for up to 10 minutes after sending it. A refusal Meta shows meanwhile reads **Failed** (`processingFailed`). Still not published then, or should Peal not hear whether a reel or a story went out, the channel reads **To check** (`stillProcessing` when Meta was still processing it) and Peal never sends it again: look on the Page, then say what you found. Meta also takes 30 reels a Page within any 24 hours through its API; past them, the reel fails with Meta's code, and you can post it again later.
+
+If Peal's server restarts while a story or a reel is going out, Peal cannot read it back: the channel reads **To check**, for you to check the account, then confirm it or post it again. Peal never sends it again by itself. Through the API, a channel's capabilities list its platform's formats in `postFormats`, each with the media it takes and whether the text is sent.
 
 ## Schedule it [#schedule]
 
@@ -228,6 +246,17 @@ The plan's posts a month count in the month of the slot found. When that month h
 After you change a queue's slots or its time zone, **Settings**, **Queues** offers, while posts wait in it, **Move the waiting posts onto the new slots**, with how many wait. Once you confirm, every post that waits in the queue (scheduled, or waiting for an approval, at a time to come) moves onto the queue's slots as they are now, in the order of their times: the first onto the first free slot, the second onto the next, and so on. Posts moved by hand onto another time move too, as the queue keeps no record of which were. A post already on its slot stays where it is, a slot a publishing post holds is skipped, and what the posts say and where they go do not change. Owners, admins and editors may do it (post:schedule through the API); through the API, a contributor whose posts wait for an approval moves those alone.
 
 Each post moves as if moved by hand, but for approvals: it gets its new time and counts in its new month. A scheduled post goes through the workspace's approvals as if you scheduled it, and a post waiting for an approval keeps waiting, at its new time, whoever moves it: its request stays with whoever asked for it, and nobody is asked again to decide. To schedule such a post yourself, when your own posts need no approval, move it by hand. Peal then says how many posts moved, how many stayed, and how many remain. It stops, keeping what it moved, at a month the plan has no room in, when no slot is left within 366 days, or when someone saves the queue meanwhile: move them again once there is room. Moving them twice moves nothing the second time.
+
+## Repeat a post [#recycling]
+
+A post that is scheduled, or already out, can **repeat**: Peal makes a new post from it at an interval, until a number of posts or a date, saying its text or, in turn, text variants. Open the post and choose **Repeat**: every so many days (1 to 365), weeks (1 to 52) or months (1 to 12), ending after a number of posts (2 to 100, this one counted), on a date, or after 100 posts at most; optionally on a [queue](#queues); with up to 10 **text variants**. Owners, admins and editors may do it (post:schedule through the API); a contributor's posts, where the workspace lets them ask, each wait for an approval. **Settings**, **Repeating posts** lists the workspace's rules with their next three posts, and lets those who may schedule pause, resume or stop one.
+
+- Each new post is an ordinary post, with its own channels' outcome, notifications and analytics: move, unschedule or cancel one as any other, and the rule goes on by its own clock. It is copied from the source with what the workspace still has (its channels still connected, its media, its options, its tags), never with a signature or a default option added since.
+- The next post is made once the latest one's time has passed, so the calendar shows one ahead. It is due one interval after the one before, at the same time of day in the source's time zone, daylight saving included; a month shorter than the source's day takes its last day (31 January, then 28 February, then 31 March). On a queue, it takes the queue's first free slot from that time. A time missed while Peal was down is skipped, never made up for. A post whose time, or queue slot, would fall after the rule's last day is not made: the rule ends there, as after its last post.
+- The first post says the source's text, the next the first variant, and so on, then the source's again. A variant replaces the text of the post's first part, and its texts on some channels; its media, later parts and options stay. Some platforms refuse a text they already published for the account: variants are for that. Each variant is checked as the source saying it would be when you save it, and again when its post is made.
+- A post repeats as whoever started it, with what they may do when it is made: their posts' approvals apply, and a member who left, a key revoked or an application whose access no longer publishes stops it.
+
+Peal stops a rule, rather than skip a post silently, and tells those it concerns ([notifications](/notifications#events)) when its post was deleted, cancelled or taken back to draft, its starter can no longer schedule, none of its channels is left, a platform refuses what it would say, the month has no room in the plan, or its queue was deleted or has no free slot. While its post waits for an approval, it makes nothing and waits. Once that is put right (room in the plan, other variants, a channel connected again, slots on its queue, its post scheduled again), **Resume** sets it going from the next due time after now (with the same variants: other variants for a refused text go with the resume through the [command line](/cli#recycling) or the API), unless another rule repeats the post by then or the workspace has 100 going; for any other end, make the post repeat again. A post has one rule going on at a time, and a workspace 100. A rule keeps the source's first time: moving the source does not move the times it repeats at.
 
 ## Drafts [#drafts]
 
@@ -305,23 +334,31 @@ The deletion runs in the background, with the channel's other calls, one at a ti
 
 Statistics stop: analytics reads the post no more and keeps the counts it read, and the inbox stops reading its comments and keeps those it has for their 30 days. A post shown by a boost that is not over cannot be unpublished: stop the boost first, as the ad would go on spending on a post that is gone.
 
-Where Peal deletes posts:
+Where Peal deletes posts, and where it [edits them](#edit-live):
 
-| Platform                | Unpublish | Why not                                                 |
-| ----------------------- | --------- | ------------------------------------------------------- |
-| Mastodon                | Yes       |                                                         |
-| Bluesky                 | Yes       |                                                         |
-| X                       | Yes       |                                                         |
-| Pinterest               | Yes       |                                                         |
-| Google Business Profile | Yes       |                                                         |
-| LinkedIn                | No        | LinkedIn does not say which permission a deletion needs |
-| Facebook Pages          | No        | Meta says that only some apps may delete Page posts     |
-| Threads                 | No        | It needs a permission Meta grants after a review        |
-| Instagram               | No        | It needs a permission Meta grants after a review        |
-| YouTube                 | No        | It needs a wider permission than the one Peal asks for  |
-| TikTok                  | No        | TikTok's API has no call to delete a post               |
+| Platform                | Unpublish | Edit | Why not                                                                                |
+| ----------------------- | --------- | ---- | -------------------------------------------------------------------------------------- |
+| Mastodon                | Yes       | Yes  |                                                                                        |
+| Google Business Profile | Yes       | Yes  |                                                                                        |
+| Bluesky                 | Yes       | No   | Bluesky has no call to edit a post                                                     |
+| X                       | Yes       | No   | X does not say which posts may be edited, or on which access                           |
+| Pinterest               | Yes       | No   | Editing a Pin is in beta, not open to every app                                        |
+| LinkedIn                | No        | No   | LinkedIn does not say which permission a deletion or an edit needs                     |
+| Facebook Pages          | No        | No   | Meta says only some apps may delete Page posts, and not which permission an edit needs |
+| Threads                 | No        | No   | Deleting needs a permission Meta grants after a review; Threads has no call to edit    |
+| Instagram               | No        | No   | Deleting needs a permission Meta grants after a review; Instagram has no call to edit  |
+| YouTube                 | No        | No   | It needs a wider permission than the one Peal asks for                                 |
+| TikTok                  | No        | No   | TikTok's API has no call to delete or edit a post                                      |
 
 Where it cannot, delete the post on the platform itself. A post confirmed by hand cannot be unpublished from Peal either: Peal has no id for it. A channel disconnected, turned off or to reconnect cannot be unpublished on until it is back.
+
+## Edit a published post [#edit-live]
+
+A post that went out can have its text corrected on Mastodon and Google Business Profile: **Edit**, beside the channel on the post's page, opens the text of that channel with the channel's counter, and **Save** replaces it on the platform. Only the text changes: never the media, the options, the audience or the time. The change is public at once, so whoever may unpublish may edit (`post:publish`), but not a member whose posts need an [approval](/review): an approver makes the edit for them, as it would put text nobody reviewed out.
+
+The new text is checked as the channel's text is when a post is scheduled: the platform's length (a Mastodon content warning counts), its characters, and the rest. Once the platform took it, it is that part's own text on that channel in Peal (other channels keep theirs), the channel reads **Edited on** with the date, and webhooks hear `post.edited`. Peal keeps no earlier text; Mastodon shows its own history of edits. The edit runs in the background, with the channel's other calls, and is tried again as a deletion is; after that it **failed**, with why, and **Try again** asks again.
+
+Mastodon is sent the post again with its media, its content warning and its sensitivity as they are on Mastodon at that moment, changes made there since included, as Mastodon clears whatever an edit leaves out, and its language is left as it is; a post with a poll is refused, as the edit would remove the poll. Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel. Each part of a thread is edited on its own, by its place from 0 (the post itself).
 
 ## From an agent, the command line or the API [#api]
 

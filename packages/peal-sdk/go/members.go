@@ -37,19 +37,21 @@ func (l *ListMembersRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
-	workspaceMemberFieldEmail    = big.NewInt(1 << 0)
-	workspaceMemberFieldJoinedAt = big.NewInt(1 << 1)
-	workspaceMemberFieldName     = big.NewInt(1 << 2)
-	workspaceMemberFieldRole     = big.NewInt(1 << 3)
-	workspaceMemberFieldUserID   = big.NewInt(1 << 4)
+	workspaceMemberFieldEmail          = big.NewInt(1 << 0)
+	workspaceMemberFieldJoinedAt       = big.NewInt(1 << 1)
+	workspaceMemberFieldName           = big.NewInt(1 << 2)
+	workspaceMemberFieldRole           = big.NewInt(1 << 3)
+	workspaceMemberFieldTwoStepEnabled = big.NewInt(1 << 4)
+	workspaceMemberFieldUserID         = big.NewInt(1 << 5)
 )
 
 type WorkspaceMember struct {
-	Email    string `json:"email" url:"email"`
-	JoinedAt string `json:"joinedAt" url:"joinedAt"`
-	Name     string `json:"name" url:"name"`
-	Role     string `json:"role" url:"role"`
-	UserID   string `json:"userId" url:"userId"`
+	Email          string `json:"email" url:"email"`
+	JoinedAt       string `json:"joinedAt" url:"joinedAt"`
+	Name           string `json:"name" url:"name"`
+	Role           string `json:"role" url:"role"`
+	TwoStepEnabled *bool  `json:"twoStepEnabled,omitempty" url:"twoStepEnabled,omitempty"`
+	UserID         string `json:"userId" url:"userId"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -84,6 +86,13 @@ func (w *WorkspaceMember) GetRole() string {
 		return ""
 	}
 	return w.Role
+}
+
+func (w *WorkspaceMember) GetTwoStepEnabled() *bool {
+	if w == nil {
+		return nil
+	}
+	return w.TwoStepEnabled
 }
 
 func (w *WorkspaceMember) GetUserID() string {
@@ -135,6 +144,13 @@ func (w *WorkspaceMember) SetName(name string) {
 func (w *WorkspaceMember) SetRole(role string) {
 	w.Role = role
 	w.require(workspaceMemberFieldRole)
+}
+
+// SetTwoStepEnabled sets the TwoStepEnabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceMember) SetTwoStepEnabled(twoStepEnabled *bool) {
+	w.TwoStepEnabled = twoStepEnabled
+	w.require(workspaceMemberFieldTwoStepEnabled)
 }
 
 // SetUserID sets the UserID field and marks it as non-optional;

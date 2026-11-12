@@ -94,8 +94,10 @@ public class CancelTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -114,6 +116,7 @@ public class CancelTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -163,6 +166,7 @@ public class CancelTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -299,8 +303,10 @@ public class CancelTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -318,6 +324,7 @@ public class CancelTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,

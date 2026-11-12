@@ -193,6 +193,18 @@ describe("the persisted contract", () => {
       );
       assert.deepStrictEqual(settled, ["done", "failed", "gone"]);
       assert.strictEqual(result, "done");
+
+      // An edit's calls, under the same activity names.
+      const edits = yield* fixture(
+        "ChangeLivePostV1",
+        "edit-call.json",
+        Schema.Array(RemovalDecisionSchema)
+      );
+
+      assert.deepStrictEqual(
+        edits.map(({ _tag }) => _tag),
+        ["edited", "retry", "failed", "gone"]
+      );
     })
   );
 

@@ -56,6 +56,22 @@ export const originOf = (
 };
 
 /**
+ * Whether two origins are the same way in: the web app, the same API key,
+ * or the same OAuth application, whatever their names.
+ */
+export const isSameOrigin = (left: PostOrigin, right: PostOrigin): boolean => {
+  if (left._tag === "apiKey") {
+    return right._tag === "apiKey" && right.apiKeyId === left.apiKeyId;
+  }
+
+  if (left._tag === "application") {
+    return right._tag === "application" && right.clientId === left.clientId;
+  }
+
+  return right._tag === "web";
+};
+
+/**
  * How a post was created, and how and by whom it was last scheduled or
  * moved: none of the latter while it is a draft. The member who created it
  * is the post's author. All unknown on posts from before this was kept.

@@ -57,6 +57,11 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * scheduled, awaiting approval or publishing at exactly the slot's
  * instant, which is all a slot's being taken is. No foreign key, as
  * elsewhere here: deleting a queue clears the column in its transaction.
+ *
+ * `recycling_id` and `occurrence` say which recycling rule
+ * (`recycling_rules`) made the post, and its place among the rule's posts,
+ * from 2; null on any other post. Their unique index is what makes an
+ * occurrence once, whoever runs the rule.
  */
 export const posts = publishing.table(
   "posts",
@@ -69,8 +74,10 @@ export const posts = publishing.table(
     followUps: jsonb("follow_ups").notNull().default([]),
     id: uuid("id").primaryKey(),
     media: jsonb("media").notNull().default([]),
+    occurrence: integer("occurrence"),
     outcome: text("outcome"),
     queueId: uuid("queue_id"),
+    recyclingId: uuid("recycling_id"),
     scheduleRevision: integer("schedule_revision").notNull().default(0),
     scheduleZone: text("schedule_zone"),
     scheduledAt: instant("scheduled_at"),
@@ -108,6 +115,11 @@ export const posts = publishing.table(
     index("posts_queue_scheduled_at")
       .on(table.queueId, table.scheduledAt)
       .where(sql`${table.queueId} is not null`),
+    // A rule's posts, each occurrence once.
+    uniqueIndex("posts_recycling_occurrence").on(
+      table.recyclingId,
+      table.occurrence
+    ),
   ]
 );
 
@@ -135,6 +147,9 @@ export const postTargets = publishing.table(
     cancelRequested: boolean("cancel_requested").notNull().default(false),
     channelId: uuid("channel_id").notNull(),
     contentDigest: text("content_digest"),
+    // When Peal last replaced the text of a part of it on the platform at
+    // a member's request (`live_post_changes`). Null until then.
+    editedAt: instant("edited_at"),
     failureCode: text("failure_code"),
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
@@ -248,9 +263,12 @@ export const publicationCalls = publishing.table(
 
 /**
  * The changes members ask of posts that are live on a channel (deleting
- * them from the platform), each run by its own job (`ChangeLivePostV1`).
- * `parts_left` lists the parts still to delete, last first, by place and
- * platform id: never content. `call_started_at` is written and committed
+ * them from the platform, or replacing the text of one of their parts),
+ * each run by its own job (`ChangeLivePostV1`). `parts_left` lists the
+ * parts still to delete or edit, last first, by place and platform id:
+ * never content. `text` is an edit's new text, while the change is
+ * pending only: cleared when it ends, done or failed, and never in the
+ * job's history. `call_started_at` is written and committed
  * before each call to the platform, and `call_finished_at` once it
  * answered: a call begun and not ended is in flight, which an erasure
  * waits for. `requested_via` is the `PostOrigin` JSON the domain decodes
@@ -280,6 +298,7 @@ export const livePostChanges = publishing.table(
     targetId: uuid("target_id")
       .notNull()
       .references(() => postTargets.id, { onDelete: "cascade" }),
+    text: text("text"),
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
@@ -466,6 +485,69 @@ export const queues = publishing.table(
       .on(table.workspaceId)
       .where(sql`${table.isDefault}`),
     index("queues_workspace_id").on(table.workspaceId, table.id),
+  ]
+);
+
+/**
+ * The rules that make a post repeat (the domain's `RecyclingRule`): the
+ * source post, the `interval` (JSON: a count of days, weeks or months),
+ * the IANA zone its wall-clock times are read in and `anchor_at`, the
+ * source's time, which every due instant is counted from; its ending
+ * (`count` occurrences, the source counted, or the date `until`, or
+ * neither); the text `variants` it takes turns with (JSON the domain's
+ * `RecyclingVariantsSchema` decodes); the queue it places occurrences on,
+ * if one. `status` is `active`, `paused` or `ended`, with `status_at`
+ * (when it was paused or ended) and `ended_reason`. `made` counts the
+ * occurrences made, the source as the first; `last_due_at` is the time the
+ * latest one had, once past which the next is made, for `next_due_at`
+ * (null once ended); `resumptions` counts the times it was resumed after
+ * ending. `started_by` is the member who started it (null for a key, or
+ * once they closed their account) and `started_via` how they reached Peal
+ * (JSON the domain's `PostOriginSchema` decodes): each occurrence acts as
+ * them. A source has one rule that has not ended. Workspace content, its
+ * variants text the workspace wrote; rows go with their workspace. No
+ * foreign key, as elsewhere here: a source or a queue gone ends the rule
+ * at its next run.
+ */
+export const recyclingRules = publishing.table(
+  "recycling_rules",
+  {
+    anchorAt: instant("anchor_at").notNull(),
+    count: integer("count"),
+    createdAt: instant("created_at").notNull(),
+    endedReason: text("ended_reason"),
+    id: uuid("id").primaryKey(),
+    interval: jsonb("interval").notNull(),
+    lastDueAt: instant("last_due_at").notNull(),
+    made: integer("made").notNull(),
+    nextDueAt: instant("next_due_at"),
+    queueId: uuid("queue_id"),
+    resumptions: integer("resumptions").notNull().default(0),
+    sourcePostId: uuid("source_post_id").notNull(),
+    startedBy: uuid("started_by"),
+    startedVia: jsonb("started_via").notNull(),
+    status: text("status").notNull(),
+    statusAt: instant("status_at"),
+    timeZone: text("time_zone").notNull(),
+    until: date("until", { mode: "string" }),
+    variants: jsonb("variants").notNull().default([]),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    // One rule going on per source.
+    uniqueIndex("recycling_rules_source")
+      .on(table.sourcePostId)
+      .where(sql`${table.status} <> 'ended'`),
+    // The rules the cron makes an occurrence of, by when they are due.
+    index("recycling_rules_due")
+      .on(table.lastDueAt, table.id)
+      .where(sql`${table.status} = 'active'`),
+    // The active rules whose next occurrence is late, for the gauge.
+    index("recycling_rules_next_due")
+      .on(table.nextDueAt)
+      .where(sql`${table.status} = 'active'`),
+    // A workspace's rules, oldest first: ids are UUIDv7s.
+    index("recycling_rules_workspace_id").on(table.workspaceId, table.id),
   ]
 );
 

@@ -126,8 +126,10 @@ public class UpdateTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -146,6 +148,7 @@ public class UpdateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -195,6 +198,7 @@ public class UpdateTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -384,8 +388,10 @@ public class UpdateTest : BaseMockServerTest
                 "via": "web"
               },
               "id": "id",
+              "occurrence": 1,
               "outcome": "published",
               "queueId": "queueId",
+              "recyclingId": "recyclingId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -403,6 +409,7 @@ public class UpdateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,

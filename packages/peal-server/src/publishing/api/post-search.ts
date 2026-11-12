@@ -15,6 +15,7 @@ import type {
   PostSearchRequest,
 } from "#publishing/application/post-search.ts";
 import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
+import { RecyclingRuleIdSchema } from "#publishing/domain/recycling-rule-id.ts";
 import { TagIdSchema } from "#publishing/domain/tag-id.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 
@@ -31,6 +32,7 @@ export interface SearchInput {
   readonly outcome?: PostOutcome;
   readonly platform?: Platform;
   readonly queueId?: string;
+  readonly recyclingId?: string;
   readonly removed?: boolean;
   readonly sort?: PostSort;
   readonly status?: PostStatus;
@@ -56,6 +58,13 @@ const decodeQueueId = Schema.decodeUnknownOption(QueueIdSchema);
 
 const noQueue = QueueIdSchema.make("00000000-0000-7000-8000-000000000000");
 
+const decodeRuleId = Schema.decodeUnknownOption(RecyclingRuleIdSchema);
+
+// A rule no post is made by: what a filter by an id no rule has matches.
+const noRule = RecyclingRuleIdSchema.make(
+  "00000000-0000-7000-8000-000000000000"
+);
+
 /** What to list, with ids decoded and defaults filled in. */
 export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   authorId: Option.fromUndefinedOr(input.authorId).pipe(
@@ -72,6 +81,9 @@ export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   platform: Option.fromUndefinedOr(input.platform),
   queueId: Option.fromUndefinedOr(input.queueId).pipe(
     Option.map((id) => Option.getOrElse(decodeQueueId(id), () => noQueue))
+  ),
+  recyclingId: Option.fromUndefinedOr(input.recyclingId).pipe(
+    Option.map((id) => Option.getOrElse(decodeRuleId(id), () => noRule))
   ),
   removed: Option.fromUndefinedOr(input.removed),
   sort: input.sort ?? "createdDesc",

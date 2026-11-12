@@ -11,7 +11,11 @@
   also takes a workspace's API key as the bearer token (never in the URL),
   for agents that run with nobody to sign in: the key's permissions apply,
   as on the API, `whoami` answers `apiKey` with a null `user` and role, and
-  what only a person does refuses it in words about keys. A key acts in its
+  what only a person does refuses it in words about keys. A workspace that
+  requires two-step verification refuses a person without it with a
+  JSON-RPC 403 that says what to do (`mcp-authentication.ts`); no tool
+  reads or changes two-step verification or a workspace's requirement,
+  which are a person's, in a browser. A key acts in its
   own workspace (`workspaceOfKey` in `Authenticate`: the one place to
   change if a key ever spans several). Past the rate limit it answers a
   JSON-RPC error with 429.
@@ -43,7 +47,11 @@
   `publishingTools`) is `destructive` and `openWorld`: its description
   says the post is deleted from the platform for everyone, for good, and
   that an agent calls it only when the user asked for that post;
-  `list_post_changes` reads. Their refusals have their words in
+  `list_post_changes` reads. `edit_published_post` (in
+  `publishingTools`) is not destructive, idempotent and `openWorld`: it
+  names one channel by `channelId` or `targetId`, exactly one, checks
+  `post:publish` before it reads the post, and says the change is public
+  at once and which platforms take it. Their refusals have their words in
   `refusals.ts` (`livePostRefusals`). Instants are
   `Schema.DateTimeUtcFromString` in tool parameters. The tools of
   `PostTools` and `MediaTools` that change something are `contentTools`,
@@ -139,3 +147,10 @@
   none a header's value: `create_webhook` and `update_webhook` take
   `headers` (write-only, the whole list replaced), and answer
   `headerNames`.
+- Repeating posts: `recycle_post`, `update_recycling_rule` and
+  `resume_recycling_rule` (`PostTools`, `openWorld`, in `publishingTools`:
+  a rule publishes again without anyone being asked) and
+  `list_recycling_rules`, `get_recycling_rule` and `stop_recycling_rule`
+  (`SavedTools`; stopping takes post:schedule, so it is in
+  `publishingTools` too), their refusals in `recycling-refusals.ts`;
+  `list_posts` takes `recyclingId`. The CLI's are `peal recycling`.

@@ -9,6 +9,7 @@ import type {
 import {
   audienceOf,
   emailKindOf,
+  isAboutPost,
   pageOf,
   readerPermissionOf,
   recipientsOf,
@@ -102,6 +103,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     channel: Option.none(),
     postId,
   },
+  RecyclingEnded: {
+    _tag: "RecyclingEnded",
+    reason: "planLimit",
+    ruleId: Uuid7Schema.make("00000000-0000-7000-8000-00000000ec01"),
+    sourcePostId: postId,
+  },
   SubscriptionCancelled: {
     _tag: "SubscriptionCancelled",
     endsAt: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
@@ -183,6 +190,20 @@ describe("notice events", () => {
       `/app/${workspaceId}/settings/webhooks`
     );
     expect(wantsEmail(nothing, events.WebhookEndpointDisabled)).toBeTruthy();
+  });
+
+  it("tell those who schedule posts that a rule ended, by email unless they turned it off", () => {
+    const off = changePreferences(defaultPreferences, {
+      email: { recyclingEnded: false },
+    });
+
+    expect(audienceOf(events.RecyclingEnded)).toBe("post:schedule");
+    expect(isAboutPost(events.RecyclingEnded)).toBeTruthy();
+    expect(pageOf(events.RecyclingEnded, workspaceId)).toBe(
+      `/app/${workspaceId}/settings/recycling?rule=00000000-0000-7000-8000-00000000ec01`
+    );
+    expect(wantsEmail(defaultPreferences, events.RecyclingEnded)).toBeTruthy();
+    expect(wantsEmail(off, events.RecyclingEnded)).toBeFalsy();
   });
 
   it("tell those who manage webhooks that deliveries fail, by email unless they turned it off", () => {
@@ -297,6 +318,20 @@ describe(recipientsOf, () => {
     ).toStrictEqual([follower, scheduler]);
   });
 
+  it("tell a rule's starter that it ended, or everyone who may schedule once they left", () => {
+    expect([
+      recipientsOf(events.RecyclingEnded, Option.some(author), members),
+      recipientsOf(
+        events.RecyclingEnded,
+        Option.some(UserIdSchema.make("9a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f")),
+        members
+      ),
+    ]).toStrictEqual([
+      [author, follower],
+      [follower, scheduler],
+    ]);
+  });
+
   it("tell every member who may act about a channel, whatever they follow", () => {
     expect(
       recipientsOf(
@@ -367,6 +402,7 @@ describe("notification preferences", () => {
       Option.some("postReview"),
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
+      Option.some("recyclingEnded"),
       // Billing's five, deliveries failing, then the webhook endpoint
       // turned off.
       Option.none(),
@@ -391,6 +427,7 @@ describe("notification preferences", () => {
       postPublished: true,
       postReview: true,
       postUnconfirmed: true,
+      recyclingEnded: true,
       webhookFailing: true,
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();

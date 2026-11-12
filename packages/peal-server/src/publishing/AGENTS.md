@@ -180,6 +180,43 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   refuse one with a pending change, and leave such targets out of
   `PromotablePosts` (`test/publishing/domain/live-post-boost-hold.test.ts`
   fails the day one does).
+- An edit is a kind of change too (`kind` `edit`): `LivePostChanges.editTarget`
+  replaces the text of one part (`part`, from 0) on one channel. It takes
+  the same permission, and is refused `approvalRequired` to a member the
+  approval gate holds (`ApprovalGate.holds`; unpublishing stays open to
+  them); `editable` answers the part or the reason (a failed removal
+  leaves the target editable; a part not live is `noPlatformId`). The text
+  is made storable (`storableText`), checked as scheduling checks that
+  part (`editViolationsOn`, `domain/live-post-edit.ts`: `violationsOn` on
+  `partAlone`, options counted, empty refused), and held on the change
+  (`live_post_changes.text`) only while it is pending: `finishChange` and
+  `failChange` clear it, and the job's history, its payload and the gate's
+  call (`EditLivePost`, `{ changeId, channelId, platformPostId }`) never
+  hold it; the gate's side reads it, and the target's options, through
+  `LivePostEdits`. The job is `ChangeLivePostV1`, its call decided by
+  `decideRemoval` (`edited` beside `removed`: an edit is safe to repeat),
+  under the same activity and clock names (`fixtures/persisted/
+  ChangeLivePostV1/edit-call.json`). Settling makes the text that part's
+  own on the channel (`PostRepository.amendText`, which writes the part's
+  overrides alone, never `update`), sets `post_targets.edited_at`
+  (`markEdited`), keeps the new digest (`remember`) and tells
+  `post.edited` or `post.edit_failed` (with `part`, never the text; the
+  webhooks only). Peal keeps no earlier text. The registry's entry per
+  platform is `{ remove, edit }`, each an adapter or a marker
+  (`notDeleting`, `notEditing`), and `livePostClientsWith` refuses on the
+  blocker of the kind asked (`livePostSupport[platform].edit`, a test keeps
+  both equal). Mastodon's editor reads the status first (`read:statuses`;
+  a 403 with Mastodon's JSON is `permissionDenied`, the channel to
+  reconnect) and sends `media_ids`, `spoiler_text` and `sensitive` again
+  as the status read has them (never the target's options, which may be
+  stale: only the text changes), and no `language`, which Mastodon keeps,
+  as Mastodon clears whatever else an edit leaves out, refusing a status
+  with a poll (`pollNotEditable`), which the edit would destroy; a 404 of
+  the read is `postGone` only once `verify_credentials` accepts the token
+  (401 there is `TokenRejected`); Google's patches
+  `summary` under `updateMask=summary`. A post gone from the platform is
+  `BadRequest` `postGone` (a 404 counts only with the platform's own JSON).
+  LinkedIn, Facebook Pages, Pinterest and X stay `unverified` for edits.
 - Every way of scheduling passes the `ApprovalGate` in the transaction that
   saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
   `posts.send`, `create_post`, `publish_post` and `peal post` too) ask
@@ -487,6 +524,54 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   goes on images and a carousel's images. Meta names no parameter in a
   code: a container refused while it names collaborators keeps Meta's
   code, never `optionRefused`.
+- A post format is a kind of post whose rules differ from a feed post's,
+  chosen by the options' `format` and never guessed from the files
+  (`post-format.ts`, `postFormatOf`: `feed` and nothing are none): an
+  Instagram `story`, a Facebook `story` or `reel`. Its rules are
+  `platformRules[platform].postFormats[format]` (`PostFormatRules`, each
+  figure cited with its page), whose media, count of files, need of one
+  and parts replace the platform's whole; `sendsText: false` (a story)
+  sends, counts and checks no text, and the check's preview says
+  `textNotSent`, a note, never a violation. Read the rules a post follows
+  only through `rulesFor(platform, options)` (`violationsOn`,
+  `mediaViolationsOn`, `partViolationsOn`, `previewOn`, `followUpsOn` and
+  the router), never `platformRules[platform]` for a post; the contract's
+  `rulesFor` is the clients' copy, which the contract test compares format
+  by format. The capabilities give `postFormats` only on platforms that
+  have formats, under the same version. A story refuses a feed post's
+  options in `problems()` (with `onlyWith` constraints on `format`), so
+  `mediaOptionViolationsOn` skips them there. The duplicate digest adds
+  the format when there is one, so a feed post's digests stay as they were
+  and a story is never the feed post's duplicate. `PublishedTargets` rows
+  carry their `format`; `from(cursor, limit, without)` leaves formats out
+  in its query, so a page stays full: analytics and the inbox leave out
+  stories there, and ads offer feed posts only.
+- Instagram's story is a container with `media_type=STORIES` and its one
+  file, no caption, alt text or collaborators, published without a
+  permalink; its `lookUp` reads the held container only (a resumed run
+  answers `unknown`), never the caption search. Facebook's reels and video
+  stories (`meta/facebook-formats.ts`) start on `video_reels` or
+  `video_stories`, have Meta fetch the file on the upload host
+  (`MetaHosts.facebookUpload`, the Page's token in the `Authorization`
+  header, which traces redact), poll `?fields=status` until the
+  `uploading_phase` is done (`video_status` says `processing` mid-upload
+  too), and publish with the `finish` phase (`finishPhase`), then read the
+  status again: Published only once `publishing_phase` is done; a
+  non-null `processing_phase` error, before or after the finish, is
+  MediaRejected `processingFailed` (a lookUp answers `refused`); still
+  processing, it is confirmed over `videoPublishingWait` (10 minutes,
+  `videoStepTiming`), then unconfirmed `stillProcessing`, never sent
+  again. A photo story uploads its
+  photo unpublished in `prepare`, every run its own, and publishes it with
+  `photo_stories`. Their `lookUp` reads what the run holds and never
+  answers `absent` (Meta's samples show `not_started` after an upload, and
+  `publish_status: "published"` before a story is): a reel is `found` when
+  its `publishing_phase` is done, a video story when that phase is done
+  and the Page's `stories` list it by its `media_id`, `unknown` otherwise; a resumed run answers `unknown`,
+  so a story or a reel is never sent twice. A reel is published under its
+  video's id, a story under its `post_id` only (a finish without it is
+  confirmed by the listing), neither with a permalink. Meta's 30 reels a Page a day have no endpoint or
+  documented code: its refusal keeps Meta's code.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's
@@ -503,6 +588,9 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   use cases and workflows on an in-memory cluster. `AppLive` gives publishing
   an engine that runs no job, so scheduling through it fails. Only
   `test/app/cluster.test.ts` runs a SQL runner.
+- Test files share one database and run together: a test that runs a
+  purge of every workspace (`forgetExpiredKeys`) does so at virtual days
+  well before every other test's (2025), so it deletes nothing of theirs.
 - A time asked for is judged as of when the request came (`asReceived`):
   account-rule checks that take minutes never turn "now" into
   `ScheduleInPast`.
@@ -779,3 +867,34 @@ publishing's schema, naming nobody: each goes with its workspace
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.
+- A recycling rule (`domain/recycling-rule.ts`, `Recycling`,
+  `publishing.recycling_rules`) makes a source post (scheduled, publishing
+  or finished, unpublished since or not) repeat. Its due instants count
+  from the source's time (`anchorAt`) in its zone (`recycling-interval.ts`:
+  `dueAt`, a month shorter than the day on its last day), never from the
+  step before; a missed one is skipped (`plannedAt`). The next post is
+  made once the latest one's time (`lastDueAt`) passed: one ahead. Each
+  occurrence is a new post (`posts.recycling_id` and `occurrence`, unique
+  together), copied with `copyOf` (`post-copies.ts`, which `duplicate`
+  shares) and sent by `PostScheduling.sendOccurrence`: no preset, signature
+  or default option filled in, `remember` instead of the duplicate refusal,
+  a queue's slot at or after the due instant (from a millisecond before),
+  the rule's lock (`claimed`) first in the transaction and the rule written
+  after the insert (`made`), so a send that rolls back leaves the rule as
+  it was. It acts as the starter now (`RecyclingActors`, backed by the
+  workspace context's `ActorsNow`): gone, or no longer able to ask, ends
+  the rule `starterGone`; `lockedOut` waits. Any other refusal ends it with
+  its reason and `RecyclingNotices` (`RecyclingEnded`, keyed by the rule
+  and its `resumptions`), in one transaction under the rule's lock.
+  `makeDue` (cron `publishing.recycling`, every ten minutes from 4) pages
+  by `(last_due_at, id)`, makes one occurrence a rule a run, skips a rule
+  another run holds (`FOR UPDATE SKIP LOCKED`), and the cron sets
+  `peal.publishing.recycling.overdue` (active rules whose latest time, a
+  queue's slot included, passed over 30 minutes ago, less those the run
+  left to wait: a starter locked out, a source awaiting approval), which
+  an alert watches. Lock order: the rule's row, then the queue, the
+  post's row, the gate, the month and the duplicate guard's advisory lock;
+  nothing locks a rule after those. Deleting a queue leaves its rules
+  alone: the next run ends them `queueGone`. Erasure deletes rules before
+  posts; `forgetAuthor` clears `started_by`, and the next run ends the
+  rule.

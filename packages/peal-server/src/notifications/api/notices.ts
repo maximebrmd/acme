@@ -133,6 +133,12 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       channel: postChannelView(channel),
       postId,
     }),
+    RecyclingEnded: ({ reason, ruleId, sourcePostId }): NoticeEventView => ({
+      _tag: "RecyclingEnded",
+      reason,
+      ruleId,
+      sourcePostId,
+    }),
     SubscriptionCancelled: ({ endsAt, plan }): NoticeEventView => ({
       _tag: "SubscriptionCancelled",
       endsAt,

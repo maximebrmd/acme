@@ -11,6 +11,13 @@ import {
 } from "./harness.ts";
 import type { Reply } from "./harness.ts";
 
+// A sign-up's answer, every field of its user kept.
+const AnsweredUserSchema = Schema.Struct({
+  user: Schema.Record(Schema.String, Schema.Unknown),
+});
+
+type AnsweredUser = typeof AnsweredUserSchema.Type.user;
+
 const SignUpSchema = Schema.Struct({
   token: Schema.NullOr(Schema.String),
   user: Schema.Struct({
@@ -135,10 +142,21 @@ layer(TestApp.layer, { excludeTestServices: true, timeout: "180 seconds" })(
 
         assert.notStrictEqual(repeated.user.id, original.user.id);
         assert.strictEqual(versionOf(repeated.user.id), "4");
-        assert.deepStrictEqual(
-          Object.keys(repeated.user).toSorted(),
-          Object.keys(original.user).toSorted()
-        );
+        // Field for field, in the same order, with the same values but
+        // those that name the account and when it was made: the plugins'
+        // fields included (the admin plugin's, two-step verification's).
+        const real = (yield* decode(AnsweredUserSchema, first)).user;
+        const made = (yield* decode(AnsweredUserSchema, again)).user;
+
+        assert.deepStrictEqual(Object.keys(made), Object.keys(real));
+
+        const named = new Set(["createdAt", "email", "id", "updatedAt"]);
+
+        const alike = (user: AnsweredUser) =>
+          Object.entries(user).filter(([field]) => !named.has(field));
+
+        assert.deepStrictEqual(alike(made), alike(real));
+        assert.strictEqual(made["twoFactorEnabled"], false);
       })
     );
 

@@ -81,6 +81,21 @@ describe("the crons' schedules", () => {
     })
   );
 
+  it.effect(
+    "make recycling rules' occurrences every ten minutes from minute 4",
+    () =>
+      Effect.gen(function* recycling() {
+        const cron = (yield* everyCron).find(
+          ({ name }) => name === "publishing.recycling"
+        );
+
+        assert.deepStrictEqual(
+          cron === undefined ? [] : minutesOf(cron).slice(0, 6),
+          [4, 14, 24, 34, 44, 54]
+        );
+      })
+  );
+
   it.effect("never start two jobs that use the gates on the same minute", () =>
     Effect.gen(function* takesTurns() {
       const crons = (yield* everyCron).filter(({ name }) =>

@@ -469,6 +469,23 @@ Enregistrer les créneaux d’une file ne déplace aucune publication. `POST …
 
 `remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée, ou une publication y a été ajoutée sur un créneau pas encore atteint, entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
 
+## Répéter une publication [#recycling]
+
+`POST …/recycling`, avec `{ "postId", "every": { "count", "unit" }, "count"?, "until"?, "variants"?, "queueId"? }`, répète une publication programmée, en cours d’envoi ou en ligne ([comment](/scheduling#recycling)) : `unit` vaut `days` (1 à 365), `weeks` (1 à 52) ou `months` (1 à 12) ; `count` est le nombre de publications en tout, la source comprise (2 à 100) ; `until` le dernier jour, en `YYYY-MM-DD` dans le fuseau de la source ; chaque variante est `{ "text", "overrides"? }`, 10 au plus. La réponse 201 donne la règle, dont `coming` liste les trois prochaines publications et la variante de chacune. Lancer, modifier, mettre en pause, reprendre et arrêter une règle demande post:schedule (ou post:create là où les publications attendent une approbation, pour la lancer), jamais un membre du personnel agissant comme un membre ; la lire, post:read.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Ouvert tout l’été, comme avant."}]}'
+```
+
+`GET …/recycling` liste les règles, de la plus ancienne à la plus récente (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` en lit une, `PATCH` change son `count` ou son `until` (null le retire), ses `variants` (un tableau vide les retire) ou la met en pause (`paused`), `POST …/recycling/{ruleId}/resume` avec `{ "variants"? }` relance une règle en pause, ou terminée pour `planLimit`, `contentRejected`, `noChannels`, `queueFull` ou `sourceWithdrawn` (sa publication annulée ou remise en brouillon, une fois programmée de nouveau : 409 `post_not_recyclable` d’ici là, ou tant qu’une autre règle la répète, et 409 `too_many_recycling_rules` au-delà de 100), et `DELETE` l’arrête : les publications créées restent. Chaque publication créée par une règle porte `recyclingId` et `occurrence` (sa place, la source étant 1), et `GET …/posts/search?recyclingId=…` les liste. Chacune agit au nom de qui a lancé la règle, tel qu’il est alors : la règle d’une clé s’arrête une fois la clé révoquée. Changer, mettre en pause, reprendre ou arrêter une règle demande post:schedule, ou d’être la personne qui l’a lancée, agissant comme elle l’a lancée : dans l’application web, par la même application ou avec la même clé.
+
+- Une publication qui ne peut pas se répéter répond 409 `post_not_recyclable`, avec `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`.
+- Des variantes qui enfreignent les règles des canaux de la source répondent 422 `recycling_variants_invalid`, chacune par sa place à partir de 1 avec ses violations ; une fin qui ne laisse aucune publication à créer, 422 `recycling_ends_too_soon`.
+- 100 règles en cours répondent 409 `too_many_recycling_rules` ; une modification d’une règle terminée, 409 `recycling_rule_ended`.
+
 ## Dépublier une publication [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` supprime une publication partie de la plateforme d’un canal, pour tout le monde, toutes les parties d’un fil, la dernière d’abord ([Dépublier une publication](/scheduling#unpublish)) ; `POST …/posts/{postId}/unpublish` le demande pour chaque canal de la publication, et répond le changement de chaque canal (`changes`) à côté de la raison pour laquelle les autres n’ont pas pu l’être (`refused`) : un canal qui ne peut pas ne fait jamais échouer toute la requête. Les deux demandent post:publish, et un client OAuth le scope `workspace:publish`. C’est définitif.
@@ -500,6 +517,23 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 - Les webhooks reçoivent `post.unpublished` ou `post.unpublish_failed` ([Webhooks](/webhooks#post-unpublished)).
 - `GET …/platforms/capabilities` dit d’avance où Peal supprime des publications : `livePost.unpublish`, et `livePost.unpublishBlockedBy` (`noApi`, `permission` ou `unverified`) là où il ne le fait pas.
 
+## Modifier une publication en ligne [#edit-live]
+
+`POST …/posts/{postId}/targets/{targetId}/edit` remplace le texte d’une partie d’une publication en ligne sur la plateforme d’un canal, pour tout le monde ([Modifier une publication en ligne](/scheduling#edit-live)), avec `{ "text": "…", "part": 0 }` : `part` compte depuis 0, la publication elle-même, ce qu’elle est quand elle est omise. Seul le texte change, jamais les médias, les options ni l’heure. Il faut post:publish, pour un client OAuth la portée `workspace:publish`, et c’est refusé à qui doit faire approuver ses publications ([approbations](/review)). Peal modifie sur Mastodon et Google Business Profile.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/edit?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Ouverture des portes à 19 h, pas 18 h."}'
+```
+
+- Le texte est vérifié comme le texte de ce canal l’est quand une publication est programmée, avertissement de contenu Mastodon compris : un texte que la plateforme refuserait répond 422 `post_content_invalid` avec chaque violation, tout comme un texte fait seulement d’espaces ; un `text` vide répond 400 `invalid_request`.
+- La demande est acceptée (202) avec le changement (`kind: "edit"`), et une tâche fait la modification, relancée comme une suppression ; `?wait=<secondes>` attend qu’elle se termine. Un changement `failed` a son `code` (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied` pour un canal Mastodon à reconnecter, ou celui de la plateforme), et peut être redemandé. Le changement ne garde jamais le texte.
+- Une fois fait, le texte est celui de cette partie sur ce canal (`content.overrides`, ou celui de la partie dans `content.followUps`), les autres canaux gardent le leur, et la cible a son `editedAt`. Peal ne garde aucun texte précédent.
+- Avant tout appel, 409 `live_post_not_changeable` dit pourquoi pas, comme pour une suppression, avec aussi `approvalRequired` ; une partie que la publication n’a pas en ligne là est `noPlatformId`.
+- Les webhooks reçoivent `post.edited` ou `post.edit_failed` ([Webhooks](/webhooks#post-edited)), avec la partie, jamais le texte. `livePost.edit` et `livePost.editBlockedBy` des capacités disent d’avance où Peal modifie.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
 | Requête                             | Outil MCP                         | Commande                             |
@@ -512,6 +546,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 | `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
 | `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
 | `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
+| `POST …/targets/{targetId}/edit`    | `edit_published_post`             | `peal posts edit <post-id>`          |
 | `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
 | `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
 | `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |

@@ -31,6 +31,11 @@ export interface MetaHosts {
    * through Facebook Login.
    */
   readonly facebookGraph: URL;
+  /**
+   * Meta's upload host, which takes a Page's reels and video stories
+   * (`rupload.facebook.com`, the Reels Publishing API).
+   */
+  readonly facebookUpload: URL;
   /** Instagram's API host, which exchanges an Instagram Login's code. */
   readonly instagramApi: URL;
   /** Business Login for Instagram's sign-in page. */
@@ -49,6 +54,7 @@ export interface MetaHosts {
 export const metaHosts: MetaHosts = {
   facebookDialog: new URL("https://www.facebook.com"),
   facebookGraph: new URL("https://graph.facebook.com"),
+  facebookUpload: new URL("https://rupload.facebook.com"),
   instagramApi: new URL("https://api.instagram.com"),
   instagramAuthorize: new URL("https://www.instagram.com"),
   instagramGraph: new URL("https://graph.instagram.com"),
@@ -59,6 +65,16 @@ export const metaHosts: MetaHosts = {
 /** A path of the Graph API at its version, such as `/me/accounts`. */
 export const graphUrl = (hosts: MetaHosts, path: string): URL =>
   new URL(`/${graphApiVersion}${path}`, hosts.facebookGraph);
+
+/**
+ * Where a video Meta made room for (a reel's, a video story's) is uploaded,
+ * by its id: `POST /video-upload/<version>/<video id>` on the upload host.
+ */
+export const videoUploadUrl = (hosts: MetaHosts, videoId: string): URL =>
+  new URL(
+    `/video-upload/${graphApiVersion}/${encodeURIComponent(videoId)}`,
+    hosts.facebookUpload
+  );
 
 /**
  * A path of the Instagram API with Instagram Login at the Graph version,

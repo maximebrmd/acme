@@ -1,7 +1,12 @@
+import { Option } from "effect";
+
 import type { Platform } from "#shared/domain/platform.ts";
 
 import type { MediaContentType } from "./media-file.ts";
+import { postFormatOf } from "./post-format.ts";
+import type { PostFormat } from "./post-format.ts";
 import { maxFollowUps } from "./post-part.ts";
+import type { TargetOptions } from "./target-options.ts";
 import type { TextUnit } from "./text-length.ts";
 
 /** At most `maximum` of `unit`. */
@@ -67,6 +72,25 @@ export interface FollowUpRules {
 }
 
 /**
+ * What a post format (`./post-format.ts`: a story, a reel) changes of its
+ * platform's rules. Its media rules, its count of files, whether it needs
+ * one and the parts it takes replace the platform's whole: a format left
+ * without `followUps` takes no parts, and one without `media` has no media
+ * rule Peal knows.
+ */
+export interface PostFormatRules {
+  readonly followUps?: FollowUpRules;
+  readonly maxMedia?: number;
+  readonly media?: MediaRules;
+  readonly mediaRequired: boolean;
+  /**
+   * The platform publishes the post's text with it. A story is sent
+   * without: its text is neither counted nor checked there.
+   */
+  readonly sendsText: boolean;
+}
+
+/**
  * What a platform accepts in one post, as far as Peal checks before
  * publishing. A limit left out is one Peal does not know yet: the platform
  * may still refuse the post when it goes out. So is every media rule of a
@@ -88,6 +112,16 @@ export interface PlatformRules {
   readonly media?: MediaRules;
   /** The platform publishes images and videos only, never text alone. */
   readonly mediaRequired: boolean;
+  /**
+   * The kinds of post whose rules differ from a feed post's there, by the
+   * name the options' `format` gives them. Left out where it has none.
+   */
+  readonly postFormats?: Readonly<Record<string, PostFormatRules>>;
+  /**
+   * False where the post goes out without its text (a story's rules, as
+   * `rulesFor` answers them). Left out, the text is sent.
+   */
+  readonly sendsText?: boolean;
   /** Every limit applies: Bluesky counts graphemes and bytes. */
   readonly textLimits: readonly TextLimit[];
 }
@@ -256,6 +290,93 @@ const pinterestVideo: FormatLimits = {
   minDurationMs: 4 * second,
 };
 
+// Post formats, from Meta's references (read 2026-11-12):
+//
+// - Instagram story (the IG User Media reference,
+//   https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media):
+//   `media_type=STORIES`, one image or video; an image "Format: JPEG",
+//   "File size: 8 MB maximum", 9:16 recommended and no ratio stated, which
+//   Peal reads as the video's range; a video "MOV or MP4", "60 seconds
+//   maximum" and "3 seconds minimum", "File size: 100MB maximum",
+//   "between 0.1:1 and 10:1". `alt_text`: "Reels and stories are not
+//   supported." No caption is sent.
+// - Facebook Page story (the Page Stories API,
+//   https://developers.facebook.com/docs/page-stories-api): photos
+//   ".jpeg, .bmp, .png, .gif, .tiff" that "can not exceed 10MB" (BMP and
+//   TIFF Peal does not take); a video ".mp4 (recommended)", "9 x 16",
+//   "Minimum is 540 x 960 pixels", "A video story can not exceed 60
+//   seconds", and 3 seconds at least as for reels. No text is listed.
+// - Facebook reel (the Reels Publishing API,
+//   https://developers.facebook.com/docs/video-api/guides/reels-publishing):
+//   one video, "9 x 16", "Minimum is 540 x 960 pixels", "3 to 90 seconds";
+//   the post's text is its `description`. MP4, as the page's examples.
+//
+// 9:16 is read as a ratio from 0.5 to 0.6, and 540 by 960 as 540 pixels on
+// each side at least; Meta names no largest side, and 8,192 is Peal's
+// ceiling. Neither page gives a size for a video, nor does Peal. Both ask
+// 24 to 60 frames a second, which Peal does not read: Meta refuses a video
+// outside it when the post goes out.
+const verticalVideo: FormatLimits = {
+  aspectRatio: { maximum: 0.6, minimum: 0.5 },
+  minDurationMs: 3 * second,
+  sideRange: { maximum: 8192, minimum: 540 },
+};
+
+const instagramStoryVideo: FormatLimits = {
+  aspectRatio: { maximum: 10, minimum: 0.1 },
+  maxByteSize: 100 * mebibyte,
+  maxDurationMs: 60 * second,
+  minDurationMs: 3 * second,
+};
+
+const instagramStory: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: {
+      "image/jpeg": {
+        aspectRatio: { maximum: 10, minimum: 0.1 },
+        maxByteSize: 8 * mebibyte,
+      },
+      "video/mp4": instagramStoryVideo,
+      "video/quicktime": instagramStoryVideo,
+    },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: false,
+};
+
+const facebookStory: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: {
+      "image/gif": { maxByteSize: 10 * mebibyte },
+      "image/jpeg": { maxByteSize: 10 * mebibyte },
+      "image/png": { maxByteSize: 10 * mebibyte },
+      "video/mp4": { ...verticalVideo, maxDurationMs: 60 * second },
+    },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: false,
+};
+
+const facebookReel: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: { "video/mp4": { ...verticalVideo, maxDurationMs: 90 * second } },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: true,
+};
+
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
@@ -295,6 +416,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: false,
+    postFormats: { reel: facebookReel, story: facebookStory },
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
   },
   googleBusiness: {
@@ -330,6 +452,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: true,
+    postFormats: { story: instagramStory },
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
@@ -460,6 +583,55 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   },
 };
 
-/** The parts the platform takes after a post's first, if it takes any. */
-export const followUpsOn = (platform: Platform): FollowUpRules | undefined =>
-  platformRules[platform].followUps;
+// The platform's rules with a format's in place of its own. Each field the
+// format leaves out is gone, as a format replaces them whole.
+const withFormat = (
+  {
+    followUps: _followUps,
+    maxMedia: _maxMedia,
+    media: _media,
+    postFormats: _postFormats,
+    ...base
+  }: PlatformRules,
+  format: PostFormatRules
+): PlatformRules => ({ ...base, ...format });
+
+/**
+ * The rules of a post of `format` on the platform, or none where the
+ * platform has no such format.
+ */
+export const formatRulesOn = (
+  platform: Platform,
+  format: PostFormat
+): PlatformRules | undefined => {
+  const rules = platformRules[platform];
+  const chosen = rules.postFormats?.[format];
+
+  return chosen === undefined ? undefined : withFormat(rules, chosen);
+};
+
+/**
+ * The rules a post follows on the platform with the options it has there:
+ * those of the format the options choose (`postFormatOf`: a story, a
+ * reel), or the platform's own, the same object, for a feed post, for
+ * options of another platform and on a platform without formats.
+ */
+export const rulesFor = (
+  platform: Platform,
+  options: Option.Option<TargetOptions>
+): PlatformRules =>
+  options.pipe(
+    Option.filter((chosen) => chosen.platform === platform),
+    postFormatOf,
+    Option.flatMapNullishOr((format) => formatRulesOn(platform, format)),
+    Option.getOrElse(() => platformRules[platform])
+  );
+
+/**
+ * The parts the platform takes after a post's first, if it takes any,
+ * with the options the post has there: a format takes none.
+ */
+export const followUpsOn = (
+  platform: Platform,
+  options: Option.Option<TargetOptions> = Option.none()
+): FollowUpRules | undefined => rulesFor(platform, options).followUps;

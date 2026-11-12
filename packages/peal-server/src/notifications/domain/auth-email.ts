@@ -30,6 +30,21 @@ export type ContractRequestOutcome = typeof ContractRequestOutcomeSchema.Type;
 
 const instant = Schema.DateTimeUtc;
 
+/**
+ * What changed in an account's two-step verification: turned on or off by
+ * its person, new recovery codes made, one used to sign in, or reset by the
+ * people who run the server.
+ */
+export const TwoStepChangeSchema = Schema.Literals([
+  "turnedOn",
+  "turnedOff",
+  "recoveryCodesRenewed",
+  "recoveryCodeUsed",
+  "resetByStaff",
+]);
+
+export type TwoStepChange = typeof TwoStepChangeSchema.Type;
+
 /** An email that signing in depends on. */
 export const AuthEmailSchema = Schema.Union([
   // Confirms the address of a new account.
@@ -65,6 +80,15 @@ export const AuthEmailSchema = Schema.Union([
     ...link,
     subscriptionsCancelled: Schema.Int,
     workspaceName: Schema.String,
+  }),
+  // Tells the account's address what changed in its two-step
+  // verification, so a change someone else made is noticed: with how many
+  // recovery codes are left when one was used. Its link opens account
+  // settings.
+  Schema.TaggedStruct("TwoStepChanged", {
+    ...link,
+    kind: TwoStepChangeSchema,
+    recoveryCodesLeft: Schema.NullOr(Schema.Int),
   }),
   // Tells the account's address that a copy of its data was downloaded,
   // from the web app or the command line. Its link opens account settings.

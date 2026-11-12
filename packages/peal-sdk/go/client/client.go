@@ -28,6 +28,7 @@ import (
 	partneraccount "github.com/peal-social/peal/packages/peal-sdk/go/partneraccount"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
 	queues "github.com/peal-social/peal/packages/peal-sdk/go/queues"
+	recycling "github.com/peal-social/peal/packages/peal-sdk/go/recycling"
 	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	signatures "github.com/peal-social/peal/packages/peal-sdk/go/signatures"
@@ -68,6 +69,7 @@ type Client struct {
 	Signatures              *signatures.Client
 	ChannelSets             *channelsets.Client
 	Queues                  *queues.Client
+	Recycling               *recycling.Client
 	ChannelDefaults         *channeldefaults.Client
 
 	options *core.RequestOptions
@@ -107,6 +109,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Signatures:              signatures.NewClient(options),
 		ChannelSets:             channelsets.NewClient(options),
 		Queues:                  queues.NewClient(options),
+		Recycling:               recycling.NewClient(options),
 		ChannelDefaults:         channeldefaults.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,

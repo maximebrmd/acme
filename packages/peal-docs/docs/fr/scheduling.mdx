@@ -179,6 +179,7 @@ Sur **Instagram** :
 
 | Option                                               | Nom dans l’API  | Valeurs                                                               | Par défaut                  |
 | ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | --------------------------- |
+| **Format**                                           | `format`        | `story` (voir [stories et reels](#formats)), ou `feed`                | Une publication du fil      |
 | **Partager aussi dans le fil**                       | `shareToFeed`   | Un reel : oui ou non                                                  | Comme Instagram le décide   |
 | **Image de couverture**                              | `coverMediaId`  | Un reel : une image JPEG de la médiathèque, de 8 Mio au plus          | L’image prise dans la vidéo |
 | **Couverture prise dans la vidéo, en millisecondes** | `thumbOffsetMs` | Un reel : son image, en millisecondes depuis son début, dans sa durée | La première image           |
@@ -186,17 +187,34 @@ Sur **Instagram** :
 | **Reel d’essai**                                     | `trialReel`     | Un reel : `manual` ou `performance`                                   | Pas un essai                |
 | **Collaborateurs**                                   | `collaborators` | Un à trois noms d’utilisateur Instagram                               | Aucun                       |
 
-Un reel est une publication d’une seule vidéo. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
+Sur Instagram, un reel est une publication du fil d’une seule vidéo ; une story ne prend aucune de ces options. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
 
 Sur **Facebook** :
 
-| Option                | Nom dans l’API | Valeurs                                       | Par défaut   |
-| --------------------- | -------------- | --------------------------------------------- | ------------ |
-| **Titre de la vidéo** | `videoTitle`   | Une vidéo : une ligne, 255 caractères au plus | Pas de titre |
+| Option                | Nom dans l’API | Valeurs                                                          | Par défaut             |
+| --------------------- | -------------- | ---------------------------------------------------------------- | ---------------------- |
+| **Format**            | `format`       | `story` ou `reel` (voir [stories et reels](#formats)), ou `feed` | Une publication du fil |
+| **Titre de la vidéo** | `videoTitle`   | Une vidéo ou un reel : une ligne, 255 caractères au plus         | Pas de titre           |
 
 Une miniature ou une couverture est un fichier de la médiathèque que la publication ne montre pas : il doit être prêt et appartenir à l’espace de travail, il ne peut pas être supprimé tant qu’une publication qui part le nomme, un brouillon le perd quand il est supprimé, et une copie de la publication le laisse de côté une fois qu’il n’est plus là. Un ensemble de canaux ou les options par défaut d’un canal ne peuvent pas en nommer un.
 
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
+
+### Stories et reels [#formats]
+
+Sur Instagram et Facebook, **Format** choisit le genre de publication que reçoit un canal. Peal ne le devine jamais d’après le fichier : une vidéo verticale reste une publication du fil (un reel, sur Instagram) tant que vous ne choisissez pas **Story**, ou **Reel** sur Facebook.
+
+| Format    | Où        | Ce qu’il prend                                                                                                                  | Le texte de la publication |
+| --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Story** | Instagram | Une image JPEG de 8 Mio au plus, ou une vidéo MP4 ou QuickTime de 3 à 60 secondes et 100 Mio au plus                            | Pas envoyé                 |
+| **Story** | Facebook  | Une image JPEG, PNG ou GIF de 10 Mio au plus, ou une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 60 secondes | Pas envoyé                 |
+| **Reel**  | Facebook  | Une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 90 secondes                                                  | Sa description             |
+
+Une story est envoyée sans le texte de la publication : l’éditeur le dit sous les compteurs et n’y compte rien, et une vérification par l’API répond `textNotSent` pour ce canal. Une story ne prend aucune autre option (ni collaborateurs, ni réglages de reel, ni titre), et une story ou un reel n’a pas de parties après lui. Le titre d’un reel Facebook est le **Titre de la vidéo**. Une story et la publication du fil du même fichier et du même texte ne sont pas prises pour des doublons l’une de l’autre ; deux stories du même fichier le sont, quel que soit le texte des publications, puisqu’une story n’en montre aucun.
+
+Une story disparaît après 24 heures. Peal n’en garde pas de lien et n’en lit ni statistiques ni commentaires, et ni une story ni un reel ne peuvent être sponsorisés depuis Peal ; chacun compte dans les publications du mois comme les autres. Meta demande que la vidéo d’un reel ou d’une story vidéo défile à 24 à 60 images par seconde, ce que Peal ne vérifie pas : Meta refuse une vidéo hors de cette plage, ou sous 540p, pendant son traitement. Un reel ou une story vidéo n’indique **Publié** qu’une fois que Meta dit l’avoir publié : Peal lit l’état chez Meta jusqu’à 10 minutes après l’envoi. Un refus que Meta montre entre-temps indique **Échec** (`processingFailed`). S’il n’est toujours pas publié alors, ou si Peal ne sait pas si un reel ou une story est parti, le canal indique **À vérifier** (`stillProcessing` quand Meta le traitait encore) et Peal ne l’envoie jamais de nouveau : regardez sur la Page, puis indiquez ce que vous avez trouvé. Meta n’accepte aussi que 30 reels par Page sur 24 heures glissantes par son API ; au-delà, le reel échoue avec le code de Meta, et vous pouvez le republier plus tard.
+
+Si le serveur de Peal redémarre pendant qu’une story ou un reel part, Peal ne peut pas le relire : le canal indique **À vérifier**, pour que vous vérifiiez le compte, puis le confirmiez ou le republiiez. Peal ne le renvoie jamais de lui-même. Par l’API, les capacités d’un canal listent les formats de sa plateforme dans `postFormats`, chacun avec les médias qu’il prend et si le texte est envoyé.
 
 ## La programmer [#schedule]
 
@@ -228,6 +246,17 @@ Les publications du mois permises par l’abonnement se comptent dans le mois du
 Quand vous changez les créneaux d’une file ou son fuseau horaire, **Réglages**, **Files d’attente** propose, tant que des publications y attendent, **Replacer les publications en attente sur les nouveaux créneaux**, avec leur nombre. Une fois que vous confirmez, chaque publication en attente dans la file (programmée, ou en attente d’approbation, à une heure à venir) passe sur les créneaux de la file tels qu’ils sont maintenant, dans l’ordre de leurs heures : la première sur le premier créneau libre, la deuxième sur le suivant, et ainsi de suite. Les publications déplacées à la main à une autre heure sont déplacées aussi, car la file ne garde pas trace de celles qui l’ont été. Une publication déjà sur son créneau y reste, un créneau qu’occupe une publication en cours de publication est sauté, et ce que disent les publications et où elles vont ne change pas. Propriétaires, administrateurs et éditeurs peuvent le faire (`post:schedule` par l’API) ; par l’API, un contributeur dont les publications attendent une approbation ne déplace que celles-là.
 
 Chaque publication est déplacée comme à la main, sauf pour les approbations : elle prend sa nouvelle heure et compte dans son nouveau mois. Une publication programmée passe par les approbations de l’espace de travail comme si vous la programmiez, et une publication en attente d’approbation continue d’attendre, à sa nouvelle heure, quelle que soit la personne qui la déplace : sa demande reste celle de qui l’a faite, et personne n’est sollicité de nouveau pour décider. Pour programmer vous-même une telle publication, quand les vôtres n’ont pas besoin d’approbation, déplacez-la à la main. Peal dit ensuite combien de publications ont été déplacées, combien sont restées et combien restent à placer. Le déplacement s’arrête, en gardant ce qu’il a déplacé, à un mois où l’abonnement n’a plus de place, quand il ne reste aucun créneau dans les 366 jours, ou quand quelqu’un enregistre la file entre-temps : replacez-les de nouveau quand il y a de la place. Les replacer deux fois ne déplace rien la seconde fois.
+
+## Répéter une publication [#recycling]
+
+Une publication programmée, ou déjà en ligne, peut **se répéter** : Peal en crée une nouvelle à intervalle régulier, jusqu’à un nombre de publications ou une date, avec son texte ou, à tour de rôle, des variantes de texte. Ouvrez la publication et choisissez **Répéter** : tous les tant de jours (1 à 365), de semaines (1 à 52) ou de mois (1 à 12), jusqu’à un nombre de publications (2 à 100, celle-ci comprise), une date, ou 100 publications au plus ; éventuellement sur une [file d’attente](#queues) ; avec jusqu’à 10 **variantes de texte**. Les propriétaires, administrateurs et éditeurs le peuvent (post:schedule par l’API) ; les publications d’un contributeur, là où l’espace de travail lui permet de demander, attendent chacune une approbation. **Réglages**, **Répétitions** liste les règles de l’espace de travail avec leurs trois prochaines publications, et permet à ceux qui programment de mettre une règle en pause, de la reprendre ou de l’arrêter.
+
+- Chaque nouvelle publication est une publication ordinaire, avec le résultat de ses propres canaux, ses notifications et ses statistiques : déplacez-la, repassez-la en brouillon ou annulez-la comme toute autre, la règle continue selon sa propre horloge. Elle est copiée de la source avec ce que l’espace de travail a encore (ses canaux toujours connectés, ses médias, ses options, ses étiquettes), jamais avec une signature ou une option par défaut ajoutée depuis.
+- La suivante est créée une fois passée l’heure de la dernière : le calendrier en montre une d’avance. Elle est prévue un intervalle après la précédente, à la même heure dans le fuseau de la source, heure d’été comprise ; un mois plus court que le jour de la source en prend le dernier jour (31 janvier, puis 28 février, puis 31 mars). Sur une file d’attente, elle prend le premier créneau libre à partir de cette heure. Une heure manquée pendant que Peal était arrêté est sautée, jamais rattrapée. Une publication dont l’heure, ou le créneau de la file, tomberait après le dernier jour de la règle n’est pas créée : la règle s’arrête là, comme après sa dernière publication.
+- La première dit le texte de la source, la suivante la première variante, et ainsi de suite, puis de nouveau celui de la source. Une variante remplace le texte de la première partie, et ses textes sur certains canaux ; ses médias, parties suivantes et options restent. Certaines plateformes refusent un texte déjà publié pour le compte : les variantes sont faites pour cela. Chaque variante est vérifiée, à l’enregistrement, comme la source qui la dirait, puis à nouveau quand sa publication est créée.
+- Une publication se répète au nom de qui l’a lancée, avec ce qu’il peut faire au moment où elle est créée : les approbations de ses publications s’appliquent, et un membre parti, une clé révoquée ou une application dont l’accès ne publie plus l’arrête.
+
+Peal arrête une règle, plutôt que de sauter une publication en silence, et prévient les personnes concernées ([notifications](/notifications#events)) quand sa publication a été supprimée, annulée ou remise en brouillon, que la personne qui l’a lancée ne peut plus programmer, qu’aucun de ses canaux ne reste, qu’une plateforme refuse ce qu’elle dirait, que le mois n’a plus de place dans l’offre, ou que sa file d’attente a été supprimée ou n’a plus de créneau libre. Tant que sa publication attend une approbation, elle ne crée rien et attend. Une fois le problème réglé (de la place dans l’offre, d’autres variantes, un canal reconnecté, des créneaux sur sa file, sa publication programmée de nouveau), **Reprendre** la relance à partir de la prochaine heure prévue (avec les mêmes variantes : d’autres variantes pour un texte refusé accompagnent la reprise par la [ligne de commande](/cli#recycling) ou l’API), sauf si une autre règle répète la publication entre-temps ou si l’espace de travail en a 100 en cours ; pour toute autre fin, répétez de nouveau la publication. Une publication a une règle en cours à la fois, et un espace de travail 100. Une règle garde la première heure de la source : déplacer la source ne déplace pas les heures auxquelles elle se répète.
 
 ## Brouillons [#drafts]
 
@@ -305,23 +334,31 @@ La suppression se fait en arrière-plan, avec les autres appels du canal, un à 
 
 Les statistiques s’arrêtent : les statistiques ne lisent plus la publication et gardent les chiffres déjà lus, et la boîte de réception ne lit plus ses commentaires et garde ceux qu’elle a pendant leurs 30 jours. Une publication montrée par une mise en avant qui n’est pas terminée ne peut pas être dépubliée : arrêtez d’abord la mise en avant, car la publicité continuerait de dépenser pour une publication disparue.
 
-Là où Peal supprime des publications :
+Là où Peal supprime des publications, et là où il [les modifie](#edit-live) :
 
-| Plateforme              | Dépublier | Pourquoi pas                                                                              |
-| ----------------------- | --------- | ----------------------------------------------------------------------------------------- |
-| Mastodon                | Oui       |                                                                                           |
-| Bluesky                 | Oui       |                                                                                           |
-| X                       | Oui       |                                                                                           |
-| Pinterest               | Oui       |                                                                                           |
-| Google Business Profile | Oui       |                                                                                           |
-| LinkedIn                | Non       | LinkedIn ne dit pas quelle permission une suppression demande                             |
-| Facebook Pages          | Non       | Meta indique que seules certaines applications peuvent supprimer les publications de Page |
-| Threads                 | Non       | Il faut une permission que Meta accorde après examen                                      |
-| Instagram               | Non       | Il faut une permission que Meta accorde après examen                                      |
-| YouTube                 | Non       | Il faut une permission plus large que celle que Peal demande                              |
-| TikTok                  | Non       | L’API de TikTok n’a aucun appel pour supprimer une publication                            |
+| Plateforme              | Dépublier | Modifier | Pourquoi pas                                                                                                        |
+| ----------------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Mastodon                | Oui       | Oui      |                                                                                                                     |
+| Google Business Profile | Oui       | Oui      |                                                                                                                     |
+| Bluesky                 | Oui       | Non      | Bluesky n’a aucun appel pour modifier une publication                                                               |
+| X                       | Oui       | Non      | X ne dit pas quelles publications peuvent être modifiées, ni avec quel accès                                        |
+| Pinterest               | Oui       | Non      | Modifier une épingle est en bêta, pas ouvert à toutes les applications                                              |
+| LinkedIn                | Non       | Non      | LinkedIn ne dit pas quelle permission une suppression ou une modification demande                                   |
+| Facebook Pages          | Non       | Non      | Meta indique que seules certaines applications peuvent supprimer, et pas quelle permission une modification demande |
+| Threads                 | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Threads n’a aucun appel pour modifier              |
+| Instagram               | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Instagram n’a aucun appel pour modifier            |
+| YouTube                 | Non       | Non      | Il faut une permission plus large que celle que Peal demande                                                        |
+| TikTok                  | Non       | Non      | L’API de TikTok n’a aucun appel pour supprimer ou modifier une publication                                          |
 
 Là où ce n’est pas possible, supprimez la publication sur la plateforme elle-même. Une publication confirmée à la main ne peut pas non plus être dépubliée depuis Peal : Peal n’a pas son identifiant. Un canal déconnecté, désactivé ou à reconnecter ne peut pas être dépublié tant qu’il n’est pas revenu.
+
+## Modifier une publication en ligne [#edit-live]
+
+Une publication partie peut voir son texte corrigé sur Mastodon et Google Business Profile : **Modifier**, à côté du canal sur la page de la publication, ouvre le texte de ce canal avec le compteur du canal, et **Enregistrer** le remplace sur la plateforme. Seul le texte change : jamais les médias, les options, l’audience ni l’heure. La modification est publique immédiatement, si bien que qui peut dépublier peut modifier (`post:publish`), mais pas un membre dont les publications demandent une [approbation](/review) : un approbateur fait la modification pour lui, car elle mettrait en ligne un texte que personne n’a relu.
+
+Le nouveau texte est vérifié comme le texte du canal l’est quand une publication est programmée : la longueur de la plateforme (un avertissement de contenu Mastodon compte), ses caractères, et le reste. Une fois que la plateforme l’a pris, c’est le texte propre de cette partie sur ce canal dans Peal (les autres canaux gardent le leur), le canal indique **Modifié le** avec la date, et les webhooks reçoivent `post.edited`. Peal ne garde aucun texte précédent ; Mastodon montre son propre historique des modifications. La modification se fait en arrière-plan, avec les autres appels du canal, et est relancée comme une suppression ; ensuite elle **a échoué**, avec la raison, et **Réessayer** redemande.
+
+Mastodon reçoit de nouveau la publication avec ses médias, son avertissement de contenu et sa sensibilité tels qu’ils sont sur Mastodon à ce moment, changements faits là-bas compris, car Mastodon efface ce qu’une modification omet, et sa langue reste telle quelle ; une publication avec un sondage est refusée, car la modification supprimerait le sondage. Lire la publication d’abord demande la permission `read:statuses`, qui manque aux canaux connectés avant que Peal la demande : reconnectez le canal. Chaque partie d’un fil se modifie seule, par sa place depuis 0 (la publication elle-même).
 
 ## Depuis un agent, la ligne de commande ou l’API [#api]
 

@@ -65,6 +65,7 @@ const liveOnTwinHandles = (studio: Studio) =>
                 [instagramTargetId, instagramId],
               ].map(([id = "", channelId = ""]) => ({
                 channelId,
+                editedAt: null,
                 failureReason: null,
                 id,
                 options: null,

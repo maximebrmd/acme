@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::UnknownChannelsEncoded }, key: "UNKNOWN_CHANNELS"
+      member -> { Peal::Types::RecyclingEndsTooSoonEncoded }, key: "RECYCLING_ENDS_TOO_SOON"
 
-      member -> { Peal::Types::InvalidTimeZoneEncoded }, key: "INVALID_TIME_ZONE"
+      member -> { Peal::Types::RecyclingVariantsInvalidEncoded }, key: "RECYCLING_VARIANTS_INVALID"
     end
   end
 end

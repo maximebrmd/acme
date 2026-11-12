@@ -94,6 +94,7 @@ import type {
   Partner,
   Permission,
   Post,
+  RecyclingRule,
   PostContent,
   PostDraft,
   PostOrigin,
@@ -138,6 +139,7 @@ import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
 import type { StudioQueue } from "./studio-queues.ts";
+import { studioRecyclingOf } from "./studio-recycling.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -214,6 +216,7 @@ export const studioMe: Me = {
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -222,6 +225,7 @@ export const studioMe: Me = {
       permissions: everything,
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
     {
       id: shopId,
@@ -229,6 +233,7 @@ export const studioMe: Me = {
       permissions: reading,
       role: "viewer",
       slug: "shop",
+      twoStepRequired: false,
     },
   ],
 };
@@ -348,6 +353,7 @@ export const quotaTargetId = "0190f3a0-0000-7000-8000-00000000e003";
 
 const pendingOn = (id: string, channelId: string): PostTarget => ({
   channelId,
+  editedAt: null,
   failureReason: null,
   id,
   options: null,
@@ -454,8 +460,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic draft about the spring catalogue."),
     createdVia: null,
     id: draftId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: null,
     scheduledBy: null,
     scheduledVia: null,
@@ -468,8 +476,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that goes out next week."),
     createdVia: null,
     id: scheduledId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -482,8 +492,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that waits. Out on Friday."),
     createdVia: null,
     id: awaitingId,
+    occurrence: null,
     outcome: null,
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: contributorId,
     scheduledVia: null,
@@ -496,8 +508,10 @@ const posts: readonly Post[] = [
     content: content("A synthetic post that went out yesterday."),
     createdVia: null,
     id: finishedId,
+    occurrence: null,
     outcome: "failed",
     queueId: null,
+    recyclingId: null,
     schedule: { at: at("2026-11-08T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -756,6 +770,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postPublished: false,
       postReview: true,
       postUnconfirmed: true,
+      recyclingEnded: true,
       webhookFailing: true,
     },
     everyPost: false,
@@ -773,6 +788,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
     updatedAt: at("2026-10-01T08:00:00Z"),
   },
   workspaces: [],
@@ -1069,6 +1085,8 @@ export interface StudioState {
   readonly media: readonly Media[];
   readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
+  /** The workspace's recycling rules, oldest first. */
+  readonly recyclingRules: readonly RecyclingRule[];
   /** The workspace's queues, oldest first. */
   readonly queues: readonly StudioQueue[];
   /** The posts made under an idempotency key, with the request's body. */
@@ -1166,6 +1184,7 @@ export const makeStudio = (
       policy: "contributorsAndApplications",
       posts,
       queues: studioQueues(mastodonId),
+      recyclingRules: [],
       sent: {},
       signatures,
       signingKeys: true,
@@ -1411,6 +1430,68 @@ const unpublishedOn = (
   return target.removedAt === null
     ? Result.succeed({ ...target, removedAt: studioNow })
     : Result.fail("alreadyRemoved");
+};
+
+// The platforms whose posts the studio edits once live, as the server's.
+const editingPlatforms: ReadonlySet<string> = new Set([
+  "mastodon",
+  "googleBusiness",
+]);
+
+// Why the studio does not edit the part of the target, if it does not.
+const editRefusal = (
+  target: PostTarget,
+  platform: string | undefined,
+  part: number
+): LivePostRefusal | undefined => {
+  if (target.status !== "published") {
+    return "notPublished";
+  }
+
+  if (target.removedAt !== null) {
+    return "alreadyRemoved";
+  }
+
+  if (platform === undefined || !editingPlatforms.has(platform)) {
+    return "notSupported";
+  }
+
+  return part < target.parts.count ? undefined : "noPlatformId";
+};
+
+// The post with `text` as the channel's own on the part at `part`.
+const withTextOn = (
+  post: Post,
+  part: number,
+  channelId: string,
+  text: string
+): Post => {
+  const overridden = (
+    overrides: readonly { readonly channelId: string; readonly text: string }[]
+  ) => [
+    ...overrides.filter((override) => override.channelId !== channelId),
+    { channelId, text },
+  ];
+
+  return part === 0
+    ? {
+        ...post,
+        content: {
+          ...post.content,
+          overrides: overridden(post.content.overrides),
+        },
+      }
+    : {
+        ...post,
+        content: {
+          ...post.content,
+          followUps: (post.content.followUps ?? []).map((followUp, index) =>
+            index + 1 === part
+              ? { ...followUp, overrides: overridden(followUp.overrides) }
+              : followUp
+          ),
+        },
+      };
 };
 
 // Posts scheduled through the command line say so.
@@ -2121,6 +2202,14 @@ const duplicatesOf = (
           .map((other) => ({ channelId, postId: other.id }))
       );
 
+// The studio's recycling rules, over its posts.
+const recyclingOfStudio = studioRecyclingOf({
+  allowed,
+  now: studioNow,
+  record,
+  workspaceId: studioId,
+});
+
 // The studio's queues, over what the rest of it holds.
 const queuesOfStudio = studioQueuesOf({
   allowed,
@@ -2280,8 +2369,10 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       content: written.content,
       createdVia: viaCommandLine,
       id,
+      occurrence: null,
       outcome: null,
       queueId: onQueue.queueId,
+      recyclingId: null,
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
@@ -2758,6 +2849,7 @@ export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
     queuesOfStudio.groupLive(studio),
+    recyclingOfStudio.groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
@@ -2968,8 +3060,10 @@ export const studioGroupsLive = (studio: Studio) =>
               content: written.content,
               createdVia: null,
               id,
+              occurrence: null,
               outcome: null,
               queueId: null,
+              recyclingId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -3063,8 +3157,10 @@ export const studioGroupsLive = (studio: Studio) =>
               },
               createdVia: null,
               id,
+              occurrence: null,
               outcome: null,
               queueId: null,
+              recyclingId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -3077,6 +3173,50 @@ export const studioGroupsLive = (studio: Studio) =>
                 options: target.options,
               })),
             });
+          }),
+        editTarget: ({ params, payload }) =>
+          Effect.gen(function* editTarget() {
+            yield* unpublishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const target = post.targets.find(
+              ({ id }) => id === params.targetId
+            );
+
+            if (target === undefined) {
+              return yield* new PostNotFound();
+            }
+
+            const { channels: known } = yield* Ref.get(studio.state);
+
+            const platform = known.find(
+              ({ id }) => id === target.channelId
+            )?.platform;
+
+            const part = payload.part ?? 0;
+
+            const refusal = editRefusal(target, platform, part);
+
+            if (refusal !== undefined) {
+              return yield* new LivePostNotChangeable({ reason: refusal });
+            }
+
+            yield* savePost(studio, {
+              ...withTextOn(post, part, target.channelId, payload.text),
+              targets: post.targets.map((found) =>
+                found.id === target.id
+                  ? { ...found, editedAt: studioNow }
+                  : found
+              ),
+            });
+            yield* record(studio, `edit:${target.id}:${String(part)}`);
+
+            return { ...doneChange(post.id, target), kind: "edit" as const };
           }),
         enqueue: ({ params, payload }) =>
           Effect.gen(function* enqueue() {
@@ -4147,6 +4287,7 @@ export const studioGroupsLive = (studio: Studio) =>
               },
             });
           }),
+        twoStep: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "connectedApps", (handlers) =>
@@ -5429,6 +5570,17 @@ export const studioAccessLive = (studio: Studio) =>
 
         if (workspace === undefined) {
           return yield* new WorkspaceNotFound();
+        }
+
+        // A workspace that requires two-step verification refuses a
+        // person whose account does not have it on.
+        if (workspace.twoStepRequired && !studio.me.user.twoStepEnabled) {
+          return yield* new Forbidden({
+            code: "forbidden",
+            message:
+              "This workspace requires two-step verification. Turn it on in your Peal account settings, then try again.",
+            reason: "twoStepRequired",
+          });
         }
 
         return yield* httpEffect.pipe(

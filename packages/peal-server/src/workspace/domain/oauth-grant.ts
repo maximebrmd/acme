@@ -96,11 +96,13 @@ export const adsPermissions: ReadonlySet<Permission> = new Set([
 ]);
 
 /**
- * What no OAuth client does, whatever its scopes: deciding that ads may
- * spend, and how much, is the owner's, in their own session.
+ * What no OAuth client does, whatever its scopes, nor any API key: deciding
+ * that ads may spend, and how much, and requiring two-step verification of
+ * the workspace's members, are the owner's, in their own session.
  */
 export const personOnlyPermissions: ReadonlySet<Permission> = new Set([
   "ads:authorize",
+  "organization:secure",
 ]);
 
 /**

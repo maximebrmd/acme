@@ -9,15 +9,15 @@ Les paramètres d’un espace de travail appartiennent à ses membres, selon leu
 
 ## Paramètres de l’espace de travail [#workspace]
 
-Choisissez **Paramètres** sur la carte d’un espace de travail. Chaque membre voit **Général** et **Membres** ; les membres qui peuvent inviter voient **Invitations**, ceux qui peuvent gérer les clés voient **Clés d’API**, et ceux qui peuvent gérer les webhooks voient **Webhooks**.
+Choisissez **Paramètres** sur la carte d’un espace de travail. Chaque membre voit **Général**, **Membres** et **Sécurité** ; les membres qui peuvent inviter voient **Invitations**, ceux qui peuvent gérer les clés voient **Clés d’API**, et ceux qui peuvent gérer les webhooks voient **Webhooks**.
 
-| Rôle           | Dans les paramètres                                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Propriétaire   | Tout : renommer, les membres, propriétaires compris, les invitations, les clés d’API, les webhooks, et la suppression                            |
-| Administrateur | Renommer, les membres autres que les propriétaires, les invitations, les clés d’API et les webhooks ; jamais les propriétaires ni la suppression |
-| Éditeur        | Voit les membres                                                                                                                                 |
-| Contributeur   | Voit les membres                                                                                                                                 |
-| Lecteur        | Voit les membres                                                                                                                                 |
+| Rôle           | Dans les paramètres                                                                                                                                                                          |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Propriétaire   | Tout : renommer, les membres, propriétaires compris, les invitations, les clés d’API, les webhooks, l’exigence de la validation en deux étapes, et la suppression                            |
+| Administrateur | Renommer, les membres autres que les propriétaires, les invitations, les clés d’API et les webhooks ; jamais les propriétaires, l’exigence de la validation en deux étapes ni la suppression |
+| Éditeur        | Voit les membres                                                                                                                                                                             |
+| Contributeur   | Voit les membres                                                                                                                                                                             |
+| Lecteur        | Voit les membres                                                                                                                                                                             |
 
 Sous **Général**, les propriétaires et les administrateurs choisissent aussi **Approbations** : si les publications attendent une approbation avant d’être programmées. Voyez [Relecture et approbation](/review#policy).
 
@@ -28,6 +28,12 @@ Sous **Général**, les propriétaires et les administrateurs choisissent aussi 
 ### Invitations [#invitations]
 
 Sous **Invitations**, saisissez une adresse e-mail et un rôle, puis **Envoyer l’invitation**. La personne reçoit un lien pour rejoindre l’espace, valable 7 jours, dans sa langue si elle a déjà un compte et dans la vôtre sinon. Elle le rejoint une fois connectée avec cette adresse. Les invitations en attente sont listées avec leur date d’expiration : **Renvoyer** envoie un nouveau lien, et **Révoquer** rend le lien inutilisable. Seuls les propriétaires invitent des propriétaires.
+
+### Sécurité : exiger la validation en deux étapes [#require-two-step]
+
+Sous **Sécurité**, un propriétaire exige la [validation en deux étapes](#two-step) de tous les membres. Seul un propriétaire le fait, connecté lui-même : jamais un administrateur, une clé d’API, une application ou l’équipe agissant à la place d’un propriétaire, et seulement une fois qu’il l’a activée pour son propre compte, pour que personne ne s’enferme dehors. Avant que l’exigence ne s’applique, Peal nomme les membres dont le compte ne l’a pas activée : ils perdent l’accès aussitôt, jusqu’à ce qu’ils l’activent. Chaque membre voit si elle est exigée ; ceux qui gèrent les membres voient qui l’a activée, dans **Membres**.
+
+Tant que son compte ne l’a pas activée, le membre d’un espace de travail qui l’exige se voit refuser l’espace partout où il l’atteint : l’application web lui montre ce qu’exigent les propriétaires et le chemin vers les paramètres de son compte au lieu de toute page de l’espace, la [ligne de commande](/cli#login) et les [clients MCP](/mcp#sign-in) sont refusés avec `twoStepRequired`, tout comme les routes d’espace de travail du service de connexion pour cet espace. Ses sessions et applications ne sont pas déconnectées : tout fonctionne de nouveau dès qu’il l’active. Les invitations fonctionnent toujours : l’invité rejoint l’espace, puis on lui demande de l’activer. Les [clés d’API](#api-keys) de l’espace et les clés d’un partenaire ne sont pas concernées : elles appartiennent à l’espace, pas à une personne. Ne plus l’exiger s’applique aussitôt aussi ; l’un et l’autre sont inscrits au [journal d’activité](#activity).
 
 ### Clés d’API [#api-keys]
 
@@ -97,6 +103,16 @@ Choisissez **Paramètres du compte** dans le menu du compte.
 - **Mot de passe** : votre mot de passe actuel confirme que c’est bien vous. Le changer ferme vos autres sessions, sauf si vous décochez cette case.
 - **Sessions** : les navigateurs et appareils connectés à votre compte, avec leur date de connexion et leur dernière activité. Fermez-en une, ou toutes sauf celle que vous utilisez.
 - **Applications connectées** : la [ligne de commande](/cli) et les [clients MCP](/mcp) que vous laissez agir pour vous, avec ce qu’ils peuvent faire et dans quels espaces de travail. **Révoquez**-en un : il ne peut plus renouveler son accès, et celui qu’il détient déjà prend fin sous 15 minutes.
+
+### Validation en deux étapes [#two-step]
+
+Avec la validation en deux étapes, la connexion demande, après votre mot de passe, un code fourni par une application d’authentification sur votre téléphone. Sous **Validation en deux étapes**, **Activer** demande votre mot de passe, puis affiche un code QR à scanner avec l’application, et sa clé en texte à saisir à la place ; saisissez le code à 6 chiffres qu’affiche l’application. Peal affiche alors dix codes de secours, une seule fois : copiez-les ou téléchargez-les, et conservez-les en lieu sûr. Chacun fonctionne une fois, à la place d’un code, quand vous n’avez pas votre téléphone. L’activer ne déconnecte pas les navigateurs et applications déjà connectés : déconnectez-les depuis **Sessions** si vous le souhaitez. Votre adresse e-mail doit d’abord être confirmée.
+
+À la connexion, après votre mot de passe, saisissez le code de l’application, ou choisissez **Utiliser un code de secours**. **Faire confiance à ce navigateur pendant 30 jours** évite la seconde étape sur ce navigateur jusque-là, ou jusqu’à ce que la validation en deux étapes soit désactivée, ce qui oublie tous les navigateurs de confiance. Après cinq codes erronés, reconnectez-vous avec votre mot de passe ; après dix d’affilée, la validation en deux étapes est bloquée pendant 15 minutes. La seconde étape expire 10 minutes après le mot de passe.
+
+La section indique combien de codes de secours il reste ; **Nouveaux codes de secours** les remplace tous, avec votre mot de passe. **Désactiver** demande aussi votre mot de passe, et est refusé tant qu’un espace de travail dont vous êtes membre l’[exige](#require-two-step) : la section nomme ces espaces. Peal écrit à votre adresse chaque fois qu’elle est activée ou désactivée, que de nouveaux codes sont créés, ou qu’un code de secours sert à se connecter : si ce n’était pas vous, changez votre mot de passe.
+
+Si vous perdez votre téléphone et vos codes de secours, écrivez à la personne qui gère le serveur : son équipe peut la [réinitialiser](/staff#actions) une fois sûre que c’est vous, ce qui vous déconnecte partout. Connectez-vous avec votre mot de passe, puis réactivez-la. Les codes par e-mail ou par SMS ne sont pas proposés : un code envoyé par e-mail ne protège rien quand c’est la boîte de réception qui a été prise.
 
 ### Télécharger vos données [#export]
 

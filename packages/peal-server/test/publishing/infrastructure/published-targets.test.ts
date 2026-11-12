@@ -5,6 +5,7 @@ import { TestClock } from "effect/testing";
 
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
+import type { PublishedTarget } from "#publishing/application/published-targets.ts";
 import {
   confirmPublished,
   recordLivePart,
@@ -36,6 +37,8 @@ const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
 interface TargetRow {
   readonly finishedAt: string | null;
+  /** The target's options, as JSON; none when left out. */
+  readonly options?: string;
   readonly platformPostId: string | null;
   readonly status: string;
 }
@@ -68,7 +71,7 @@ const insertPost = Effect.fn("test.insertPost")(function* insertPost(
     // A published target is listed from when it went live.
     const listedAt = target.status === "published" ? finishedAt : null;
 
-    yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, finished_at, listed_at, platform_post_id, permalink) VALUES (${targetId}, ${postId}, ${targetChannel}, ${target.status}, ${finishedAt}, ${listedAt}, ${target.platformPostId}, ${target.platformPostId === null ? null : `https://mastodon.test/@alice/${target.platformPostId}`})`;
+    yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, finished_at, listed_at, platform_post_id, permalink, options) VALUES (${targetId}, ${postId}, ${targetChannel}, ${target.status}, ${finishedAt}, ${listedAt}, ${target.platformPostId}, ${target.platformPostId === null ? null : `https://mastodon.test/@alice/${target.platformPostId}`}, ${target.options ?? null}::jsonb)`;
 
     ids.push(targetId);
   }
@@ -128,18 +131,23 @@ layer(ListingTest)("the published targets", (it) => {
             [ids[0], "110000000000000002"],
           ]
         );
-        assert.deepStrictEqual(own[1], {
-          authorId: own[1]?.authorId,
+        const [, second] = own;
+
+        assert.isDefined(second);
+        assert.deepStrictEqual(second, {
+          authorId: second.authorId,
           channelId,
+          format: Option.none(),
           permalink: Option.some(
             "https://mastodon.test/@alice/110000000000000002"
           ),
-          platformPostId: own[1]?.platformPostId,
+          platformPostId: second.platformPostId,
           postId,
           publishedAt: utc("2045-02-01T10:00:00.000Z"),
-          targetId: ids[0],
+          targetId: second.targetId,
           workspaceId,
         });
+        assert.strictEqual(second.targetId, ids[0]);
 
         // From a target on: those after it.
         const after = yield* published.from(
@@ -158,6 +166,64 @@ layer(ListingTest)("the published targets", (it) => {
         );
       }).pipe(Effect.ensuring(deletePost(postId)));
     })
+  );
+
+  it.effect(
+    "carry their format, and leave out those of formats a reader skips, in full pages",
+    () =>
+      Effect.gen(function* formats() {
+        const story = '{"format":"story","platform":"instagram"}';
+
+        const { ids, postId } = yield* insertPost([
+          ...["10:00", "10:01", "10:02"].map((time, index) => ({
+            finishedAt: `2046-03-01T${time}:00.000Z`,
+            options: story,
+            platformPostId: `17900000000000000${index}`,
+            status: "published",
+          })),
+          {
+            finishedAt: "2046-03-01T10:03:00.000Z",
+            options: '{"format":"feed","platform":"instagram"}',
+            platformPostId: "179000000000000009",
+            status: "published",
+          },
+          {
+            finishedAt: "2046-03-01T10:04:00.000Z",
+            options: '{"format":"reel","platform":"facebook"}',
+            platformPostId: "179000000000000010",
+            status: "published",
+          },
+        ]);
+
+        yield* Effect.gen(function* checks() {
+          const published = yield* PublishedTargets;
+
+          const cursor = {
+            publishedAt: utc("2046-03-01T00:00:00.000Z"),
+            targetId: Option.none(),
+          };
+
+          const own = (found: readonly PublishedTarget[]) =>
+            found.filter(({ targetId }) => ids.includes(targetId));
+
+          const all = own(yield* published.from(cursor, 100));
+
+          assert.deepStrictEqual(
+            all.map(({ format }) => Option.getOrNull(format)),
+            ["story", "story", "story", null, "reel"]
+          );
+
+          // A page as long as asked, past every story: the feed post and
+          // the reel come first, so a reader that stops at a short page
+          // never misses them.
+          const page = yield* published.from(cursor, 2, ["story"]);
+
+          assert.deepStrictEqual(
+            own(page).map(({ targetId }) => targetId),
+            [ids[3], ids[4]]
+          );
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
   );
 
   it.effect("are told apart by id when they went live at once", () =>

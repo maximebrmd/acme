@@ -238,6 +238,17 @@ const scheduled = { name: "postType", values: ["event", "offer"] } as const;
 
 const offered = { name: "postType", values: ["offer"] } as const;
 
+// A feed post, which a format left out is: the options of a feed post's
+// show only on one.
+const feedPost = { name: "format", unset: true, values: ["feed"] } as const;
+
+// A Facebook post that has a title: a feed post's video, or a reel.
+const titled = {
+  name: "format",
+  unset: true,
+  values: ["feed", "reel"],
+} as const;
+
 // A Bluesky thread whose replies are limited to some.
 const repliesLimited = { name: "replies", values: ["limited"] } as const;
 
@@ -313,6 +324,18 @@ export const optionFields = {
   ],
   facebook: [
     {
+      // A feed post, left out, is the first choice (`none`).
+      choices: [
+        { label: "facebook.formatStory", value: "story" },
+        { label: "facebook.formatReel", value: "reel" },
+      ],
+      hint: "facebook.formatHint",
+      kind: "choice",
+      label: "facebook.format",
+      name: "format",
+      none: "facebook.formatFeed",
+    },
+    {
       hint: "facebook.videoTitleHint",
       invalid: "facebook.videoTitleInvalid",
       kind: "text",
@@ -320,6 +343,7 @@ export const optionFields = {
       maxLength: maxFacebookVideoTitleLength,
       name: "videoTitle",
       shownFor: "video",
+      shownWith: titled,
     },
   ],
   googleBusiness: [
@@ -418,12 +442,22 @@ export const optionFields = {
   ],
   instagram: [
     {
+      // A feed post, left out, is the first choice (`none`).
+      choices: [{ label: "instagram.formatStory", value: "story" }],
+      hint: "instagram.formatHint",
+      kind: "choice",
+      label: "instagram.format",
+      name: "format",
+      none: "instagram.formatFeed",
+    },
+    {
       hint: "instagram.shareToFeedHint",
       kind: "yesNo",
       label: "instagram.shareToFeed",
       name: "shareToFeed",
       no: "instagram.shareToFeedNo",
       shownFor: "reel",
+      shownWith: feedPost,
       yes: "instagram.shareToFeedYes",
     },
     {
@@ -435,6 +469,7 @@ export const optionFields = {
       maxByteSize: maxInstagramCoverByteSize,
       name: "coverMediaId",
       shownFor: "reel",
+      shownWith: feedPost,
     },
     {
       hint: "instagram.thumbOffsetHint",
@@ -444,6 +479,7 @@ export const optionFields = {
       minimum: 0,
       name: "thumbOffsetMs",
       shownFor: "reel",
+      shownWith: feedPost,
     },
     {
       hint: "instagram.audioNameHint",
@@ -453,6 +489,7 @@ export const optionFields = {
       maxLength: maxInstagramAudioNameLength,
       name: "audioName",
       shownFor: "reel",
+      shownWith: feedPost,
     },
     {
       choices: [
@@ -465,6 +502,7 @@ export const optionFields = {
       name: "trialReel",
       none: "instagram.trialReelNone",
       shownFor: "reel",
+      shownWith: feedPost,
     },
     {
       hint: "instagram.collaboratorsHint",
@@ -473,6 +511,7 @@ export const optionFields = {
       label: "instagram.collaborators",
       maximum: maxInstagramCollaborators,
       name: "collaborators",
+      shownWith: feedPost,
     },
   ],
   linkedin: [

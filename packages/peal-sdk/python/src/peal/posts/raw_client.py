@@ -421,6 +421,7 @@ class RawPostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -429,7 +430,7 @@ class RawPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -452,6 +453,8 @@ class RawPostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -484,6 +487,7 @@ class RawPostsClient:
                 "outcome": outcome,
                 "platform": platform,
                 "queueId": queue_id,
+                "recyclingId": recycling_id,
                 "removed": removed,
                 "sort": sort,
                 "status": status,
@@ -2717,6 +2721,146 @@ class RawPostsClient:
             )
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
+    def edit_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        text: str,
+        wait: typing.Optional[str] = None,
+        part: typing.Optional[int] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> HttpResponse[LivePostChange]:
+        """
+        Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        text : str
+
+        wait : typing.Optional[str]
+
+        part : typing.Optional[int]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[LivePostChange]
+            LivePostChange
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/targets/{encode_path_param(target_id)}/edit",
+            method="POST",
+            params={
+                "wait": wait,
+            },
+            json={
+                "part": part,
+                "text": text,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    LivePostChange,
+                    parse_obj_as(
+                        type_=LivePostChange,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 409:
+                raise ConflictError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
     def unpublish(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[PostUnpublish]:
@@ -2812,7 +2956,7 @@ class RawPostsClient:
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[LivePostChanges]:
         """
-        Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+        Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 
         Parameters
         ----------
@@ -3372,6 +3516,7 @@ class AsyncRawPostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -3380,7 +3525,7 @@ class AsyncRawPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -3403,6 +3548,8 @@ class AsyncRawPostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -3435,6 +3582,7 @@ class AsyncRawPostsClient:
                 "outcome": outcome,
                 "platform": platform,
                 "queueId": queue_id,
+                "recyclingId": recycling_id,
                 "removed": removed,
                 "sort": sort,
                 "status": status,
@@ -5668,6 +5816,146 @@ class AsyncRawPostsClient:
             )
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
+    async def edit_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        text: str,
+        wait: typing.Optional[str] = None,
+        part: typing.Optional[int] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AsyncHttpResponse[LivePostChange]:
+        """
+        Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        text : str
+
+        wait : typing.Optional[str]
+
+        part : typing.Optional[int]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[LivePostChange]
+            LivePostChange
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/targets/{encode_path_param(target_id)}/edit",
+            method="POST",
+            params={
+                "wait": wait,
+            },
+            json={
+                "part": part,
+                "text": text,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    LivePostChange,
+                    parse_obj_as(
+                        type_=LivePostChange,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 409:
+                raise ConflictError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
     async def unpublish(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[PostUnpublish]:
@@ -5763,7 +6051,7 @@ class AsyncRawPostsClient:
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[LivePostChanges]:
         """
-        Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+        Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 
         Parameters
         ----------

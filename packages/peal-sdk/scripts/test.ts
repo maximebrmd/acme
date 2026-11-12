@@ -25,6 +25,7 @@ const me = {
     image: null,
     locale: "en",
     name: "Ada",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -33,6 +34,7 @@ const me = {
       permissions: ["post:schedule", "media:upload"],
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
   ],
 };

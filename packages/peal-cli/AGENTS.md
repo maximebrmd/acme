@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `queues`, `media`, `approvals`,
+  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
   `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
@@ -54,6 +54,12 @@
   credential is used and whether it works, the publish scope, the workspace
   commands will act in, the MCP endpoint's address), exits with 1 when a
   check fails, and is the first thing the skill tells an agent to run.
+- No command manages two-step verification, which is a person's, in the
+  web app. A workspace that requires it refuses a sign-in whose account
+  does not have it on (`Forbidden`, `twoStepRequired`): `explain` sends
+  the person to the web app's account page (`accountPageOf`, the API's
+  origin), and `peal doctor` fails the workspace's check with the same
+  words. With `PEAL_API_KEY` nothing changes: keys are not concerned.
 - `test/parity.test.ts` maps every endpoint a bearer token can call
   (`test/contract-endpoints.ts`, which copies the SDK spec's rule and its
   `ownSessionTags`: keep them equal) to the command that covers it, or to
@@ -74,6 +80,9 @@
   (`neverAsksInJson`). `peal posts changes` reads `posts.changes`, and
   `peal posts list --removed` `search?removed=true`. Refusal reasons have
   their words in `src/live-post-refusals.ts`, typed by the contract.
+  `peal posts edit` (`commands/posts-edit.ts`) replaces a part's text on
+  one channel (`--channel`, resolved as `unpublish` resolves it, `--text`,
+  `--part`, `--wait`), without asking: the edit is the user's own text.
 - `peal tags` (list, create, update, delete) keeps a workspace's tags, and
   `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
   `peal post --tag` file posts under them. Wherever a command takes a tag
@@ -106,6 +115,11 @@
   `queues.reshuffle` and says why it stopped (`reshuffleLines`). The
   studio's queues are in `test/studio-queues.ts`, built over what
   `studio.ts` hands them.
+- `peal recycling` (list, show, start, update, pause, resume, end) keeps
+  the rules that repeat posts (`--every 2w`, `intervalOf`; `--count`,
+  `--until`, `--variant` repeated, `--queue`), and `peal posts list
+  --recycling` lists a rule's posts. The studio's rules are in
+  `test/studio-recycling.ts`.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first

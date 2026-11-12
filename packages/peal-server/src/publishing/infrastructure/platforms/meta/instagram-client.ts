@@ -13,11 +13,13 @@ import {
   sequenced,
 } from "#publishing/application/publication-steps.ts";
 import type {
+  LookUp,
   PublicationSteps,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
 import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { postFormatOf } from "#publishing/domain/post-format.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { MediaAssetId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -112,6 +114,21 @@ const graduations = {
 
 const instagramOptionsOf = (post: OutgoingPost) =>
   post.options.pipe(Option.filter(Schema.is(InstagramOptions)));
+
+// A story (`media_type=STORIES`, the IG User Media reference, read
+// 2026-11-12): one image or video, with no caption, alt text ("Reels and
+// stories are not supported") or collaborators ("Not supported for
+// Stories"). It has no lasting address, and the account's media, which a
+// resumed attempt searches by caption, cannot tell it: a story is
+// confirmed by its container only.
+const isStory = (post: OutgoingPost) =>
+  Option.contains(postFormatOf(post.options), "story");
+
+// A story's container: its one file, and nothing else.
+const storyParams = (url: string, described: PublishableMedia) =>
+  described.kind === "image"
+    ? { image_url: url, media_type: "STORIES" }
+    : { media_type: "STORIES", video_url: url };
 
 // The collaborators the options invite: on a feed image, a reel or a
 // carousel's own container, never on an item of one.
@@ -336,6 +353,18 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         return yield* new BadRequest({ code: "mediaRequired" });
       }
 
+      if (isStory(post)) {
+        // The platform rules take one file on a story.
+        if (others.length > 0) {
+          return yield* new BadRequest({ code: "tooManyMedia" });
+        }
+
+        const url = yield* publicUrlOf(post, single.attachment.mediaId);
+        const id = yield* container(post, storyParams(url, single.described));
+
+        return processing({ items: [], post: Option.some(id), video });
+      }
+
       if (others.length === 0) {
         const params = yield* mediaParams(
           post,
@@ -452,7 +481,10 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
             creation_id: creationId,
           }),
         IdSchema,
-        ({ id }, auth, on) => permalinkOf(id, auth, on),
+        ({ id }, auth, on) =>
+          isStory(post)
+            ? Effect.succeed(publishedAs(id, undefined))
+            : permalinkOf(id, auth, on),
         ({ id }): Published => ({
           _tag: "published",
           platformPostId: PlatformPostIdSchema.make(id),
@@ -485,20 +517,33 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         prepared.pipe(Option.flatMap((containers) => containers.post)),
         {
           // A resumed attempt: its post can only be found, never ruled out.
+          // A story cannot be found: it ends unconfirmed, for the member to
+          // check, and is never sent again.
           onNone: () =>
-            foundAmong(post).pipe(
-              Effect.map(
-                Option.match({
-                  onNone: () => ({ _tag: "unknown" }) as const,
-                  onSome: (found) =>
-                    ({ _tag: "found", published: publishedOf(found) }) as const,
-                })
-              )
-            ),
+            isStory(post)
+              ? Effect.succeed<LookUp>({ _tag: "unknown" })
+              : foundAmong(post).pipe(
+                  Effect.map(
+                    Option.match({
+                      onNone: () => ({ _tag: "unknown" }) as const,
+                      onSome: (found) =>
+                        ({
+                          _tag: "found",
+                          published: publishedOf(found),
+                        }) as const,
+                    })
+                  )
+                ),
+          // A published story is named by its container: the account's
+          // media are never searched for it.
           onSome: (containerId) =>
             statusOf(post, containerId).pipe(
               Effect.flatMap(({ status }) =>
-                lookUpOf(status, containerId, () => foundAmong(post))
+                lookUpOf(status, containerId, () =>
+                  isStory(post)
+                    ? Effect.succeed(Option.none())
+                    : foundAmong(post)
+                )
               )
             ),
         }

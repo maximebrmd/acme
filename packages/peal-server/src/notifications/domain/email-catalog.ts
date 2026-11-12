@@ -1,6 +1,7 @@
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import type { PostFailureReason } from "./notice-event.ts";
+import type { TwoStepChange } from "./auth-email.ts";
+import type { PostFailureReason, RecyclingEndReason } from "./notice-event.ts";
 
 /**
  * The words of each email in one language. `{name}` stands for a value the
@@ -207,6 +208,12 @@ export interface EmailCatalog {
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
   /**
+   * A recycling rule of `{workspaceName}` stopped repeating its post, for
+   * `{reason}`, one of `recyclingEndReasons`.
+   */
+  readonly recyclingEnded: EmailMessages;
+  readonly recyclingEndReasons: Readonly<Record<RecyclingEndReason, string>>;
+  /**
    * Peal turned off the webhook endpoint at `{host}` in `{workspaceName}`,
    * for `{reason}`, one of `webhookTurnOffReasons`.
    */
@@ -236,6 +243,17 @@ export interface EmailCatalog {
     readonly gone: string;
   };
   readonly verifyEmail: EmailMessages;
+  /**
+   * What changed in the account's two-step verification, by kind;
+   * `recoveryCodeUsed`'s body ends with `{left}`, one of
+   * `recoveryCodesLeft` (`{count}`).
+   */
+  readonly twoStepChanged: Readonly<Record<TwoStepChange, EmailMessages>>;
+  readonly recoveryCodesLeft: {
+    readonly none: string;
+    readonly one: string;
+    readonly other: string;
+  };
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;
 }

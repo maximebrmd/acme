@@ -173,12 +173,12 @@ export const RoutedPlatformPublisher = Layer.effect(
         );
       }
 
-      // Scheduling refuses parts where the platform takes a post alone; a
-      // part that came this far all the same must never go out as a post
-      // of its own.
+      // Scheduling refuses parts where the platform, or the format the
+      // options choose there, takes a post alone; a part that came this
+      // far all the same must never go out as a post of its own.
       if (
         part.index > 0 &&
-        (followUpsOn(account.platform) === undefined ||
+        (followUpsOn(account.platform, target.value.options) === undefined ||
           !threaded.takesParts(account.platform))
       ) {
         return yield* new BadRequest({

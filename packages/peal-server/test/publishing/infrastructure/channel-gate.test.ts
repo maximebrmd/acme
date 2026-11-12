@@ -234,6 +234,7 @@ describe("the channel's gate, with every context that calls through it", () => {
     const calls = [...ChannelGate.protocol.requests.values()];
 
     assert.deepStrictEqual(calls.map(({ _tag }) => _tag).toSorted(), [
+      "EditLivePost",
       "ModerateComment",
       "Publish",
       "ReadAccount",

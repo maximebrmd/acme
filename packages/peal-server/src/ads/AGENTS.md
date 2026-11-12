@@ -109,7 +109,9 @@ weaken a rule below to make something pass.
   `PublishedTargets`, ordered by `listed_at`). A target's
   `platform_post_id` is its first part's, so a boost of a post in several
   parts promotes the post itself, never a reply; Facebook and Instagram
-  take no parts so far. `BoostFollowUp` ends boosts past their end date and
+  take no parts so far. Only feed posts are matched and offered
+  (`isFeedPost`): a story leaves after a day, and a reel is known by its
+  video's id. `BoostFollowUp` ends boosts past their end date and
   tells once when a total budget is spent.
 - Every decision about money and every change to a boost is in
   `ads.audit_events` with who made it (`audit`), read by owners alone, kept

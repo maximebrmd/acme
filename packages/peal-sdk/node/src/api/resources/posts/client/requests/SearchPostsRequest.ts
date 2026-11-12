@@ -19,6 +19,7 @@ export interface SearchPostsRequest {
     outcome?: Peal.PostOutcome;
     platform?: Peal.Platform;
     queueId?: string;
+    recyclingId?: string;
     removed?: Peal.SearchPostsRequestRemoved;
     sort?: Peal.PostSort;
     status?: Peal.PostStatus;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 
+import { authWithoutDatabase, servedRoutes } from "#test/workspace/support.ts";
 import { refusedWhileImpersonating } from "#workspace/infrastructure/auth/impersonation.ts";
 
 describe(refusedWhileImpersonating, () => {
@@ -29,6 +30,28 @@ describe(refusedWhileImpersonating, () => {
     "/update-user",
   ])("refuses %s, which changes the account", (path) => {
     expect(refusedWhileImpersonating(path)).toBeTruthy();
+  });
+
+  // Two-step verification is the member's: turning it on or off, its key
+  // and recovery codes, and verifying a code, which spends a recovery code.
+  it("refuses every route of two-step verification the server serves", () => {
+    const routes = servedRoutes(authWithoutDatabase()).filter((path) =>
+      path.startsWith("/two-factor/")
+    );
+
+    expect(routes).toStrictEqual(
+      expect.arrayContaining([
+        "/two-factor/disable",
+        "/two-factor/enable",
+        "/two-factor/generate-backup-codes",
+        "/two-factor/get-totp-uri",
+        "/two-factor/verify-backup-code",
+        "/two-factor/verify-totp",
+      ])
+    );
+    expect(
+      routes.filter((path) => !refusedWhileImpersonating(path))
+    ).toStrictEqual([]);
   });
 
   it.each([

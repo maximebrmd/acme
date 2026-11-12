@@ -220,6 +220,7 @@ class PostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -228,7 +229,7 @@ class PostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> PostPage:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -251,6 +252,8 @@ class PostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -292,6 +295,7 @@ class PostsClient:
             outcome=outcome,
             platform=platform,
             queue_id=queue_id,
+            recycling_id=recycling_id,
             removed=removed,
             sort=sort,
             status=status,
@@ -1243,6 +1247,61 @@ class PostsClient:
         )
         return _response.data
 
+    def edit_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        text: str,
+        wait: typing.Optional[str] = None,
+        part: typing.Optional[int] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> LivePostChange:
+        """
+        Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        text : str
+
+        wait : typing.Optional[str]
+
+        part : typing.Optional[int]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        LivePostChange
+            LivePostChange
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.posts.edit_target(
+            workspace_id="workspaceId",
+            post_id="postId",
+            target_id="targetId",
+            text="text",
+        )
+        """
+        _response = self._raw_client.edit_target(
+            workspace_id, post_id, target_id, text=text, wait=wait, part=part, request_options=request_options
+        )
+        return _response.data
+
     def unpublish(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> PostUnpublish:
@@ -1282,7 +1341,7 @@ class PostsClient:
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> LivePostChanges:
         """
-        Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+        Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 
         Parameters
         ----------
@@ -1564,6 +1623,7 @@ class AsyncPostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -1572,7 +1632,7 @@ class AsyncPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> PostPage:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -1595,6 +1655,8 @@ class AsyncPostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -1644,6 +1706,7 @@ class AsyncPostsClient:
             outcome=outcome,
             platform=platform,
             queue_id=queue_id,
+            recycling_id=recycling_id,
             removed=removed,
             sort=sort,
             status=status,
@@ -2741,6 +2804,69 @@ class AsyncPostsClient:
         )
         return _response.data
 
+    async def edit_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        text: str,
+        wait: typing.Optional[str] = None,
+        part: typing.Optional[int] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> LivePostChange:
+        """
+        Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        text : str
+
+        wait : typing.Optional[str]
+
+        part : typing.Optional[int]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        LivePostChange
+            LivePostChange
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.posts.edit_target(
+                workspace_id="workspaceId",
+                post_id="postId",
+                target_id="targetId",
+                text="text",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.edit_target(
+            workspace_id, post_id, target_id, text=text, wait=wait, part=part, request_options=request_options
+        )
+        return _response.data
+
     async def unpublish(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> PostUnpublish:
@@ -2788,7 +2914,7 @@ class AsyncPostsClient:
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> LivePostChanges:
         """
-        Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+        Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 
         Parameters
         ----------

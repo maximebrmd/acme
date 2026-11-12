@@ -6,6 +6,7 @@ import type {
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
+import type { RecyclingRuleId } from "#publishing/domain/recycling-rule-id.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -41,6 +42,8 @@ export interface PostSearchRequest {
   readonly platform: Option.Option<Platform>;
   /** Posts this queue placed. */
   readonly queueId: Option.Option<QueueId>;
+  /** Posts this recycling rule made. */
+  readonly recyclingId: Option.Option<RecyclingRuleId>;
   /** Posts Peal deleted from a channel's platform, or from none. */
   readonly removed: Option.Option<boolean>;
   readonly sort: PostSort;
@@ -179,6 +182,7 @@ export class PostSearch extends Context.Service<
             createdVia: request.createdVia,
             outcome: request.outcome,
             queueId: request.queueId,
+            recyclingId: request.recyclingId,
             removed: request.removed,
             scheduledBefore: to,
             scheduledFrom: from,

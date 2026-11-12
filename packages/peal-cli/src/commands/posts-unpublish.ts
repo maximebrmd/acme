@@ -22,7 +22,8 @@ const postArgument = Argument.String("post-id").pipe(
   )
 );
 
-const changeLine = (
+/** What a change of a live post did, or does, in a line. */
+export const changeLine = (
   change: LivePostChange,
   names: ReadonlyMap<string, string>,
   post: Post
@@ -33,6 +34,16 @@ const changeLine = (
     Option.map(({ channelId }) => named(names, channelId)),
     Option.getOrElse(() => change.targetId)
   );
+
+  if (change.kind === "edit") {
+    if (change.status === "done") {
+      return `Edited on ${channel}${change.finishedAt === null ? "" : ` on ${instant(change.finishedAt)}`}.`;
+    }
+
+    return change.status === "failed"
+      ? `Could not edit it on ${channel} (${change.code ?? "unknown"}): Peal kept the earlier text${change.code === "unavailable" || change.code === "rateLimited" ? `, though ${channel} may show the new one if an answer was lost: look there before you ask again` : ". Ask again to edit it"}.`
+      : `Editing it on ${channel}. peal posts changes ${change.postId} says how it goes.`;
+  }
 
   if (change.status === "done") {
     return `Deleted from ${channel}${change.finishedAt === null ? "" : ` on ${instant(change.finishedAt)}`}${change.alreadyGone === true ? " (a part was gone already)" : ""}.`;
@@ -64,9 +75,11 @@ const isNamedBy = (channel: Channel, given: string): boolean => {
   );
 };
 
-// The post's targets `given` names: by the target's channel id, or the
-// channel's handle, or its platform and handle.
-const targetsOn = (
+/**
+ * The post's targets `given` names: by the target's channel id, or the
+ * channel's handle, or its platform and handle.
+ */
+export const targetsOn = (
   post: Post,
   channels: readonly Channel[],
   given: string
@@ -278,6 +291,6 @@ export const changes = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "List what was asked of a post once it was live (deleting it from a channel's platform), newest first, and where each stands."
+    "List what was asked of a post once it was live (deleting it from a channel's platform, or editing its text there), newest first, and where each stands."
   )
 );

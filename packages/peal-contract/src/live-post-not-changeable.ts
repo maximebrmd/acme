@@ -12,7 +12,7 @@ export class LivePostNotChangeable extends Schema.TaggedError<LivePostNotChangea
   { ...errorEnvelope, reason: LivePostRefusalSchema },
   {
     description:
-      "The post cannot be changed on that channel now. `reason` says why: `notPublished` (not live there), `alreadyRemoved`, `noPlatformId` (Peal has no id for it, as for a post confirmed by hand), `notSupported` (the platform's capabilities say why), `changeInProgress`, `channelUnavailable` (disconnected, turned off or to reconnect) or `boostRunning` (stop the boost first).",
+      "The post cannot be changed on that channel now. `reason` says why: `notPublished` (not live there), `alreadyRemoved`, `noPlatformId` (Peal has no id for it, as for a post confirmed by hand), `notSupported` (the platform's capabilities say why), `changeInProgress`, `channelUnavailable` (disconnected, turned off or to reconnect) `boostRunning` (stop the boost first) or `approvalRequired` (your posts need an approval: an approver makes the edit).",
     httpApiStatus: 409,
   }
 ) {}

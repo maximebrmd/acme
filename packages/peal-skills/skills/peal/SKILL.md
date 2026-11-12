@@ -167,10 +167,10 @@ media, the options its platform asks for, and the lookups that answer their
 values (a board, a playlist, a category).
 
 Set an option only when the user chose it: who may reply, a content warning, a
-community, a language, a disclosure label or Instagram `collaborators` (who
-are invited). Left out, each platform does what its description says
-(`ifLeftOut`), most often the account's own default. A `media` option names a
-file of the workspace's media by its id.
+community, a language, a disclosure label, Instagram `collaborators` (invited)
+or a `format` (a `story`, sent without its text, gone after 24 hours; a Facebook
+`reel`), never guessed from the file. Left out, each platform does what its
+description says (`ifLeftOut`). A `media` option names a library file by id.
 
 ```sh
 peal channels capabilities <channel-id> --json
@@ -191,10 +191,9 @@ peal drafts discard <post-id> --json
 `drafts save` answers the post, with its `id`. Saving a draft again makes
 another draft: keep the id, and change the draft with `--post`.
 
-To write a post like one the workspace has, whatever its status, duplicate
-it: the new draft has its text, media, channels with their options, and
-tags, without what the workspace no longer has, and no time. Each call makes
-another draft.
+To copy a post the workspace has, whatever its status, duplicate it: the new
+draft has its text, media, channels with their options and tags, without what
+the workspace no longer has, and no time. Each call makes another draft.
 
 ```sh
 peal posts duplicate <post-id> --json
@@ -225,10 +224,10 @@ each channel would receive and everything that would refuse it. With it,
 peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T09:00:00Z --dry-run --json
 ```
 
-When the user keeps a timetable rather than a time ("add this to the
-queue"), put the post on a queue's next free slot with `--queue <name>` or
-`--default-queue` (see
-[references/saved.md](references/saved.md#queues)) instead of `--at`.
+A timetable rather than a time ("add this to the queue") is `--queue <name>`
+or `--default-queue` instead of `--at`, and a post to repeat ("every two
+weeks") `peal recycling start`: see [references/saved.md](references/saved.md)
+(queues, repeating posts).
 
 A thread is a post with parts after it: each `--then` adds one, in order,
 sent as a reply to the part before it where the platform has threads (a
@@ -354,7 +353,7 @@ only when the user wants it sent again:
 peal posts repost <post-id> <target-id> --json
 ```
 
-Taking a live post down (`peal posts unpublish`) deletes it for everyone, for good: only when the user asks, as [references/live-posts.md](references/live-posts.md) says. Counts once a post is live (`peal analytics`), and what the workspace used
+Taking a live post down (`peal posts unpublish`) deletes it for everyone, for good, and correcting its text (`peal posts edit`, Mastodon and Google Business Profile) changes it for everyone at once: either only when the user asks, as [references/live-posts.md](references/live-posts.md) says. Counts once a post is live (`peal analytics`), and what the workspace used
 of its plan by UTC day (`peal usage`, needs billing:read):
 [references/reports.md](references/reports.md).
 
@@ -436,13 +435,14 @@ Every error of the API carries:
 
 `forbidden` carries a `reason`:
 
-| `reason`            | Meaning, and what to do                                                        |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `missingScope`      | The person did not give this client `scope`. Tell them; do not work around it. |
-| `missingPermission` | The role or the key lacks `permission`. Tell them; do not work around it.      |
-| `personRequired`    | Only a person in the web app does this.                                        |
-| `wrongWorkspace`    | The key or token belongs to another workspace: check `PEAL_WORKSPACE`.         |
-| `suspended`         | The account is suspended.                                                      |
+| `reason`            | Meaning, and what to do                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `missingScope`      | The person did not give this client `scope`. Tell them; do not work around it.                                                                        |
+| `missingPermission` | The role or the key lacks `permission`. Tell them; do not work around it.                                                                             |
+| `personRequired`    | Only a person in the web app does this.                                                                                                               |
+| `wrongWorkspace`    | The key or token belongs to another workspace: check `PEAL_WORKSPACE`.                                                                                |
+| `suspended`         | The account is suspended.                                                                                                                             |
+| `twoStepRequired`   | The workspace requires two-step verification: the person turns it on in the web app's account settings, then the same sign-in works. An agent cannot. |
 
 ### Error codes
 

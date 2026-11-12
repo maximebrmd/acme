@@ -33,6 +33,7 @@ import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
 import { QueuesApi } from "./queues.ts";
+import { RecyclingApi } from "./recycling.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
@@ -170,6 +171,60 @@ export { QueueNotFound } from "./queue-not-found.ts";
 export { TooManyQueues } from "./too-many-queues.ts";
 
 export {
+  defaultRecyclingPageSize,
+  maxOccurrences,
+  maxRecyclingInterval,
+  maxRecyclingPageSize,
+  maxRecyclingRulesPerWorkspace,
+  maxRecyclingVariants,
+  minOccurrences,
+  NewRecyclingRuleSchema,
+  RecyclingApi,
+  RecyclingComingSchema,
+  RecyclingEndReasonSchema,
+  RecyclingIntervalSchema,
+  RecyclingResumeSchema,
+  RecyclingRuleChangeSchema,
+  RecyclingRulePageSchema,
+  RecyclingRuleSchema,
+  RecyclingStatusSchema,
+  RecyclingUnitSchema,
+  RecyclingVariantSchema,
+  recyclingComingShown,
+} from "./recycling.ts";
+
+export type {
+  NewRecyclingRule,
+  RecyclingComing,
+  RecyclingEndReason,
+  RecyclingInterval,
+  RecyclingResume,
+  RecyclingRule,
+  RecyclingRuleChange,
+  RecyclingRulePage,
+  RecyclingStatus,
+  RecyclingUnit,
+  RecyclingVariant,
+} from "./recycling.ts";
+
+export {
+  NotRecyclableReasonSchema,
+  PostNotRecyclable,
+} from "./post-not-recyclable.ts";
+
+export type { NotRecyclableReason } from "./post-not-recyclable.ts";
+
+export { RecyclingEndsTooSoon } from "./recycling-ends-too-soon.ts";
+
+export { RecyclingRuleEnded } from "./recycling-rule-ended.ts";
+
+export { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
+
+export { RecyclingVariantsInvalid } from "./recycling-variants-invalid.ts";
+
+export { TooManyRecyclingRules } from "./too-many-recycling-rules.ts";
+
+export {
   ActivityActorSchema,
   ActivityApi,
   ActivityApplicationSchema,
@@ -194,12 +249,14 @@ export {
   AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
+  TwoStepStatusSchema,
 } from "./account.ts";
 
 export type {
   AccountClosure,
   AccountExport,
   DeleteAccount,
+  TwoStepStatus,
 } from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
@@ -214,7 +271,12 @@ export { LastOwner } from "./last-owner.ts";
 
 export { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 
-export { DeleteWorkspaceSchema, WorkspacesApi } from "./workspaces.ts";
+export {
+  DeleteWorkspaceSchema,
+  SecureWorkspaceSchema,
+  WorkspaceSecuritySchema,
+  WorkspacesApi,
+} from "./workspaces.ts";
 
 export { AlreadyMember } from "./already-member.ts";
 
@@ -238,7 +300,11 @@ export type { Role } from "./role.ts";
 
 export { TooManyInvitations } from "./too-many-invitations.ts";
 
-export type { DeleteWorkspace } from "./workspaces.ts";
+export type {
+  DeleteWorkspace,
+  SecureWorkspace,
+  WorkspaceSecurity,
+} from "./workspaces.ts";
 
 export { WorkspaceBusy } from "./workspace-busy.ts";
 
@@ -518,6 +584,7 @@ export {
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
   postCountNames,
+  PostFormatCapabilitiesSchema,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";
@@ -530,6 +597,7 @@ export type {
   MediaFormat,
   OptionConstraint,
   PlatformCapabilities,
+  PostFormatCapabilities,
   TextLimit,
 } from "./capabilities.ts";
 
@@ -762,6 +830,7 @@ export {
   NoticePageSchema,
   NoticeSchema,
   NoticesApi,
+  RecyclingNoticeReasonSchema,
   UnreadNoticesSchema,
   WebhookTurnOffReasonSchema,
 } from "./notices.ts";
@@ -772,6 +841,7 @@ export type {
   NoticeChannel,
   NoticeEvent,
   NoticePage,
+  RecyclingNoticeReason,
   UnreadNotices,
   WebhookTurnOffReason,
 } from "./notices.ts";
@@ -839,6 +909,7 @@ export {
   LivePostChangeSchema,
   LivePostChangesSchema,
   LivePostChangeStatusSchema,
+  LivePostEditSchema,
   LivePostRefusalSchema,
   LivePostRefusedTargetSchema,
   PostUnpublishSchema,
@@ -849,6 +920,7 @@ export type {
   LivePostChangeKind,
   LivePostChanges,
   LivePostChangeStatus,
+  LivePostEdit,
   LivePostRefusal,
   LivePostRefusedTarget,
   PostUnpublish,
@@ -1047,7 +1119,9 @@ export {
   ThreadsReplyControlSchema,
   XOptionsSchema,
   XReplySettingsSchema,
+  FacebookFormatSchema,
   FacebookOptionsSchema,
+  InstagramFormatSchema,
   InstagramOptionsSchema,
   InstagramTrialReelSchema,
   instagramCoverTypes,
@@ -1086,7 +1160,9 @@ export type {
   ThreadsReplyControl,
   XOptions,
   XReplySettings,
+  FacebookFormat,
   FacebookOptions,
+  InstagramFormat,
   InstagramOptions,
   InstagramTrialReel,
   YouTubeLicense,
@@ -1798,6 +1874,7 @@ export class Api extends HttpApi.make("peal")
   .add(SignaturesApi)
   .add(ChannelSetsApi)
   .add(QueuesApi)
+  .add(RecyclingApi)
   .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.

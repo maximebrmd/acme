@@ -14,6 +14,9 @@ public final class ForbiddenReason {
 
     public static final ForbiddenReason WRONG_WORKSPACE = new ForbiddenReason(Value.WRONG_WORKSPACE, "wrongWorkspace");
 
+    public static final ForbiddenReason TWO_STEP_REQUIRED =
+            new ForbiddenReason(Value.TWO_STEP_REQUIRED, "twoStepRequired");
+
     public static final ForbiddenReason SUSPENDED = new ForbiddenReason(Value.SUSPENDED, "suspended");
 
     public static final ForbiddenReason PERSON_REQUIRED = new ForbiddenReason(Value.PERSON_REQUIRED, "personRequired");
@@ -59,6 +62,8 @@ public final class ForbiddenReason {
                 return visitor.visitUntrustedOrigin();
             case WRONG_WORKSPACE:
                 return visitor.visitWrongWorkspace();
+            case TWO_STEP_REQUIRED:
+                return visitor.visitTwoStepRequired();
             case SUSPENDED:
                 return visitor.visitSuspended();
             case PERSON_REQUIRED:
@@ -80,6 +85,8 @@ public final class ForbiddenReason {
                 return UNTRUSTED_ORIGIN;
             case "wrongWorkspace":
                 return WRONG_WORKSPACE;
+            case "twoStepRequired":
+                return TWO_STEP_REQUIRED;
             case "suspended":
                 return SUSPENDED;
             case "personRequired":
@@ -104,6 +111,8 @@ public final class ForbiddenReason {
 
         UNTRUSTED_ORIGIN,
 
+        TWO_STEP_REQUIRED,
+
         UNKNOWN
     }
 
@@ -119,6 +128,8 @@ public final class ForbiddenReason {
         T visitSuspended();
 
         T visitUntrustedOrigin();
+
+        T visitTwoStepRequired();
 
         T visitUnknown(String unknownType);
     }

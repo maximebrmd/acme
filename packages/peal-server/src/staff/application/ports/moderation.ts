@@ -48,6 +48,14 @@ export class Moderation extends Context.Service<
     readonly revokeSessions: (
       act: Act
     ) => Effect.Effect<readonly EndedImpersonation[], ModerationFailed>;
+    /**
+     * Turns the account's two-step verification off: deletes its
+     * authenticator, recovery codes and trusted browsers, ends its
+     * sessions and emails it. The impersonations that ended with them.
+     */
+    readonly resetTwoStep: (
+      act: Act
+    ) => Effect.Effect<readonly EndedImpersonation[], ModerationFailed>;
     readonly resendVerification: (account: {
       readonly email: string;
       readonly locale: Locale;

@@ -20,8 +20,10 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
   content: { media: [], overrides: [], text: "A synthetic draft" },
   createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
+  occurrence: null,
   outcome: null,
   queueId: null,
+  recyclingId: null,
   schedule: null,
   scheduledBy: null,
   scheduledVia: null,
@@ -29,6 +31,7 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
   tagIds: [],
   targets: channelIds.map((channelId, index) => ({
     channelId,
+    editedAt: null,
     failureReason: null,
     id: `00000000-0000-7000-8000-00000000010${index}`,
     options: null,

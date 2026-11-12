@@ -23,6 +23,8 @@ module Peal
 
       field :text_counts, -> { Internal::Types::Array[Peal::Types::TextCount] }, optional: false, nullable: false, api_name: "textCounts"
 
+      field :text_not_sent, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "textNotSent"
+
       field :violations, -> { Internal::Types::Array[Peal::Types::ContentViolation] }, optional: false, nullable: false
     end
   end

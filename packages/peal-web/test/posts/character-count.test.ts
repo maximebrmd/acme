@@ -147,3 +147,24 @@ describe(fitOn, () => {
     expect(fits(fitOn("pinterest", "é".repeat(800), 1))).toBeTruthy();
   });
 });
+
+describe("the text of a story", () => {
+  const story = { format: "story", platform: "instagram" } as const;
+
+  it("is neither counted nor checked, and said not to be sent", () => {
+    const fit = fitOn("instagram", "#a ".repeat(2000), 1, story);
+
+    expect(fit.counts).toStrictEqual([]);
+    expect(fit.tightest).toBeUndefined();
+    expect(fit.problems).toStrictEqual([]);
+    expect(fit.textNotSent).toBeTruthy();
+    expect(fitOn("instagram", "", 1, story).textNotSent).toBeFalsy();
+  });
+
+  it("takes one file", () => {
+    expect(fitOn("instagram", "", 2, story).problems).toStrictEqual([
+      { _tag: "tooManyMedia", count: 2, maximum: 1 },
+    ]);
+    expect(fitOn("instagram", "A caption", 1).textNotSent).toBeFalsy();
+  });
+});

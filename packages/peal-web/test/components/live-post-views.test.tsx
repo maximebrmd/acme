@@ -50,8 +50,10 @@ const removed: Post = {
   content: { media: [], overrides: [], text: "Our field note." },
   createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
+  occurrence: null,
   outcome: "published",
   queueId: null,
+  recyclingId: null,
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
   scheduledBy: null,
   scheduledVia: null,
@@ -60,6 +62,7 @@ const removed: Post = {
   targets: [
     {
       channelId: "c1",
+      editedAt: null,
       failureReason: null,
       id: "t1",
       options: null,

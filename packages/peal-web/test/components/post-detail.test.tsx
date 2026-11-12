@@ -38,6 +38,7 @@ const target = (
   fields: Partial<PostTarget>
 ): PostTarget => ({
   channelId,
+  editedAt: null,
   failureReason: null,
   id,
   options: null,
@@ -56,8 +57,10 @@ const post: Post = {
   content: { media: [], overrides: [], text: "Our field note." },
   createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
+  occurrence: null,
   outcome: "unconfirmed",
   queueId: null,
+  recyclingId: null,
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
   scheduledBy: null,
   scheduledVia: null,
@@ -248,6 +251,29 @@ describe(PostDetailView, () => {
     expect(english).toContain("YouTube made the video private");
     expect(english).toContain("daily allowance of uploads stayed used up");
     expect(french).toContain("YouTube a rendu la vidéo privée");
+  });
+
+  it("shows a published story's format, with no link to it", async () => {
+    const shown: Post = {
+      ...post,
+      tagIds: [],
+      targets: [
+        target("t6", "c3", {
+          options: { format: "story", platform: "instagram" },
+          permalink: "https://social.example/stories/synthetic",
+          publishedAt: utc("2026-06-15T08:00:02Z"),
+          status: "published",
+        }),
+      ],
+    };
+
+    const english = await renderPost("en", shown);
+    const french = await renderPost("fr", shown);
+
+    expect(english).toContain("Story");
+    expect(english).toContain("Stories disappear after 24 hours");
+    expect(english).not.toContain("https://social.example/stories/synthetic");
+    expect(french).toContain("Les stories disparaissent après 24 heures");
   });
 
   it("tells a video YouTube went live with without its thumbnail", async () => {

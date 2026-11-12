@@ -13,6 +13,10 @@ export const MembershipSchema = Schema.Struct({
   permissions: Schema.Array(PermissionSchema),
   role: Schema.String,
   slug: Schema.String,
+  // The workspace requires two-step verification of its members: while the
+  // user's account does not have it on, the workspace refuses them
+  // (Forbidden, `twoStepRequired`).
+  twoStepRequired: Schema.Boolean,
 }).annotate({ identifier: "Membership" });
 
 export type Membership = typeof MembershipSchema.Type;
@@ -28,6 +32,8 @@ export const MeSchema = Schema.Struct({
     image: Schema.NullOr(Schema.String),
     locale: Schema.Literals(["en", "fr"]),
     name: Schema.String,
+    // Whether the account has two-step verification on.
+    twoStepEnabled: Schema.Boolean,
   }),
   workspaces: Schema.Array(MembershipSchema),
 }).annotate({ identifier: "Me" });
@@ -42,7 +48,7 @@ export class SessionApi extends HttpApiGroup.make("session")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with the signed-in user and every workspace they belong to, with their role and permissions in each. API keys belong to a workspace, not a user, and get 403.",
+          "Answers with the signed-in user and every workspace they belong to, with their role and permissions in each, whether the account has two-step verification on, and whether each workspace requires it (a workspace that requires it refuses the user while it is off). API keys belong to a workspace, not a user, and get 403.",
         summary: "Get the signed-in user",
       })
     )

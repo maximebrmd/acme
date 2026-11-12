@@ -469,6 +469,23 @@ Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, wit
 
 `remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved, or a post added to it on a slot not yet reached, meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
 
+## Repeat a post [#recycling]
+
+`POST …/recycling`, with `{ "postId", "every": { "count", "unit" }, "count"?, "until"?, "variants"?, "queueId"? }`, makes a post that is scheduled, publishing or out repeat ([how](/scheduling#recycling)): `unit` is `days` (1 to 365), `weeks` (1 to 52) or `months` (1 to 12); `count` is the number of posts in all, the source counted (2 to 100); `until` the last day, as `YYYY-MM-DD` in the source's zone; each variant is `{ "text", "overrides"? }`, 10 at most. It answers 201 with the rule, whose `coming` lists its next three posts and the variant each says. Starting, changing, pausing, resuming and stopping a rule needs post:schedule (or post:create where posts wait for an approval, for starting), never staff acting as a member; reading, post:read.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Open all summer, as before."}]}'
+```
+
+`GET …/recycling` lists the rules, oldest first (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` reads one, `PATCH` changes its `count` or `until` (null takes it away), its `variants` (an empty array takes them away) or pauses it (`paused`), `POST …/recycling/{ruleId}/resume` with `{ "variants"? }` sets a paused rule going again, or one that ended for `planLimit`, `contentRejected`, `noChannels`, `queueFull` or `sourceWithdrawn` (its post cancelled or taken back to draft, once it is scheduled again: 409 `post_not_recyclable` until then, or while another rule repeats it, and 409 `too_many_recycling_rules` past 100), and `DELETE` stops it: the posts it made stay. Each post a rule makes carries `recyclingId` and `occurrence` (its place, the source being 1), and `GET …/posts/search?recyclingId=…` lists them. Each post acts as the rule's starter as they are then: a key's rule stops once the key is revoked. Changing, pausing, resuming or stopping a rule needs post:schedule, or to be its starter acting as they started it: in the web app, through the same application or with the same key.
+
+- A post that cannot repeat answers 409 `post_not_recyclable`, with `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`.
+- Variants that break the source's channels' rules answer 422 `recycling_variants_invalid`, each by its place from 1 with its violations; an ending that leaves no post to make, 422 `recycling_ends_too_soon`.
+- 100 rules going on answer 409 `too_many_recycling_rules`; a change to an ended rule, 409 `recycling_rule_ended`.
+
 ## Unpublish a post [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` deletes a published post from one channel's platform, for everyone, every part of a thread, the last first ([Unpublish a post](/scheduling#unpublish)); `POST …/posts/{postId}/unpublish` asks it of every channel the post is on, and answers each channel's change (`changes`) beside why the others could not (`refused`): one channel that cannot never fails the whole request. Both need post:publish, and an OAuth client the scope `workspace:publish`. It cannot be undone.
@@ -500,6 +517,23 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 - Webhooks hear `post.unpublished` or `post.unpublish_failed` ([Webhooks](/webhooks#post-unpublished)).
 - `GET …/platforms/capabilities` says beforehand where Peal deletes posts: `livePost.unpublish`, and `livePost.unpublishBlockedBy` (`noApi`, `permission` or `unverified`) where it does not.
 
+## Edit a published post [#edit-live]
+
+`POST …/posts/{postId}/targets/{targetId}/edit` replaces the text of one part of a published post on one channel's platform, for everyone ([Edit a published post](/scheduling#edit-live)), with `{ "text": "…", "part": 0 }`: `part` counts from 0, the post itself, which it is when left out. Only the text changes, never the media, the options or the time. It needs post:publish, an OAuth client the scope `workspace:publish`, and is refused to someone whose posts need an [approval](/review). Peal edits on Mastodon and Google Business Profile.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/edit?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Doors open at 7 pm, not 6."}'
+```
+
+- The text is checked as that channel's text is when a post is scheduled, a Mastodon content warning counted: a text the platform would refuse answers 422 `post_content_invalid` with every violation, and so does a text of spaces alone; an empty `text` answers 400 `invalid_request`.
+- The request is accepted (202) with the change (`kind: "edit"`), and a job makes the edit, tried again as a deletion is; `?wait=<seconds>` waits for it to end. A change that `failed` has its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied` for a Mastodon channel to reconnect, or the platform's own), and may be asked again. The change never holds the text.
+- Once done, the text is that part's own text on that channel (`content.overrides`, or the part's in `content.followUps`), the other channels keep theirs, and the target has its `editedAt`. Peal keeps no earlier text.
+- Before anything is called, 409 `live_post_not_changeable` says why not, as for a deletion, with `approvalRequired` too; a part the post does not have live there is `noPlatformId`.
+- Webhooks hear `post.edited` or `post.edit_failed` ([Webhooks](/webhooks#post-edited)), with the part, never the text. `livePost.edit` and `livePost.editBlockedBy` in the capabilities say beforehand where Peal edits.
+
 ## From MCP and the command line [#tools]
 
 | Request                             | MCP tool                          | Command                              |
@@ -512,6 +546,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 | `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
 | `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
 | `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
+| `POST …/targets/{targetId}/edit`    | `edit_published_post`             | `peal posts edit <post-id>`          |
 | `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
 | `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
 | `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |

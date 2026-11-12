@@ -12,6 +12,7 @@ export interface Target {
   readonly emailVerified: boolean;
   readonly id: UserId;
   readonly staff: boolean;
+  readonly twoStepEnabled: boolean;
 }
 
 /** What staff ask for, with what the action needs. */
@@ -22,11 +23,13 @@ export type Request =
 const refuse = (reason: ActionRefused["reason"]) =>
   Result.fail(new ActionRefused({ reason }));
 
-// Actions that would lock staff out of their own account, or hand them a
-// session of their own, which they have already.
+// Actions that would lock staff out of their own account, hand them a
+// session of their own, which they have already, or take the second step
+// off the account the console may require it of.
 const notOnSelf: ReadonlySet<StaffAction> = new Set([
   "ban",
   "impersonate",
+  "resetTwoStep",
   "revokeSessions",
 ]);
 
@@ -34,7 +37,8 @@ const notOnSelf: ReadonlySet<StaffAction> = new Set([
  * Whether staff may do this to the account at `now`. Staff never ban, sign
  * out or impersonate themselves, never impersonate other staff, who would
  * then act with their rights, and only resend a confirmation the account
- * still needs. A ban ends in the future, if it ends, and a banned account,
+ * still needs, and only reset two-step verification an account has on. A
+ * ban ends in the future, if it ends, and a banned account,
  * which cannot sign in, cannot be signed in as either.
  */
 export const mayAct = (
@@ -53,6 +57,10 @@ export const mayAct = (
 
   if (request.action === "impersonate" && target.banned) {
     return refuse("banned");
+  }
+
+  if (request.action === "resetTwoStep" && !target.twoStepEnabled) {
+    return refuse("twoStepOff");
   }
 
   if (request.action === "resendVerification" && target.emailVerified) {

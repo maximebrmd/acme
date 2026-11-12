@@ -179,7 +179,7 @@ const stranger = memberOf(workspaceId, []);
 
 describe("the platforms' capabilities endpoint", () => {
   it.effect(
-    "say where a post can be unpublished, as live-post-support does",
+    "say where a post can be unpublished or edited, as live-post-support does",
     () =>
       Effect.gen(function* livePosts() {
         const client = yield* clientWith(viewer);
@@ -191,13 +191,13 @@ describe("the platforms' capabilities endpoint", () => {
         assert.deepStrictEqual(
           all.map(({ livePost, platform }) => [platform, livePost]),
           platforms.map((platform) => {
-            const { editBlockedBy, unpublish } = livePostSupport[platform];
+            const { edit, unpublish } = livePostSupport[platform];
 
             return [
               platform,
               {
-                edit: false,
-                ...Option.match(editBlockedBy, {
+                edit: Option.isNone(edit),
+                ...Option.match(edit, {
                   onNone: () => ({}),
                   onSome: (blocker) => ({ editBlockedBy: blocker }),
                 }),
@@ -268,7 +268,10 @@ describe("the platforms' capabilities endpoint", () => {
             type,
             maxLength,
           ]),
-        [["videoTitle", "text", 255]]
+        [
+          ["format", "choice", null],
+          ["videoTitle", "text", 255],
+        ]
       );
 
       // Where a post may have parts after its first, and what they become.
@@ -780,6 +783,43 @@ describe("the capabilities and the contract's copy of the rules", () => {
               })
             )
       );
+    }
+  });
+
+  it("describe each post format with the contract's rules for it", () => {
+    assert.deepStrictEqual(
+      views.flatMap(({ platform, postFormats }) =>
+        (postFormats ?? []).map(({ name }) => `${platform}:${name}`)
+      ),
+      ["instagram:story", "facebook:reel", "facebook:story"]
+    );
+
+    for (const view of views) {
+      for (const format of view.postFormats ?? []) {
+        const rules = ContractText.rulesFor(
+          view.platform,
+          Schema.decodeUnknownSync(ContractOptionsSchema)({
+            format: format.name,
+            platform: view.platform,
+          })
+        );
+
+        const formats = rules.media?.formats ?? {};
+
+        assert.isAbove(format.description.length, 0);
+        assert.strictEqual(format.sendsText, rules.sendsText !== false);
+        assert.strictEqual(format.media.maxCount, rules.maxMedia);
+        assert.strictEqual(format.media.required, rules.mediaRequired);
+        assert.deepStrictEqual(
+          format.media.formats,
+          MediaContentTypeSchema.literals.flatMap((contentType) =>
+            Option.match(Option.fromUndefinedOr(formats[contentType]), {
+              onNone: () => [],
+              onSome: (limits) => [formatOf(contentType, limits)],
+            })
+          )
+        );
+      }
     }
   });
 

@@ -14,6 +14,8 @@ import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
+import { LivePostEdits } from "#publishing/application/live-post-edits.ts";
+import type { PendingEdit } from "#publishing/application/live-post-edits.ts";
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
@@ -460,6 +462,7 @@ export const blueskySession = Effect.fn("test.blueskySession")(
 export const metaHostsAt = (url: string, instagramUrl = url): MetaHosts => ({
   facebookDialog: new URL(url),
   facebookGraph: new URL(url),
+  facebookUpload: new URL(url),
   instagramApi: new URL(instagramUrl),
   instagramAuthorize: new URL(instagramUrl),
   instagramGraph: new URL(instagramUrl),
@@ -714,12 +717,24 @@ export const pinterestClientWith = Effect.fn("test.pinterestClient")(
   }
 );
 
+/** LivePostEdits answering the edits given, by change id. */
+export const pendingEdits = (edits: ReadonlyMap<string, PendingEdit>) =>
+  Layer.succeed(
+    LivePostEdits,
+    LivePostEdits.of({
+      of: (changeId) =>
+        Effect.succeed(Option.fromUndefinedOr(edits.get(changeId))),
+    })
+  );
+
 /**
  * The clients that delete posts, with the fakes as the platforms, over
  * plain HTTP, with the credentials given.
  */
 export const liveClientsOn = (options: {
   readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+  /** The edits pending, by change id: none by default. */
+  readonly edits?: ReadonlyMap<string, PendingEdit>;
   readonly platforms: Partial<Omit<LivePostSettings, "mastodonScheme">>;
 }) =>
   LivePostClients.pipe(
@@ -736,6 +751,7 @@ export const liveClientsOn = (options: {
           Layer.mergeAll(
             HttpTest,
             options.credentials,
+            pendingEdits(options.edits ?? new Map()),
             SecureRandom.layerWebCrypto,
             Digest.layerWebCrypto
           )

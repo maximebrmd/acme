@@ -23,6 +23,9 @@ public record WorkspaceMember : IJsonOnDeserialized
     [JsonPropertyName("role")]
     public required string Role { get; set; }
 
+    [JsonPropertyName("twoStepEnabled")]
+    public bool? TwoStepEnabled { get; set; }
+
     [JsonPropertyName("userId")]
     public required string UserId { get; set; }
 

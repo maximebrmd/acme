@@ -89,6 +89,11 @@ layer(StorageTest)("a target's stored options", (it) => {
           "instagram",
           "facebook",
           "facebook",
+          "instagram",
+          "instagram",
+          "facebook",
+          "facebook",
+          "facebook",
         ]
       );
     })

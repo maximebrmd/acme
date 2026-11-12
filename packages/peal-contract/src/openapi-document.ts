@@ -36,6 +36,9 @@ const summaries = {
   "post.approved": "A post that waited was approved",
   "post.cancelled": "A post was cancelled",
   "post.changes_requested": "Changes were asked for on a post that waited",
+  "post.edit_failed":
+    "Peal could not edit a post's text on a channel's platform",
+  "post.edited": "A post's text was edited on a channel's platform",
   "post.failed": "A post did not go out on a channel",
   "post.finished": "Every channel of a post has its result",
   "post.published": "A post went live on a channel",

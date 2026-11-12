@@ -239,6 +239,33 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("post.unpublish_failed"),
   }),
+  // Peal replaced the text of the post's part at `part` (from 0) on the
+  // channel's platform, at a member's request: that part's text on the
+  // channel is the new one in Peal too. Never the text itself.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      editedAt: Schema.DateTimeUtc,
+      part: Schema.Int,
+    }),
+    type: Schema.Literal("post.edited"),
+  }),
+  // Peal could not edit the post's part on the channel's platform: `code`
+  // says why (`postGone` when the platform no longer has it); Peal's text
+  // is unchanged, the platform's most likely too (after `unavailable` or
+  // `rateLimited` an answer may have been lost), and a member may ask
+  // again.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      code: Schema.NonEmptyString,
+      failedAt: Schema.DateTimeUtc,
+      part: Schema.Int,
+    }),
+    type: Schema.Literal("post.edit_failed"),
+  }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent
   // until it is approved.
@@ -421,6 +448,8 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "post.approved": () => ofPost,
       "post.cancelled": ofTargets,
       "post.changes_requested": () => ofPost,
+      "post.edit_failed": ofChannel,
+      "post.edited": ofChannel,
       "post.failed": ofChannel,
       "post.finished": ofTargets,
       "post.published": ofChannel,

@@ -186,11 +186,15 @@ describe("the options of Instagram and Facebook", () => {
       ["audioName", "text", false],
       ["collaborators", "textList", false],
       ["coverMediaId", "media", false],
+      ["format", "choice", false],
       ["shareToFeed", "boolean", false],
       ["thumbOffsetMs", "integer", false],
       ["trialReel", "choice", false],
     ]);
-    expect(fields("facebook")).toStrictEqual([["videoTitle", "text", false]]);
+    expect(fields("facebook")).toStrictEqual([
+      ["format", "choice", false],
+      ["videoTitle", "text", false],
+    ]);
   });
 
   it("take collaborators as one to three usernames, each once", () => {

@@ -16,7 +16,8 @@ export const businessLocationPath =
 
 /** A local post Google holds. */
 export interface FakeLocalPost {
-  readonly body: NewLocalPost;
+  /** What the post holds: what it was made with, as patched since. */
+  body: NewLocalPost;
   readonly createTime: string;
   readonly name: string;
   /** The states the next reads answer, the last one for good. */
@@ -381,6 +382,38 @@ export const fakeGoogleBusinessApi = Effect.fnUntraced(
 
       if (request.method === "DELETE") {
         return businessError(404, "NOT_FOUND");
+      }
+
+      // localPosts.patch: "You must specify each field that is being
+      // updated in the mask"; a field the mask does not name is left as
+      // it was, and a patch without a mask is refused.
+      if (request.method === "PATCH") {
+        const patched = posts.find(
+          ({ name }) => request.path === `/v4/${name}`
+        );
+
+        if (patched === undefined) {
+          return businessError(404, "NOT_FOUND");
+        }
+
+        const mask = (request.query.get("updateMask") ?? "")
+          .split(",")
+          .filter((field) => field !== "");
+
+        if (mask.length === 0) {
+          return validationError(
+            businessErrorCodes.missingValue,
+            "update_mask"
+          );
+        }
+
+        const body = postOf(request);
+
+        patched.body = mask.includes("summary")
+          ? { ...patched.body, summary: body.summary ?? "" }
+          : patched.body;
+
+        return json(shown(patched));
       }
 
       const post = posts.find(({ name }) => route === `GET /v4/${name}`);

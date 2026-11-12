@@ -108,5 +108,14 @@
     "trialReel": "performance"
   },
   { "platform": "facebook" },
-  { "platform": "facebook", "videoTitle": "A synthetic video title" }
+  { "platform": "facebook", "videoTitle": "A synthetic video title" },
+  { "format": "story", "platform": "instagram" },
+  { "format": "feed", "platform": "instagram" },
+  { "format": "story", "platform": "facebook" },
+  {
+    "format": "reel",
+    "platform": "facebook",
+    "videoTitle": "A synthetic reel title"
+  },
+  { "format": "feed", "platform": "facebook" }
 ]

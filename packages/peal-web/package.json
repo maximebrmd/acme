@@ -34,6 +34,7 @@
     "next-intl": "4.14.9",
     "peal-contract": "workspace:*",
     "peal-ui": "workspace:*",
+    "qrcode.react": "4.2.0",
     "react": "19.3.1",
     "react-day-picker": "10.0.2",
     "react-dom": "19.3.1",

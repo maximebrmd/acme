@@ -46,6 +46,7 @@ const UserPage = async ({
   const actions = await getTranslations("Staff.actions");
   const roles = await getTranslations("WorkspaceSettings");
   const staffT = await getTranslations("Staff");
+  const twoStep = await getTranslations("TwoStep");
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,6 +87,9 @@ const UserPage = async ({
             )}
           </Fact>
           <Fact label={t("sessions")}>{user.sessions}</Fact>
+          <Fact label={twoStep("staffField")}>
+            {twoStep("staffValue", { on: String(user.twoStepEnabled) })}
+          </Fact>
         </dl>
       </Section>
       <Section title={t("banTitle")}>
@@ -117,6 +121,7 @@ const UserPage = async ({
           name={user.name}
           self={user.id === staff.userId}
           staff={user.staff}
+          twoStepEnabled={user.twoStepEnabled}
           userId={user.id}
         />
       </Section>

@@ -9,6 +9,10 @@ import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import type { Membership } from "#workspace/domain/membership.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
+// An account without two-step verification, in a workspace that does not
+// require it.
+const noTwoStep = { enabled: false, required: false };
+
 const workspaceId = WorkspaceIdSchema.make(
   "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60"
 );
@@ -41,14 +45,31 @@ const bannedUntilNoon: Membership = {
     expiresAt: Option.some(DateTime.makeUnsafe("2026-11-09T12:00:00Z")),
   }),
   role: "editor",
+  twoStep: noTwoStep,
 };
+
+// An owner of a workspace that requires two-step verification.
+const standing = (enabled: boolean) =>
+  directoryWith(
+    Option.some({
+      ban: Option.none(),
+      role: "owner",
+      twoStep: { enabled, required: true },
+    })
+  );
 
 describe(ResolveMember, () => {
   it.effect("reads the member's role on every request", () =>
     Effect.gen(function* resolves() {
       const actor = yield* resolve.pipe(
         Effect.provide(
-          directoryWith(Option.some({ ban: Option.none(), role: "viewer" }))
+          directoryWith(
+            Option.some({
+              ban: Option.none(),
+              role: "viewer",
+              twoStep: noTwoStep,
+            })
+          )
         )
       );
 
@@ -60,6 +81,23 @@ describe(ResolveMember, () => {
         "post:read",
       ]);
     })
+  );
+
+  it.effect(
+    "refuses a member without two-step verification where it is required, and lets them in once it is on",
+    () =>
+      Effect.gen(function* twoStep() {
+        const refused = yield* resolve.pipe(
+          Effect.provide(standing(false)),
+          Effect.flip
+        );
+
+        assert.strictEqual(refused._tag, "TwoStepRequired");
+
+        const actor = yield* resolve.pipe(Effect.provide(standing(true)));
+
+        assert.include(actor.permissions, "organization:secure");
+      })
   );
 
   it.effect("refuses a banned member until the ban ends", () =>

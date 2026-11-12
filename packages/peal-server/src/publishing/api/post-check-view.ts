@@ -37,16 +37,20 @@ const countsView = (counts: PartCounts) => ({
   })),
 });
 
-const previewView = (preview: ChannelPreview): PreviewView => ({
-  ...countsView(preview),
-  channelId: preview.channel.channelId,
-  parts: preview.parts.map((part) => ({
-    ...countsView(part),
-    part: part.part,
-  })),
-  platform: preview.channel.platform,
-  violations: [...preview.violations],
-});
+const previewView = (preview: ChannelPreview): PreviewView => {
+  const view: PreviewView = {
+    ...countsView(preview),
+    channelId: preview.channel.channelId,
+    parts: preview.parts.map((part) => ({
+      ...countsView(part),
+      part: part.part,
+    })),
+    platform: preview.channel.platform,
+    violations: [...preview.violations],
+  };
+
+  return preview.textNotSent === true ? { ...view, textNotSent: true } : view;
+};
 
 /**
  * What clients see of a check: the use case's answer, with the ids the
