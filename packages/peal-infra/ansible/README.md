@@ -560,21 +560,46 @@ password manager: the backups cannot be read without it.
 
 `bootstrap.yml` logs in once, with your key, as the account the server's
 image lets in, `bootstrap_user`, and creates `ops`, which every other
-playbook logs in as. Images come in two kinds:
+playbook logs in as. Images come in three kinds:
 
-| The image lets your key into                                | Set                            | Then                                                                                                                                         |
-| ----------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| root                                                        | nothing: `root` is the default | `site.yml`, or `uptime.yml`, turns root's logins over SSH off                                                                                |
-| an account of its own with sudo, such as `ubuntu`, not root | `bootstrap_user: ubuntu`       | The bootstrap uses sudo, which that account has without a password. `site.yml`, or `uptime.yml`, removes it, with its home and its sudo rule |
+| The image lets your key into                                          | Set                            | Then                                                                                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| root                                                                  | nothing: `root` is the default | `site.yml`, or `uptime.yml`, turns root's logins over SSH off                                                                                                |
+| an account of its own with sudo, such as `ubuntu`, not root           | `bootstrap_user: ubuntu`       | The bootstrap uses sudo, which that account has without a password. `site.yml`, or `uptime.yml`, removes it, with its home and its sudo rule                 |
+| an account of its own whose sudo asks its password, such as `install` | `bootstrap_user: install`      | The bootstrap uses sudo with the password from your keychain, below. `site.yml`, or `uptime.yml`, removes the account, with its home, as for the second kind |
 
 Set `bootstrap_user` in the group's `main.yml`, so every later run knows
 which account to remove, rather than with `-e`. The provider's page for
 the image names the account it lets your key into.
 
-The image's own account holds your key and sudo without a password, so it
-goes once `ops` works: the `ssh` role, which runs as `ops` with sudo,
-removes it right after it has confirmed `ops`'s keys and sudo rule, then
-lets `ops` alone in over SSH. cloud-init makes that account once per
+When the account's sudo asks a password, Ansible reads it from the login
+keychain of the Mac that runs it, through
+[`scripts/become-keychain.py`](scripts/become-keychain.py), which prints
+the item `PEAL_BECOME_KEYCHAIN_SERVICE` names and is never typed or shown:
+
+```sh
+PEAL_BECOME_KEYCHAIN_SERVICE=peal-production-install-password \
+  uv run ansible-playbook playbooks/bootstrap.yml --limit production \
+  -e ssh_via_tunnel=false --become-password-file scripts/become-keychain.py
+```
+
+Make the item once, with the account's name and a service of your choice,
+`security add-generic-password -a <account> -s <service> -T "" -U -w`,
+which asks the password without echoing it. `-T ""` trusts no application,
+so macOS asks at each read: allow once, never "Always Allow". The password
+serves the bootstrap alone, as `ops` has sudo without one: once `site.yml`
+has removed the account, delete the item
+(`security delete-generic-password -s <service>`).
+
+Ubuntu 26.04's `sudo` is sudo-rs, whose password prompt ansible-core
+recognises. If a run stops at the prompt all the same, add
+`-e ansible_become_exe=/usr/bin/sudo.ws`, the classic sudo the image also
+ships.
+
+The image's own account holds your key and sudo, so it goes once `ops`
+works: the `ssh` role, which runs as `ops` with sudo, removes it right
+after it has confirmed `ops`'s keys and sudo rule, then lets `ops` alone
+in over SSH. cloud-init makes that account once per
 instance, not at each boot. A server made again from a snapshot is a new
 instance, where it comes back: run `site.yml`, or `uptime.yml`, after
 restoring one.
