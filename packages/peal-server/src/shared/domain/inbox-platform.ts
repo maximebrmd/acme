@@ -4,7 +4,8 @@ import { Schema } from "effect";
  * The platforms whose comments the inbox reads only where the server's
  * operator turned them on (`PEAL_INBOX_PLATFORMS`): their platforms grant
  * the permissions they take to an app only after a review (Meta's App
- * Review; Google's verification of a sensitive scope for YouTube), so a
+ * Review; Google's verification of a sensitive scope for YouTube;
+ * LinkedIn's Community Management review for company pages), so a
  * server offers them once its app holds them. Mastodon and Bluesky need no
  * such grant, and are always read.
  */
@@ -12,6 +13,7 @@ export const OptionalInboxPlatformSchema = Schema.Literals([
   "facebook",
   "instagram",
   "youtube",
+  "linkedin",
 ]);
 
 export type OptionalInboxPlatform = typeof OptionalInboxPlatformSchema.Type;
@@ -60,3 +62,20 @@ export const instagramLoginCommentScope = "instagram_business_manage_comments";
  */
 export const youtubeCommentScope =
   "https://www.googleapis.com/auth/youtube.force-ssl";
+
+/**
+ * The permissions a LinkedIn company page's comments take, from the
+ * Comments API reference (learn.microsoft.com/en-us/linkedin/marketing/
+ * community-management/shares/comments-api, dated 2026-04-28, version
+ * 2026-10, read 2026-11-12): `r_organization_social_feed` to "Retrieve
+ * organizations' posts, comments, and reactions" and
+ * `w_organization_social_feed` to "Post, comment, and react on posts on
+ * behalf of an organization". Granted with the Community Management API
+ * (…/marketing/increasing-access, dated 2026-10-14). Asked at the pages'
+ * sign-in where the inbox reads LinkedIn; a member's own posts cannot be
+ * read (`r_member_social` is closed), so LinkedIn is pages only.
+ */
+export const linkedinCommentScopes = {
+  read: "r_organization_social_feed",
+  write: "w_organization_social_feed",
+} as const;
