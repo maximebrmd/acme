@@ -1198,6 +1198,8 @@ export interface StudioState {
   readonly deliveries: readonly StudioDelivery[];
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
+  /** Whether its new posts ask for short links unless they say. */
+  readonly shortLinksByDefault: boolean;
   readonly invitations: readonly Invitation[];
   /** The workspace's connect links, newest first. */
   readonly connectLinks: readonly ConnectLink[];
@@ -1309,6 +1311,7 @@ export const makeStudio = (
       queues: studioQueues(mastodonId),
       recyclingRules: [],
       sent: {},
+      shortLinksByDefault: false,
       signatures,
       signingKeys: true,
       storeStatus: 200,
@@ -2507,7 +2510,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
-      shortenLinks: payload.shortenLinks ?? false,
+      shortenLinks: payload.shortenLinks ?? before.shortLinksByDefault,
       status,
       tagIds: payload.tagIds ?? [],
       targets: targetsOf(id, written),
@@ -3204,7 +3207,10 @@ export const studioGroupsLive = (studio: Studio) =>
               true
             );
 
-            const { posts: all } = yield* Ref.get(studio.state);
+            const { posts: all, shortLinksByDefault } = yield* Ref.get(
+              studio.state
+            );
+
             const id = `0190f3a0-0000-7000-8000-${String(all.length + 1).padStart(12, "0")}`;
 
             yield* record(studio, `create:${id}`);
@@ -3221,7 +3227,7 @@ export const studioGroupsLive = (studio: Studio) =>
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
-              shortenLinks: payload.shortenLinks ?? false,
+              shortenLinks: payload.shortenLinks ?? shortLinksByDefault,
               status: "draft",
               tagIds: payload.tagIds ?? [],
               targets: targetsOf(id, written),
@@ -4419,13 +4425,25 @@ export const studioGroupsLive = (studio: Studio) =>
             Effect.tap(() =>
               record(studio, `short-links-default:${String(payload.byDefault)}`)
             ),
+            Effect.tap(() =>
+              Ref.update(studio.state, (current) => ({
+                ...current,
+                shortLinksByDefault: payload.byDefault,
+              }))
+            ),
             Effect.as({
               ...shortLinkStatusFixture,
               byDefault: payload.byDefault,
             })
           ),
         status: () =>
-          allowed("post:read").pipe(Effect.as(shortLinkStatusFixture)),
+          allowed("post:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ shortLinksByDefault }) => ({
+              ...shortLinkStatusFixture,
+              byDefault: shortLinksByDefault,
+            }))
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "usage", (handlers) =>

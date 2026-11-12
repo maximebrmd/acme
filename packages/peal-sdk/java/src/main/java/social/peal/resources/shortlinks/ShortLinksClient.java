@@ -31,42 +31,42 @@ public class ShortLinksClient {
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that leaves <code>shortenLinks</code> out takes <code>byDefault</code> when it is made (the web app, the API, MCP, the command line and feeds alike), and <code>false</code> always wins; on a server without short links, nothing is shortened whatever the default. A post that asks goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public ShortLinkStatus status(String workspaceId) {
         return this.rawClient.status(workspaceId).body();
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that leaves <code>shortenLinks</code> out takes <code>byDefault</code> when it is made (the web app, the API, MCP, the command line and feeds alike), and <code>false</code> always wins; on a server without short links, nothing is shortened whatever the default. A post that asks goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public ShortLinkStatus status(String workspaceId, RequestOptions requestOptions) {
         return this.rawClient.status(workspaceId, requestOptions).body();
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that leaves <code>shortenLinks</code> out takes <code>byDefault</code> when it is made (the web app, the API, MCP, the command line and feeds alike), and <code>false</code> always wins; on a server without short links, nothing is shortened whatever the default. A post that asks goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public ShortLinkStatus status(String workspaceId, StatusShortLinksRequest request) {
         return this.rawClient.status(workspaceId, request).body();
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that leaves <code>shortenLinks</code> out takes <code>byDefault</code> when it is made (the web app, the API, MCP, the command line and feeds alike), and <code>false</code> always wins; on a server without short links, nothing is shortened whatever the default. A post that asks goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public ShortLinkStatus status(String workspaceId, StatusShortLinksRequest request, RequestOptions requestOptions) {
         return this.rawClient.status(workspaceId, request, requestOptions).body();
     }
 
     /**
-     * Sets whether the workspace's new posts ask for short links unless their author says otherwise; each post still chooses for itself. Needs organization:update, which owners and admins hold.
+     * Sets whether the workspace's new posts ask for short links unless they say otherwise (<code>shortenLinks</code>), whatever makes them: the web app, the API, MCP, the command line and feeds. Each post still chooses for itself, and takes the default when it is made, so a change reaches only posts made after it. Needs organization:update, which owners and admins hold.
      */
     public ShortLinkStatus setDefault(String workspaceId, ShortLinkSettings request) {
         return this.rawClient.setDefault(workspaceId, request).body();
     }
 
     /**
-     * Sets whether the workspace's new posts ask for short links unless their author says otherwise; each post still chooses for itself. Needs organization:update, which owners and admins hold.
+     * Sets whether the workspace's new posts ask for short links unless they say otherwise (<code>shortenLinks</code>), whatever makes them: the web app, the API, MCP, the command line and feeds. Each post still chooses for itself, and takes the default when it is made, so a change reaches only posts made after it. Needs organization:update, which owners and admins hold.
      */
     public ShortLinkStatus setDefault(String workspaceId, ShortLinkSettings request, RequestOptions requestOptions) {
         return this.rawClient.setDefault(workspaceId, request, requestOptions).body();

@@ -353,7 +353,8 @@ export const PostSchema = Schema.Struct({
   // How it was last scheduled or moved; null on a draft, or on a post from
   // before this was kept.
   scheduledVia: Schema.NullOr(PostOriginSchema),
-  // Whether its links go out shortened, where the server has short links.
+  // Whether its links go out shortened, where the server has short links:
+  // as its request said, else the workspace's default when it was made.
   shortenLinks: Schema.Boolean,
   status: PostStatusSchema,
   // The workspace's tags it is filed under (`tags.list` names them).
@@ -393,13 +394,16 @@ export const PostDraftSchema = Schema.Struct({
       )
     )
   ),
-  // A signature of the workspace to put under its text, on every channel.
   // True to send its links shortened, where the server has short links
   // (`shortLinks.status`): each link written with http:// or https:// and
   // longer than a short address goes out as one, per channel; the text
-  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
-  // a live post sends the text as written. Left out, false on a new draft; on an update, the draft keeps its own.
+  // kept stays as written, Pinterest, Instagram and TikTok get links as
+  // written, as does a link to a channel's own platform, and an edit of a
+  // live post sends the text as written. False sends them as written. Left
+  // out, a new draft takes the workspace's default (`byDefault`) when it is
+  // made, and keeps it; on an update, the draft keeps its own.
   shortenLinks: Schema.optionalKey(Schema.Boolean),
+  // A signature of the workspace to put under its text, on every channel.
   signatureId: Schema.optionalKey(Schema.String),
   tagIds: Schema.optionalKey(PostTagIdsSchema),
 }).annotate({ identifier: "PostDraft" });
@@ -483,13 +487,16 @@ export const NewPostSchema = Schema.Struct({
       )
     )
   ),
-  // A signature of the workspace to put under its text, on every channel.
   // True to send its links shortened, where the server has short links
   // (`shortLinks.status`): each link written with http:// or https:// and
   // longer than a short address goes out as one, per channel; the text
-  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
-  // a live post sends the text as written. Left out, false.
+  // kept stays as written, Pinterest, Instagram and TikTok get links as
+  // written, as does a link to a channel's own platform, and an edit of a
+  // live post sends the text as written. False sends them as written. Left
+  // out, the post takes the workspace's default (`byDefault`) when it is
+  // made, and keeps it.
   shortenLinks: Schema.optionalKey(Schema.Boolean),
+  // A signature of the workspace to put under its text, on every channel.
   signatureId: Schema.optionalKey(Schema.String),
   // The workspace's tags it is filed under; left out, none.
   tagIds: Schema.optionalKey(PostTagIdsSchema),
@@ -525,10 +532,10 @@ export const PostToValidateSchema = Schema.Struct({
       )
     )
   ),
-  // A signature of the workspace to put under its text, on every channel.
   // As `send` takes it: what the check answers is about the text as
   // written, which a short address never makes longer.
   shortenLinks: Schema.optionalKey(Schema.Boolean),
+  // A signature of the workspace to put under its text, on every channel.
   signatureId: Schema.optionalKey(Schema.String),
   when: Schema.optionalKey(PostTimingSchema),
 }).annotate({ identifier: "PostToValidate" });
@@ -899,7 +906,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. Needs post:create, channel:read, and media:read when it shows media.",
+          "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. `shortenLinks: true` sends its links shortened where the server has short links (`shortLinks.status`), `false` as written; left out, the post takes the workspace's default (`byDefault`) when it is made, and keeps it. Needs post:create, channel:read, and media:read when it shows media.",
         summary: "Create a draft",
       })
     ),
@@ -934,7 +941,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       success: PostSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, \`at\` an instant, kept with its IANA time zone, or \`queue\`, which puts it on the next free slot of a queue (\`queueId\`, or the workspace's default queue), decided when the request is received so that posts sent together never take the same slot; it is then an ordinary scheduled post, through every rule a time chosen by hand goes through, the plan's room counted in the slot's month (PlanLimitReached, never a later month), and with no channel or channel set named it goes to the queue's (QueueHasNoRoom when the queue has no free slot within ${queueHorizonDays} days). Instead of listing channels, or beside them, it may name channel sets (\`channelSets\`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's \`warnings\`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. \`defaultSignatures\` puts each channel's default signature under its text, and \`signatureId\` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, \`at\` an instant, kept with its IANA time zone, or \`queue\`, which puts it on the next free slot of a queue (\`queueId\`, or the workspace's default queue), decided when the request is received so that posts sent together never take the same slot; it is then an ordinary scheduled post, through every rule a time chosen by hand goes through, the plan's room counted in the slot's month (PlanLimitReached, never a later month), and with no channel or channel set named it goes to the queue's (QueueHasNoRoom when the queue has no free slot within ${queueHorizonDays} days). Instead of listing channels, or beside them, it may name channel sets (\`channelSets\`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's \`warnings\`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. \`defaultSignatures\` puts each channel's default signature under its text, and \`signatureId\` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. \`shortenLinks: true\` sends its links shortened where the server has short links (\`shortLinks.status\`), \`false\` as written; left out, the post takes the workspace's default (\`byDefault\`) when it is made, and keeps it. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
         summary: "Create and send a post",
       })
     ),
@@ -970,7 +977,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       success: ImportResultSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates and sends the posts a CSV file lists, one per row, at most ${maxImportRows} rows under its first line, which names the columns, in any order: \`text\` and \`channels\` (channel ids separated by spaces, commas or semicolons) are required columns, \`at\` too (\`now\`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's \`time_zone\`, an IANA zone, UTC if left out); \`media\` (ids of ready media of the workspace), \`allow_duplicate\` (\`true\` or \`false\`) and \`idempotency_key\` are optional. Cells follow RFC 4180, strictly: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled; a quote anywhere else is ImportUnreadable (\`strayQuote\`). Blank lines are no rows. The file is checked first, every row, as \`validate\` checks a post and as the file it is (a row an earlier row leaves no room for in its month, one that repeats an earlier row's content near its time, and one that carries an earlier row's key with another post are refused; a row with more or fewer cells than the first line names is unreadable, never guessed); unless every row is valid, nothing is made, and \`rows\` says which are \`valid\`, \`refused\` (with what \`send\` would have answered) or \`unreadable\` (with the cells at fault). \`dryRun\` stops there even when every row is valid. Otherwise the rows are then made in order as \`bulk\` makes its items, each \`created\` or, when something changed since the check or a row repeats an earlier one, \`refused\`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An \`Idempotency-Key\` header works as on \`bulk\`, by row. Needs post:schedule, post:read and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates and sends the posts a CSV file lists, one per row, at most ${maxImportRows} rows under its first line, which names the columns, in any order: \`text\` and \`channels\` (channel ids separated by spaces, commas or semicolons) are required columns, \`at\` too (\`now\`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's \`time_zone\`, an IANA zone, UTC if left out); \`media\` (ids of ready media of the workspace), \`allow_duplicate\` (\`true\` or \`false\`) and \`idempotency_key\` are optional. Cells follow RFC 4180, strictly: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled; a quote anywhere else is ImportUnreadable (\`strayQuote\`). Blank lines are no rows. The file is checked first, every row, as \`validate\` checks a post and as the file it is (a row an earlier row leaves no room for in its month, one that repeats an earlier row's content near its time, and one that carries an earlier row's key with another post are refused; a row with more or fewer cells than the first line names is unreadable, never guessed); unless every row is valid, nothing is made, and \`rows\` says which are \`valid\`, \`refused\` (with what \`send\` would have answered) or \`unreadable\` (with the cells at fault). \`dryRun\` stops there even when every row is valid. Otherwise the rows are then made in order as \`bulk\` makes its items, each \`created\` or, when something changed since the check or a row repeats an earlier one, \`refused\`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An \`Idempotency-Key\` header works as on \`bulk\`, by row. A file has no column for short links: each post takes the workspace's default (\`shortLinks.status\`'s \`byDefault\`). Needs post:schedule, post:read and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.`,
         summary: "Import posts from CSV",
       })
     ),

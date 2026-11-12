@@ -33,7 +33,12 @@
   first by cursor (UUIDv7), by post or channel, with their clicks over a
   range of UTC days (30 by default, 92 at most, `domain/click-range.ts`),
   and one link with its days. `ShortLinkSettings` reads the default with
-  post:read and sets it with organization:update.
+  post:read and sets it with organization:update; `defaultFor`, without
+  a permission and false without a base, is what publishing's
+  `ShortLinksShortLinkDefaults` reads for each new post that does not
+  say. It comes alone as `ShortLinkSettingsLive`, which the composition
+  root gives publishing: `ShortLinksLive` needs publishing through
+  `LinkStanding`.
 - Clicks are kept 400 days by day (`domain/click-retention.ts`, the daily
   `shortlinks.click-retention` cron at 04:53 UTC, the `shortLinkClicks`
   period of the data-processing registry and the privacy policy's table:

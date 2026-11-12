@@ -74,8 +74,9 @@
   (`reports-tools.ts`) answer the short links endpoints' views
   (`#shortlinks/api/short-links-view.ts`); their descriptions say counts
   are approximate and nothing about visitors is kept. `shortenLinks` on
-  the post tools asks for short links; no tool shortens an address
-  outside a post. The CLI's is `peal short-links`.
+  the post tools asks for short links, left out the workspace's default
+  (their descriptions say so); no tool shortens an address outside a
+  post. The CLI's is `peal short-links`.
 - `get_channel_capabilities` and `run_channel_lookup`
   (`capabilities-tools.ts`) answer the views of the capabilities and lookups
   endpoints; they read, and are open world, as they may ask the platform.

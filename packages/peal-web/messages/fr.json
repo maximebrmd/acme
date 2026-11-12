@@ -3509,7 +3509,7 @@
       "description": "Une publication qui demande des liens courts part avec ses liens longs remplacés par des adresses courtes, une par canal, qui comptent leurs clics. Le texte conservé reste tel qu’écrit, Pinterest, Instagram et TikTok gardent les liens tels qu’écrits, comme un lien vers la plateforme du canal, et les adresses courtes cessent de fonctionner quand l’espace de travail est supprimé.",
       "unavailable": "Ce serveur n’a pas de liens courts : son exploitant n’a pas indiqué où ils se trouvent.",
       "label": "Raccourcir les liens des nouvelles publications par défaut",
-      "hint": "Chaque publication peut toujours choisir dans l’éditeur.",
+      "hint": "Les publications faites par l’API, un agent, la ligne de commande ou un flux la prennent aussi, sauf si elles disent autrement. Chaque publication peut toujours choisir dans l’éditeur.",
       "readOnly": "Les propriétaires et les administrateurs choisissent la valeur par défaut.",
       "saved": "Valeur par défaut enregistrée.",
       "saveFailed": "La valeur par défaut n’a pas pu être enregistrée.",

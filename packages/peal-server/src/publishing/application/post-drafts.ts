@@ -37,6 +37,7 @@ import type { PresetAsk } from "./post-presets.ts";
 import { channelsFor, mediaFor, tagsFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
+import { ShortLinkDefaults } from "./short-link-defaults.ts";
 import type { SignatureNotFound } from "./signature-not-found.ts";
 import { TagStore } from "./tag-store.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
@@ -65,8 +66,9 @@ export interface DraftRequest {
    */
   readonly presets?: PresetAsk;
   /**
-   * Whether its links go out shortened. Left out, a new draft's do not,
-   * and a draft that is changed keeps its own choice.
+   * Whether its links go out shortened. Left out, a new draft takes the
+   * workspace's default (`ShortLinkDefaults`), and a draft that is changed
+   * keeps its own choice.
    */
   readonly shortenLinks?: boolean | undefined;
   /**
@@ -92,6 +94,7 @@ type Ports =
   | PostPresets
   | PostOrigins
   | PostRepository
+  | ShortLinkDefaults
   | TagStore
   | WorkspaceChannels;
 
@@ -221,6 +224,12 @@ export class PostDrafts extends Context.Service<
           withPorts
         );
 
+        const shortenLinks =
+          request.shortenLinks ??
+          (yield* ShortLinkDefaults.use((defaults) =>
+            defaults.byDefault(actor.workspaceId)
+          ).pipe(withPorts));
+
         const targets = yield* targetsOn(
           postId,
           channels,
@@ -243,7 +252,7 @@ export class PostDrafts extends Context.Service<
                 ),
                 Option.getOrElse(tags, () => [])
               ),
-              request.shortenLinks ?? false
+              shortenLinks
             );
 
             yield* posts.insert(made, targets);

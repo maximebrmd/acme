@@ -32,6 +32,16 @@ export const ShortLinksLive = Layer.mergeAll(
   Layer.provide(Layer.mergeAll(DrizzleShortLinkStore, RandomShortCodes))
 );
 
+/**
+ * The workspaces' defaults alone (ShortLinkSettings), for publishing's new
+ * posts, which LinkStanding's own need of publishing keeps from taking
+ * them from ShortLinksLive. Reads `PEAL_SHORT_LINK_BASE` when it is built.
+ * Needs the database (Drizzle).
+ */
+export const ShortLinkSettingsLive = ShortLinkSettings.layer.pipe(
+  Layer.provide(Layer.merge(ShortLinkBaseLive, DrizzleShortLinkStore))
+);
+
 /** The clicks' daily retention. Needs PurgeClicks. */
 export { ClickRetentionCron as ShortLinksCronsLive } from "#shortlinks/infrastructure/crons.ts";
 

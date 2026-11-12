@@ -111,6 +111,7 @@ import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
   LinkStandingLive,
+  ShortLinkSettingsLive,
   ShortLinksApiLive,
   ShortLinksLive,
 } from "#shortlinks/container.ts";
@@ -276,7 +277,8 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
 // media the media context holds, once the review context's gate admits
 // them.
 // A post deleted from its platform is no longer followed by analytics
-// nor the inbox, and none is while a boost of the ads context shows it.
+// nor the inbox, and none is while a boost of the ads context shows it. A
+// new post that does not say takes the workspace's short links default.
 const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -285,7 +287,8 @@ const PublishingContextLive = PublishingLive.pipe(
       ReviewGateContextLive,
       AnalyticsRecordsLive,
       EngagementRecordsLive,
-      PostBoostsLive
+      PostBoostsLive,
+      ShortLinkSettingsLive
     )
   )
 );
