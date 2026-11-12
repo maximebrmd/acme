@@ -3,6 +3,7 @@ import { CurrentMember, defaultMediaPageSize } from "peal-contract";
 
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
+import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { itemView } from "#media/api/media-view.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
@@ -35,15 +36,70 @@ const unreachable = {
   unknownHost: "its host name does not exist",
 } as const;
 
-/** What the media tools do, through the media context's use cases. */
+// Why the image model made no image, and what to do about it.
+const imageFailures = {
+  refused:
+    "The image provider refused this description, under its content rules or for the size asked for. Nothing was stored; the requests it cost are spent. Ask the user for another description.",
+  timedOut:
+    "The image provider took too long to answer. Nothing was stored, and the requests it cost are spent, as it may have made the image: call again only if the user wants to.",
+  unreachable:
+    "The image provider could not be reached. Nothing was spent or stored: call again in a few minutes.",
+  unusableAnswer:
+    "The image provider answered with nothing Peal stores as an image. Nothing was stored; the requests it cost are spent.",
+} as const;
+
+/**
+ * What the media tools do, through the media context's use cases, and the
+ * assistant's for an image it makes.
+ */
 export const MediaToolsLive = MediaTools.toLayer(
   Effect.gen(function* mediaTools() {
     const library = yield* MediaLibrary;
+    const assistant = yield* WritingAssistant;
     const refusedByPlan = yield* planRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return MediaTools.of({
+      generate_image: ({ aspect, prompt }) =>
+        Effect.gen(function* generating() {
+          const maker = yield* actor;
+
+          return yield* assistant
+            .generateImage(maker, { aspect: aspect ?? "square", prompt })
+            .pipe(
+              Effect.catchTags({
+                AssistantQuotaExceeded: ({ dailyLimit }) =>
+                  refuse(
+                    `The workspace has fewer of its ${String(dailyLimit)} daily assistant requests left than an image costs. Nothing was made; ask again after midnight UTC, or the user moves to a plan that allows more.`
+                  ),
+                AssistantUnavailable: () =>
+                  refuse(
+                    "This Peal server makes no images: its operator has not set up an image model. Ask the user for a picture to upload or import instead."
+                  ),
+                DraftRejected: ({ maxLength, reason }) =>
+                  refuse(
+                    reason === "empty"
+                      ? "The prompt is blank: describe what the image should show."
+                      : `The prompt is longer than the ${String(maxLength)} characters an image is made from: shorten it.`
+                  ),
+                ImageFailed: ({ reason }) => refuse(imageFailures[reason]),
+                ImageNotStored: () =>
+                  refuse(
+                    "The image was made, but the server's media store did not answer, so it was not kept: try again in a few minutes."
+                  ),
+                ImagesBusy: () =>
+                  refuse(
+                    "The workspace already has two images being made, or the server as many as it makes together: nothing was asked. Call again in a moment, once one has finished."
+                  ),
+                MissingPermission: notAllowed("make an image into the media"),
+                PlanLimitReached: refusedByPlan(
+                  maker.workspaceId,
+                  "Nothing was made."
+                ),
+              })
+            );
+        }),
       import_media: ({ altText, url }) =>
         Effect.gen(function* importing() {
           const importer = yield* actor;

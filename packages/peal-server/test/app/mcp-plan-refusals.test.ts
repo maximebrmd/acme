@@ -7,6 +7,7 @@ import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
+import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
@@ -84,6 +85,48 @@ describe("a plan's refusal, through the tools", () => {
                         allowed: 1_000_000_000,
                         limit: "mediaStorage",
                         needed: 1_000_002_000,
+                        used: 999_999_000,
+                      })
+                    ),
+                }),
+                Layer.mock(WritingAssistant, {}),
+                UpgradePaths.layerTest
+              )
+            )
+          )
+        )
+      )
+  );
+
+  it.effect(
+    "tells an image the storage the plan allows, before anything is made",
+    () =>
+      Effect.gen(function* generating() {
+        const tools = yield* MediaTools;
+
+        const refusal = yield* refusalOf(
+          tools.handle("generate_image", {
+            prompt: "A lighthouse at dawn, in watercolour.",
+          })
+        );
+
+        assert.strictEqual(
+          refusal,
+          `Nothing was made. The workspace's Free plan allows 1000000000 bytes of media stored, uploads in progress included, and it has 999999000. The Starter plan has room: an owner or an admin of the workspace orders it on its billing page, ${billingUrl}`
+        );
+      }).pipe(
+        Effect.provide(
+          MediaToolsLive.pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                Layer.mock(MediaLibrary, {}),
+                Layer.mock(WritingAssistant, {
+                  generateImage: () =>
+                    refusing(
+                      new PlanLimitReached({
+                        allowed: 1_000_000_000,
+                        limit: "mediaStorage",
+                        needed: 1_000_000_000 + 16 * 1024 * 1024,
                         used: 999_999_000,
                       })
                     ),
