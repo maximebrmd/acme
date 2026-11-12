@@ -274,3 +274,20 @@ describe("RSS's dates", () => {
     ).toStrictEqual([undefined, undefined, undefined, undefined, undefined]);
   });
 });
+
+describe("a hostile document", () => {
+  it("is read fast when a title or a summary is a 2 MiB run of '<'", () => {
+    const run = "<".repeat(2 * 1024 * 1024);
+
+    const atom = `<feed xmlns="http://www.w3.org/2005/Atom"><title type="html"><![CDATA[${run}]]></title><entry><id>1</id><title type="html"><![CDATA[${run}]]></title><summary type="html"><![CDATA[${run}]]></summary></entry></feed>`;
+
+    const rss = `<rss><channel><item><guid>1</guid><title><![CDATA[${run}]]></title><description><![CDATA[${run}]]></description></item></channel></rss>`;
+
+    const started = performance.now();
+
+    readFeed(atom, "https://x.example/");
+    readFeed(rss, "https://x.example/");
+
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});

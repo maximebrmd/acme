@@ -47,4 +47,18 @@ describe(textOfHtml, () => {
 
     expect(performance.now() - started).toBeLessThan(2000);
   });
+
+  it("strips tags in linear time, however many open without closing", () => {
+    const hostile = "<".repeat(2 * 1024 * 1024);
+    const started = performance.now();
+
+    expect(textOfHtml(hostile)).toBe(hostile);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
+  it("still makes a paragraph break between paragraphs, and drops other tags", () => {
+    expect(textOfHtml("<p>a</p>\n <p class='x'>b</p> <i>c</i><BR/>d")).toBe(
+      "a\n\nb c\nd"
+    );
+  });
 });

@@ -46,21 +46,32 @@ export interface CleanItem {
 export const identityOf = (kind: string, value: string): string =>
   `${kind}\u0000${value}`;
 
+/**
+ * The most of a title or a line Peal reads before cleaning it: four times
+ * what it keeps, room for markup and entities. Every text is bounded
+ * before it is cleaned, so no cleaning ever reads a whole document.
+ */
+export const maxLineInput = maxFeedTitleLength * 4;
+
 const nonEmpty = (text: string): Option.Option<string> =>
   text.length === 0 ? Option.none() : Option.some(text);
 
 /** A line of text Peal did not write, made storable; none when empty. */
 export const lineOf = (text: string): Option.Option<string> =>
-  nonEmpty(storableLine(text, maxFeedTitleLength));
+  nonEmpty(storableLine(text.slice(0, maxLineInput), maxFeedTitleLength));
 
 /**
  * An address an item gives, absolute against the feed's own address,
  * kept only when it is HTTP or HTTPS and not too long.
  */
 export const addressOf = (raw: string, base: string): Option.Option<string> => {
-  const trimmed = raw.trim();
+  const trimmed = raw.slice(0, maxFeedUrlLength + 64).trim();
 
-  if (trimmed.length === 0 || !URL.canParse(trimmed, base)) {
+  if (
+    trimmed.length === 0 ||
+    trimmed.length > maxFeedUrlLength ||
+    !URL.canParse(trimmed, base)
+  ) {
     return Option.none();
   }
 
@@ -72,14 +83,17 @@ export const addressOf = (raw: string, base: string): Option.Option<string> => {
     : Option.none();
 };
 
-// Read no more of an HTML summary than this, before it becomes text: a
-// summary is bounded far below it once it is text.
+// Read no more of a summary than this, before it is cleaned: a summary
+// is bounded far below it once it is text.
 const maxSummaryHtml = 64 * 1024;
 
 const summaryOf = (raw: string, isText: boolean): Option.Option<string> =>
   nonEmpty(
     storableText(
-      (isText ? raw : textOfHtml(raw.slice(0, maxSummaryHtml)))
+      (isText
+        ? raw.slice(0, maxSummaryHtml)
+        : textOfHtml(raw.slice(0, maxSummaryHtml))
+      )
         .replaceAll(/[ \t]+/gu, " ")
         .replaceAll(/\n[ \t]*\n[\s]*/gu, "\n\n")
         .trim(),

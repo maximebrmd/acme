@@ -78,15 +78,71 @@ const withoutHidden = (html: string): string => {
   }
 };
 
+const lineBreak = /^br\s*\/?$/u;
+
+// The HTML with each tag (from a `<` to the next `>`) dropped, a line
+// break for `<br>` and a blank line between a `</p>` and the `<p>` after
+// it. Where the next `>` is, is searched again only once passed, so the
+// time is linear in the length, whatever the HTML: a `<` that no `>`
+// follows starts text, as does everything after it.
+const withoutTags = (html: string): string => {
+  const lower = html.toLowerCase();
+  let kept = "";
+  let from = 0;
+  let close = lower.indexOf(">");
+
+  while (from < html.length) {
+    const open = lower.indexOf("<", from);
+
+    if (open === -1) {
+      return kept + html.slice(from);
+    }
+
+    kept += html.slice(from, open);
+
+    if (close !== -1 && close < open) {
+      close = lower.indexOf(">", open);
+    }
+
+    if (close === -1) {
+      return kept + html.slice(open);
+    }
+
+    const tag = lower.slice(open + 1, close).trim();
+
+    from = close + 1;
+
+    if (lineBreak.test(tag)) {
+      kept += "\n";
+    } else if (tag === "/p") {
+      let next = from;
+
+      while (next < html.length && /\s/u.test(html.charAt(next))) {
+        next += 1;
+      }
+
+      const paragraph = lower.startsWith("<p", next)
+        ? lower.indexOf(">", next)
+        : -1;
+
+      if (paragraph !== -1) {
+        kept += "\n\n";
+        close = paragraph;
+        from = paragraph + 1;
+      }
+    }
+  }
+
+  return kept;
+};
+
 /**
- * The text of some HTML: what scripts and styles hold dropped, a line break for `<br>`, a blank line
- * between paragraphs, every other tag dropped, entities decoded last, so
- * an escaped `&lt;b&gt;` stays the text `<b>`.
+ * The text of some HTML: what scripts and styles hold dropped, a line
+ * break for `<br>`, a blank line between paragraphs, every other tag
+ * dropped, entities decoded last, so an escaped `&lt;b&gt;` stays the
+ * text `<b>`. Linear in the length of the HTML.
  */
 export const textOfHtml = (html: string): string =>
-  withoutHidden(html)
-    .replaceAll(/<br\s*\/?>/giu, "\n")
-    .replaceAll(/<\/p>\s*<p[^>]*>/giu, "\n\n")
-    .replaceAll(/<[^>]*>/gu, "")
+  withoutTags(withoutHidden(html))
     .replaceAll(/&(?<name>#x[0-9a-f]+|#\d+|[a-z]+);/giu, decodeEntity)
     .trim();

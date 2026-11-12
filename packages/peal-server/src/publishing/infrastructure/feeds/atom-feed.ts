@@ -3,7 +3,7 @@ import { Option } from "effect";
 import { textOfHtml } from "#shared/domain/html-text.ts";
 
 import { rfc3339Date } from "./feed-dates.ts";
-import { identityOf } from "./raw-feed.ts";
+import { identityOf, maxLineInput } from "./raw-feed.ts";
 import type { RawFeed, RawItem } from "./raw-feed.ts";
 import { mediaPictureIn } from "./rss-feed.ts";
 import { attributeOf, childNamed, childrenNamed } from "./xml-tree.ts";
@@ -39,6 +39,10 @@ const textConstruct = (element: XmlElement): TextConstruct => {
 const titleOf = (element: XmlElement): Option.Option<string> =>
   childOf(element, "title").pipe(
     Option.map(textConstruct),
+    Option.map(({ isText, value }) => ({
+      isText,
+      value: value.slice(0, maxLineInput),
+    })),
     Option.flatMap(({ isText, value }) =>
       nonEmpty(isText ? value : textOfHtml(value))
     )
