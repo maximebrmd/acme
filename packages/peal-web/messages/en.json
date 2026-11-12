@@ -2123,7 +2123,12 @@
       "revokeFor": "Revoke the invitation to {email}",
       "revokeTitle": "Revoke the invitation to {email}?",
       "revokeDescription": "Its link stops working. You can invite them again later.",
-      "revoked": "The invitation to {email} is revoked."
+      "revoked": "The invitation to {email} is revoked.",
+      "copyLink": "Copy link",
+      "copyLinkFor": "Copy the invitation link for {email}",
+      "linkCopied": "Link copied. Only {email} can accept it.",
+      "copyFailed": "The link could not be copied.",
+      "linkNote": "A copied link is the one the email holds: only the person invited can accept it, signed in with the invited address once it is verified, until the invitation expires, 7 days after it was last sent."
     },
     "apiKeys": {
       "description": "Keys let scripts and integrations use the workspace through the API. A key may do only what you chose, never more than you may yourself.",

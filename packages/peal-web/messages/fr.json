@@ -2123,7 +2123,12 @@
       "revokeFor": "Révoquer l’invitation à {email}",
       "revokeTitle": "Révoquer l’invitation à {email} ?",
       "revokeDescription": "Son lien ne fonctionne plus. Vous pourrez inviter cette personne à nouveau.",
-      "revoked": "L’invitation à {email} est révoquée."
+      "revoked": "L’invitation à {email} est révoquée.",
+      "copyLink": "Copier le lien",
+      "copyLinkFor": "Copier le lien de l’invitation de {email}",
+      "linkCopied": "Lien copié. Seule la personne invitée, {email}, peut l’accepter.",
+      "copyFailed": "Le lien n’a pas pu être copié.",
+      "linkNote": "Un lien copié est celui de l’e-mail : seule la personne invitée peut l’accepter, connectée avec l’adresse invitée une fois celle-ci vérifiée, jusqu’à l’expiration de l’invitation, 7 jours après son dernier envoi."
     },
     "apiKeys": {
       "description": "Les clés permettent à des scripts et des intégrations d’utiliser l’espace de travail par l’API. Une clé ne fait que ce que vous avez choisi, jamais plus que vous ne le pouvez vous-même.",
