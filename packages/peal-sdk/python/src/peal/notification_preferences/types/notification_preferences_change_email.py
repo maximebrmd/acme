@@ -13,6 +13,9 @@ class NotificationPreferencesChangeEmail(UniversalBaseModel):
         typing.Optional[bool], FieldMetadata(alias="channelReconnect"), pydantic.Field(alias="channelReconnect")
     ] = None
     comments: typing.Optional[bool] = None
+    feed_stopped: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="feedStopped"), pydantic.Field(alias="feedStopped")
+    ] = None
     post_failed: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="postFailed"), pydantic.Field(alias="postFailed")
     ] = None

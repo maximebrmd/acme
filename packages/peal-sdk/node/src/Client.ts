@@ -11,6 +11,7 @@ import { ChannelDefaultsClient } from "./api/resources/channelDefaults/client/Cl
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
 import { ChannelSetsClient } from "./api/resources/channelSets/client/Client.js";
 import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
+import { FeedsClient } from "./api/resources/feeds/client/Client.js";
 import { InboxClient } from "./api/resources/inbox/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { LookupsClient } from "./api/resources/lookups/client/Client.js";
@@ -75,6 +76,7 @@ export class PealClient {
     protected _channelSets: ChannelSetsClient | undefined;
     protected _queues: QueuesClient | undefined;
     protected _recycling: RecyclingClient | undefined;
+    protected _feeds: FeedsClient | undefined;
     protected _channelDefaults: ChannelDefaultsClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
@@ -200,6 +202,10 @@ export class PealClient {
 
     public get recycling(): RecyclingClient {
         return (this._recycling ??= new RecyclingClient(this._options));
+    }
+
+    public get feeds(): FeedsClient {
+        return (this._feeds ??= new FeedsClient(this._options));
     }
 
     public get channelDefaults(): ChannelDefaultsClient {

@@ -20,6 +20,8 @@ export * as channelSets from "./channelSets/index.js";
 export * from "./channelSets/client/requests/index.js";
 export * as connectLinks from "./connectLinks/index.js";
 export * from "./connectLinks/client/requests/index.js";
+export * as feeds from "./feeds/index.js";
+export * from "./feeds/client/requests/index.js";
 export * as inbox from "./inbox/index.js";
 export * from "./inbox/client/requests/index.js";
 export * from "./inbox/types/index.js";

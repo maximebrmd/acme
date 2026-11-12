@@ -32,5 +32,6 @@ public partial interface IPealClient
     public IChannelSetsClient ChannelSets { get; }
     public IQueuesClient Queues { get; }
     public IRecyclingClient Recycling { get; }
+    public IFeedsClient Feeds { get; }
     public IChannelDefaultsClient ChannelDefaults { get; }
 }

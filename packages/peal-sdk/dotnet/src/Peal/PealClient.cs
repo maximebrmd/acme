@@ -63,6 +63,7 @@ public partial class PealClient : IPealClient
         ChannelSets = new ChannelSetsClient(_client);
         Queues = new QueuesClient(_client);
         Recycling = new RecyclingClient(_client);
+        Feeds = new FeedsClient(_client);
         ChannelDefaults = new ChannelDefaultsClient(_client);
     }
 
@@ -125,6 +126,8 @@ public partial class PealClient : IPealClient
     public IQueuesClient Queues { get; }
 
     public IRecyclingClient Recycling { get; }
+
+    public IFeedsClient Feeds { get; }
 
     public IChannelDefaultsClient ChannelDefaults { get; }
 }

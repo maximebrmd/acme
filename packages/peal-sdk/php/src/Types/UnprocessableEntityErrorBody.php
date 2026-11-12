@@ -9,8 +9,10 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'RecyclingEndsTooSoon'
-     *   |'RecyclingVariantsInvalid'
+     *    'FeedAddressRefused'
+     *   |'FeedTemplateInvalid'
+     *   |'FeedUnreadable'
+     *   |'UnknownChannels'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +20,10 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    RecyclingEndsTooSoonEncoded
-     *   |RecyclingVariantsInvalidEncoded
+     *    FeedAddressRefusedEncoded
+     *   |FeedTemplateInvalidEncoded
+     *   |FeedUnreadableEncoded
+     *   |UnknownChannelsEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +32,17 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'RecyclingEndsTooSoon'
-     *   |'RecyclingVariantsInvalid'
+     *    'FeedAddressRefused'
+     *   |'FeedTemplateInvalid'
+     *   |'FeedUnreadable'
+     *   |'UnknownChannels'
      *   |'_unknown'
      * ),
      *   value: (
-     *    RecyclingEndsTooSoonEncoded
-     *   |RecyclingVariantsInvalidEncoded
+     *    FeedAddressRefusedEncoded
+     *   |FeedTemplateInvalidEncoded
+     *   |FeedUnreadableEncoded
+     *   |UnknownChannelsEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +55,69 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param RecyclingEndsTooSoonEncoded $recyclingEndsTooSoon
+     * @param FeedAddressRefusedEncoded $feedAddressRefused
      * @return UnprocessableEntityErrorBody
      */
-    public static function recyclingEndsTooSoon(RecyclingEndsTooSoonEncoded $recyclingEndsTooSoon): UnprocessableEntityErrorBody
+    public static function feedAddressRefused(FeedAddressRefusedEncoded $feedAddressRefused): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'RecyclingEndsTooSoon',
-            'value' => $recyclingEndsTooSoon,
+            'type' => 'FeedAddressRefused',
+            'value' => $feedAddressRefused,
         ]);
     }
 
     /**
-     * @param RecyclingVariantsInvalidEncoded $recyclingVariantsInvalid
+     * @param FeedTemplateInvalidEncoded $feedTemplateInvalid
      * @return UnprocessableEntityErrorBody
      */
-    public static function recyclingVariantsInvalid(RecyclingVariantsInvalidEncoded $recyclingVariantsInvalid): UnprocessableEntityErrorBody
+    public static function feedTemplateInvalid(FeedTemplateInvalidEncoded $feedTemplateInvalid): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'RecyclingVariantsInvalid',
-            'value' => $recyclingVariantsInvalid,
+            'type' => 'FeedTemplateInvalid',
+            'value' => $feedTemplateInvalid,
+        ]);
+    }
+
+    /**
+     * @param FeedUnreadableEncoded $feedUnreadable
+     * @return UnprocessableEntityErrorBody
+     */
+    public static function feedUnreadable(FeedUnreadableEncoded $feedUnreadable): UnprocessableEntityErrorBody
+    {
+        return new UnprocessableEntityErrorBody([
+            'type' => 'FeedUnreadable',
+            'value' => $feedUnreadable,
+        ]);
+    }
+
+    /**
+     * @param UnknownChannelsEncoded $unknownChannels
+     * @return UnprocessableEntityErrorBody
+     */
+    public static function unknownChannels(UnknownChannelsEncoded $unknownChannels): UnprocessableEntityErrorBody
+    {
+        return new UnprocessableEntityErrorBody([
+            'type' => 'UnknownChannels',
+            'value' => $unknownChannels,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isRecyclingEndsTooSoon(): bool
+    public function isFeedAddressRefused(): bool
     {
-        return $this->value instanceof RecyclingEndsTooSoonEncoded && $this->type === 'RecyclingEndsTooSoon';
+        return $this->value instanceof FeedAddressRefusedEncoded && $this->type === 'FeedAddressRefused';
     }
 
     /**
-     * @return RecyclingEndsTooSoonEncoded
+     * @return FeedAddressRefusedEncoded
      */
-    public function asRecyclingEndsTooSoon(): RecyclingEndsTooSoonEncoded
+    public function asFeedAddressRefused(): FeedAddressRefusedEncoded
     {
-        if (!($this->value instanceof RecyclingEndsTooSoonEncoded && $this->type === 'RecyclingEndsTooSoon')) {
+        if (!($this->value instanceof FeedAddressRefusedEncoded && $this->type === 'FeedAddressRefused')) {
             throw new Exception(
-                "Expected RecyclingEndsTooSoon; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected FeedAddressRefused; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +127,63 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isRecyclingVariantsInvalid(): bool
+    public function isFeedTemplateInvalid(): bool
     {
-        return $this->value instanceof RecyclingVariantsInvalidEncoded && $this->type === 'RecyclingVariantsInvalid';
+        return $this->value instanceof FeedTemplateInvalidEncoded && $this->type === 'FeedTemplateInvalid';
     }
 
     /**
-     * @return RecyclingVariantsInvalidEncoded
+     * @return FeedTemplateInvalidEncoded
      */
-    public function asRecyclingVariantsInvalid(): RecyclingVariantsInvalidEncoded
+    public function asFeedTemplateInvalid(): FeedTemplateInvalidEncoded
     {
-        if (!($this->value instanceof RecyclingVariantsInvalidEncoded && $this->type === 'RecyclingVariantsInvalid')) {
+        if (!($this->value instanceof FeedTemplateInvalidEncoded && $this->type === 'FeedTemplateInvalid')) {
             throw new Exception(
-                "Expected RecyclingVariantsInvalid; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected FeedTemplateInvalid; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFeedUnreadable(): bool
+    {
+        return $this->value instanceof FeedUnreadableEncoded && $this->type === 'FeedUnreadable';
+    }
+
+    /**
+     * @return FeedUnreadableEncoded
+     */
+    public function asFeedUnreadable(): FeedUnreadableEncoded
+    {
+        if (!($this->value instanceof FeedUnreadableEncoded && $this->type === 'FeedUnreadable')) {
+            throw new Exception(
+                "Expected FeedUnreadable; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUnknownChannels(): bool
+    {
+        return $this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels';
+    }
+
+    /**
+     * @return UnknownChannelsEncoded
+     */
+    public function asUnknownChannels(): UnknownChannelsEncoded
+    {
+        if (!($this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels')) {
+            throw new Exception(
+                "Expected UnknownChannels; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +210,20 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'RecyclingEndsTooSoon':
-                $value = $this->asRecyclingEndsTooSoon()->jsonSerialize();
+            case 'FeedAddressRefused':
+                $value = $this->asFeedAddressRefused()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'RecyclingVariantsInvalid':
-                $value = $this->asRecyclingVariantsInvalid()->jsonSerialize();
+            case 'FeedTemplateInvalid':
+                $value = $this->asFeedTemplateInvalid()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'FeedUnreadable':
+                $value = $this->asFeedUnreadable()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'UnknownChannels':
+                $value = $this->asUnknownChannels()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +262,17 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'RecyclingEndsTooSoon':
-                $args['value'] = RecyclingEndsTooSoonEncoded::jsonDeserialize($data);
+            case 'FeedAddressRefused':
+                $args['value'] = FeedAddressRefusedEncoded::jsonDeserialize($data);
                 break;
-            case 'RecyclingVariantsInvalid':
-                $args['value'] = RecyclingVariantsInvalidEncoded::jsonDeserialize($data);
+            case 'FeedTemplateInvalid':
+                $args['value'] = FeedTemplateInvalidEncoded::jsonDeserialize($data);
+                break;
+            case 'FeedUnreadable':
+                $args['value'] = FeedUnreadableEncoded::jsonDeserialize($data);
+                break;
+            case 'UnknownChannels':
+                $args['value'] = UnknownChannelsEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

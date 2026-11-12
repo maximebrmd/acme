@@ -7,6 +7,9 @@ pub struct NotificationPreferencesChangeEmail {
     pub channel_reconnect: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<bool>,
+    #[serde(rename = "feedStopped")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feed_stopped: Option<bool>,
     #[serde(rename = "postFailed")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub post_failed: Option<bool>,
@@ -38,6 +41,7 @@ impl NotificationPreferencesChangeEmail {
 pub struct NotificationPreferencesChangeEmailBuilder {
     channel_reconnect: Option<bool>,
     comments: Option<bool>,
+    feed_stopped: Option<bool>,
     post_failed: Option<bool>,
     post_published: Option<bool>,
     post_review: Option<bool>,
@@ -54,6 +58,11 @@ impl NotificationPreferencesChangeEmailBuilder {
 
     pub fn comments(mut self, value: bool) -> Self {
         self.comments = Some(value);
+        self
+    }
+
+    pub fn feed_stopped(mut self, value: bool) -> Self {
+        self.feed_stopped = Some(value);
         self
     }
 
@@ -92,6 +101,7 @@ impl NotificationPreferencesChangeEmailBuilder {
         Ok(NotificationPreferencesChangeEmail {
             channel_reconnect: self.channel_reconnect,
             comments: self.comments,
+            feed_stopped: self.feed_stopped,
             post_failed: self.post_failed,
             post_published: self.post_published,
             post_review: self.post_review,

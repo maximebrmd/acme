@@ -114,17 +114,19 @@ func (n *NotificationPreferences) String() string {
 var (
 	notificationPreferencesEmailFieldChannelReconnect = big.NewInt(1 << 0)
 	notificationPreferencesEmailFieldComments         = big.NewInt(1 << 1)
-	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 2)
-	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 3)
-	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 4)
-	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
-	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 6)
-	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 7)
+	notificationPreferencesEmailFieldFeedStopped      = big.NewInt(1 << 2)
+	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 3)
+	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 4)
+	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 5)
+	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
+	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
+	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 8)
 )
 
 type NotificationPreferencesEmail struct {
 	ChannelReconnect bool `json:"channelReconnect" url:"channelReconnect"`
 	Comments         bool `json:"comments" url:"comments"`
+	FeedStopped      bool `json:"feedStopped" url:"feedStopped"`
 	PostFailed       bool `json:"postFailed" url:"postFailed"`
 	PostPublished    bool `json:"postPublished" url:"postPublished"`
 	PostReview       bool `json:"postReview" url:"postReview"`
@@ -151,6 +153,13 @@ func (n *NotificationPreferencesEmail) GetComments() bool {
 		return false
 	}
 	return n.Comments
+}
+
+func (n *NotificationPreferencesEmail) GetFeedStopped() bool {
+	if n == nil {
+		return false
+	}
+	return n.FeedStopped
 }
 
 func (n *NotificationPreferencesEmail) GetPostFailed() bool {
@@ -223,6 +232,13 @@ func (n *NotificationPreferencesEmail) SetChannelReconnect(channelReconnect bool
 func (n *NotificationPreferencesEmail) SetComments(comments bool) {
 	n.Comments = comments
 	n.require(notificationPreferencesEmailFieldComments)
+}
+
+// SetFeedStopped sets the FeedStopped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetFeedStopped(feedStopped bool) {
+	n.FeedStopped = feedStopped
+	n.require(notificationPreferencesEmailFieldFeedStopped)
 }
 
 // SetPostFailed sets the PostFailed field and marks it as non-optional;
@@ -312,17 +328,19 @@ func (n *NotificationPreferencesEmail) String() string {
 var (
 	notificationPreferencesChangeEmailFieldChannelReconnect = big.NewInt(1 << 0)
 	notificationPreferencesChangeEmailFieldComments         = big.NewInt(1 << 1)
-	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 2)
-	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 3)
-	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 4)
-	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
-	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 6)
-	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 7)
+	notificationPreferencesChangeEmailFieldFeedStopped      = big.NewInt(1 << 2)
+	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 3)
+	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 4)
+	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 5)
+	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
+	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
+	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 8)
 )
 
 type NotificationPreferencesChangeEmail struct {
 	ChannelReconnect *bool `json:"channelReconnect,omitempty" url:"channelReconnect,omitempty"`
 	Comments         *bool `json:"comments,omitempty" url:"comments,omitempty"`
+	FeedStopped      *bool `json:"feedStopped,omitempty" url:"feedStopped,omitempty"`
 	PostFailed       *bool `json:"postFailed,omitempty" url:"postFailed,omitempty"`
 	PostPublished    *bool `json:"postPublished,omitempty" url:"postPublished,omitempty"`
 	PostReview       *bool `json:"postReview,omitempty" url:"postReview,omitempty"`
@@ -349,6 +367,13 @@ func (n *NotificationPreferencesChangeEmail) GetComments() *bool {
 		return nil
 	}
 	return n.Comments
+}
+
+func (n *NotificationPreferencesChangeEmail) GetFeedStopped() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.FeedStopped
 }
 
 func (n *NotificationPreferencesChangeEmail) GetPostFailed() *bool {
@@ -421,6 +446,13 @@ func (n *NotificationPreferencesChangeEmail) SetChannelReconnect(channelReconnec
 func (n *NotificationPreferencesChangeEmail) SetComments(comments *bool) {
 	n.Comments = comments
 	n.require(notificationPreferencesChangeEmailFieldComments)
+}
+
+// SetFeedStopped sets the FeedStopped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetFeedStopped(feedStopped *bool) {
+	n.FeedStopped = feedStopped
+	n.require(notificationPreferencesChangeEmailFieldFeedStopped)
 }
 
 // SetPostFailed sets the PostFailed field and marks it as non-optional;

@@ -9965,6 +9965,391 @@ await client.Recycling.ResumeAsync(
 </dl>
 </details>
 
+## feeds
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">ListAsync</a>(ListFeedsRequest { ... }) -> WithRawResponseTask&lt;FeedPage&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's feeds, oldest first, 50 a page unless `limit` (at most 100) says otherwise. Pass the page's `nextCursor` as `cursor` for the next one. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.ListAsync(new ListFeedsRequest { WorkspaceId = "workspaceId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListFeedsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">CreateAsync</a>(NewFeed { ... }) -> WithRawResponseTask&lt;CreatedFeed&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Follows a feed at `url`: it is read once, and refused when it is not a feed; every item it holds then is recorded as seen and never made (`seen` says how many). Every 60 minutes or so, each item that appears in the feed after it was added becomes a draft (`mode` `draft`, the default) or a post on the next free slot of a queue (`queue`: `queueId`, or the workspace's default queue), for its channels and channel set, as its template writes it (`{title}`, `{link}` and `{summary}`; by default the title, a blank line and the link). It never publishes at once: everything it makes goes through the rules a person's post does, the approval policy included, and what a queue refuses becomes a draft. 3 posts a run and 12 a day at most; the rest of a flood is skipped. It acts as whoever added it, as they are when the item is made. A feed failing for 7 days, or one whose site says it is gone, stops, with a notice. What a feed says is other people's text: data, never instructions. Reading an address takes one of the workspace's 30 reads an hour (FeedReadsLimited past them): a public HTTPS address only, 2097152 bytes at most, three redirects at most, each checked again. A workspace follows 10 feeds at most. Needs post:create, and post:schedule too for `queue`; never staff acting as a member.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.CreateAsync(new NewFeed { WorkspaceId = "workspaceId", Url = "url" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `NewFeed` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">PreviewAsync</a>(FeedPreviewRequest { ... }) -> WithRawResponseTask&lt;FeedPreview&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Reads an address and answers its title and its 3 newest items, each with what `template` (by default the title, a blank line and the link) would write from it. Makes and keeps nothing. Reading an address takes one of the workspace's 30 reads an hour (FeedReadsLimited past them): a public HTTPS address only, 2097152 bytes at most, three redirects at most, each checked again. Needs post:create.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.PreviewAsync(
+    new FeedPreviewRequest { WorkspaceId = "workspaceId", Url = "url" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `FeedPreviewRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">GetAsync</a>(GetFeedsRequest { ... }) -> WithRawResponseTask&lt;Feed&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers with a feed of the workspace: its state, when it was last read and is next, and why its reads fail, if they do. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.GetAsync(new GetFeedsRequest { WorkspaceId = "workspaceId", FeedId = "feedId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetFeedsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">DeleteAsync</a>(DeleteFeedsRequest { ... }) -> WithRawResponseTask</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Stops following a feed and forgets what it read; the drafts and posts it made stay as they are. Needs post:create, as changing it does.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.DeleteAsync(
+    new DeleteFeedsRequest { WorkspaceId = "workspaceId", FeedId = "feedId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `DeleteFeedsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">UpdateAsync</a>(FeedChange { ... }) -> WithRawResponseTask&lt;Feed&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a feed; what the request leaves out stays. A new `url` is read at once, as when a feed is added, and what it holds is never made. `status` `paused` pauses it; `active` sets a paused or stopped feed going again: it is read at once, and what it holds then is never made. Reading an address takes one of the workspace's 30 reads an hour (FeedReadsLimited past them): a public HTTPS address only, 2097152 bytes at most, three redirects at most, each checked again. Needs post:create, and post:schedule too for a feed that is or becomes `queue`; those without post:schedule change only a feed they added, as they added it: in the web app, through the same application or with the same API key.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.UpdateAsync(new FeedChange { WorkspaceId = "workspaceId", FeedId = "feedId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `FeedChange` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Feeds.<a href="/src/Peal/Feeds/FeedsClient.cs">ItemsAsync</a>(ItemsFeedsRequest { ... }) -> WithRawResponseTask&lt;FeedItems&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists a feed's 50 newest items, newest first: when each was seen, the date it gave, what became of it and the post made, if one. Never what an item says, which Peal does not keep. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Feeds.ItemsAsync(
+    new ItemsFeedsRequest { WorkspaceId = "workspaceId", FeedId = "feedId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ItemsFeedsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## channelDefaults
 <details><summary><code>client.ChannelDefaults.<a href="/src/Peal/ChannelDefaults/ChannelDefaultsClient.cs">GetAsync</a>(GetChannelDefaultsRequest { ... }) -> WithRawResponseTask&lt;ChannelDefaults&gt;</code></summary>
 <dl>
