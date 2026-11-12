@@ -8,4 +8,5 @@ enum UnconfirmedReason: string
     case UnreadableResponse = "unreadableResponse";
     case Interrupted = "interrupted";
     case AdapterFailure = "adapterFailure";
+    case StillProcessing = "stillProcessing";
 }

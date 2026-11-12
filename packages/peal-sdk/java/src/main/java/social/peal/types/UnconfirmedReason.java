@@ -15,6 +15,9 @@ public final class UnconfirmedReason {
     public static final UnconfirmedReason UNREADABLE_RESPONSE =
             new UnconfirmedReason(Value.UNREADABLE_RESPONSE, "unreadableResponse");
 
+    public static final UnconfirmedReason STILL_PROCESSING =
+            new UnconfirmedReason(Value.STILL_PROCESSING, "stillProcessing");
+
     public static final UnconfirmedReason INTERRUPTED = new UnconfirmedReason(Value.INTERRUPTED, "interrupted");
 
     private final Value value;
@@ -55,6 +58,8 @@ public final class UnconfirmedReason {
                 return visitor.visitNoResponse();
             case UNREADABLE_RESPONSE:
                 return visitor.visitUnreadableResponse();
+            case STILL_PROCESSING:
+                return visitor.visitStillProcessing();
             case INTERRUPTED:
                 return visitor.visitInterrupted();
             case UNKNOWN:
@@ -72,6 +77,8 @@ public final class UnconfirmedReason {
                 return NO_RESPONSE;
             case "unreadableResponse":
                 return UNREADABLE_RESPONSE;
+            case "stillProcessing":
+                return STILL_PROCESSING;
             case "interrupted":
                 return INTERRUPTED;
             default:
@@ -88,6 +95,8 @@ public final class UnconfirmedReason {
 
         ADAPTER_FAILURE,
 
+        STILL_PROCESSING,
+
         UNKNOWN
     }
 
@@ -99,6 +108,8 @@ public final class UnconfirmedReason {
         T visitInterrupted();
 
         T visitAdapterFailure();
+
+        T visitStillProcessing();
 
         T visitUnknown(String unknownType);
     }

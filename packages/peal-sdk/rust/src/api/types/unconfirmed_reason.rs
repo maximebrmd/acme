@@ -7,6 +7,7 @@ pub enum UnconfirmedReason {
     UnreadableResponse,
     Interrupted,
     AdapterFailure,
+    StillProcessing,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -19,6 +20,7 @@ impl Serialize for UnconfirmedReason {
             Self::UnreadableResponse => serializer.serialize_str("unreadableResponse"),
             Self::Interrupted => serializer.serialize_str("interrupted"),
             Self::AdapterFailure => serializer.serialize_str("adapterFailure"),
+            Self::StillProcessing => serializer.serialize_str("stillProcessing"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -32,6 +34,7 @@ impl<'de> Deserialize<'de> for UnconfirmedReason {
             "unreadableResponse" => Ok(Self::UnreadableResponse),
             "interrupted" => Ok(Self::Interrupted),
             "adapterFailure" => Ok(Self::AdapterFailure),
+            "stillProcessing" => Ok(Self::StillProcessing),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -44,6 +47,7 @@ impl fmt::Display for UnconfirmedReason {
             Self::UnreadableResponse => write!(f, "unreadableResponse"),
             Self::Interrupted => write!(f, "interrupted"),
             Self::AdapterFailure => write!(f, "adapterFailure"),
+            Self::StillProcessing => write!(f, "stillProcessing"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

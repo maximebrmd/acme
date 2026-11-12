@@ -37032,6 +37032,13 @@ func TestEnumUnconfirmedReason(t *testing.T) {
 		assert.Equal(t, UnconfirmedReason("adapterFailure"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_stillProcessing", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewUnconfirmedReasonFromString("stillProcessing")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, UnconfirmedReason("stillProcessing"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewUnconfirmedReasonFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

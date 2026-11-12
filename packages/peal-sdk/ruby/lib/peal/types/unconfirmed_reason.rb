@@ -11,6 +11,7 @@ module Peal
       UNREADABLE_RESPONSE = "unreadableResponse"
       INTERRUPTED = "interrupted"
       ADAPTER_FAILURE = "adapterFailure"
+      STILL_PROCESSING = "stillProcessing"
     end
   end
 end

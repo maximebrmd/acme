@@ -15272,6 +15272,7 @@ const (
 	UnconfirmedReasonUnreadableResponse UnconfirmedReason = "unreadableResponse"
 	UnconfirmedReasonInterrupted        UnconfirmedReason = "interrupted"
 	UnconfirmedReasonAdapterFailure     UnconfirmedReason = "adapterFailure"
+	UnconfirmedReasonStillProcessing    UnconfirmedReason = "stillProcessing"
 )
 
 func NewUnconfirmedReasonFromString(s string) (UnconfirmedReason, error) {
@@ -15284,6 +15285,8 @@ func NewUnconfirmedReasonFromString(s string) (UnconfirmedReason, error) {
 		return UnconfirmedReasonInterrupted, nil
 	case "adapterFailure":
 		return UnconfirmedReasonAdapterFailure, nil
+	case "stillProcessing":
+		return UnconfirmedReasonStillProcessing, nil
 	}
 	var t UnconfirmedReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
