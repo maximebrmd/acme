@@ -28,7 +28,7 @@ describe("peal assistant image-provider", () => {
         const session = yield* signedIn();
 
         const printed = yield* session
-          .piping(`${syntheticKey}\n`)
+          .piping(`  ${syntheticKey} \n`)
           .printed(setting("https://images.example.com/v1/"));
 
         assert.include(

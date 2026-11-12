@@ -52,6 +52,15 @@ describe(keyNeeded, () => {
 });
 
 describe(changeOf, () => {
+  it("drops the spaces a pasted key comes with", () => {
+    expect(
+      changeOf({
+        ...draftOf(saved),
+        apiKey: "  synthetic-workspace-image-key \n",
+      }).apiKey
+    ).toBe("synthetic-workspace-image-key");
+  });
+
   it("sends the key only when it was typed", () => {
     expect(
       changeOf({

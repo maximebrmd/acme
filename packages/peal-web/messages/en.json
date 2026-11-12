@@ -396,6 +396,7 @@
         "storeDown": "The image was made, but the media storage could not be reached to keep it. The requests it cost are spent; try again in a few minutes.",
         "forbidden": "Your role does not let you generate images.",
         "ownLimit": "Your workspace asked its own image provider for {dailyLimit, number} images today, the most a day allows. Ask again tomorrow (UTC).",
+        "providerRedirected": "Your workspace's image provider answered with a redirect, which Peal never follows: its address is not the API's own. Nothing was spent. An owner or an admin fixes the address in the assistant settings.",
         "providerRefused": "Your workspace's image provider refused its settings: its key, its account, its model or its address. Nothing was spent. An owner or an admin fixes them in the assistant settings.",
         "providerAddress": "Your workspace's image provider is at an address Peal sends nothing to. Nothing was spent. An owner or an admin fixes it in the assistant settings.",
         "providerKey": "The key of your workspace's image provider can no longer be read. Nothing was spent. An owner or an admin types it again in the assistant settings.",

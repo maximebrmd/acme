@@ -39,6 +39,7 @@ export type ImageFailure =
 const providerKeys = {
   addressRefused: "providerAddress",
   keyUnreadable: "providerKey",
+  redirected: "providerRedirected",
   settingsRefused: "providerRefused",
 } as const;
 
@@ -53,6 +54,7 @@ export type ImageFailureKey =
   | "ownLimit"
   | "providerAddress"
   | "providerKey"
+  | "providerRedirected"
   | "providerRefused"
   | "quota"
   | "storage"

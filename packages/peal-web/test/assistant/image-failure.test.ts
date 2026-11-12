@@ -42,16 +42,27 @@ describe(imageFailureKey, () => {
 
   it("says the workspace's own provider refused, and why", () => {
     expect(
-      (["settingsRefused", "addressRefused", "keyUnreadable"] as const).map(
-        (reason) =>
-          imageFailureKey(
-            new ImageProviderRefused({
-              reason,
-              status: reason === "settingsRefused" ? 401 : null,
-            })
-          )
+      (
+        [
+          "settingsRefused",
+          "addressRefused",
+          "keyUnreadable",
+          "redirected",
+        ] as const
+      ).map((reason) =>
+        imageFailureKey(
+          new ImageProviderRefused({
+            reason,
+            status: reason === "settingsRefused" ? 401 : null,
+          })
+        )
       )
-    ).toStrictEqual(["providerRefused", "providerAddress", "providerKey"]);
+    ).toStrictEqual([
+      "providerRefused",
+      "providerAddress",
+      "providerKey",
+      "providerRedirected",
+    ]);
   });
 
   it("says the workspace asked its own provider for all a day allows", () => {

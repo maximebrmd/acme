@@ -396,6 +396,7 @@
         "storeDown": "L’image a été créée, mais le stockage des médias est injoignable : elle n’a pas été conservée. Les demandes qu’elle a coûtées sont décomptées ; réessayez dans quelques minutes.",
         "forbidden": "Votre rôle ne vous permet pas de générer des images.",
         "ownLimit": "Votre espace de travail a demandé {dailyLimit, number} images à son propre fournisseur aujourd’hui, le maximum d’une journée. Redemandez demain (UTC).",
+        "providerRedirected": "Le fournisseur d’images de votre espace de travail a répondu par une redirection, que Peal ne suit jamais : son adresse n’est pas celle de l’API. Rien n’a été décompté. Un propriétaire ou un administrateur corrige l’adresse dans les réglages de l’assistant.",
         "providerRefused": "Le fournisseur d’images de votre espace de travail a refusé ses réglages : sa clé, son compte, son modèle ou son adresse. Rien n’a été décompté. Un propriétaire ou un administrateur les corrige dans les réglages de l’assistant.",
         "providerAddress": "Le fournisseur d’images de votre espace de travail est à une adresse à laquelle Peal n’envoie rien. Rien n’a été décompté. Un propriétaire ou un administrateur la corrige dans les réglages de l’assistant.",
         "providerKey": "La clé du fournisseur d’images de votre espace de travail ne peut plus être lue. Rien n’a été décompté. Un propriétaire ou un administrateur la saisit à nouveau dans les réglages de l’assistant.",

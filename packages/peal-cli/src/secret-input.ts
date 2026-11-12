@@ -42,7 +42,7 @@ const piped = Effect.gen(function* piped() {
  * A secret the command line never takes as an argument, which the shell's
  * history and the list of processes keep: typed at a terminal, without
  * echo, or read from standard input when it is not one (the key piped in,
- * its final line break dropped). Kept `Redacted`; blank is refused.
+ * the spaces around it dropped). Kept `Redacted`; blank is refused.
  */
 export const readSecret = (question: string) =>
   Effect.gen(function* readingSecret() {
@@ -60,7 +60,8 @@ export const readSecret = (question: string) =>
         )
       : yield* piped;
 
-    const secret = text.replace(/\r?\n$/u, "");
+    // A pasted key comes with spaces and a line break, which no key holds.
+    const secret = text.trim();
 
     if (secret.trim() === "") {
       return yield* new Refused({

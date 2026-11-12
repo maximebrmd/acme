@@ -71,6 +71,8 @@ const imageProviderRefusals = {
     "The workspace's own image provider is at an address Peal sends nothing to (not public, or a name that does not resolve). Nothing was made or spent. Someone who may change the workspace's assistant settings fixes the address in the web app.",
   keyUnreadable:
     "The key of the workspace's own image provider can no longer be read on this server. Nothing was made or spent. Someone who may change the workspace's assistant settings types the key again in the web app.",
+  redirected:
+    "The workspace's own image provider answered with a redirect, which Peal never follows: its address is not the API's own (its host or version is missing). Nothing was made or spent. Someone who may change the workspace's assistant settings fixes the address in the web app.",
   settingsRefused:
     "The workspace's own image provider refused its key, its account, its model or its address. Nothing was made or spent of Peal's requests. Someone who may change the workspace's assistant settings fixes them in the web app.",
 } as const;

@@ -91,6 +91,8 @@ const providerRefusals: Readonly<
     "The workspace's image provider is at an address Peal sends nothing to: nothing was made or spent. Set another with peal assistant image-provider set.",
   keyUnreadable:
     "The key of the workspace's image provider can no longer be read on this server: nothing was made or spent. Give it again with peal assistant image-provider set.",
+  redirected:
+    "The workspace's image provider answered with a redirect, which Peal never follows: its address is not the API's own (check its host and version). Nothing was made or spent. Fix it with peal assistant image-provider set.",
   settingsRefused:
     "The workspace's image provider refused its key, its account, its model or its address: nothing was made, and none of the workspace's requests were spent. Check them with peal assistant image-provider show, and fix them with set.",
 };

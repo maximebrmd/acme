@@ -57,7 +57,10 @@ export const keyNeeded = (
 export const changeOf = (draft: ImageProviderDraft): ImageProviderChange => {
   const change = { baseUrl: draft.baseUrl.trim(), model: draft.model.trim() };
 
-  return draft.apiKey === "" ? change : { ...change, apiKey: draft.apiKey };
+  // A pasted key comes with spaces, which no key holds.
+  const apiKey = draft.apiKey.trim();
+
+  return apiKey === "" ? change : { ...change, apiKey };
 };
 
 /** Whether the form can be saved: an address, a model, and a key if needed. */
@@ -67,7 +70,7 @@ export const isSavable = (
 ): boolean =>
   draft.baseUrl.trim() !== "" &&
   draft.model.trim() !== "" &&
-  (draft.apiKey !== "" || keyNeeded(draft, saved) === null);
+  (draft.apiKey.trim() !== "" || keyNeeded(draft, saved) === null);
 
 /** Why a save or a removal failed, as the API declares it. */
 export type ImageProviderFailure =

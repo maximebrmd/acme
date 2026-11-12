@@ -193,7 +193,7 @@ const failureOf = <A>(
         onNone: () => "defect",
         onSome: (error) =>
           error._tag === "ImageProviderRefused"
-            ? `refused ${error.status ?? "null"}`
+            ? `${error.reason === "redirected" ? "redirected" : "refused"} ${error.status ?? "null"}`
             : (error.reason ?? error._tag),
       })
     : "success";
@@ -329,7 +329,7 @@ describe("a workspace's own image provider", () => {
 
       const made = yield* generate(host.url);
 
-      assert.strictEqual(failureOf(made.outcome), "refused");
+      assert.strictEqual(failureOf(made.outcome), "redirected 307");
       assert.deepStrictEqual(
         host.received.map(({ url }) => url),
         ["/v1/images/generations"]

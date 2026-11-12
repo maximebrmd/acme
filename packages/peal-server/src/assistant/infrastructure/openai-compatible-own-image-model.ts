@@ -33,21 +33,20 @@ const failWith = (kind: string, reason: ImageFailed["reason"]) =>
     Effect.andThen(Effect.fail(imageFailure(reason)))
   );
 
-const refusedWith = (kind: string, status: number | null) =>
+const refusedWith = (
+  kind: string,
+  status: number | null,
+  reason: ImageProviderRefused["reason"] = status === null
+    ? "addressRefused"
+    : "settingsRefused"
+) =>
   Effect.logWarning("A workspace's image provider refused its settings", {
     kind,
     source: "workspace",
     status,
   }).pipe(
     Effect.andThen(Effect.annotateCurrentSpan("peal.assistant.failure", kind)),
-    Effect.andThen(
-      Effect.fail(
-        new ImageProviderRefused({
-          reason: status === null ? "addressRefused" : "settingsRefused",
-          status,
-        })
-      )
-    )
+    Effect.andThen(Effect.fail(new ImageProviderRefused({ reason, status })))
   );
 
 // A host Peal sends nothing to is the workspace's to fix; one that
@@ -96,6 +95,16 @@ export const openAiCompatibleOwnImageModel = ({
       ): Effect.Effect<MadeImage, ImageFailed | ImageProviderRefused> => {
         if (settingsRefused.has(response.status)) {
           return refusedWith(`Status${response.status}`, response.status);
+        }
+
+        // A redirect is never followed, as it could lead past the guard:
+        // the address is not the API's own.
+        if (response.status >= 300 && response.status <= 399) {
+          return refusedWith(
+            `Status${response.status}`,
+            response.status,
+            "redirected"
+          );
         }
 
         if (response.status < 200 || response.status > 299) {

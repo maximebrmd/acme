@@ -6,6 +6,8 @@ import { Schema } from "effect";
  *
  * - `settingsRefused`: the provider refused the key, the account, the
  *   model or the address (`status` 401, 402, 403 or 404).
+ * - `redirected`: the provider answered with a redirect (`status` 3xx),
+ *   which Peal never follows: the address lacks the API's host or version.
  * - `addressRefused`: the address is one Peal sends nothing to (not
  *   public, or a name that does not resolve); `status` is null.
  * - `keyUnreadable`: the stored key no longer decrypts, and must be typed
@@ -20,6 +22,7 @@ export class ImageProviderRefused extends Schema.TaggedError<ImageProviderRefuse
   {
     reason: Schema.Literals([
       "settingsRefused",
+      "redirected",
       "addressRefused",
       "keyUnreadable",
     ]),
