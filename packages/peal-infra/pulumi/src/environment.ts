@@ -22,7 +22,10 @@ const publicCallbackPaths = [
  * otherwise public (production): Better Auth's admin endpoints, the staff
  * console's API, and its pages, under /en and /fr too. The Ansible
  * project's peal_access_paths routes the same paths, and cloudflared checks
- * this application's token on them: a path added there is added here.
+ * this application's token on them: a path added there is added here, and
+ * a locale added to the web app (src/i18n/routing.ts) adds its /<locale>/admin
+ * to both. The Ansible project's tests/test_cloudflared.py reads this list
+ * and fails when the three disagree.
  */
 const adminPaths = [
   "api/auth/admin",

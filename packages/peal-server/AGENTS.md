@@ -133,6 +133,16 @@ and no socket, for tests.
   middlewares left for it (`setAnswerHeader`, `#shared/api/answer-headers.ts`:
   an error is encoded after they ran), a deprecated endpoint's headers, and
   the error envelope.
+- Before any route runs, `ApiAnswersLive` answers 400 (`BadRequest`) to a
+  path holding an encoded slash or backslash (`%2F`, `%5C`, any case), a
+  backslash, or a dot segment, raw or encoded (`isRefusedPath`,
+  `peal-contract/path-spelling`; the query is not read). cloudflared
+  decodes and resolves a path before it picks the rule that says whether
+  Access guards it, and forwards it as sent; the router keeps `%2F` inside a
+  segment, so `/api/admin/users/x%2F..%2F..%2Fapi%2Fhealth` would be open
+  to one and the staff console to the other. Never give a path parameter a
+  value that needs one of them: send it in the query or the body
+  (`test/app/path-spellings.test.ts`).
 - Every error of the API is one envelope: its own fields, then `code`,
   `message` and `requestId` (`errorEnvelope`, which every contract error
   spreads first; `enveloped` in `src/app/error-envelope.ts` fills them). A

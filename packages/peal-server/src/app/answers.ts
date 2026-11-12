@@ -3,6 +3,7 @@ import { SecureRandom } from "effect/crypto";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import type { HttpApi, HttpApiGroup } from "effect/http-api";
 import { Api } from "peal-contract";
+import { isRefusedPath } from "peal-contract/path-spelling";
 
 import { deprecatedRoutes, deprecationOf } from "#app/deprecations.ts";
 import {
@@ -10,6 +11,7 @@ import {
   isEnveloped,
   requestIssuesOf,
 } from "#app/error-envelope.ts";
+import { refusedPathError } from "#app/path-spelling.ts";
 import {
   mapFailureResponse,
   requestIdAttribute,
@@ -35,6 +37,10 @@ const pathOf = (url: string) => url.split(/[?#]/u, 1)[0] ?? url;
  *   (`#app/deprecations.ts`).
  * - for an error of the API, the envelope (`#app/error-envelope.ts`):
  *   `code`, `message` and `requestId` beside the error's own fields.
+ *
+ * A path written to read differently to the proxy in front and to the
+ * router (`isRefusedPath`, `peal-contract/path-spelling`) is refused with
+ * 400 before any route runs, Better Auth's and the MCP endpoint's included.
  *
  * A failure keeps its cause, so it is logged, counted and traced as before.
  */
@@ -78,6 +84,17 @@ export const apiAnswers = <
                 response;
 
           yield* Effect.annotateCurrentSpan(requestIdAttribute, id);
+
+          if (isRefusedPath(request.url)) {
+            return named(
+              enveloped(
+                id,
+                Option.none()
+              )(
+                HttpServerResponse.jsonUnsafe(refusedPathError, { status: 400 })
+              )
+            );
+          }
 
           return yield* httpEffect.pipe(
             Effect.provideService(RequestId, id),

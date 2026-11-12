@@ -123,6 +123,76 @@ def test_production_admin_needs_access(rendered: Path, path: str) -> None:
     assert _guarded(rule, settings["cloudflare_access_aud"]["admin"]), rule
 
 
+# An admin path followed by an encoded traversal, such as
+# /api/admin/users/x%2F..%2F..%2F..%2F..%2Fapi%2Fhealth, resolves here to an
+# open path while the routers behind keep %2F inside a segment. Decided: the
+# server and the web app's proxy answer any path with an encoded slash or
+# backslash, or a dot segment, 400 before routing
+# (peal-contract/path-spelling), so such a path reaches nothing.
+
+REPOSITORY = INFRA.parent.parent.parent
+
+
+def _pulumi_admin_paths() -> list[str]:
+    """`adminPaths` of the Pulumi project (src/environment.ts): the paths
+    production's Access application covers at the edge."""
+    source = (INFRA.parent / "pulumi" / "src" / "environment.ts").read_text()
+    listed = re.search(r"const adminPaths = \[(.*?)\] as const;", source, re.DOTALL)
+    assert listed is not None, "adminPaths is no longer a literal list in src/environment.ts"
+    return re.findall(r'"([^"]+)"', listed.group(1))
+
+
+def _web_locales() -> list[str]:
+    """The web app's locales (packages/peal-web/src/i18n/routing.ts), each
+    serving the staff console under /<locale>/admin."""
+    source = (REPOSITORY / "packages" / "peal-web" / "src" / "i18n" / "routing.ts").read_text()
+    listed = re.search(r"locales: \[(.*?)\]", source, re.DOTALL)
+    assert listed is not None, "locales is no longer a literal list in routing.ts"
+    return re.findall(r'"([^"]+)"', listed.group(1))
+
+
+def test_admin_paths_agree_across_pulumi_ansible_and_the_web_app(rendered: Path) -> None:
+    """The admin paths are kept in three places: Pulumi's adminPaths (the
+    edge's Access application), Ansible's peal_access_paths (cloudflared's
+    check of its token) and the web app's locales (the pages under
+    /<locale>/admin). A path or a locale in one and not the others leaves a
+    layer missing, or a rule nothing at the edge stands for."""
+    settings = _settings("peal-production")
+    pulumi = _pulumi_admin_paths()
+    locales = set(_web_locales())
+    access = settings["peal_access_paths"]
+    host = settings["peal_hostnames"]["app"]
+    rules = _rules(rendered, "peal-production")
+
+    def guarded(path: str) -> bool:
+        return _guarded(rules[_match(rules, host, path)], settings["cloudflare_access_aud"]["admin"])
+
+    # The edge covers every locale's console, and no locale the web app has not.
+    at_edge = {path.removesuffix("/admin") for path in pulumi if re.fullmatch(r"[a-z]{2}(-[A-Za-z]+)?/admin", path)}
+    assert at_edge == locales, (at_edge, locales)
+
+    # cloudflared's rule for the pages names the same locales.
+    in_tunnel = {
+        locale
+        for rule in access
+        if rule["to"] == "web"
+        for group in re.findall(r"\(\(([^()]+)\)/", rule["path"])
+        for locale in group.split("|")
+    }
+    assert in_tunnel == locales, (in_tunnel, locales)
+
+    # Each of Pulumi's paths, and what lies under it, needs the admin
+    # application's token at cloudflared, in production as rendered, and so
+    # does every locale's console.
+    for path in [*pulumi, *(f"{locale}/admin" for locale in locales)]:
+        for request in (f"/{path}", f"/{path}/users"):
+            assert guarded(request), request
+
+    # And each of Ansible's rules stands for one of Pulumi's paths at least.
+    for rule in access:
+        assert any(re.search(rule["path"], f"/{path}") for path in pulumi), rule["path"]
+
+
 @pytest.mark.parametrize("environment", ENVIRONMENTS)
 @pytest.mark.parametrize("surface", ["grafana", "ssh"])
 @pytest.mark.parametrize("path", ["/", "/api/health", "/x/../"])
