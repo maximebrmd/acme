@@ -15,6 +15,28 @@ peal_environment: production
 hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-PRODUCTION
 hosting_location: REPLACE-WITH-THE-CITY-OF-PRODUCTION
 
+# Units the server's image runs that nothing here needs, which the system
+# role stops and masks (its defaults say why masked, not removed):
+system_masked_units:
+  # BIND, listening on the public address; nothing resolves through it
+  # (systemd-resolved uses the provider's servers, Docker resolved's).
+  - named.service
+  # Modems, and disks hot-plugged on a desktop: a server has neither.
+  - ModemManager.service
+  - udisks2.service
+  # Multipath storage, and its socket: the disks are a software RAID.
+  - multipathd.service
+  - multipathd.socket
+  # Firmware updates, and their daily refresh: nobody applies firmware from
+  # here.
+  - fwupd.service
+  - fwupd-refresh.timer
+  # Crash reports: it has the kernel pipe every crash on the host,
+  # containers' processes included, to core files under /var/crash.
+  - apport.service
+  - apport-autoreport.path
+  - apport-forward.socket
+
 # Host names on the Cloudflare zone. Cloudflare's free certificate covers the
 # zone and its first-level subdomains only, so no name goes deeper.
 peal_hostnames:

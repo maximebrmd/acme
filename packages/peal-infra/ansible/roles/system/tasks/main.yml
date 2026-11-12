@@ -66,6 +66,30 @@
     name: [unattended-upgrades, ufw, ca-certificates, curl]
     state: present
 
+# Read-only, so it runs in check mode too. Packages install their units in
+# /usr/lib/systemd/system, the administrator in /etc/systemd/system; a
+# masked unit's own file stays where its package put it, so a second run
+# finds it again and masks it with no change.
+- name: Find the units to mask that the server has
+  ansible.builtin.find:
+    paths: "{{ system_unit_folders }}"
+    patterns: "{{ system_masked_units }}"
+    file_type: any
+  register: system_units_found
+  when: system_masked_units | length > 0
+
+# The mask goes first, then the stop. A masked unit cannot start, so it
+# needs no disabling: the module reads a masked unit as not enabled, and
+# `enabled: false` would never act.
+- name: Mask the units the server does not need
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    masked: true
+    state: stopped
+  loop: >-
+    {{ system_masked_units | select('in', system_units_found.files | default([])
+       | map(attribute='path') | map('basename') | list) | list }}
+
 # Security updates install daily. A kernel update needs a reboot, which
 # happens at a fixed early-morning time instead of never. Docker restarts the
 # stack after it (restart: unless-stopped).

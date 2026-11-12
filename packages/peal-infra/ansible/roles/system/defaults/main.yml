@@ -3,3 +3,14 @@
 # name a folder of their own (tests/test_cloud_init.py).
 system_hosts_file: /etc/hosts
 system_cloud_init_dir: /etc/cloud
+
+# Units the server's image runs that nothing here needs, stopped and masked
+# so that nothing starts them again: by hand, at boot, or a socket, timer,
+# path or D-Bus request. Each with its suffix (.service, .socket, .timer,
+# .path); a unit the server does not have is skipped. Masked rather than
+# removed: removing their packages can take Ubuntu's metapackages with them,
+# whose other dependencies the unattended upgrades would then remove.
+system_masked_units: []
+# Where systemd reads units from: their packages', then the administrator's.
+# The tests name folders of their own (tests/test_units.py).
+system_unit_folders: [/usr/lib/systemd/system, /etc/systemd/system]

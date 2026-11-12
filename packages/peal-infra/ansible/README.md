@@ -75,18 +75,18 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 
 ### Roles
 
-| Role             | What it does                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                            |
-| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size |
-| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                        |
-| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                               |
-| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                   |
-| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                          |
-| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                        |
-| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                              |
-| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                          |
-| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)                                                            |
+| Role             | What it does                                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                                                                                                 |
+| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, updates, unattended upgrades with reboots at 03:30 UTC, the units the image runs for nothing masked (`system_masked_units`), swap, journal size |
+| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                                                                                             |
+| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                                                                                                    |
+| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                                                                                        |
+| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                                                                                               |
+| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                                                                                             |
+| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                                                                                                   |
+| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                                                                                               |
+| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)                                                                                                                                 |
 
 ### Playbooks
 
@@ -938,6 +938,9 @@ A second run of `site.yml` reports no change:
   (`creates`). The swap file is made under another
   name and renamed once it is a swap area, so a run cut short leaves none
   half made.
+- The units `system_masked_units` names are looked up first, and those the
+  server has are masked and stopped; a masked unit is found again, already
+  masked and stopped, and a unit the server lacks is skipped.
 - cloudflared's package is downloaded only when its digest differs, and
   installed only when that version is not.
 - The credentials check reads names, never values, and changes nothing.
