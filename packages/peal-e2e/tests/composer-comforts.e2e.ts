@@ -108,10 +108,21 @@ describe("the composer's comforts", { serial: true }, () => {
     await expect(textbox).toHaveText(`${text}🚀`);
   });
 
+  test("previews what each channel will receive", async ({ screen }) => {
+    await screen.getByRole("button", "Select all").tap();
+
+    const previews = screen.getByRole("region", "Previews");
+
+    // Asked a second after the last change, from the server's own check.
+    await expect(previews.getByText(`${text}🚀`)).toHaveCount(handles.length);
+    await expect(
+      previews.getByText("Each platform lays the post out its own way.")
+    ).toBeVisible();
+  });
+
   test("asks before publishing now, naming the channels", async ({
     screen,
   }) => {
-    await screen.getByRole("button", "Select all").tap();
     await screen.getByRole("button", "Publish now").tap();
 
     const dialog = screen.getByRole("dialog", "Publish this post now?");

@@ -49,6 +49,10 @@ Sous **Longueur sur chaque canal**, chaque canal où part la publication montre 
 
 Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. YouTube compte des octets : une lettre accentuée en compte deux. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Peal limite les deux à 2 200. La limite de Facebook est le chiffre couramment rapporté, Meta n’en nommant aucune ; il en va de même des 1 500 caractères de Google Business Profile, et des 58 du titre d’un événement ou d’une offre, la référence et les pages d’aide de Google n’en nommant aucune. Peal vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
 
+### Aperçus [#previews]
+
+À côté du texte (en dessous sur un écran étroit), **Aperçus** montre ce que chaque canal où part la publication recevra : son nom et sa plateforme, le texte qu’il reçoit, en texte brut, compté comme sa plateforme le compte, ses images et vidéos, et les parties qui suivent. Peal les demande une seconde après votre dernière frappe, par la même vérification que `posts.validate` dans l’API : l’aperçu est la publication telle qu’elle serait enregistrée, signatures et options comprises. Ce n’est pas une imitation de la plateforme, qui met la publication en page à sa façon. Un canal qui la refuserait est signalé, et ce qu’il faut corriger est montré plus haut. Avec les liens raccourcis, les liens apparaissent tels qu’écrits : ils ne sont raccourcis qu’au départ de la publication.
+
 ## Fils [#threads]
 
 Une publication peut avoir des parties à sa suite. Sous **Fil**, choisissez **Ajouter une partie** : chaque partie a son texte, ses images et vidéos, un compteur pour chaque canal et, si vous le souhaitez, une attente après la partie précédente, d’une minute à un jour. Montez ou descendez une partie, ou retirez-la, avec ses boutons. Une publication a au plus 24 parties après la première.

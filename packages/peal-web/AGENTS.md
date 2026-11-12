@@ -257,6 +257,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   **Select all** (`everyChannel`: never a channel off or to reconnect)
   from three channels up. Every place that shows a post's text as text
   gives its element `dir="auto"`, and the editor `textDirection: "auto"`.
+- `PostPreviews`, beside the composer's text, asks `posts.validate`
+  (`validatePost`) for the request a save sends (`previewRequestOf` of the
+  composer's one `draft`, tags left out: a test fails when the draft and
+  the check's request part ways), a second after the last change and only
+  while the post can be written, goes to a channel and its options are
+  taken. `previewed` lets the latest request win and `previewOf` dims the
+  last answer from the moment the post changes; a failure offers "Try
+  again", a `Forbidden` hides the previews. It draws the text with
+  `PreviewedText`, as the review page does, and repeats no violation: it
+  marks the channel and points up. Never imitate a platform's look.
 - The posts list (`…/posts`, `PostList`, views in `post-list-views.tsx`)
   keeps its filters in the query string (`#posts/post-list-filter.ts`:
   `filtersOf`, `queryOf`, `withFilter`), so a link shows the same list,

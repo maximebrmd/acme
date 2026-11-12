@@ -49,6 +49,10 @@ Under **Length on each channel**, each channel the post goes to shows how much r
 
 Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. YouTube counts bytes, so an accented letter counts two. TikTok takes 2,200 for a video's caption and 4,000 for a photo post's description: Peal holds both to 2,200. Facebook's limit is the figure commonly reported, as Meta names none; so are Google Business Profile's 1,500 characters, and the 58 of an event's or an offer's title, as Google's reference and help pages name none. Peal checks the limits when you schedule a post, not while you write a draft.
 
+### Previews [#previews]
+
+Beside the text (below it on a narrow screen), **Previews** shows what each channel the post goes to will receive: its name and platform, the text it gets, as plain text, counted as its platform counts it, its images and videos, and the parts that follow. Peal asks for them a second after you stop typing, from the same check the API's `posts.validate` makes, so the preview is the post as it would be saved, signatures and options included. It is not an imitation of the platform, which lays the post out its own way. A channel that would refuse the post is marked, and what to fix is shown above. With short links on, links show as written: they are shortened only when the post goes out.
+
 ## Threads [#threads]
 
 A post can have parts that follow it. Under **Thread**, choose **Add a part**: each part has its own text, its own images and videos, a counter for every channel, and, if you like, a wait after the part before it, from a minute to a day. Move a part up or down, or remove it, with its buttons. A post has 24 parts after its first at most.
