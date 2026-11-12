@@ -40,7 +40,10 @@
   is the bearer token, wins over a saved sign-in, stays `Redacted`, and
   `--workspace` or `PEAL_WORKSPACE` must then be the workspace's id, as a
   key cannot read `/api/me`. What only a person does (`login`, `account`,
-  members and invitations) says so without asking the server.
+  members and invitations) says so without asking the server; `peal
+  whoami` with a key reads `credential.get` instead of `/api/me`, and
+  prints the key's name, start, workspace, permissions and expiry, never
+  the key.
 - Every command that reads or changes through the API takes `--json`
   (`jsonFlag`, `printJson`) and prints the API's answer as it came; an
   answer without a body prints `null`. With `--json` a failure is one JSON

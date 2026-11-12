@@ -29,6 +29,12 @@
   it for the docs and the server serves it at `/api/openapi.json` and
   `/openapi.json`: the server's tests check they are equal and list every
   event type. A new event type needs its summary there.
+- `GET /api/credential` (`CredentialApi`, `credential.ts`) answers every
+  principal `Authentication` knows, by kind (`user`, `apiKey`,
+  `partnerKey`), never a key, a token, or a partner's workspaces: a new
+  principal is a new member of `CredentialSchema`, and the server's
+  `toCredential` and `CredentialCheck` (`Match.typeTags`) do not compile
+  until it is described.
 - Every contract error spreads `errorEnvelope` first, and its `code` is its
   tag in snake case (`errorCodeOf`): a tag never changes once published.
   The server's guide says how answers are shaped
