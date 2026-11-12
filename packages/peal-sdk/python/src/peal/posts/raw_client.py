@@ -421,6 +421,7 @@ class RawPostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -429,7 +430,7 @@ class RawPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -452,6 +453,8 @@ class RawPostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -484,6 +487,7 @@ class RawPostsClient:
                 "outcome": outcome,
                 "platform": platform,
                 "queueId": queue_id,
+                "recyclingId": recycling_id,
                 "removed": removed,
                 "sort": sort,
                 "status": status,
@@ -3372,6 +3376,7 @@ class AsyncRawPostsClient:
         outcome: typing.Optional[PostOutcome] = None,
         platform: typing.Optional[Platform] = None,
         queue_id: typing.Optional[str] = None,
+        recycling_id: typing.Optional[str] = None,
         removed: typing.Optional[SearchPostsRequestRemoved] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
@@ -3380,7 +3385,7 @@ class AsyncRawPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -3403,6 +3408,8 @@ class AsyncRawPostsClient:
         platform : typing.Optional[Platform]
 
         queue_id : typing.Optional[str]
+
+        recycling_id : typing.Optional[str]
 
         removed : typing.Optional[SearchPostsRequestRemoved]
 
@@ -3435,6 +3442,7 @@ class AsyncRawPostsClient:
                 "outcome": outcome,
                 "platform": platform,
                 "queueId": queue_id,
+                "recyclingId": recycling_id,
                 "removed": removed,
                 "sort": sort,
                 "status": status,

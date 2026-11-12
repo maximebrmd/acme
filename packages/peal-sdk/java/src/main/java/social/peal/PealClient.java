@@ -28,6 +28,7 @@ import social.peal.resources.partner.PartnerClient;
 import social.peal.resources.partneraccount.PartnerAccountClient;
 import social.peal.resources.posts.PostsClient;
 import social.peal.resources.queues.QueuesClient;
+import social.peal.resources.recycling.RecyclingClient;
 import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.signatures.SignaturesClient;
@@ -98,6 +99,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<QueuesClient> queuesClient;
 
+    protected final Supplier<RecyclingClient> recyclingClient;
+
     protected final Supplier<ChannelDefaultsClient> channelDefaultsClient;
 
     public PealClient(ClientOptions clientOptions) {
@@ -131,6 +134,7 @@ public class PealClient implements AutoCloseable {
         this.signaturesClient = Suppliers.memoize(() -> new SignaturesClient(clientOptions));
         this.channelSetsClient = Suppliers.memoize(() -> new ChannelSetsClient(clientOptions));
         this.queuesClient = Suppliers.memoize(() -> new QueuesClient(clientOptions));
+        this.recyclingClient = Suppliers.memoize(() -> new RecyclingClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new ChannelDefaultsClient(clientOptions));
     }
 
@@ -248,6 +252,10 @@ public class PealClient implements AutoCloseable {
 
     public QueuesClient queues() {
         return this.queuesClient.get();
+    }
+
+    public RecyclingClient recycling() {
+        return this.recyclingClient.get();
     }
 
     public ChannelDefaultsClient channelDefaults() {

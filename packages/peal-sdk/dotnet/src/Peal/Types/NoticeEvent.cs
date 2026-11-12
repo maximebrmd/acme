@@ -190,6 +190,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.RecyclingEnded"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.RecyclingEnded value)
+    {
+        Type = "RecyclingEnded";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -294,6 +303,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "AdConnectionReconnectRequired"
     /// </summary>
     public bool IsAdConnectionReconnectRequired => Type == "AdConnectionReconnectRequired";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "RecyclingEnded"
+    /// </summary>
+    public bool IsRecyclingEnded => Type == "RecyclingEnded";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -474,6 +488,15 @@ public record NoticeEvent
                 "NoticeEvent.Type is not 'AdConnectionReconnectRequired'"
             );
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventRecyclingEnded"/> if <see cref="Type"/> is 'RecyclingEnded', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingEnded'.</exception>
+    public Peal.NoticeEventRecyclingEnded AsRecyclingEnded() =>
+        IsRecyclingEnded
+            ? (Peal.NoticeEventRecyclingEnded)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'RecyclingEnded'");
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
@@ -494,6 +517,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventWebhookDeliveriesFailing, T> onWebhookDeliveriesFailing,
         Func<Peal.NoticeEventAdBoostChanged, T> onAdBoostChanged,
         Func<Peal.NoticeEventAdConnectionReconnectRequired, T> onAdConnectionReconnectRequired,
+        Func<Peal.NoticeEventRecyclingEnded, T> onRecyclingEnded,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -520,6 +544,7 @@ public record NoticeEvent
             "AdConnectionReconnectRequired" => onAdConnectionReconnectRequired(
                 AsAdConnectionReconnectRequired()
             ),
+            "RecyclingEnded" => onRecyclingEnded(AsRecyclingEnded()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -544,6 +569,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventWebhookDeliveriesFailing> onWebhookDeliveriesFailing,
         Action<Peal.NoticeEventAdBoostChanged> onAdBoostChanged,
         Action<Peal.NoticeEventAdConnectionReconnectRequired> onAdConnectionReconnectRequired,
+        Action<Peal.NoticeEventRecyclingEnded> onRecyclingEnded,
         Action<string, object?> onUnknown_
     )
     {
@@ -605,6 +631,9 @@ public record NoticeEvent
                 break;
             case "AdConnectionReconnectRequired":
                 onAdConnectionReconnectRequired(AsAdConnectionReconnectRequired());
+                break;
+            case "RecyclingEnded":
+                onRecyclingEnded(AsRecyclingEnded());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -880,6 +909,20 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventRecyclingEnded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsRecyclingEnded(out Peal.NoticeEventRecyclingEnded? value)
+    {
+        if (Type == "RecyclingEnded")
+        {
+            value = (Peal.NoticeEventRecyclingEnded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -930,6 +973,8 @@ public record NoticeEvent
 
     public static implicit operator NoticeEvent(NoticeEvent.AdConnectionReconnectRequired value) =>
         new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.RecyclingEnded value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<NoticeEvent>
@@ -1085,6 +1130,11 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventAdConnectionReconnectRequired"
                         ),
+                "RecyclingEnded" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventRecyclingEnded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventRecyclingEnded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -1130,6 +1180,7 @@ public record NoticeEvent
                         value.Value,
                         options
                     ),
+                    "RecyclingEnded" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -1534,6 +1585,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.AdConnectionReconnectRequired(
             Peal.NoticeEventAdConnectionReconnectRequired value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for RecyclingEnded
+    /// </summary>
+    [Serializable]
+    public struct RecyclingEnded
+    {
+        public RecyclingEnded(Peal.NoticeEventRecyclingEnded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventRecyclingEnded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.RecyclingEnded(
+            Peal.NoticeEventRecyclingEnded value
         ) => new(value);
     }
 }

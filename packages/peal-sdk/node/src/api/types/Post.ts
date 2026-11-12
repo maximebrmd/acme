@@ -7,8 +7,10 @@ export interface Post {
     content: Peal.PostContent;
     createdVia: Peal.PostOrigin | null;
     id: string;
+    occurrence: number | null;
     outcome: Peal.PostOutcome | null;
     queueId: string | null;
+    recyclingId: string | null;
     schedule: Peal.PostSchedule | null;
     scheduledBy: string | null;
     scheduledVia: Peal.PostOrigin | null;

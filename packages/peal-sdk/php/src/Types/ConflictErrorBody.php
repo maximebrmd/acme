@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'QueueNameTaken'
-     *   |'TooManyQueues'
+     *    'PostNotRecyclable'
+     *   |'TooManyRecyclingRules'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    QueueNameTakenEncoded
-     *   |TooManyQueuesEncoded
+     *    PostNotRecyclableEncoded
+     *   |TooManyRecyclingRulesEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'QueueNameTaken'
-     *   |'TooManyQueues'
+     *    'PostNotRecyclable'
+     *   |'TooManyRecyclingRules'
      *   |'_unknown'
      * ),
      *   value: (
-     *    QueueNameTakenEncoded
-     *   |TooManyQueuesEncoded
+     *    PostNotRecyclableEncoded
+     *   |TooManyRecyclingRulesEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param QueueNameTakenEncoded $queueNameTaken
+     * @param PostNotRecyclableEncoded $postNotRecyclable
      * @return ConflictErrorBody
      */
-    public static function queueNameTaken(QueueNameTakenEncoded $queueNameTaken): ConflictErrorBody
+    public static function postNotRecyclable(PostNotRecyclableEncoded $postNotRecyclable): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'QueueNameTaken',
-            'value' => $queueNameTaken,
+            'type' => 'PostNotRecyclable',
+            'value' => $postNotRecyclable,
         ]);
     }
 
     /**
-     * @param TooManyQueuesEncoded $tooManyQueues
+     * @param TooManyRecyclingRulesEncoded $tooManyRecyclingRules
      * @return ConflictErrorBody
      */
-    public static function tooManyQueues(TooManyQueuesEncoded $tooManyQueues): ConflictErrorBody
+    public static function tooManyRecyclingRules(TooManyRecyclingRulesEncoded $tooManyRecyclingRules): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'TooManyQueues',
-            'value' => $tooManyQueues,
+            'type' => 'TooManyRecyclingRules',
+            'value' => $tooManyRecyclingRules,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isQueueNameTaken(): bool
+    public function isPostNotRecyclable(): bool
     {
-        return $this->value instanceof QueueNameTakenEncoded && $this->type === 'QueueNameTaken';
+        return $this->value instanceof PostNotRecyclableEncoded && $this->type === 'PostNotRecyclable';
     }
 
     /**
-     * @return QueueNameTakenEncoded
+     * @return PostNotRecyclableEncoded
      */
-    public function asQueueNameTaken(): QueueNameTakenEncoded
+    public function asPostNotRecyclable(): PostNotRecyclableEncoded
     {
-        if (!($this->value instanceof QueueNameTakenEncoded && $this->type === 'QueueNameTaken')) {
+        if (!($this->value instanceof PostNotRecyclableEncoded && $this->type === 'PostNotRecyclable')) {
             throw new Exception(
-                "Expected QueueNameTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected PostNotRecyclable; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyQueues(): bool
+    public function isTooManyRecyclingRules(): bool
     {
-        return $this->value instanceof TooManyQueuesEncoded && $this->type === 'TooManyQueues';
+        return $this->value instanceof TooManyRecyclingRulesEncoded && $this->type === 'TooManyRecyclingRules';
     }
 
     /**
-     * @return TooManyQueuesEncoded
+     * @return TooManyRecyclingRulesEncoded
      */
-    public function asTooManyQueues(): TooManyQueuesEncoded
+    public function asTooManyRecyclingRules(): TooManyRecyclingRulesEncoded
     {
-        if (!($this->value instanceof TooManyQueuesEncoded && $this->type === 'TooManyQueues')) {
+        if (!($this->value instanceof TooManyRecyclingRulesEncoded && $this->type === 'TooManyRecyclingRules')) {
             throw new Exception(
-                "Expected TooManyQueues; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyRecyclingRules; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'QueueNameTaken':
-                $value = $this->asQueueNameTaken()->jsonSerialize();
+            case 'PostNotRecyclable':
+                $value = $this->asPostNotRecyclable()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'TooManyQueues':
-                $value = $this->asTooManyQueues()->jsonSerialize();
+            case 'TooManyRecyclingRules':
+                $value = $this->asTooManyRecyclingRules()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'QueueNameTaken':
-                $args['value'] = QueueNameTakenEncoded::jsonDeserialize($data);
+            case 'PostNotRecyclable':
+                $args['value'] = PostNotRecyclableEncoded::jsonDeserialize($data);
                 break;
-            case 'TooManyQueues':
-                $args['value'] = TooManyQueuesEncoded::jsonDeserialize($data);
+            case 'TooManyRecyclingRules':
+                $args['value'] = TooManyRecyclingRulesEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

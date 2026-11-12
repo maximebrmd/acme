@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    QueueNameTaken {
+    PostNotRecyclable {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,10 +13,14 @@ pub enum ConflictErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+        reason: NotRecyclableReason,
     },
 
     #[non_exhaustive]
-    TooManyQueues {
+    TooManyRecyclingRules {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -36,16 +40,18 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn queue_name_taken() -> Self {
-        Self::QueueNameTaken {
+    pub fn post_not_recyclable(post_id: String, reason: NotRecyclableReason) -> Self {
+        Self::PostNotRecyclable {
             code: None,
             message: None,
             request_id: None,
+            post_id,
+            reason,
         }
     }
 
-    pub fn too_many_queues(allowed: i64) -> Self {
-        Self::TooManyQueues {
+    pub fn too_many_recycling_rules(allowed: i64) -> Self {
+        Self::TooManyRecyclingRules {
             code: None,
             message: None,
             request_id: None,
@@ -53,49 +59,61 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn queue_name_taken_with_code(
+    pub fn post_not_recyclable_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
+        post_id: String,
+        reason: NotRecyclableReason,
     ) -> Self {
-        Self::QueueNameTaken {
+        Self::PostNotRecyclable {
             code: Some(code),
             message,
             request_id,
+            post_id,
+            reason,
         }
     }
 
-    pub fn queue_name_taken_with_message(
+    pub fn post_not_recyclable_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
+        post_id: String,
+        reason: NotRecyclableReason,
     ) -> Self {
-        Self::QueueNameTaken {
+        Self::PostNotRecyclable {
             code,
             message: Some(message),
             request_id,
+            post_id,
+            reason,
         }
     }
 
-    pub fn queue_name_taken_with_request_id(
+    pub fn post_not_recyclable_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
+        post_id: String,
+        reason: NotRecyclableReason,
     ) -> Self {
-        Self::QueueNameTaken {
+        Self::PostNotRecyclable {
             code,
             message,
             request_id: Some(request_id),
+            post_id,
+            reason,
         }
     }
 
-    pub fn too_many_queues_with_code(
+    pub fn too_many_recycling_rules_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyQueues {
+        Self::TooManyRecyclingRules {
             code: Some(code),
             message,
             request_id,
@@ -103,13 +121,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_queues_with_message(
+    pub fn too_many_recycling_rules_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyQueues {
+        Self::TooManyRecyclingRules {
             code,
             message: Some(message),
             request_id,
@@ -117,13 +135,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_queues_with_request_id(
+    pub fn too_many_recycling_rules_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
         allowed: i64,
     ) -> Self {
-        Self::TooManyQueues {
+        Self::TooManyRecyclingRules {
             code,
             message,
             request_id: Some(request_id),

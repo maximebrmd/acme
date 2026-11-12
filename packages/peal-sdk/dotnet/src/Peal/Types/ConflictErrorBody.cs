@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.QueueNameTaken"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.PostNotRecyclable"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.QueueNameTaken value)
+    public ConflictErrorBody(ConflictErrorBody.PostNotRecyclable value)
     {
-        Type = "QueueNameTaken";
+        Type = "PostNotRecyclable";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyQueues"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyRecyclingRules"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyQueues value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyRecyclingRules value)
     {
-        Type = "TooManyQueues";
+        Type = "TooManyRecyclingRules";
         Value = value.Value;
     }
 
@@ -48,60 +48,64 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "QueueNameTaken"
+    /// Returns true if <see cref="Type"/> is "PostNotRecyclable"
     /// </summary>
-    public bool IsQueueNameTaken => Type == "QueueNameTaken";
+    public bool IsPostNotRecyclable => Type == "PostNotRecyclable";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyQueues"
+    /// Returns true if <see cref="Type"/> is "TooManyRecyclingRules"
     /// </summary>
-    public bool IsTooManyQueues => Type == "TooManyQueues";
+    public bool IsTooManyRecyclingRules => Type == "TooManyRecyclingRules";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.QueueNameTakenEncoded"/> if <see cref="Type"/> is 'QueueNameTaken', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.PostNotRecyclableEncoded"/> if <see cref="Type"/> is 'PostNotRecyclable', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'QueueNameTaken'.</exception>
-    public Peal.QueueNameTakenEncoded AsQueueNameTaken() =>
-        IsQueueNameTaken
-            ? (Peal.QueueNameTakenEncoded)Value!
-            : throw new global::System.Exception("ConflictErrorBody.Type is not 'QueueNameTaken'");
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostNotRecyclable'.</exception>
+    public Peal.PostNotRecyclableEncoded AsPostNotRecyclable() =>
+        IsPostNotRecyclable
+            ? (Peal.PostNotRecyclableEncoded)Value!
+            : throw new global::System.Exception(
+                "ConflictErrorBody.Type is not 'PostNotRecyclable'"
+            );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyQueuesEncoded"/> if <see cref="Type"/> is 'TooManyQueues', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.TooManyRecyclingRulesEncoded"/> if <see cref="Type"/> is 'TooManyRecyclingRules', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyQueues'.</exception>
-    public Peal.TooManyQueuesEncoded AsTooManyQueues() =>
-        IsTooManyQueues
-            ? (Peal.TooManyQueuesEncoded)Value!
-            : throw new global::System.Exception("ConflictErrorBody.Type is not 'TooManyQueues'");
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyRecyclingRules'.</exception>
+    public Peal.TooManyRecyclingRulesEncoded AsTooManyRecyclingRules() =>
+        IsTooManyRecyclingRules
+            ? (Peal.TooManyRecyclingRulesEncoded)Value!
+            : throw new global::System.Exception(
+                "ConflictErrorBody.Type is not 'TooManyRecyclingRules'"
+            );
 
     public T Match<T>(
-        Func<Peal.QueueNameTakenEncoded, T> onQueueNameTaken,
-        Func<Peal.TooManyQueuesEncoded, T> onTooManyQueues,
+        Func<Peal.PostNotRecyclableEncoded, T> onPostNotRecyclable,
+        Func<Peal.TooManyRecyclingRulesEncoded, T> onTooManyRecyclingRules,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "QueueNameTaken" => onQueueNameTaken(AsQueueNameTaken()),
-            "TooManyQueues" => onTooManyQueues(AsTooManyQueues()),
+            "PostNotRecyclable" => onPostNotRecyclable(AsPostNotRecyclable()),
+            "TooManyRecyclingRules" => onTooManyRecyclingRules(AsTooManyRecyclingRules()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.QueueNameTakenEncoded> onQueueNameTaken,
-        Action<Peal.TooManyQueuesEncoded> onTooManyQueues,
+        Action<Peal.PostNotRecyclableEncoded> onPostNotRecyclable,
+        Action<Peal.TooManyRecyclingRulesEncoded> onTooManyRecyclingRules,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "QueueNameTaken":
-                onQueueNameTaken(AsQueueNameTaken());
+            case "PostNotRecyclable":
+                onPostNotRecyclable(AsPostNotRecyclable());
                 break;
-            case "TooManyQueues":
-                onTooManyQueues(AsTooManyQueues());
+            case "TooManyRecyclingRules":
+                onTooManyRecyclingRules(AsTooManyRecyclingRules());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -110,13 +114,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.QueueNameTakenEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.PostNotRecyclableEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsQueueNameTaken(out Peal.QueueNameTakenEncoded? value)
+    public bool TryAsPostNotRecyclable(out Peal.PostNotRecyclableEncoded? value)
     {
-        if (Type == "QueueNameTaken")
+        if (Type == "PostNotRecyclable")
         {
-            value = (Peal.QueueNameTakenEncoded)Value!;
+            value = (Peal.PostNotRecyclableEncoded)Value!;
             return true;
         }
         value = null;
@@ -124,13 +128,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyQueuesEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyRecyclingRulesEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyQueues(out Peal.TooManyQueuesEncoded? value)
+    public bool TryAsTooManyRecyclingRules(out Peal.TooManyRecyclingRulesEncoded? value)
     {
-        if (Type == "TooManyQueues")
+        if (Type == "TooManyRecyclingRules")
         {
-            value = (Peal.TooManyQueuesEncoded)Value!;
+            value = (Peal.TooManyRecyclingRulesEncoded)Value!;
             return true;
         }
         value = null;
@@ -139,11 +143,12 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.QueueNameTaken value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotRecyclable value) =>
         new(value);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyQueues value) =>
-        new(value);
+    public static implicit operator ConflictErrorBody(
+        ConflictErrorBody.TooManyRecyclingRules value
+    ) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<ConflictErrorBody>
@@ -186,11 +191,18 @@ public record ConflictErrorBody
 
             var value = discriminator switch
             {
-                "QueueNameTaken" => json.Deserialize<Peal.QueueNameTakenEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.QueueNameTakenEncoded"),
-                "TooManyQueues" => jsonWithoutDiscriminator.Deserialize<Peal.TooManyQueuesEncoded?>(
-                    options
-                ) ?? throw new JsonException("Failed to deserialize Peal.TooManyQueuesEncoded"),
+                "PostNotRecyclable" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.PostNotRecyclableEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.PostNotRecyclableEncoded"
+                        ),
+                "TooManyRecyclingRules" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyRecyclingRulesEncoded?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.TooManyRecyclingRulesEncoded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new ConflictErrorBody(discriminator, value);
@@ -205,8 +217,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "QueueNameTaken" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyQueues" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostNotRecyclable" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyRecyclingRules" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -236,42 +248,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for QueueNameTaken
+    /// Discriminated union type for PostNotRecyclable
     /// </summary>
     [Serializable]
-    public struct QueueNameTaken
+    public struct PostNotRecyclable
     {
-        public QueueNameTaken(Peal.QueueNameTakenEncoded value)
+        public PostNotRecyclable(Peal.PostNotRecyclableEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.QueueNameTakenEncoded Value { get; set; }
+        internal Peal.PostNotRecyclableEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.QueueNameTaken(
-            Peal.QueueNameTakenEncoded value
+        public static implicit operator ConflictErrorBody.PostNotRecyclable(
+            Peal.PostNotRecyclableEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyQueues
+    /// Discriminated union type for TooManyRecyclingRules
     /// </summary>
     [Serializable]
-    public struct TooManyQueues
+    public struct TooManyRecyclingRules
     {
-        public TooManyQueues(Peal.TooManyQueuesEncoded value)
+        public TooManyRecyclingRules(Peal.TooManyRecyclingRulesEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyQueuesEncoded Value { get; set; }
+        internal Peal.TooManyRecyclingRulesEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.TooManyQueues(
-            Peal.TooManyQueuesEncoded value
+        public static implicit operator ConflictErrorBody.TooManyRecyclingRules(
+            Peal.TooManyRecyclingRulesEncoded value
         ) => new(value);
     }
 }

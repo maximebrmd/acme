@@ -32,6 +32,8 @@ public final class NotificationPreferencesChangeEmail {
 
     private final Optional<Boolean> postUnconfirmed;
 
+    private final Optional<Boolean> recyclingEnded;
+
     private final Optional<Boolean> webhookFailing;
 
     private final Map<String, Object> additionalProperties;
@@ -43,6 +45,7 @@ public final class NotificationPreferencesChangeEmail {
             Optional<Boolean> postPublished,
             Optional<Boolean> postReview,
             Optional<Boolean> postUnconfirmed,
+            Optional<Boolean> recyclingEnded,
             Optional<Boolean> webhookFailing,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
@@ -51,6 +54,7 @@ public final class NotificationPreferencesChangeEmail {
         this.postPublished = postPublished;
         this.postReview = postReview;
         this.postUnconfirmed = postUnconfirmed;
+        this.recyclingEnded = recyclingEnded;
         this.webhookFailing = webhookFailing;
         this.additionalProperties = additionalProperties;
     }
@@ -85,6 +89,11 @@ public final class NotificationPreferencesChangeEmail {
         return postUnconfirmed;
     }
 
+    @JsonProperty("recyclingEnded")
+    public Optional<Boolean> getRecyclingEnded() {
+        return recyclingEnded;
+    }
+
     @JsonProperty("webhookFailing")
     public Optional<Boolean> getWebhookFailing() {
         return webhookFailing;
@@ -109,6 +118,7 @@ public final class NotificationPreferencesChangeEmail {
                 && postPublished.equals(other.postPublished)
                 && postReview.equals(other.postReview)
                 && postUnconfirmed.equals(other.postUnconfirmed)
+                && recyclingEnded.equals(other.recyclingEnded)
                 && webhookFailing.equals(other.webhookFailing);
     }
 
@@ -121,6 +131,7 @@ public final class NotificationPreferencesChangeEmail {
                 this.postPublished,
                 this.postReview,
                 this.postUnconfirmed,
+                this.recyclingEnded,
                 this.webhookFailing);
     }
 
@@ -147,6 +158,8 @@ public final class NotificationPreferencesChangeEmail {
 
         private Optional<Boolean> postUnconfirmed = Optional.empty();
 
+        private Optional<Boolean> recyclingEnded = Optional.empty();
+
         private Optional<Boolean> webhookFailing = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -160,6 +173,7 @@ public final class NotificationPreferencesChangeEmail {
             postPublished(other.getPostPublished());
             postReview(other.getPostReview());
             postUnconfirmed(other.getPostUnconfirmed());
+            recyclingEnded(other.getRecyclingEnded());
             webhookFailing(other.getWebhookFailing());
             return this;
         }
@@ -230,6 +244,17 @@ public final class NotificationPreferencesChangeEmail {
             return this;
         }
 
+        @JsonSetter(value = "recyclingEnded", nulls = Nulls.SKIP)
+        public Builder recyclingEnded(Optional<Boolean> recyclingEnded) {
+            this.recyclingEnded = recyclingEnded;
+            return this;
+        }
+
+        public Builder recyclingEnded(Boolean recyclingEnded) {
+            this.recyclingEnded = Optional.ofNullable(recyclingEnded);
+            return this;
+        }
+
         @JsonSetter(value = "webhookFailing", nulls = Nulls.SKIP)
         public Builder webhookFailing(Optional<Boolean> webhookFailing) {
             this.webhookFailing = webhookFailing;
@@ -249,6 +274,7 @@ public final class NotificationPreferencesChangeEmail {
                     postPublished,
                     postReview,
                     postUnconfirmed,
+                    recyclingEnded,
                     webhookFailing,
                     additionalProperties);
         }
@@ -261,6 +287,7 @@ public final class NotificationPreferencesChangeEmail {
                     || key.equalsIgnoreCase("postPublished")
                     || key.equalsIgnoreCase("postReview")
                     || key.equalsIgnoreCase("postUnconfirmed")
+                    || key.equalsIgnoreCase("recyclingEnded")
                     || key.equalsIgnoreCase("webhookFailing")) {
                 return;
             }

@@ -20,6 +20,7 @@ public class GetTest : BaseMockServerTest
                 "postPublished": true,
                 "postReview": true,
                 "postUnconfirmed": true,
+                "recyclingEnded": true,
                 "webhookFailing": true
               },
               "everyPost": true
@@ -56,6 +57,7 @@ public class GetTest : BaseMockServerTest
                 "postPublished": true,
                 "postReview": true,
                 "postUnconfirmed": true,
+                "recyclingEnded": true,
                 "webhookFailing": true
               },
               "everyPost": true

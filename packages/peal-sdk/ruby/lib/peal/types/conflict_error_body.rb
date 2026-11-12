@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::QueueNameTakenEncoded }, key: "QUEUE_NAME_TAKEN"
+      member -> { Peal::Types::PostNotRecyclableEncoded }, key: "POST_NOT_RECYCLABLE"
 
-      member -> { Peal::Types::TooManyQueuesEncoded }, key: "TOO_MANY_QUEUES"
+      member -> { Peal::Types::TooManyRecyclingRulesEncoded }, key: "TOO_MANY_RECYCLING_RULES"
     end
   end
 end

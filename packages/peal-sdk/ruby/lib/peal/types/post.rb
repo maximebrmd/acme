@@ -13,9 +13,13 @@ module Peal
 
       field :id, -> { String }, optional: false, nullable: false
 
+      field :occurrence, -> { Integer }, optional: false, nullable: true
+
       field :outcome, -> { Peal::Types::PostOutcome }, optional: false, nullable: true
 
       field :queue_id, -> { String }, optional: false, nullable: true, api_name: "queueId"
+
+      field :recycling_id, -> { String }, optional: false, nullable: true, api_name: "recyclingId"
 
       field :schedule, -> { Peal::Types::PostSchedule }, optional: false, nullable: true
 

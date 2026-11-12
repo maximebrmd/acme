@@ -32,6 +32,7 @@ if typing.TYPE_CHECKING:
     from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
     from .posts.client import AsyncPostsClient, PostsClient
     from .queues.client import AsyncQueuesClient, QueuesClient
+    from .recycling.client import AsyncRecyclingClient, RecyclingClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
     from .signatures.client import AsyncSignaturesClient, SignaturesClient
@@ -155,6 +156,7 @@ class Peal:
         self._signatures: typing.Optional[SignaturesClient] = None
         self._channel_sets: typing.Optional[ChannelSetsClient] = None
         self._queues: typing.Optional[QueuesClient] = None
+        self._recycling: typing.Optional[RecyclingClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
 
     @property
@@ -390,6 +392,14 @@ class Peal:
         return self._queues
 
     @property
+    def recycling(self):
+        if self._recycling is None:
+            from .recycling.client import RecyclingClient  # noqa: E402
+
+            self._recycling = RecyclingClient(client_wrapper=self._client_wrapper)
+        return self._recycling
+
+    @property
     def channel_defaults(self):
         if self._channel_defaults is None:
             from .channel_defaults.client import ChannelDefaultsClient  # noqa: E402
@@ -532,6 +542,7 @@ class AsyncPeal:
         self._signatures: typing.Optional[AsyncSignaturesClient] = None
         self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
         self._queues: typing.Optional[AsyncQueuesClient] = None
+        self._recycling: typing.Optional[AsyncRecyclingClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
 
     @property
@@ -765,6 +776,14 @@ class AsyncPeal:
 
             self._queues = AsyncQueuesClient(client_wrapper=self._client_wrapper)
         return self._queues
+
+    @property
+    def recycling(self):
+        if self._recycling is None:
+            from .recycling.client import AsyncRecyclingClient  # noqa: E402
+
+            self._recycling = AsyncRecyclingClient(client_wrapper=self._client_wrapper)
+        return self._recycling
 
     @property
     def channel_defaults(self):

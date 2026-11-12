@@ -19,6 +19,9 @@ pub struct NotificationPreferencesEmail {
     #[serde(rename = "postUnconfirmed")]
     #[serde(default)]
     pub post_unconfirmed: bool,
+    #[serde(rename = "recyclingEnded")]
+    #[serde(default)]
+    pub recycling_ended: bool,
     #[serde(rename = "webhookFailing")]
     #[serde(default)]
     pub webhook_failing: bool,
@@ -39,6 +42,7 @@ pub struct NotificationPreferencesEmailBuilder {
     post_published: Option<bool>,
     post_review: Option<bool>,
     post_unconfirmed: Option<bool>,
+    recycling_ended: Option<bool>,
     webhook_failing: Option<bool>,
 }
 
@@ -73,6 +77,11 @@ impl NotificationPreferencesEmailBuilder {
         self
     }
 
+    pub fn recycling_ended(mut self, value: bool) -> Self {
+        self.recycling_ended = Some(value);
+        self
+    }
+
     pub fn webhook_failing(mut self, value: bool) -> Self {
         self.webhook_failing = Some(value);
         self
@@ -86,6 +95,7 @@ impl NotificationPreferencesEmailBuilder {
     /// - [`post_published`](NotificationPreferencesEmailBuilder::post_published)
     /// - [`post_review`](NotificationPreferencesEmailBuilder::post_review)
     /// - [`post_unconfirmed`](NotificationPreferencesEmailBuilder::post_unconfirmed)
+    /// - [`recycling_ended`](NotificationPreferencesEmailBuilder::recycling_ended)
     /// - [`webhook_failing`](NotificationPreferencesEmailBuilder::webhook_failing)
     pub fn build(self) -> Result<NotificationPreferencesEmail, BuildError> {
         Ok(NotificationPreferencesEmail {
@@ -107,6 +117,9 @@ impl NotificationPreferencesEmailBuilder {
             post_unconfirmed: self
                 .post_unconfirmed
                 .ok_or_else(|| BuildError::missing_field("post_unconfirmed"))?,
+            recycling_ended: self
+                .recycling_ended
+                .ok_or_else(|| BuildError::missing_field("recycling_ended"))?,
             webhook_failing: self
                 .webhook_failing
                 .ok_or_else(|| BuildError::missing_field("webhook_failing"))?,

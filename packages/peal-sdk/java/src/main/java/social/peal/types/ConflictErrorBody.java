@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody queueNameTaken(QueueNameTakenEncoded value) {
-        return new ConflictErrorBody(new QueueNameTakenValue(value));
+    public static ConflictErrorBody postNotRecyclable(PostNotRecyclableEncoded value) {
+        return new ConflictErrorBody(new PostNotRecyclableValue(value));
     }
 
-    public static ConflictErrorBody tooManyQueues(TooManyQueuesEncoded value) {
-        return new ConflictErrorBody(new TooManyQueuesValue(value));
+    public static ConflictErrorBody tooManyRecyclingRules(TooManyRecyclingRulesEncoded value) {
+        return new ConflictErrorBody(new TooManyRecyclingRulesValue(value));
     }
 
-    public boolean isQueueNameTaken() {
-        return value instanceof QueueNameTakenValue;
+    public boolean isPostNotRecyclable() {
+        return value instanceof PostNotRecyclableValue;
     }
 
-    public boolean isTooManyQueues() {
-        return value instanceof TooManyQueuesValue;
+    public boolean isTooManyRecyclingRules() {
+        return value instanceof TooManyRecyclingRulesValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<QueueNameTakenEncoded> getQueueNameTaken() {
-        if (isQueueNameTaken()) {
-            return Optional.of(((QueueNameTakenValue) value).value);
+    public Optional<PostNotRecyclableEncoded> getPostNotRecyclable() {
+        if (isPostNotRecyclable()) {
+            return Optional.of(((PostNotRecyclableValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<TooManyQueuesEncoded> getTooManyQueues() {
-        if (isTooManyQueues()) {
-            return Optional.of(((TooManyQueuesValue) value).value);
+    public Optional<TooManyRecyclingRulesEncoded> getTooManyRecyclingRules() {
+        if (isTooManyRecyclingRules()) {
+            return Optional.of(((TooManyRecyclingRulesValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,46 +89,49 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitQueueNameTaken(QueueNameTakenEncoded queueNameTaken);
+        T visitPostNotRecyclable(PostNotRecyclableEncoded postNotRecyclable);
 
-        T visitTooManyQueues(TooManyQueuesEncoded tooManyQueues);
+        T visitTooManyRecyclingRules(TooManyRecyclingRulesEncoded tooManyRecyclingRules);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(QueueNameTakenValue.class), @JsonSubTypes.Type(TooManyQueuesValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(PostNotRecyclableValue.class),
+        @JsonSubTypes.Type(TooManyRecyclingRulesValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("QueueNameTaken")
+    @JsonTypeName("PostNotRecyclable")
     @JsonIgnoreProperties("_tag")
-    private static final class QueueNameTakenValue implements Value {
+    private static final class PostNotRecyclableValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private QueueNameTakenEncoded value;
+        private PostNotRecyclableEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private QueueNameTakenValue() {}
+        private PostNotRecyclableValue() {}
 
-        private QueueNameTakenValue(QueueNameTakenEncoded value) {
+        private PostNotRecyclableValue(PostNotRecyclableEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitQueueNameTaken(value);
+            return visitor.visitPostNotRecyclable(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof QueueNameTakenValue && equalTo((QueueNameTakenValue) other);
+            return other instanceof PostNotRecyclableValue && equalTo((PostNotRecyclableValue) other);
         }
 
-        private boolean equalTo(QueueNameTakenValue other) {
+        private boolean equalTo(PostNotRecyclableValue other) {
             return value.equals(other.value);
         }
 
@@ -143,32 +146,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("TooManyQueues")
+    @JsonTypeName("TooManyRecyclingRules")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyQueuesValue implements Value {
+    private static final class TooManyRecyclingRulesValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyQueuesEncoded value;
+        private TooManyRecyclingRulesEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyQueuesValue() {}
+        private TooManyRecyclingRulesValue() {}
 
-        private TooManyQueuesValue(TooManyQueuesEncoded value) {
+        private TooManyRecyclingRulesValue(TooManyRecyclingRulesEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyQueues(value);
+            return visitor.visitTooManyRecyclingRules(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyQueuesValue && equalTo((TooManyQueuesValue) other);
+            return other instanceof TooManyRecyclingRulesValue && equalTo((TooManyRecyclingRulesValue) other);
         }
 
-        private boolean equalTo(TooManyQueuesValue other) {
+        private boolean equalTo(TooManyRecyclingRulesValue other) {
             return value.equals(other.value);
         }
 

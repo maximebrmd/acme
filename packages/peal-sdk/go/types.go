@@ -5029,9 +5029,9 @@ func (c CommentProblem) Ptr() *CommentProblem {
 }
 
 type ConflictErrorBody struct {
-	Type           string
-	QueueNameTaken *QueueNameTakenEncoded
-	TooManyQueues  *TooManyQueuesEncoded
+	Type                  string
+	PostNotRecyclable     *PostNotRecyclableEncoded
+	TooManyRecyclingRules *TooManyRecyclingRulesEncoded
 
 	rawJSON json.RawMessage
 }
@@ -5043,18 +5043,18 @@ func (c *ConflictErrorBody) GetType() string {
 	return c.Type
 }
 
-func (c *ConflictErrorBody) GetQueueNameTaken() *QueueNameTakenEncoded {
+func (c *ConflictErrorBody) GetPostNotRecyclable() *PostNotRecyclableEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.QueueNameTaken
+	return c.PostNotRecyclable
 }
 
-func (c *ConflictErrorBody) GetTooManyQueues() *TooManyQueuesEncoded {
+func (c *ConflictErrorBody) GetTooManyRecyclingRules() *TooManyRecyclingRulesEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.TooManyQueues
+	return c.TooManyRecyclingRules
 }
 
 func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
@@ -5069,18 +5069,18 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", c)
 	}
 	switch unmarshaler.Type {
-	case "QueueNameTaken":
-		value := new(QueueNameTakenEncoded)
+	case "PostNotRecyclable":
+		value := new(PostNotRecyclableEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.QueueNameTaken = value
-	case "TooManyQueues":
-		value := new(TooManyQueuesEncoded)
+		c.PostNotRecyclable = value
+	case "TooManyRecyclingRules":
+		value := new(TooManyRecyclingRulesEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.TooManyQueues = value
+		c.TooManyRecyclingRules = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -5090,11 +5090,11 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if c.QueueNameTaken != nil {
-		return internal.MarshalJSONWithExtraProperty(c.QueueNameTaken, "_tag", "QueueNameTaken")
+	if c.PostNotRecyclable != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PostNotRecyclable, "_tag", "PostNotRecyclable")
 	}
-	if c.TooManyQueues != nil {
-		return internal.MarshalJSONWithExtraProperty(c.TooManyQueues, "_tag", "TooManyQueues")
+	if c.TooManyRecyclingRules != nil {
+		return internal.MarshalJSONWithExtraProperty(c.TooManyRecyclingRules, "_tag", "TooManyRecyclingRules")
 	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
@@ -5103,16 +5103,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type ConflictErrorBodyVisitor interface {
-	VisitQueueNameTaken(*QueueNameTakenEncoded) error
-	VisitTooManyQueues(*TooManyQueuesEncoded) error
+	VisitPostNotRecyclable(*PostNotRecyclableEncoded) error
+	VisitTooManyRecyclingRules(*TooManyRecyclingRulesEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
-	if c.QueueNameTaken != nil {
-		return visitor.VisitQueueNameTaken(c.QueueNameTaken)
+	if c.PostNotRecyclable != nil {
+		return visitor.VisitPostNotRecyclable(c.PostNotRecyclable)
 	}
-	if c.TooManyQueues != nil {
-		return visitor.VisitTooManyQueues(c.TooManyQueues)
+	if c.TooManyRecyclingRules != nil {
+		return visitor.VisitTooManyRecyclingRules(c.TooManyRecyclingRules)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
@@ -5122,11 +5122,11 @@ func (c *ConflictErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if c.QueueNameTaken != nil {
-		fields = append(fields, "QueueNameTaken")
+	if c.PostNotRecyclable != nil {
+		fields = append(fields, "PostNotRecyclable")
 	}
-	if c.TooManyQueues != nil {
-		fields = append(fields, "TooManyQueues")
+	if c.TooManyRecyclingRules != nil {
+		fields = append(fields, "TooManyRecyclingRules")
 	}
 	if len(fields) == 0 {
 		if c.Type != "" {
@@ -11563,6 +11563,40 @@ func (n *NotFoundErrorBody) validate() error {
 	return nil
 }
 
+type NotRecyclableReason string
+
+const (
+	NotRecyclableReasonDraft            NotRecyclableReason = "draft"
+	NotRecyclableReasonAwaitingApproval NotRecyclableReason = "awaitingApproval"
+	NotRecyclableReasonCancelled        NotRecyclableReason = "cancelled"
+	NotRecyclableReasonRepeating        NotRecyclableReason = "repeating"
+	NotRecyclableReasonOccurrence       NotRecyclableReason = "occurrence"
+	NotRecyclableReasonNoChannels       NotRecyclableReason = "noChannels"
+)
+
+func NewNotRecyclableReasonFromString(s string) (NotRecyclableReason, error) {
+	switch s {
+	case "draft":
+		return NotRecyclableReasonDraft, nil
+	case "awaitingApproval":
+		return NotRecyclableReasonAwaitingApproval, nil
+	case "cancelled":
+		return NotRecyclableReasonCancelled, nil
+	case "repeating":
+		return NotRecyclableReasonRepeating, nil
+	case "occurrence":
+		return NotRecyclableReasonOccurrence, nil
+	case "noChannels":
+		return NotRecyclableReasonNoChannels, nil
+	}
+	var t NotRecyclableReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
+	return &n
+}
+
 type PaidPlan string
 
 const (
@@ -13837,6 +13871,156 @@ func (p PostNotPromotableEncodedReason) Ptr() *PostNotPromotableEncodedReason {
 }
 
 var (
+	postNotRecyclableEncodedFieldCode      = big.NewInt(1 << 0)
+	postNotRecyclableEncodedFieldMessage   = big.NewInt(1 << 1)
+	postNotRecyclableEncodedFieldRequestID = big.NewInt(1 << 2)
+	postNotRecyclableEncodedFieldPostID    = big.NewInt(1 << 3)
+	postNotRecyclableEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type PostNotRecyclableEncoded struct {
+	Code      *string             `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string             `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string             `json:"requestId,omitempty" url:"requestId,omitempty"`
+	PostID    string              `json:"postId" url:"postId"`
+	Reason    NotRecyclableReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostNotRecyclableEncoded) GetCode() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Code
+}
+
+func (p *PostNotRecyclableEncoded) GetMessage() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Message
+}
+
+func (p *PostNotRecyclableEncoded) GetRequestID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.RequestID
+}
+
+func (p *PostNotRecyclableEncoded) GetPostID() string {
+	if p == nil {
+		return ""
+	}
+	return p.PostID
+}
+
+func (p *PostNotRecyclableEncoded) GetReason() NotRecyclableReason {
+	if p == nil {
+		return ""
+	}
+	return p.Reason
+}
+
+func (p *PostNotRecyclableEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostNotRecyclableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotRecyclableEncoded) SetCode(code *string) {
+	p.Code = code
+	p.require(postNotRecyclableEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotRecyclableEncoded) SetMessage(message *string) {
+	p.Message = message
+	p.require(postNotRecyclableEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotRecyclableEncoded) SetRequestID(requestID *string) {
+	p.RequestID = requestID
+	p.require(postNotRecyclableEncodedFieldRequestID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotRecyclableEncoded) SetPostID(postID string) {
+	p.PostID = postID
+	p.require(postNotRecyclableEncodedFieldPostID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotRecyclableEncoded) SetReason(reason NotRecyclableReason) {
+	p.Reason = reason
+	p.require(postNotRecyclableEncodedFieldReason)
+}
+
+func (p *PostNotRecyclableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostNotRecyclableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostNotRecyclableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostNotRecyclableEncoded) MarshalJSON() ([]byte, error) {
+	type embed PostNotRecyclableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostNotRecyclableEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postNotReviewableEncodedFieldCode      = big.NewInt(1 << 0)
 	postNotReviewableEncodedFieldMessage   = big.NewInt(1 << 1)
 	postNotReviewableEncodedFieldRequestID = big.NewInt(1 << 2)
@@ -13989,6 +14173,162 @@ func NewPostNotReviewableEncodedStatusFromString(s string) (PostNotReviewableEnc
 }
 
 func (p PostNotReviewableEncodedStatus) Ptr() *PostNotReviewableEncodedStatus {
+	return &p
+}
+
+var (
+	postOriginFieldID   = big.NewInt(1 << 0)
+	postOriginFieldName = big.NewInt(1 << 1)
+	postOriginFieldVia  = big.NewInt(1 << 2)
+)
+
+// postOriginNullableFields maps the wire names of PostOrigin's nullable fields (required or optional) to their field bits.
+var postOriginNullableFields = map[string]*big.Int{
+	"id":   postOriginFieldID,
+	"name": postOriginFieldName,
+}
+
+type PostOrigin struct {
+	ID   *string       `json:"id,omitempty" url:"id,omitempty"`
+	Name *string       `json:"name,omitempty" url:"name,omitempty"`
+	Via  PostOriginVia `json:"via" url:"via"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostOrigin) GetID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.ID
+}
+
+func (p *PostOrigin) GetName() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Name
+}
+
+func (p *PostOrigin) GetVia() PostOriginVia {
+	if p == nil {
+		return ""
+	}
+	return p.Via
+}
+
+func (p *PostOrigin) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostOrigin) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetID(id *string) {
+	p.ID = id
+	p.require(postOriginFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetName(name *string) {
+	p.Name = name
+	p.require(postOriginFieldName)
+}
+
+// SetVia sets the Via field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetVia(via PostOriginVia) {
+	p.Via = via
+	p.require(postOriginFieldVia)
+}
+
+func (p *PostOrigin) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostOrigin
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostOrigin(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, postOriginNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostOrigin) MarshalJSON() ([]byte, error) {
+	type embed PostOrigin
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostOrigin) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PostOriginVia string
+
+const (
+	PostOriginViaWeb         PostOriginVia = "web"
+	PostOriginViaAPIKey      PostOriginVia = "apiKey"
+	PostOriginViaApplication PostOriginVia = "application"
+)
+
+func NewPostOriginViaFromString(s string) (PostOriginVia, error) {
+	switch s {
+	case "web":
+		return PostOriginViaWeb, nil
+	case "apiKey":
+		return PostOriginViaAPIKey, nil
+	case "application":
+		return PostOriginViaApplication, nil
+	}
+	var t PostOriginVia
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostOriginVia) Ptr() *PostOriginVia {
 	return &p
 }
 
@@ -14436,6 +14776,663 @@ func NewQueueNoRoomFromString(s string) (QueueNoRoom, error) {
 
 func (q QueueNoRoom) Ptr() *QueueNoRoom {
 	return &q
+}
+
+var (
+	recyclingEndsTooSoonEncodedFieldCode       = big.NewInt(1 << 0)
+	recyclingEndsTooSoonEncodedFieldMessage    = big.NewInt(1 << 1)
+	recyclingEndsTooSoonEncodedFieldRequestID  = big.NewInt(1 << 2)
+	recyclingEndsTooSoonEncodedFieldFirstDueAt = big.NewInt(1 << 3)
+)
+
+type RecyclingEndsTooSoonEncoded struct {
+	Code       *string `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	FirstDueAt string  `json:"firstDueAt" url:"firstDueAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RecyclingEndsTooSoonEncoded) GetCode() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Code
+}
+
+func (r *RecyclingEndsTooSoonEncoded) GetMessage() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Message
+}
+
+func (r *RecyclingEndsTooSoonEncoded) GetRequestID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.RequestID
+}
+
+func (r *RecyclingEndsTooSoonEncoded) GetFirstDueAt() string {
+	if r == nil {
+		return ""
+	}
+	return r.FirstDueAt
+}
+
+func (r *RecyclingEndsTooSoonEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RecyclingEndsTooSoonEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingEndsTooSoonEncoded) SetCode(code *string) {
+	r.Code = code
+	r.require(recyclingEndsTooSoonEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingEndsTooSoonEncoded) SetMessage(message *string) {
+	r.Message = message
+	r.require(recyclingEndsTooSoonEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingEndsTooSoonEncoded) SetRequestID(requestID *string) {
+	r.RequestID = requestID
+	r.require(recyclingEndsTooSoonEncodedFieldRequestID)
+}
+
+// SetFirstDueAt sets the FirstDueAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingEndsTooSoonEncoded) SetFirstDueAt(firstDueAt string) {
+	r.FirstDueAt = firstDueAt
+	r.require(recyclingEndsTooSoonEncodedFieldFirstDueAt)
+}
+
+func (r *RecyclingEndsTooSoonEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler RecyclingEndsTooSoonEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RecyclingEndsTooSoonEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RecyclingEndsTooSoonEncoded) MarshalJSON() ([]byte, error) {
+	type embed RecyclingEndsTooSoonEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RecyclingEndsTooSoonEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	recyclingRuleEndedEncodedFieldTag       = big.NewInt(1 << 0)
+	recyclingRuleEndedEncodedFieldCode      = big.NewInt(1 << 1)
+	recyclingRuleEndedEncodedFieldMessage   = big.NewInt(1 << 2)
+	recyclingRuleEndedEncodedFieldRequestID = big.NewInt(1 << 3)
+	recyclingRuleEndedEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type RecyclingRuleEndedEncoded struct {
+	Tag       RecyclingRuleEndedEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                      `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                      `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                      `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    string                       `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RecyclingRuleEndedEncoded) GetTag() RecyclingRuleEndedEncodedTag {
+	if r == nil {
+		return ""
+	}
+	return r.Tag
+}
+
+func (r *RecyclingRuleEndedEncoded) GetCode() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Code
+}
+
+func (r *RecyclingRuleEndedEncoded) GetMessage() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Message
+}
+
+func (r *RecyclingRuleEndedEncoded) GetRequestID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.RequestID
+}
+
+func (r *RecyclingRuleEndedEncoded) GetReason() string {
+	if r == nil {
+		return ""
+	}
+	return r.Reason
+}
+
+func (r *RecyclingRuleEndedEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RecyclingRuleEndedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleEndedEncoded) SetTag(tag RecyclingRuleEndedEncodedTag) {
+	r.Tag = tag
+	r.require(recyclingRuleEndedEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleEndedEncoded) SetCode(code *string) {
+	r.Code = code
+	r.require(recyclingRuleEndedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleEndedEncoded) SetMessage(message *string) {
+	r.Message = message
+	r.require(recyclingRuleEndedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleEndedEncoded) SetRequestID(requestID *string) {
+	r.RequestID = requestID
+	r.require(recyclingRuleEndedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleEndedEncoded) SetReason(reason string) {
+	r.Reason = reason
+	r.require(recyclingRuleEndedEncodedFieldReason)
+}
+
+func (r *RecyclingRuleEndedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler RecyclingRuleEndedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RecyclingRuleEndedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RecyclingRuleEndedEncoded) MarshalJSON() ([]byte, error) {
+	type embed RecyclingRuleEndedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RecyclingRuleEndedEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+type RecyclingRuleEndedEncodedTag string
+
+const (
+	RecyclingRuleEndedEncodedTagRecyclingRuleEnded RecyclingRuleEndedEncodedTag = "RecyclingRuleEnded"
+)
+
+func NewRecyclingRuleEndedEncodedTagFromString(s string) (RecyclingRuleEndedEncodedTag, error) {
+	switch s {
+	case "RecyclingRuleEnded":
+		return RecyclingRuleEndedEncodedTagRecyclingRuleEnded, nil
+	}
+	var t RecyclingRuleEndedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RecyclingRuleEndedEncodedTag) Ptr() *RecyclingRuleEndedEncodedTag {
+	return &r
+}
+
+var (
+	recyclingRuleNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	recyclingRuleNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	recyclingRuleNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type RecyclingRuleNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RecyclingRuleNotFoundEncoded) GetCode() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Code
+}
+
+func (r *RecyclingRuleNotFoundEncoded) GetMessage() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Message
+}
+
+func (r *RecyclingRuleNotFoundEncoded) GetRequestID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.RequestID
+}
+
+func (r *RecyclingRuleNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RecyclingRuleNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleNotFoundEncoded) SetCode(code *string) {
+	r.Code = code
+	r.require(recyclingRuleNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleNotFoundEncoded) SetMessage(message *string) {
+	r.Message = message
+	r.require(recyclingRuleNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingRuleNotFoundEncoded) SetRequestID(requestID *string) {
+	r.RequestID = requestID
+	r.require(recyclingRuleNotFoundEncodedFieldRequestID)
+}
+
+func (r *RecyclingRuleNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler RecyclingRuleNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RecyclingRuleNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RecyclingRuleNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed RecyclingRuleNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RecyclingRuleNotFoundEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	recyclingVariantsInvalidEncodedFieldCode      = big.NewInt(1 << 0)
+	recyclingVariantsInvalidEncodedFieldMessage   = big.NewInt(1 << 1)
+	recyclingVariantsInvalidEncodedFieldRequestID = big.NewInt(1 << 2)
+	recyclingVariantsInvalidEncodedFieldVariants  = big.NewInt(1 << 3)
+)
+
+type RecyclingVariantsInvalidEncoded struct {
+	Code      *string                                        `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                                        `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                                        `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Variants  []*RecyclingVariantsInvalidEncodedVariantsItem `json:"variants" url:"variants"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RecyclingVariantsInvalidEncoded) GetCode() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Code
+}
+
+func (r *RecyclingVariantsInvalidEncoded) GetMessage() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Message
+}
+
+func (r *RecyclingVariantsInvalidEncoded) GetRequestID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.RequestID
+}
+
+func (r *RecyclingVariantsInvalidEncoded) GetVariants() []*RecyclingVariantsInvalidEncodedVariantsItem {
+	if r == nil {
+		return nil
+	}
+	return r.Variants
+}
+
+func (r *RecyclingVariantsInvalidEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RecyclingVariantsInvalidEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncoded) SetCode(code *string) {
+	r.Code = code
+	r.require(recyclingVariantsInvalidEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncoded) SetMessage(message *string) {
+	r.Message = message
+	r.require(recyclingVariantsInvalidEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncoded) SetRequestID(requestID *string) {
+	r.RequestID = requestID
+	r.require(recyclingVariantsInvalidEncodedFieldRequestID)
+}
+
+// SetVariants sets the Variants field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncoded) SetVariants(variants []*RecyclingVariantsInvalidEncodedVariantsItem) {
+	r.Variants = variants
+	r.require(recyclingVariantsInvalidEncodedFieldVariants)
+}
+
+func (r *RecyclingVariantsInvalidEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler RecyclingVariantsInvalidEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RecyclingVariantsInvalidEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RecyclingVariantsInvalidEncoded) MarshalJSON() ([]byte, error) {
+	type embed RecyclingVariantsInvalidEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RecyclingVariantsInvalidEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	recyclingVariantsInvalidEncodedVariantsItemFieldVariant    = big.NewInt(1 << 0)
+	recyclingVariantsInvalidEncodedVariantsItemFieldViolations = big.NewInt(1 << 1)
+)
+
+type RecyclingVariantsInvalidEncodedVariantsItem struct {
+	Variant    int                 `json:"variant" url:"variant"`
+	Violations []*ContentViolation `json:"violations" url:"violations"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) GetVariant() int {
+	if r == nil {
+		return 0
+	}
+	return r.Variant
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) GetViolations() []*ContentViolation {
+	if r == nil {
+		return nil
+	}
+	return r.Violations
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetVariant sets the Variant field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) SetVariant(variant int) {
+	r.Variant = variant
+	r.require(recyclingVariantsInvalidEncodedVariantsItemFieldVariant)
+}
+
+// SetViolations sets the Violations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) SetViolations(violations []*ContentViolation) {
+	r.Violations = violations
+	r.require(recyclingVariantsInvalidEncodedVariantsItemFieldViolations)
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler RecyclingVariantsInvalidEncodedVariantsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RecyclingVariantsInvalidEncodedVariantsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) MarshalJSON() ([]byte, error) {
+	type embed RecyclingVariantsInvalidEncodedVariantsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RecyclingVariantsInvalidEncodedVariantsItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
 }
 
 var (
@@ -16439,6 +17436,108 @@ func (t *TargetStatusConflictEncoded) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+var (
+	textOverrideFieldChannelID = big.NewInt(1 << 0)
+	textOverrideFieldText      = big.NewInt(1 << 1)
+)
+
+type TextOverride struct {
+	ChannelID string `json:"channelId" url:"channelId"`
+	Text      string `json:"text" url:"text"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TextOverride) GetChannelID() string {
+	if t == nil {
+		return ""
+	}
+	return t.ChannelID
+}
+
+func (t *TextOverride) GetText() string {
+	if t == nil {
+		return ""
+	}
+	return t.Text
+}
+
+func (t *TextOverride) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TextOverride) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextOverride) SetChannelID(channelID string) {
+	t.ChannelID = channelID
+	t.require(textOverrideFieldChannelID)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextOverride) SetText(text string) {
+	t.Text = text
+	t.require(textOverrideFieldText)
+}
+
+func (t *TextOverride) UnmarshalJSON(data []byte) error {
+	type unmarshaler TextOverride
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TextOverride(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TextOverride) MarshalJSON() ([]byte, error) {
+	type embed TextOverride
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TextOverride) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
 // How a platform measures the length of a post's text.
 type TextUnit string
 
@@ -18072,6 +19171,140 @@ func (t *TooManyQueuesEncoded) String() string {
 }
 
 var (
+	tooManyRecyclingRulesEncodedFieldCode      = big.NewInt(1 << 0)
+	tooManyRecyclingRulesEncodedFieldMessage   = big.NewInt(1 << 1)
+	tooManyRecyclingRulesEncodedFieldRequestID = big.NewInt(1 << 2)
+	tooManyRecyclingRulesEncodedFieldAllowed   = big.NewInt(1 << 3)
+)
+
+type TooManyRecyclingRulesEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed   int     `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyRecyclingRulesEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TooManyRecyclingRulesEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TooManyRecyclingRulesEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TooManyRecyclingRulesEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyRecyclingRulesEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyRecyclingRulesEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRecyclingRulesEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(tooManyRecyclingRulesEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRecyclingRulesEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(tooManyRecyclingRulesEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRecyclingRulesEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(tooManyRecyclingRulesEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRecyclingRulesEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyRecyclingRulesEncodedFieldAllowed)
+}
+
+func (t *TooManyRecyclingRulesEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyRecyclingRulesEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyRecyclingRulesEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyRecyclingRulesEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyRecyclingRulesEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyRecyclingRulesEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
 	tooManyRequestsEncodedFieldTag               = big.NewInt(1 << 0)
 	tooManyRequestsEncodedFieldCode              = big.NewInt(1 << 1)
 	tooManyRequestsEncodedFieldMessage           = big.NewInt(1 << 2)
@@ -19273,9 +20506,9 @@ func (u UnauthenticatedEncodedTag) Ptr() *UnauthenticatedEncodedTag {
 }
 
 type UnprocessableEntityErrorBody struct {
-	Type            string
-	UnknownChannels *UnknownChannelsEncoded
-	InvalidTimeZone *InvalidTimeZoneEncoded
+	Type                     string
+	RecyclingEndsTooSoon     *RecyclingEndsTooSoonEncoded
+	RecyclingVariantsInvalid *RecyclingVariantsInvalidEncoded
 
 	rawJSON json.RawMessage
 }
@@ -19287,18 +20520,18 @@ func (u *UnprocessableEntityErrorBody) GetType() string {
 	return u.Type
 }
 
-func (u *UnprocessableEntityErrorBody) GetUnknownChannels() *UnknownChannelsEncoded {
+func (u *UnprocessableEntityErrorBody) GetRecyclingEndsTooSoon() *RecyclingEndsTooSoonEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.UnknownChannels
+	return u.RecyclingEndsTooSoon
 }
 
-func (u *UnprocessableEntityErrorBody) GetInvalidTimeZone() *InvalidTimeZoneEncoded {
+func (u *UnprocessableEntityErrorBody) GetRecyclingVariantsInvalid() *RecyclingVariantsInvalidEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.InvalidTimeZone
+	return u.RecyclingVariantsInvalid
 }
 
 func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
@@ -19313,18 +20546,18 @@ func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", u)
 	}
 	switch unmarshaler.Type {
-	case "UnknownChannels":
-		value := new(UnknownChannelsEncoded)
+	case "RecyclingEndsTooSoon":
+		value := new(RecyclingEndsTooSoonEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.UnknownChannels = value
-	case "InvalidTimeZone":
-		value := new(InvalidTimeZoneEncoded)
+		u.RecyclingEndsTooSoon = value
+	case "RecyclingVariantsInvalid":
+		value := new(RecyclingVariantsInvalidEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.InvalidTimeZone = value
+		u.RecyclingVariantsInvalid = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -19334,11 +20567,11 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 	if err := u.validate(); err != nil {
 		return nil, err
 	}
-	if u.UnknownChannels != nil {
-		return internal.MarshalJSONWithExtraProperty(u.UnknownChannels, "_tag", "UnknownChannels")
+	if u.RecyclingEndsTooSoon != nil {
+		return internal.MarshalJSONWithExtraProperty(u.RecyclingEndsTooSoon, "_tag", "RecyclingEndsTooSoon")
 	}
-	if u.InvalidTimeZone != nil {
-		return internal.MarshalJSONWithExtraProperty(u.InvalidTimeZone, "_tag", "InvalidTimeZone")
+	if u.RecyclingVariantsInvalid != nil {
+		return internal.MarshalJSONWithExtraProperty(u.RecyclingVariantsInvalid, "_tag", "RecyclingVariantsInvalid")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -19347,16 +20580,16 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type UnprocessableEntityErrorBodyVisitor interface {
-	VisitUnknownChannels(*UnknownChannelsEncoded) error
-	VisitInvalidTimeZone(*InvalidTimeZoneEncoded) error
+	VisitRecyclingEndsTooSoon(*RecyclingEndsTooSoonEncoded) error
+	VisitRecyclingVariantsInvalid(*RecyclingVariantsInvalidEncoded) error
 }
 
 func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBodyVisitor) error {
-	if u.UnknownChannels != nil {
-		return visitor.VisitUnknownChannels(u.UnknownChannels)
+	if u.RecyclingEndsTooSoon != nil {
+		return visitor.VisitRecyclingEndsTooSoon(u.RecyclingEndsTooSoon)
 	}
-	if u.InvalidTimeZone != nil {
-		return visitor.VisitInvalidTimeZone(u.InvalidTimeZone)
+	if u.RecyclingVariantsInvalid != nil {
+		return visitor.VisitRecyclingVariantsInvalid(u.RecyclingVariantsInvalid)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -19366,11 +20599,11 @@ func (u *UnprocessableEntityErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", u)
 	}
 	var fields []string
-	if u.UnknownChannels != nil {
-		fields = append(fields, "UnknownChannels")
+	if u.RecyclingEndsTooSoon != nil {
+		fields = append(fields, "RecyclingEndsTooSoon")
 	}
-	if u.InvalidTimeZone != nil {
-		fields = append(fields, "InvalidTimeZone")
+	if u.RecyclingVariantsInvalid != nil {
+		fields = append(fields, "RecyclingVariantsInvalid")
 	}
 	if len(fields) == 0 {
 		if u.Type != "" {

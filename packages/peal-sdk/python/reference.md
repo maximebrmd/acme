@@ -1792,7 +1792,7 @@ client.posts.create(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L210-L302">search</a>(...) -> PostPage</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L210-L306">search</a>(...) -> PostPage</code></summary>
 <dl>
 <dd>
 
@@ -1804,7 +1804,7 @@ client.posts.create(
 <dl>
 <dd>
 
-Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `recyclingId` (posts that recycling rule made), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 </dd>
 </dl>
 </dd>
@@ -1925,6 +1925,14 @@ client.posts.search(
 <dl>
 <dd>
 
+**recycling_id:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **removed:** `typing.Optional[SearchPostsRequestRemoved]` 
     
 </dd>
@@ -1977,7 +1985,7 @@ client.posts.search(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L304-L407">send</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L308-L411">send</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2157,7 +2165,7 @@ client.posts.send(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L409-L478">bulk</a>(...) -> BulkResult</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L413-L482">bulk</a>(...) -> BulkResult</code></summary>
 <dl>
 <dd>
 
@@ -2367,7 +2375,7 @@ client.posts.import_(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L527-L611">validate</a>(...) -> PostValidation</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L531-L615">validate</a>(...) -> PostValidation</code></summary>
 <dl>
 <dd>
 
@@ -2522,7 +2530,7 @@ client.posts.validate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L613-L644">get</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L617-L648">get</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2604,7 +2612,7 @@ client.posts.get(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L646-L731">update</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L650-L735">update</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2712,7 +2720,7 @@ client.posts.update(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L733-L765">discard</a>(...)</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L737-L769">discard</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -2794,7 +2802,7 @@ client.posts.discard(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L767-L807">outcome</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L771-L811">outcome</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2884,7 +2892,7 @@ client.posts.outcome(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L809-L842">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L813-L846">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
 <dl>
 <dd>
 
@@ -2966,7 +2974,7 @@ client.posts.attempts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L844-L885">tag</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L848-L889">tag</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3059,7 +3067,7 @@ client.posts.tag(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L887-L920">duplicate</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L891-L924">duplicate</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3141,7 +3149,7 @@ client.posts.duplicate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L922-L973">schedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L926-L977">schedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3252,7 +3260,7 @@ client.posts.schedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L975-L1022">reschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L979-L1026">reschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3344,7 +3352,7 @@ client.posts.reschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1024-L1069">enqueue</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1028-L1073">enqueue</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3442,7 +3450,7 @@ client.posts.enqueue(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1071-L1104">unschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1075-L1108">unschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3524,7 +3532,7 @@ client.posts.unschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1106-L1147">repost</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1110-L1151">repost</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3615,7 +3623,7 @@ client.posts.repost(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1149-L1196">confirm</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1153-L1200">confirm</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3717,7 +3725,7 @@ client.posts.confirm(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1198-L1244">unpublish_target</a>(...) -> LivePostChange</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1202-L1248">unpublish_target</a>(...) -> LivePostChange</code></summary>
 <dl>
 <dd>
 
@@ -3816,7 +3824,7 @@ client.posts.unpublish_target(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1246-L1279">unpublish</a>(...) -> PostUnpublish</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1250-L1283">unpublish</a>(...) -> PostUnpublish</code></summary>
 <dl>
 <dd>
 
@@ -3898,7 +3906,7 @@ client.posts.unpublish(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1281-L1314">changes</a>(...) -> LivePostChanges</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1285-L1318">changes</a>(...) -> LivePostChanges</code></summary>
 <dl>
 <dd>
 
@@ -3980,7 +3988,7 @@ client.posts.changes(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1316-L1349">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1320-L1353">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -5054,7 +5062,7 @@ client.notices.mark_all_read()
 <dl>
 <dd>
 
-Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, and channels to reconnect, but not published posts, are emailed; and they hear only about the posts they wrote.
+Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed; and they hear only about the posts they wrote.
 </dd>
 </dl>
 </dd>
@@ -14974,6 +14982,598 @@ client.queues.reshuffle(
 <dd>
 
 **queue_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## recycling
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L34-L78">list</a>(...) -> RecyclingRulePage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's recycling rules, oldest first, 50 a page unless `limit` (at most 100) says otherwise, those with `status` alone when given, each with its next 3 posts to come. Pass the page's `nextCursor` as `cursor` for the next one. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.list(
+    workspace_id="workspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[RecyclingStatus]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L80-L145">create</a>(...) -> RecyclingRule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Starts a rule that repeats a post that is scheduled, publishing or went out (deleted from a platform since or not): `every` 1 to 365 days, 1 to 52 weeks or 1 to 12 months, until `count` posts in all (2 to 100, the source counted) or until the day `until`, and never more than 100; with up to 10 text `variants`, each checked as the source saying it would be, and optionally on a queue. Each post a rule makes is a new post, copied from the source with what the workspace still has (its channels still connected, its media, the options on them, its tags; never a signature or a default added since), and sent as any post is: the same checks, the approval policy, the month's room in the plan, its own job, outcome and notices. It says the source's text, then each variant in turn, then the source's again. The next post is made once the latest one's time has passed, one interval after the one before at the same wall-clock time in the source's zone (a month shorter than the day takes its last day), or on the queue's first free slot from then; a time missed while nothing ran is skipped, never made up for. Each acts as whoever started the rule, with what they may do when it is made: a member removed, a key revoked or an application whose grant no longer publishes ends it. A post has one rule going on at a time, and a workspace 100 active or paused. It publishes again, in public, without anyone being asked each time, unless the approval policy holds the starter's posts: then each waits for an approval. Needs post:schedule, or post:create where posts wait for an approval; never staff acting as a member.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal, RecyclingInterval
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.create(
+    workspace_id="workspaceId",
+    every=RecyclingInterval(
+        count=1,
+        unit="days",
+    ),
+    post_id="postId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**every:** `RecyclingInterval` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**count:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**until:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**variants:** `typing.Optional[typing.List[RecyclingVariant]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L147-L180">get</a>(...) -> RecyclingRule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers with a rule of the workspace and its next 3 posts to come, each with the variant it will say. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.get(
+    workspace_id="workspaceId",
+    rule_id="ruleId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**rule_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L182-L214">delete</a>(...)</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.delete(
+    workspace_id="workspaceId",
+    rule_id="ruleId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**rule_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L216-L273">update</a>(...) -> RecyclingRule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.update(
+    workspace_id="workspaceId",
+    rule_id="ruleId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**rule_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**count:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**paused:** `typing.Optional[bool]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**until:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**variants:** `typing.Optional[typing.List[RecyclingVariant]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.recycling.<a href="src/peal/recycling/client.py#L275-L315">resume</a>(...) -> RecyclingRule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.recycling.resume(
+    workspace_id="workspaceId",
+    rule_id="ruleId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**rule_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**variants:** `typing.Optional[typing.List[RecyclingVariant]]` 
     
 </dd>
 </dl>

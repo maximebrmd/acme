@@ -25,6 +25,9 @@ pub struct SearchQueryRequest {
     #[serde(rename = "queueId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub queue_id: Option<String>,
+    #[serde(rename = "recyclingId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recycling_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub removed: Option<SearchPostsRequestRemoved>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,6 +59,7 @@ pub struct SearchQueryRequestBuilder {
     outcome: Option<PostOutcome>,
     platform: Option<Platform>,
     queue_id: Option<String>,
+    recycling_id: Option<String>,
     removed: Option<SearchPostsRequestRemoved>,
     sort: Option<PostSort>,
     status: Option<PostStatus>,
@@ -109,6 +113,11 @@ impl SearchQueryRequestBuilder {
         self
     }
 
+    pub fn recycling_id(mut self, value: impl Into<String>) -> Self {
+        self.recycling_id = Some(value.into());
+        self
+    }
+
     pub fn removed(mut self, value: SearchPostsRequestRemoved) -> Self {
         self.removed = Some(value);
         self
@@ -146,6 +155,7 @@ impl SearchQueryRequestBuilder {
             outcome: self.outcome,
             platform: self.platform,
             queue_id: self.queue_id,
+            recycling_id: self.recycling_id,
             removed: self.removed,
             sort: self.sort,
             status: self.status,

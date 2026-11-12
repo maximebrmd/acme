@@ -1,9 +1,9 @@
 pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct InvalidTimeZoneEncoded {
+pub struct RecyclingRuleEndedEncoded {
     #[serde(rename = "_tag")]
-    pub tag: InvalidTimeZoneEncodedTag,
+    pub tag: RecyclingRuleEndedEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11,29 +11,28 @@ pub struct InvalidTimeZoneEncoded {
     #[serde(rename = "requestId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
-    #[serde(rename = "timeZone")]
     #[serde(default)]
-    pub time_zone: String,
+    pub reason: String,
 }
 
-impl InvalidTimeZoneEncoded {
-    pub fn builder() -> InvalidTimeZoneEncodedBuilder {
-        <InvalidTimeZoneEncodedBuilder as Default>::default()
+impl RecyclingRuleEndedEncoded {
+    pub fn builder() -> RecyclingRuleEndedEncodedBuilder {
+        <RecyclingRuleEndedEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct InvalidTimeZoneEncodedBuilder {
-    tag: Option<InvalidTimeZoneEncodedTag>,
+pub struct RecyclingRuleEndedEncodedBuilder {
+    tag: Option<RecyclingRuleEndedEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
-    time_zone: Option<String>,
+    reason: Option<String>,
 }
 
-impl InvalidTimeZoneEncodedBuilder {
-    pub fn tag(mut self, value: InvalidTimeZoneEncodedTag) -> Self {
+impl RecyclingRuleEndedEncodedBuilder {
+    pub fn tag(mut self, value: RecyclingRuleEndedEncodedTag) -> Self {
         self.tag = Some(value);
         self
     }
@@ -53,24 +52,24 @@ impl InvalidTimeZoneEncodedBuilder {
         self
     }
 
-    pub fn time_zone(mut self, value: impl Into<String>) -> Self {
-        self.time_zone = Some(value.into());
+    pub fn reason(mut self, value: impl Into<String>) -> Self {
+        self.reason = Some(value.into());
         self
     }
 
-    /// Consumes the builder and constructs a [`InvalidTimeZoneEncoded`].
+    /// Consumes the builder and constructs a [`RecyclingRuleEndedEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](InvalidTimeZoneEncodedBuilder::tag)
-    /// - [`time_zone`](InvalidTimeZoneEncodedBuilder::time_zone)
-    pub fn build(self) -> Result<InvalidTimeZoneEncoded, BuildError> {
-        Ok(InvalidTimeZoneEncoded {
+    /// - [`tag`](RecyclingRuleEndedEncodedBuilder::tag)
+    /// - [`reason`](RecyclingRuleEndedEncodedBuilder::reason)
+    pub fn build(self) -> Result<RecyclingRuleEndedEncoded, BuildError> {
+        Ok(RecyclingRuleEndedEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,
             request_id: self.request_id,
-            time_zone: self
-                .time_zone
-                .ok_or_else(|| BuildError::missing_field("time_zone"))?,
+            reason: self
+                .reason
+                .ok_or_else(|| BuildError::missing_field("reason"))?,
         })
     }
 }
