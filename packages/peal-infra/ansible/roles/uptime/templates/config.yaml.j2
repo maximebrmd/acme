@@ -50,6 +50,9 @@ endpoints:
 {% endif %}
     conditions:
       - "[STATUS] == {{ check.status }}"
+{% if check.body_code is defined %}
+      - "[BODY].code == {{ check.body_code }}"
+{% endif %}
       - "[RESPONSE_TIME] < {{ check.max_ms }}"
     alerts:
       - type: telegram

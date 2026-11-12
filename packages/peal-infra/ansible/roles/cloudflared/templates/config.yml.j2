@@ -44,5 +44,15 @@ ingress:
   - {hostname: {{ peal_hostnames.site }}, service: "http://127.0.0.1:{{ peal_ports.site }}"{{ everything }}}
   - {hostname: {{ peal_hostnames.docs }}, service: "http://127.0.0.1:{{ peal_ports.docs }}"{{ everything }}}
 
+{% if peal_short_link_hostname %}
+
+  # Short links: Cloudflare's edge rewrites /<code> to /api/l/<code>
+  # (packages/peal-infra/pulumi, src/link-domain.ts). The server gets that
+  # path alone, seven letters and digits, and the host answers 404 to
+  # anything else, so no path on it reaches the rest of the stack.
+  - {hostname: {{ peal_short_link_hostname }}, path: "^/api/l/[0-9A-Za-z]{7}$", service: "{{ server }}"{{ everything }}}
+  - {hostname: {{ peal_short_link_hostname }}, service: http_status:404}
+{% endif %}
+
   # Anything else the tunnel receives.
   - service: http_status:404

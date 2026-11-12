@@ -34,13 +34,16 @@ const sandbox: EnvironmentSettings = {
     site: "sandbox-site",
     ssh: "sandbox-ssh",
   },
+  shortLinkHost: "sandbox.short.test",
   zoneId: "zone-synthetic",
 };
 
-const result = new PealEnvironment("environment", sandbox, {
-  owner: "owner-policy",
-  publicCallbacks: "callbacks-policy",
-});
+const result = new PealEnvironment(
+  "environment",
+  sandbox,
+  { owner: "owner-policy", publicCallbacks: "callbacks-policy" },
+  "link-zone-synthetic"
+);
 
 const ofType = (type: string) =>
   made.filter((resource) => resource.type === type);
@@ -68,6 +71,7 @@ describe("the sandbox at Cloudflare", () => {
       "sandbox-site.example.test",
       "sandbox-ssh.example.test",
       "sandbox.example.test",
+      "sandbox.short.test",
     ]);
 
     for (const record of records) {
@@ -77,6 +81,16 @@ describe("the sandbox at Cloudflare", () => {
         type: "CNAME",
       });
     }
+
+    const zoneOf = (name: string) =>
+      input(
+        records.find((record) => record.name === name),
+        "zoneId",
+        Schema.String
+      );
+
+    expect(zoneOf("hostname-app")).toBe("zone-synthetic");
+    expect(zoneOf("hostname-short-links")).toBe("link-zone-synthetic");
   });
 
   it("keeps every host name behind the owner's policy, but the callbacks", async () => {
@@ -98,6 +112,20 @@ describe("the sandbox at Cloudflare", () => {
         { id: "owner-policy", precedence: 1 },
       ]);
     }
+
+    // Short links stay behind Access on the sandbox, as the rest of it.
+    expect(
+      input(
+        applications.find((application) => application.name === "access-app"),
+        "destinations",
+        DestinationsSchema
+      ).map((destination) => destination.uri)
+    ).toStrictEqual([
+      "sandbox.example.test",
+      "sandbox-site.example.test",
+      "sandbox-docs.example.test",
+      "sandbox.short.test",
+    ]);
 
     expect(policyOf("access-callbacks")).toStrictEqual([
       { id: "callbacks-policy", precedence: 1 },
@@ -161,7 +189,8 @@ describe("the sandbox at Cloudflare", () => {
         new PealEnvironment(
           "production",
           { ...sandbox, environment: "production" },
-          { owner: "o", publicCallbacks: "c" }
+          { owner: "o", publicCallbacks: "c" },
+          "link-zone-synthetic"
         )
     ).toThrow("not described yet");
   });

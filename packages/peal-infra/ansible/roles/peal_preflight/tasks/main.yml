@@ -18,3 +18,29 @@
       {{ peal_preflight_settings | dict2items
          | selectattr('value', 'search', peal_preflight_pattern)
          | map(attribute='key') | list }}
+
+# Short links: the server issues them on https://<peal_short_link_hostname>/
+# (peal_runtime sets PEAL_SHORT_LINK_BASE from it) and stops at startup when
+# the base is not written as its URL's href is, so the name is a plain host
+# name, in lower case, without a scheme, port, path or trailing dot. The
+# base never comes from peal_settings, where it could name another host
+# than the one the tunnel routes.
+- name: Refuse a short-link host name the server or the tunnel would misread
+  ansible.builtin.assert:
+    that: peal_preflight_short_links | length == 0
+    fail_msg: >-
+      Change {{ peal_preflight_short_links | join(', ') }}: peal_short_link_hostname
+      is a host name in lower case, such as peal.link, without a scheme, port,
+      path or trailing dot, and PEAL_SHORT_LINK_BASE comes from it, never from
+      peal_settings.
+    quiet: true
+  vars:
+    peal_preflight_host_name: '^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*[a-z0-9]\Z'
+    peal_preflight_short_links: >-
+      {{ (['peal_short_link_hostname']
+          if peal_short_link_hostname | default('') | length > 0
+             and peal_short_link_hostname is not match(peal_preflight_host_name)
+          else [])
+         + (['peal_settings.PEAL_SHORT_LINK_BASE']
+            if 'PEAL_SHORT_LINK_BASE' in peal_settings | default({})
+            else []) }}

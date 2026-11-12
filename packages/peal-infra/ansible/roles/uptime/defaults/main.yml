@@ -39,6 +39,16 @@ uptime_checks:
     path: /api/ready
     status: 204
     max_ms: 1000
+  # Short links: a code no link has goes through the edge's rewrite to
+  # /api/l/<code> and the tunnel, and the server answers its own 404, whose
+  # error code (body_code) nothing before it gives: cloudflared's 404, for a
+  # path the rewrite missed, has no body. It counts no visit.
+  - name: short links
+    host: short_links
+    path: /0000000
+    status: 404
+    body_code: not_found
+    max_ms: 1000
 uptime_check_interval: 1m
 
 # Each host name's certificate, checked hourly, must be valid for this long.

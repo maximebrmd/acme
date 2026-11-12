@@ -19,6 +19,8 @@ peal_hostnames:
   docs: sandbox-docs.peal.social
   grafana: sandbox-grafana.peal.social
   ssh: sandbox-ssh.peal.social
+# Short links, behind Access as the rest (its Pulumi stack's shortLinkHost).
+peal_short_link_hostname: sandbox.peal.link
 
 # The audience tags of the sandbox's Access applications (one covers its
 # app, site and docs), its buckets and their endpoints come from its Pulumi
@@ -34,8 +36,8 @@ peal_backup_path: /sandbox
 peal_settings:
   OTEL_TRACES_SAMPLER: parentbased_always_on
   # Refuses the staff console to staff whose own account does not have
-  # two-step verification on: set once every staff account has it on.
-  # PEAL_STAFF_TWO_STEP: "true"
+  # two-step verification on: turn it on for each staff account first.
+  PEAL_STAFF_TWO_STEP: "true"
 
 peal_static_build_args:
   SITE_URL: https://sandbox-site.peal.social

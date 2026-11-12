@@ -114,6 +114,20 @@ def test_a_ledger_bucket_that_is_the_media_bucket_is_not_one_of_its_own() -> Non
     ) is False
 
 
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_server_issues_short_links_on_the_host_the_tunnel_routes(rendered: Path, environment: str) -> None:
+    host = settings(environment)["peal_short_link_hostname"]
+
+    assert _host_env(rendered, environment)["PEAL_SHORT_LINK_BASE"] == f"https://{host}/"
+
+
+def test_short_links_are_off_without_their_host_name() -> None:
+    expression = role_file("peal_runtime", "vars")["peal_runtime_host_settings"]
+    names = {**settings("sandbox"), "peal_short_link_hostname": ""}
+
+    assert "PEAL_SHORT_LINK_BASE" not in ansible_render(expression, **names)
+
+
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 
