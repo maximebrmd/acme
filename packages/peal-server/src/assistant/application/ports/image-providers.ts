@@ -3,7 +3,7 @@ import type { Effect, Option, Redacted } from "effect";
 
 import type { ProviderSecretsNotConfigured } from "#assistant/application/provider-secrets-not-configured.ts";
 import type { ImageProviderSettings } from "#assistant/domain/image-provider.ts";
-import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /** A workspace's provider as its settings page reads it: never its key. */
 export interface StoredImageProvider {
@@ -50,8 +50,7 @@ export class ImageProviders extends Context.Service<
     readonly save: (
       workspaceId: WorkspaceId,
       settings: ImageProviderSettings,
-      key: Redacted.Redacted,
-      by: Option.Option<UserId>
+      key: Redacted.Redacted
     ) => Effect.Effect<void, ProviderSecretsNotConfigured>;
     readonly remove: (workspaceId: WorkspaceId) => Effect.Effect<void>;
   }

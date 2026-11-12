@@ -20,7 +20,7 @@ import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-ima
 import type { TokenCipher } from "#channels/application/token-cipher.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 import { Ids } from "#shared/application/ids.ts";
-import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { DatabaseTest } from "#test/assistant/support.ts";
 import { TokenCipherTest } from "#test/channels/support.ts";
 
@@ -28,8 +28,6 @@ import { TokenCipherTest } from "#test/channels/support.ts";
 // synthetic keyring. Nothing here reaches a provider.
 
 const syntheticKey = "synthetic-workspace-image-key";
-
-const by = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
 
 const settings = new ImageProviderSettings({
   baseUrl: ProviderAddressSchema.make("https://images.example.com/v1"),
@@ -82,8 +80,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
           yield* providers.save(
             workspaceId,
             settings,
-            Redacted.make(syntheticKey),
-            Option.some(by)
+            Redacted.make(syntheticKey)
           );
 
           const opened = yield* providers.open(workspaceId);
@@ -104,13 +101,11 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
           const [row] = yield* sql<{
             readonly keyId: string;
             readonly sealedKey: string;
-            readonly setBy: string | null;
-          }>`SELECT key_id AS "keyId", sealed_key AS "sealedKey", set_by AS "setBy" FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`;
+          }>`SELECT key_id AS "keyId", sealed_key AS "sealedKey" FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`;
 
           assert.notInclude(row?.sealedKey ?? "", syntheticKey);
           assert.isTrue(row?.sealedKey.startsWith("test-key."));
           assert.strictEqual(row?.keyId, "test-key");
-          assert.strictEqual(row?.setBy, by);
         })
     );
 
@@ -122,8 +117,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
         yield* providers.save(
           workspaceId,
           settings,
-          Redacted.make(syntheticKey),
-          Option.some(by)
+          Redacted.make(syntheticKey)
         );
 
         const moved = new ImageProviderSettings({
@@ -135,8 +129,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
         yield* providers.save(
           workspaceId,
           moved,
-          Redacted.make(`${syntheticKey}-2`),
-          Option.none()
+          Redacted.make(`${syntheticKey}-2`)
         );
 
         assert.deepStrictEqual(
@@ -161,8 +154,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
           yield* providers.save(
             workspaceId,
             settings,
-            Redacted.make(syntheticKey),
-            Option.some(by)
+            Redacted.make(syntheticKey)
           );
 
           // The key was typed for images.example.com/v1: it never goes to
@@ -202,12 +194,11 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
         yield* providers.save(
           workspaceId,
           settings,
-          Redacted.make(syntheticKey),
-          Option.some(by)
+          Redacted.make(syntheticKey)
         );
 
-        yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, set_by, updated_at)
-          SELECT ${other}, base_url, model, sealed_key, key_id, set_by, updated_at
+        yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, updated_at)
+          SELECT ${other}, base_url, model, sealed_key, key_id, updated_at
           FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`;
 
         assert.isTrue(Option.isNone(keyOf(yield* providers.open(other))));
@@ -239,12 +230,7 @@ layer(providersOn(NoKeyring), { timeout: "60 seconds" })(
         const providers = yield* ImageProviders;
 
         const refused = yield* providers
-          .save(
-            workspaceId,
-            settings,
-            Redacted.make(syntheticKey),
-            Option.some(by)
-          )
+          .save(workspaceId, settings, Redacted.make(syntheticKey))
           .pipe(Effect.flip);
 
         assert.strictEqual(refused._tag, "ProviderSecretsNotConfigured");

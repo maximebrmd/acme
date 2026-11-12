@@ -7,12 +7,12 @@ import type {
   OwnImagesRecord,
   UsageRecord,
 } from "#shared/application/personal-data.ts";
-import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
  * A workspace's assistant usage as a whole, and the image provider it
  * brought, for the workspace context when a workspace's data is exported
- * or erased, or an account closes. Erasing runs in the caller's
+ * or erased. Erasing runs in the caller's
  * transaction, if any.
  */
 export class UsageRecords extends Context.Service<
@@ -40,7 +40,5 @@ export class UsageRecords extends Context.Service<
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
-    /** Forgets the user as the one who saved a workspace's provider. */
-    readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/assistant/application/UsageRecords") {}

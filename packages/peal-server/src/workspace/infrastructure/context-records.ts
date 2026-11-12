@@ -82,7 +82,6 @@ export const ContextRecordsLive = Layer.effect(
           yield* channels.eraseUser(userId);
           yield* activity.forgetUser(userId);
           yield* adRecords.forgetUser(userId);
-          yield* usage.forgetUser(userId);
           yield* staff.forgetUser(userId, pseudonym);
           yield* billing.forgetUser(userId, pseudonym);
         }

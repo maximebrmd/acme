@@ -98,7 +98,7 @@ export const DrizzleImageProvidersLive = Layer.effect(
             Effect.withSpan("ImageProviders.remove")
           ),
       save: Effect.fn("ImageProviders.save")(
-        function* save(workspaceId, settings, key, by) {
+        function* save(workspaceId, settings, key) {
           // Sealed first: without a keyring, nothing is stored.
           const { keyId, sealed } = yield* secrets.seal(
             key,
@@ -111,7 +111,6 @@ export const DrizzleImageProvidersLive = Layer.effect(
             keyId,
             model: settings.model,
             sealedKey: sealed,
-            setBy: Option.getOrNull(by),
             updatedAt: DateTime.toDateUtc(settings.updatedAt),
           };
 

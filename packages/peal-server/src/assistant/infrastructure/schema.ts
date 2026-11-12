@@ -35,16 +35,15 @@ export const dailyUsage = assistant.table(
  * model, and its key, encrypted with the server's keyring as
  * `<keyId>.<iv>.<ciphertext>` and bound to
  * `assistant:<workspace id>:<address>`, so a row whose address changed
- * in any way, or that was copied to another workspace, does not decrypt. `key_id` names the key that encrypted it,
- * for a rotation; `set_by` the member who saved it, null for a key or
- * once their account closed.
+ * in any way, or that was copied to another workspace, does not decrypt.
+ * `key_id` names the key that encrypted it, for a rotation. Who saved it
+ * is the activity log's to say, not this row's.
  */
 export const imageProviders = assistant.table("image_providers", {
   baseUrl: text("base_url").notNull(),
   keyId: text("key_id").notNull(),
   model: text("model").notNull(),
   sealedKey: text("sealed_key").notNull(),
-  setBy: uuid("set_by"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });

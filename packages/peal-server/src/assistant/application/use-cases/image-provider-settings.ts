@@ -14,7 +14,6 @@ import type {
   ProviderModel,
 } from "#assistant/domain/image-provider.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { UserId } from "#shared/domain/ids.ts";
 
 /** A workspace's provider as its members read it: never its key. */
 export interface ImageProviderView {
@@ -45,10 +44,6 @@ const viewOf = ({
   model: settings.model,
   updatedAt: settings.updatedAt,
 });
-
-// The member who saved it; none for a key, which belongs to no one.
-const savedBy = ({ subject }: Actor): Option.Option<UserId> =>
-  subject._tag === "user" ? Option.some(subject.userId) : Option.none();
 
 /** The actor's workspace's provider, without its key; none when it has none. */
 export const viewImageProvider = Effect.fn("ImageProviderSettings.view")(
@@ -106,7 +101,7 @@ export const saveImageProvider = Effect.fn("ImageProviderSettings.save")(
       updatedAt: yield* DateTime.now,
     });
 
-    yield* providers.save(workspaceId, settings, key, savedBy(actor));
+    yield* providers.save(workspaceId, settings, key);
 
     const view: ImageProviderView = viewOf({ keyUnreadable: false, settings });
 

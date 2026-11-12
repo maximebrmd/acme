@@ -80,16 +80,6 @@ export const DrizzleUsageRecordsLive = Layer.effect(
             Effect.mapError(failed),
             Effect.withSpan("UsageRecords.exportWorkspace")
           ),
-      forgetUser: (userId) =>
-        db
-          .update(imageProviders)
-          .set({ setBy: null })
-          .where(eq(imageProviders.setBy, userId))
-          .pipe(
-            Effect.asVoid,
-            Effect.mapError(failed),
-            Effect.withSpan("UsageRecords.forgetUser")
-          ),
     });
   })
 );

@@ -110,4 +110,5 @@
   The status answers `images.source` (`workspace`, `server` or null), and
   `requestCost` 0 for the workspace's own. Exports give the address, the
   model and the date (`UsageRecords.exportImageProvider`), never the key;
-  erasing a workspace deletes the row, closing an account clears `set_by`.
+  erasing a workspace deletes the row. The row names no member: the
+  activity log keeps who saved it.

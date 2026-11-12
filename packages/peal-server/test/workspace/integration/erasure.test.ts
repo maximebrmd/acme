@@ -268,9 +268,6 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM ads.grants WHERE granted_by = ${id}`,
   "ads.sign_in_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM ads.sign_in_attempts WHERE started_by = ${id}`,
-  // The image providers they set stay with their workspaces, without them.
-  "assistant.image_providers": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM assistant.image_providers WHERE set_by = ${id}`,
   "auth.account": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.account WHERE user_id = ${id}`,
   "auth.device_code": (sql, id) =>
@@ -580,10 +577,10 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedUsage(workspaceId, 2);
   yield* sql`INSERT INTO assistant.own_image_days (workspace_id, day, images)
     VALUES (${workspaceId}, '2026-11-09', 3)`;
-  // The image provider the person set, its key sealed (a synthetic stand-in
-  // here: nothing opens it).
-  yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, set_by, updated_at)
-    VALUES (${workspaceId}, 'https://images.example.com/v1', 'synthetic-image-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', ${person.id}, now())`;
+  // The image provider the workspace brought, its key sealed (a synthetic
+  // stand-in here: nothing opens it).
+  yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, updated_at)
+    VALUES (${workspaceId}, 'https://images.example.com/v1', 'synthetic-image-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', now())`;
   yield* seedSubscription(workspaceId, "canceled");
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)
