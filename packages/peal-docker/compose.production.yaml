@@ -307,6 +307,21 @@ services:
       <<: *healthcheck
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/, http://127.0.0.1:8081/]
 
+  # The collector's image has no shell or HTTP client, so its health check
+  # runs busybox's static wget, which this service copies into a volume at
+  # each `up`, then exits. An image mount would be simpler, but Docker does
+  # not mount the image again when its daemon restarts, and the collector
+  # then restarts on an empty folder. The copy is renamed into place, so a
+  # health check running the old one never sees a partial file.
+  collector-wget:
+    <<: *service
+    image: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
+    command: [sh, -c, "cp /bin/busybox /tools/.wget && mv -f /tools/.wget /tools/wget"]
+    restart: "no"
+    network_mode: none
+    volumes:
+      - collector-wget:/tools
+
   otel-collector:
     <<: *service
     image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
@@ -314,14 +329,13 @@ services:
       - ./config/production/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
       # The host's filesystem, read-only, for its disk, memory and load.
       - /:/hostfs:ro,rslave
-      # The collector image has no shell or HTTP client, so the health check
-      # borrows busybox's static wget from an image mount.
-      - type: image
-        source: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
-        target: /busybox
+      # busybox's wget, for the health check (collector-wget).
+      - collector-wget:/busybox:ro
     ports:
       - 127.0.0.1:${PEAL_OTLP_HTTP_PORT:-14318}:4318
     depends_on:
+      collector-wget:
+        condition: service_completed_successfully
       loki:
         condition: service_healthy
       tempo:
@@ -330,7 +344,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck
-      test: [CMD, /busybox/bin/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
+      test: [CMD, /busybox/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
 
   loki:
     <<: *service
@@ -433,6 +447,7 @@ services:
 
 volumes:
   postgres:
+  collector-wget:
   loki:
   tempo:
   prometheus:

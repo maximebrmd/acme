@@ -333,10 +333,15 @@
   register: peal_release_server
   changed_when: peal_release_server.stderr is search('(Started|Recreated)')
 
+# collector-wget copies the collector's health-check wget and exits, so
+# Compose starts it at every `up`: that start alone is no change, but its
+# recreation is (tests/test_release_stack.py).
 - name: Start the rest of the stack
   ansible.builtin.command: "{{ peal_compose_bin }} up --no-build --detach --wait --wait-timeout 600 --remove-orphans"
   register: peal_release_stack
-  changed_when: peal_release_stack.stderr is search('(Started|Recreated|Removed)')
+  changed_when: >-
+    peal_release_stack.stderr_lines | reject('search', 'collector-wget-[0-9]+ +Started')
+    | select('search', '(Started|Recreated|Removed)') | list | length > 0
 
 - name: Check the server and the web app on the server
   ansible.builtin.uri:
