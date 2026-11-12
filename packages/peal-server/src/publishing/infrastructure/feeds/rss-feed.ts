@@ -83,7 +83,10 @@ const itemOf = (item: XmlElement): RawItem => {
   const link = textOf(item, "link").pipe(
     Option.orElse(() =>
       guid.pipe(
-        Option.filter(({ isPermaLink }) => isPermaLink),
+        // Only an absolute address: a guid such as `1` is never a link.
+        Option.filter(
+          ({ isPermaLink, value }) => isPermaLink && URL.canParse(value)
+        ),
         Option.map(({ value }) => value)
       )
     )
