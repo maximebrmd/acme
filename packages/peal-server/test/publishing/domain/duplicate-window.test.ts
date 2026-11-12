@@ -20,6 +20,14 @@ const picture = MediaAssetIdSchema.make("01900000-0000-7000-8000-0000000000a1");
 const part = (text: string, changed: Partial<PostPart> = {}) =>
   new PostPart({ delaySeconds: 0, media: [], overrides: [], text, ...changed });
 
+// A post of one picture and `text`.
+const pictured = (text: string) =>
+  new PostContent({
+    media: [new MediaAttachment({ altText: "", mediaId: picture })],
+    overrides: [],
+    text,
+  });
+
 const post = (text: string, followUps: readonly PostPart[] = []) =>
   new PostContent({ followUps, media: [], overrides: [], text });
 
@@ -142,27 +150,20 @@ describe(contentOn, () => {
   });
 
   it("takes two stories of the same file for the same, whatever text they hold, as a story sends none", () => {
-    const shown = (text: string) =>
-      new PostContent({
-        media: [new MediaAttachment({ altText: "", mediaId: picture })],
-        overrides: [],
-        text,
-      });
-
     for (const story of [
       Option.some(new InstagramOptions({ format: "story" })),
       Option.some(new FacebookOptions({ format: "story" })),
     ]) {
-      expect(contentOn(shown("Low tide at six."), channel, story)).toBe(
-        contentOn(shown("High tide at noon."), channel, story)
+      expect(contentOn(pictured("Low tide at six."), channel, story)).toBe(
+        contentOn(pictured("High tide at noon."), channel, story)
       );
     }
 
     // A reel sends its text: two reels of different text differ.
     const reel = Option.some(new FacebookOptions({ format: "reel" }));
 
-    expect(contentOn(shown("Low tide at six."), channel, reel)).not.toBe(
-      contentOn(shown("High tide at noon."), channel, reel)
+    expect(contentOn(pictured("Low tide at six."), channel, reel)).not.toBe(
+      contentOn(pictured("High tide at noon."), channel, reel)
     );
   });
 
