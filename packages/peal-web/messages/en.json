@@ -958,7 +958,15 @@
       "queued": "Added to the queue: it goes out {at}.",
       "queuedForApproval": "Added to the queue for {at}: it waits for an approval.",
       "selectAllChannels": "Select all",
-      "clearChannels": "Clear"
+      "clearChannels": "Clear",
+      "publishNow": "Publish now",
+      "publishingNow": "Publishing…",
+      "publishNowTitle": "Publish this post now?",
+      "publishNowDescription": "It goes out at once and is public on {count, plural, one {this channel} other {these # channels}}. Once it is out, it cannot be taken back from here.",
+      "publishNowChannels": "Where it goes",
+      "keepForLater": "Not now",
+      "confirmPublishNow": "Publish now",
+      "publishedNow": "The post is going out now."
     },
     "Parts": {
       "legend": "Thread",

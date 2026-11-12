@@ -958,7 +958,15 @@
       "queued": "Ajoutée à la file : elle part {at}.",
       "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation.",
       "selectAllChannels": "Tout sélectionner",
-      "clearChannels": "Effacer"
+      "clearChannels": "Effacer",
+      "publishNow": "Publier maintenant",
+      "publishingNow": "Publication…",
+      "publishNowTitle": "Publier maintenant ?",
+      "publishNowDescription": "Elle part tout de suite et devient publique sur {count, plural, one {ce canal} other {ces # canaux}}. Une fois partie, elle ne peut pas être reprise d’ici.",
+      "publishNowChannels": "Où il part",
+      "keepForLater": "Pas maintenant",
+      "confirmPublishNow": "Publier maintenant",
+      "publishedNow": "La publication part maintenant."
     },
     "Parts": {
       "legend": "Fil",

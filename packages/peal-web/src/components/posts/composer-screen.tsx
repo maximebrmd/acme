@@ -1,11 +1,13 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { DateTime } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type { Channel, Permission } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
+import { useCallback } from "react";
 
 import { Composer } from "#components/posts/composer.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
@@ -14,7 +16,9 @@ import { PostLinks } from "#components/posts/post-links.tsx";
 import { PostRepeat } from "#components/recycling/post-repeat.tsx";
 import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
+import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import { workspaceChannels, workspacePost } from "#posts/api.ts";
+import { isDue } from "#posts/publish-now.ts";
 import { useMounted } from "#posts/use-mounted.ts";
 import { reviewSettings } from "#review/api.ts";
 
@@ -70,6 +74,10 @@ const useApprovalPolicy = (workspaceId: string) => {
     : "never";
 };
 
+// While a scheduled post is due, how often its page asks whether it went
+// out: PostDetail takes over once it is publishing.
+const refreshWhileDue = 5000;
+
 const ExistingPost = ({
   channels,
   permissions,
@@ -86,6 +94,17 @@ const ExistingPost = ({
   const retry = useAtomRefresh(query);
   const approvalPolicy = useApprovalPolicy(workspaceId);
   const tAds = useTranslations("Ads.boost");
+
+  const refreshDue = useCallback(() => {
+    if (
+      AsyncResult.isSuccess(result) &&
+      isDue(result.value, DateTime.nowUnsafe())
+    ) {
+      retry();
+    }
+  }, [result, retry]);
+
+  useRefreshWhileVisible(refreshDue, refreshWhileDue);
 
   if (AsyncResult.isSuccess(result)) {
     const post = result.value;

@@ -27,6 +27,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { canGenerateImages } from "#assistant/permissions.ts";
+import { channelName } from "#channels/channel-name.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
@@ -76,6 +77,7 @@ import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { publishNowOf } from "#posts/publish-now.ts";
 import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
 import {
@@ -500,6 +502,12 @@ export const Composer = ({
     }
   };
 
+  // A post sent out now: its page shows how it goes.
+  const wentOut = (id: string) => {
+    toast.success(t("publishedNow"));
+    router.push(`/app/${workspaceId}/posts/${id}`);
+  };
+
   const saveDraft = async () => {
     if (!optionsTaken) {
       return;
@@ -520,10 +528,15 @@ export const Composer = ({
     }
   };
 
-  const scheduleDraft = async () => {
-    const at = instantOfChoice(choice);
+  // Schedules the draft at the time chosen, on the queue chosen, or, for
+  // "Publish now", at `now` on the viewer's clock: the same save, signature
+  // pause and request either way.
+  const scheduleDraft = async (now?: DateTime.Utc) => {
+    const at = now === undefined ? instantOfChoice(choice) : Option.some(now);
+    const timeZone = now === undefined ? choice.timeZone : browserTimeZone();
+    const queued = now === undefined && placement._tag === "queue";
 
-    if (placement._tag === "time" && Option.isNone(at)) {
+    if (!queued && Option.isNone(at)) {
       requests.fail({ _tag: "InvalidTime" });
 
       return;
@@ -565,9 +578,9 @@ export const Composer = ({
     }
 
     // On a queue, a draft for no channel takes the queue's.
-    if (placement._tag === "queue") {
+    if (queued) {
       // No queue read yet: the server takes the default.
-      const queued = await requests.enqueue(
+      const enqueued = await requests.enqueue(
         saved.value.id,
         Option.match(queueId, {
           onNone: () => ({}),
@@ -575,14 +588,14 @@ export const Composer = ({
         })
       );
 
-      if (Option.isNone(queued)) {
+      if (Option.isNone(enqueued)) {
         opened(saved.value);
 
         return;
       }
 
-      placed(queued.value);
-      toSlotWeek(queued.value);
+      placed(enqueued.value);
+      toSlotWeek(enqueued.value);
 
       return;
     }
@@ -599,11 +612,17 @@ export const Composer = ({
     const scheduled = await requests.schedule(saved.value.id, {
       at: at.value,
       channelIds: [first, ...rest],
-      timeZone: choice.timeZone,
+      timeZone,
     });
 
     if (Option.isNone(scheduled)) {
       opened(saved.value);
+
+      return;
+    }
+
+    if (now !== undefined) {
+      wentOut(scheduled.value.id);
 
       return;
     }
@@ -619,7 +638,22 @@ export const Composer = ({
     router.push(calendarOf(workspaceId, choice.date));
   };
 
-  const move = async (id: string) => {
+  // Moves the post to the time chosen, to its queue's next free slot, or,
+  // for "Publish now", to `now` on the viewer's clock.
+  const move = async (id: string, now?: DateTime.Utc) => {
+    if (now !== undefined) {
+      const moved = await requests.reschedule(id, {
+        at: now,
+        timeZone: browserTimeZone(),
+      });
+
+      if (Option.isSome(moved)) {
+        wentOut(id);
+      }
+
+      return;
+    }
+
     if (placement._tag === "queue") {
       const queued = await requests.enqueue(
         id,
@@ -690,13 +724,25 @@ export const Composer = ({
         await discard(postId);
       }
     },
+    // "Now" is when the person confirmed, before the save.
+    publishNow: async () => {
+      const now = DateTime.nowUnsafe();
+
+      if (status === "draft") {
+        await scheduleDraft(now);
+      } else if (post !== undefined) {
+        await move(post.id, now);
+      }
+    },
     reschedule: async () => {
       if (post !== undefined) {
         await move(post.id);
       }
     },
     save: saveDraft,
-    schedule: scheduleDraft,
+    schedule: async () => {
+      await scheduleDraft();
+    },
     unschedule: async () => {
       if (post !== undefined) {
         await unschedule(post.id);
@@ -711,6 +757,14 @@ export const Composer = ({
   };
 
   const notice = noticeOf(t, status, { canSchedule, canWrite, willWait });
+  const schedulable = canWrite && canSchedule;
+
+  const publishable =
+    channelFits.every(
+      ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
+    ) &&
+    partsFit &&
+    optionsTaken;
 
   return (
     <Card>
@@ -938,19 +992,22 @@ export const Composer = ({
           busy={busy}
           canSave={canWrite}
           savable={optionsTaken}
-          canSchedule={canWrite && canSchedule}
+          canSchedule={schedulable}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
           willWait={willWait}
           canDiscard={canDiscard}
           canCancel={canCancel}
-          publishable={
-            channelFits.every(
-              ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
-            ) &&
-            partsFit &&
-            optionsTaken
-          }
+          channelNames={selected.map(channelName)}
+          publishable={publishable}
+          publishNow={publishNowOf({
+            canReschedule,
+            canSchedule: schedulable,
+            publishable,
+            running: busy !== null,
+            status,
+            willWait,
+          })}
           onAction={perform}
           extra={
             <DuplicatePost
