@@ -1,5 +1,6 @@
 "use client";
 
+import type { Editor } from "@tiptap/core";
 import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
@@ -16,6 +17,10 @@ import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";
 const allChannels = "all";
 
 interface TextTabsProps {
+  /** Hears a text's editor take the focus. */
+  readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
+  /** Hears the editor of the text for all channels made. */
+  readonly onMainEditor?: ((editor: Editor) => void) | undefined;
   readonly onOverride: (channelId: string, text: string | undefined) => void;
   /** Takes files pasted into a text, as `PlainTextEditor`'s. */
   readonly onPasteFiles?: ((files: readonly File[]) => boolean) | undefined;
@@ -28,6 +33,7 @@ interface TextTabsProps {
 
 interface OverrideEditorProps {
   readonly channel: Channel;
+  readonly onEditorFocus: TextTabsProps["onEditorFocus"];
   readonly onOverride: TextTabsProps["onOverride"];
   readonly onPasteFiles: TextTabsProps["onPasteFiles"];
   readonly readOnly: boolean;
@@ -39,6 +45,7 @@ interface OverrideEditorProps {
 // fresh editor.
 const OverrideEditor = ({
   channel,
+  onEditorFocus,
   onOverride,
   onPasteFiles,
   readOnly,
@@ -64,6 +71,7 @@ const OverrideEditor = ({
         onChange={(text) => {
           onOverride(channel.id, text);
         }}
+        onEditorFocus={onEditorFocus}
         onPasteFiles={onPasteFiles}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -90,6 +98,8 @@ const OverrideEditor = ({
 // The post's text for all channels, and a tab per selected channel for a
 // text of its own there.
 export const TextTabs = ({
+  onEditorFocus,
+  onMainEditor,
   onOverride,
   onPasteFiles,
   onText,
@@ -132,6 +142,8 @@ export const TextTabs = ({
             readOnly={readOnly}
             value={text}
             onChange={onText}
+            onEditorFocus={onEditorFocus}
+            onEditorReady={onMainEditor}
             onPasteFiles={onPasteFiles}
           />
           <p id="text-hint" className="text-muted-foreground text-xs">
@@ -143,6 +155,7 @@ export const TextTabs = ({
         <TabsContent key={channel.id} value={channel.id}>
           <OverrideEditor
             channel={channel}
+            onEditorFocus={onEditorFocus}
             onPasteFiles={onPasteFiles}
             onOverride={onOverride}
             readOnly={readOnly}

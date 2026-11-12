@@ -44,6 +44,7 @@ import {
   useDefaultSigning,
 } from "#components/posts/default-signatures.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
+import { EmojiMenu, useEmojiTarget } from "#components/posts/emoji-menu.tsx";
 import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
 import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
@@ -346,6 +347,7 @@ export const Composer = ({
   const attached = useAttachedMedia(workspaceId, media);
   // Files pasted into the post's texts are uploaded and attached to it.
   const uploader = useRef<MediaUploaderHandle>(null);
+  const emoji = useEmojiTarget();
 
   // The kinds of the attached media, which some options follow; unknown,
   // so every option shows, while one is still being read.
@@ -844,6 +846,7 @@ export const Composer = ({
                 setAccepted((count) => count + 1);
               }}
             />
+            <EmojiMenu disabled={locked} target={emoji.target} />
             <SignatureMenu
               channels={selected}
               disabled={locked}
@@ -868,6 +871,8 @@ export const Composer = ({
               text={text}
               overrides={overrides}
               readOnly={locked}
+              onEditorFocus={emoji.handleFocus}
+              onMainEditor={emoji.handleMain}
               onPasteFiles={(files) => uploader.current?.add(files) ?? false}
               onText={setText}
               onOverride={(channelId, own) => {
@@ -948,6 +953,7 @@ export const Composer = ({
             selected={selected}
             workspaceId={workspaceId}
             onChange={setParts}
+            onEditorFocus={emoji.handleFocus}
           />
           <Separator />
           <fieldset className="flex flex-col gap-3">
@@ -1008,6 +1014,7 @@ export const Composer = ({
           publishNow={publishNowOf({
             canReschedule,
             canSchedule: schedulable,
+            channels: selected.length,
             publishable,
             running: busy !== null,
             status,

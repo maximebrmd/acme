@@ -966,7 +966,16 @@
       "publishNowChannels": "Where it goes",
       "keepForLater": "Not now",
       "confirmPublishNow": "Publish now",
-      "publishedNow": "The post is going out now."
+      "publishedNow": "The post is going out now.",
+      "emoji": {
+        "open": "Insert an emoji",
+        "search": "Search emoji",
+        "searchPlaceholder": "Search…",
+        "empty": "No emoji found.",
+        "loading": "Loading the emoji…",
+        "footer": "Choose an emoji…",
+        "category": "{group, select, smileysEmotion {Smileys and emotion} peopleBody {People and body} component {Components} animalsNature {Animals and nature} foodDrink {Food and drink} travelPlaces {Travel and places} activities {Activities} objects {Objects} symbols {Symbols} flags {Flags} other {{group}}}"
+      }
     },
     "Parts": {
       "legend": "Thread",

@@ -1,7 +1,7 @@
 "use client";
 
 import { Extension } from "@tiptap/core";
-import type { JSONContent } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { Document } from "@tiptap/extension-document";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Text } from "@tiptap/extension-text";
@@ -79,6 +79,10 @@ interface PlainTextEditorProps {
   readonly id: string;
   readonly labelledBy: string;
   readonly onChange: (text: string) => void;
+  /** Hears that the editor was made, which the composer may write into. */
+  readonly onEditorReady?: ((editor: Editor) => void) | undefined;
+  /** Hears the editor take the focus: where an emoji chosen goes. */
+  readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /**
    * Takes files pasted into the editor, and says whether it did: then no
    * text is pasted. A paste without files is the editor's.
@@ -95,6 +99,8 @@ export const PlainTextEditor = ({
   id,
   labelledBy,
   onChange,
+  onEditorFocus,
+  onEditorReady,
   onPasteFiles,
   placeholder,
   readOnly = false,
@@ -141,6 +147,12 @@ export const PlainTextEditor = ({
     extensions,
     // Rendered on the server too: the editor mounts in the browser.
     immediatelyRender: false,
+    onCreate: ({ editor: created }) => {
+      onEditorReady?.(created);
+    },
+    onFocus: ({ editor: focused }) => {
+      onEditorFocus?.(focused);
+    },
     onUpdate: ({ editor: current }) => {
       onChange(current.getText({ blockSeparator: lineBreak }));
     },

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Editor } from "@tiptap/core";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
@@ -49,6 +50,7 @@ interface PartEditorProps {
   readonly disabled: boolean;
   /** The post can still be written. */
   readonly editable: boolean;
+  readonly onEditorFocus: ((editor: Editor) => void) | undefined;
   readonly onParts: SetParts;
   /** The options the post has on its channels, some counted with a text. */
   readonly options: readonly ChannelOptions[];
@@ -66,6 +68,7 @@ const PartEditor = ({
   count,
   disabled,
   editable,
+  onEditorFocus,
   onParts,
   options,
   part,
@@ -183,6 +186,7 @@ const PartEditor = ({
         onChange={(text) => {
           change({ text });
         }}
+        onEditorFocus={onEditorFocus}
         onPasteFiles={pasteFiles}
       />
       <p id={`${id}-hint`} className="sr-only">
@@ -216,6 +220,7 @@ const PartEditor = ({
                   ),
                 });
               }}
+              onEditorFocus={onEditorFocus}
               onPasteFiles={pasteFiles}
             />
             <p
@@ -300,6 +305,8 @@ interface FollowUpPartsProps {
   /** The post can still be written: a draft the member may change. */
   readonly editable: boolean;
   readonly onChange: SetParts;
+  /** Hears a part's text take the focus: where an emoji chosen goes. */
+  readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** The options the post has on its channels. */
   readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
@@ -320,6 +327,7 @@ export const FollowUpParts = ({
   disabled,
   editable,
   onChange,
+  onEditorFocus,
   options,
   parts,
   permissions,
@@ -362,6 +370,7 @@ export const FollowUpParts = ({
               position={index + 2}
               selected={selected}
               workspaceId={workspaceId}
+              onEditorFocus={onEditorFocus}
               onParts={onChange}
             />
           ))}

@@ -966,7 +966,16 @@
       "publishNowChannels": "Où il part",
       "keepForLater": "Pas maintenant",
       "confirmPublishNow": "Publier maintenant",
-      "publishedNow": "La publication part maintenant."
+      "publishedNow": "La publication part maintenant.",
+      "emoji": {
+        "open": "Insérer un emoji",
+        "search": "Rechercher un emoji",
+        "searchPlaceholder": "Rechercher…",
+        "empty": "Aucun emoji trouvé.",
+        "loading": "Chargement des emoji…",
+        "footer": "Choisissez un emoji…",
+        "category": "{group, select, smileysEmotion {Smileys et émotions} peopleBody {Personnes et corps} component {Composants} animalsNature {Animaux et nature} foodDrink {Nourriture et boissons} travelPlaces {Voyages et lieux} activities {Activités} objects {Objets} symbols {Symboles} flags {Drapeaux} other {{group}}}"
+      }
     },
     "Parts": {
       "legend": "Fil",
