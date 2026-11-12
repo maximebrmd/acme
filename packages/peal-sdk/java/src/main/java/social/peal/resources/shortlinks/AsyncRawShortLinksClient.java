@@ -49,14 +49,14 @@ public class AsyncRawShortLinksClient {
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest always gets links as written. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public CompletableFuture<PealClientHttpResponse<ShortLinkStatus>> status(String workspaceId) {
         return status(workspaceId, StatusShortLinksRequest.builder().build());
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest always gets links as written. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public CompletableFuture<PealClientHttpResponse<ShortLinkStatus>> status(
             String workspaceId, RequestOptions requestOptions) {
@@ -64,7 +64,7 @@ public class AsyncRawShortLinksClient {
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest always gets links as written. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public CompletableFuture<PealClientHttpResponse<ShortLinkStatus>> status(
             String workspaceId, StatusShortLinksRequest request) {
@@ -72,7 +72,7 @@ public class AsyncRawShortLinksClient {
     }
 
     /**
-     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest always gets links as written. Needs post:read.
+     * Answers whether this server shortens links (<code>available</code>), what a short address starts with (<code>base</code>) and how long it is (<code>shortLength</code>), and whether the workspace's new posts ask for short links by default (<code>byDefault</code>). A post that asks (<code>shortenLinks</code>) goes out with each link written with <code>http://</code> or <code>https://</code> and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
      */
     public CompletableFuture<PealClientHttpResponse<ShortLinkStatus>> status(
             String workspaceId, StatusShortLinksRequest request, RequestOptions requestOptions) {
