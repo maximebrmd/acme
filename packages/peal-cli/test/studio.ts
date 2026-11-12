@@ -6,6 +6,7 @@ import {
   Api,
   ApprovalChanged,
   ApprovalNotPending,
+  AssistantUnavailable,
   ChannelNotFound,
   ChannelSetNameTaken,
   ChannelSetNotFound,
@@ -174,6 +175,7 @@ const everything: readonly Permission[] = [
   "ads:manage",
   "ads:spend",
   "ads:authorize",
+  "assistant:use",
   "analytics:read",
   "billing:read",
   "channel:read",
@@ -1934,7 +1936,7 @@ const optionsOn = (post: Post): ChannelOptions[] =>
     options === null ? [] : [{ channelId, options }]
   );
 
-const nextId = (kind: "f" | "d", count: number) =>
+const nextId = (kind: "a" | "d" | "f", count: number) =>
   `0190f3a0-0000-7000-8000-${kind}${String(count + 1).padStart(11, "0")}`;
 
 const storedTypes: readonly MediaContentType[] = [
@@ -3779,6 +3781,42 @@ export const studioGroupsLive = (studio: Studio) =>
               ...warned,
             };
           }),
+      })
+    ),
+    // The assistant makes images only: the command line writes no text
+    // with it. A prompt that says "unavailable" stands for a server without
+    // an image model.
+    HttpApiBuilder.group(Api, "assistant", (handlers) =>
+      handlers.handleAll({
+        generateImage: ({ params, payload }) =>
+          Effect.gen(function* generateImage() {
+            yield* allowed("assistant:use");
+            yield* allowed("media:upload");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            if (payload.prompt.includes("unavailable")) {
+              return yield* new AssistantUnavailable();
+            }
+
+            const { media: all } = yield* Ref.get(studio.state);
+            const id = nextId("a", all.length);
+
+            yield* record(studio, `generate:${payload.aspect}:${id}`);
+
+            return yield* saveMedia(
+              studio,
+              image(id, {
+                aiGenerated: true,
+                createdAt: studioNow,
+                updatedAt: studioNow,
+              })
+            );
+          }),
+        status: () => Effect.fail(new Forbidden()),
+        suggest: () => Effect.fail(new Forbidden()),
       })
     ),
     HttpApiBuilder.group(Api, "media", (handlers) =>

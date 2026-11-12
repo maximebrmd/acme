@@ -62,6 +62,10 @@ const AnswerSchema = Schema.fromJsonString(
 
 const answerOf = Schema.decodeUnknownSync(AnswerSchema);
 
+const MadeSchemaOf = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Struct({ aiGenerated: Schema.Boolean }))
+);
+
 const ListSchema = Schema.fromJsonString(
   Schema.Array(Schema.Struct({ id: Schema.String, platform: Schema.String }))
 );
@@ -119,6 +123,16 @@ const importing = (address: string) => [
   "media",
   "import",
   address,
+  ...inStudio,
+];
+
+// peal media generate, in the studio.
+const generating = (prompt: string, ...rest: readonly string[]) => [
+  "media",
+  "generate",
+  "--prompt",
+  prompt,
+  ...rest,
   ...inStudio,
 ];
 
@@ -961,6 +975,56 @@ describe("peal media", () => {
           "media",
           "import",
           "https://files.example.test/banner.png",
+          "--workspace",
+          "shop",
+        ]),
+        "Peal refused: your role in this workspace does not allow it"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("makes an image into the workspace's media", () =>
+    Effect.gen(function* generates() {
+      const session = yield* signedIn();
+
+      const printed = yield* session.printed(
+        generating(
+          "A lighthouse at dawn, in watercolour.",
+          "--aspect",
+          "landscape"
+        )
+      );
+
+      assert.match(
+        printed,
+        /Made an image as media [\da-f-]{36} in Studio \(image\/png, 2048 bytes\): ready\./u
+      );
+      assert.include(printed, "made by AI");
+      assert.include(
+        (yield* changes(session.studio)).join("\n"),
+        "generate:landscape"
+      );
+
+      const answer = MadeSchemaOf(
+        yield* session.printed(generating("A lighthouse at dusk.", "--json"))
+      );
+
+      assert.isTrue(answer.aiGenerated);
+      assert.include(
+        (yield* changes(session.studio)).join("\n"),
+        "generate:square"
+      );
+
+      assert.include(
+        yield* session.refused(generating("unavailable on this server")),
+        "This Peal server makes no images"
+      );
+      assert.include(
+        yield* session.refused([
+          "media",
+          "generate",
+          "--prompt",
+          "A lighthouse",
           "--workspace",
           "shop",
         ]),

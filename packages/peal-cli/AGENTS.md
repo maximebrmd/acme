@@ -49,6 +49,11 @@
   what is printed, in prose or JSON, and holds the command line's own codes
   (`unreachable`, `not_signed_in`, `api_key_refused`…). In prose, a refusal
   ends with the request's id (`requestLine`).
+- `peal media generate --prompt … [--aspect …]` has the server's image
+  model make an image into the workspace's media (`assistant.generateImage`,
+  a real parity row); the text assistant stays without a command, as an
+  agent writes its own text. Its answer says the file is marked as made by
+  AI and that the post's options carry the platforms' AI labels.
 - `peal doctor` checks a configuration and changes nothing (the API URL and
   where it came from, health, readiness, the API's latest release, which
   credential is used and whether it works, the publish scope, the workspace
