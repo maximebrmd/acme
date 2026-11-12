@@ -61,7 +61,8 @@ const exempt: ReadonlySet<string> = new Set([
 // The others, which read or change one workspace: its members, roles,
 // invitations, settings and subscriptions. Listed so a test fails on a
 // route an upgrade adds until it is placed in one set or the other; a
-// route of these prefixes in neither is guarded anyway. Each with the
+// route of these prefixes in neither is guarded anyway, the active
+// workspace checked beside any it names (`workspacesChecked`). Each with the
 // fields that name a workspace it reads, where it reads them, as Better
 // Auth 1.7's routes and the Stripe plugin's reference middleware do: a
 // request that names one in another field is refused, since the route
@@ -272,6 +273,28 @@ const namedWorkspaces = async (
 };
 
 /**
+ * The workspaces the guard checks for a request: every one it names, and
+ * the session's active one when the route falls back to it (no field the
+ * route reads holds a value, or what they hold names no workspace). On a
+ * route in neither list, whose fields no list says, nothing is refused
+ * and the active workspace is always checked too.
+ */
+export const workspacesChecked = ({
+  active,
+  listed,
+  named,
+  readsOne,
+}: {
+  readonly active: Option.Option<WorkspaceId>;
+  readonly listed: boolean;
+  readonly named: readonly WorkspaceId[];
+  readonly readsOne: boolean;
+}): readonly WorkspaceId[] =>
+  listed && readsOne && named.length > 0
+    ? named
+    : [...named, ...Option.toArray(active)];
+
+/**
  * Part of Better Auth's before hook: its routes that read or change one
  * workspace never pass WorkspaceAccess, so a member whose account lacks the
  * two-step verification the workspace requires is refused them here, as
@@ -310,16 +333,14 @@ export const refuseLockedOutMembers = async (
   const { session, user } = found.value;
   const { named, readsOne } = await namedWorkspaces(ctx);
 
-  const active =
-    readsOne && named.length > 0
-      ? []
-      : Option.toArray(
-          Option.fromNullishOr(session.activeOrganizationId).pipe(
-            Option.map(idOf)
-          )
-        );
-
-  const workspaceIds = [...named, ...active];
+  const workspaceIds = workspacesChecked({
+    active: Option.fromNullishOr(session.activeOrganizationId).pipe(
+      Option.map(idOf)
+    ),
+    listed: guarded.has(ctx.path),
+    named,
+    readsOne,
+  });
 
   if (
     workspaceIds.length > 0 &&
