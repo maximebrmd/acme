@@ -703,6 +703,29 @@ export {
   withDisplayVat,
 } from "./billing-plans.ts";
 
+export {
+  AccountBandSchema,
+  accountsCharge,
+  accountsMonthly,
+  meterCharge,
+  MeterRateSchema,
+  MeterSchema,
+  rateCard,
+  RateCardCurrencySchema,
+  rateCards,
+  RateCardSchema,
+  UnitPriceSchema,
+} from "./rate-card.ts";
+
+export type {
+  AccountBand,
+  Meter,
+  MeterRate,
+  RateCard,
+  RateCardCurrency,
+  UnitPrice,
+} from "./rate-card.ts";
+
 export type {
   BillingInterval,
   Money,
