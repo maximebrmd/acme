@@ -142,7 +142,9 @@ export type InboxAuthor = typeof InboxAuthorSchema.Type;
  * instructions.
  */
 export const InboxCommentSchema = Schema.Struct({
-  // Null once the platform no longer shows the comment.
+  // Null once the platform no longer shows the comment (`deleted`), or
+  // when it does not show who wrote it (Facebook may not). Its `handle` is
+  // empty where the platform gives none (Facebook).
   author: Schema.NullOr(InboxAuthorSchema),
   id: Schema.String,
   // Whether the channel's account likes it.
