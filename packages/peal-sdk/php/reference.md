@@ -9857,6 +9857,70 @@ $client->partner->account();
 </dl>
 </details>
 
+<details><summary><code>$client-&gt;partner-&gt;overview($request) -> ?PartnerHealth</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. Each section needs the permission that reads it in a workspace: `channel:read`, `post:read`, `engagement:read`, and `mayApprove` says whether the key holds `post:approve`. Needs the scope workspaces:read. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->partner->overview(
+    new OverviewPartnerRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$before:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>$client-&gt;partner-&gt;listWorkspaces($request) -> ?CustomerWorkspacePage</code></summary>
 <dl>
 <dd>
@@ -10745,6 +10809,79 @@ $client->partnerAccount->revokeKey(
 <dd>
 
 **$partnerKeyId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;partnerAccount-&gt;overview($workspaceId, $request) -> ?PartnerHealth</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. For the home workspace's people: each section only where the caller holds its permission in the home workspace (`channel:read`, `post:read`, `engagement:read`), as the overview across their workspaces gives it, so staff acting as a member read no inbox; `mayApprove` is always false, as they are members of no customer's workspace. Needs partner:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->partnerAccount->overview(
+    'workspaceId',
+    new OverviewPartnerAccountRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$before:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?string` 
     
 </dd>
 </dl>

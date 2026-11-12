@@ -11,6 +11,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
+import { BillingMode } from "./ports/billing-mode.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
 
@@ -47,6 +48,8 @@ export interface Standing {
 export class WorkspaceStanding extends Context.Service<
   WorkspaceStanding,
   {
+    /** Whether this server bills: none of the others limits anything. */
+    readonly bills: boolean;
     readonly of: (actor: Actor) => Effect.Effect<Standing, DatabaseError>;
     /**
      * Those of these workspaces for which `of` answers `mustReduce`, for
@@ -68,6 +71,7 @@ export class WorkspaceStanding extends Context.Service<
     Effect.gen(function* WorkspaceStandingLive() {
       const entitlements = yield* WorkspaceEntitlements;
       const usage = yield* WorkspaceUsage;
+      const { enabled } = yield* BillingMode;
 
       const of = Effect.fn("WorkspaceStanding.of")(function* of(actor: Actor) {
         const [current, used] = yield* Effect.all(
@@ -120,7 +124,7 @@ export class WorkspaceStanding extends Context.Service<
         }
       );
 
-      return WorkspaceStanding.of({ of, overPlanIn });
+      return WorkspaceStanding.of({ bills: enabled, of, overPlanIn });
     })
   );
 }

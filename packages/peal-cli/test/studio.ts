@@ -73,6 +73,7 @@ import {
 } from "peal-contract";
 import type {
   Credential,
+  CustomerHealth,
   ImageProvider,
   Feed,
   LivePostChange,
@@ -1082,6 +1083,26 @@ const customers: readonly CustomerWorkspace[] = [
     name: "Boulangerie Martin",
   },
 ];
+
+// What needs attention in one of the partner's customers.
+const healthOf = (
+  customer: CustomerWorkspace | undefined,
+  toReconnect: number,
+  failed: number
+): CustomerHealth => ({
+  channels: { connected: customer?.channels ?? 0, off: 0, toReconnect },
+  externalId: customer?.externalId ?? null,
+  id: customer?.id ?? "",
+  inbox: { unanswered: 0 },
+  name: customer?.name ?? "",
+  posts: {
+    awaitingApproval: 0,
+    failedLast7Days: failed,
+    mayApprove: true,
+    scheduledNext7Days: 0,
+    unconfirmedLast7Days: 0,
+  },
+});
 
 // What one of the partner's workspaces used over the period.
 const tenantUsage = (
@@ -4924,6 +4945,29 @@ export const studioGroupsLive = (studio: Studio) =>
             })
           ),
         open: () => refusing,
+        overview: ({ query }) =>
+          allowed("partner:read").pipe(
+            Effect.as(
+              query.before === "studio-health-next"
+                ? {
+                    account: null,
+                    next: null,
+                    total: 2,
+                    workspaces: [healthOf(customers[1], 0, 0)],
+                  }
+                : {
+                    account: { overPlan: false },
+                    next: query.limit === 1 ? "studio-health-next" : null,
+                    total: 2,
+                    workspaces: [
+                      healthOf(customers[0], 1, 2),
+                      ...(query.limit === 1
+                        ? []
+                        : [healthOf(customers[1], 0, 0)]),
+                    ],
+                  }
+            )
+          ),
         revokeKey: () => refusing,
         update: () => refusing,
       })

@@ -192,6 +192,7 @@ export const overviewOver = (
         ...current,
         agenda: [...current.agenda, request],
       })).pipe(Effect.as(options.entries ?? [])),
+    bills: true,
     channels: (ids) =>
       record((current) => ({
         ...current,

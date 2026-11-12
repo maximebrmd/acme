@@ -838,6 +838,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
               "/api/partner/workspaces",
               `/api/partner/workspaces/${ofAlpha.id}`,
               "/api/partner/usage",
+              "/api/partner/overview",
             ]) {
               const reply = yield* app.request(path, { headers });
 

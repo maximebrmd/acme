@@ -262,6 +262,54 @@ To mark a customer's post done in your product once, subscribe to [`post.finishe
 
 To keep your staging environment's customers apart from production's, give each environment a partner endpoint of its own and list, in `workspaceIds` (200 at most), the workspaces it should hear: your staging endpoint hears your test customers, and your production endpoint, with no list, every workspace. Your home workspace is heard only when it is listed. Change the list as you add test customers with `PATCH …/webhooks/{endpointId}`. The deliveries of every endpoint, with each one's workspace and your id for it, are in your home workspace's [log across endpoints](/webhooks#log), where the failed ones can be sent again together.
 
+## See which customers need attention [#health]
+
+Webhooks tell you each change as it happens; `GET /api/partner/overview` tells you how every customer stands now, in one call a page, so your product can show its own list of customers to look after, or check its state after an outage of its receiver.
+
+```bash
+curl "https://api.example.com/api/partner/overview?limit=100" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```json
+{
+  "account": { "overPlan": false },
+  "next": "eyJjcmVhdGVkQXQiOjE3OTQzMDEyMDMwMDAsImlkIjoiN2IxZiJ9",
+  "total": 412,
+  "workspaces": [
+    {
+      "id": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+      "externalId": "cus_42",
+      "name": "Garage Dupont",
+      "channels": { "connected": 3, "toReconnect": 1, "off": 0 },
+      "posts": {
+        "scheduledNext7Days": 4,
+        "awaitingApproval": 0,
+        "failedLast7Days": 1,
+        "unconfirmedLast7Days": 0,
+        "mayApprove": true
+      },
+      "inbox": { "unanswered": 2 }
+    }
+  ]
+}
+```
+
+| Figure                       | What it counts                                                                                           | Opened by         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| `channels.connected`         | The channels connected in the workspace                                                                  | `channel:read`    |
+| `channels.toReconnect`       | Those to [reconnect](#reconnect), as `channel.reconnect_needed` told                                     | `channel:read`    |
+| `channels.off`               | Those turned off, on which nothing goes out                                                              | `channel:read`    |
+| `posts.scheduledNext7Days`   | Posts going out in the next 7 days                                                                       | `post:read`       |
+| `posts.awaitingApproval`     | Posts waiting for an [approval](/review); `mayApprove` says whether the key holds `post:approve`         | `post:read`       |
+| `posts.failedLast7Days`      | Posts that finished in the last 7 days with a channel that failed, as `post.failed` told                 | `post:read`       |
+| `posts.unconfirmedLast7Days` | Posts of the last 7 days with a channel that may be live and must be checked, as `post.unconfirmed` told | `post:read`       |
+| `inbox.unanswered`           | Threads of the [inbox](/inbox) with a comment waiting for an answer                                      | `engagement:read` |
+
+A section is `null` where the key was not given the permission that reads it, which is not the same as nothing to attend: a workspace with nothing answers zeros. The key needs the scope `workspaces:read`. `account.overPlan`, on the first page only, says whether your workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing until some are removed ([Plans and limits](#limits)); before your first customer, it is your home workspace's own standing. It is `null` on a server that does not bill.
+
+Pages follow the list of your workspaces: newest first, 50 a page unless `limit` (100 at most) says otherwise, `next` passed as `before`. Your home workspace is not listed: it is no customer. Nothing filters the list to the workspaces that need attention: page through it, which for 1,000 customers is 10 to 20 calls, well within the [rate limit](/api-conventions#rate-limits). The owners and admins of your home workspace read the same at `GET /api/workspaces/{homeWorkspaceId}/partner/overview` (`partner:read`), each section where they hold its permission in the home workspace (staff acting as one read no inbox) and `mayApprove` always false, as they are members of no customer's workspace, in **Settings**, then **Partner**, and with `peal partner overview` ([command line](/cli#partner)).
+
 ## Offboard a customer [#offboard]
 
 ```typescript
@@ -315,6 +363,7 @@ const usage = await peal.partnerUsage.get({
 | Act inside a workspace                          | `/api/workspaces/{workspaceId}/…`, with the same key; `connectLinks`, `channels`, `media`, `posts`, `analytics` in the SDKs                                                |
 | Read the account and its workspaces as a person | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([command line](/cli#partner))                                                                         |
 | Read the usage per customer                     | `GET /api/partner/usage`, with the key; `partnerUsage` in the SDKs; `peal partner usage`, the MCP tool `get_partner_usage` and **Settings**, then **Partner**, as a person |
+| See which customers need attention              | `GET /api/partner/overview`, with the key; `partner.overview` in the SDKs; `peal partner overview` and **Settings**, then **Partner**, as a person ([Health](#health))     |
 | Make a link by hand for a workspace of yours    | `peal links create` ([command line](/cli#links)), or the MCP tool `create_connect_link` ([MCP](/mcp#tools))                                                                |
 
 The [API reference](/reference) lists every endpoint with its errors. The [SDKs](/sdks) are generated from the same contract, in eight languages; a partner key checks itself with `GET /api/credential` (`credential.get`), which names its partner, scopes and permissions, never its workspaces.

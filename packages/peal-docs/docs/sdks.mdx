@@ -210,7 +210,7 @@ Every SDK retries, with backoff, a GET, a PUT or a DELETE the API answers with 4
 
 ## Pages [#paging]
 
-Lists that grow without end are read a page at a time: pass `limit` and `cursor`, then the answer's `nextCursor` as the next `cursor`, until it is `null` ([Paging](/api-conventions#paging)). The partner API's lists (`/api/partner/workspaces`, `/api/partner/usage`) take `before` instead, and answer `next`. The SDKs pass both as they are: they have no helper that reads every page for you.
+Lists that grow without end are read a page at a time: pass `limit` and `cursor`, then the answer's `nextCursor` as the next `cursor`, until it is `null` ([Paging](/api-conventions#paging)). The partner API's lists (`/api/partner/workspaces`, `/api/partner/usage`, `/api/partner/overview`) take `before` instead, and answer `next`. The SDKs pass both as they are: they have no helper that reads every page for you.
 
 ```ts
 let cursor: string | undefined;

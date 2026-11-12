@@ -186,6 +186,7 @@ require_relative "peal/ads/types/audit_trail_ads_request"
 require_relative "peal/activity/client"
 require_relative "peal/activity/types/list_activity_request"
 require_relative "peal/partner/client"
+require_relative "peal/partner/types/overview_partner_request"
 require_relative "peal/partner/types/list_workspaces_partner_request"
 require_relative "peal/partner/types/new_customer_workspace"
 require_relative "peal/partner/types/get_workspace_partner_request"
@@ -201,6 +202,7 @@ require_relative "peal/partner_account/types/partner_change"
 require_relative "peal/partner_account/types/list_keys_partner_account_request"
 require_relative "peal/partner_account/types/new_partner_key"
 require_relative "peal/partner_account/types/revoke_key_partner_account_request"
+require_relative "peal/partner_account/types/overview_partner_account_request"
 require_relative "peal/partner_account/types/list_workspaces_partner_account_request"
 require_relative "peal/connect_links/client"
 require_relative "peal/connect_links/types/list_connect_links_request"
@@ -717,6 +719,10 @@ module Peal
     autoload :CredentialPartnerKey, ::File.join(__dir__, "peal/types/credential_partner_key")
     autoload :CredentialUser, ::File.join(__dir__, "peal/types/credential_user")
     autoload :Credential, ::File.join(__dir__, "peal/types/credential")
+    autoload :OverviewChannels, ::File.join(__dir__, "peal/types/overview_channels")
+    autoload :OverviewInbox, ::File.join(__dir__, "peal/types/overview_inbox")
+    autoload :OverviewPosts, ::File.join(__dir__, "peal/types/overview_posts")
+    autoload :CustomerHealth, ::File.join(__dir__, "peal/types/customer_health")
     autoload :CustomerWorkspace, ::File.join(__dir__, "peal/types/customer_workspace")
     autoload :CustomerWorkspacePage, ::File.join(__dir__, "peal/types/customer_workspace_page")
     autoload :DatabaseUnavailableEncodedTag, ::File.join(__dir__, "peal/types/database_unavailable_encoded_tag")
@@ -871,9 +877,6 @@ module Peal
     autoload :NotificationPreferencesEmail, ::File.join(__dir__, "peal/types/notification_preferences_email")
     autoload :NotificationPreferences, ::File.join(__dir__, "peal/types/notification_preferences")
     autoload :OrganicCounts, ::File.join(__dir__, "peal/types/organic_counts")
-    autoload :OverviewChannels, ::File.join(__dir__, "peal/types/overview_channels")
-    autoload :OverviewInbox, ::File.join(__dir__, "peal/types/overview_inbox")
-    autoload :OverviewPosts, ::File.join(__dir__, "peal/types/overview_posts")
     autoload :WorkspaceOverview, ::File.join(__dir__, "peal/types/workspace_overview")
     autoload :Overview, ::File.join(__dir__, "peal/types/overview")
     autoload :OwnImageLimitReachedEncoded, ::File.join(__dir__, "peal/types/own_image_limit_reached_encoded")
@@ -881,6 +884,8 @@ module Peal
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
     autoload :PartnerDetailsInvalidEncoded, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded")
+    autoload :PartnerHealthAccount, ::File.join(__dir__, "peal/types/partner_health_account")
+    autoload :PartnerHealth, ::File.join(__dir__, "peal/types/partner_health")
     autoload :PartnerHoldings, ::File.join(__dir__, "peal/types/partner_holdings")
     autoload :PartnerKeyNotFoundEncoded, ::File.join(__dir__, "peal/types/partner_key_not_found_encoded")
     autoload :PartnerNotFoundEncoded, ::File.join(__dir__, "peal/types/partner_not_found_encoded")

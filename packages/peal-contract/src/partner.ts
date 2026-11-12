@@ -15,6 +15,7 @@ import { Forbidden } from "./forbidden.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { PartnerDetailsInvalid } from "./partner-details-invalid.ts";
+import { PartnerHealthSchema } from "./partner-health.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
 import { WorkspaceNotFound } from "./workspace-not-found.ts";
 
@@ -155,6 +156,19 @@ const workspace = { workspaceId: Schema.String };
 const keyOnly =
   "Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.";
 
+/** A page of the partner's customers' health: the list's own paging. */
+export const partnerHealthQuery = {
+  before: Schema.optionalKey(Schema.String),
+  limit: Schema.optionalKey(
+    Schema.Int.check(
+      Schema.isBetween({ maximum: maxWorkspacePageSize, minimum: 1 })
+    )
+  ),
+};
+
+/** What both copies of the partner's customers' health answer. */
+export const partnerHealthDescription = `Answers, for each workspace the partner owns, what needs attention: its channels (\`connected\`, \`toReconnect\`: to reconnect, as \`channel.reconnect_needed\` told; \`off\`: turned off), its posts (\`scheduledNext7Days\`, \`awaitingApproval\`, \`failedLast7Days\`: finished in the last 7 days with a channel that failed, as \`post.failed\` told; \`unconfirmedLast7Days\`: one that may be live and must be checked) and its inbox (\`unanswered\`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, ${defaultWorkspacePageSize} a page unless \`limit\` (at most ${maxWorkspacePageSize}) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass \`next\` as \`before\`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. \`account\` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing.`;
+
 /**
  * A partner's own account and the workspaces it owns, for its backend,
  * with a partner key. Inside each workspace, the same key calls the
@@ -170,6 +184,16 @@ export class PartnerApi extends HttpApiGroup.make("partner")
       OpenApi.annotations({
         description: `The partner account the key belongs to, with what it holds: the workspaces it owns and the channels connected across them and its home workspace, now and at the end of each of the last 35 days (UTC). ${keyOnly}`,
         summary: "Read the partner account",
+      })
+    ),
+    HttpApiEndpoint.get("overview", "/overview", {
+      error: [Forbidden, HttpApiError.BadRequest],
+      query: partnerHealthQuery,
+      success: PartnerHealthSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `${partnerHealthDescription} Each section needs the permission that reads it in a workspace: \`channel:read\`, \`post:read\`, \`engagement:read\`, and \`mayApprove\` says whether the key holds \`post:approve\`. Needs the scope workspaces:read. ${keyOnly}`,
+        summary: "See which customers need attention",
       })
     ),
     HttpApiEndpoint.get("listWorkspaces", "/workspaces", {

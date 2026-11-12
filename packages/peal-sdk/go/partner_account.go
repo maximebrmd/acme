@@ -295,6 +295,51 @@ func (o *OpenPartner) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	overviewPartnerAccountRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	overviewPartnerAccountRequestFieldBefore      = big.NewInt(1 << 1)
+	overviewPartnerAccountRequestFieldLimit       = big.NewInt(1 << 2)
+)
+
+type OverviewPartnerAccountRequest struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	Before      *string `json:"-" url:"before,omitempty"`
+	Limit       *string `json:"-" url:"limit,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (o *OverviewPartnerAccountRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPartnerAccountRequest) SetWorkspaceID(workspaceID string) {
+	o.WorkspaceID = workspaceID
+	o.require(overviewPartnerAccountRequestFieldWorkspaceID)
+}
+
+// SetBefore sets the Before field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPartnerAccountRequest) SetBefore(before *string) {
+	o.Before = before
+	o.require(overviewPartnerAccountRequestFieldBefore)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPartnerAccountRequest) SetLimit(limit *string) {
+	o.Limit = limit
+	o.require(overviewPartnerAccountRequestFieldLimit)
+}
+
+var (
 	revokeKeyPartnerAccountRequestFieldWorkspaceID  = big.NewInt(1 << 0)
 	revokeKeyPartnerAccountRequestFieldPartnerKeyID = big.NewInt(1 << 1)
 )

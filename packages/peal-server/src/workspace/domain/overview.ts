@@ -1,7 +1,6 @@
 import { Option, Order, Result, Schema } from "effect";
 
-import { can } from "#shared/domain/access.ts";
-import type { Actor } from "#shared/domain/access.ts";
+import type { Actor, Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 
 import type { WorkspaceMembership } from "./account.ts";
@@ -104,9 +103,15 @@ export interface OverviewSections {
   readonly posts: boolean;
 }
 
-export const sectionsFor = (actor: Actor): OverviewSections => ({
-  channels: can(actor, "channel:read"),
-  inbox: can(actor, "engagement:read"),
-  mayApprove: can(actor, "post:approve"),
-  posts: can(actor, "post:read"),
+/** The sections these permissions read, as a page of each checks them. */
+export const sectionsHeld = (
+  permissions: readonly Permission[]
+): OverviewSections => ({
+  channels: permissions.includes("channel:read"),
+  inbox: permissions.includes("engagement:read"),
+  mayApprove: permissions.includes("post:approve"),
+  posts: permissions.includes("post:read"),
 });
+
+export const sectionsFor = (actor: Actor): OverviewSections =>
+  sectionsHeld(actor.permissions);

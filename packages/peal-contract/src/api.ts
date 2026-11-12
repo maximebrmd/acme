@@ -1918,6 +1918,18 @@ export type {
 } from "./partner.ts";
 
 export {
+  CustomerHealthSchema,
+  PartnerHealthAccountSchema,
+  PartnerHealthSchema,
+} from "./partner-health.ts";
+
+export type {
+  CustomerHealth,
+  PartnerHealth,
+  PartnerHealthAccount,
+} from "./partner-health.ts";
+
+export {
   CreatedPartnerKeySchema,
   maxPartnerKeyNameLength,
   NewPartnerKeySchema,
