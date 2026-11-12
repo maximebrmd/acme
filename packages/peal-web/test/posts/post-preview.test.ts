@@ -7,6 +7,7 @@ import {
   previewOf,
   previewRequestOf,
   previewed,
+  shouldAsk,
 } from "#posts/post-preview.ts";
 
 // A draft with every field the composer may send.
@@ -154,5 +155,27 @@ describe(previewOf, () => {
   it("shows it as it is while the post is the one asked, or none", () => {
     expect(previewOf(shown, "one")).toStrictEqual(shown);
     expect(previewOf(shown, undefined)).toStrictEqual(shown);
+  });
+});
+
+describe(shouldAsk, () => {
+  const shown = previewed(
+    previewed(noPreview(), { _tag: "asked", key: "one", request: 1 }),
+    { _tag: "answered", request: 1, value: answer("one") }
+  );
+
+  it("asks for a post that changed, and nothing while it is the same", () => {
+    expect(shouldAsk(shown, "two")).toBeTruthy();
+    expect(shouldAsk(shown, "one")).toBeFalsy();
+    expect(shouldAsk(shown, undefined)).toBeFalsy();
+  });
+
+  it("asks nothing more of a member refused once, whatever changes", () => {
+    const refused = previewed(
+      previewed(shown, { _tag: "asked", key: "two", request: 2 }),
+      { _tag: "failed", forbidden: true, request: 2 }
+    );
+
+    expect(shouldAsk(refused, "three")).toBeFalsy();
   });
 });

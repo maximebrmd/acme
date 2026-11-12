@@ -843,7 +843,15 @@ export const Composer = ({
             />
           </fieldset>
           <Separator />
-          <div className="grid gap-6 lg:grid-cols-2">
+          <PostPreviews
+            channels={channels}
+            draft={draft}
+            media={media}
+            optionsTaken={optionsTaken}
+            parts={parts}
+            workspaceId={workspaceId}
+            writable={canWrite}
+          >
             <fieldset className="flex min-w-0 flex-col gap-3">
               <legend className="mb-3 text-sm font-medium">
                 {t("textLegend")}
@@ -905,16 +913,7 @@ export const Composer = ({
                 texts={textsOf(content)}
               />
             </fieldset>
-            <PostPreviews
-              channels={channels}
-              draft={draft}
-              media={media}
-              optionsTaken={optionsTaken}
-              parts={parts}
-              workspaceId={workspaceId}
-              writable={canWrite}
-            />
-          </div>
+          </PostPreviews>
           <section
             aria-labelledby="counters-title"
             className="flex flex-col gap-3"

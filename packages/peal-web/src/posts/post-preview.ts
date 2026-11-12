@@ -81,3 +81,14 @@ export const previewOf = <A>(
   key !== undefined && key !== state.asked && state.status !== "forbidden"
     ? { ...state, status: "loading" }
     : state;
+
+/**
+ * Whether to ask about the post `key` names: once it differs from the one
+ * last asked about, and never again once the member was refused, which no
+ * change to the post would alter.
+ */
+export const shouldAsk = <A>(
+  state: PreviewState<A>,
+  key: string | undefined
+): boolean =>
+  key !== undefined && key !== state.asked && state.status !== "forbidden";

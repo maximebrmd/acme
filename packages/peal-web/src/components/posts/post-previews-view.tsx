@@ -140,6 +140,7 @@ export const PostPreviewsView = ({
   selected,
   shortenLinks,
   state,
+  waitingForOptions,
 }: {
   readonly channels: readonly Channel[];
   /** The post's images and videos, in order. */
@@ -152,12 +153,16 @@ export const PostPreviewsView = ({
   /** Whether its links go out shortened. */
   readonly shortenLinks: boolean;
   readonly state: PreviewState<PreviewAnswer>;
+  /** Whether an option is one the API would refuse: nothing is asked then. */
+  readonly waitingForOptions: boolean;
 }) => {
   const t = useTranslations("Posts.Preview");
 
   if (state.status === "forbidden") {
     return null;
   }
+
+  const dimmed = state.status === "loading" || waitingForOptions;
 
   const body = () => {
     if (selected === 0) {
@@ -179,7 +184,7 @@ export const PostPreviewsView = ({
       <ul
         aria-busy={state.status === "loading"}
         className={
-          state.status === "loading"
+          dimmed
             ? "flex flex-col gap-3 opacity-60 transition-opacity"
             : "flex flex-col gap-3 transition-opacity"
         }
@@ -208,6 +213,11 @@ export const PostPreviewsView = ({
           <p className="text-muted-foreground text-xs">{t("shortLinks")}</p>
         ) : null}
       </div>
+      {selected > 0 && waitingForOptions ? (
+        <p className="text-muted-foreground text-sm">
+          {t("waitingForOptions")}
+        </p>
+      ) : null}
       {selected > 0 && state.status === "failed" ? (
         <Alert variant="destructive">
           <AlertDescription>

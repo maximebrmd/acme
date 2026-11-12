@@ -1388,7 +1388,8 @@
       "part": "Partie {position}",
       "media": "Images et vidéos sur {channel}",
       "partMedia": "Images et vidéos de la partie {position}",
-      "shortLinks": "Les liens apparaissent tels qu’écrits : ils sont raccourcis quand la publication part."
+      "shortLinks": "Les liens apparaissent tels qu’écrits : ils sont raccourcis quand la publication part.",
+      "waitingForOptions": "Les aperçus attendent que les options plus bas soient corrigées."
     }
   },
   "Drafts": {

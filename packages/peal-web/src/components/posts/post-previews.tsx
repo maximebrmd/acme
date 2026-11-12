@@ -8,6 +8,7 @@ import type {
   PostDraft,
   PostValidation,
 } from "peal-contract";
+import type { ReactNode } from "react";
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 
 import { validatePost } from "#posts/api.ts";
@@ -19,6 +20,7 @@ import {
   previewed,
   previewOf,
   previewRequestOf,
+  shouldAsk,
 } from "#posts/post-preview.ts";
 import type { PreviewEvent, PreviewState } from "#posts/post-preview.ts";
 
@@ -83,20 +85,22 @@ const usePostPreview = (
   });
 
   // Nothing is asked again while the post is the one last asked about.
-  const lastAsked = state.asked;
+  // Asked once the post differs from the last one asked about, and never
+  // again once the member was refused.
+  const due = shouldAsk(state, key);
 
   useEffect(() => {
     const timer =
-      key === undefined || key === lastAsked
-        ? undefined
-        : window.setTimeout(() => {
+      due && key !== undefined
+        ? window.setTimeout(() => {
             void ask(key);
-          }, previewDelayMillis);
+          }, previewDelayMillis)
+        : undefined;
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [key, lastAsked]);
+  }, [key, due]);
 
   return {
     retry: () => {
@@ -114,6 +118,7 @@ const usePostPreview = (
  */
 export const PostPreviews = ({
   channels,
+  children,
   draft,
   media,
   optionsTaken,
@@ -122,6 +127,8 @@ export const PostPreviews = ({
   writable,
 }: {
   readonly channels: readonly Channel[];
+  /** The composer's text, which the previews sit beside. */
+  readonly children: ReactNode;
   /** What a save of the post sends now. */
   readonly draft: PostDraft;
   readonly media: readonly MediaAttachment[];
@@ -152,20 +159,25 @@ export const PostPreviews = ({
     return attached.slice(from, from + part.media.length);
   });
 
-  // A post that can no longer be written is shown as it is elsewhere.
+  // A post that can no longer be written is shown as it is elsewhere: its
+  // text takes the whole width.
   if (!writable) {
-    return null;
+    return <div className="flex flex-col">{children}</div>;
   }
 
   return (
-    <PostPreviewsView
-      channels={channels}
-      media={attached.slice(0, media.length)}
-      parts={partMedia}
-      selected={draft.channelIds.length}
-      shortenLinks={draft.shortenLinks === true}
-      state={state}
-      onRetry={retry}
-    />
+    <div className="grid gap-6 lg:grid-cols-2">
+      {children}
+      <PostPreviewsView
+        channels={channels}
+        media={attached.slice(0, media.length)}
+        parts={partMedia}
+        selected={draft.channelIds.length}
+        shortenLinks={draft.shortenLinks === true}
+        state={state}
+        waitingForOptions={!optionsTaken}
+        onRetry={retry}
+      />
+    </div>
   );
 };

@@ -1388,7 +1388,8 @@
       "part": "Part {position}",
       "media": "Images and videos on {channel}",
       "partMedia": "Images and videos of part {position}",
-      "shortLinks": "Links show as written: they are shortened when the post goes out."
+      "shortLinks": "Links show as written: they are shortened when the post goes out.",
+      "waitingForOptions": "The previews wait until the options below are fixed."
     }
   },
   "Drafts": {

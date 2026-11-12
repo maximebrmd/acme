@@ -40,7 +40,7 @@ const preview = (changes: Partial<ChannelPreview>): ChannelPreview => ({
 const render = async (
   locale: Locale,
   state: PreviewState<PreviewAnswer>,
-  { selected = 1, shortenLinks = false } = {}
+  { selected = 1, shortenLinks = false, waiting = false } = {}
 ) => {
   const messages = await loadMessages(locale);
 
@@ -53,6 +53,7 @@ const render = async (
         selected={selected}
         shortenLinks={shortenLinks}
         state={state}
+        waitingForOptions={waiting}
         onRetry={() => {
           // Nothing to ask in a render.
         }}
@@ -155,6 +156,15 @@ describe(PostPreviewsView, () => {
         status: "forbidden",
       })
     ).resolves.toBe("");
+  });
+
+  it("dims the last preview, and says why, while an option is refused", async () => {
+    const html = await render("en", shown([preview({})]), { waiting: true });
+
+    expect(html).toContain(
+      "The previews wait until the options below are fixed."
+    );
+    expect(html).toContain("opacity-60");
   });
 
   it("says links are shortened only when the post goes out", async () => {
