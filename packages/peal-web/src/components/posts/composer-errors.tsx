@@ -43,17 +43,18 @@ interface ComposerErrorsProps {
 
 const noMedia: readonly AttachedMedia[] = [];
 
-// Why the last save or schedule failed, with each of the platforms' rules
-// the content breaks, channel by channel, and image by image.
-export const ComposerErrors = ({
-  channels,
-  failure,
-  media = noMedia,
-}: ComposerErrorsProps) => {
+/**
+ * Each of the platforms' rules a post's content breaks, in words: by
+ * channel, image by image, and by part after the first. The composer
+ * shows them under a refused save; the CSV import under a refused row.
+ */
+export const useViolationText = (
+  channels: readonly Channel[],
+  media: readonly AttachedMedia[] = noMedia
+): ((violation: ContentViolation) => string) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
   const tOptions = useTranslations("Posts.Options");
-  const billing = useTranslations("Billing");
 
   // An option's label, as its platform's fields name it.
   const fieldName = (violation: { platform: Platform; field: string }) =>
@@ -82,10 +83,6 @@ export const ComposerErrors = ({
   };
 
   const mediaTexts = useMediaViolationTexts(media, channelName);
-
-  if (failure === null) {
-    return null;
-  }
 
   const violationText = (violation: ContentViolation) =>
     Match.valueTags(violation, {
@@ -172,6 +169,24 @@ export const ComposerErrors = ({
           text: violationText(violation),
         })
       : violationText(violation);
+
+  return placed;
+};
+
+// Why the last save or schedule failed, with each of the platforms' rules
+// the content breaks, channel by channel, and image by image.
+export const ComposerErrors = ({
+  channels,
+  failure,
+  media = noMedia,
+}: ComposerErrorsProps) => {
+  const t = useTranslations("Posts.Composer");
+  const billing = useTranslations("Billing");
+  const placed = useViolationText(channels, media);
+
+  if (failure === null) {
+    return null;
+  }
 
   const generic = () => t("errors.generic");
 

@@ -39,7 +39,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
   `…/drafts`, `…/posts` (every post, whatever its state, for post:read
-  and channel:read), `…/posts/new`, `…/posts/[postId]`, which opens
+  and channel:read), `…/posts/import` (a CSV file's posts, for
+  post:schedule, post:read and channel:read), `…/posts/new`,
+  `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
@@ -299,6 +301,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and asks `posts.search` (`postSearchPage`) with them; "Show more"
   passes the page's cursor with the same filters and sort, as the API
   requires. An outcome is a filter on finished posts only.
+- The CSV import (`…/posts/import`, `PostImport`, views in
+  `post-import-views.tsx`, states in `#posts/import-state.ts`) never
+  parses the file: the browser reads it as text (`#posts/import-file.ts`,
+  the CLI's bounds, a leading BOM dropped) and the server is the one
+  reader of CSV, so the check and the import cannot disagree. Choosing a
+  file sends it with `dryRun`; **Import** is offered only once every row
+  is valid, asks once, and sends the same file under the
+  `Idempotency-Key` made when that check passed, kept for a retry and new
+  for each check, one request at a time (`oneAtATime`). A row's refusal
+  and a file's problem get their words from `#posts/import-refusal.ts`,
+  matched exhaustively, so a refusal the contract adds needs words to
+  compile; never show the server's English `message`. A
+  `PlanLimitReached` among the rows opens the upgrade dialog
+  (`OfferUpgrade`), as it comes inside a 200 answer.
 - A pending invitation's **Copy link** (`#settings/invitation-link.ts`)
   copies the emailed link, which Better Auth lets only a session of the
   invited, verified address accept: there is no open invitation link.

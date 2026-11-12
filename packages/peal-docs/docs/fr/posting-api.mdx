@@ -264,6 +264,8 @@ Un en-tête `Idempotency-Key` permet de renvoyer toute la requête sans risque p
 
 ## Importer des publications depuis un fichier CSV [#import]
 
+Dans l’application web, [Importer depuis un fichier](/scheduling#import-screen) vérifie un fichier et l’importe par ce point de terminaison.
+
 `POST …/posts/import` crée et envoie les publications que liste un fichier CSV, une par ligne. La première ligne du fichier nomme les colonnes, dans n’importe quel ordre :
 
 | Colonne           | Obligatoire | Ce qu’elle contient                                                                                                                                                   |

@@ -52,6 +52,7 @@ const PostsPage = async ({
       </div>
       <PostList
         canCreate={membership.permissions.includes("post:create")}
+        canImport={membership.permissions.includes("post:schedule")}
         query={query}
         workspaceId={membership.id}
       />

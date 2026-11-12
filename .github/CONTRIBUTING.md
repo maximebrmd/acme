@@ -153,8 +153,7 @@ when an agent wrote a large part of it.
 ## Set up
 
 You need Git, Bun (the version in [`.bun-version`](../.bun-version)), Node 26.13
-or later, Docker (Engine 28 or later with Compose 2.35 or later, because the
-stacks use image mounts), and [uv](https://docs.astral.sh/uv/), which installs
+or later, Docker (Engine 28 or later with Compose 2.35 or later), and [uv](https://docs.astral.sh/uv/), which installs
 the Ansible toolchain that `bun run test` checks `packages/peal-infra/ansible` with.
 
 ```sh

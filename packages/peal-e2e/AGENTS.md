@@ -53,6 +53,12 @@
   discards it, and reads a pending invitation's **Copy link**. Pasting
   files is tested below the pages (`#posts/paste.ts`): the runner offers
   no clipboard.
+- `tests/csv-import.e2e.ts` opens **Import from a file** from **All
+  posts**, sets the file input (`setInputFiles`) to files it writes under
+  `.e2e/csv-import/`: a row on a channel the workspace lacks is refused
+  and nothing is offered to import; a row next year on a seeded channel
+  (`seedChannel` answers its id) is checked, imported and its post
+  cancelled. It never imports a row dated `now`.
 - `tests/queues.e2e.ts` adds a queue with two slots late today (the
   test's weekday), adds two posts to it from the composer's **Add to
   queue**, reads that they took 23:57 then 23:58, swaps the 23:57 slot
