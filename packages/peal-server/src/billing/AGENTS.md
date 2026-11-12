@@ -21,8 +21,16 @@
   (`peal-contract/rate-card`), kept equal by
   `test/billing/api/contract.test.ts`: change both, never one. The plan
   `payAsYouGo` is per-account pricing; nothing records or offers it yet
-  (`allowancesOf` holds it to the free plan; Better Auth's plans, the price
-  check and the contract's `OrderablePlan` leave it out).
+  (`allowancesOf` holds it to the free plan, and `largerPlan` ranks it
+  below every legacy plan so it never takes a legacy plan's place; Better
+  Auth's plans, the price check and the contract's `OrderablePlan` leave
+  it out). The change that wires it computes its allowances from the rate
+  card and ranks it again, before any Stripe price maps to it, with a test
+  of a workspace holding a legacy plan and `payAsYouGo` together; and
+  `planToPay` must not offer it a price of 0. The pricing functions refuse
+  a count that is not a whole number of zero or more (`RangeError`);
+  Stripe's rounding of a half cent on a meter is assumed half up until a
+  sandbox invoice settles it.
 - The legacy plans are priced by connected channels, in tiers: free,
   starter, pro, business, agency (`LegacyPlan`, `LegacyPaidPlan`), each a
   monthly and a yearly price (ten months), kept for the subscriptions that
