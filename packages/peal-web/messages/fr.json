@@ -1967,7 +1967,8 @@
       "tags": "Étiquettes",
       "signatures": "Signatures",
       "channelSets": "Groupes de canaux",
-      "queues": "Files d’attente"
+      "queues": "Files d’attente",
+      "recycling": "Répétitions"
     },
     "general": {
       "title": "Nom",
@@ -3183,6 +3184,65 @@
       "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
       "unknown": "Une erreur est survenue. Réessayez."
+    }
+  },
+  "Recycling": {
+    "title": "Publications répétées",
+    "description": "Des règles qui répètent une publication : une nouvelle publication à chaque intervalle, à la même heure, jusqu’à un nombre de publications ou une date, avec le texte de la publication ou, à tour de rôle, ses variantes. Chaque nouvelle publication est ordinaire, avec son propre résultat, et se déplace ou s’annule comme toute autre.",
+    "readOnly": "Vous pouvez lire les règles : les modifier demande un rôle qui programme des publications.",
+    "empty": "Aucune publication ne se répète dans cet espace de travail. Ouvrez une publication programmée ou en ligne, puis choisissez Répéter.",
+    "repeat": "Répéter",
+    "repeatPost": "Répéter cette publication",
+    "every": "{unit, select, days {{count, plural, one {Tous les jours} other {Tous les # jours}}} weeks {{count, plural, one {Toutes les semaines} other {Toutes les # semaines}}} other {{count, plural, one {Tous les mois} other {Tous les # mois}}}}",
+    "until": "Jusqu’au {date}",
+    "count": "{count} fois",
+    "made": "{made, plural, one {# publication créée} other {# publications créées}}",
+    "madeOf": "{made} sur {count}",
+    "status": "{status, select, active {Active} paused {En pause} other {Terminée}}",
+    "ended": "Règle terminée : {reason}",
+    "reason": "{reason, select, completed {elle a créé toutes les publications demandées.} stopped {quelqu’un l’a arrêtée.} sourceGone {la publication qu’elle répète a été supprimée.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’avait plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}",
+    "variants": "Variantes de texte",
+    "coming": "Prochaines occurrences",
+    "comingItem": "{at}{variant, select, 0 {} other {, avec la variante {variant}}}",
+    "repeats": "Se répète : {every}, {progress}",
+    "openRule": "Voir la règle",
+    "source": "La publication répétée",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "stop": "Arrêter",
+    "stopConfirm": "Arrêter cette règle ? Elle ne crée plus de publication et ne peut pas être reprise ; les publications créées restent telles quelles.",
+    "stopped": "La règle est arrêtée.",
+    "paused": "La règle est en pause.",
+    "resumed": "La règle reprend.",
+    "started": "La publication se répète.",
+    "failed": "Cela n’a pas fonctionné. Réessayez.",
+    "errors": {
+      "notRecyclable": "{reason, select, draft {Un brouillon ne peut pas se répéter : programmez-le d’abord.} awaitingApproval {La publication attend une approbation : elle pourra se répéter une fois programmée.} cancelled {Une publication annulée ne peut pas se répéter.} repeating {Une autre règle répète déjà cette publication.} occurrence {Une règle a créé cette publication : répétez plutôt sa source.} other {Aucun des canaux de la publication n’est plus connecté.}}",
+      "tooMany": "L’espace de travail a {allowed} règles en cours, le maximum permis : arrêtez-en une d’abord.",
+      "endsTooSoon": "Cette fin ne laisse aucune publication à créer : choisissez une date plus tardive ou plus de publications.",
+      "variantsInvalid": "{count, plural, one {Une variante enfreint} other {# variantes enfreignent}} les règles des canaux de la publication : raccourcissez-les, ou vérifiez ce que chaque plateforme accepte.",
+      "ended": "La règle est terminée et ne change plus.",
+      "forbidden": "Votre rôle ne le permet pas.",
+      "notFound": "La règle ou sa publication n’existe plus."
+    },
+    "form": {
+      "every": "Tous les",
+      "unit": "Unité",
+      "units": "{unit, select, days {jours} weeks {semaines} other {mois}}",
+      "ending": "Fin",
+      "endings": "{ending, select, count {Après un nombre de publications} until {À une date} other {Après {max} publications au plus}}",
+      "count": "Publications en tout, celle-ci comprise",
+      "until": "Dernier jour",
+      "queue": "Quand",
+      "ownTime": "À l’heure de la publication",
+      "variantsHint": "Des textes dits à la place de celui de la publication, à tour de rôle après lui, {max} au plus. Ses médias et options restent. Certaines plateformes refusent deux fois le même texte : les variantes sont faites pour cela.",
+      "variant": "Variante {number}",
+      "characters": "{count, plural, one {# caractère} other {# caractères}}",
+      "addVariant": "Ajouter une variante",
+      "removeVariant": "Retirer la variante {number}",
+      "inPublic": "Elle repart, en public, sans que personne ne soit sollicité à chaque fois, sauf si l’espace de travail demande des approbations : chaque publication en attend alors une.",
+      "start": "Répéter",
+      "cancel": "Annuler"
     }
   }
 }

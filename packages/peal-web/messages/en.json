@@ -1967,7 +1967,8 @@
       "tags": "Tags",
       "signatures": "Signatures",
       "channelSets": "Channel sets",
-      "queues": "Queues"
+      "queues": "Queues",
+      "recycling": "Repeating posts"
     },
     "general": {
       "title": "Name",
@@ -3183,6 +3184,65 @@
       "actionFailed": "The platform did not do it, and nothing changed: {reason, select, rateLimited {it asked to slow down. Try again in a moment.} platformUnavailable {it could not be reached. Try again later.} reconnectNeeded {it refuses the account’s authorization. Disconnect the channel and connect the account again.} channelUnavailable {the channel was disconnected or turned off.} commentGone {the comment is no longer there.} refused {it refused.} other {{reason}}}",
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
       "unknown": "Something went wrong. Try again."
+    }
+  },
+  "Recycling": {
+    "title": "Repeating posts",
+    "description": "Rules that make a post repeat: a new post each interval, at the same time of day, until a number of posts or a date, saying the post’s text or, in turn, its variants. Each new post is an ordinary one, with its own outcome, which you move or cancel as any other.",
+    "readOnly": "You may read the rules: changing them takes a role that schedules posts.",
+    "empty": "No post repeats in this workspace. Open a scheduled or published post and choose Repeat.",
+    "repeat": "Repeat",
+    "repeatPost": "Repeat this post",
+    "every": "{unit, select, days {{count, plural, one {Every day} other {Every # days}}} weeks {{count, plural, one {Every week} other {Every # weeks}}} other {{count, plural, one {Every month} other {Every # months}}}}",
+    "until": "Until {date}",
+    "count": "{count} times",
+    "made": "{made, plural, one {# post made} other {# posts made}}",
+    "madeOf": "{made} of {count}",
+    "status": "{status, select, active {Active} paused {Paused} other {Ended}}",
+    "ended": "Rule ended: {reason}",
+    "reason": "{reason, select, completed {it made every post it was asked for.} stopped {someone stopped it.} sourceGone {the post it repeats was deleted.} starterGone {whoever started it can no longer schedule posts here.} noChannels {none of its channels is connected any more.} contentRejected {a platform refuses what the next post would say.} planLimit {the plan had no room left for posts that month.} queueGone {its queue was deleted.} other {its queue has no free slot.}}",
+    "variants": "Text variants",
+    "coming": "Next occurrences",
+    "comingItem": "{at}{variant, select, 0 {} other {, with variant {variant}}}",
+    "repeats": "Repeats: {every}, {progress}",
+    "openRule": "See the rule",
+    "source": "The post it repeats",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "stopConfirm": "Stop this rule? It makes no more posts, and cannot be resumed; the posts it made stay as they are.",
+    "stopped": "The rule is stopped.",
+    "paused": "The rule is paused.",
+    "resumed": "The rule goes on.",
+    "started": "The post repeats.",
+    "failed": "That did not work. Try again.",
+    "errors": {
+      "notRecyclable": "{reason, select, draft {A draft cannot repeat: schedule it first.} awaitingApproval {The post waits for an approval: it can repeat once it is scheduled.} cancelled {A cancelled post cannot repeat.} repeating {Another rule repeats this post already.} occurrence {A rule made this post: make its source repeat instead.} other {None of the post’s channels is connected any more.}}",
+      "tooMany": "The workspace has {allowed} rules going, the most it may: stop one first.",
+      "endsTooSoon": "That ending leaves no post to make: choose a later date or more posts.",
+      "variantsInvalid": "{count, plural, one {A variant breaks} other {# variants break}} the rules of the post’s channels: shorten them, or check what each platform takes.",
+      "ended": "The rule ended, and changes no more.",
+      "forbidden": "Your role does not allow this.",
+      "notFound": "The rule or its post is gone."
+    },
+    "form": {
+      "every": "Every",
+      "unit": "Unit",
+      "units": "{unit, select, days {days} weeks {weeks} other {months}}",
+      "ending": "Ends",
+      "endings": "{ending, select, count {After a number of posts} until {On a date} other {After {max} posts at most}}",
+      "count": "Posts in all, this one counted",
+      "until": "Last day",
+      "queue": "When",
+      "ownTime": "At the post’s time of day",
+      "variantsHint": "Texts said instead of the post’s, in turn after it, {max} at most. Its media and options stay. Some platforms refuse the same text twice: variants are for that.",
+      "variant": "Variant {number}",
+      "characters": "{count, plural, one {# character} other {# characters}}",
+      "addVariant": "Add a variant",
+      "removeVariant": "Remove variant {number}",
+      "inPublic": "It goes out again, in public, without anyone being asked each time, unless the workspace asks for approvals: then each post waits for one.",
+      "start": "Repeat",
+      "cancel": "Cancel"
     }
   }
 }
