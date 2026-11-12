@@ -558,6 +558,10 @@ export class Feeds extends Context.Service<
         feedId: FeedId,
         request: ChangeFeedRequest
       ) {
+        // Said before the feed is looked up: a role that may not change
+        // feeds learns nothing of which exist.
+        yield* Effect.fromResult(authorize(actor, "post:create"));
+
         const current = yield* found(actor, feedId);
         const mode = request.mode ?? current.mode;
 
@@ -691,6 +695,8 @@ export class Feeds extends Context.Service<
         actor: Actor,
         feedId: FeedId
       ) {
+        yield* Effect.fromResult(authorize(actor, "post:create"));
+
         const current = yield* found(actor, feedId);
 
         yield* mayChangeStarted(actor, current, mayStart(actor, current.mode));

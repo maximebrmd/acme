@@ -23,11 +23,12 @@ const feedId = Schema.String.annotate({
   description: "The feed's id, as list_feeds answers it.",
 });
 
+// Room past the server's limit, which says what is wrong with a longer one.
 const template = Schema.String.check(
-  Schema.isMaxLength(maxFeedTemplateLength)
+  Schema.isMaxLength(maxFeedTemplateLength * 4)
 ).annotate({
   description:
-    "What each post says: `{title}`, `{link}` and `{summary}` are replaced by the item's (its summary as plain text, 280 characters at most); any other placeholder is refused. Left out, the title, a blank line and the link.",
+    "What each post says: `{title}`, `{link}` and `{summary}` are replaced by the item's (its summary as plain text, 280 characters at most); any other placeholder is refused. Left out, the title, a blank line and the link. At most 1000 characters.",
 });
 
 const url = Schema.String.annotate({

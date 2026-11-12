@@ -173,11 +173,15 @@ export const CreatedFeedSchema = Schema.Struct({
 
 export type CreatedFeed = typeof CreatedFeedSchema.Type;
 
+// Room past the server's own limits, so the server answers what is wrong
+// (FeedTemplateInvalid `tooLong`, FeedAddressRefused `malformed`) rather
+// than a bare 400: it counts a template in characters, and refuses an
+// address over 2048.
 const TemplateSchema = Schema.String.check(
-  Schema.isMaxLength(maxFeedTemplateLength)
+  Schema.isMaxLength(maxFeedTemplateLength * 4)
 );
 
-const UrlSchema = Schema.String.check(Schema.isMaxLength(2048));
+const UrlSchema = Schema.String.check(Schema.isMaxLength(8192));
 
 /** What starts a feed. */
 export const NewFeedSchema = Schema.Struct({

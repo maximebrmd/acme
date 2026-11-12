@@ -292,4 +292,64 @@ describe("feeds", () => {
       ),
     timeout
   );
+
+  it.effect(
+    "refuse a role that may not change feeds before looking the feed up",
+    () =>
+      onServer(
+        Effect.gen(function* permissionFirst() {
+          const { params, viewer } = yield* studio;
+          const missing = {
+            ...params,
+            feedId: "0190f3a0-0000-7000-8000-00000000dead",
+          };
+
+          const changed = yield* viewer.feeds
+            .update({ params: missing, payload: { status: "paused" } })
+            .pipe(Effect.flip);
+
+          const removed = yield* viewer.feeds
+            .delete({ params: missing })
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            [changed._tag, removed._tag],
+            ["Forbidden", "Forbidden"]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "say what is wrong with a long template or address, as the server judges it",
+    () =>
+      onServer(
+        Effect.gen(function* longInputs() {
+          const { editor, params } = yield* studio;
+
+          yield* serveItems(blog, []);
+
+          const template = yield* editor.feeds
+            .create({
+              params,
+              payload: { template: "a".repeat(1001), url: blog },
+            })
+            .pipe(Effect.flip);
+
+          const address = yield* editor.feeds
+            .create({
+              params,
+              payload: { url: `https://blog.example/${"a".repeat(3000)}` },
+            })
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            [template._tag, address._tag],
+            ["FeedTemplateInvalid", "FeedAddressRefused"]
+          );
+        })
+      ),
+    timeout
+  );
 });
