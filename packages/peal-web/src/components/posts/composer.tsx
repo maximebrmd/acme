@@ -28,7 +28,6 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { canGenerateImages } from "#assistant/permissions.ts";
-import { channelName } from "#channels/channel-name.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
@@ -82,7 +81,7 @@ import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
 import { oneAtATime } from "#posts/one-at-a-time.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
-import { publishNowOf } from "#posts/publish-now.ts";
+import { publishNowOf, whereItGoes } from "#posts/publish-now.ts";
 import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
 import {
@@ -1031,12 +1030,12 @@ export const Composer = ({
           willWait={willWait}
           canDiscard={canDiscard}
           canCancel={canCancel}
-          channelNames={selected.map(channelName)}
+          channels={selected}
           publishable={publishable}
           publishNow={publishNowOf({
             canReschedule,
             canSchedule: schedulable,
-            channels: selected.length,
+            channels: whereItGoes(selected).publishing.length,
             policyKnown: approvalPolicy !== undefined,
             publishable,
             running: busy !== null,

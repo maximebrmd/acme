@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
-import type { PostSchedule, PostStatus } from "peal-contract";
+import type { Channel, PostSchedule, PostStatus } from "peal-contract";
 
-import { isDue, publishNowOf } from "#posts/publish-now.ts";
+import { isDue, publishNowOf, whereItGoes } from "#posts/publish-now.ts";
 import type { PublishNowState } from "#posts/publish-now.ts";
 
 const draft: PublishNowState = {
@@ -112,5 +112,29 @@ describe(isDue, () => {
     expect(due("scheduled", at("2026-11-12T10:01:00Z"))).toBeFalsy();
     expect(due("draft", null)).toBeFalsy();
     expect(due("awaitingApproval", at("2026-11-12T09:00:00Z"))).toBeFalsy();
+  });
+});
+
+const channel = (handle: string, status: Channel["status"]): Channel => ({
+  avatarUrl: null,
+  connection: null,
+  displayName: null,
+  handle,
+  id: handle,
+  label: null,
+  platform: "mastodon",
+  status,
+  tokenExpiresAt: null,
+});
+
+describe(whereItGoes, () => {
+  it("names the channels that publish apart from those that cannot", () => {
+    expect(
+      whereItGoes([
+        channel("@on", { _tag: "active" }),
+        channel("@off", { _tag: "disabled", refreshNeeded: false }),
+        channel("@stale", { _tag: "refreshNeeded" }),
+      ])
+    ).toStrictEqual({ publishing: ["@on"], skipped: ["@off", "@stale"] });
   });
 });

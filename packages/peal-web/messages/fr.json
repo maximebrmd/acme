@@ -976,7 +976,8 @@
         "loading": "Chargement des emoji…",
         "footer": "Choisissez un emoji…",
         "category": "{group, select, smileysEmotion {Smileys et émotions} peopleBody {Personnes et corps} component {Composants} animalsNature {Animaux et nature} foodDrink {Nourriture et boissons} travelPlaces {Voyages et lieux} activities {Activités} objects {Objets} symbols {Symboles} flags {Drapeaux} other {{group}}}"
-      }
+      },
+      "publishNowSkipped": "Pas sur {channels}, {count, plural, one {désactivé ou à reconnecter} other {désactivés ou à reconnecter}}."
     },
     "Parts": {
       "legend": "Fil",

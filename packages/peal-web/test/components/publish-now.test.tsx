@@ -6,12 +6,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { PublishNowSummary } from "#components/posts/publish-now.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 
-const render = async (locale: Locale, channels: readonly string[]) => {
+const render = async (
+  locale: Locale,
+  channels: readonly string[],
+  skipped: readonly string[] = []
+) => {
   const messages = await loadMessages(locale);
 
   return renderToStaticMarkup(
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
-      <PublishNowSummary channels={channels} />
+      <PublishNowSummary channels={channels} skipped={skipped} />
     </NextIntlClientProvider>
   );
 };
@@ -27,6 +31,13 @@ describe(PublishNowSummary, () => {
     expect(html).toContain("<li>Client A (@client_a)</li>");
     expect(html).toContain("is public on these 2 channels");
     expect(html).toContain("cannot be taken back from here");
+  });
+
+  it("names apart the channels that will not publish", async () => {
+    const html = await render("en", ["@on"], ["@off"]);
+
+    expect(html).toContain("is public on this channel");
+    expect(html).toContain("Not on @off, turned off or to be reconnected.");
   });
 
   it("says it in the reader's language", async () => {

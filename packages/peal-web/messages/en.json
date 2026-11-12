@@ -976,7 +976,8 @@
         "loading": "Loading the emoji…",
         "footer": "Choose an emoji…",
         "category": "{group, select, smileysEmotion {Smileys and emotion} peopleBody {People and body} component {Components} animalsNature {Animals and nature} foodDrink {Food and drink} travelPlaces {Travel and places} activities {Activities} objects {Objects} symbols {Symbols} flags {Flags} other {{group}}}"
-      }
+      },
+      "publishNowSkipped": "Not on {channels}, turned off or to be reconnected."
     },
     "Parts": {
       "legend": "Thread",

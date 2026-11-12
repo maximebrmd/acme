@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import type { Channel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -36,8 +37,8 @@ interface ComposerActionsProps {
   readonly canSave: boolean;
   readonly canSchedule: boolean;
   readonly canUnschedule: boolean;
-  /** The channels the post goes to, by name, which "Publish now" lists. */
-  readonly channelNames?: readonly string[];
+  /** The channels the post goes to, which "Publish now" lists. */
+  readonly channels?: readonly Channel[];
   /** Another action shown with these, such as copying the post. */
   readonly extra?: ReactNode;
   readonly onAction: (action: ComposerAction) => void;
@@ -96,7 +97,7 @@ const DiscardDraft = ({
 
 const notOffered: PublishNow = { _tag: "none" };
 
-const noChannels: readonly string[] = [];
+const noChannels: readonly Channel[] = [];
 
 // Save, schedule, publish now, move, take back to draft, discard or cancel,
 // as the post's status and the member's role allow. Buttons stay focusable while
@@ -109,7 +110,7 @@ export const ComposerActions = ({
   canSave,
   canSchedule,
   canUnschedule,
-  channelNames = noChannels,
+  channels = noChannels,
   extra,
   onAction,
   publishable,
@@ -124,7 +125,7 @@ export const ComposerActions = ({
     publishNow._tag === "offered" && publishNow.from === from ? (
       <PublishNowButton
         busy={busy === "publishNow"}
-        channels={channelNames}
+        channels={channels}
         enabled={publishNow.enabled}
         onConfirm={() => {
           onAction("publishNow");

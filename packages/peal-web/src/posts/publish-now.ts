@@ -1,5 +1,7 @@
 import { DateTime } from "effect";
-import type { Post, PostStatus } from "peal-contract";
+import type { Channel, Post, PostStatus } from "peal-contract";
+
+import { channelName } from "#channels/channel-name.ts";
 
 /** What the composer knows when it decides whether to offer "Publish now". */
 export interface PublishNowState {
@@ -75,3 +77,21 @@ export const isDue = (
   status === "scheduled" &&
   schedule !== null &&
   DateTime.isLessThanOrEqualTo(schedule.at, now);
+
+/**
+ * Where "Publish now" sends the post, by channel name: the channels that
+ * publish, and apart those turned off or to reconnect, where it would fail.
+ */
+export const whereItGoes = (
+  channels: readonly Channel[]
+): {
+  readonly publishing: readonly string[];
+  readonly skipped: readonly string[];
+} => ({
+  publishing: channels.flatMap((channel) =>
+    channel.status._tag === "active" ? [channelName(channel)] : []
+  ),
+  skipped: channels.flatMap((channel) =>
+    channel.status._tag === "active" ? [] : [channelName(channel)]
+  ),
+});
