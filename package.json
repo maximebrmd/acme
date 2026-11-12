@@ -29,14 +29,14 @@
   "devDependencies": {
     "@types/bun": "1.4.4",
     "@types/node": "26.6.6",
-    "effect": "4.1.2",
+    "effect": "4.1.4",
     "fern-api": "5.201.0",
-    "nx": "24.0.5",
-    "oxfmt": "0.77.0",
-    "oxlint": "1.92.0",
-    "oxlint-tsgolint": "7.0.2006",
+    "nx": "24.0.6",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2007",
     "typescript": "7.0.2",
-    "ultracite": "8.1.1"
+    "ultracite": "8.2.0"
   },
   "engines": {
     "bun": "1.4.4",
