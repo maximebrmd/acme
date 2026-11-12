@@ -13,17 +13,23 @@ const settings = readSettings(EnvironmentSettingsSchema, [
   "domain",
   "environment",
   "hostnames",
+  "shortLinkHost",
   "zoneId",
 ]);
 
 const shared = new pulumi.StackReference(settings.accountStack);
 
-const made = new PealEnvironment("environment", settings, {
-  owner: shared.requireOutput("ownerPolicyId").apply(String),
-  publicCallbacks: shared
-    .requireOutput("publicCallbacksPolicyId")
-    .apply(String),
-});
+const made = new PealEnvironment(
+  "environment",
+  settings,
+  {
+    owner: shared.requireOutput("ownerPolicyId").apply(String),
+    publicCallbacks: shared
+      .requireOutput("publicCallbacksPolicyId")
+      .apply(String),
+  },
+  shared.requireOutput("linkZoneId").apply(String)
+);
 
 export const { accessAud, r2Endpoint, tunnelToken } = made;
 export const tunnelId = made.tunnel.id;

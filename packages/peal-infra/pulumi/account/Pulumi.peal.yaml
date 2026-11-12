@@ -3,6 +3,7 @@ config:
   peal:accountId: 6fdd7e600b33c2c948da88b6cf8b5f26
   peal:zoneId: e5b2c1ccbc4294e524f4615e5feece45
   peal:domain: peal.social
+  peal:linkDomain: peal.link
   peal:ownerName: Maxime
   peal:ownerEmail:
     secure: v1:NC6ki64aryh/nA0/:/MBg/QWRISg6HKtPOLNeTbu9SiD2GPT0qGzAximWU6P+aw+OBQ==

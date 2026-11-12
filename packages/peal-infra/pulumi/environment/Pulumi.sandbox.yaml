@@ -11,3 +11,4 @@ config:
     docs: sandbox-docs
     grafana: sandbox-grafana
     ssh: sandbox-ssh
+  peal:shortLinkHost: sandbox.peal.link

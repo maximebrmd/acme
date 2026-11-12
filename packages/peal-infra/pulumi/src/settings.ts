@@ -13,11 +13,19 @@ const CloudflareSchema = Schema.Struct({
 
 export const AccountSettingsSchema = Schema.Struct({
   ...CloudflareSchema.fields,
+  // The domain of the short links (peal.link), a zone of its own.
+  linkDomain: Schema.NonEmptyString,
   // The owner's first name, in the name of the policy that lets them in.
   ownerName: Schema.NonEmptyString,
 });
 
 export type AccountSettings = typeof AccountSettingsSchema.Type;
+
+/** What the short-link domain's component reads of the account's settings. */
+export type LinkDomainSettings = Pick<
+  AccountSettings,
+  "accountId" | "domain" | "linkDomain"
+>;
 
 /** The first-level subdomains of an environment's host names. */
 const HostnamesSchema = Schema.Struct({
@@ -34,6 +42,9 @@ export const EnvironmentSettingsSchema = Schema.Struct({
   accountStack: Schema.NonEmptyString,
   environment: Schema.Literals(["sandbox", "production"]),
   hostnames: HostnamesSchema,
+  // The environment's host name on the short-link domain, whose zone the
+  // account's stack holds: the domain itself or a first-level subdomain.
+  shortLinkHost: Schema.NonEmptyString,
 });
 
 export type EnvironmentSettings = typeof EnvironmentSettingsSchema.Type;
