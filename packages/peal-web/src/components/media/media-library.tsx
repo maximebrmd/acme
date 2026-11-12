@@ -361,11 +361,14 @@ export const MediaLibrary = ({
   canDelete,
   canGenerate = false,
   canUpload,
+  mayConfigure = false,
   workspaceId,
 }: {
   readonly canDelete: boolean;
   /** The member may have the assistant make images (assistant:use and media:upload). */
   readonly canGenerate?: boolean;
+  /** The member may change the assistant's settings (assistant:configure). */
+  readonly mayConfigure?: boolean;
   readonly canUpload: boolean;
   readonly workspaceId: string;
 }) => {
@@ -384,7 +387,10 @@ export const MediaLibrary = ({
       {canUpload ? <MediaUploader workspaceId={workspaceId} /> : null}
       {canGenerate && hydrated ? (
         <div>
-          <GenerateImage workspaceId={workspaceId} />
+          <GenerateImage
+            mayConfigure={mayConfigure}
+            workspaceId={workspaceId}
+          />
         </div>
       ) : null}
       <section className="flex flex-col gap-4" aria-labelledby="media-library">

@@ -3,6 +3,7 @@ import {
   AssistantFailed,
   AssistantInputRejected,
   AssistantUnavailable,
+  ImageProviderRefused,
   MediaImportBusy,
   MediaStoreUnavailable,
 } from "peal-contract";
@@ -37,6 +38,20 @@ describe(imageFailureKey, () => {
     ]);
   });
 
+  it("says the workspace's own provider refused, and why", () => {
+    expect(
+      (["settingsRefused", "addressRefused", "keyUnreadable"] as const).map(
+        (reason) =>
+          imageFailureKey(
+            new ImageProviderRefused({
+              reason,
+              status: reason === "settingsRefused" ? 401 : null,
+            })
+          )
+      )
+    ).toStrictEqual(["providerRefused", "providerAddress", "providerKey"]);
+  });
+
   it("offers to try again only where it may work", () => {
     expect(
       [
@@ -44,8 +59,9 @@ describe(imageFailureKey, () => {
         new AssistantFailed({ reason: "timedOut" }),
         new AssistantUnavailable(),
         new MediaImportBusy(),
+        new ImageProviderRefused({ reason: "settingsRefused", status: 403 }),
       ].map(isImageRetryable)
-    ).toStrictEqual([false, true, false, true]);
+    ).toStrictEqual([false, true, false, true, false]);
   });
 });
 
@@ -66,6 +82,7 @@ describe(imageAllowanceHint, () => {
     dailyLimit: 20,
     maxPromptLength: 1000,
     requestCost: 5,
+    source: "server" as const,
   };
 
   it("says when the plan makes no image, and when today is spent", () => {
@@ -86,5 +103,28 @@ describe(imageAllowanceHint, () => {
       "notEnoughToday",
       null,
     ]);
+  });
+
+  it("says nothing of requests when the workspace's own provider makes them", () => {
+    expect([
+      imageAllowanceHint({
+        images: {
+          ...images,
+          dailyLimit: 0,
+          requestCost: 0,
+          source: "workspace",
+        },
+        remaining: 0,
+      }),
+      imageAllowanceHint({
+        images: {
+          ...images,
+          dailyLimit: 3,
+          requestCost: 0,
+          source: "workspace",
+        },
+        remaining: 3,
+      }),
+    ]).toStrictEqual([null, null]);
   });
 });

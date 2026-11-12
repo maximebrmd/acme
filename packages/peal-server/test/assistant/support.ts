@@ -2,15 +2,21 @@ import type { Schema } from "effect";
 import { Context, Effect, Layer, Option, Ref, Stream } from "effect";
 import { AiError, LanguageModel } from "effect/ai";
 import type { Prompt, Response } from "effect/ai";
+import { FetchHttpClient } from "effect/http";
+import { Dns } from "effect/net";
 import { SqlClient } from "effect/sql";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { GeneratedImages } from "#assistant/application/ports/generated-images.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider-secrets.ts";
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
+import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-image-providers.ts";
+import { GuardedProviderAddressCheck } from "#assistant/infrastructure/guarded-provider-address-check.ts";
 import { languageModelWritingModel } from "#assistant/infrastructure/language-model-writing-model.ts";
 import { LibraryGeneratedImagesLive } from "#assistant/infrastructure/library-generated-images.ts";
+import { openAiCompatibleOwnImageModel } from "#assistant/infrastructure/openai-compatible-own-image-model.ts";
 import { PublishingPlatformLimitsLive } from "#assistant/infrastructure/publishing-platform-limits.ts";
 import { UnavailableImageModelLive } from "#assistant/infrastructure/unavailable-image-model.ts";
 import { UnavailableWritingModelLive } from "#assistant/infrastructure/unavailable-writing-model.ts";
@@ -22,9 +28,12 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { FakeImageModelLive } from "#test/assistant/fake-image-model.ts";
+import { FakeOwnImageModelLive } from "#test/assistant/fake-own-image-model.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
+import { OpenOutboundGuard, TokenCipherTest } from "#test/channels/support.ts";
 import { mediaTestWith } from "#test/media/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -166,6 +175,59 @@ export const FullLibrary = Layer.succeed(
 );
 
 /**
+ * The hosts a workspace may type for its provider in these tests: public
+ * ones, and one that leads inside, as an attacker would set it up.
+ */
+export const providerHosts = {
+  "images.example.com": ["93.184.215.14"],
+  "images.internal.example": ["10.0.0.8"],
+  "other-images.example.com": ["93.184.215.15"],
+};
+
+/**
+ * The image providers workspaces brought, as the server keeps them: in
+ * Postgres, their keys sealed with the synthetic keyring, their addresses
+ * checked by the real outbound guard on `providerHosts`; and a fake
+ * provider behind them (FakeOwnImageModel), which no request leaves.
+ */
+const SealedImageProviders = DrizzleImageProvidersLive.pipe(
+  Layer.provide(CipherProviderSecrets.pipe(Layer.provide(TokenCipherTest))),
+  Layer.orDie
+);
+
+export const ImageProvidersTest = Layer.mergeAll(
+  SealedImageProviders,
+  GuardedProviderAddressCheck.pipe(
+    Layer.provide(
+      OutboundGuard.layer.pipe(
+        Layer.provide(Dns.layerStatic({ hosts: providerHosts })),
+        Layer.orDie
+      )
+    ),
+    Layer.orDie
+  ),
+  FakeOwnImageModelLive
+);
+
+/**
+ * The image providers workspaces brought, with the real adapter behind
+ * them and a guard that lets every address through, saving included: for
+ * a provider on loopback, which the real guard refuses. The guard itself
+ * is tested on its own.
+ */
+export const LoopbackImageProvidersTest = Layer.mergeAll(
+  SealedImageProviders,
+  GuardedProviderAddressCheck.pipe(
+    Layer.provide(OpenOutboundGuard),
+    Layer.orDie
+  ),
+  openAiCompatibleOwnImageModel({ timeout: "10 seconds" }).pipe(
+    Layer.provide(OpenOutboundGuard),
+    Layer.provide(FetchHttpClient.layer)
+  )
+);
+
+/**
  * Postgres from DATABASE_URL, brought up to date, and random ids, so runs
  * and parallel suites never collide.
  */
@@ -196,6 +258,7 @@ export const assistantTest = ({
         NoGeneratedImages
       )
     ),
+    Layer.provideMerge(ImageProvidersTest),
     Layer.provideMerge(
       model === "fake"
         ? FakeWritingModelLive
@@ -229,6 +292,9 @@ export const freshWorkspace = Effect.gen(function* freshWorkspace() {
 
   yield* Effect.addFinalizer(() =>
     sql`DELETE FROM assistant.daily_usage WHERE workspace_id = ${workspaceId}`.pipe(
+      Effect.andThen(
+        sql`DELETE FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`
+      ),
       Effect.ignore
     )
   );
@@ -257,6 +323,10 @@ export const messagesOf = (prompt: Prompt.Prompt | undefined) =>
 
 export { FakeImageModel } from "#test/assistant/fake-image-model.ts";
 
+export { FakeOwnImageModel } from "#test/assistant/fake-own-image-model.ts";
+
+export type { OwnImageReply } from "#test/assistant/fake-own-image-model.ts";
+
 export type { ImageReply } from "#test/assistant/fake-image-model.ts";
 
 /**
@@ -272,6 +342,7 @@ export const imagesTest = ({
   imageRequests = dailyRequests,
   images = "fake",
   library = "media",
+  providers = "fake",
 }: {
   readonly dailyRequests?: number;
   readonly entitlements?: typeof UnmeteredTest;
@@ -283,6 +354,12 @@ export const imagesTest = ({
    * turns out full once the image is made.
    */
   readonly library?: "full" | "media";
+  /**
+   * The providers workspaces bring: a fake behind the real store and
+   * guard, or the real adapter calling whatever address was saved, on
+   * loopback (`LoopbackImageProvidersTest`).
+   */
+  readonly providers?: "fake" | "loopback";
 } = {}) =>
   WritingAssistant.layer.pipe(
     Layer.provide(
@@ -299,6 +376,13 @@ export const imagesTest = ({
       )
     ),
     Layer.provideMerge(FakeWritingModelLive),
+    Layer.provideMerge(
+      // With the loopback providers, the fake's script stays with nothing
+      // behind it: the real adapter, merged last, is the OwnImageModel.
+      providers === "fake"
+        ? ImageProvidersTest
+        : Layer.merge(FakeOwnImageModelLive, LoopbackImageProvidersTest)
+    ),
     Layer.provideMerge(
       images === "fake"
         ? FakeImageModelLive

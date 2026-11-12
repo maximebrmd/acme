@@ -6,7 +6,11 @@ import { PealApi } from "#api/client.ts";
 
 /** Whether the server has a language model, and the workspace's requests left today. */
 export const assistantStatus = (workspaceId: string) =>
-  PealApi.query("assistant", "status", { params: { workspaceId } });
+  PealApi.query("assistant", "status", {
+    params: { workspaceId },
+    // The workspace's own image provider changes who makes images.
+    reactivityKeys: [`image-provider:${workspaceId}`],
+  });
 
 export const suggestChange = PealApi.mutation("assistant", "suggest");
 

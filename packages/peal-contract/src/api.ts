@@ -500,12 +500,21 @@ export type { ApiKey, NewApiKey } from "./api-keys.ts";
 
 export {
   AssistantActionSchema,
+  AssistantImageSourceSchema,
   AssistantImagesStatusSchema,
   AssistantStatusSchema,
   AssistantToneSchema,
   ImageAspectSchema,
+  ImageProviderChangeSchema,
+  ImageProviderSchema,
+  ImageProviderSettingSchema,
   imageRequestCost,
   ImageRequestSchema,
+  imageProviderKeyPattern,
+  imageProviderModelPattern,
+  maxImageProviderAddressLength,
+  maxImageProviderKeyLength,
+  maxImageProviderModelLength,
   maxImagePromptLength,
   SuggestionRequestSchema,
   SuggestionSchema,
@@ -514,10 +523,14 @@ export {
 
 export type {
   AssistantAction,
+  AssistantImageSource,
   AssistantImagesStatus,
   AssistantStatus,
   AssistantTone,
   ImageAspect,
+  ImageProvider,
+  ImageProviderChange,
+  ImageProviderSetting,
   ImageRequest,
   Suggestion,
   SuggestionRequest,
@@ -529,6 +542,8 @@ export { AssistantFailed } from "./assistant-failed.ts";
 export { AssistantInputRejected } from "./assistant-input-rejected.ts";
 
 export { AssistantQuotaExceeded } from "./assistant-quota-exceeded.ts";
+
+export { AssistantSecretsNotConfigured } from "./assistant-secrets-not-configured.ts";
 
 export { AssistantUnavailable } from "./assistant-unavailable.ts";
 
@@ -1063,6 +1078,17 @@ export { PostStatusSchema } from "./post-status.ts";
 export type { PostStatus } from "./post-status.ts";
 
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
+
+export {
+  ImageProviderAddressRefusalSchema,
+  ImageProviderAddressRefused,
+} from "./image-provider-address-refused.ts";
+
+export type { ImageProviderAddressRefusal } from "./image-provider-address-refused.ts";
+
+export { ImageProviderKeyRequired } from "./image-provider-key-required.ts";
+
+export { ImageProviderRefused } from "./image-provider-refused.ts";
 
 export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
 

@@ -40,7 +40,14 @@ const refusedWith = (kind: string, status: number | null) =>
     status,
   }).pipe(
     Effect.andThen(Effect.annotateCurrentSpan("peal.assistant.failure", kind)),
-    Effect.andThen(Effect.fail(new ImageProviderRefused({ status })))
+    Effect.andThen(
+      Effect.fail(
+        new ImageProviderRefused({
+          reason: status === null ? "addressRefused" : "settingsRefused",
+          status,
+        })
+      )
+    )
   );
 
 // A host Peal sends nothing to is the workspace's to fix; one that

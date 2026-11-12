@@ -15,9 +15,13 @@ export interface StoredImageProvider {
   readonly settings: ImageProviderSettings;
 }
 
-/** A workspace's provider ready for a call: its settings and its key. */
+/**
+ * A workspace's provider ready for a call: its settings and its key, none
+ * when the stored key no longer decrypts (its key left the keyring, or the
+ * row moved to another workspace or origin).
+ */
 export interface OpenedImageProvider {
-  readonly apiKey: Redacted.Redacted;
+  readonly apiKey: Option.Option<Redacted.Redacted>;
   readonly settings: ImageProviderSettings;
 }
 
@@ -36,7 +40,8 @@ export class ImageProviders extends Context.Service<
     ) => Effect.Effect<Option.Option<StoredImageProvider>>;
     /**
      * The workspace's provider with its key, for a call; none when it has
-     * none, or when its key does not decrypt (which `find` tells).
+     * none. A provider whose key does not decrypt is still the
+     * workspace's: images are never made with Peal's model instead.
      */
     readonly open: (
       workspaceId: WorkspaceId

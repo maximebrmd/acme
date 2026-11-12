@@ -35,9 +35,11 @@ import {
   imageAllowanceHint,
   imageFailureKey,
   isImageRetryable,
+  isProviderRefusal,
 } from "#assistant/image-failure.ts";
 import type { ImageFailure } from "#assistant/image-failure.ts";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
+import { Link } from "#i18n/navigation.ts";
 import { mediaKey } from "#media/atoms.ts";
 import { failureOf } from "#posts/outcome.ts";
 
@@ -47,6 +49,11 @@ const unexpected = (): ImageFailure => ({ _tag: "Unexpected" });
 
 interface GenerateImageProps {
   readonly disabled?: boolean;
+  /**
+   * The member may change the assistant's settings (assistant:configure):
+   * a refusal of the workspace's own provider links them there.
+   */
+  readonly mayConfigure?: boolean;
   /** Called with the new image, once it is in the library. */
   readonly onGenerated?: (media: Media) => void;
   readonly workspaceId: string;
@@ -54,6 +61,7 @@ interface GenerateImageProps {
 
 const GenerateDialog = ({
   disabled = false,
+  mayConfigure = false,
   onGenerated,
   status,
   workspaceId,
@@ -72,6 +80,8 @@ const GenerateDialog = ({
   const [generating, startTransition] = useTransition();
 
   const { images, remaining } = status;
+  // The workspace's own provider makes its images, at no request's cost.
+  const own = images.source === "workspace";
   // Shown, never blocking: a refusal of the quota opens the upgrade dialog.
   const hint = imageAllowanceHint(status);
   const blank = prompt.trim() === "";
@@ -132,7 +142,9 @@ const GenerateDialog = ({
         >
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
-            <DialogDescription>{t("description")}</DialogDescription>
+            <DialogDescription>
+              {own ? t("descriptionOwn") : t("description")}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor={promptId}>{t("prompt")}</Label>
@@ -180,7 +192,9 @@ const GenerateDialog = ({
             </Select>
           </div>
           <p className="text-muted-foreground text-sm">
-            {t("cost", { cost: images.requestCost, remaining })}
+            {own
+              ? t("ownProvider")
+              : t("cost", { cost: images.requestCost, remaining })}
           </p>
           <div aria-live="polite" className="flex flex-col gap-2">
             {hint === null ? null : (
@@ -204,6 +218,14 @@ const GenerateDialog = ({
                     maxLength: images.maxPromptLength,
                   })}
                 </AlertTitle>
+                {mayConfigure && isProviderRefusal(failure) ? (
+                  <Link
+                    className="text-sm underline"
+                    href={`/app/${workspaceId}/settings/assistant`}
+                  >
+                    {t("providerSettings")}
+                  </Link>
+                ) : null}
               </Alert>
             )}
           </div>
@@ -233,8 +255,9 @@ const GenerateDialog = ({
 /**
  * "Generate an image": the assistant makes an image from a description
  * into the workspace's media library, marked as made by AI. Shown only
- * while the server has an image model; render it only for members with
- * both assistant:use and media:upload.
+ * while images can be made (the workspace's own provider, or the server's
+ * image model); render it only for members with both assistant:use and
+ * media:upload.
  */
 export const GenerateImage = (props: GenerateImageProps) => {
   const status = AsyncResult.value(

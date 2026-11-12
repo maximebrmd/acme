@@ -1,21 +1,32 @@
 import { Schema } from "effect";
 
 /**
- * The image provider the workspace brought refused its settings: its key,
- * its account, its model or its address (`status` 401, 402, 403 or 404),
- * or the address is one Peal sends nothing to (`status` null: not public,
- * or a name that does not resolve). Nothing of Peal's allowance was spent,
- * and the next request tries again: the workspace may have fixed its
- * account. It carries no body: a provider's error can quote the prompt and
- * the key.
+ * The image provider the workspace brought gave no image with its
+ * settings, and Peal's own model is not used instead:
+ *
+ * - `settingsRefused`: the provider refused the key, the account, the
+ *   model or the address (`status` 401, 402, 403 or 404).
+ * - `addressRefused`: the address is one Peal sends nothing to (not
+ *   public, or a name that does not resolve); `status` is null.
+ * - `keyUnreadable`: the stored key no longer decrypts, and must be typed
+ *   again; `status` is null.
+ *
+ * Nothing of Peal's allowance was spent, and the next request tries again:
+ * the workspace may have fixed its account. It carries no body: a
+ * provider's error can quote the prompt and the key.
  */
 export class ImageProviderRefused extends Schema.TaggedError<ImageProviderRefused>()(
   "ImageProviderRefused",
-  { status: Schema.NullOr(Schema.Int) }
+  {
+    reason: Schema.Literals([
+      "settingsRefused",
+      "addressRefused",
+      "keyUnreadable",
+    ]),
+    status: Schema.NullOr(Schema.Int),
+  }
 ) {
   override get message(): string {
-    return this.status === null
-      ? "The workspace's image provider is at an address Peal sends nothing to"
-      : `The workspace's image provider refused its settings (${this.status})`;
+    return `The workspace's image provider gave no image: ${this.reason}`;
   }
 }

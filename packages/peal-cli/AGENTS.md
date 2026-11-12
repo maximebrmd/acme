@@ -14,7 +14,7 @@
   `health` are the other commands, with `channels`, `drafts`, `posts`,
   `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `feeds`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
-  `invitations`, `webhooks` and `ads`, which act in the
+  `invitations`, `webhooks`, `ads` and `assistant`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -49,11 +49,20 @@
   what is printed, in prose or JSON, and holds the command line's own codes
   (`unreachable`, `not_signed_in`, `api_key_refused`…). In prose, a refusal
   ends with the request's id (`requestLine`).
-- `peal media generate --prompt … [--aspect …]` has the server's image
-  model make an image into the workspace's media (`assistant.generateImage`,
-  a real parity row); the text assistant stays without a command, as an
-  agent writes its own text. Its answer says the file is marked as made by
-  AI and that the post's options carry the platforms' AI labels.
+- `peal media generate --prompt … [--aspect …]` has the workspace's own
+  image provider, or else the server's image model, make an image into the
+  workspace's media (`assistant.generateImage`, a real parity row); the
+  text assistant stays without a command, as an agent writes its own text.
+  Its answer says the file is marked as made by AI and that the post's
+  options carry the platforms' AI labels.
+- `peal assistant image-provider` (`commands/assistant.ts`: show, set,
+  clear) keeps the workspace's own image provider (assistant:configure).
+  The key is never an argument: `set` reads it with `readSecret`
+  (`src/secret-input.ts`), effect/cli's `Prompt.Hidden` (no echo) at a
+  terminal, else standard input to its end (4 KiB at most, the last line
+  break dropped); `--keep-key` sends none, which the server takes while
+  the origin stays. `clear` asks first (`confirmed`, `--yes`). Tests pipe
+  standard input with `signedIn(...).piping(text)`.
 - `peal doctor` checks a configuration and changes nothing (the API URL and
   where it came from, health, readiness, the API's latest release, which
   credential is used and whether it works, the publish scope, the workspace

@@ -31,7 +31,7 @@ const settingsOf = (row: Row) =>
  * ImageProviders in Postgres (`assistant.image_providers`), the keys
  * sealed through ProviderSecrets: bound to the workspace and to the origin
  * of the address in the same row, so a row whose address moved, or that
- * was copied to another workspace, opens as none. A database failure is a
+ * was copied to another workspace, opens without its key. A database failure is a
  * defect, as the quota's are.
  */
 export const DrizzleImageProvidersLive = Layer.effect(
@@ -67,32 +67,24 @@ export const DrizzleImageProvidersLive = Layer.effect(
         return Option.none<OpenedImageProvider>();
       }
 
-      const key = yield* keyOf(workspaceId, row.value);
-
-      return key.pipe(
-        Option.map((apiKey): OpenedImageProvider => ({
-          apiKey,
-          settings: settingsOf(row.value),
-        }))
-      );
-    });
-
-    const find = Effect.fn("ImageProviders.find")(function* find(
-      workspaceId: WorkspaceId
-    ) {
-      const row = yield* rowOf(workspaceId);
-
-      if (Option.isNone(row)) {
-        return Option.none<StoredImageProvider>();
-      }
-
-      const key = yield* keyOf(workspaceId, row.value);
-
-      return Option.some<StoredImageProvider>({
-        keyUnreadable: Option.isNone(key),
+      const provider: OpenedImageProvider = {
+        apiKey: yield* keyOf(workspaceId, row.value),
         settings: settingsOf(row.value),
-      });
+      };
+
+      return Option.some(provider);
     });
+
+    // What the settings page reads: whether the key opens, never the key.
+    const find = (workspaceId: WorkspaceId) =>
+      open(workspaceId).pipe(
+        Effect.map(
+          Option.map(({ apiKey, settings }): StoredImageProvider => ({
+            keyUnreadable: Option.isNone(apiKey),
+            settings,
+          }))
+        )
+      );
 
     return ImageProviders.of({
       find,

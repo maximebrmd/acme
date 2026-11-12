@@ -90,6 +90,11 @@
     "tag": "AssistantQuotaExceeded"
   },
   {
+    "code": "assistant_secrets_not_configured",
+    "status": 503,
+    "tag": "AssistantSecretsNotConfigured"
+  },
+  {
     "code": "assistant_unavailable",
     "status": 503,
     "tag": "AssistantUnavailable"
@@ -273,6 +278,21 @@
     "code": "idempotency_key_reused",
     "status": 409,
     "tag": "IdempotencyKeyReused"
+  },
+  {
+    "code": "image_provider_address_refused",
+    "status": 422,
+    "tag": "ImageProviderAddressRefused"
+  },
+  {
+    "code": "image_provider_key_required",
+    "status": 422,
+    "tag": "ImageProviderKeyRequired"
+  },
+  {
+    "code": "image_provider_refused",
+    "status": 502,
+    "tag": "ImageProviderRefused"
   },
   {
     "code": "import_unreadable",

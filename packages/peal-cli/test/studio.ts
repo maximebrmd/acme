@@ -8,6 +8,8 @@ import {
   ApprovalNotPending,
   AssistantQuotaExceeded,
   AssistantUnavailable,
+  ImageProviderAddressRefused,
+  ImageProviderKeyRequired,
   ChannelNotFound,
   ChannelSetNameTaken,
   ChannelSetNotFound,
@@ -70,6 +72,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  ImageProvider,
   Feed,
   LivePostChange,
   LivePostRefusal,
@@ -182,6 +185,7 @@ const everything: readonly Permission[] = [
   "ads:manage",
   "ads:spend",
   "ads:authorize",
+  "assistant:configure",
   "assistant:use",
   "analytics:read",
   "billing:read",
@@ -1227,6 +1231,11 @@ export interface StudioState {
   /** Whether the server has the keys that encrypt signing secrets. */
   readonly signingKeys: boolean;
   readonly webhooks: readonly WebhookEndpoint[];
+  /** The image provider the studio brought, and the key it was given. */
+  readonly imageProvider: {
+    readonly apiKey: string;
+    readonly provider: ImageProvider;
+  } | null;
 }
 
 /** A synthetic API key of a workspace, with what it may do there. */
@@ -1302,6 +1311,7 @@ export const makeStudio = (
       defaults: {},
       deliveries,
       feeds: [],
+      imageProvider: null,
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
@@ -3984,6 +3994,87 @@ export const studioGroupsLive = (studio: Studio) =>
                 updatedAt: studioNow,
               })
             );
+          }),
+        // The studio's own image provider. An address on a host named
+        // `internal` stands for one that is not public.
+        imageProvider: ({ params }) =>
+          Effect.gen(function* imageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { imageProvider: brought } = yield* Ref.get(studio.state);
+
+            return { provider: brought?.provider ?? null };
+          }),
+        removeImageProvider: ({ params }) =>
+          Effect.gen(function* removeImageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              imageProvider: null,
+            }));
+
+            return yield* record(studio, "image-provider:remove");
+          }),
+        setImageProvider: ({ params, payload }) =>
+          Effect.gen(function* setImageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const url = URL.parse(payload.baseUrl);
+
+            if (url === null || url.protocol !== "https:") {
+              return yield* new ImageProviderAddressRefused({
+                reason: url === null ? "malformed" : "notHttps",
+              });
+            }
+
+            if (url.hostname.includes("internal")) {
+              return yield* new ImageProviderAddressRefused({
+                reason: "notPublic",
+              });
+            }
+
+            const { imageProvider: brought } = yield* Ref.get(studio.state);
+
+            const kept =
+              brought !== null &&
+              new URL(brought.provider.baseUrl).origin === url.origin
+                ? brought.apiKey
+                : null;
+
+            const apiKey = payload.apiKey ?? kept;
+
+            if (apiKey === null) {
+              return yield* new ImageProviderKeyRequired();
+            }
+
+            const provider: ImageProvider = {
+              baseUrl: url.href.replace(/\/+$/u, ""),
+              keySet: true,
+              keyUnreadable: false,
+              model: payload.model,
+              updatedAt: studioNow,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              imageProvider: { apiKey, provider },
+            }));
+            yield* record(studio, `image-provider:set:${url.origin}`);
+
+            return provider;
           }),
         status: () => Effect.fail(new Forbidden()),
         suggest: () => Effect.fail(new Forbidden()),

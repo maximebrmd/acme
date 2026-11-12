@@ -1,7 +1,5 @@
 import { Result, Schema } from "effect";
 
-import { storableLine } from "#shared/domain/platform-text.ts";
-
 import { ProviderAddressRejected } from "./provider-address-rejected.ts";
 import { ProviderSettingRejected } from "./provider-setting-rejected.ts";
 
@@ -100,29 +98,37 @@ export const originOfProvider = (address: ProviderAddress): string =>
   new URL(address).origin;
 
 /**
+ * What a model name may hold: one line, without control or format
+ * characters (the marks that reorder text among them), lone surrogates or
+ * line separators, and not blank: what `storableLine` would not change but
+ * for its spaces. The contract copies it.
+ */
+export const providerModelPattern =
+  /^(?=.*\S)[^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]+$/u;
+
+/**
  * The model as the provider is asked for it: one line of 1 to
- * `maxProviderModelLength` characters, which `storableLine` would keep as
- * it is (no control characters, no marks that reorder text).
+ * `maxProviderModelLength` characters, as `providerModelPattern` says,
+ * without the spaces around it.
  */
 export const checkProviderModel = (
   text: string
 ): Result.Result<ProviderModel, ProviderSettingRejected> => {
   const model = text.trim();
 
-  return model !== "" &&
-    model.length <= maxProviderModelLength &&
-    storableLine(model, maxProviderModelLength) === model
+  return model.length <= maxProviderModelLength &&
+    providerModelPattern.test(model)
     ? Result.succeed(ProviderModelSchema.make(model))
     : Result.fail(new ProviderSettingRejected({ field: "model" }));
 };
 
-// What a bearer token may hold: visible ASCII, as an HTTP header does.
-const keyPattern = /^[!-~]+$/u;
+/** What a key may hold: visible ASCII, as an HTTP header does. */
+export const providerKeyPattern = /^[!-~]+$/u;
 
 /** The key as it is sent: 1 to `maxProviderKeyLength` visible characters. */
 export const checkProviderKey = (
   text: string
 ): Result.Result<string, ProviderSettingRejected> =>
-  text.length <= maxProviderKeyLength && keyPattern.test(text)
+  text.length <= maxProviderKeyLength && providerKeyPattern.test(text)
     ? Result.succeed(text)
     : Result.fail(new ProviderSettingRejected({ field: "apiKey" }));

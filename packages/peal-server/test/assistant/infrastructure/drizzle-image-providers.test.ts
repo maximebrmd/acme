@@ -57,8 +57,13 @@ const providersOn = <E>(cipher: Layer.Layer<TokenCipher, E>) =>
     Layer.provideMerge(DatabaseTest)
   );
 
-const keyOf = (opened: Option.Option<{ readonly apiKey: Redacted.Redacted }>) =>
-  opened.pipe(Option.map(({ apiKey }) => Redacted.value(apiKey)));
+const keyOf = (
+  opened: Option.Option<{ readonly apiKey: Option.Option<Redacted.Redacted> }>
+) =>
+  opened.pipe(
+    Option.flatMap(({ apiKey }) => apiKey),
+    Option.map(Redacted.value)
+  );
 
 layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
   "workspaces' image providers on Postgres",
@@ -146,7 +151,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
     );
 
     it.effect(
-      "opens none for an address moved by hand, and says the key is unreadable",
+      "opens no key for an address moved by hand, and says it is unreadable",
       () =>
         Effect.gen(function* moved() {
           const workspaceId = yield* freshWorkspace;
@@ -164,7 +169,9 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
           // another origin, whoever changed the row.
           yield* sql`UPDATE assistant.image_providers SET base_url = 'https://elsewhere.example.com/v1' WHERE workspace_id = ${workspaceId}`;
 
-          assert.isTrue(Option.isNone(yield* providers.open(workspaceId)));
+          assert.isTrue(
+            Option.isNone(keyOf(yield* providers.open(workspaceId)))
+          );
 
           const found = yield* providers.find(workspaceId);
 
@@ -185,7 +192,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
         })
     );
 
-    it.effect("opens none for a row copied to another workspace", () =>
+    it.effect("opens no key for a row copied to another workspace", () =>
       Effect.gen(function* copied() {
         const workspaceId = yield* freshWorkspace;
         const other = yield* freshWorkspace;
@@ -203,14 +210,14 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
           SELECT ${other}, base_url, model, sealed_key, key_id, set_by, updated_at
           FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`;
 
-        assert.isTrue(Option.isNone(yield* providers.open(other)));
+        assert.isTrue(Option.isNone(keyOf(yield* providers.open(other))));
         assert.isTrue(
           Option.exists(
             yield* providers.find(other),
             ({ keyUnreadable }) => keyUnreadable
           )
         );
-        assert.isTrue(Option.isSome(yield* providers.open(workspaceId)));
+        assert.isTrue(Option.isSome(keyOf(yield* providers.open(workspaceId))));
       })
     );
   }

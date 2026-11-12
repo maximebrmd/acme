@@ -14,6 +14,8 @@ import type {
   CommentInvalid,
   ContentViolation,
   DuplicateOnChannel,
+  ImageProviderAddressRefused,
+  ImageProviderRefused,
   ImportUnreadable,
   MediaSourceFailure,
   NotRecyclableReason,
@@ -61,6 +63,37 @@ const assistantFailures = {
   unreachable:
     "The image provider could not be reached: nothing was spent or stored. Try again in a few minutes.",
 } as const;
+
+// Why Peal sends a workspace's prompts and key nowhere at an address.
+const providerAddressRefusals: Readonly<
+  Record<ImageProviderAddressRefused["reason"], string>
+> = {
+  credentials:
+    "The address carries a user name or a password: leave them out, and give the key with the key instead.",
+  malformed:
+    "The address is not a URL: give the API's base address whole, such as https://images.example.com/v1.",
+  notHttps:
+    "The address must be HTTPS, on the default port (443): Peal sends a key nowhere else.",
+  notPublic:
+    "The address's host is not a public address (loopback, private or link-local): Peal sends prompts only to hosts anyone on the internet can reach.",
+  queryOrFragment:
+    "The address has a query or a fragment: give the API's base address alone, which /images/generations follows.",
+  tooLong: "The address is longer than 2048 characters.",
+  unknownHost:
+    "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why the workspace's own image provider made no image.
+const providerRefusals: Readonly<
+  Record<ImageProviderRefused["reason"], string>
+> = {
+  addressRefused:
+    "The workspace's image provider is at an address Peal sends nothing to: nothing was made or spent. Set another with peal assistant image-provider set.",
+  keyUnreadable:
+    "The key of the workspace's image provider can no longer be read on this server: nothing was made or spent. Give it again with peal assistant image-provider set.",
+  settingsRefused:
+    "The workspace's image provider refused its key, its account, its model or its address: nothing was made, and none of the workspace's requests were spent. Check them with peal assistant image-provider show, and fix them with set.",
+};
 
 /** What a platform counts a text in. */
 export const units: Readonly<Record<TextUnit, string>> = {
@@ -377,6 +410,10 @@ const reasonOf =
             : `The workspace has fewer of its ${String(dailyLimit)} daily assistant requests left than an image costs: nothing was made. Try again after midnight UTC${larger}.`
         );
       },
+      AssistantSecretsNotConfigured: () =>
+        refused(
+          "This server cannot keep a workspace's image provider key: its operator must set PEAL_TOKEN_KEYS, the keys that encrypt them. Nothing was saved."
+        ),
       AssistantUnavailable: () =>
         refused(
           "This Peal server makes no images: its operator has not set up an image model, or the image provider refused the server's settings. Upload or import a picture instead."
@@ -509,6 +546,13 @@ const reasonOf =
         refused(
           "This idempotency key was sent in the last 24 hours with another post: nothing was made. Send this one under a new --idempotency-key."
         ),
+      ImageProviderAddressRefused: ({ reason }) =>
+        refused(providerAddressRefusals[reason]),
+      ImageProviderKeyRequired: () =>
+        refused(
+          "The workspace has no key stored for its image provider that can be read, or the new --base-url is on another origin than the one the key was given for: Peal never sends a key to another origin. Give the key again, on standard input."
+        ),
+      ImageProviderRefused: ({ reason }) => refused(providerRefusals[reason]),
       ImportUnreadable: (unreadable) => refused(unreadableImport(unreadable)),
       InboxActionFailed: ({ reason }) =>
         refused(
