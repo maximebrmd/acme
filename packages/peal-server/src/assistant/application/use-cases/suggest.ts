@@ -73,7 +73,7 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
 
   const claimed =
     dailyLimit > 0
-      ? yield* usage.claim(workspaceId, window.day, dailyLimit)
+      ? yield* usage.claim(workspaceId, window.day, dailyLimit, 1)
       : Option.none();
 
   if (Option.isNone(claimed)) {
@@ -85,7 +85,7 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
 
   const giveBackUnsent = (failure: AssistantUnavailable | WritingFailed) =>
     failure._tag === "WritingFailed" && failure.reason === "unreachable"
-      ? usage.release(workspaceId, window.day)
+      ? usage.release(workspaceId, window.day, 1)
       : Effect.void;
 
   if (plan.answer === "hashtags") {
