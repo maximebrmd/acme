@@ -124,6 +124,7 @@ require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/dashboard_analytics_request"
 require_relative "peal/analytics/types/channel_analytics_request"
 require_relative "peal/analytics/types/export_analytics_request"
+require_relative "peal/analytics/types/best_times_analytics_request"
 require_relative "peal/analytics/types/post_analytics_request"
 require_relative "peal/tiktok/client"
 require_relative "peal/tiktok/types/creator_tiktok_request"
@@ -459,6 +460,11 @@ module Peal
     autoload :AssistantUnavailableEncoded, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded")
     autoload :AttemptResult, ::File.join(__dir__, "peal/types/attempt_result")
     autoload :Authorization, ::File.join(__dir__, "peal/types/authorization")
+    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
+    autoload :BestTimesHourMedian, ::File.join(__dir__, "peal/types/best_times_hour_median")
+    autoload :Weekday, ::File.join(__dir__, "peal/types/weekday")
+    autoload :BestTimesHour, ::File.join(__dir__, "peal/types/best_times_hour")
+    autoload :BestTimes, ::File.join(__dir__, "peal/types/best_times")
     autoload :BillingInterval, ::File.join(__dir__, "peal/types/billing_interval")
     autoload :SubscriptionStatus, ::File.join(__dir__, "peal/types/subscription_status")
     autoload :BillingSubscription, ::File.join(__dir__, "peal/types/billing_subscription")
@@ -542,7 +548,6 @@ module Peal
     autoload :BulkPostResultCreated, ::File.join(__dir__, "peal/types/bulk_post_result_created")
     autoload :ChannelSetNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_set_not_found_encoded")
     autoload :ContentViolationAltTextTooLong, ::File.join(__dir__, "peal/types/content_violation_alt_text_too_long")
-    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
     autoload :ContentViolationAspectRatioUnsupportedMaximum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_maximum")
     autoload :ContentViolationAspectRatioUnsupportedMinimum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_minimum")
     autoload :ContentViolationAspectRatioUnsupported, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported")
@@ -900,7 +905,6 @@ module Peal
     autoload :PreviewSlot, ::File.join(__dir__, "peal/types/preview_slot")
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
     autoload :SlotTime, ::File.join(__dir__, "peal/types/slot_time")
-    autoload :Weekday, ::File.join(__dir__, "peal/types/weekday")
     autoload :QueueSlot, ::File.join(__dir__, "peal/types/queue_slot")
     autoload :Queue, ::File.join(__dir__, "peal/types/queue")
     autoload :QueueDetails, ::File.join(__dir__, "peal/types/queue_details")

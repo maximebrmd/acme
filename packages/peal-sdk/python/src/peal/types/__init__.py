@@ -129,6 +129,9 @@ if typing.TYPE_CHECKING:
         BadRequestErrorBody_BadRequest,
         BadRequestErrorBody_InvalidDateRange,
     )
+    from .best_times import BestTimes
+    from .best_times_hour import BestTimesHour
+    from .best_times_hour_median import BestTimesHourMedian
     from .billing import Billing
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
@@ -1013,6 +1016,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BadRequestErrorBody": ".bad_request_error_body",
     "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
     "BadRequestErrorBody_InvalidDateRange": ".bad_request_error_body",
+    "BestTimes": ".best_times",
+    "BestTimesHour": ".best_times_hour",
+    "BestTimesHourMedian": ".best_times_hour_median",
     "Billing": ".billing",
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
@@ -1911,6 +1917,9 @@ __all__ = [
     "BadRequestErrorBody",
     "BadRequestErrorBody_BadRequest",
     "BadRequestErrorBody_InvalidDateRange",
+    "BestTimes",
+    "BestTimesHour",
+    "BestTimesHourMedian",
     "Billing",
     "BillingInterval",
     "BillingSubscription",

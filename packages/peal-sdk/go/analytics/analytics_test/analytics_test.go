@@ -197,6 +197,34 @@ func TestAnalyticsExportWithWireMock(
 	VerifyRequestCount(t, "TestAnalyticsExportWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/export", map[string]interface{}{"timeZone": "timeZone", "kind": "posts"}, 1)
 }
 
+func TestAnalyticsBestTimesWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.BestTimesAnalyticsRequest{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+		TimeZone:    "timeZone",
+	}
+	_, invocationErr := client.Analytics.BestTimes(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAnalyticsBestTimesWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAnalyticsBestTimesWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/best-times", map[string]interface{}{"channelId": "channelId", "timeZone": "timeZone"}, 1)
+}
+
 func TestAnalyticsPostWithWireMock(
 	t *testing.T,
 ) {

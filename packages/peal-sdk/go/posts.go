@@ -9974,29 +9974,6 @@ func (m *MediaAttachment) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-// A number JSON cannot hold: infinity, negative infinity or not a number.
-type NonFiniteNumber string
-
-const (
-	NonFiniteNumberInfinity NonFiniteNumber = "Infinity"
-	NonFiniteNumberNaN      NonFiniteNumber = "NaN"
-)
-
-func NewNonFiniteNumberFromString(s string) (NonFiniteNumber, error) {
-	switch s {
-	case "Infinity":
-		return NonFiniteNumberInfinity, nil
-	case "NaN":
-		return NonFiniteNumberNaN, nil
-	}
-	var t NonFiniteNumber
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
-	return &n
-}
-
 var (
 	partPreviewFieldHashtags   = big.NewInt(1 << 0)
 	partPreviewFieldLinks      = big.NewInt(1 << 1)

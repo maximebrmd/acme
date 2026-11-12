@@ -4364,6 +4364,67 @@ await client.Analytics.ExportAsync(
 </dl>
 </details>
 
+<details><summary><code>client.Analytics.<a href="/src/Peal/Analytics/AnalyticsClient.cs">BestTimesAsync</a>(BestTimesAnalyticsRequest { ... }) -> WithRawResponseTask&lt;BestTimes&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Analytics.BestTimesAsync(
+    new BestTimesAnalyticsRequest
+    {
+        WorkspaceId = "workspaceId",
+        ChannelId = "channelId",
+        TimeZone = "timeZone",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `BestTimesAnalyticsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Analytics.<a href="/src/Peal/Analytics/AnalyticsClient.cs">PostAsync</a>(PostAnalyticsRequest { ... }) -> WithRawResponseTask&lt;PostAnalytics&gt;</code></summary>
 <dl>
 <dd>

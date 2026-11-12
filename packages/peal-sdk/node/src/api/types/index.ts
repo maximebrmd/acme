@@ -83,6 +83,8 @@ export * from "./AssistantUnavailableEncoded.js";
 export * from "./AttemptResult.js";
 export * from "./Authorization.js";
 export * from "./BadRequestErrorBody.js";
+export * from "./BestTimes.js";
+export * from "./BestTimesHour.js";
 export * from "./Billing.js";
 export * from "./BillingInterval.js";
 export * from "./BillingSubscription.js";

@@ -2868,6 +2868,50 @@
       }
     },
     {
+      "id": "01a435a6-5ceb-446e-8a8c-0fa0173f2eaa",
+      "name": "Get when a channel's posts did best - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/analytics/best-times",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        },
+        "queryParameters": {
+          "channelId": {
+            "equalTo": "channelId"
+          },
+          "timeZone": {
+            "equalTo": "timeZone"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"best\": [\n    {\n      \"hour\": 1,\n      \"median\": \"Infinity\",\n      \"posts\": 1,\n      \"weekday\": \"monday\"\n    }\n  ],\n  \"buckets\": [\n    {\n      \"hour\": 1,\n      \"median\": \"Infinity\",\n      \"posts\": 1,\n      \"weekday\": \"monday\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"counted\": true,\n  \"days\": 1,\n  \"enough\": true,\n  \"from\": \"from\",\n  \"minimumPosts\": 1,\n  \"minimumPostsPerHour\": 1,\n  \"platform\": \"x\",\n  \"posts\": 1,\n  \"recent\": 1,\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "01a435a6-5ceb-446e-8a8c-0fa0173f2eaa",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "35a2a0e7-49d6-4595-abda-bbd93777325f",
       "name": "Get a post's analytics - default",
       "request": {
@@ -7316,6 +7360,6 @@
     }
   ],
   "meta": {
-    "total": 195
+    "total": 196
   }
 }

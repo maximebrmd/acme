@@ -6610,7 +6610,7 @@ client.usage.partner(
 </details>
 
 ## analytics
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L32-L79">summary</a>(...) -> AnalyticsSummary</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L33-L80">summary</a>(...) -> AnalyticsSummary</code></summary>
 <dl>
 <dd>
 
@@ -6710,7 +6710,7 @@ client.analytics.summary(
 </dl>
 </details>
 
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L81-L138">dashboard</a>(...) -> AnalyticsDashboard</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L82-L139">dashboard</a>(...) -> AnalyticsDashboard</code></summary>
 <dl>
 <dd>
 
@@ -6824,7 +6824,7 @@ client.analytics.dashboard(
 </dl>
 </details>
 
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L140-L198">channel</a>(...) -> ChannelSeries</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L141-L199">channel</a>(...) -> ChannelSeries</code></summary>
 <dl>
 <dd>
 
@@ -6939,7 +6939,7 @@ client.analytics.channel(
 </dl>
 </details>
 
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L200-L262">export</a>(...) -> typing.Iterator[bytes]</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L201-L263">export</a>(...) -> typing.Iterator[bytes]</code></summary>
 <dl>
 <dd>
 
@@ -7062,7 +7062,106 @@ client.analytics.export(
 </dl>
 </details>
 
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L264-L297">post</a>(...) -> PostAnalytics</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L265-L311">best_times</a>(...) -> BestTimes</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.analytics.best_times(
+    workspace_id="workspaceId",
+    channel_id="channelId",
+    time_zone="timeZone",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L313-L346">post</a>(...) -> PostAnalytics</code></summary>
 <dl>
 <dd>
 

@@ -13676,6 +13676,29 @@ func (m *MeteredPosts) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
+// A number JSON cannot hold: infinity, negative infinity or not a number.
+type NonFiniteNumber string
+
+const (
+	NonFiniteNumberInfinity NonFiniteNumber = "Infinity"
+	NonFiniteNumberNaN      NonFiniteNumber = "NaN"
+)
+
+func NewNonFiniteNumberFromString(s string) (NonFiniteNumber, error) {
+	switch s {
+	case "Infinity":
+		return NonFiniteNumberInfinity, nil
+	case "NaN":
+		return NonFiniteNumberNaN, nil
+	}
+	var t NonFiniteNumber
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
+	return &n
+}
+
 type NotFoundErrorBody struct {
 	Type              string
 	ShortLinkNotFound *ShortLinkNotFoundEncoded
@@ -26228,6 +26251,43 @@ func NewWebhooksNotConfiguredEncodedTagFromString(s string) (WebhooksNotConfigur
 }
 
 func (w WebhooksNotConfiguredEncodedTag) Ptr() *WebhooksNotConfiguredEncodedTag {
+	return &w
+}
+
+type Weekday string
+
+const (
+	WeekdayMonday    Weekday = "monday"
+	WeekdayTuesday   Weekday = "tuesday"
+	WeekdayWednesday Weekday = "wednesday"
+	WeekdayThursday  Weekday = "thursday"
+	WeekdayFriday    Weekday = "friday"
+	WeekdaySaturday  Weekday = "saturday"
+	WeekdaySunday    Weekday = "sunday"
+)
+
+func NewWeekdayFromString(s string) (Weekday, error) {
+	switch s {
+	case "monday":
+		return WeekdayMonday, nil
+	case "tuesday":
+		return WeekdayTuesday, nil
+	case "wednesday":
+		return WeekdayWednesday, nil
+	case "thursday":
+		return WeekdayThursday, nil
+	case "friday":
+		return WeekdayFriday, nil
+	case "saturday":
+		return WeekdaySaturday, nil
+	case "sunday":
+		return WeekdaySunday, nil
+	}
+	var t Weekday
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w Weekday) Ptr() *Weekday {
 	return &w
 }
 

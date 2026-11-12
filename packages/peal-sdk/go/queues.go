@@ -1142,43 +1142,6 @@ func (r ReshuffleStop) Ptr() *ReshuffleStop {
 
 type SlotTime = string
 
-type Weekday string
-
-const (
-	WeekdayMonday    Weekday = "monday"
-	WeekdayTuesday   Weekday = "tuesday"
-	WeekdayWednesday Weekday = "wednesday"
-	WeekdayThursday  Weekday = "thursday"
-	WeekdayFriday    Weekday = "friday"
-	WeekdaySaturday  Weekday = "saturday"
-	WeekdaySunday    Weekday = "sunday"
-)
-
-func NewWeekdayFromString(s string) (Weekday, error) {
-	switch s {
-	case "monday":
-		return WeekdayMonday, nil
-	case "tuesday":
-		return WeekdayTuesday, nil
-	case "wednesday":
-		return WeekdayWednesday, nil
-	case "thursday":
-		return WeekdayThursday, nil
-	case "friday":
-		return WeekdayFriday, nil
-	case "saturday":
-		return WeekdaySaturday, nil
-	case "sunday":
-		return WeekdaySunday, nil
-	}
-	var t Weekday
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (w Weekday) Ptr() *Weekday {
-	return &w
-}
-
 var (
 	updateQueuesRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	updateQueuesRequestFieldQueueID     = big.NewInt(1 << 1)

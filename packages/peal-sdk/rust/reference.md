@@ -6733,6 +6733,105 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">best_times</a>(workspace_id: String, channel_id: Option&lt;String&gt;, days: Option&lt;Option&lt;String&gt;&gt;, time_zone: Option&lt;String&gt;) -> Result&lt;BestTimes, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .analytics
+        .best_times(
+            &"workspaceId".to_string(),
+            &BestTimesQueryRequest {
+                channel_id: "channelId".to_string(),
+                time_zone: "timeZone".to_string(),
+                days: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">post</a>(workspace_id: String, post_id: String) -> Result&lt;PostAnalytics, ApiError&gt;</code></summary>
 <dl>
 <dd>

@@ -18,6 +18,8 @@ use Peal\Types\AnalyticsDashboard;
 use Peal\Analytics\Requests\ChannelAnalyticsRequest;
 use Peal\Types\ChannelSeries;
 use Peal\Analytics\Requests\ExportAnalyticsRequest;
+use Peal\Analytics\Requests\BestTimesAnalyticsRequest;
+use Peal\Types\BestTimes;
 use Peal\Types\PostAnalytics;
 
 class AnalyticsClient
@@ -329,6 +331,73 @@ class AnalyticsClient
             if ($statusCode >= 200 && $statusCode < 400) {
                 return $response->getBody()->getContents();
             }
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+     *
+     * Example:
+     * ```php
+     * $client->analytics->bestTimes(
+     *     'workspaceId',
+     *     new BestTimesAnalyticsRequest([
+     *         'channelId' => 'channelId',
+     *         'timeZone' => 'timeZone',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param BestTimesAnalyticsRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?BestTimes
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function bestTimes(string $workspaceId, BestTimesAnalyticsRequest $request, ?array $options = null): ?BestTimes
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $query = [];
+        $query['channelId'] = $request->channelId;
+        $query['timeZone'] = $request->timeZone;
+        if ($request->days != null) {
+            $query['days'] = $request->days;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/analytics/best-times",
+                    method: HttpMethod::GET,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return BestTimes::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
         } catch (ClientExceptionInterface $e) {
             throw new PealException(message: $e->getMessage(), previous: $e);
         }

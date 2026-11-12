@@ -61774,6 +61774,35 @@ func TestEnumMediaTooLargeEncodedKind(t *testing.T) {
 	})
 }
 
+func TestEnumNonFiniteNumber(t *testing.T) {
+	t.Run("NewFromString_Infinity", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewNonFiniteNumberFromString("Infinity")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, NonFiniteNumber("Infinity"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_NaN", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewNonFiniteNumberFromString("NaN")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, NonFiniteNumber("NaN"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewNonFiniteNumberFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewNonFiniteNumberFromString("Infinity")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumNotRecyclableReason(t *testing.T) {
 	t.Run("NewFromString_draft", func(t *testing.T) {
 		t.Parallel()
@@ -63331,6 +63360,70 @@ func TestEnumWebhooksNotConfiguredEncodedTag(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewWebhooksNotConfiguredEncodedTagFromString("WebhooksNotConfigured")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumWeekday(t *testing.T) {
+	t.Run("NewFromString_monday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("monday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("monday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_tuesday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("tuesday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("tuesday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_wednesday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("wednesday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("wednesday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_thursday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("thursday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("thursday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_friday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("friday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("friday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_saturday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("saturday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("saturday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_sunday", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWeekdayFromString("sunday")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Weekday("sunday"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewWeekdayFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewWeekdayFromString("monday")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

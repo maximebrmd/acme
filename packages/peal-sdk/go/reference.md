@@ -6008,6 +6008,92 @@ _, err := client.Analytics.Export(
 </dl>
 </details>
 
+<details><summary><code>client.Analytics.BestTimes(WorkspaceID) -> *peal.BestTimes</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.BestTimesAnalyticsRequest{
+    WorkspaceID: "workspaceId",
+    ChannelID: "channelId",
+    TimeZone: "timeZone",
+}
+_, err := client.Analytics.BestTimes(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channelID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**timeZone:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Analytics.Post(WorkspaceID, PostID) -> *peal.PostAnalytics</code></summary>
 <dl>
 <dd>
