@@ -135,6 +135,93 @@ describe("peal feeds", () => {
   );
 });
 
+describe("peal feeds update and pause", () => {
+  it.effect(
+    "goes back to the default queue, and refuses a queue on a feed of drafts",
+    () =>
+      Effect.gen(function* queues() {
+        const session = yield* signedIn();
+
+        yield* session
+          .printed([
+            "feeds",
+            "add",
+            blog,
+            "--mode",
+            "queue",
+            "--queue",
+            "Weekdays",
+            ...inStudio,
+          ])
+          .pipe(Effect.ignore);
+
+        yield* session.printed([
+          "feeds",
+          "add",
+          "https://other.example/feed",
+          ...inStudio,
+        ]);
+
+        const { feeds } = yield* Ref.get(session.studio.state);
+        const drafts = feeds.find(({ mode }) => mode === "draft");
+
+        assert.include(
+          yield* session.refused([
+            "feeds",
+            "update",
+            drafts?.id ?? "",
+            "--default-queue",
+            ...inStudio,
+          ]),
+          "--mode queue"
+        );
+
+        assert.include(
+          yield* session.printed([
+            "feeds",
+            "update",
+            drafts?.id ?? "",
+            "--mode",
+            "queue",
+            "--default-queue",
+            ...inStudio,
+          ]),
+          "changed"
+        );
+
+        const updated = (yield* Ref.get(session.studio.state)).feeds.find(
+          ({ id }) => id === drafts?.id
+        );
+
+        assert.deepStrictEqual(
+          [updated?.mode, updated?.queueId],
+          ["queue", null]
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("says a stopped feed stays stopped when asked to pause", () =>
+    Effect.gen(function* stopped() {
+      const session = yield* signedIn();
+
+      yield* session.printed(["feeds", "add", blog, ...inStudio]);
+      yield* Ref.update(session.studio.state, (current) => ({
+        ...current,
+        feeds: current.feeds.map((feed) => ({
+          ...feed,
+          status: "stopped" as const,
+          stopReason: "gone" as const,
+        })),
+      }));
+
+      assert.include(
+        yield* session.printed(["feeds", "pause", feedId, ...inStudio]),
+        "is stopped (gone)"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
 describe("the feeds' examples", () => {
   it("never write a line break a shell would pass as \\n", () => {
     const files = [

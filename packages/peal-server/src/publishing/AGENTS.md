@@ -944,6 +944,14 @@ publishing's schema, naming nobody: each goes with its workspace
   which an alert watches. A feed keeps its 500 newest items: the
   idempotency retention's run prunes the rest and read counts a day old.
   Erasure deletes feeds before posts; `forgetAuthor` clears `started_by`.
+- Feeds and the guard: a name that resolves to a public address when the
+  guard checks it and to another when fetch connects is not caught (the
+  guard says so). Pinning the connection to the checked address while
+  keeping the Host and SNI is not done: Bun's fetch and Node's (where the
+  tests run) take no common option for it, and Peal reaches every host
+  through the one fetch client. HTTPS on port 443 with certificate
+  validation narrows it to a host holding a valid certificate for the
+  outside name.
 - With `attachPicture`, an item's picture is imported through
   `FeedPictures` (`LibraryFeedPictures`, the media context's
   `MediaLibrary.importMedia`, as the starter, who needs media:upload)

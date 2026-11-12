@@ -302,6 +302,12 @@ const update = Command.make(
     channels: channelsFlag(
       "The channels its posts go to, replacing those it had; repeat it, or separate ids with commas."
     ),
+    defaultQueue: Flag.Boolean("default-queue").pipe(
+      Flag.withDescription(
+        "Put its posts on the workspace's default queue, whichever it is then, rather than a queue named."
+      ),
+      Flag.withDefault(false)
+    ),
     feed: feedArgument,
     json: jsonFlag,
     mode: modeFlag,
@@ -327,6 +333,29 @@ const update = Command.make(
     const { client, url, workspace } = session;
     const { queueId, setId } = yield* savedIdsOf(session, input);
 
+    if (Option.isSome(input.queue) && input.defaultQueue) {
+      yield* new Refused({
+        reason: "Give --queue or --default-queue, not both.",
+      });
+    }
+
+    // A queue goes with a feed that puts posts on one.
+    if (
+      (Option.isSome(input.queue) || input.defaultQueue) &&
+      !Option.contains(input.mode, "queue")
+    ) {
+      const current = yield* client.feeds
+        .get({ params: { feedId: input.feed, workspaceId: workspace.id } })
+        .pipe(Effect.mapError(explain(url)));
+
+      if (current.mode !== "queue" || Option.contains(input.mode, "draft")) {
+        yield* new Refused({
+          reason:
+            "--queue and --default-queue go with a feed whose posts go on a queue: add --mode queue.",
+        });
+      }
+    }
+
     const payload: { -readonly [K in keyof FeedChange]: FeedChange[K] } = {};
     const channels = channelIdsOf(input.channels);
 
@@ -346,6 +375,10 @@ const update = Command.make(
       payload.queueId = queueId.value;
     }
 
+    if (input.defaultQueue) {
+      payload.queueId = null;
+    }
+
     if (Option.isSome(setId) || input.noSet) {
       payload.channelSetId = Option.getOrNull(setId);
     }
@@ -361,7 +394,7 @@ const update = Command.make(
     if (Object.keys(payload).length === 0) {
       yield* new Refused({
         reason:
-          "Give --channel, --mode, --queue, --set, --no-set, --template, --url, --picture or several: nothing else of a feed changes (peal feeds pause and resume change its state).",
+          "Give --channel, --mode, --queue, --default-queue, --set, --no-set, --template, --url, --picture or several: nothing else of a feed changes (peal feeds pause and resume change its state).",
       });
     }
 
@@ -397,6 +430,15 @@ const statusCommand = (
           payload: { status },
         })
         .pipe(Effect.mapError(explain(url)));
+
+      // A stopped feed is not paused: it stays as it stopped.
+      if (!input.json && feed.status === "stopped") {
+        yield* Console.log(
+          `Feed ${feed.id} is stopped (${feed.stopReason ?? "unknown"}): peal feeds resume sets it going again.`
+        );
+
+        return;
+      }
 
       yield* printFeed(
         feed,

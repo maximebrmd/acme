@@ -221,7 +221,11 @@ export const studioFeedsOf = (world: FeedsWorld) => {
               yield* readable(payload.url);
             }
 
-            const status = payload.status ?? feed.status;
+            // Pausing a stopped feed leaves it stopped, as the server does.
+            const status =
+              payload.status === "paused" && feed.status === "stopped"
+                ? feed.status
+                : (payload.status ?? feed.status);
 
             return yield* saved(
               studio,
