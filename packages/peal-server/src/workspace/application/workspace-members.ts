@@ -225,9 +225,9 @@ export class WorkspaceMembers extends Context.Service<
 
           const revoked = yield* people.revoke(actor.workspaceId, invitationId);
 
-          if (!revoked) {
-            yield* new InvitationNotFound({ invitationId });
-          }
+          yield* revoked
+            ? Effect.void
+            : Effect.fail(new InvitationNotFound({ invitationId }));
         }
       );
 

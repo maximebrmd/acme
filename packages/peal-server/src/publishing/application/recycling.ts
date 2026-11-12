@@ -804,9 +804,9 @@ export class Recycling extends Context.Service<
             claimed: Effect.gen(function* claimed() {
               const locked = yield* store.lockUnlessHeld(planned.id);
 
-              if (Option.isNone(locked) || !isSameRule(locked.value, planned)) {
-                yield* new LeftForNextRun({ ruleId: planned.id });
-              }
+              yield* Option.isNone(locked) || !isSameRule(locked.value, planned)
+                ? Effect.fail(new LeftForNextRun({ ruleId: planned.id }))
+                : Effect.void;
             }),
             content: sayingVariant(copy.value, variantFor(planned, number)),
             dueAt,

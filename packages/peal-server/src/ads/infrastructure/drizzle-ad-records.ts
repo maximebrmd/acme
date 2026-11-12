@@ -49,9 +49,9 @@ export const DrizzleAdRecords = Layer.effect(
 
           const count = open?.count ?? 0;
 
-          if (count > 0) {
-            yield* new BoostsRunning({ boosts: count, workspaceId });
-          }
+          yield* count > 0
+            ? Effect.fail(new BoostsRunning({ boosts: count, workspaceId }))
+            : Effect.void;
         }
       ),
       eraseWorkspace: Effect.fn("AdRecords.eraseWorkspace")(

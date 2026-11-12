@@ -310,14 +310,14 @@ const link = Command.make(
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    if (
-      Option.isSome(hours) &&
-      (hours.value < 1 || hours.value > maxReviewLinkHours)
-    ) {
-      yield* new Refused({
-        reason: `--hours is between 1 and ${String(maxReviewLinkHours)}.`,
-      });
-    }
+    yield* Option.isSome(hours) &&
+    (hours.value < 1 || hours.value > maxReviewLinkHours)
+      ? Effect.fail(
+          new Refused({
+            reason: `--hours is between 1 and ${String(maxReviewLinkHours)}.`,
+          })
+        )
+      : Effect.void;
 
     const made = yield* client.review
       .createLink({

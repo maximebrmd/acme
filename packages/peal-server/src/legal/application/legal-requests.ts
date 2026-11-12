@@ -94,9 +94,9 @@ export class LegalRequests extends Context.Service<
 
       const ensureOfficer = Effect.fn("LegalRequests.ensureOfficer")(
         function* ensureOfficer(staffId: UserId) {
-          if (!(yield* officers.mayAnswer(staffId))) {
-            yield* new NotLegalOfficer();
-          }
+          const mayAnswer = yield* officers.mayAnswer(staffId);
+
+          yield* mayAnswer ? Effect.void : Effect.fail(new NotLegalOfficer());
         }
       );
 

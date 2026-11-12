@@ -216,16 +216,16 @@ export const importPosts = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("posts.import")(function* importPosts(input) {
-    if (
-      Option.exists(
-        input.idempotencyKey,
-        (key) => key === "" || key.length > maxIdempotencyKeyLength
-      )
-    ) {
-      yield* new Refused({
-        reason: `--idempotency-key takes 1 to ${String(maxIdempotencyKeyLength)} characters.`,
-      });
-    }
+    yield* Option.exists(
+      input.idempotencyKey,
+      (key) => key === "" || key.length > maxIdempotencyKeyLength
+    )
+      ? Effect.fail(
+          new Refused({
+            reason: `--idempotency-key takes 1 to ${String(maxIdempotencyKeyLength)} characters.`,
+          })
+        )
+      : Effect.void;
 
     const csv = yield* contentsOf(input.file);
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
@@ -256,9 +256,7 @@ export const importPosts = Command.make(
     }
 
     // Every row is printed first: the refusal says which to correct.
-    if (Option.isSome(refusal)) {
-      yield* refusal.value;
-    }
+    yield* Option.isSome(refusal) ? refusal.value : Effect.void;
   })
 ).pipe(
   Command.withDescription(

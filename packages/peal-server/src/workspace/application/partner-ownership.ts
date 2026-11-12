@@ -237,12 +237,14 @@ export class PartnerOwnership extends Context.Service<
 
               const owned = yield* workspaces.idsOf(partner.value.id);
 
-              if (owned.length > 0) {
-                yield* new PartnerOwnsWorkspaces({
-                  owned: owned.length,
-                  workspaceId,
-                });
-              }
+              yield* owned.length > 0
+                ? Effect.fail(
+                    new PartnerOwnsWorkspaces({
+                      owned: owned.length,
+                      workspaceId,
+                    })
+                  )
+                : Effect.void;
             }),
             { discard: true }
           );

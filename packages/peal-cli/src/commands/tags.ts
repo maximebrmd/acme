@@ -141,11 +141,14 @@ const update = Command.make(
     tag: given,
     workspace: choice,
   }) {
-    if (Option.isNone(colour) && Option.isNone(name)) {
-      yield* new Refused({
-        reason: "Give --name, --colour or both: nothing else of a tag changes.",
-      });
-    }
+    yield* Option.isNone(colour) && Option.isNone(name)
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --name, --colour or both: nothing else of a tag changes.",
+          })
+        )
+      : Effect.void;
 
     const session = yield* inWorkspace(choice);
     const { client, url, workspace } = session;

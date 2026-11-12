@@ -239,28 +239,24 @@ export const studioQueuesOf = (world: StudioWorld) => {
     Effect.gen(function* checkingQueue() {
       yield* world.checkChannels(details.channelIds ?? []);
 
-      if (/^[+-]/u.test(details.timeZone)) {
-        yield* new InvalidTimeZone({ timeZone: details.timeZone });
-      }
+      yield* /^[+-]/u.test(details.timeZone)
+        ? Effect.fail(new InvalidTimeZone({ timeZone: details.timeZone }))
+        : Effect.void;
 
-      if (
-        details.channelSetId !== undefined &&
-        !world.setIds.includes(details.channelSetId)
-      ) {
-        yield* new ChannelSetNotFound();
-      }
+      yield* details.channelSetId !== undefined &&
+      !world.setIds.includes(details.channelSetId)
+        ? Effect.fail(new ChannelSetNotFound())
+        : Effect.void;
 
       const { queues } = yield* Ref.get(studio.state);
 
-      if (
-        queues.some(
-          (queue) =>
-            queue.id !== but &&
-            queue.name.toLowerCase() === details.name.toLowerCase()
-        )
-      ) {
-        yield* new QueueNameTaken();
-      }
+      yield* queues.some(
+        (queue) =>
+          queue.id !== but &&
+          queue.name.toLowerCase() === details.name.toLowerCase()
+      )
+        ? Effect.fail(new QueueNameTaken())
+        : Effect.void;
     });
 
   const groupLive = (studio: Studio) =>

@@ -104,7 +104,7 @@ export class CloseAccount extends Context.Service<
         const userId = yield* Effect.fromResult(ownSession(principal));
 
         if (!(yield* passwords.matches(userId, password))) {
-          yield* new IncorrectPassword();
+          return yield* new IncorrectPassword();
         }
 
         const { user } = yield* store.records(userId).pipe(
@@ -145,7 +145,7 @@ export class CloseAccount extends Context.Service<
         // From here to the end without stopping, whatever becomes of the
         // request: a client that goes away leaves no file behind, no
         // entry unconfirmed and nobody untold.
-        yield* Effect.uninterruptible(
+        return yield* Effect.uninterruptible(
           Effect.gen(function* erase() {
             const erasure = yield* transaction(
               Effect.gen(function* closeInTransaction() {

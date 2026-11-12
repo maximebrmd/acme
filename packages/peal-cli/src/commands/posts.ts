@@ -339,11 +339,13 @@ const wait = Command.make(
     seconds,
     workspace: choice,
   }) {
-    if (seconds < 0 || seconds > maxOutcomeWaitSeconds) {
-      yield* new Refused({
-        reason: `--seconds takes 0 to ${String(maxOutcomeWaitSeconds)} seconds.`,
-      });
-    }
+    yield* seconds < 0 || seconds > maxOutcomeWaitSeconds
+      ? Effect.fail(
+          new Refused({
+            reason: `--seconds takes 0 to ${String(maxOutcomeWaitSeconds)} seconds.`,
+          })
+        )
+      : Effect.void;
 
     const { client, url, workspace } = yield* inWorkspace(choice);
 
@@ -468,11 +470,13 @@ const confirm = Command.make(
   Effect.fn("posts.confirm")(function* confirm(input) {
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
-    if (input.verdict === "not-published" && Option.isSome(input.permalink)) {
-      yield* new Refused({
-        reason: "--permalink is for a post you found live: leave it out.",
-      });
-    }
+    yield* input.verdict === "not-published" && Option.isSome(input.permalink)
+      ? Effect.fail(
+          new Refused({
+            reason: "--permalink is for a post you found live: leave it out.",
+          })
+        )
+      : Effect.void;
 
     const payload = yield* decodeConfirmation(
       input.verdict === "published"

@@ -89,12 +89,11 @@ export class ApiKeys extends Context.Service<
 
         const revoked = yield* issuer.revoke(actor.workspaceId, apiKeyId);
 
-        if (!revoked) {
-          yield* new ApiKeyNotFound({
-            apiKeyId,
-            workspaceId: actor.workspaceId,
-          });
-        }
+        yield* revoked
+          ? Effect.void
+          : Effect.fail(
+              new ApiKeyNotFound({ apiKeyId, workspaceId: actor.workspaceId })
+            );
       });
 
       return ApiKeys.of({ create, list, revoke });
