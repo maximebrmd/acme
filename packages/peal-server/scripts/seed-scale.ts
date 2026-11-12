@@ -5,10 +5,15 @@
 // "synthetic".
 //
 //   DATABASE_URL=postgres://…/peal_scale bun src/migrate.ts
-//   DATABASE_URL=postgres://…/peal_scale bun scripts/seed-scale.ts [users]
+//   DATABASE_URL=postgres://…/peal_scale bun scripts/seed-scale.ts [users] [customers]
 //
 // Per user (the sizing model's averages): one workspace, 4 channels, 30
-// posts a month on 2 or 3 channels each, over three months. The posts of
+// posts a month on 2 or 3 channels each, over three months. Each workspace
+// has its owner as a member, one in three an editor too; one in five has
+// a subscription (a starter plan, a trial of pro, or one cancelled). The
+// first workspace is a partner's home, owning `customers` workspaces
+// (1,000 by default) of one channel each and no member, to read the
+// plans of the reads across a partner's pool on. The posts of
 // the last 30 days are followed by analytics and due at the next
 // collection; a day of posts is still scheduled. The first workspace has
 // two webhook endpoints and a million deliveries over the 30 days of the
@@ -23,6 +28,7 @@ import { databaseNameOf } from "#shared/infrastructure/database-name.ts";
 
 const url = process.env["DATABASE_URL"] ?? "";
 const users = Number(process.argv[2] ?? "10000");
+const customers = Number(process.argv[3] ?? "1000");
 
 // The name in the URL's path, not anywhere in the URL: a parameter such as
 // `?application_name=scale` names no database.
@@ -32,6 +38,10 @@ if (!Option.exists(databaseNameOf(url), (name) => name.endsWith("scale"))) {
 
 if (!Number.isInteger(users) || users < 1) {
   throw new Error("The number of users must be a whole number above 0");
+}
+
+if (!Number.isInteger(customers) || customers < 0) {
+  throw new Error("The number of customers must be a whole number");
 }
 
 const sql = new Bun.SQL(url);
@@ -92,6 +102,89 @@ await timed("channels", async () => {
            (ARRAY['nonExpiring','refreshable','nonRefreshable','refreshable','refreshable','nonExpiring','nonExpiring','refreshable','refreshable'])[1 + (workspace.number + slot) % 9] AS kind
     FROM generate_series(1, 4) AS slot
   ) AS platform`;
+});
+
+// The sign-in service's rows: each workspace, its owner, one in three an
+// editor more, and a subscription for one in five.
+await timed("accounts", async () => {
+  await sql`
+  INSERT INTO auth.organization (id, name, slug, created_at)
+  SELECT id, 'Synthetic workspace ' || number, 'synthetic-' || number,
+         now() - interval '100 days'
+  FROM seed_workspaces`;
+
+  await sql`
+  CREATE TEMP TABLE seed_members AS
+  SELECT gen_random_uuid() AS user_id, workspace.id AS workspace_id,
+         workspace.number, seat
+  FROM seed_workspaces AS workspace
+  CROSS JOIN generate_series(1, 2) AS seat
+  WHERE seat = 1 OR workspace.number % 3 = 0`;
+
+  await sql`
+  INSERT INTO auth.user (id, name, email, created_at, updated_at)
+  SELECT user_id, 'Synthetic member ' || number || '-' || seat,
+         'synthetic-' || number || '-' || seat || '@example.com',
+         now() - interval '100 days', now() - interval '100 days'
+  FROM seed_members`;
+
+  await sql`
+  INSERT INTO auth.member (organization_id, user_id, role, created_at)
+  SELECT workspace_id, user_id, CASE WHEN seat = 1 THEN 'owner' ELSE 'editor' END,
+         now() - interval '100 days'
+  FROM seed_members`;
+
+  await sql`
+  INSERT INTO billing.subscriptions
+    (stripe_subscription_id, stripe_customer_id, workspace_id, plan, status,
+     interval, cancel_at_period_end, last_event_at, last_event_id, updated_at)
+  SELECT 'sub_synthetic_' || number, 'cus_synthetic_' || number, id,
+         (ARRAY['starter','pro','starter'])[1 + (number / 5) % 3],
+         (ARRAY['active','trialing','canceled'])[1 + (number / 5) % 3],
+         'month', false, now() - interval '10 days',
+         'evt_synthetic_' || number, now() - interval '10 days'
+  FROM seed_workspaces
+  WHERE number % 5 = 0`;
+});
+
+// A partner whose home is the first workspace, and its customers: one
+// channel each, one in ten to reconnect, and no member.
+await timed("partner", async () => {
+  await sql`
+  CREATE TEMP TABLE seed_customers AS
+  SELECT gen_random_uuid() AS id, number
+  FROM generate_series(1, ${customers}) AS number`;
+
+  await sql`
+  INSERT INTO workspace.partners (id, workspace_id, name, return_origins, created_at, updated_at)
+  SELECT uuidv7(), id, 'Synthetic partner', '{}', now() - interval '100 days', now() - interval '100 days'
+  FROM seed_workspaces
+  WHERE number = 1`;
+
+  await sql`
+  INSERT INTO auth.organization (id, name, slug, created_at)
+  SELECT id, 'Synthetic customer ' || number, id::text,
+         now() - interval '90 days' + number * interval '1 minute'
+  FROM seed_customers`;
+
+  await sql`
+  INSERT INTO workspace.partner_workspaces (workspace_id, partner_id, external_id, created_at)
+  SELECT customer.id, partner.id, 'synthetic-' || customer.number,
+         now() - interval '90 days' + customer.number * interval '1 minute'
+  FROM seed_customers AS customer
+  CROSS JOIN workspace.partners AS partner`;
+
+  await sql`
+  INSERT INTO channels.channels
+    (id, workspace_id, platform, account_id, handle, access_token,
+     token_key_id, token_kind, scopes, status, refresh_needed, created_at, updated_at)
+  SELECT uuidv7(), id, 'mastodon', 'synthetic-customer-' || number,
+         '@synthetic_customer_' || number, 'k1.synthetic.synthetic', 'k1',
+         'nonExpiring', ARRAY['synthetic'],
+         CASE WHEN number % 10 = 0 THEN 'refreshNeeded' ELSE 'active' END,
+         number % 10 = 0,
+         now() - interval '90 days', now() - interval '90 days'
+  FROM seed_customers`;
 });
 
 // Posts spread evenly over the months before now and a day after it: those
