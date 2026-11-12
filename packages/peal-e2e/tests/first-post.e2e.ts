@@ -84,7 +84,9 @@ describe("a new member's first post", { serial: true }, () => {
     const links = screen.getByRole("navigation", `Posts of ${workspace}`);
     const calendar = links.getByRole("link", "Calendar");
 
-    await expect(calendar).toBeVisible();
+    // Creating the workspace, then rendering the page again on the server,
+    // takes a loaded machine longer than an assertion's 5 seconds.
+    await expect(calendar).toBeVisible({ timeout: 30_000 });
 
     const href = (await calendar.getAttribute("href")) ?? "";
 

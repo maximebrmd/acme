@@ -75,8 +75,37 @@ const StatesTest = Layer.succeed(
   })
 );
 
+// The purges the snapshot asked the ledger for: the day each starts from,
+// and how many rows it deleted.
+const purges = Ref.makeUnsafe<
+  readonly { readonly before: DateTime.Utc; readonly purged: number }[]
+>([]);
+
+// The ledger on Postgres, saying what each purge was asked. A purge
+// deletes every workspace's old rows, and the ledger's own suite purges at
+// the same time as this one: the row this test wrote may be gone before
+// the snapshot's purge reaches it, so the count says nothing of the run.
+const RecordingLedger = Layer.effect(
+  UsageLedger,
+  Effect.gen(function* RecordingLedger() {
+    const ledger = yield* UsageLedger;
+
+    return UsageLedger.of({
+      ...ledger,
+      purgeBefore: (before) =>
+        ledger
+          .purgeBefore(before)
+          .pipe(
+            Effect.tap((purged) =>
+              Ref.update(purges, (all) => [...all, { before, purged }])
+            )
+          ),
+    });
+  })
+).pipe(Layer.provide(DrizzleUsageLedgerLive));
+
 const SnapshotTest = SnapshotUsage.make(2).pipe(
-  Layer.provide(StatesTest),
+  Layer.provide(Layer.mergeAll(StatesTest, RecordingLedger)),
   Layer.provideMerge(DrizzleUsageLedgerLive),
   Layer.provideMerge(DatabaseTest)
 );
@@ -129,7 +158,11 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
 
         assert.deepStrictEqual(run.day, yesterday);
         assert.strictEqual(run.workspaces, 4);
-        assert.isAtLeast(run.purged, 1);
+        // It purged the days past the 400 the ledger keeps, and says how
+        // many rows went.
+        assert.deepStrictEqual(yield* Ref.get(purges), [
+          { before: day("2025-10-07"), purged: run.purged },
+        ]);
         assert.deepStrictEqual(
           (yield* Ref.get(asked)).map(({ after, createdBefore, limit }) => ({
             after,

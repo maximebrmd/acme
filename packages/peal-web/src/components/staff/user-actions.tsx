@@ -28,6 +28,7 @@ import { useId, useState, useTransition } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 import { toast } from "sonner";
 
+import { useHydrated } from "#components/media/use-hydrated.ts";
 import { useRouter } from "#i18n/navigation.ts";
 import {
   banUser,
@@ -94,6 +95,9 @@ const ActionDialog = ({
   const [error, setError] = useState<StaffErrorKey | null>(null);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // The server renders the button, which opens nothing until the page has
+  // hydrated: it stays disabled until then, never a click lost.
+  const hydrated = useHydrated();
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -124,6 +128,7 @@ const ActionDialog = ({
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogTrigger
+        disabled={!hydrated}
         render={
           <Button variant={destructive ? "destructive" : "outline"} size="sm" />
         }

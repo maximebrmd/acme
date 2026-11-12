@@ -229,13 +229,19 @@ describe("threads, analytics and the inbox", { serial: true }, () => {
     await screen.getByLabel("Email, name or id").fill(addressOf("author"));
     await screen.getByRole("button", "Search").tap();
     await screen.getByRole("main").getByRole("link", name).tap();
-    await screen
+
+    // The page arrives from the server before it hydrates: the button is
+    // disabled until it opens its confirmation.
+    const actAs = screen
       .getByRole("main")
-      .getByRole("button", "Act as this account")
-      .tap();
+      .getByRole("button", "Act as this account");
+
+    await expect(actAs).toBeEnabled();
+    await actAs.tap();
 
     const dialog = screen.getByRole("alertdialog", `Act as ${name}?`);
 
+    await expect(dialog).toBeVisible();
     await dialog.getByRole("textbox", "Why").fill("Synthetic support request");
     await dialog.getByRole("button", "Act as the account").tap();
 

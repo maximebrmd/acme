@@ -9,6 +9,7 @@ import {
   maxSuggestionLength,
 } from "#assistant/domain/suggestion.ts";
 import { remainingOf, usageWindowAt } from "#assistant/domain/usage-window.ts";
+import { growthOf, linearGrowthAtMost } from "#test/shared/support.ts";
 
 const draftOf = (text: string): Draft => Result.getOrThrow(checkDraft(text));
 
@@ -108,12 +109,16 @@ describe(acceptHashtags, () => {
   // A pattern that can read a run of letters several ways takes quadratic
   // time over an answer it does not match: seconds for this one.
   it("reads a long answer in linear time", () => {
-    const started = performance.now();
-
+    expect(
+      growthOf(
+        hashtagsOf,
+        (letters) => [`#${"a".repeat(letters)}!`, "#launch"],
+        65_536
+      ).growth
+    ).toBeLessThan(linearGrowthAtMost);
     expect(hashtagsOf([`#${"a".repeat(200_000)}!`, "#launch"])).toStrictEqual([
       "#launch",
     ]);
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 });
 

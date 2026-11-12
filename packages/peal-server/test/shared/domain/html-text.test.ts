@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 
 import { textOfHtml } from "#shared/domain/html-text.ts";
+import { growthOf, linearGrowthAtMost } from "#test/shared/support.ts";
 
 // HTML as plain text: what a comment or a feed's item says, never markup.
 
@@ -41,19 +42,19 @@ describe(textOfHtml, () => {
   });
 
   it("reads a long run of unclosed scripts in linear time", () => {
-    const started = performance.now();
-
-    textOfHtml("<script>".repeat(200_000));
-
-    expect(performance.now() - started).toBeLessThan(2000);
+    expect(
+      growthOf(textOfHtml, (times) => "<script>".repeat(times), 16_384).growth
+    ).toBeLessThan(linearGrowthAtMost);
+    expect(textOfHtml("<script>".repeat(200_000))).toBe("");
   });
 
   it("strips tags in linear time, however many open without closing", () => {
     const hostile = "<".repeat(2 * 1024 * 1024);
-    const started = performance.now();
 
+    expect(
+      growthOf(textOfHtml, (times) => "<".repeat(times), 16_384).growth
+    ).toBeLessThan(linearGrowthAtMost);
     expect(textOfHtml(hostile)).toBe(hostile);
-    expect(performance.now() - started).toBeLessThan(200);
   });
 
   it("still makes a paragraph break between paragraphs, and drops other tags", () => {

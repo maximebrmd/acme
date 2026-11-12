@@ -1,5 +1,13 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Duration, Effect, Layer, Metric, Schema } from "effect";
+import {
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Metric,
+  Schema,
+  Tracer,
+} from "effect";
 import { SqlClient } from "effect/sql";
 
 import {
@@ -64,6 +72,32 @@ const postsPerChannel = 5;
 // posts are due.
 const at = DateTime.makeUnsafe("1985-01-01T11:07:00.000Z");
 
+// The statements a run sends to Postgres: each is a span that carries its
+// text. Counted rather than timed, the run's cost is the same on an idle
+// machine and on a loaded one.
+const statementsOf = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* counted() {
+    const spans: Tracer.NativeSpan[] = [];
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        const span = new Tracer.NativeSpan(options);
+
+        spans.push(span);
+
+        return span;
+      },
+    });
+
+    const result = yield* effect.pipe(Effect.withTracer(tracer));
+
+    const statements = spans.filter((span) =>
+      span.attributes.has("db.query.text")
+    ).length;
+
+    return { result, statements };
+  });
+
 const decodeCount = Schema.decodeUnknownEffect(
   Schema.Tuple([Schema.Struct({ rows: Schema.Number })])
 );
@@ -72,7 +106,7 @@ layer(CollectionTest, { excludeTestServices: true })(
   "the collection on Postgres, at scale",
   (it) => {
     it.effect(
-      "reads 20,000 posts due on 4,000 channels in one run, within 30 seconds",
+      "reads 20,000 posts due on 4,000 channels in one run, a statement a channel",
       () =>
         Effect.gen(function* tensOfThousands() {
           const workspaceId = yield* freshWorkspace;
@@ -99,8 +133,8 @@ layer(CollectionTest, { excludeTestServices: true })(
 
             const startedAt = performance.now();
 
-            const report = yield* CollectMetrics.use((collect) =>
-              collect.run(at)
+            const { result: report, statements } = yield* statementsOf(
+              CollectMetrics.use((collect) => collect.run(at))
             );
 
             const seconds = (performance.now() - startedAt) / 1000;
@@ -135,10 +169,15 @@ layer(CollectionTest, { excludeTestServices: true })(
 
             assert.strictEqual(snapshots.rows, channels * postsPerChannel);
             assert.strictEqual((yield* Metric.value(collectionLeft)).value, 0);
-            assert.isBelow(seconds, 30);
+            // A statement a channel, its readings and schedules together,
+            // and a few a page of channels: never one a post. Counted, not
+            // timed, as a run takes thirty times longer on a loaded machine
+            // than on an idle one; the test's timeout still stops a run
+            // whose queries Postgres plans badly.
+            assert.isAtMost(statements, channels + 50);
 
             yield* Effect.logInfo("The collection read its posts").pipe(
-              Effect.annotateLogs({ posts: report.read, seconds })
+              Effect.annotateLogs({ posts: report.read, seconds, statements })
             );
           }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
         }),

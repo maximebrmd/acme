@@ -42,7 +42,9 @@ const signIn = async (
   await screen.getByRole("main").getByRole("button", "Sign in").tap();
 };
 
-// Opens an action's confirmation, says why, and confirms.
+// Opens an action's confirmation, says why, and confirms. The page arrives
+// from the server before it hydrates, and its buttons open nothing until
+// then: each is disabled until it can.
 const act = async (
   screen: Screen,
   {
@@ -52,10 +54,14 @@ const act = async (
     title,
   }: Record<"confirm" | "open" | "reason" | "title", string>
 ) => {
-  await screen.getByRole("main").getByRole("button", open).tap();
+  const trigger = screen.getByRole("main").getByRole("button", open);
+
+  await expect(trigger).toBeEnabled();
+  await trigger.tap();
 
   const dialog = screen.getByRole("alertdialog", title);
 
+  await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", "Why").fill(reason);
   await dialog.getByRole("button", confirm).tap();
 };
@@ -196,20 +202,26 @@ describe("the staff console", { serial: true }, () => {
       screen.getByRole("heading", "Audit log", { level: 1 })
     ).toBeVisible();
 
+    // The log is every account's: other journeys of the run act as their
+    // own members, for the same reasons.
+    const ofMember = screen
+      .getByRole("row")
+      .filter({ hasText: memberAddress() });
+
     await Promise.all(
       [
         "Synthetic report of spam",
         "Synthetic appeal accepted",
         "Synthetic support request",
       ].map(async (reason) => {
-        await expect(screen.getByRole("cell", reason)).toBeVisible();
+        await expect(ofMember.getByRole("cell", reason)).toBeVisible();
       })
     );
 
     // Coming back from the member's account is recorded too, with the
     // route staff took.
     await expect(
-      screen.getByRole(
+      ofMember.getByRole(
         "cell",
         "Stopped acting as the account auth:/admin/stop-impersonating"
       )
