@@ -4,7 +4,11 @@ import { DateTime, Effect, Layer } from "effect";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import {
+  DatabaseTest,
+  freshWorkspace,
+  pastParameterLimit,
+} from "#test/channels/support.ts";
 
 const LedgerTest = DrizzleUsageLedgerLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -205,5 +209,25 @@ layer(LedgerTest)("the usage ledger in Postgres", (it) => {
           yield* ledger.eraseWorkspace(workspaceId);
         }
       })
+  );
+
+  it.effect("reads more workspaces than a statement takes parameters", () =>
+    Effect.gen(function* many() {
+      const ledger = yield* UsageLedger;
+      const workspaceId = yield* freshWorkspace;
+
+      yield* ledger.add({ record: posts("2026-10-09", 3), workspaceId });
+
+      const ids = pastParameterLimit([workspaceId]);
+
+      assert.deepStrictEqual(yield* ledger.ofWorkspaces(ids, period), [
+        { record: posts("2026-10-09", 3), workspaceId },
+      ]);
+      assert.deepStrictEqual(yield* ledger.postsAcross(ids, period), [
+        posts("2026-10-09", 3),
+      ]);
+
+      yield* ledger.eraseWorkspace(workspaceId);
+    })
   );
 });

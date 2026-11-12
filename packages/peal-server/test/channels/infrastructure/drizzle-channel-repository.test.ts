@@ -16,6 +16,7 @@ import {
   freshChannel,
   freshWorkspace,
   later,
+  pastParameterLimit,
   refreshable,
   syntheticCredentials,
 } from "#test/channels/support.ts";
@@ -280,5 +281,23 @@ layer(RepositoryTest)("the Drizzle channel repository", (it) => {
         Option.some(channel)
       );
     })
+  );
+
+  it.effect(
+    "counts the channels of more workspaces than a statement takes parameters",
+    () =>
+      Effect.gen(function* many() {
+        const channels = yield* ChannelRepository;
+        const channel = yield* freshChannel(yield* freshWorkspace);
+
+        yield* channels.insert(channel, syntheticCredentials(channel));
+
+        const counted = yield* channels.countIn(
+          pastParameterLimit([channel.workspaceId])
+        );
+
+        assert.strictEqual(counted.get(channel.workspaceId), 1);
+        assert.strictEqual(counted.size, 1);
+      })
   );
 });

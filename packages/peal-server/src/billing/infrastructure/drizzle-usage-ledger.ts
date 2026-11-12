@@ -1,4 +1,4 @@
-import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, between, eq, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -7,6 +7,7 @@ import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledg
 import { UsageRecordSchema } from "#billing/domain/usage-meter.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { usageDays } from "./schema.ts";
@@ -121,10 +122,9 @@ export const DrizzleUsageLedgerLive = Layer.effect(
             Effect.flatMap(Effect.forEach(toRecord)),
             Effect.withSpan("UsageLedger.ofWorkspace")
           ),
-      // One read for the whole list (`workspace_id = any(…)`), on the
-      // primary key, which starts with the workspace and the day; in no
-      // order, as the report tallies them by day (a page of 101 workspaces
-      // over 92 days is some 55,000 rows to sort otherwise).
+      // One read for the whole list, its ids one array parameter
+      // (`anyUuid`), on the primary key, which starts with the workspace;
+      // in no order, as the report tallies the rows by workspace and day.
       ofWorkspaces: (workspaceIds, { from, to }) =>
         workspaceIds.length === 0
           ? Effect.succeed([])
@@ -133,7 +133,7 @@ export const DrizzleUsageLedgerLive = Layer.effect(
               .from(usageDays)
               .where(
                 and(
-                  inArray(usageDays.workspaceId, [...workspaceIds]),
+                  anyUuid(usageDays.workspaceId, workspaceIds),
                   between(
                     usageDays.day,
                     DateTime.toDateUtc(from),
@@ -162,7 +162,7 @@ export const DrizzleUsageLedgerLive = Layer.effect(
               .from(usageDays)
               .where(
                 and(
-                  inArray(usageDays.workspaceId, [...workspaceIds]),
+                  anyUuid(usageDays.workspaceId, workspaceIds),
                   eq(usageDays.meter, "publishedPosts"),
                   between(
                     usageDays.day,

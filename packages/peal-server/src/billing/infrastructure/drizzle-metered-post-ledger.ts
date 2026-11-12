@@ -1,4 +1,4 @@
-import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, between, eq, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
@@ -6,6 +6,7 @@ import type { MeteredPostCount } from "#billing/domain/metered-posts.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { meteredPosts } from "./schema.ts";
@@ -95,7 +96,7 @@ export const DrizzleMeteredPostLedgerLive = Layer.effect(
               .from(meteredPosts)
               .where(
                 and(
-                  inArray(meteredPosts.workspaceId, [...workspaceIds]),
+                  anyUuid(meteredPosts.workspaceId, workspaceIds),
                   // Each month the period touches, whole.
                   between(
                     meteredPosts.month,

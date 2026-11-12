@@ -3,7 +3,11 @@ import { DateTime, Effect, Layer } from "effect";
 
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import {
+  DatabaseTest,
+  freshWorkspace,
+  pastParameterLimit,
+} from "#test/channels/support.ts";
 
 const LedgerTest = DrizzleMeteredPostLedgerLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -111,5 +115,39 @@ layer(LedgerTest)("the metered posts' counts in Postgres", (it) => {
           yield* ledger.eraseWorkspace(workspaceId);
         }
       })
+  );
+
+  it.effect("reads more workspaces than a statement takes parameters", () =>
+    Effect.gen(function* many() {
+      const ledger = yield* MeteredPostLedger;
+      const workspaceId = yield* freshWorkspace;
+
+      yield* ledger.add({
+        month: october,
+        platform: "x",
+        withLink: false,
+        workspaceId,
+      });
+
+      assert.deepStrictEqual(
+        yield* ledger.ofWorkspaces(pastParameterLimit([workspaceId]), {
+          from: october,
+          to: october,
+        }),
+        [
+          {
+            count: {
+              month: october,
+              platform: "x",
+              posts: 1,
+              postsWithLinks: 0,
+            },
+            workspaceId,
+          },
+        ]
+      );
+
+      yield* ledger.eraseWorkspace(workspaceId);
+    })
   );
 });
