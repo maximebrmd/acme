@@ -37,9 +37,11 @@ import social.peal.resources.partner.requests.DeleteWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.GetWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.ListWorkspacesPartnerRequest;
 import social.peal.resources.partner.requests.NewCustomerWorkspace;
+import social.peal.resources.partner.requests.OverviewPartnerRequest;
 import social.peal.types.CustomerWorkspace;
 import social.peal.types.CustomerWorkspacePage;
 import social.peal.types.DeletionIncompleteEncoded;
+import social.peal.types.PartnerHealth;
 import social.peal.types.PartnerOverview;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -97,6 +99,103 @@ public class RawPartnerClient {
             }
             try {
                 switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<PartnerHealth> overview() {
+        return overview(OverviewPartnerRequest.builder().build());
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<PartnerHealth> overview(RequestOptions requestOptions) {
+        return overview(OverviewPartnerRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<PartnerHealth> overview(OverviewPartnerRequest request) {
+        return overview(request, null);
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<PartnerHealth> overview(
+            OverviewPartnerRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/partner/overview");
+        if (request.getBefore().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "before", request.getBefore().get(), false);
+        }
+        if (request.getLimit().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "limit", request.getLimit().get(), false);
+        }
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PartnerHealth.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 400:
+                        throw new BadRequestError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 401:
                         throw new UnauthorizedError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),

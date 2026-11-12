@@ -454,6 +454,70 @@ export class PartnerAccountClient {
     }
 
     /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.
+     *
+     * @param {Peal.OverviewPartnerAccountRequest} request
+     * @param {PartnerAccountClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.BadRequestError}
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.partnerAccount.overview({
+     *         workspaceId: "workspaceId"
+     *     })
+     */
+    public overview(request: Peal.OverviewPartnerAccountRequest, requestOptions?: PartnerAccountClient.RequestOptions): core.HttpResponsePromise<Peal.PartnerHealth> {
+        return core.HttpResponsePromise.fromPromise(this.__overview(request, requestOptions));
+    }
+
+    private async __overview(request: Peal.OverviewPartnerAccountRequest, requestOptions?: PartnerAccountClient.RequestOptions): Promise<core.WithRawResponse<Peal.PartnerHealth>> {
+        const { workspaceId, before, limit } = request;
+        const _queryParams: Record<string, unknown> = {
+            before,
+            limit
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/partner/overview`),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.PartnerHealth, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/workspaces/{workspaceId}/partner/overview");
+    }
+
+    /**
      * Lists the workspaces the partner account owns, newest first, each with the number of channels connected in it, 50 a page unless `limit` (at most 100) says otherwise, with the filters and the paging of the partner API's list. Needs partner:read.
      *
      * @param {Peal.ListWorkspacesPartnerAccountRequest} request

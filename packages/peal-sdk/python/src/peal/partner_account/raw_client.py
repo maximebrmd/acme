@@ -20,6 +20,7 @@ from ..errors.unprocessable_entity_error import UnprocessableEntityError
 from ..types.created_partner_key import CreatedPartnerKey
 from ..types.customer_workspace_page import CustomerWorkspacePage
 from ..types.partner import Partner
+from ..types.partner_health import PartnerHealth
 from ..types.partner_key import PartnerKey
 from ..types.partner_scope import PartnerScope
 from ..types.partner_standing import PartnerStanding
@@ -678,6 +679,116 @@ class RawPartnerAccountClient:
         try:
             if 200 <= _response.status_code < 300:
                 return HttpResponse(response=_response, data=None)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    def overview(
+        self,
+        workspace_id: str,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> HttpResponse[PartnerHealth]:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[PartnerHealth]
+            PartnerHealth
+        """
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/partner/overview",
+            method="GET",
+            params={
+                "before": before,
+                "limit": limit,
+            },
+            request_options=request_options,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    PartnerHealth,
+                    parse_obj_as(
+                        type_=PartnerHealth,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 400:
+                raise BadRequestError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             if _response.status_code == 401:
                 raise UnauthorizedError(
                     headers=dict(_response.headers),
@@ -1497,6 +1608,116 @@ class AsyncRawPartnerAccountClient:
         try:
             if 200 <= _response.status_code < 300:
                 return AsyncHttpResponse(response=_response, data=None)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    async def overview(
+        self,
+        workspace_id: str,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AsyncHttpResponse[PartnerHealth]:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[PartnerHealth]
+            PartnerHealth
+        """
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/partner/overview",
+            method="GET",
+            params={
+                "before": before,
+                "limit": limit,
+            },
+            request_options=request_options,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    PartnerHealth,
+                    parse_obj_as(
+                        type_=PartnerHealth,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 400:
+                raise BadRequestError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             if _response.status_code == 401:
                 raise UnauthorizedError(
                     headers=dict(_response.headers),

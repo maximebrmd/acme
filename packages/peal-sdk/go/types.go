@@ -5791,6 +5791,187 @@ func (c *ConnectLinkNotFoundEncoded) String() string {
 }
 
 var (
+	customerHealthFieldChannels   = big.NewInt(1 << 0)
+	customerHealthFieldExternalID = big.NewInt(1 << 1)
+	customerHealthFieldID         = big.NewInt(1 << 2)
+	customerHealthFieldInbox      = big.NewInt(1 << 3)
+	customerHealthFieldName       = big.NewInt(1 << 4)
+	customerHealthFieldPosts      = big.NewInt(1 << 5)
+)
+
+// customerHealthNullableFields maps the wire names of CustomerHealth's nullable fields (required or optional) to their field bits.
+var customerHealthNullableFields = map[string]*big.Int{
+	"channels":   customerHealthFieldChannels,
+	"externalId": customerHealthFieldExternalID,
+	"inbox":      customerHealthFieldInbox,
+	"posts":      customerHealthFieldPosts,
+}
+
+type CustomerHealth struct {
+	Channels   *OverviewChannels `json:"channels,omitempty" url:"channels,omitempty"`
+	ExternalID *string           `json:"externalId,omitempty" url:"externalId,omitempty"`
+	ID         string            `json:"id" url:"id"`
+	Inbox      *OverviewInbox    `json:"inbox,omitempty" url:"inbox,omitempty"`
+	Name       string            `json:"name" url:"name"`
+	Posts      *OverviewPosts    `json:"posts,omitempty" url:"posts,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CustomerHealth) GetChannels() *OverviewChannels {
+	if c == nil {
+		return nil
+	}
+	return c.Channels
+}
+
+func (c *CustomerHealth) GetExternalID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExternalID
+}
+
+func (c *CustomerHealth) GetID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ID
+}
+
+func (c *CustomerHealth) GetInbox() *OverviewInbox {
+	if c == nil {
+		return nil
+	}
+	return c.Inbox
+}
+
+func (c *CustomerHealth) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *CustomerHealth) GetPosts() *OverviewPosts {
+	if c == nil {
+		return nil
+	}
+	return c.Posts
+}
+
+func (c *CustomerHealth) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CustomerHealth) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetChannels(channels *OverviewChannels) {
+	c.Channels = channels
+	c.require(customerHealthFieldChannels)
+}
+
+// SetExternalID sets the ExternalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetExternalID(externalID *string) {
+	c.ExternalID = externalID
+	c.require(customerHealthFieldExternalID)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetID(id string) {
+	c.ID = id
+	c.require(customerHealthFieldID)
+}
+
+// SetInbox sets the Inbox field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetInbox(inbox *OverviewInbox) {
+	c.Inbox = inbox
+	c.require(customerHealthFieldInbox)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetName(name string) {
+	c.Name = name
+	c.require(customerHealthFieldName)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerHealth) SetPosts(posts *OverviewPosts) {
+	c.Posts = posts
+	c.require(customerHealthFieldPosts)
+}
+
+func (c *CustomerHealth) UnmarshalJSON(data []byte) error {
+	type unmarshaler CustomerHealth
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CustomerHealth(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, customerHealthNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CustomerHealth) MarshalJSON() ([]byte, error) {
+	type embed CustomerHealth
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CustomerHealth) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
 	customerWorkspaceFieldChannels   = big.NewInt(1 << 0)
 	customerWorkspaceFieldCreatedAt  = big.NewInt(1 << 1)
 	customerWorkspaceFieldExternalID = big.NewInt(1 << 2)
@@ -14618,6 +14799,360 @@ func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
 }
 
 var (
+	overviewChannelsFieldConnected   = big.NewInt(1 << 0)
+	overviewChannelsFieldOff         = big.NewInt(1 << 1)
+	overviewChannelsFieldToReconnect = big.NewInt(1 << 2)
+)
+
+type OverviewChannels struct {
+	Connected   int `json:"connected" url:"connected"`
+	Off         int `json:"off" url:"off"`
+	ToReconnect int `json:"toReconnect" url:"toReconnect"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OverviewChannels) GetConnected() int {
+	if o == nil {
+		return 0
+	}
+	return o.Connected
+}
+
+func (o *OverviewChannels) GetOff() int {
+	if o == nil {
+		return 0
+	}
+	return o.Off
+}
+
+func (o *OverviewChannels) GetToReconnect() int {
+	if o == nil {
+		return 0
+	}
+	return o.ToReconnect
+}
+
+func (o *OverviewChannels) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OverviewChannels) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetConnected sets the Connected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewChannels) SetConnected(connected int) {
+	o.Connected = connected
+	o.require(overviewChannelsFieldConnected)
+}
+
+// SetOff sets the Off field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewChannels) SetOff(off int) {
+	o.Off = off
+	o.require(overviewChannelsFieldOff)
+}
+
+// SetToReconnect sets the ToReconnect field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewChannels) SetToReconnect(toReconnect int) {
+	o.ToReconnect = toReconnect
+	o.require(overviewChannelsFieldToReconnect)
+}
+
+func (o *OverviewChannels) UnmarshalJSON(data []byte) error {
+	type unmarshaler OverviewChannels
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OverviewChannels(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OverviewChannels) MarshalJSON() ([]byte, error) {
+	type embed OverviewChannels
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OverviewChannels) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
+var (
+	overviewInboxFieldUnanswered = big.NewInt(1 << 0)
+)
+
+type OverviewInbox struct {
+	Unanswered int `json:"unanswered" url:"unanswered"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OverviewInbox) GetUnanswered() int {
+	if o == nil {
+		return 0
+	}
+	return o.Unanswered
+}
+
+func (o *OverviewInbox) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OverviewInbox) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetUnanswered sets the Unanswered field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewInbox) SetUnanswered(unanswered int) {
+	o.Unanswered = unanswered
+	o.require(overviewInboxFieldUnanswered)
+}
+
+func (o *OverviewInbox) UnmarshalJSON(data []byte) error {
+	type unmarshaler OverviewInbox
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OverviewInbox(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OverviewInbox) MarshalJSON() ([]byte, error) {
+	type embed OverviewInbox
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OverviewInbox) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
+var (
+	overviewPostsFieldAwaitingApproval     = big.NewInt(1 << 0)
+	overviewPostsFieldFailedLast7Days      = big.NewInt(1 << 1)
+	overviewPostsFieldMayApprove           = big.NewInt(1 << 2)
+	overviewPostsFieldScheduledNext7Days   = big.NewInt(1 << 3)
+	overviewPostsFieldUnconfirmedLast7Days = big.NewInt(1 << 4)
+)
+
+type OverviewPosts struct {
+	AwaitingApproval     int  `json:"awaitingApproval" url:"awaitingApproval"`
+	FailedLast7Days      int  `json:"failedLast7Days" url:"failedLast7Days"`
+	MayApprove           bool `json:"mayApprove" url:"mayApprove"`
+	ScheduledNext7Days   int  `json:"scheduledNext7Days" url:"scheduledNext7Days"`
+	UnconfirmedLast7Days int  `json:"unconfirmedLast7Days" url:"unconfirmedLast7Days"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OverviewPosts) GetAwaitingApproval() int {
+	if o == nil {
+		return 0
+	}
+	return o.AwaitingApproval
+}
+
+func (o *OverviewPosts) GetFailedLast7Days() int {
+	if o == nil {
+		return 0
+	}
+	return o.FailedLast7Days
+}
+
+func (o *OverviewPosts) GetMayApprove() bool {
+	if o == nil {
+		return false
+	}
+	return o.MayApprove
+}
+
+func (o *OverviewPosts) GetScheduledNext7Days() int {
+	if o == nil {
+		return 0
+	}
+	return o.ScheduledNext7Days
+}
+
+func (o *OverviewPosts) GetUnconfirmedLast7Days() int {
+	if o == nil {
+		return 0
+	}
+	return o.UnconfirmedLast7Days
+}
+
+func (o *OverviewPosts) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OverviewPosts) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetAwaitingApproval sets the AwaitingApproval field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPosts) SetAwaitingApproval(awaitingApproval int) {
+	o.AwaitingApproval = awaitingApproval
+	o.require(overviewPostsFieldAwaitingApproval)
+}
+
+// SetFailedLast7Days sets the FailedLast7Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPosts) SetFailedLast7Days(failedLast7Days int) {
+	o.FailedLast7Days = failedLast7Days
+	o.require(overviewPostsFieldFailedLast7Days)
+}
+
+// SetMayApprove sets the MayApprove field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPosts) SetMayApprove(mayApprove bool) {
+	o.MayApprove = mayApprove
+	o.require(overviewPostsFieldMayApprove)
+}
+
+// SetScheduledNext7Days sets the ScheduledNext7Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPosts) SetScheduledNext7Days(scheduledNext7Days int) {
+	o.ScheduledNext7Days = scheduledNext7Days
+	o.require(overviewPostsFieldScheduledNext7Days)
+}
+
+// SetUnconfirmedLast7Days sets the UnconfirmedLast7Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPosts) SetUnconfirmedLast7Days(unconfirmedLast7Days int) {
+	o.UnconfirmedLast7Days = unconfirmedLast7Days
+	o.require(overviewPostsFieldUnconfirmedLast7Days)
+}
+
+func (o *OverviewPosts) UnmarshalJSON(data []byte) error {
+	type unmarshaler OverviewPosts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OverviewPosts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OverviewPosts) MarshalJSON() ([]byte, error) {
+	type embed OverviewPosts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OverviewPosts) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
+var (
 	ownImageLimitReachedEncodedFieldCode       = big.NewInt(1 << 0)
 	ownImageLimitReachedEncodedFieldMessage    = big.NewInt(1 << 1)
 	ownImageLimitReachedEncodedFieldRequestID  = big.NewInt(1 << 2)
@@ -15289,6 +15824,251 @@ func NewPartnerDetailsInvalidEncodedTagFromString(s string) (PartnerDetailsInval
 
 func (p PartnerDetailsInvalidEncodedTag) Ptr() *PartnerDetailsInvalidEncodedTag {
 	return &p
+}
+
+var (
+	partnerHealthFieldAccount    = big.NewInt(1 << 0)
+	partnerHealthFieldNext       = big.NewInt(1 << 1)
+	partnerHealthFieldTotal      = big.NewInt(1 << 2)
+	partnerHealthFieldWorkspaces = big.NewInt(1 << 3)
+)
+
+// partnerHealthNullableFields maps the wire names of PartnerHealth's nullable fields (required or optional) to their field bits.
+var partnerHealthNullableFields = map[string]*big.Int{
+	"account": partnerHealthFieldAccount,
+	"next":    partnerHealthFieldNext,
+}
+
+type PartnerHealth struct {
+	Account    *PartnerHealthAccount `json:"account,omitempty" url:"account,omitempty"`
+	Next       *string               `json:"next,omitempty" url:"next,omitempty"`
+	Total      int                   `json:"total" url:"total"`
+	Workspaces []*CustomerHealth     `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerHealth) GetAccount() *PartnerHealthAccount {
+	if p == nil {
+		return nil
+	}
+	return p.Account
+}
+
+func (p *PartnerHealth) GetNext() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Next
+}
+
+func (p *PartnerHealth) GetTotal() int {
+	if p == nil {
+		return 0
+	}
+	return p.Total
+}
+
+func (p *PartnerHealth) GetWorkspaces() []*CustomerHealth {
+	if p == nil {
+		return nil
+	}
+	return p.Workspaces
+}
+
+func (p *PartnerHealth) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerHealth) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetAccount sets the Account field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerHealth) SetAccount(account *PartnerHealthAccount) {
+	p.Account = account
+	p.require(partnerHealthFieldAccount)
+}
+
+// SetNext sets the Next field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerHealth) SetNext(next *string) {
+	p.Next = next
+	p.require(partnerHealthFieldNext)
+}
+
+// SetTotal sets the Total field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerHealth) SetTotal(total int) {
+	p.Total = total
+	p.require(partnerHealthFieldTotal)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerHealth) SetWorkspaces(workspaces []*CustomerHealth) {
+	p.Workspaces = workspaces
+	p.require(partnerHealthFieldWorkspaces)
+}
+
+func (p *PartnerHealth) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerHealth
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerHealth(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, partnerHealthNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerHealth) MarshalJSON() ([]byte, error) {
+	type embed PartnerHealth
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerHealth) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	partnerHealthAccountFieldOverPlan = big.NewInt(1 << 0)
+)
+
+// partnerHealthAccountNullableFields maps the wire names of PartnerHealthAccount's nullable fields (required or optional) to their field bits.
+var partnerHealthAccountNullableFields = map[string]*big.Int{
+	"overPlan": partnerHealthAccountFieldOverPlan,
+}
+
+type PartnerHealthAccount struct {
+	OverPlan *bool `json:"overPlan,omitempty" url:"overPlan,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerHealthAccount) GetOverPlan() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.OverPlan
+}
+
+func (p *PartnerHealthAccount) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerHealthAccount) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetOverPlan sets the OverPlan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerHealthAccount) SetOverPlan(overPlan *bool) {
+	p.OverPlan = overPlan
+	p.require(partnerHealthAccountFieldOverPlan)
+}
+
+func (p *PartnerHealthAccount) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerHealthAccount
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerHealthAccount(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, partnerHealthAccountNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerHealthAccount) MarshalJSON() ([]byte, error) {
+	type embed PartnerHealthAccount
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerHealthAccount) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
 }
 
 var (

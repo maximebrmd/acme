@@ -368,6 +368,60 @@ impl PartnerAccountClient {
             .await
     }
 
+    /// Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .partner_account
+    ///         .overview(
+    ///             &"workspaceId".to_string(),
+    ///             &PartnerAccountOverviewQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn overview(
+        &self,
+        workspace_id: &str,
+        request: &PartnerAccountOverviewQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<PartnerHealth, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/partner/overview", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("before", request.before.clone())
+                    .string("limit", request.limit.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
     /// Lists the workspaces the partner account owns, newest first, each with the number of channels connected in it, 50 a page unless `limit` (at most 100) says otherwise, with the filters and the paging of the partner API's list. Needs partner:read.
     ///
     /// # Arguments

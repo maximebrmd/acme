@@ -3,3 +3,4 @@ export type { DeleteWorkspacePartnerRequest } from "./DeleteWorkspacePartnerRequ
 export type { GetWorkspacePartnerRequest } from "./GetWorkspacePartnerRequest.js";
 export type { ListWorkspacesPartnerRequest } from "./ListWorkspacesPartnerRequest.js";
 export type { NewCustomerWorkspace } from "./NewCustomerWorkspace.js";
+export type { OverviewPartnerRequest } from "./OverviewPartnerRequest.js";

@@ -292,6 +292,7 @@ if typing.TYPE_CHECKING:
     from .created_feed import CreatedFeed
     from .created_partner_key import CreatedPartnerKey
     from .created_review_link import CreatedReviewLink
+    from .customer_health import CustomerHealth
     from .customer_workspace import CustomerWorkspace
     from .customer_workspace_page import CustomerWorkspacePage
     from .dashboard_day import DashboardDay
@@ -580,6 +581,8 @@ if typing.TYPE_CHECKING:
     from .partner_detail_field import PartnerDetailField
     from .partner_details_invalid_encoded import PartnerDetailsInvalidEncoded
     from .partner_details_invalid_encoded_tag import PartnerDetailsInvalidEncodedTag
+    from .partner_health import PartnerHealth
+    from .partner_health_account import PartnerHealthAccount
     from .partner_holdings import PartnerHoldings
     from .partner_key import PartnerKey
     from .partner_key_not_found_encoded import PartnerKeyNotFoundEncoded
@@ -1196,6 +1199,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CreatedFeed": ".created_feed",
     "CreatedPartnerKey": ".created_partner_key",
     "CreatedReviewLink": ".created_review_link",
+    "CustomerHealth": ".customer_health",
     "CustomerWorkspace": ".customer_workspace",
     "CustomerWorkspacePage": ".customer_workspace_page",
     "DashboardDay": ".dashboard_day",
@@ -1470,6 +1474,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PartnerDetailField": ".partner_detail_field",
     "PartnerDetailsInvalidEncoded": ".partner_details_invalid_encoded",
     "PartnerDetailsInvalidEncodedTag": ".partner_details_invalid_encoded_tag",
+    "PartnerHealth": ".partner_health",
+    "PartnerHealthAccount": ".partner_health_account",
     "PartnerHoldings": ".partner_holdings",
     "PartnerKey": ".partner_key",
     "PartnerKeyNotFoundEncoded": ".partner_key_not_found_encoded",
@@ -2111,6 +2117,7 @@ __all__ = [
     "CreatedFeed",
     "CreatedPartnerKey",
     "CreatedReviewLink",
+    "CustomerHealth",
     "CustomerWorkspace",
     "CustomerWorkspacePage",
     "DashboardDay",
@@ -2385,6 +2392,8 @@ __all__ = [
     "PartnerDetailField",
     "PartnerDetailsInvalidEncoded",
     "PartnerDetailsInvalidEncodedTag",
+    "PartnerHealth",
+    "PartnerHealthAccount",
     "PartnerHoldings",
     "PartnerKey",
     "PartnerKeyNotFoundEncoded",

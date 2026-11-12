@@ -10,8 +10,10 @@ import social.peal.resources.partner.requests.DeleteWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.GetWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.ListWorkspacesPartnerRequest;
 import social.peal.resources.partner.requests.NewCustomerWorkspace;
+import social.peal.resources.partner.requests.OverviewPartnerRequest;
 import social.peal.types.CustomerWorkspace;
 import social.peal.types.CustomerWorkspacePage;
+import social.peal.types.PartnerHealth;
 import social.peal.types.PartnerOverview;
 
 public class PartnerClient {
@@ -43,6 +45,34 @@ public class PartnerClient {
      */
     public PartnerOverview account(RequestOptions requestOptions) {
         return this.rawClient.account(requestOptions).body();
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PartnerHealth overview() {
+        return this.rawClient.overview().body();
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PartnerHealth overview(RequestOptions requestOptions) {
+        return this.rawClient.overview(requestOptions).body();
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PartnerHealth overview(OverviewPartnerRequest request) {
+        return this.rawClient.overview(request).body();
+    }
+
+    /**
+     * Answers, for each workspace the partner owns, what needs attention: its channels (<code>connected</code>, <code>toReconnect</code>: to reconnect, as <code>channel.reconnect_needed</code> told; <code>off</code>: turned off), its posts (<code>scheduledNext7Days</code>, <code>awaitingApproval</code>, <code>failedLast7Days</code>: finished in the last 7 days with a channel that failed, as <code>post.failed</code> told; <code>unconfirmedLast7Days</code>: one that may be live and must be checked) and its inbox (<code>unanswered</code>: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. <code>account</code> comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill). Each section needs the permission that reads it in a workspace: <code>channel:read</code>, <code>post:read</code>, <code>engagement:read</code>, and <code>mayApprove</code> says whether the key holds <code>post:approve</code>. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PartnerHealth overview(OverviewPartnerRequest request, RequestOptions requestOptions) {
+        return this.rawClient.overview(request, requestOptions).body();
     }
 
     /**
