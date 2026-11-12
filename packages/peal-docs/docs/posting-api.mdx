@@ -488,7 +488,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
 
 ## Post from a feed [#feeds]
 
-`POST …/feeds`, with `{ "url", "channelIds"?, "channelSetId"?, "mode"?, "queueId"?, "template"? }`, follows a web feed ([how](/scheduling#feeds)): it is read once, and every item it holds then is recorded as seen and never made; it answers 201 with the feed and `seen`, how many. `mode` is `draft` (the default) or `queue` (on `queueId`, or the workspace's default queue); `template` takes `{title}`, `{link}` and `{summary}`, 1000 characters at most. `POST …/feeds/preview` with `{ "url", "template"? }` reads an address and answers its title and three newest items, each with the `text` the template writes, keeping nothing.
+`POST …/feeds`, with `{ "url", "channelIds"?, "channelSetId"?, "mode"?, "queueId"?, "template"? }`, follows a web feed ([how](/scheduling#feeds)): it is read once, and every item it holds then is recorded as seen and never made; it answers 201 with the feed and `seen`, how many. `mode` is `draft` (the default) or `queue` (on `queueId`, or the workspace's default queue); `template` takes `{title}`, `{link}` and `{summary}`, 1000 characters at most; `attachPicture` imports each item's picture into the media library for its post (the starter needs media:upload), and an item's `pictureSkipped` says why one was left out. `POST …/feeds/preview` with `{ "url", "template"? }` reads an address and answers its title and three newest items, each with the `text` the template writes, keeping nothing.
 
 ```sh
 curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \

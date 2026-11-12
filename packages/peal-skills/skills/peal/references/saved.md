@@ -153,6 +153,9 @@ peal feeds remove <feed-id> --json
 - Drafts are the default. `--mode queue` puts each item on the queue's
   next free slot without anyone reading it first: choose it only when the
   user asked for that, as it needs a role that schedules.
+- `--picture` attaches each item's picture, imported into the media
+  library; a post goes without one it cannot have (`peal feeds items`
+  says why).
 - What the feed holds when it is added is never posted; at most 3 posts a
   run and 12 a day per feed. A feed that fails for seven days, or whose
   site says it is gone, stops with a notification: `peal feeds show` says
@@ -161,4 +164,3 @@ peal feeds remove <feed-id> --json
   feed), `feed_template_invalid` (a placeholder other than `{title}`,
   `{link}`, `{summary}`), `feed_reads_limited` (30 reads an hour: wait
   `retryAfterSeconds`), `too_many_feeds` (10 a workspace).
-

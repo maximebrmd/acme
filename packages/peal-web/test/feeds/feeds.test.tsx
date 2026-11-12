@@ -88,6 +88,7 @@ describe("a feed", () => {
           {
             itemAt: null,
             outcome: "heldBack",
+            pictureSkipped: "tooLarge",
             postId: "0190f3a0-0000-7000-8000-00000000f001",
             reason: "duplicate",
             seenAt: at("2026-06-16T07:00:00Z"),
@@ -99,6 +100,7 @@ describe("a feed", () => {
     expect(english).toContain(
       "a draft was made instead, as the same post already goes out"
     );
+    expect(english).toContain("Its picture was left out: it is too large.");
   });
 
   it("previews each item as its post would say it", async () => {
@@ -139,6 +141,7 @@ describe("a feed", () => {
         channels={[]}
         disabled={false}
         draft={{
+          attachPicture: false,
           channelIds: [],
           mode: "draft",
           queueId: "",

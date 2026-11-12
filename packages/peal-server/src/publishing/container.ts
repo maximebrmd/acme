@@ -10,6 +10,7 @@ import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { FeedNotices } from "#publishing/application/feed-notices.ts";
+import { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import { FeedSource } from "#publishing/application/feed-source.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
@@ -84,6 +85,7 @@ import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { HttpFeedSource } from "#publishing/infrastructure/feeds/http-feed-source.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
+import { LibraryFeedPictures } from "#publishing/infrastructure/library-feed-pictures.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedChannelConnections } from "#publishing/infrastructure/listed-channel-connections.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
@@ -126,15 +128,19 @@ type LiveServices = LivePostEvents | LivePostHolds | PlatformCredentials;
 // starter is now, and who hears that a rule ended.
 type RecyclingServices = RecyclingActors | RecyclingNotices;
 
-// What feeds need beside publishing's own adapters: what reads them, and
-// who hears that one stopped.
-type FeedServices = FeedNotices | FeedSource;
+// What feeds need beside publishing's own adapters: what reads them, who
+// hears that one stopped, and what brings an item's picture in.
+type FeedServices = FeedNotices | FeedPictures | FeedSource;
 
 /**
- * For tests that read no feed: every host is out of reach, and nobody
- * hears that a feed stopped.
+ * For tests that read no feed: every host is out of reach, nobody hears
+ * that a feed stopped, and no picture is ever had.
  */
-export const FeedsUnused = Layer.merge(FeedSource.none, FeedNotices.none);
+export const FeedsUnused = Layer.mergeAll(
+  FeedSource.none,
+  FeedNotices.none,
+  FeedPictures.none
+);
 
 /**
  * For tests that make no occurrence: every starter is gone, and nobody
@@ -358,14 +364,15 @@ export const PublishingLive = publishingOver(
   // Recycling rules: the workspace context says who a starter is now, and
   // the notices tell that a rule ended.
   Layer.merge(WorkspaceRecyclingActors, NotifiedRecyclingNotices),
-  // Feeds: read over the guarded public client, and the notices tell that
-  // one stopped.
-  Layer.merge(
+  // Feeds: read over the guarded public client, the notices tell that one
+  // stopped, and the media context's import brings an item's picture in.
+  Layer.mergeAll(
     HttpFeedSource.pipe(
       Layer.provide(OutboundGuard.layer),
       Layer.provide(Layer.merge(FetchHttpClient.layer, Digest.layerWebCrypto))
     ),
-    NotifiedFeedNotices
+    NotifiedFeedNotices,
+    LibraryFeedPictures
   )
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.

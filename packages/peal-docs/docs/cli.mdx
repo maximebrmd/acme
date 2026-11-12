@@ -393,7 +393,7 @@ peal feeds resume <feed-id>
 peal feeds remove <feed-id>
 ```
 
-- `peal feeds add` follows a [feed](/scheduling#feeds): what it holds then is never posted, and each item that appears afterwards becomes a draft, or with `--mode queue` a post on the queue's next free slot (`--queue`, by name or id; the default queue otherwise), without anyone reading it first. `--channel` (repeated, or ids separated by commas) and `--set` say where its posts go, `--template` what they say (`{title}`, `{link}`, `{summary}`).
+- `peal feeds add` follows a [feed](/scheduling#feeds): what it holds then is never posted, and each item that appears afterwards becomes a draft, or with `--mode queue` a post on the queue's next free slot (`--queue`, by name or id; the default queue otherwise), without anyone reading it first. `--channel` (repeated, or ids separated by commas) and `--set` say where its posts go, `--template` what they say (`{title}`, `{link}`, `{summary}`), and `--picture` attaches each item's picture, imported into the media library.
 - `peal feeds preview` reads an address and prints its three newest items as the template would write them, keeping nothing. `peal feeds items` prints what became of its 50 newest items, never what they said.
 - `peal feeds update` changes the channels, mode, queue, set (`--no-set` takes it away), template or address (read at once); `pause` and `resume` stop and restart it, `resume` reading it at once. `remove` stops following it; its drafts and posts stay.
 

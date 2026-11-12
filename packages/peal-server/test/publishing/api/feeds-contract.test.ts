@@ -8,6 +8,7 @@ import {
   FeedItemReasonSchema,
   feedItemsShown,
   FeedModeSchema,
+  FeedPictureSkipSchema,
   feedPlaceholders,
   feedPreviewItems,
   feedReadsPerHour,
@@ -27,6 +28,7 @@ import { itemsShown, previewedItems } from "#publishing/application/feeds.ts";
 import {
   FeedItemOutcomeSchema as OwnOutcomes,
   FeedItemReasonSchema as OwnItemReasons,
+  FeedPictureSkipSchema as OwnPictureSkips,
 } from "#publishing/domain/feed-item-outcome.ts";
 import { FeedReadFailureSchema as OwnFailures } from "#publishing/domain/feed-read-failure.ts";
 import { FeedStopReasonSchema as OwnStopReasons } from "#publishing/domain/feed-stop-reason.ts";
@@ -84,6 +86,7 @@ describe("the contract's feeds", () => {
       FeedFailureSchema.literals,
       FeedItemOutcomeSchema.literals,
       FeedItemReasonSchema.literals,
+      FeedPictureSkipSchema.literals,
     ]).toStrictEqual([
       Own.FeedModeSchema.literals,
       OwnStopReasons.literals,
@@ -91,6 +94,7 @@ describe("the contract's feeds", () => {
       OwnFailures.literals,
       OwnOutcomes.literals,
       OwnItemReasons.literals,
+      OwnPictureSkips.literals,
     ]);
   });
 });

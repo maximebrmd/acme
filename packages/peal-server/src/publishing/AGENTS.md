@@ -944,3 +944,11 @@ publishing's schema, naming nobody: each goes with its workspace
   which an alert watches. A feed keeps its 500 newest items: the
   idempotency retention's run prunes the rest and read counts a day old.
   Erasure deletes feeds before posts; `forgetAuthor` clears `started_by`.
+- With `attachPicture`, an item's picture is imported through
+  `FeedPictures` (`LibraryFeedPictures`, the media context's
+  `MediaLibrary.importMedia`, as the starter, who needs media:upload)
+  before the item's transaction, and attached, described by the item's
+  title, only when it is a ready image; anything else leaves the post
+  without it and writes `feed_items.picture_skipped`. A crash after the
+  import, or a file that is not an image, leaves an asset unattached in
+  the library: accepted. A claim sent again imports again.

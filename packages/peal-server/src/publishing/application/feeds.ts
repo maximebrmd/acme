@@ -46,6 +46,7 @@ import type {
   FeedMode,
   FeedValidators,
 } from "#publishing/domain/feed.ts";
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
@@ -62,6 +63,8 @@ import { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { ChannelSetStore } from "./channel-set-store.ts";
 import { FeedNotFound } from "./feed-not-found.ts";
 import { FeedNotices } from "./feed-notices.ts";
+import { FeedPictures } from "./feed-pictures.ts";
+import type { FeedPicture } from "./feed-pictures.ts";
 import type { FeedReadFailed } from "./feed-read-failed.ts";
 import { FeedReadsLimited } from "./feed-reads-limited.ts";
 import { FeedReads } from "./feed-reads.ts";
@@ -224,13 +227,16 @@ const existing = (
     digest: entry.digest,
     itemAt: entry.publishedAt,
     outcome: "skipped",
+    pictureSkipped: Option.none(),
     postId: Option.none(),
     reason: Option.some("existing"),
     seenAt: now,
   }));
 
-const contentOf = (text: string) =>
-  new PostContent({ media: [], overrides: [], text });
+// A post's content: the text, and the item's picture when it was had,
+// described by the item's title.
+const contentOf = (text: string, picture: Option.Option<MediaAttachment>) =>
+  new PostContent({ media: Option.toArray(picture), overrides: [], text });
 
 // The newest items first: by date when each has one, else as listed.
 const newestFirst = (items: readonly FeedEntry[]) =>
@@ -334,6 +340,7 @@ export class Feeds extends Context.Service<
       const scheduling = yield* PostScheduling;
       const actors = yield* RecyclingActors;
       const notices = yield* FeedNotices;
+      const pictures = yield* FeedPictures;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ports>();
 
@@ -762,13 +769,13 @@ export class Feeds extends Context.Service<
         actor: Actor,
         feed: Feed,
         entry: FeedEntry,
-        text: string,
+        content: PostContent,
         reason: Option.Option<FeedItemReason>,
         recorded: boolean
       ) {
         const request = (channelIds: readonly ChannelId[]) => ({
           channelIds,
-          content: contentOf(text),
+          content,
           ...Option.match(feed.channelSetId, {
             onNone: () => ({}),
             onSome: (setId) => ({
@@ -789,6 +796,7 @@ export class Feeds extends Context.Service<
                   digest: entry.digest,
                   itemAt: entry.publishedAt,
                   outcome: "claimed",
+                  pictureSkipped: Option.none(),
                   postId: Option.none(),
                   reason: Option.none(),
                   seenAt: yield* DateTime.now,
@@ -805,15 +813,9 @@ export class Feeds extends Context.Service<
               .pipe(
                 Effect.catchTags({
                   ChannelSetNotFound: () =>
-                    drafts.create(actor, {
-                      channelIds: [],
-                      content: contentOf(text),
-                    }),
+                    drafts.create(actor, { channelIds: [], content }),
                   UnknownChannels: () =>
-                    drafts.create(actor, {
-                      channelIds: [],
-                      content: contentOf(text),
-                    }),
+                    drafts.create(actor, { channelIds: [], content }),
                 })
               );
 
@@ -840,7 +842,7 @@ export class Feeds extends Context.Service<
         actor: Actor,
         feed: Feed,
         entry: FeedEntry,
-        text: string,
+        content: PostContent,
         recorded: boolean
       ) {
         if (!recorded) {
@@ -849,6 +851,7 @@ export class Feeds extends Context.Service<
               digest: entry.digest,
               itemAt: entry.publishedAt,
               outcome: "claimed",
+              pictureSkipped: Option.none(),
               postId: Option.none(),
               reason: Option.none(),
               seenAt: yield* DateTime.now,
@@ -871,7 +874,7 @@ export class Feeds extends Context.Service<
             actor,
             feed,
             entry,
-            text,
+            content,
             Option.some("queueGone"),
             true
           );
@@ -882,7 +885,7 @@ export class Feeds extends Context.Service<
         const key = `feed:${feed.id}:${entry.digest}`;
 
         const heldBack = (reason: FeedItemReason) =>
-          draftOf(actor, feed, entry, text, Option.some(reason), true).pipe(
+          draftOf(actor, feed, entry, content, Option.some(reason), true).pipe(
             Effect.as("made" as const)
           );
 
@@ -890,7 +893,7 @@ export class Feeds extends Context.Service<
           .send(actor, {
             allowDuplicate: false,
             channelIds: feed.channelIds,
-            content: contentOf(text),
+            content,
             idempotency: Option.some({ fingerprint: key, key }),
             placement: { _tag: "queue", queueId: Option.some(queue.value.id) },
             ...Option.match(feed.channelSetId, {
@@ -940,7 +943,7 @@ export class Feeds extends Context.Service<
                   actor,
                   feed,
                   entry,
-                  text,
+                  content,
                   Option.some("queueGone"),
                   true
                 ).pipe(Effect.as("queueGone" as const)),
@@ -971,6 +974,7 @@ export class Feeds extends Context.Service<
               digest: entry.digest,
               itemAt: entry.publishedAt,
               outcome: "skipped",
+              pictureSkipped: Option.none(),
               postId: Option.none(),
               reason: Option.some("empty"),
               seenAt: now,
@@ -996,6 +1000,7 @@ export class Feeds extends Context.Service<
                 digest: entry.digest,
                 itemAt: entry.publishedAt,
                 outcome: "skipped",
+                pictureSkipped: Option.none(),
                 postId: Option.none(),
                 reason: Option.some(reason),
                 seenAt: now,
@@ -1014,6 +1019,35 @@ export class Feeds extends Context.Service<
               Effect.as("skipped" as const)
             );
 
+        // The picture comes before the item's transaction: a crash after
+        // the import leaves the asset in the library, unattached.
+        const picture =
+          feed.attachPicture && Option.isSome(entry.pictureUrl)
+            ? Option.some(
+                yield* pictures.attach(
+                  actor,
+                  entry.pictureUrl.value,
+                  Option.getOrElse(entry.title, () => "")
+                )
+              )
+            : Option.none<FeedPicture>();
+
+        const content = contentOf(
+          text.value,
+          picture.pipe(
+            Option.flatMap((had) =>
+              had._tag === "attached"
+                ? Option.some(
+                    new MediaAttachment({
+                      altText: Option.getOrElse(entry.title, () => ""),
+                      mediaId: had.mediaId,
+                    })
+                  )
+                : Option.none()
+            )
+          )
+        );
+
         const attempt: Effect.Effect<
           Made,
           | ChannelSetNotFound
@@ -1026,19 +1060,19 @@ export class Feeds extends Context.Service<
           | UnknownTags
         > =
           feed.mode === "queue"
-            ? queued(actor, feed, entry, text.value, recorded)
+            ? queued(actor, feed, entry, content, recorded)
             : draftOf(
                 actor,
                 feed,
                 entry,
-                text.value,
+                content,
                 Option.none(),
                 recorded
               ).pipe(
                 Effect.map((post) => (Option.isSome(post) ? "made" : "skipped"))
               );
 
-        return yield* attempt.pipe(
+        const outcome = yield* attempt.pipe(
           Effect.catchTags({
             ChannelSetNotFound: () => skipped("noChannels"),
             MissingPermission: () =>
@@ -1058,6 +1092,13 @@ export class Feeds extends Context.Service<
             UnknownTags: () => skipped("contentRejected"),
           })
         );
+
+        // Kept on the item, whatever came of it: why it went without.
+        if (Option.isSome(picture) && picture.value._tag === "skipped") {
+          yield* store.skipPicture(feed.id, entry.digest, picture.value.reason);
+        }
+
+        return outcome;
       });
 
       // What a read's document makes, as the feed's starter: the sends a
@@ -1114,6 +1155,7 @@ export class Feeds extends Context.Service<
             digest: entry.digest,
             itemAt: entry.publishedAt,
             outcome: "skipped",
+            pictureSkipped: Option.none(),
             postId: Option.none(),
             reason: Option.some("tooMany"),
             seenAt: now,

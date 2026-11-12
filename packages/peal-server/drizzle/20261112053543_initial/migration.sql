@@ -714,6 +714,7 @@ CREATE TABLE "publishing"."feed_items" (
 	"item_at" timestamp with time zone,
 	"item_digest" text,
 	"outcome" text NOT NULL,
+	"picture_skipped" text,
 	"post_id" uuid,
 	"reason" text,
 	"seen_at" timestamp with time zone NOT NULL,

@@ -50,6 +50,7 @@ import {
 import type { FeedDraft } from "./feed-views.tsx";
 
 const emptyDraft: FeedDraft = {
+  attachPicture: false,
   channelIds: [],
   mode: "draft",
   queueId: "",
@@ -238,6 +239,7 @@ const CreateForm = ({
     event.preventDefault();
 
     const payload: NewFeed = {
+      attachPicture: draft.attachPicture,
       channelIds: draft.channelIds,
       mode: draft.mode,
       template: draft.template,

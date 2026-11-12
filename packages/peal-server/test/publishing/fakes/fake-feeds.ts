@@ -1,6 +1,8 @@
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { FeedNotices } from "#publishing/application/feed-notices.ts";
+import { FeedPictures } from "#publishing/application/feed-pictures.ts";
+import type { FeedPicture } from "#publishing/application/feed-pictures.ts";
 import { FeedReadFailed } from "#publishing/application/feed-read-failed.ts";
 import { FeedSource } from "#publishing/application/feed-source.ts";
 import type { FeedRead } from "#publishing/application/feed-source.ts";
@@ -41,6 +43,13 @@ const served = Ref.makeUnsafe<ReadonlyMap<string, Served>>(new Map());
 const reads = Ref.makeUnsafe<readonly string[]>([]);
 const told = Ref.makeUnsafe<readonly ToldStop[]>([]);
 
+// What each picture's address gives, and the imports asked for.
+const pictures = Ref.makeUnsafe<ReadonlyMap<string, FeedPicture>>(new Map());
+
+const imported = Ref.makeUnsafe<
+  readonly { readonly altText: string; readonly url: string }[]
+>([]);
+
 /** The digest of item `n`. */
 export const digestOf = (n: number) =>
   ItemDigestSchema.make(n.toString(16).padStart(64, "0"));
@@ -63,7 +72,16 @@ export const resetFeeds = Effect.all([
   Ref.set(served, new Map()),
   Ref.set(reads, []),
   Ref.set(told, []),
+  Ref.set(pictures, new Map()),
+  Ref.set(imported, []),
 ]);
+
+/** What importing the picture at `url` gives from now on. */
+export const picturesGive = (url: string, picture: FeedPicture) =>
+  Ref.update(pictures, (map) => new Map([...map, [url, picture]]));
+
+/** The pictures imported so far, with the alt text each was given. */
+export const importedPictures = Ref.get(imported);
 
 /** What `url` answers from now on. */
 export const serve = (url: string, answer: Served) =>
@@ -79,8 +97,24 @@ export const readAddresses = Ref.get(reads);
 /** The stops told so far. */
 export const toldStops = Ref.get(told);
 
-/** A source that reads what `serve` set, and notices that keep stops. */
-export const FakeFeeds = Layer.merge(
+/**
+ * A source that reads what `serve` set, notices that keep stops, and
+ * pictures that give what `picturesGive` set (or fail).
+ */
+export const FakeFeeds = Layer.mergeAll(
+  Layer.succeed(
+    FeedPictures,
+    FeedPictures.of({
+      attach: (_actor, url, altText) =>
+        Ref.update(imported, (all) => [...all, { altText, url }]).pipe(
+          Effect.andThen(Ref.get(pictures)),
+          Effect.map(
+            (map): FeedPicture =>
+              map.get(url) ?? { _tag: "skipped", reason: "unreachable" }
+          )
+        ),
+    })
+  ),
   Layer.succeed(
     FeedSource,
     FeedSource.of({

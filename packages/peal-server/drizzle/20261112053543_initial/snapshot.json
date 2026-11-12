@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "1176901b-4c85-4543-86d3-4f6e8b328ba0",
+  "id": "a047de08-77e7-4e98-8477-122437eb5cd0",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -13575,6 +13575,19 @@
       "type": "text",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "picture_skipped",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

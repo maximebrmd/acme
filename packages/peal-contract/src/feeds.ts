@@ -274,11 +274,34 @@ export const FeedItemReasonSchema = Schema.Literals([
 
 export type FeedItemReason = typeof FeedItemReasonSchema.Type;
 
+/**
+ * Why an item's picture was not attached, its post made without it: its
+ * address is not public (`notPublic`) or gave nothing (`unreachable`), the
+ * file is too large (`tooLarge`) or not an image (`notAnImage`), the
+ * plan's storage is full (`storageFull`), the imports are busy (`busy`),
+ * the feed's starter may not upload media (`notAllowed`), or anything else
+ * (`failed`).
+ */
+export const FeedPictureSkipSchema = Schema.Literals([
+  "notPublic",
+  "unreachable",
+  "tooLarge",
+  "notAnImage",
+  "storageFull",
+  "busy",
+  "notAllowed",
+  "failed",
+]).annotate({ identifier: "FeedPictureSkip" });
+
+export type FeedPictureSkip = typeof FeedPictureSkipSchema.Type;
+
 /** An item a feed read: never its text, which Peal does not keep. */
 export const FeedItemSchema = Schema.Struct({
   // The date the item gave, if one.
   itemAt: Schema.NullOr(Schema.DateTimeUtc),
   outcome: FeedItemOutcomeSchema,
+  // Why its picture was not attached, for a feed that attaches them.
+  pictureSkipped: Schema.NullOr(FeedPictureSkipSchema),
   postId: Schema.NullOr(Schema.String),
   reason: Schema.NullOr(FeedItemReasonSchema),
   seenAt: Schema.DateTimeUtc,

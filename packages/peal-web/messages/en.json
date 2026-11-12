@@ -3437,6 +3437,9 @@
       "noQueue": "The workspace has no such queue, or no default queue: add one first.",
       "notFound": "This feed no longer exists.",
       "unknownChannels": "A chosen channel is no longer connected."
-    }
+    },
+    "pictureSkipped": "Its picture was left out: {reason, select, notPublic {its address is not public.} unreachable {it could not be fetched.} tooLarge {it is too large.} notAnImage {it is not an image.} storageFull {the plan’s storage is full.} busy {too many imports ran at once.} notAllowed {whoever added the feed may not upload media.} other {it could not be imported.}}",
+    "picture": "Attach each item’s picture",
+    "pictureHint": "Imported into the media library, described by the item’s title. A post goes without it when it cannot be had."
   }
 }

@@ -30,6 +30,8 @@ import { channelName } from "#channels/channel-name.ts";
 
 /** What the form holds while a member writes a feed. */
 export interface FeedDraft {
+  /** Whether each item's picture goes with its post. */
+  readonly attachPicture: boolean;
   readonly channelIds: readonly string[];
   readonly mode: FeedMode;
   /** The queue's id; empty for the workspace's default. */
@@ -134,6 +136,9 @@ export const FeedItemsView = ({
             outcome: item.outcome,
             reason: item.reason ?? "none",
           })}
+          {item.pictureSkipped === null
+            ? null
+            : ` ${t("pictureSkipped", { reason: item.pictureSkipped })}`}
         </li>
       ))}
     </ul>
@@ -196,6 +201,7 @@ export const FeedFieldsView = ({
   const templateId = `${prefix}-template`;
   const modeId = `${prefix}-mode`;
   const queueId = `${prefix}-queue`;
+  const pictureId = `${prefix}-picture`;
   const chosenQueue = queues.find(({ id }) => id === draft.queueId);
 
   return (
@@ -287,6 +293,20 @@ export const FeedFieldsView = ({
           </Select>
         </div>
       ) : null}
+      <div className="flex max-w-xl flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={pictureId}
+            checked={draft.attachPicture}
+            disabled={disabled}
+            onCheckedChange={(checked) => {
+              onChange({ ...draft, attachPicture: checked });
+            }}
+          />
+          <Label htmlFor={pictureId}>{t("picture")}</Label>
+        </div>
+        <p className="text-muted-foreground text-xs">{t("pictureHint")}</p>
+      </div>
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
         <legend className="mb-2 text-sm font-medium">{t("channels")}</legend>
         {channels.length === 0 ? (

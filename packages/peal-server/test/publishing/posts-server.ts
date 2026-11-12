@@ -8,6 +8,7 @@ import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-chann
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import type { FeedNotices } from "#publishing/application/feed-notices.ts";
+import type { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import type { FeedSource } from "#publishing/application/feed-source.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
@@ -75,7 +76,7 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // Who a recycling rule's starter is, and who hears it ended.
   recycling: Layer.Layer<RecyclingActors | RecyclingNotices> = RecyclingUnused,
   // What reads feeds, and who hears one stopped.
-  feeds: Layer.Layer<FeedNotices | FeedSource> = FeedsUnused
+  feeds: Layer.Layer<FeedNotices | FeedPictures | FeedSource> = FeedsUnused
 ) =>
   publishingWorkers(
     FakePlatformPublisher,

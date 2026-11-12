@@ -39,3 +39,25 @@ export const FeedItemReasonSchema = Schema.Literals([
 ]);
 
 export type FeedItemReason = typeof FeedItemReasonSchema.Type;
+
+/**
+ * Why an item's picture was not attached to its post, which went without
+ * it: its address is not public (`notPublic`) or did not answer
+ * (`unreachable`), the file is too large (`tooLarge`) or not an image
+ * Peal takes (`notAnImage`), the plan's storage is full (`storageFull`),
+ * the imports are all busy (`busy`), the starter may not upload media
+ * (`notAllowed`), or anything else (`failed`). Stored: add a member, never
+ * rename or remove one.
+ */
+export const FeedPictureSkipSchema = Schema.Literals([
+  "notPublic",
+  "unreachable",
+  "tooLarge",
+  "notAnImage",
+  "storageFull",
+  "busy",
+  "notAllowed",
+  "failed",
+]);
+
+export type FeedPictureSkip = typeof FeedPictureSkipSchema.Type;

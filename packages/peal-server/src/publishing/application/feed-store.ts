@@ -6,6 +6,7 @@ import type { FeedId } from "#publishing/domain/feed-id.ts";
 import type {
   FeedItemOutcome,
   FeedItemReason,
+  FeedPictureSkip,
 } from "#publishing/domain/feed-item-outcome.ts";
 import type { Feed } from "#publishing/domain/feed.ts";
 import type { ItemDigest } from "#publishing/domain/item-digest.ts";
@@ -23,6 +24,8 @@ export interface FeedItemRecord {
   readonly digest: ItemDigest;
   readonly itemAt: Option.Option<DateTime.Utc>;
   readonly outcome: FeedItemOutcome;
+  /** Why its picture was not attached, when one was asked for. */
+  readonly pictureSkipped: Option.Option<FeedPictureSkip>;
   readonly postId: Option.Option<PostId>;
   readonly reason: Option.Option<FeedItemReason>;
   readonly seenAt: DateTime.Utc;
@@ -116,6 +119,12 @@ export class FeedStore extends Context.Service<
       outcome: FeedItemOutcome,
       reason: Option.Option<FeedItemReason>,
       postId: Option.Option<PostId>
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Writes why an item's picture was not attached to its post. */
+    readonly skipPicture: (
+      feedId: FeedId,
+      digest: ItemDigest,
+      reason: FeedPictureSkip
     ) => Effect.Effect<void, DatabaseError>;
     /** The feed's items still `claimed`: their post's send not settled. */
     readonly claimed: (

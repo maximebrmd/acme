@@ -500,6 +500,9 @@ const items = Command.make(
             ? item.outcome
             : `${item.outcome} (${item.reason})`,
           item.postId === null ? undefined : `post ${item.postId}`,
+          item.pictureSkipped === null
+            ? undefined
+            : `without its picture (${item.pictureSkipped})`,
         ]
           .filter((part) => part !== undefined)
           .join("  ")

@@ -19,6 +19,7 @@ import type { FeedItemRecord } from "#publishing/application/feed-store.ts";
 import {
   FeedItemOutcomeSchema,
   FeedItemReasonSchema,
+  FeedPictureSkipSchema,
 } from "#publishing/domain/feed-item-outcome.ts";
 import { Feed } from "#publishing/domain/feed.ts";
 import type { FeedStatus } from "#publishing/domain/feed.ts";
@@ -44,6 +45,7 @@ const decodeItem = Schema.decodeUnknownEffect(
     digest: ItemDigestSchema,
     itemAt: Schema.Option(Schema.DateTimeUtc),
     outcome: FeedItemOutcomeSchema,
+    pictureSkipped: Schema.Option(FeedPictureSkipSchema),
     postId: Schema.Option(PostIdSchema),
     reason: Schema.Option(FeedItemReasonSchema),
     seenAt: Schema.DateTimeUtc,
@@ -118,6 +120,7 @@ const toItem = (row: ItemRow): Effect.Effect<FeedItemRecord> =>
     digest: row.itemDigest,
     itemAt: optionalUtc(row.itemAt),
     outcome: row.outcome,
+    pictureSkipped: Option.fromNullOr(row.pictureSkipped),
     postId: Option.fromNullOr(row.postId),
     reason: Option.fromNullOr(row.reason),
     seenAt: utc(row.seenAt),
@@ -349,6 +352,7 @@ export const DrizzleFeedStore = Layer.effect(
                   itemAt: item.itemAt.pipe(Option.map(date), Option.getOrNull),
                   itemDigest: item.digest,
                   outcome: item.outcome,
+                  pictureSkipped: Option.getOrNull(item.pictureSkipped),
                   postId: Option.getOrNull(item.postId),
                   reason: Option.getOrNull(item.reason),
                   seenAt: date(item.seenAt),
@@ -403,6 +407,14 @@ export const DrizzleFeedStore = Layer.effect(
             postId: Option.getOrNull(postId),
             reason: Option.getOrNull(reason),
           })
+          .where(
+            and(eq(feedItems.feedId, feedId), eq(feedItems.itemDigest, digest))
+          )
+          .pipe(Effect.asVoid, Effect.mapError(failed)),
+      skipPicture: (feedId, digest, reason) =>
+        db
+          .update(feedItems)
+          .set({ pictureSkipped: reason })
           .where(
             and(eq(feedItems.feedId, feedId), eq(feedItems.itemDigest, digest))
           )

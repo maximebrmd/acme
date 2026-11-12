@@ -19,6 +19,8 @@ import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   digestOf,
   FakeFeeds,
+  importedPictures,
+  picturesGive,
   readAddresses,
   resetFeeds,
   serve,
@@ -31,11 +33,16 @@ import {
   startersAre,
 } from "#test/publishing/fakes/fake-recycling.ts";
 import { setTime } from "#test/publishing/infrastructure/harness.ts";
-import { connect, postsServerBehind } from "#test/publishing/posts-server.ts";
+import {
+  attachableImage,
+  connect,
+  postsServerBehind,
+} from "#test/publishing/posts-server.ts";
 import {
   actorIn,
   attachableMedia,
   contentOf,
+  mediaFile,
   postAllowance,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -76,7 +83,7 @@ const serverWith = (
 ) =>
   postsServerBehind(
     gate,
-    attachableMedia(),
+    attachableMedia([mediaFile(attachableImage)]),
     allowance,
     PostEvents.none,
     FakeRecycling,
@@ -754,6 +761,135 @@ describe("a feed resumed", () => {
             (yield* itemsOf(workspaceId, feed.id)).map(({ reason }) => reason),
             ["existing"]
           );
+        })
+      ),
+    timeout
+  );
+});
+
+interface MediaRow {
+  readonly media: unknown;
+}
+
+const mediaOf = (workspaceId: WorkspaceId) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql<MediaRow>`SELECT media FROM publishing.posts WHERE workspace_id = ${workspaceId} ORDER BY id`
+  ).pipe(
+    Effect.orDie,
+    Effect.map((rows) => rows.map(({ media }) => JSON.stringify(media)))
+  );
+
+describe("a feed that attaches its items' pictures", () => {
+  it.effect(
+    "attaches the picture, described by the item's title",
+    () =>
+      onServer(
+        Effect.gen(function* attaches() {
+          const workspaceId = yield* freshWorkspace;
+          const picture = "https://cdn.blog.example/one.png";
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId, {
+            attachPicture: true,
+          });
+
+          yield* picturesGive(picture, {
+            _tag: "attached",
+            mediaId: attachableImage,
+          });
+          yield* serveItems(blog, [{ n: 1, picture, title: "With a picture" }]);
+          yield* later();
+          yield* poll;
+
+          assert.deepStrictEqual(yield* importedPictures, [
+            { altText: "With a picture", url: picture },
+          ]);
+          assert.include(
+            (yield* mediaOf(workspaceId)).join(","),
+            attachableImage
+          );
+
+          const [item] = yield* FeedStore.use((store) =>
+            store.items(feed.id, 10)
+          );
+
+          assert.deepStrictEqual(item?.pictureSkipped, Option.none());
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "makes the post without it when the picture cannot be had, and says why",
+    () =>
+      onServer(
+        Effect.gen(function* skips() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId, {
+            attachPicture: true,
+          });
+
+          yield* picturesGive("https://cdn.blog.example/big.png", {
+            _tag: "skipped",
+            reason: "tooLarge",
+          });
+          yield* picturesGive("https://cdn.blog.example/full.png", {
+            _tag: "skipped",
+            reason: "storageFull",
+          });
+          yield* serveItems(blog, [
+            { n: 1, picture: "https://cdn.blog.example/big.png", title: "Big" },
+            {
+              n: 2,
+              picture: "https://cdn.blog.example/full.png",
+              title: "Full",
+            },
+          ]);
+          yield* later();
+          yield* poll;
+
+          assert.deepStrictEqual(yield* mediaOf(workspaceId), ["[]", "[]"]);
+
+          const items = yield* FeedStore.use((store) =>
+            store.items(feed.id, 10)
+          );
+
+          assert.deepStrictEqual(
+            items
+              .map(
+                ({ outcome, pictureSkipped }) =>
+                  `${outcome}:${Option.getOrElse(pictureSkipped, () => "")}`
+              )
+              .toSorted((left, right) => left.localeCompare(right)),
+            ["made:storageFull", "made:tooLarge"]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "asks for no picture when the feed does not attach them",
+    () =>
+      onServer(
+        Effect.gen(function* noPicture() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* serveItems(blog, []);
+          yield* created(workspaceId);
+          yield* serveItems(blog, [
+            { n: 1, picture: "https://cdn.blog.example/one.png", title: "One" },
+          ]);
+          yield* later();
+          yield* poll;
+
+          assert.lengthOf(yield* importedPictures, 0);
+          assert.deepStrictEqual(yield* mediaOf(workspaceId), ["[]"]);
         })
       ),
     timeout

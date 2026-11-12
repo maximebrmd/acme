@@ -632,6 +632,8 @@ export const feedItems = publishing.table(
     itemAt: instant("item_at"),
     itemDigest: text("item_digest").notNull(),
     outcome: text("outcome").notNull(),
+    // Why the item's picture was not attached, when it was asked for.
+    pictureSkipped: text("picture_skipped"),
     postId: uuid("post_id"),
     reason: text("reason"),
     seenAt: instant("seen_at").notNull(),

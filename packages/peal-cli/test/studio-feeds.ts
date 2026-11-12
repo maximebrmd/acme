@@ -140,6 +140,7 @@ export const studioFeedsOf = (world: FeedsWorld) => {
                 {
                   itemAt: null,
                   outcome: "made" as const,
+                  pictureSkipped: null,
                   postId: "0190f3a0-0000-7000-8000-00000000f001",
                   reason: null,
                   seenAt: world.now,
@@ -147,6 +148,7 @@ export const studioFeedsOf = (world: FeedsWorld) => {
                 {
                   itemAt: null,
                   outcome: "skipped" as const,
+                  pictureSkipped: null,
                   postId: null,
                   reason: "existing" as const,
                   seenAt: world.now,

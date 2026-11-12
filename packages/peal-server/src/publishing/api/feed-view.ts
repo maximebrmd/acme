@@ -48,6 +48,7 @@ export const feedView = (feed: Feed): FeedView => {
 export const feedItemView = (item: FeedItemRecord): FeedItemView => ({
   itemAt: Option.getOrNull(item.itemAt),
   outcome: item.outcome,
+  pictureSkipped: Option.getOrNull(item.pictureSkipped),
   postId: Option.getOrNull(item.postId),
   reason: Option.getOrNull(item.reason),
   seenAt: item.seenAt,
