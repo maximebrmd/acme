@@ -5,6 +5,7 @@ import { AccountHandlers } from "#workspace/api/account.ts";
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
 import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import { ConnectedAppsHandlers } from "#workspace/api/connected-apps.ts";
+import { CredentialHandlers } from "#workspace/api/credential.ts";
 import {
   InvitationsHandlers,
   MembersHandlers,
@@ -26,6 +27,7 @@ import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
+import { CredentialCheck } from "#workspace/application/credential-check.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
@@ -120,6 +122,9 @@ const UseCasesLive = Layer.mergeAll(
   Accounts.layer,
   AccountStanding.layer,
   ApiKeys.layer,
+  CredentialCheck.layer.pipe(
+    Layer.provide(Layer.merge(Accounts.layer, ResolveMember.layer))
+  ),
   // A bearer token may be a partner key, which the partner's keys check.
   Authenticate.layer.pipe(Layer.provideMerge(PartnerKeys.layer)),
   PartnerAccounts.layer,
@@ -301,6 +306,7 @@ export const WorkspaceCronsLive = Layer.mergeAll(
  */
 export const WorkspaceApiLive = Layer.mergeAll(
   SessionHandlers,
+  CredentialHandlers,
   ApiKeysHandlers,
   WorkspacesHandlers,
   AccountHandlers,
