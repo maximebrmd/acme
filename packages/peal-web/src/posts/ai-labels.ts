@@ -1,4 +1,4 @@
-import type { Platform, Post } from "peal-contract";
+import type { Platform } from "peal-contract";
 
 import { initialValues } from "#posts/target-options.ts";
 import type { OptionValues, ValuesByChannel } from "#posts/target-options.ts";
@@ -20,7 +20,14 @@ export const aiLabelOf = (platform: Platform): string | undefined =>
  * media made by AI: their label is settled, as the member left it.
  */
 export const labelledIn = (
-  post: Pick<Post, "targets"> | undefined
+  post:
+    | {
+        readonly targets: readonly {
+          readonly channelId: string;
+          readonly options: object | null;
+        }[];
+      }
+    | undefined
 ): ReadonlySet<string> =>
   new Set(
     (post?.targets ?? []).flatMap(({ channelId, options }) =>
