@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
+import { Duration, Effect, Layer, Schedule, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
@@ -107,11 +107,14 @@ const statusOf = Effect.fn("statusOf")(function* statusOf(email: string) {
   return rows.map(({ status }) => status);
 });
 
-// Waits until the request sent with the address was looked at.
+// Waits until the request sent with the address was looked at: the
+// server looks after it has answered, so asks again every 200 ms, for as
+// long as an email may take to arrive.
 const lookedAt = (email: string, status: string) =>
   statusOf(email).pipe(
     Effect.filterOrFail((all) => all.includes(status)),
-    Effect.retry({ times: 100 }),
+    Effect.retry({ schedule: Schedule.spaced("200 millis"), times: 300 }),
+    Effect.timeout(Duration.seconds(60)),
     Effect.orDie
   );
 
