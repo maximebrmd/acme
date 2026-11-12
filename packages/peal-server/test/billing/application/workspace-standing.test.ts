@@ -43,6 +43,8 @@ const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 interface Held {
   readonly channels: readonly string[];
   readonly members: readonly string[];
+  /** The channels of the account's other workspaces, counted with these. */
+  readonly sharedChannels?: number;
 }
 
 // The use cases over a workspace on `plan` (none: a server that does not
@@ -62,9 +64,9 @@ const run = <A, E>(
         heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(state).pipe(
-            Effect.map(({ channels, members }) => ({
+            Effect.map(({ channels, members, sharedChannels = 0 }) => ({
               assistantRequests: { resetsAt, used: 0 },
-              channels: channels.length,
+              channels: channels.length + sharedChannels,
               mediaStorage: 0,
               members: members.length,
               scheduledPosts: { resetsAt, used: 7 },
@@ -334,6 +336,49 @@ describe("a workspace over its plan", () => {
         assert.deepStrictEqual(log, []);
       }
     })
+  );
+
+  it.effect(
+    "counts a choice across its billing account, or lets it disconnect everything here",
+    () =>
+      Effect.gen(function* acrossTheAccount() {
+        // Two of the free plan's three channels are here, two in another
+        // workspace of the account.
+        const shared: Held = {
+          channels: ["c1", "c2"],
+          members: [userId],
+          sharedChannels: 2,
+        };
+
+        const kept = (channels: readonly string[]) =>
+          run(on("free"), shared, reduce({ channels, members: [userId] }));
+
+        const refused = yield* run(
+          on("free"),
+          shared,
+          reduce({ channels: ["c1", "c2"], members: [userId] }).pipe(
+            Effect.flip
+          )
+        );
+
+        assert.deepStrictEqual(
+          refused.result,
+          new ReductionRefused({ reason: "tooManyChannels" })
+        );
+        assert.deepStrictEqual(refused.log, []);
+
+        const within = yield* kept(["c1"]);
+
+        assert.deepStrictEqual(within.log, ["disconnect:c2"]);
+        assert.isFalse(within.result.standing.mustReduce);
+
+        const nothingHere = yield* kept([]);
+
+        assert.deepStrictEqual(nothingHere.log, [
+          "disconnect:c1",
+          "disconnect:c2",
+        ]);
+      })
   );
 
   it.effect("has nothing to reduce on a server that does not bill", () =>

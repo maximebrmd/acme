@@ -34,7 +34,10 @@ export interface Reduction {
  * pending invitations revoked. Only what is over the plan is touched: a
  * workspace within its plan's members keeps them all, whatever the choice
  * says of them. The whole choice is checked first, and members go before
- * channels, so a choice refused changes nothing; disconnecting then asks
+ * channels, so a choice refused changes nothing. Channels are counted
+ * across the workspace's billing account: a choice is taken when it brings
+ * the account within its plan, or disconnects every channel of this
+ * workspace. Disconnecting then asks
  * each platform to forget Peal, one channel at a time, and can be asked
  * again if it stops midway. Posts scheduled on a channel disconnected fail
  * when due, as for any channel disconnected. Needs billing:manage, with
@@ -87,18 +90,23 @@ export class ReduceWorkspace extends Context.Service<
           return yield* new ReductionRefused({ reason: "unknownMember" });
         }
 
-        const allowedOf = (limit: "channels" | "members") =>
+        const excessOf = (limit: "channels" | "members") =>
           Option.fromUndefinedOr(
             before.over.find((excess) => excess.limit === limit)
-          ).pipe(Option.map(({ allowed }) => allowed));
+          );
 
-        const channelsAllowed = allowedOf("channels");
-        const membersAllowed = allowedOf("members");
+        const channelsOver = excessOf("channels");
+        const membersAllowed = excessOf("members").pipe(
+          Option.map(({ allowed }) => allowed)
+        );
 
         // The channels to disconnect, once the choice is known to fit.
-        const leaving = yield* Option.match(channelsAllowed, {
+        const leaving = yield* Option.match(channelsOver, {
           onNone: () => Effect.succeed<readonly string[]>([]),
-          onSome: Effect.fnUntraced(function* channelsLeaving(allowed) {
+          onSome: Effect.fnUntraced(function* channelsLeaving({
+            allowed,
+            used,
+          }) {
             yield* Effect.fromResult(authorize(actor, "channel:disconnect"));
 
             const connected = yield* holdings.channels(actor);
@@ -108,7 +116,12 @@ export class ReduceWorkspace extends Context.Service<
               return yield* new ReductionRefused({ reason: "unknownChannel" });
             }
 
-            if (staying.size > allowed) {
+            // The channels the other workspaces of its billing account (or
+            // partner pool) hold count with these: a choice brings the
+            // account within its plan, or disconnects everything here.
+            const elsewhere = Math.max(used - connected.length, 0);
+
+            if (staying.size > 0 && staying.size + elsewhere > allowed) {
               return yield* new ReductionRefused({
                 reason: "tooManyChannels",
               });
