@@ -685,6 +685,9 @@ layer(OwnProviderAppTest, {
         for (const text of [written(), answers, JSON.stringify(activity)]) {
           assert.notInclude(text, workspaceKey);
         }
+
+        // Nor the host of an address refused when it was saved.
+        assert.notInclude(written(), "10.0.0.8");
       })
   );
 });

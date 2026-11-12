@@ -23,6 +23,9 @@ export const GuardedProviderAddressCheck = Layer.effect(
         const address = yield* Effect.fromResult(checkProviderAddress(text));
 
         yield* guard.check(new URL(address)).pipe(
+          // The guard's span names the host it refuses: a workspace's
+          // provider is never traced by its host.
+          Effect.withTracerEnabled(false),
           Effect.catchTag(
             "OutboundRequestRefused",
             ({
