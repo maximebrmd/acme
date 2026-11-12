@@ -255,6 +255,67 @@ module Peal
         raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
       end
 
+      # Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the
+      # last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how
+      # many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes
+      # together, those the platform gives (`counted` is false where it gives none). It describes this channel's past
+      # and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no
+      # median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best`
+      # lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are
+      # posts Peal deleted from the platform. Needs analytics:read.
+      #
+      # @param request_options [Hash]
+      # @param params [Hash]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :channel_id
+      # @option params [String, nil] :days
+      # @option params [String] :time_zone
+      #
+      # @example
+      #   client.analytics.best_times(
+      #     workspace_id: "workspaceId",
+      #     channel_id: "channelId",
+      #     time_zone: "timeZone"
+      #   )
+      #
+      # @return [Peal::Types::BestTimes]
+      def best_times(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        query_params = {}
+        query_params["channelId"] = params[:channel_id] if params.key?(:channel_id)
+        query_params["days"] = params[:days] if params.key?(:days)
+        query_params["timeZone"] = params[:time_zone] if params.key?(:time_zone)
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "GET",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/analytics/best-times",
+          query: query_params,
+          request_options: request_options
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::BestTimes.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
       # Answers with the counts of a post on each channel it went live on, over time. A post not published yet, or whose
       # counts were not read yet, has no targets. Needs analytics:read.
       #

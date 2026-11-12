@@ -175,12 +175,22 @@
   it). A range is `days` (7, 30, 90, ending today in the zone) or `from`
   and `to`. Exports stream (`exportRows`, `Stream.paginate` over keyset
   pages of 500; `HttpServerResponse.stream`), as RFC 4180 CSV whose cells
-  never start a formula, or one JSON object a line. Account days are UTC
+  never start a formula (the shared `csvLine`, `#shared/api/csv.ts`: every text
+  quoted, and an apostrophe before one a spreadsheet would take for a
+  formula, at its start or after a semicolon, full-width signs included),
+  or one JSON object a line. Account days are UTC
   days, written under the range's calendar day of the same name.
   A comparison says whether its range before is still all kept
   (`previousKept`, from `keptSince` with each platform's `retentionOf`):
   the clients show no change where it is not, never one against figures
   the retention job deleted.
+- `AnalyticsQueries.acrossWorkspaces` is the report across workspaces:
+  the dashboard's reads for several workspaces at once
+  (`AnalyticsAcrossReads`, ids as one parameter), each put together by
+  `comparisonOf`, which runs `dashboardOf` on that workspace's rows, so a
+  workspace's line never differs from its own dashboard
+  (`test/analytics/infrastructure/analytics-across.test.ts` asserts it).
+  It checks analytics:read of every actor it is given.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.

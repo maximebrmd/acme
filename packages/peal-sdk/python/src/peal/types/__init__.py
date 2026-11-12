@@ -75,6 +75,8 @@ if typing.TYPE_CHECKING:
     from .ads_mode import AdsMode
     from .ads_status import AdsStatus
     from .ads_unavailable_encoded import AdsUnavailableEncoded
+    from .agenda_item import AgendaItem
+    from .agenda_page import AgendaPage
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
@@ -135,6 +137,9 @@ if typing.TYPE_CHECKING:
         BadRequestErrorBody_BadRequest,
         BadRequestErrorBody_InvalidDateRange,
     )
+    from .best_times import BestTimes
+    from .best_times_hour import BestTimesHour
+    from .best_times_hour_median import BestTimesHourMedian
     from .billing import Billing
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
@@ -561,6 +566,11 @@ if typing.TYPE_CHECKING:
     from .option_constraint_not_with import OptionConstraintNotWith
     from .option_constraint_only_with import OptionConstraintOnlyWith
     from .organic_counts import OrganicCounts
+    from .overview import Overview
+    from .overview_channels import OverviewChannels
+    from .overview_inbox import OverviewInbox
+    from .overview_posts import OverviewPosts
+    from .overview_refusal import OverviewRefusal
     from .own_image_limit_reached_encoded import OwnImageLimitReachedEncoded
     from .paid_plan import PaidPlan
     from .paid_totals import PaidTotals
@@ -703,6 +713,8 @@ if typing.TYPE_CHECKING:
     from .reply_pending_encoded import ReplyPendingEncoded
     from .reply_status_conflict_encoded import ReplyStatusConflictEncoded
     from .reply_status_conflict_encoded_tag import ReplyStatusConflictEncodedTag
+    from .report_across_workspaces import ReportAcrossWorkspaces
+    from .report_across_workspaces_previous import ReportAcrossWorkspacesPrevious
     from .reshuffle_stop import ReshuffleStop
     from .return_url_not_allowed_encoded import ReturnUrlNotAllowedEncoded
     from .review_comment import ReviewComment
@@ -886,11 +898,14 @@ if typing.TYPE_CHECKING:
     from .webhooks_not_configured_encoded import WebhooksNotConfiguredEncoded
     from .webhooks_not_configured_encoded_tag import WebhooksNotConfiguredEncodedTag
     from .weekday import Weekday
+    from .workspace_analytics import WorkspaceAnalytics
     from .workspace_busy_encoded import WorkspaceBusyEncoded
     from .workspace_busy_encoded_tag import WorkspaceBusyEncodedTag
     from .workspace_member import WorkspaceMember
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
+    from .workspace_overview import WorkspaceOverview
+    from .workspace_report import WorkspaceReport
     from .workspace_usage_report import WorkspaceUsageReport
     from .x_options import XOptions
     from .x_reply_settings import XReplySettings
@@ -967,6 +982,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AdsMode": ".ads_mode",
     "AdsStatus": ".ads_status",
     "AdsUnavailableEncoded": ".ads_unavailable_encoded",
+    "AgendaItem": ".agenda_item",
+    "AgendaPage": ".agenda_page",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
@@ -1021,6 +1038,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BadRequestErrorBody": ".bad_request_error_body",
     "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
     "BadRequestErrorBody_InvalidDateRange": ".bad_request_error_body",
+    "BestTimes": ".best_times",
+    "BestTimesHour": ".best_times_hour",
+    "BestTimesHourMedian": ".best_times_hour_median",
     "Billing": ".billing",
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
@@ -1436,6 +1456,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "OptionConstraint_NotWith": ".option_constraint",
     "OptionConstraint_OnlyWith": ".option_constraint",
     "OrganicCounts": ".organic_counts",
+    "Overview": ".overview",
+    "OverviewChannels": ".overview_channels",
+    "OverviewInbox": ".overview_inbox",
+    "OverviewPosts": ".overview_posts",
+    "OverviewRefusal": ".overview_refusal",
     "OwnImageLimitReachedEncoded": ".own_image_limit_reached_encoded",
     "PaidPlan": ".paid_plan",
     "PaidTotals": ".paid_totals",
@@ -1581,6 +1606,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReplyPendingEncoded": ".reply_pending_encoded",
     "ReplyStatusConflictEncoded": ".reply_status_conflict_encoded",
     "ReplyStatusConflictEncodedTag": ".reply_status_conflict_encoded_tag",
+    "ReportAcrossWorkspaces": ".report_across_workspaces",
+    "ReportAcrossWorkspacesPrevious": ".report_across_workspaces_previous",
     "ReshuffleStop": ".reshuffle_stop",
     "ReturnUrlNotAllowedEncoded": ".return_url_not_allowed_encoded",
     "ReviewComment": ".review_comment",
@@ -1762,11 +1789,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhooksNotConfiguredEncoded": ".webhooks_not_configured_encoded",
     "WebhooksNotConfiguredEncodedTag": ".webhooks_not_configured_encoded_tag",
     "Weekday": ".weekday",
+    "WorkspaceAnalytics": ".workspace_analytics",
     "WorkspaceBusyEncoded": ".workspace_busy_encoded",
     "WorkspaceBusyEncodedTag": ".workspace_busy_encoded_tag",
     "WorkspaceMember": ".workspace_member",
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
+    "WorkspaceOverview": ".workspace_overview",
+    "WorkspaceReport": ".workspace_report",
     "WorkspaceUsageReport": ".workspace_usage_report",
     "XOptions": ".x_options",
     "XReplySettings": ".x_reply_settings",
@@ -1867,6 +1897,8 @@ __all__ = [
     "AdsMode",
     "AdsStatus",
     "AdsUnavailableEncoded",
+    "AgendaItem",
+    "AgendaPage",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
@@ -1921,6 +1953,9 @@ __all__ = [
     "BadRequestErrorBody",
     "BadRequestErrorBody_BadRequest",
     "BadRequestErrorBody_InvalidDateRange",
+    "BestTimes",
+    "BestTimesHour",
+    "BestTimesHourMedian",
     "Billing",
     "BillingInterval",
     "BillingSubscription",
@@ -2336,6 +2371,11 @@ __all__ = [
     "OptionConstraint_NotWith",
     "OptionConstraint_OnlyWith",
     "OrganicCounts",
+    "Overview",
+    "OverviewChannels",
+    "OverviewInbox",
+    "OverviewPosts",
+    "OverviewRefusal",
     "OwnImageLimitReachedEncoded",
     "PaidPlan",
     "PaidTotals",
@@ -2481,6 +2521,8 @@ __all__ = [
     "ReplyPendingEncoded",
     "ReplyStatusConflictEncoded",
     "ReplyStatusConflictEncodedTag",
+    "ReportAcrossWorkspaces",
+    "ReportAcrossWorkspacesPrevious",
     "ReshuffleStop",
     "ReturnUrlNotAllowedEncoded",
     "ReviewComment",
@@ -2662,11 +2704,14 @@ __all__ = [
     "WebhooksNotConfiguredEncoded",
     "WebhooksNotConfiguredEncodedTag",
     "Weekday",
+    "WorkspaceAnalytics",
     "WorkspaceBusyEncoded",
     "WorkspaceBusyEncodedTag",
     "WorkspaceMember",
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
+    "WorkspaceOverview",
+    "WorkspaceReport",
     "WorkspaceUsageReport",
     "XOptions",
     "XReplySettings",

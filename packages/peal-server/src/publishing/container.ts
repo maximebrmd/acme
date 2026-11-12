@@ -25,6 +25,7 @@ import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostAttention } from "#publishing/application/post-attention.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -105,6 +106,7 @@ import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platfo
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
 import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ShortLinksShortLinkDefaults } from "#publishing/infrastructure/shortlinks-short-link-defaults.ts";
+import { SqlPostAttentionReads } from "#publishing/infrastructure/sql-post-attention-reads.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
@@ -426,6 +428,15 @@ export const PublishingLive = publishingOver(
  */
 export const MediaInPostsLive = MediaInPosts.layer.pipe(
   Layer.provide(DrizzlePostRepository)
+);
+
+/**
+ * The posts of several workspaces at once, counted and by time, for the
+ * view across a person's workspaces (PostAttention). Needs the database
+ * (Drizzle).
+ */
+export const PostAttentionLive = PostAttention.layer.pipe(
+  Layer.provide(SqlPostAttentionReads)
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and

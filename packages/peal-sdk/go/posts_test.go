@@ -36870,35 +36870,6 @@ func TestEnumLivePostRefusal(t *testing.T) {
 	})
 }
 
-func TestEnumNonFiniteNumber(t *testing.T) {
-	t.Run("NewFromString_Infinity", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewNonFiniteNumberFromString("Infinity")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, NonFiniteNumber("Infinity"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_NaN", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewNonFiniteNumberFromString("NaN")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, NonFiniteNumber("NaN"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewNonFiniteNumberFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewNonFiniteNumberFromString("Infinity")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestEnumPlanLimit(t *testing.T) {
 	t.Run("NewFromString_channels", func(t *testing.T) {
 		t.Parallel()
@@ -37079,63 +37050,6 @@ func TestEnumPostSort(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewPostSortFromString("createdDesc")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
-func TestEnumPostStatus(t *testing.T) {
-	t.Run("NewFromString_draft", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("draft")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("draft"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_awaitingApproval", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("awaitingApproval")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("awaitingApproval"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_scheduled", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("scheduled")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("scheduled"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_publishing", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("publishing")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("publishing"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_finished", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("finished")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("finished"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_cancelled", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPostStatusFromString("cancelled")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, PostStatus("cancelled"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewPostStatusFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewPostStatusFromString("draft")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

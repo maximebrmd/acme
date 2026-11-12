@@ -1,44 +1,17 @@
-import { DateTime, Option, Schema } from "effect";
+import { DateTime, Option } from "effect";
 import { exportColumns } from "peal-contract";
 import type { ExportFormat, ExportKind } from "peal-contract";
 
 import type { ExportRow } from "#analytics/application/analytics-queries.ts";
 import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
+import { csvLine } from "#shared/api/csv.ts";
+import type { Cell } from "#shared/api/csv.ts";
 
 // How an export is written: a line a row, as CSV or as JSON.
 
-/** A cell: text, a number, or nothing where a platform gives none. */
-export type Cell = number | string | null;
+export { csvLine } from "#shared/api/csv.ts";
 
-const isNumber = Schema.is(Schema.Number);
-
-const needsQuotes = /[",\r\n]/u;
-
-// A spreadsheet takes a cell that starts with one of these for a formula.
-const startsFormula = /^[=+\-@\t\r]/u;
-
-const cellText = (cell: Cell): string => {
-  if (cell === null) {
-    return "";
-  }
-
-  if (isNumber(cell)) {
-    return String(cell);
-  }
-
-  const safe = startsFormula.test(cell) ? `'${cell}` : cell;
-
-  return needsQuotes.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-};
-
-/**
- * A line of CSV as RFC 4180 writes it: cells between commas, one with a
- * comma, a quote or a line break in quotes with its quotes doubled, and
- * CRLF at the end. Text that would start a formula in a spreadsheet gets
- * an apostrophe first, so a file opened there runs nothing.
- */
-export const csvLine = (cells: readonly Cell[]): string =>
-  `${cells.map(cellText).join(",")}\r\n`;
+export type { Cell } from "#shared/api/csv.ts";
 
 /** A line of JSON: one object, its keys the columns in order. */
 export const ndjsonLine = (

@@ -6083,6 +6083,252 @@ func (c *CustomerWorkspacePage) String() string {
 }
 
 var (
+	dashboardTotalsFieldClicks      = big.NewInt(1 << 0)
+	dashboardTotalsFieldEngagement  = big.NewInt(1 << 1)
+	dashboardTotalsFieldImpressions = big.NewInt(1 << 2)
+	dashboardTotalsFieldLikes       = big.NewInt(1 << 3)
+	dashboardTotalsFieldPosts       = big.NewInt(1 << 4)
+	dashboardTotalsFieldQuotes      = big.NewInt(1 << 5)
+	dashboardTotalsFieldReach       = big.NewInt(1 << 6)
+	dashboardTotalsFieldReplies     = big.NewInt(1 << 7)
+	dashboardTotalsFieldReposts     = big.NewInt(1 << 8)
+	dashboardTotalsFieldSaves       = big.NewInt(1 << 9)
+)
+
+// dashboardTotalsNullableFields maps the wire names of DashboardTotals's nullable fields (required or optional) to their field bits.
+var dashboardTotalsNullableFields = map[string]*big.Int{
+	"clicks":      dashboardTotalsFieldClicks,
+	"impressions": dashboardTotalsFieldImpressions,
+	"quotes":      dashboardTotalsFieldQuotes,
+	"reach":       dashboardTotalsFieldReach,
+	"saves":       dashboardTotalsFieldSaves,
+}
+
+type DashboardTotals struct {
+	Clicks      *int `json:"clicks,omitempty" url:"clicks,omitempty"`
+	Engagement  int  `json:"engagement" url:"engagement"`
+	Impressions *int `json:"impressions,omitempty" url:"impressions,omitempty"`
+	Likes       int  `json:"likes" url:"likes"`
+	Posts       int  `json:"posts" url:"posts"`
+	Quotes      *int `json:"quotes,omitempty" url:"quotes,omitempty"`
+	Reach       *int `json:"reach,omitempty" url:"reach,omitempty"`
+	Replies     int  `json:"replies" url:"replies"`
+	Reposts     int  `json:"reposts" url:"reposts"`
+	Saves       *int `json:"saves,omitempty" url:"saves,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DashboardTotals) GetClicks() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Clicks
+}
+
+func (d *DashboardTotals) GetEngagement() int {
+	if d == nil {
+		return 0
+	}
+	return d.Engagement
+}
+
+func (d *DashboardTotals) GetImpressions() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Impressions
+}
+
+func (d *DashboardTotals) GetLikes() int {
+	if d == nil {
+		return 0
+	}
+	return d.Likes
+}
+
+func (d *DashboardTotals) GetPosts() int {
+	if d == nil {
+		return 0
+	}
+	return d.Posts
+}
+
+func (d *DashboardTotals) GetQuotes() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Quotes
+}
+
+func (d *DashboardTotals) GetReach() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Reach
+}
+
+func (d *DashboardTotals) GetReplies() int {
+	if d == nil {
+		return 0
+	}
+	return d.Replies
+}
+
+func (d *DashboardTotals) GetReposts() int {
+	if d == nil {
+		return 0
+	}
+	return d.Reposts
+}
+
+func (d *DashboardTotals) GetSaves() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Saves
+}
+
+func (d *DashboardTotals) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DashboardTotals) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetClicks sets the Clicks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetClicks(clicks *int) {
+	d.Clicks = clicks
+	d.require(dashboardTotalsFieldClicks)
+}
+
+// SetEngagement sets the Engagement field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetEngagement(engagement int) {
+	d.Engagement = engagement
+	d.require(dashboardTotalsFieldEngagement)
+}
+
+// SetImpressions sets the Impressions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetImpressions(impressions *int) {
+	d.Impressions = impressions
+	d.require(dashboardTotalsFieldImpressions)
+}
+
+// SetLikes sets the Likes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetLikes(likes int) {
+	d.Likes = likes
+	d.require(dashboardTotalsFieldLikes)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetPosts(posts int) {
+	d.Posts = posts
+	d.require(dashboardTotalsFieldPosts)
+}
+
+// SetQuotes sets the Quotes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetQuotes(quotes *int) {
+	d.Quotes = quotes
+	d.require(dashboardTotalsFieldQuotes)
+}
+
+// SetReach sets the Reach field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReach(reach *int) {
+	d.Reach = reach
+	d.require(dashboardTotalsFieldReach)
+}
+
+// SetReplies sets the Replies field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReplies(replies int) {
+	d.Replies = replies
+	d.require(dashboardTotalsFieldReplies)
+}
+
+// SetReposts sets the Reposts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReposts(reposts int) {
+	d.Reposts = reposts
+	d.require(dashboardTotalsFieldReposts)
+}
+
+// SetSaves sets the Saves field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetSaves(saves *int) {
+	d.Saves = saves
+	d.require(dashboardTotalsFieldSaves)
+}
+
+func (d *DashboardTotals) UnmarshalJSON(data []byte) error {
+	type unmarshaler DashboardTotals
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DashboardTotals(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, dashboardTotalsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		d.require(presentFields)
+	}
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DashboardTotals) MarshalJSON() ([]byte, error) {
+	type embed DashboardTotals
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DashboardTotals) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+var (
 	databaseUnavailableEncodedFieldTag       = big.NewInt(1 << 0)
 	databaseUnavailableEncodedFieldCode      = big.NewInt(1 << 1)
 	databaseUnavailableEncodedFieldMessage   = big.NewInt(1 << 2)
@@ -8150,6 +8396,121 @@ func NewFieldTypeFromString(s string) (FieldType, error) {
 
 func (f FieldType) Ptr() *FieldType {
 	return &f
+}
+
+var (
+	followerChangeFieldCurrent = big.NewInt(1 << 0)
+	followerChangeFieldGained  = big.NewInt(1 << 1)
+)
+
+// followerChangeNullableFields maps the wire names of FollowerChange's nullable fields (required or optional) to their field bits.
+var followerChangeNullableFields = map[string]*big.Int{
+	"current": followerChangeFieldCurrent,
+	"gained":  followerChangeFieldGained,
+}
+
+type FollowerChange struct {
+	Current *int `json:"current,omitempty" url:"current,omitempty"`
+	Gained  *int `json:"gained,omitempty" url:"gained,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowerChange) GetCurrent() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Current
+}
+
+func (f *FollowerChange) GetGained() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Gained
+}
+
+func (f *FollowerChange) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowerChange) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCurrent sets the Current field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowerChange) SetCurrent(current *int) {
+	f.Current = current
+	f.require(followerChangeFieldCurrent)
+}
+
+// SetGained sets the Gained field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowerChange) SetGained(gained *int) {
+	f.Gained = gained
+	f.require(followerChangeFieldGained)
+}
+
+func (f *FollowerChange) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowerChange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowerChange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, followerChangeNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		f.require(presentFields)
+	}
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowerChange) MarshalJSON() ([]byte, error) {
+	type embed FollowerChange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowerChange) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 type ForbiddenErrorBody struct {
@@ -14073,6 +14434,29 @@ func (m *MeteredPosts) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
+// A number JSON cannot hold: infinity, negative infinity or not a number.
+type NonFiniteNumber string
+
+const (
+	NonFiniteNumberInfinity NonFiniteNumber = "Infinity"
+	NonFiniteNumberNaN      NonFiniteNumber = "NaN"
+)
+
+func NewNonFiniteNumberFromString(s string) (NonFiniteNumber, error) {
+	switch s {
+	case "Infinity":
+		return NonFiniteNumberInfinity, nil
+	case "NaN":
+		return NonFiniteNumberNaN, nil
+	}
+	var t NonFiniteNumber
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
+	return &n
+}
+
 type NotFoundErrorBody struct {
 	Type              string
 	ShortLinkNotFound *ShortLinkNotFoundEncoded
@@ -17789,6 +18173,40 @@ func (p *PostSchedule) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+type PostStatus string
+
+const (
+	PostStatusDraft            PostStatus = "draft"
+	PostStatusAwaitingApproval PostStatus = "awaitingApproval"
+	PostStatusScheduled        PostStatus = "scheduled"
+	PostStatusPublishing       PostStatus = "publishing"
+	PostStatusFinished         PostStatus = "finished"
+	PostStatusCancelled        PostStatus = "cancelled"
+)
+
+func NewPostStatusFromString(s string) (PostStatus, error) {
+	switch s {
+	case "draft":
+		return PostStatusDraft, nil
+	case "awaitingApproval":
+		return PostStatusAwaitingApproval, nil
+	case "scheduled":
+		return PostStatusScheduled, nil
+	case "publishing":
+		return PostStatusPublishing, nil
+	case "finished":
+		return PostStatusFinished, nil
+	case "cancelled":
+		return PostStatusCancelled, nil
+	}
+	var t PostStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostStatus) Ptr() *PostStatus {
+	return &p
 }
 
 var (
@@ -26744,6 +27162,43 @@ func NewWebhooksNotConfiguredEncodedTagFromString(s string) (WebhooksNotConfigur
 }
 
 func (w WebhooksNotConfiguredEncodedTag) Ptr() *WebhooksNotConfiguredEncodedTag {
+	return &w
+}
+
+type Weekday string
+
+const (
+	WeekdayMonday    Weekday = "monday"
+	WeekdayTuesday   Weekday = "tuesday"
+	WeekdayWednesday Weekday = "wednesday"
+	WeekdayThursday  Weekday = "thursday"
+	WeekdayFriday    Weekday = "friday"
+	WeekdaySaturday  Weekday = "saturday"
+	WeekdaySunday    Weekday = "sunday"
+)
+
+func NewWeekdayFromString(s string) (Weekday, error) {
+	switch s {
+	case "monday":
+		return WeekdayMonday, nil
+	case "tuesday":
+		return WeekdayTuesday, nil
+	case "wednesday":
+		return WeekdayWednesday, nil
+	case "thursday":
+		return WeekdayThursday, nil
+	case "friday":
+		return WeekdayFriday, nil
+	case "saturday":
+		return WeekdaySaturday, nil
+	case "sunday":
+		return WeekdaySunday, nil
+	}
+	var t Weekday
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w Weekday) Ptr() *Weekday {
 	return &w
 }
 

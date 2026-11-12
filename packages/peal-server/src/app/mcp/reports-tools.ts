@@ -5,6 +5,11 @@ import {
   activityRetentionDays,
   AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
+  bestTimesMinimumPosts,
+  bestTimesMinimumPostsPerHour,
+  bestTimesPeriods,
+  BestTimesSchema,
+  bestTimesSettlingHours,
   BillingSchema,
   CalendarDaySchema,
   ChannelSeriesSchema,
@@ -87,6 +92,22 @@ export const ChannelAnalytics = Tool.make("channel_analytics", {
 })
   .annotateMerge(reading)
   .annotate(Tool.Title, "Get a channel's analytics");
+
+export const BestTimes = Tool.make("best_times", {
+  dependencies: [CurrentMember],
+  description: `Describes when one channel's posts did best in the past, by weekday and hour in \`timeZone\`, over the last \`days\` (30, 90 or 180; 90 unless given, fewer where the platform lets Peal keep less): for each hour, how many posts went live in it and the median of what each was given (likes, reposts, replies and quotes, those the platform gives). It is no prediction: what did well before may not again, and counts of different platforms are never compared, so ask channel by channel. An hour with fewer than ${String(bestTimesMinimumPostsPerHour)} posts has no median. \`enough: false\` means the channel has fewer than ${String(bestTimesMinimumPosts)} posts in the range: nothing is ranked, and \`best\` is empty; say so rather than guess. \`counted: false\` means the platform gives none of those counts. Posts younger than ${String(bestTimesSettlingHours)} hours are left out (\`recent\`).`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.String,
+    days: Schema.optionalKey(Schema.Literals(bestTimesPeriods)),
+    timeZone: Schema.String.annotate({
+      description: "An IANA time zone, such as Europe/Paris.",
+    }),
+  }),
+  success: BestTimesSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get when a channel's posts did best");
 
 export const PostAnalytics = Tool.make("post_analytics", {
   dependencies: [CurrentMember],
@@ -197,6 +218,7 @@ export const ReportTools = Toolkit.make(
   AnalyticsSummary,
   AnalyticsDashboard,
   ChannelAnalytics,
+  BestTimes,
   PostAnalytics,
   GetBilling,
   GetUsage,

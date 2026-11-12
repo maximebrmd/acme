@@ -25,6 +25,7 @@ import social.peal.resources.media.MediaClient;
 import social.peal.resources.members.MembersClient;
 import social.peal.resources.notices.NoticesClient;
 import social.peal.resources.notificationpreferences.NotificationPreferencesClient;
+import social.peal.resources.overview.OverviewClient;
 import social.peal.resources.partner.PartnerClient;
 import social.peal.resources.partneraccount.PartnerAccountClient;
 import social.peal.resources.partnerusage.PartnerUsageClient;
@@ -59,6 +60,8 @@ public class PealClient implements AutoCloseable {
     protected final Supplier<NoticesClient> noticesClient;
 
     protected final Supplier<NotificationPreferencesClient> notificationPreferencesClient;
+
+    protected final Supplier<OverviewClient> overviewClient;
 
     protected final Supplier<AssistantClient> assistantClient;
 
@@ -122,6 +125,7 @@ public class PealClient implements AutoCloseable {
         this.mediaClient = Suppliers.memoize(() -> new MediaClient(clientOptions));
         this.noticesClient = Suppliers.memoize(() -> new NoticesClient(clientOptions));
         this.notificationPreferencesClient = Suppliers.memoize(() -> new NotificationPreferencesClient(clientOptions));
+        this.overviewClient = Suppliers.memoize(() -> new OverviewClient(clientOptions));
         this.assistantClient = Suppliers.memoize(() -> new AssistantClient(clientOptions));
         this.membersClient = Suppliers.memoize(() -> new MembersClient(clientOptions));
         this.invitationsClient = Suppliers.memoize(() -> new InvitationsClient(clientOptions));
@@ -180,6 +184,10 @@ public class PealClient implements AutoCloseable {
 
     public NotificationPreferencesClient notificationPreferences() {
         return this.notificationPreferencesClient.get();
+    }
+
+    public OverviewClient overview() {
+        return this.overviewClient.get();
     }
 
     public AssistantClient assistant() {

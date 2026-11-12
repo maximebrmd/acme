@@ -18,5 +18,16 @@ export class MemberDirectory extends Context.Service<
       userId: UserId,
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<Membership>, DirectoryUnavailable>;
+    /**
+     * The user's place in each of these workspaces, read as `membership`
+     * reads one, in one query; a workspace they are not in is left out.
+     */
+    readonly memberships: (
+      userId: UserId,
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<WorkspaceId, Membership>,
+      DirectoryUnavailable
+    >;
   }
 >()("peal-server/workspace/application/MemberDirectory") {}

@@ -1,17 +1,9 @@
-import {
-  Config,
-  Console,
-  DateTime,
-  Effect,
-  FileSystem,
-  Option,
-  Path,
-  Stream,
-} from "effect";
+import { Config, Console, DateTime, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
+  BestTimesSchema,
   CalendarDaySchema,
   ChannelSeriesSchema,
   countedPlatforms,
@@ -19,6 +11,7 @@ import {
 } from "peal-contract";
 import type {
   AnalyticsSummary,
+  BestTimesHour,
   DashboardTotals,
   FollowerChange,
   MetricTotals,
@@ -28,6 +21,7 @@ import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, count, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { saveNew } from "#saved-file.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
 // The range the web app shows unless asked otherwise: 30 days, today
@@ -509,56 +503,18 @@ const exportFile = Command.make(
   },
   Effect.fn("analytics.export")(function* exportFile(input) {
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const query = yield* rangeOf(input);
-    const file = path.resolve(input.output);
 
-    const cannotSave = (failure: { readonly message: string }) =>
-      new Refused({ reason: `Cannot save ${file} (${failure.message}).` });
-
-    if (yield* fs.exists(file).pipe(Effect.mapError(cannotSave))) {
-      yield* new Refused({
-        reason: `${file} exists already: give another --output.`,
-      });
-    }
-
-    const rows = yield* client.analytics
-      .export({
-        params: { workspaceId: workspace.id },
-        query: { ...query, format: input.format, kind: input.kind },
-      })
-      .pipe(Effect.mapError(explain(url)));
-
-    // Written as it comes, beside the file, to one made for it alone:
-    // never through a link, nor over a file made since it was checked. The
-    // file itself appears only once every row came: an export cut off on
-    // the way leaves nothing that looks complete.
-    const partial = `${file}.partial`;
-
-    const discard = fs.remove(partial).pipe(Effect.catch(() => Effect.void));
-
-    yield* rows.pipe(
-      Stream.run(fs.sink(partial, { flag: "wx" })),
-      Effect.catchTags({
-        HttpClientError: (failure) =>
-          discard.pipe(
-            Effect.andThen(
-              Effect.fail(
-                new Refused({
-                  reason: `The export was cut off before its end (${failure.message}): nothing was saved. Run the command again.`,
-                })
-              )
-            )
-          ),
-        PlatformError: (failure) =>
-          discard.pipe(Effect.andThen(Effect.fail(cannotSave(failure)))),
-      })
+    const file = yield* saveNew(
+      input.output,
+      "--output",
+      client.analytics
+        .export({
+          params: { workspaceId: workspace.id },
+          query: { ...query, format: input.format, kind: input.kind },
+        })
+        .pipe(Effect.mapError(explain(url)))
     );
-
-    yield* fs
-      .link(partial, file)
-      .pipe(Effect.mapError(cannotSave), Effect.ensuring(discard));
 
     yield* Console.log(`Saved to ${file}.`);
   })
@@ -568,9 +524,124 @@ const exportFile = Command.make(
   )
 );
 
+const weekdayNames: Readonly<Record<BestTimesHour["weekday"], string>> = {
+  friday: "Friday",
+  monday: "Monday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+  thursday: "Thursday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+};
+
+// An offset, such as +01:00, is refused before any request.
+const zoneNamed = (zone: string) =>
+  isZoneName(zone)
+    ? Effect.void
+    : Effect.fail(
+        new Refused({
+          reason: `${zone} is not an IANA time zone: give one such as Europe/Paris with --time-zone.`,
+        })
+      );
+
+const bestTimesDays = { "180": 180, "30": 30, "90": 90 } as const;
+
+const hourName = ({ hour, weekday }: BestTimesHour): string =>
+  `${weekdayNames[weekday]} ${String(hour).padStart(2, "0")}:00`;
+
+const bestTimes = Command.make(
+  "best-times",
+  {
+    channel: Flag.String("channel").pipe(
+      Flag.withMetavar("<channel-id>"),
+      Flag.withDescription("The channel, as peal channels list shows its id.")
+    ),
+    days: Flag.Literals("days", ["30", "90", "180"]).pipe(
+      Flag.withDescription(
+        "The last 30, 90 or 180 days, today included. Defaults to 90; fewer where the platform lets Peal keep less."
+      ),
+      Flag.withDefault("90" as const)
+    ),
+    json: jsonFlag,
+    timeZone: timeZoneFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("analytics.bestTimes")(function* showBestTimes(input) {
+    yield* zoneNamed(input.timeZone);
+
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const found = yield* client.analytics
+      .bestTimes({
+        params: { workspaceId: workspace.id },
+        query: {
+          channelId: input.channel,
+          days: bestTimesDays[input.days],
+          timeZone: input.timeZone,
+        },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(BestTimesSchema, found);
+
+      return;
+    }
+
+    yield* Console.log(
+      `When this ${found.platform} channel's posts did best, from ${found.from} to ${found.to} in ${found.timeZone}: what happened, not what will.`
+    );
+
+    if (!found.counted) {
+      yield* Console.log(
+        "Its platform gives no likes, reposts, replies or quotes, so there is nothing to weigh."
+      );
+
+      return;
+    }
+
+    if (!found.enough) {
+      yield* Console.log(
+        `Not enough posts to rank its hours: ${String(found.posts)} weighed, ${String(found.minimumPosts)} needed.`
+      );
+    }
+
+    if (found.best.length > 0) {
+      yield* Console.log(
+        "Best hours, by the median of likes, reposts, replies and quotes each post was given:"
+      );
+
+      for (const line of columns(
+        found.best.map((bucket) => [
+          `  ${hourName(bucket)}`,
+          `median ${count(bucket.median)}`,
+          `${String(bucket.posts)} posts`,
+        ])
+      )) {
+        yield* Console.log(line);
+      }
+    }
+
+    yield* Console.log(
+      `${String(found.posts)} posts weighed; ${String(found.recent)} left out, less than 48 hours old. An hour with fewer than ${String(found.minimumPostsPerHour)} posts has no median.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Show when one channel's posts did best, by weekday and hour: how many went live in each hour and the median of what they were given. It describes the channel's past, never a prediction, and ranks nothing under 20 posts."
+  )
+);
+
 export const analytics = Command.make("analytics").pipe(
   Command.withDescription(
     "How a workspace's posts and accounts did on their platforms."
   ),
-  Command.withSubcommands([summary, dashboard, channel, exportFile, post])
+  Command.withSubcommands([
+    summary,
+    dashboard,
+    channel,
+    bestTimes,
+    exportFile,
+    post,
+  ])
 );

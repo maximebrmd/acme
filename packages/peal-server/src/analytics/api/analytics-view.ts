@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 import type {
+  BestTimes as BestTimesView,
   AnalyticsDashboard as DashboardView,
   AnalyticsSummary as SummaryView,
   CalendarDay,
@@ -16,28 +17,32 @@ import type {
   Dashboard,
   DashboardTotals,
 } from "#analytics/application/analytics-dashboard.ts";
-import type { AnalyticsSummary } from "#analytics/application/analytics-queries.ts";
+import type {
+  AnalyticsSummary,
+  ChannelBestTimes,
+} from "#analytics/application/analytics-queries.ts";
 import type {
   CountTotals,
   PostHistory,
 } from "#analytics/application/analytics-reports.ts";
 import type { FollowerChange } from "#analytics/domain/account-series.ts";
+import {
+  minimumPosts,
+  minimumPostsPerHour,
+} from "#analytics/domain/best-times.ts";
+import type { HourBucket } from "#analytics/domain/best-times.ts";
 import { engagementOf } from "#analytics/domain/post-metrics.ts";
 import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
-import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
+import { isoDateOf, LocalDateSchema } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 // What clients see of analytics, which the API and the MCP tools answer.
 
 const decodeDate = Schema.decodeUnknownOption(LocalDateSchema);
 
-const pad = (value: number, length = 2) =>
-  value.toString().padStart(length, "0");
-
 /** A day as the contract writes it: YYYY-MM-DD. */
-export const dayView = ({ day, month, year }: LocalDate): CalendarDay =>
-  `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
+export const dayView = (date: LocalDate): CalendarDay => isoDateOf(date);
 
 /**
  * The day a request names. The contract checked it is on the calendar. One
@@ -206,4 +211,29 @@ export const channelSeriesView = (
   timeZone: series.range.timeZone,
   to: dayView(series.range.to),
   totals: dashboardTotalsView(series.totals),
+});
+
+const hourView = (bucket: HourBucket) => ({
+  hour: bucket.hour,
+  median: Option.getOrNull(bucket.median),
+  posts: bucket.posts,
+  weekday: bucket.weekday,
+});
+
+/** What clients see of when a channel's posts did best. */
+export const bestTimesView = (found: ChannelBestTimes): BestTimesView => ({
+  best: found.best.map(hourView),
+  buckets: found.buckets.map(hourView),
+  channelId: found.channelId,
+  counted: found.counted,
+  days: found.days,
+  enough: found.enough,
+  from: dayView(found.from),
+  minimumPosts,
+  minimumPostsPerHour,
+  platform: found.platform,
+  posts: found.posts,
+  recent: found.recent,
+  timeZone: found.timeZone,
+  to: dayView(found.to),
 });

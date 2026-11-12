@@ -17,7 +17,9 @@ import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analy
 import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-posts.ts";
 import { PlatformMetricsReaderLive as PlatformReaders } from "#analytics/infrastructure/platforms/platform-metrics-reader.ts";
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
+import { SqlAnalyticsAcrossReads } from "#analytics/infrastructure/sql-analytics-across-reads.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
+import { SqlBestTimesReads } from "#analytics/infrastructure/sql-best-times-reads.ts";
 import { SqlExpiredAnalytics } from "#analytics/infrastructure/sql-expired-analytics.ts";
 import { SqlPaidReads } from "#analytics/infrastructure/sql-paid-reads.ts";
 import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channels.ts";
@@ -30,7 +32,15 @@ import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channe
  * `Drizzle` and `SqlClient`.
  */
 export const AnalyticsLive = Layer.mergeAll(
-  AnalyticsQueries.layer.pipe(Layer.provide(SqlAnalyticsReports)),
+  AnalyticsQueries.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        SqlAnalyticsReports,
+        SqlAnalyticsAcrossReads,
+        SqlBestTimesReads
+      )
+    )
+  ),
   DrizzleAnalyticsRecords,
   PurgeAnalytics.layer.pipe(Layer.provide(SqlExpiredAnalytics))
 );

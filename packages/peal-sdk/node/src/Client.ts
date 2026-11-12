@@ -19,6 +19,7 @@ import { MediaClient } from "./api/resources/media/client/Client.js";
 import { MembersClient } from "./api/resources/members/client/Client.js";
 import { NoticesClient } from "./api/resources/notices/client/Client.js";
 import { NotificationPreferencesClient } from "./api/resources/notificationPreferences/client/Client.js";
+import { OverviewClient } from "./api/resources/overview/client/Client.js";
 import { PartnerClient } from "./api/resources/partner/client/Client.js";
 import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Client.js";
 import { PartnerUsageClient } from "./api/resources/partnerUsage/client/Client.js";
@@ -56,6 +57,7 @@ export class PealClient {
     protected _media: MediaClient | undefined;
     protected _notices: NoticesClient | undefined;
     protected _notificationPreferences: NotificationPreferencesClient | undefined;
+    protected _overview: OverviewClient | undefined;
     protected _assistant: AssistantClient | undefined;
     protected _members: MembersClient | undefined;
     protected _invitations: InvitationsClient | undefined;
@@ -118,6 +120,10 @@ export class PealClient {
 
     public get notificationPreferences(): NotificationPreferencesClient {
         return (this._notificationPreferences ??= new NotificationPreferencesClient(this._options));
+    }
+
+    public get overview(): OverviewClient {
+        return (this._overview ??= new OverviewClient(this._options));
     }
 
     public get assistant(): AssistantClient {

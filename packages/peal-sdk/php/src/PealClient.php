@@ -10,6 +10,7 @@ use Peal\Posts\PostsClient;
 use Peal\Media\MediaClient;
 use Peal\Notices\NoticesClient;
 use Peal\NotificationPreferences\NotificationPreferencesClient;
+use Peal\Overview\OverviewClient;
 use Peal\Assistant\AssistantClient;
 use Peal\Members\MembersClient;
 use Peal\Invitations\InvitationsClient;
@@ -80,6 +81,11 @@ class PealClient
      * @var NotificationPreferencesClient $notificationPreferences
      */
     public NotificationPreferencesClient $notificationPreferences;
+
+    /**
+     * @var OverviewClient $overview
+     */
+    public OverviewClient $overview;
 
     /**
      * @var AssistantClient $assistant
@@ -270,6 +276,7 @@ class PealClient
         $this->media = new MediaClient($this->client, $this->options);
         $this->notices = new NoticesClient($this->client, $this->options);
         $this->notificationPreferences = new NotificationPreferencesClient($this->client, $this->options);
+        $this->overview = new OverviewClient($this->client, $this->options);
         $this->assistant = new AssistantClient($this->client, $this->options);
         $this->members = new MembersClient($this->client, $this->options);
         $this->invitations = new InvitationsClient($this->client, $this->options);

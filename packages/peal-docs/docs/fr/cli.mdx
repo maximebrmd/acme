@@ -80,6 +80,16 @@ Chaque espace de travail vient avec son slug et son identifiant, que prend `--wo
 
 Quand la connexion ne fonctionne plus, parce qu’elle a été révoquée ou que votre compte a été banni, `peal whoami` le dit et vous demande de relancer `peal login`. Avant toute connexion, il répond que vous n’êtes pas connecté.
 
+## Dans tous les espaces [#across-workspaces]
+
+```sh
+peal overview
+peal agenda --from 2026-11-20T00:00 --to 2026-11-27T00:00 --workspace clients
+peal report --days 90 --csv rapport.csv
+```
+
+`peal overview` dit ce qui demande votre attention dans chaque espace de travail auquel vous appartenez : les publications qui ont échoué ou sont à vérifier, les approbations en attente, les canaux à reconnecter ou désactivés, les commentaires qui attendent une réponse, un espace au-delà de son offre, ou une fois que rien ne demande votre attention. Chaque espace montre ce que votre rôle y permet de lire, et un espace qui exige la validation en deux étapes que votre compte n’a pas activée est nommé sans aucun chiffre. `peal agenda` liste ce qui part dans ces espaces, les 14 prochains jours sauf si `--from` et `--to` disent autre chose (31 jours au plus), chaque publication avec son heure en UTC, son espace, ses plateformes, son état et le début de son texte ; `--workspace`, répété, en garde certains, par slug ou identifiant. `peal report` montre les publications, l’engagement, les impressions et les abonnés de chaque espace sur les 7, 30 ou 90 derniers jours (`--days`, 30 par défaut ; `--time-zone`), chacun à côté des jours d’avant, là où votre rôle lit les statistiques ; `--csv` enregistre le rapport en fichier CSV, une ligne par espace, jamais par-dessus un fichier qui existe. Les trois prennent `--json`, `--limit` et `--cursor`, et sont pour une personne connectée : une clé d’API appartient à un seul espace ([Dans tous vos espaces de travail](/settings#across-workspaces)).
+
 ## Se déconnecter [#logout]
 
 ```sh
@@ -527,13 +537,14 @@ peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Pari
 peal analytics post <post-id>
 peal analytics dashboard --days 7                          # par rapport aux 7 jours précédents
 peal analytics channel <channel-id> --days 30
+peal analytics best-times --channel <channel-id> --days 90
 peal analytics export posts --output posts.csv --from 2026-10-01 --to 2026-10-31
 peal analytics export accounts --format json --output accounts.ndjson
 ```
 
 `peal analytics summary` additionne les compteurs des publications parues sur une période : au total, par canal, et les publications qui ont le plus fait réagir. Les jours suivent `--time-zone`, un fuseau IANA comme `Europe/Paris` ; sans lui, `TZ`, puis le fuseau de votre ordinateur. `peal analytics post` affiche les derniers compteurs d’une publication sur chaque canal où elle est partie. Un tiret remplace un compteur que la plateforme ne donne pas. Voir [Statistiques](/analytics).
 
-`peal analytics dashboard` montre une période à côté du même nombre de jours avant elle : chaque total avec ce qui a changé, les abonnés avec ce qu’ils ont gagné, chaque canal, et les meilleures publications. `peal analytics channel` affiche un canal jour par jour : abonnés, abonnements, vues, portée, et les interactions gagnées par ses publications. Les deux acceptent `--days 7`, `30` ou `90` (30 par défaut), ou `--from` et `--to`. `peal analytics export posts` ou `accounts` enregistre les chiffres dans le fichier que nomme `--output`, en CSV ou, avec `--format json`, un objet JSON par ligne ; il ne remplace aucun fichier.
+`peal analytics dashboard` montre une période à côté du même nombre de jours avant elle : chaque total avec ce qui a changé, les abonnés avec ce qu’ils ont gagné, chaque canal, et les meilleures publications. `peal analytics channel` affiche un canal jour par jour : abonnés, abonnements, vues, portée, et les interactions gagnées par ses publications. Les deux acceptent `--days 7`, `30` ou `90` (30 par défaut), ou `--from` et `--to`. `peal analytics best-times` dit quand les publications d’un canal ont le mieux marché, par jour de la semaine et par heure dans `--time-zone`, sur `--days 30`, `90` (par défaut) ou `180` : les meilleures heures, et combien de publications compte chaque heure pesée. C’est le passé du canal, jamais une prévision, et rien n’est classé sous 20 publications ([Quand les publications ont le mieux marché](/analytics#best-times)). `peal analytics export posts` ou `accounts` enregistre les chiffres dans le fichier que nomme `--output`, en CSV ou, avec `--format json`, un objet JSON par ligne ; il ne remplace aucun fichier.
 
 ## Facturation [#billing]
 

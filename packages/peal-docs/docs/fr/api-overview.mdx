@@ -106,7 +106,7 @@ Plutôt que d’interroger l’API sans cesse, faites appeler votre serveur par 
 
 ## Votre compte [#me]
 
-Ce qui vous appartient, plutôt qu’à un espace de travail, se trouve sous `/api/me` : qui vous êtes (`GET /api/me`), vos [notifications](/notifications#api) sous `/api/me/notices`, et celles qui partent par e-mail, sous `/api/me/notification-preferences`. Les points d’accès des notifications répondent 403 aux clés d’API, qui appartiennent à un espace de travail, et aux jetons OAuth liés à un seul espace de travail, comme celui d’un client MCP.
+Ce qui vous appartient, plutôt qu’à un espace de travail, se trouve sous `/api/me` : qui vous êtes (`GET /api/me`), vos [notifications](/notifications#api) sous `/api/me/notices`, et celles qui partent par e-mail, sous `/api/me/notification-preferences` ; ce qui demande votre attention dans chacun de vos espaces de travail (`GET /api/me/overview`) ce qui part dans l’ensemble (`GET /api/me/agenda`) et comment cela s’est passé (`GET /api/me/report`), dans la mesure où votre rôle dans chacun permet de le lire ([Dans tous vos espaces de travail](/settings#across-workspaces)). Ces points d’accès répondent 403 aux clés d’API, qui appartiennent à un espace de travail, et aux jetons OAuth liés à un seul espace de travail, comme celui d’un client MCP.
 
 Une copie de vos données (`GET /api/me/export`), la suppression de votre compte (`DELETE /api/me`) et vos applications connectées (`/api/me/connected-apps`) ne répondent qu’à votre propre session dans l’application web : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403 ([Espaces de travail et compte](/settings#api)).
 

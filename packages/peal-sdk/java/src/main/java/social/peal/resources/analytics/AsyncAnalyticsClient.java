@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
+import social.peal.resources.analytics.requests.BestTimesAnalyticsRequest;
 import social.peal.resources.analytics.requests.ChannelAnalyticsRequest;
 import social.peal.resources.analytics.requests.DashboardAnalyticsRequest;
 import social.peal.resources.analytics.requests.ExportAnalyticsRequest;
@@ -15,6 +16,7 @@ import social.peal.resources.analytics.requests.PostAnalyticsRequest;
 import social.peal.resources.analytics.requests.SummaryAnalyticsRequest;
 import social.peal.types.AnalyticsDashboard;
 import social.peal.types.AnalyticsSummary;
+import social.peal.types.BestTimes;
 import social.peal.types.ChannelSeries;
 import social.peal.types.PostAnalytics;
 
@@ -151,6 +153,36 @@ public class AsyncAnalyticsClient {
         CompletableFuture<PealClientHttpResponse<InputStream>> rawFuture =
                 this.rawClient.export(workspaceId, request, requestOptions);
         CompletableFuture<InputStream> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers when one channel's posts did best, by weekday and hour as <code>timeZone</code> (an IANA zone) runs them, over the last <code>days</code> (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (<code>counted</code> is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers <code>enough: false</code> with no ranking. <code>best</code> lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (<code>recent</code>), as are posts Peal deleted from the platform. Needs analytics:read.
+     */
+    public CompletableFuture<BestTimes> bestTimes(String workspaceId, BestTimesAnalyticsRequest request) {
+        CompletableFuture<PealClientHttpResponse<BestTimes>> rawFuture = this.rawClient.bestTimes(workspaceId, request);
+        CompletableFuture<BestTimes> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers when one channel's posts did best, by weekday and hour as <code>timeZone</code> (an IANA zone) runs them, over the last <code>days</code> (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (<code>counted</code> is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers <code>enough: false</code> with no ranking. <code>best</code> lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (<code>recent</code>), as are posts Peal deleted from the platform. Needs analytics:read.
+     */
+    public CompletableFuture<BestTimes> bestTimes(
+            String workspaceId, BestTimesAnalyticsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<BestTimes>> rawFuture =
+                this.rawClient.bestTimes(workspaceId, request, requestOptions);
+        CompletableFuture<BestTimes> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

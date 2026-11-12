@@ -302,3 +302,18 @@ export const dashboardOf = (rows: DashboardRows): Dashboard => {
     topPosts: rows.topPosts,
   };
 };
+
+/** What a comparison alone is put together from: a dashboard's rows but its days' gains and its top posts. */
+export type ComparisonRows = Omit<DashboardRows, "gains" | "topPosts">;
+
+/**
+ * A workspace's range beside the one before, as its dashboard answers it
+ * at its top: the same function on the same rows, so the report across
+ * workspaces and a workspace's own dashboard never disagree.
+ */
+export const comparisonOf = (rows: ComparisonRows): Comparison => {
+  const { followers, previousFollowers, previousKept, previousTotals, totals } =
+    dashboardOf({ ...rows, gains: [], topPosts: [] });
+
+  return { followers, previousFollowers, previousKept, previousTotals, totals };
+};

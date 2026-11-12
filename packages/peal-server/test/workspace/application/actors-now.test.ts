@@ -103,6 +103,7 @@ const ActorsNowTest = ActorsNow.layer.pipe(
         MemberDirectory.of({
           account: () => Effect.succeedNone,
           membership: () => read(({ membership }) => membership),
+          memberships: () => Effect.die("not read in this test"),
         })
       ),
       Layer.succeed(

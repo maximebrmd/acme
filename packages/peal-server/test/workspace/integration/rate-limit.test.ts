@@ -86,6 +86,7 @@ const authWith = (env: Record<string, string>) =>
         MemberDirectory.of({
           account: () => Effect.succeedNone,
           membership: () => Effect.succeedNone,
+          memberships: () => Effect.die("not read in this test"),
         })
       )
     ),

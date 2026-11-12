@@ -381,6 +381,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           approve_post: [false, false, false, true],
           await_post: [true, false, true, false],
+          best_times: [true, false, true, false],
           // Spends the user's money at an ad network, and cannot be undone.
           boost_post: [false, true, false, true],
           cancel_post: [false, true, true, false],
@@ -2516,6 +2517,21 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               }
             ),
             { channelId: "not-a-channel", platform: null }
+          );
+          // Best times are a channel's own, and a zone is an IANA one.
+          assert.include(
+            yield* reader.refused("best_times", {
+              channelId: "not-a-channel",
+              timeZone: "Europe/Paris",
+            }),
+            "The workspace follows no channel with this id"
+          );
+          assert.include(
+            yield* reader.refused("best_times", {
+              channelId: "not-a-channel",
+              timeZone: "+01:00",
+            }),
+            "is not an IANA time zone"
           );
 
           // Without a Stripe key, nothing is limited.

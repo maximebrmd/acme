@@ -80,6 +80,16 @@ Each workspace comes with its slug and its id, which `--workspace` takes. `peal 
 
 When the sign-in no longer works, because it was revoked or your account was banned, `peal whoami` says so and asks you to run `peal login` again. Before you sign in at all, it answers that you are not signed in.
 
+## Across workspaces [#across-workspaces]
+
+```sh
+peal overview
+peal agenda --from 2026-11-20T00:00 --to 2026-11-27T00:00 --workspace clients
+peal report --days 90 --csv report.csv
+```
+
+`peal overview` says what needs attention in each workspace you belong to: posts that failed or must be checked, approvals waiting, channels to reconnect or off, comments waiting for an answer, a workspace over its plan, or once that nothing needs attention. Each workspace shows what your role there may read, and one that requires two-step verification your account does not have on is named with no figure. `peal agenda` lists what goes out across those workspaces, the next 14 days unless `--from` and `--to` say otherwise (31 days at most), each post with its time in UTC, its workspace, its platforms, its status and how its text starts; `--workspace`, repeated, keeps some of them, by slug or id. `peal report` shows each workspace's posts, engagement, impressions and followers over the last 7, 30 or 90 days (`--days`, 30 unless given; `--time-zone`), each beside the days before, where your role reads analytics; `--csv` saves the report as a CSV file, one line a workspace, never over a file that exists. All three take `--json`, `--limit` and `--cursor`, and are for a person signed in: an API key belongs to one workspace ([Across your workspaces](/settings#across-workspaces)).
+
 ## Sign out [#logout]
 
 ```sh
@@ -527,13 +537,14 @@ peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Pari
 peal analytics post <post-id>
 peal analytics dashboard --days 7                          # against the 7 days before
 peal analytics channel <channel-id> --days 30
+peal analytics best-times --channel <channel-id> --days 90
 peal analytics export posts --output posts.csv --from 2026-10-01 --to 2026-10-31
 peal analytics export accounts --format json --output accounts.ndjson
 ```
 
 `peal analytics summary` adds up the counts of the posts published over a range of days: in all, by channel, and the posts people did the most with. Days run in `--time-zone`, an IANA zone such as `Europe/Paris`; without it, in `TZ`, then in your computer's zone. `peal analytics post` prints a post's latest counts on each channel it went out on. A dash stands for a count the platform does not give. See [Analytics](/analytics).
 
-`peal analytics dashboard` shows a range beside the same number of days before it: each total with what changed, followers with what they gained, each channel, and the top posts. `peal analytics channel` prints one channel day by day: followers, following, views, reach, and the interactions its posts gained. Both take `--days 7`, `30` or `90` (30 unless said), or `--from` and `--to`. `peal analytics export posts` or `accounts` saves the figures to the file `--output` names, as CSV or, with `--format json`, one JSON object a line; it replaces no file.
+`peal analytics dashboard` shows a range beside the same number of days before it: each total with what changed, followers with what they gained, each channel, and the top posts. `peal analytics channel` prints one channel day by day: followers, following, views, reach, and the interactions its posts gained. Both take `--days 7`, `30` or `90` (30 unless said), or `--from` and `--to`. `peal analytics best-times` says when one channel's posts did best, by weekday and hour in `--time-zone`, over `--days 30`, `90` (the default) or `180`: the best hours, and how many posts each weighed hour holds. It is the channel's past, never a prediction, and ranks nothing under 20 posts ([When posts did best](/analytics#best-times)). `peal analytics export posts` or `accounts` saves the figures to the file `--output` names, as CSV or, with `--format json`, one JSON object a line; it replaces no file.
 
 ## Billing [#billing]
 

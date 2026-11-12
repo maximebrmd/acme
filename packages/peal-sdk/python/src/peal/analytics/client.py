@@ -8,6 +8,7 @@ from ..types.analytics_dashboard import AnalyticsDashboard
 from ..types.analytics_export_format import AnalyticsExportFormat
 from ..types.analytics_export_kind import AnalyticsExportKind
 from ..types.analytics_summary import AnalyticsSummary
+from ..types.best_times import BestTimes
 from ..types.calendar_day import CalendarDay
 from ..types.channel_series import ChannelSeries
 from ..types.post_analytics import PostAnalytics
@@ -260,6 +261,54 @@ class AnalyticsClient:
             request_options=request_options,
         ) as r:
             yield from r.data
+
+    def best_times(
+        self,
+        workspace_id: str,
+        *,
+        channel_id: str,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> BestTimes:
+        """
+        Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        BestTimes
+            BestTimes
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.analytics.best_times(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+            time_zone="timeZone",
+        )
+        """
+        _response = self._raw_client.best_times(
+            workspace_id, channel_id=channel_id, time_zone=time_zone, days=days, request_options=request_options
+        )
+        return _response.data
 
     def post(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
@@ -576,6 +625,62 @@ class AsyncAnalyticsClient:
         ) as r:
             async for _chunk in r.data:
                 yield _chunk
+
+    async def best_times(
+        self,
+        workspace_id: str,
+        *,
+        channel_id: str,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> BestTimes:
+        """
+        Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        BestTimes
+            BestTimes
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.analytics.best_times(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+                time_zone="timeZone",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.best_times(
+            workspace_id, channel_id=channel_id, time_zone=time_zone, days=days, request_options=request_options
+        )
+        return _response.data
 
     async def post(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None

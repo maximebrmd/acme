@@ -1,9 +1,30 @@
-import { Context, DateTime, Effect, Layer, Option, Stream } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Stream,
+} from "effect";
 
 import { utcDayFrom } from "#analytics/domain/account-metrics.ts";
 import { followerChange } from "#analytics/domain/account-series.ts";
 import type { FollowersRead } from "#analytics/domain/account-series.ts";
-import { keptSince } from "#analytics/domain/analytics-retention.ts";
+import {
+  keptSince,
+  retentionOf,
+} from "#analytics/domain/analytics-retention.ts";
+import {
+  bestTimesOf,
+  hourStarts,
+  settlingHours,
+  weighedCounts,
+} from "#analytics/domain/best-times.ts";
+import type {
+  BestTimes,
+  BestTimesPeriod,
+} from "#analytics/domain/best-times.ts";
 import type { InvalidReportRange } from "#analytics/domain/invalid-report-range.ts";
 import {
   dayStarts,
@@ -17,13 +38,26 @@ import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import { localDateOf } from "#shared/domain/wall-clock.ts";
+import type { Platform } from "#shared/domain/platform.ts";
+import type { TimeZoneId } from "#shared/domain/time-zone.ts";
+import { addDays, localDateOf } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
-import { dashboardOf, followersOf, totalsOf } from "./analytics-dashboard.ts";
-import type { ChannelSeries, Dashboard } from "./analytics-dashboard.ts";
+import { AnalyticsAcrossReads } from "./analytics-across-reads.ts";
+import type { OfWorkspace } from "./analytics-across-reads.ts";
+import {
+  comparisonOf,
+  dashboardOf,
+  followersOf,
+  totalsOf,
+} from "./analytics-dashboard.ts";
+import type {
+  ChannelSeries,
+  Comparison,
+  Dashboard,
+} from "./analytics-dashboard.ts";
 import { AnalyticsReports } from "./analytics-reports.ts";
 import type {
   AccountDayRow,
@@ -35,6 +69,8 @@ import type {
   ExportedPost,
   PostHistory,
 } from "./analytics-reports.ts";
+import { BestTimesReads } from "./best-times-reads.ts";
+import { ChannelNotFound } from "./channel-not-found.ts";
 
 /** How many posts a summary ranks. */
 export const topPostCount = 5;
@@ -142,6 +178,50 @@ export type ExportRow =
   | { readonly _tag: "post"; readonly row: ExportedPost }
   | { readonly _tag: "accountDay"; readonly row: AccountDayRow };
 
+/**
+ * Several workspaces' ranges beside the ones before, each as its own
+ * dashboard answers it, for the same range: a workspace whose analytics
+ * hold nothing for it answers totals of no post.
+ */
+export interface AcrossWorkspaces {
+  readonly previous: ReportRange;
+  readonly range: ReportRange;
+  readonly workspaces: ReadonlyMap<WorkspaceId, Comparison>;
+}
+
+/** When a channel's posts did best, and over which days. */
+export interface ChannelBestTimes extends BestTimes {
+  readonly channelId: ChannelId;
+  /**
+   * Whether the platform gives any of the counts weighed: likes, reposts,
+   * replies, quotes. Where it gives none, nothing is weighed.
+   */
+  readonly counted: boolean;
+  /** The days read: those asked, or fewer where the platform keeps less. */
+  readonly days: number;
+  readonly from: LocalDate;
+  readonly platform: Platform;
+  /** The posts left out because their counts still move. */
+  readonly recent: number;
+  readonly timeZone: TimeZoneId;
+  readonly to: LocalDate;
+}
+
+// The rows of several workspaces, by workspace.
+const byWorkspace = <A>(rows: readonly OfWorkspace<A>[]) => {
+  const grouped = new Map<WorkspaceId, OfWorkspace<A>[]>();
+
+  for (const row of rows) {
+    const kept = grouped.get(row.workspaceId) ?? [];
+
+    kept.push(row);
+    grouped.set(row.workspaceId, kept);
+  }
+
+  return (workspaceId: WorkspaceId): readonly OfWorkspace<A>[] =>
+    grouped.get(workspaceId) ?? [];
+};
+
 /** How many rows an export reads from the store at a time. */
 export const exportPage = 500;
 
@@ -205,12 +285,40 @@ export class AnalyticsQueries extends Context.Service<
       Stream.Stream<ExportRow, DatabaseError>,
       InvalidReportRange | MissingPermission
     >;
+    /**
+     * When one of the workspace's channels' posts did best, by weekday and
+     * hour in the zone, over the last `days`: the past of this channel,
+     * never a prediction.
+     */
+    readonly bestTimes: (
+      actor: Actor,
+      channelId: Option.Option<ChannelId>,
+      days: BestTimesPeriod,
+      timeZone: TimeZoneId
+    ) => Effect.Effect<
+      ChannelBestTimes,
+      ChannelNotFound | DatabaseError | MissingPermission
+    >;
+    /**
+     * The workspaces of these actors over the same range, each beside the
+     * range before, as its dashboard answers them: one query a kind of
+     * row for all of them. Each actor needs analytics:read in its own.
+     */
+    readonly acrossWorkspaces: (
+      actors: readonly Actor[],
+      asked: RangeAsked
+    ) => Effect.Effect<
+      AcrossWorkspaces,
+      DatabaseError | InvalidReportRange | MissingPermission
+    >;
   }
 >()("peal-server/analytics/application/AnalyticsQueries") {
   static readonly layer = Layer.effect(
     AnalyticsQueries,
     Effect.gen(function* AnalyticsQueriesLive() {
       const reports = yield* AnalyticsReports;
+      const across = yield* AnalyticsAcrossReads;
+      const bestTimesReads = yield* BestTimesReads;
 
       const post = Effect.fn("AnalyticsQueries.post")(function* post(
         actor: Actor,
@@ -465,7 +573,170 @@ export class AnalyticsQueries extends Context.Service<
         }
       );
 
+      const acrossWorkspaces = Effect.fn("AnalyticsQueries.acrossWorkspaces")(
+        function* acrossWorkspaces(
+          actors: readonly Actor[],
+          asked: RangeAsked
+        ) {
+          for (const actor of actors) {
+            yield* Effect.fromResult(authorize(actor, "analytics:read"));
+          }
+
+          const range = yield* rangeOf(asked);
+          const previous = previousRange(range);
+          const ids = actors.map(({ workspaceId }) => workspaceId);
+
+          if (ids.length === 0) {
+            const nothing: AcrossWorkspaces = {
+              previous,
+              range,
+              workspaces: new Map(),
+            };
+
+            return nothing;
+          }
+
+          const span = yield* spanOf(range);
+          const before = yield* spanOf(previous);
+          const now = yield* DateTime.now;
+
+          const found = yield* Effect.all(
+            {
+              accountDays: across.accountDays(
+                ids,
+                utcDayFrom(previous.from),
+                utcDayFrom(range.to)
+              ),
+              channels: across.channels(ids),
+              counts: across.counts(ids, span.start, span.end),
+              previousCounts: across.counts(ids, before.start, before.end),
+            },
+            { concurrency: "unbounded" }
+          );
+
+          const accountDays = byWorkspace(found.accountDays);
+          const channels = byWorkspace(found.channels);
+          const counts = byWorkspace(found.counts);
+          const previousCounts = byWorkspace(found.previousCounts);
+          const rangeDays = daysOf(range);
+
+          const previousSpan = {
+            from: utcDayFrom(previous.from),
+            to: utcDayFrom(previous.to),
+          };
+
+          const workspaces = new Map(
+            ids.map((workspaceId) => [
+              workspaceId,
+              comparisonOf({
+                accountDays: accountDays(workspaceId),
+                counts: counts(workspaceId),
+                platforms: new Map(
+                  channels(workspaceId).map((followedChannel) => [
+                    followedChannel.channelId,
+                    followedChannel.platform,
+                  ])
+                ),
+                previous,
+                previousCounts: previousCounts(workspaceId),
+                previousKeptOn: (platform) =>
+                  keptSince(platform, before.start, now),
+                previousSpan,
+                range,
+                rangeDays,
+              }),
+            ])
+          );
+
+          const answered: AcrossWorkspaces = { previous, range, workspaces };
+
+          return answered;
+        }
+      );
+
+      const bestTimes = Effect.fn("AnalyticsQueries.bestTimes")(
+        function* bestTimes(
+          actor: Actor,
+          asked: Option.Option<ChannelId>,
+          days: BestTimesPeriod,
+          timeZone: TimeZoneId
+        ) {
+          yield* Effect.fromResult(authorize(actor, "analytics:read"));
+
+          const { workspaceId } = actor;
+          const followed = yield* reports.channels(workspaceId);
+
+          const match = Option.flatMapNullishOr(asked, (channelId) =>
+            followed.find((each) => each.channelId === channelId)
+          );
+
+          if (Option.isNone(match)) {
+            return yield* new ChannelNotFound();
+          }
+
+          const { channelId, platform } = match.value;
+          const now = yield* DateTime.now;
+          const weighed = weighedCounts(platform);
+
+          // No more days than the platform lets Peal keep.
+          const kept = Math.floor(Duration.toDays(retentionOf(platform)));
+
+          const covered = Math.min(days, kept);
+          const to = localDateOf(now, timeZone);
+          const from = addDays(to, 1 - covered);
+          const starts = hourStarts(from, to, timeZone);
+          const settled = DateTime.subtract(now, { hours: settlingHours });
+          const [first] = starts;
+
+          const read =
+            first === undefined || weighed.length === 0
+              ? []
+              : yield* bestTimesReads.channelPosts(
+                  workspaceId,
+                  channelId,
+                  first.at,
+                  now
+                );
+
+          const old = read.filter(({ publishedAt }) =>
+            DateTime.isLessThan(publishedAt, settled)
+          );
+
+          const scoreOf = (given: (typeof read)[number]) =>
+            weighed.reduce(
+              (sum, count) =>
+                sum +
+                (count === "quotes"
+                  ? Option.getOrElse(given.quotes, () => 0)
+                  : given[count]),
+              0
+            );
+
+          const answered: ChannelBestTimes = {
+            ...bestTimesOf(
+              starts,
+              old.map((given) => ({
+                publishedAt: given.publishedAt,
+                score: scoreOf(given),
+              }))
+            ),
+            channelId,
+            counted: weighed.length > 0,
+            days: covered,
+            from,
+            platform,
+            recent: read.length - old.length,
+            timeZone,
+            to,
+          };
+
+          return answered;
+        }
+      );
+
       return AnalyticsQueries.of({
+        acrossWorkspaces,
+        bestTimes,
         channel,
         dashboard,
         exportRows,

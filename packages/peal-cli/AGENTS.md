@@ -10,8 +10,8 @@
   first (`signedIn` does), which refuses plain HTTP elsewhere
   (`insecure_api_url`) unless `--insecure-http` or `PEAL_INSECURE_HTTP`
   allows it, for a self-hosted server without TLS.
-- `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
-  `health` are the other commands, with `channels`, `drafts`, `posts`,
+- `peal login` signs in with the device grant; `whoami`, `overview`,
+  `agenda`, `logout`, `mcp` and `health` are the other commands, with `channels`, `drafts`, `posts`,
   `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `feeds`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
   `invitations`, `webhooks`, `ads` and `assistant`, which act in the
@@ -169,6 +169,16 @@
   printed through `printableConsole` like everything else, and a reply
   that is `unconfirmed` is never sent again, so `explain` sends the user
   to the platform, then to `peal inbox confirm`.
+- `peal overview` and `peal agenda` read across the person's workspaces
+  (`overview.get`, `overview.agenda`, under `/api/me`), for a person
+  signed in only (`personOnly`): a key belongs to one workspace. The
+  overview prints what needs attention in each, once "Nothing needs
+  attention." where nothing does, and a workspace that refuses the person
+  by name alone; the agenda takes `--from`, `--to` (14 days unless given,
+  31 at most, checked before any request) and `--workspace`, repeated,
+  by slug or id among the person's (`/api/me`), and never `PEAL_WORKSPACE`:
+  narrowing is asked for, not inherited. No MCP tool reads across
+  workspaces (`src/app/mcp/AGENTS.md`).
 - `peal usage` (`--from`, `--to`: UTC days) reads `usage.get`: the plan
   line, the limits against what is used now (`usageLines`, shared with
   `peal billing`), the period's totals, then a row per day that has

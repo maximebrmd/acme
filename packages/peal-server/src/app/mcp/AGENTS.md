@@ -19,6 +19,10 @@
   own workspace (`workspaceOfKey` in `Authenticate`: the one place to
   change if a key ever spans several). Past the rate limit it answers a
   JSON-RPC error with 429.
+- No tool reads across workspaces (the overview, the agenda, the report
+  of `/api/me`): a connection acts in the one workspace the person chose,
+  and a tool that read the others would hand a model what the person did
+  not connect. The command line has them.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
@@ -79,6 +83,9 @@
   the user; open world) and `revoke_review_link` (destructive) are in
   `publishingTools`, as `ReviewLinks` checks post:approve. The CLI's are
   `peal media describe|delete` and `peal review links|link|revoke`.
+- `best_times` (`reports-tools.ts`) answers `GET …/analytics/best-times`'s
+  view for one channel; its description says it describes the past of
+  that channel, is no prediction, and that `enough: false` ranks nothing.
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.

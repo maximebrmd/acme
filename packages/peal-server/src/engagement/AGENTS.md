@@ -200,6 +200,10 @@
   notice once per thread and UTC day (key `comments:<thread>:<day>`), to
   the post's author and the members with `engagement:reply` who follow
   every post, emailed only to those who turned `comments` on.
+- `InboxWaiting` counts, for several workspaces at once, the threads the
+  inbox's `unanswered` filter lists (comments, one waiting), for the
+  overview across workspaces: a count of threads, never a comment's text
+  or author, ids as one `anyUuid` parameter, no permission checked.
 - Test use cases on the in-memory world (`test/engagement/fakes/world.ts`),
   the store on Postgres at instants no other suite uses (2043; the purge
   in 2031), deleting the workspace's rows after.

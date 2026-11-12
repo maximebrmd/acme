@@ -10,6 +10,60 @@ import (
 )
 
 var (
+	bestTimesAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	bestTimesAnalyticsRequestFieldChannelID   = big.NewInt(1 << 1)
+	bestTimesAnalyticsRequestFieldDays        = big.NewInt(1 << 2)
+	bestTimesAnalyticsRequestFieldTimeZone    = big.NewInt(1 << 3)
+)
+
+type BestTimesAnalyticsRequest struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	ChannelID   string  `json:"-" url:"channelId"`
+	Days        *string `json:"-" url:"days,omitempty"`
+	TimeZone    string  `json:"-" url:"timeZone"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (b *BestTimesAnalyticsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesAnalyticsRequest) SetWorkspaceID(workspaceID string) {
+	b.WorkspaceID = workspaceID
+	b.require(bestTimesAnalyticsRequestFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesAnalyticsRequest) SetChannelID(channelID string) {
+	b.ChannelID = channelID
+	b.require(bestTimesAnalyticsRequestFieldChannelID)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesAnalyticsRequest) SetDays(days *string) {
+	b.Days = days
+	b.require(bestTimesAnalyticsRequestFieldDays)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesAnalyticsRequest) SetTimeZone(timeZone string) {
+	b.TimeZone = timeZone
+	b.require(bestTimesAnalyticsRequestFieldTimeZone)
+}
+
+var (
 	channelAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	channelAnalyticsRequestFieldChannelID   = big.NewInt(1 << 1)
 	channelAnalyticsRequestFieldDays        = big.NewInt(1 << 2)
@@ -929,6 +983,508 @@ func (a *AnalyticsSummary) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
+}
+
+var (
+	bestTimesFieldBest                = big.NewInt(1 << 0)
+	bestTimesFieldBuckets             = big.NewInt(1 << 1)
+	bestTimesFieldChannelID           = big.NewInt(1 << 2)
+	bestTimesFieldCounted             = big.NewInt(1 << 3)
+	bestTimesFieldDays                = big.NewInt(1 << 4)
+	bestTimesFieldEnough              = big.NewInt(1 << 5)
+	bestTimesFieldFrom                = big.NewInt(1 << 6)
+	bestTimesFieldMinimumPosts        = big.NewInt(1 << 7)
+	bestTimesFieldMinimumPostsPerHour = big.NewInt(1 << 8)
+	bestTimesFieldPlatform            = big.NewInt(1 << 9)
+	bestTimesFieldPosts               = big.NewInt(1 << 10)
+	bestTimesFieldRecent              = big.NewInt(1 << 11)
+	bestTimesFieldTimeZone            = big.NewInt(1 << 12)
+	bestTimesFieldTo                  = big.NewInt(1 << 13)
+)
+
+type BestTimes struct {
+	Best                []*BestTimesHour `json:"best" url:"best"`
+	Buckets             []*BestTimesHour `json:"buckets" url:"buckets"`
+	ChannelID           string           `json:"channelId" url:"channelId"`
+	Counted             bool             `json:"counted" url:"counted"`
+	Days                int              `json:"days" url:"days"`
+	Enough              bool             `json:"enough" url:"enough"`
+	From                CalendarDay      `json:"from" url:"from"`
+	MinimumPosts        int              `json:"minimumPosts" url:"minimumPosts"`
+	MinimumPostsPerHour int              `json:"minimumPostsPerHour" url:"minimumPostsPerHour"`
+	Platform            Platform         `json:"platform" url:"platform"`
+	Posts               int              `json:"posts" url:"posts"`
+	Recent              int              `json:"recent" url:"recent"`
+	TimeZone            string           `json:"timeZone" url:"timeZone"`
+	To                  CalendarDay      `json:"to" url:"to"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BestTimes) GetBest() []*BestTimesHour {
+	if b == nil {
+		return nil
+	}
+	return b.Best
+}
+
+func (b *BestTimes) GetBuckets() []*BestTimesHour {
+	if b == nil {
+		return nil
+	}
+	return b.Buckets
+}
+
+func (b *BestTimes) GetChannelID() string {
+	if b == nil {
+		return ""
+	}
+	return b.ChannelID
+}
+
+func (b *BestTimes) GetCounted() bool {
+	if b == nil {
+		return false
+	}
+	return b.Counted
+}
+
+func (b *BestTimes) GetDays() int {
+	if b == nil {
+		return 0
+	}
+	return b.Days
+}
+
+func (b *BestTimes) GetEnough() bool {
+	if b == nil {
+		return false
+	}
+	return b.Enough
+}
+
+func (b *BestTimes) GetFrom() CalendarDay {
+	if b == nil {
+		return ""
+	}
+	return b.From
+}
+
+func (b *BestTimes) GetMinimumPosts() int {
+	if b == nil {
+		return 0
+	}
+	return b.MinimumPosts
+}
+
+func (b *BestTimes) GetMinimumPostsPerHour() int {
+	if b == nil {
+		return 0
+	}
+	return b.MinimumPostsPerHour
+}
+
+func (b *BestTimes) GetPlatform() Platform {
+	if b == nil {
+		return ""
+	}
+	return b.Platform
+}
+
+func (b *BestTimes) GetPosts() int {
+	if b == nil {
+		return 0
+	}
+	return b.Posts
+}
+
+func (b *BestTimes) GetRecent() int {
+	if b == nil {
+		return 0
+	}
+	return b.Recent
+}
+
+func (b *BestTimes) GetTimeZone() string {
+	if b == nil {
+		return ""
+	}
+	return b.TimeZone
+}
+
+func (b *BestTimes) GetTo() CalendarDay {
+	if b == nil {
+		return ""
+	}
+	return b.To
+}
+
+func (b *BestTimes) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BestTimes) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetBest sets the Best field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetBest(best []*BestTimesHour) {
+	b.Best = best
+	b.require(bestTimesFieldBest)
+}
+
+// SetBuckets sets the Buckets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetBuckets(buckets []*BestTimesHour) {
+	b.Buckets = buckets
+	b.require(bestTimesFieldBuckets)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetChannelID(channelID string) {
+	b.ChannelID = channelID
+	b.require(bestTimesFieldChannelID)
+}
+
+// SetCounted sets the Counted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetCounted(counted bool) {
+	b.Counted = counted
+	b.require(bestTimesFieldCounted)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetDays(days int) {
+	b.Days = days
+	b.require(bestTimesFieldDays)
+}
+
+// SetEnough sets the Enough field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetEnough(enough bool) {
+	b.Enough = enough
+	b.require(bestTimesFieldEnough)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetFrom(from CalendarDay) {
+	b.From = from
+	b.require(bestTimesFieldFrom)
+}
+
+// SetMinimumPosts sets the MinimumPosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetMinimumPosts(minimumPosts int) {
+	b.MinimumPosts = minimumPosts
+	b.require(bestTimesFieldMinimumPosts)
+}
+
+// SetMinimumPostsPerHour sets the MinimumPostsPerHour field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetMinimumPostsPerHour(minimumPostsPerHour int) {
+	b.MinimumPostsPerHour = minimumPostsPerHour
+	b.require(bestTimesFieldMinimumPostsPerHour)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetPlatform(platform Platform) {
+	b.Platform = platform
+	b.require(bestTimesFieldPlatform)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetPosts(posts int) {
+	b.Posts = posts
+	b.require(bestTimesFieldPosts)
+}
+
+// SetRecent sets the Recent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetRecent(recent int) {
+	b.Recent = recent
+	b.require(bestTimesFieldRecent)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetTimeZone(timeZone string) {
+	b.TimeZone = timeZone
+	b.require(bestTimesFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimes) SetTo(to CalendarDay) {
+	b.To = to
+	b.require(bestTimesFieldTo)
+}
+
+func (b *BestTimes) UnmarshalJSON(data []byte) error {
+	type unmarshaler BestTimes
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BestTimes(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BestTimes) MarshalJSON() ([]byte, error) {
+	type embed BestTimes
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BestTimes) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
+	bestTimesHourFieldHour    = big.NewInt(1 << 0)
+	bestTimesHourFieldMedian  = big.NewInt(1 << 1)
+	bestTimesHourFieldPosts   = big.NewInt(1 << 2)
+	bestTimesHourFieldWeekday = big.NewInt(1 << 3)
+)
+
+// bestTimesHourNullableFields maps the wire names of BestTimesHour's nullable fields (required or optional) to their field bits.
+var bestTimesHourNullableFields = map[string]*big.Int{
+	"median": bestTimesHourFieldMedian,
+}
+
+type BestTimesHour struct {
+	Hour    int                  `json:"hour" url:"hour"`
+	Median  *BestTimesHourMedian `json:"median,omitempty" url:"median,omitempty"`
+	Posts   int                  `json:"posts" url:"posts"`
+	Weekday Weekday              `json:"weekday" url:"weekday"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BestTimesHour) GetHour() int {
+	if b == nil {
+		return 0
+	}
+	return b.Hour
+}
+
+func (b *BestTimesHour) GetMedian() *BestTimesHourMedian {
+	if b == nil {
+		return nil
+	}
+	return b.Median
+}
+
+func (b *BestTimesHour) GetPosts() int {
+	if b == nil {
+		return 0
+	}
+	return b.Posts
+}
+
+func (b *BestTimesHour) GetWeekday() Weekday {
+	if b == nil {
+		return ""
+	}
+	return b.Weekday
+}
+
+func (b *BestTimesHour) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BestTimesHour) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetHour sets the Hour field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesHour) SetHour(hour int) {
+	b.Hour = hour
+	b.require(bestTimesHourFieldHour)
+}
+
+// SetMedian sets the Median field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesHour) SetMedian(median *BestTimesHourMedian) {
+	b.Median = median
+	b.require(bestTimesHourFieldMedian)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesHour) SetPosts(posts int) {
+	b.Posts = posts
+	b.require(bestTimesHourFieldPosts)
+}
+
+// SetWeekday sets the Weekday field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BestTimesHour) SetWeekday(weekday Weekday) {
+	b.Weekday = weekday
+	b.require(bestTimesHourFieldWeekday)
+}
+
+func (b *BestTimesHour) UnmarshalJSON(data []byte) error {
+	type unmarshaler BestTimesHour
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BestTimesHour(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, bestTimesHourNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		b.require(presentFields)
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BestTimesHour) MarshalJSON() ([]byte, error) {
+	type embed BestTimesHour
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BestTimesHour) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+type BestTimesHourMedian struct {
+	Double          float64
+	NonFiniteNumber NonFiniteNumber
+
+	typ string
+}
+
+func (b *BestTimesHourMedian) GetDouble() float64 {
+	if b == nil {
+		return 0
+	}
+	return b.Double
+}
+
+func (b *BestTimesHourMedian) GetNonFiniteNumber() NonFiniteNumber {
+	if b == nil {
+		return ""
+	}
+	return b.NonFiniteNumber
+}
+
+func (b *BestTimesHourMedian) UnmarshalJSON(data []byte) error {
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		b.typ = "Double"
+		b.Double = valueDouble
+		return nil
+	}
+	var valueNonFiniteNumber NonFiniteNumber
+	if err := json.Unmarshal(data, &valueNonFiniteNumber); err == nil {
+		b.typ = "NonFiniteNumber"
+		b.NonFiniteNumber = valueNonFiniteNumber
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, b)
+}
+
+func (b BestTimesHourMedian) MarshalJSON() ([]byte, error) {
+	if b.typ == "Double" || b.Double != 0 {
+		return json.Marshal(b.Double)
+	}
+	if b.typ == "NonFiniteNumber" || b.NonFiniteNumber != "" {
+		return json.Marshal(b.NonFiniteNumber)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", b)
+}
+
+type BestTimesHourMedianVisitor interface {
+	VisitDouble(float64) error
+	VisitNonFiniteNumber(NonFiniteNumber) error
+}
+
+func (b *BestTimesHourMedian) Accept(visitor BestTimesHourMedianVisitor) error {
+	if b.typ == "Double" || b.Double != 0 {
+		return visitor.VisitDouble(b.Double)
+	}
+	if b.typ == "NonFiniteNumber" || b.NonFiniteNumber != "" {
+		return visitor.VisitNonFiniteNumber(b.NonFiniteNumber)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", b)
 }
 
 var (
@@ -1990,252 +2546,6 @@ func (d *DashboardDay) String() string {
 }
 
 var (
-	dashboardTotalsFieldClicks      = big.NewInt(1 << 0)
-	dashboardTotalsFieldEngagement  = big.NewInt(1 << 1)
-	dashboardTotalsFieldImpressions = big.NewInt(1 << 2)
-	dashboardTotalsFieldLikes       = big.NewInt(1 << 3)
-	dashboardTotalsFieldPosts       = big.NewInt(1 << 4)
-	dashboardTotalsFieldQuotes      = big.NewInt(1 << 5)
-	dashboardTotalsFieldReach       = big.NewInt(1 << 6)
-	dashboardTotalsFieldReplies     = big.NewInt(1 << 7)
-	dashboardTotalsFieldReposts     = big.NewInt(1 << 8)
-	dashboardTotalsFieldSaves       = big.NewInt(1 << 9)
-)
-
-// dashboardTotalsNullableFields maps the wire names of DashboardTotals's nullable fields (required or optional) to their field bits.
-var dashboardTotalsNullableFields = map[string]*big.Int{
-	"clicks":      dashboardTotalsFieldClicks,
-	"impressions": dashboardTotalsFieldImpressions,
-	"quotes":      dashboardTotalsFieldQuotes,
-	"reach":       dashboardTotalsFieldReach,
-	"saves":       dashboardTotalsFieldSaves,
-}
-
-type DashboardTotals struct {
-	Clicks      *int `json:"clicks,omitempty" url:"clicks,omitempty"`
-	Engagement  int  `json:"engagement" url:"engagement"`
-	Impressions *int `json:"impressions,omitempty" url:"impressions,omitempty"`
-	Likes       int  `json:"likes" url:"likes"`
-	Posts       int  `json:"posts" url:"posts"`
-	Quotes      *int `json:"quotes,omitempty" url:"quotes,omitempty"`
-	Reach       *int `json:"reach,omitempty" url:"reach,omitempty"`
-	Replies     int  `json:"replies" url:"replies"`
-	Reposts     int  `json:"reposts" url:"reposts"`
-	Saves       *int `json:"saves,omitempty" url:"saves,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (d *DashboardTotals) GetClicks() *int {
-	if d == nil {
-		return nil
-	}
-	return d.Clicks
-}
-
-func (d *DashboardTotals) GetEngagement() int {
-	if d == nil {
-		return 0
-	}
-	return d.Engagement
-}
-
-func (d *DashboardTotals) GetImpressions() *int {
-	if d == nil {
-		return nil
-	}
-	return d.Impressions
-}
-
-func (d *DashboardTotals) GetLikes() int {
-	if d == nil {
-		return 0
-	}
-	return d.Likes
-}
-
-func (d *DashboardTotals) GetPosts() int {
-	if d == nil {
-		return 0
-	}
-	return d.Posts
-}
-
-func (d *DashboardTotals) GetQuotes() *int {
-	if d == nil {
-		return nil
-	}
-	return d.Quotes
-}
-
-func (d *DashboardTotals) GetReach() *int {
-	if d == nil {
-		return nil
-	}
-	return d.Reach
-}
-
-func (d *DashboardTotals) GetReplies() int {
-	if d == nil {
-		return 0
-	}
-	return d.Replies
-}
-
-func (d *DashboardTotals) GetReposts() int {
-	if d == nil {
-		return 0
-	}
-	return d.Reposts
-}
-
-func (d *DashboardTotals) GetSaves() *int {
-	if d == nil {
-		return nil
-	}
-	return d.Saves
-}
-
-func (d *DashboardTotals) GetExtraProperties() map[string]interface{} {
-	if d == nil {
-		return nil
-	}
-	return d.extraProperties
-}
-
-func (d *DashboardTotals) require(field *big.Int) {
-	next := new(big.Int)
-	if d.explicitFields != nil {
-		next.Set(d.explicitFields)
-	}
-	next.Or(next, field)
-	d.explicitFields = next
-}
-
-// SetClicks sets the Clicks field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetClicks(clicks *int) {
-	d.Clicks = clicks
-	d.require(dashboardTotalsFieldClicks)
-}
-
-// SetEngagement sets the Engagement field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetEngagement(engagement int) {
-	d.Engagement = engagement
-	d.require(dashboardTotalsFieldEngagement)
-}
-
-// SetImpressions sets the Impressions field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetImpressions(impressions *int) {
-	d.Impressions = impressions
-	d.require(dashboardTotalsFieldImpressions)
-}
-
-// SetLikes sets the Likes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetLikes(likes int) {
-	d.Likes = likes
-	d.require(dashboardTotalsFieldLikes)
-}
-
-// SetPosts sets the Posts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetPosts(posts int) {
-	d.Posts = posts
-	d.require(dashboardTotalsFieldPosts)
-}
-
-// SetQuotes sets the Quotes field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetQuotes(quotes *int) {
-	d.Quotes = quotes
-	d.require(dashboardTotalsFieldQuotes)
-}
-
-// SetReach sets the Reach field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetReach(reach *int) {
-	d.Reach = reach
-	d.require(dashboardTotalsFieldReach)
-}
-
-// SetReplies sets the Replies field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetReplies(replies int) {
-	d.Replies = replies
-	d.require(dashboardTotalsFieldReplies)
-}
-
-// SetReposts sets the Reposts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetReposts(reposts int) {
-	d.Reposts = reposts
-	d.require(dashboardTotalsFieldReposts)
-}
-
-// SetSaves sets the Saves field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DashboardTotals) SetSaves(saves *int) {
-	d.Saves = saves
-	d.require(dashboardTotalsFieldSaves)
-}
-
-func (d *DashboardTotals) UnmarshalJSON(data []byte) error {
-	type unmarshaler DashboardTotals
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DashboardTotals(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
-	if err != nil {
-		return err
-	}
-	d.extraProperties = extraProperties
-	presentFields, err := internal.ExplicitFieldsFromJSON(data, dashboardTotalsNullableFields)
-	if err != nil {
-		return err
-	}
-	if presentFields != nil {
-		d.require(presentFields)
-	}
-	d.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DashboardTotals) MarshalJSON() ([]byte, error) {
-	type embed DashboardTotals
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*d),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (d *DashboardTotals) String() string {
-	if d == nil {
-		return "<nil>"
-	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-var (
 	engagementDayFieldDate    = big.NewInt(1 << 0)
 	engagementDayFieldLikes   = big.NewInt(1 << 1)
 	engagementDayFieldQuotes  = big.NewInt(1 << 2)
@@ -2383,121 +2693,6 @@ func (e *EngagementDay) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", e)
-}
-
-var (
-	followerChangeFieldCurrent = big.NewInt(1 << 0)
-	followerChangeFieldGained  = big.NewInt(1 << 1)
-)
-
-// followerChangeNullableFields maps the wire names of FollowerChange's nullable fields (required or optional) to their field bits.
-var followerChangeNullableFields = map[string]*big.Int{
-	"current": followerChangeFieldCurrent,
-	"gained":  followerChangeFieldGained,
-}
-
-type FollowerChange struct {
-	Current *int `json:"current,omitempty" url:"current,omitempty"`
-	Gained  *int `json:"gained,omitempty" url:"gained,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (f *FollowerChange) GetCurrent() *int {
-	if f == nil {
-		return nil
-	}
-	return f.Current
-}
-
-func (f *FollowerChange) GetGained() *int {
-	if f == nil {
-		return nil
-	}
-	return f.Gained
-}
-
-func (f *FollowerChange) GetExtraProperties() map[string]interface{} {
-	if f == nil {
-		return nil
-	}
-	return f.extraProperties
-}
-
-func (f *FollowerChange) require(field *big.Int) {
-	next := new(big.Int)
-	if f.explicitFields != nil {
-		next.Set(f.explicitFields)
-	}
-	next.Or(next, field)
-	f.explicitFields = next
-}
-
-// SetCurrent sets the Current field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FollowerChange) SetCurrent(current *int) {
-	f.Current = current
-	f.require(followerChangeFieldCurrent)
-}
-
-// SetGained sets the Gained field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FollowerChange) SetGained(gained *int) {
-	f.Gained = gained
-	f.require(followerChangeFieldGained)
-}
-
-func (f *FollowerChange) UnmarshalJSON(data []byte) error {
-	type unmarshaler FollowerChange
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*f = FollowerChange(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *f)
-	if err != nil {
-		return err
-	}
-	f.extraProperties = extraProperties
-	presentFields, err := internal.ExplicitFieldsFromJSON(data, followerChangeNullableFields)
-	if err != nil {
-		return err
-	}
-	if presentFields != nil {
-		f.require(presentFields)
-	}
-	f.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (f *FollowerChange) MarshalJSON() ([]byte, error) {
-	type embed FollowerChange
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*f),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (f *FollowerChange) String() string {
-	if f == nil {
-		return "<nil>"
-	}
-	if len(f.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(f); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", f)
 }
 
 var (

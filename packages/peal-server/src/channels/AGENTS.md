@@ -13,6 +13,10 @@
   with `MissingTokenKey` (connecting answers `ConnectFailed` `notConfigured`)
   and decrypting with `UnknownTokenKey`. A malformed keyring stops the server
   at startup. `token_key_id` records which key encrypted a row.
+- `ChannelOverview` counts several workspaces' channels by status at once
+  (connected, `refreshNeeded` to reconnect, `disabled` off) and gives the
+  platforms of the channels an agenda names, for the overview across
+  workspaces: ids as one `anyUuid` parameter, no permission checked.
 - Channels have their own OAuth flows and token tables. Better Auth's social
   providers are for signing in only.
 - Platform sign-in goes through one `PlatformAuthorizer` per platform

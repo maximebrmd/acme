@@ -875,6 +875,8 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             `/api/workspaces/${ofAlpha.id}/partner`,
             `/api/workspaces/${ofAlpha.id}/usage/partner`,
             "/api/me",
+            "/api/me/overview",
+            "/api/me/agenda?from=2026-11-01T00:00:00Z&to=2026-11-08T00:00:00Z",
           ]) {
             const reply = yield* app.request(path, {
               headers: bearer(alphaKey),

@@ -258,6 +258,63 @@ impl AnalyticsClient {
             .await
     }
 
+    /// Answers when one channel's posts did best, by weekday and hour as `timeZone` (an IANA zone) runs them, over the last `days` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (`counted` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than 3 posts has no median, and a channel with fewer than 20 posts in the range answers `enough: false` with no ranking. `best` lists at most 5 hours, by median then by posts. Posts younger than 48 hours are left out (`recent`), as are posts Peal deleted from the platform. Needs analytics:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .analytics
+    ///         .best_times(
+    ///             &"workspaceId".to_string(),
+    ///             &BestTimesQueryRequest {
+    ///                 channel_id: "channelId".to_string(),
+    ///                 time_zone: "timeZone".to_string(),
+    ///                 days: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn best_times(
+        &self,
+        workspace_id: &str,
+        request: &BestTimesQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<BestTimes, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/analytics/best-times", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("channelId", request.channel_id.clone())
+                    .string("days", request.days.clone())
+                    .string("timeZone", request.time_zone.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
     /// Answers with the counts of a post on each channel it went live on, over time. A post not published yet, or whose counts were not read yet, has no targets. Needs analytics:read.
     ///
     /// # Arguments

@@ -107,6 +107,19 @@ export const posts = publishing.table(
     index("posts_scheduled")
       .on(table.scheduledAt)
       .where(sql`${table.status} = 'scheduled'`),
+    // The posts waiting for an approval in a workspace, whatever their
+    // time: what the view across workspaces counts.
+    index("posts_workspace_awaiting_approval")
+      .on(table.workspaceId)
+      .where(sql`${table.status} = 'awaitingApproval'`),
+    // A workspace's posts that ended with a channel failed or to check, by
+    // when they ended: what the view across workspaces counts over its
+    // last days. Few posts end so, so the index stays small.
+    index("posts_workspace_finished_attention")
+      .on(table.workspaceId, table.finishedAt)
+      .where(
+        sql`${table.status} = 'finished' AND ${table.outcome} IN ('failed', 'partiallyPublished', 'unconfirmed')`
+      ),
     // A workspace's posts by creation, either way: ids are UUIDv7s.
     index("posts_workspace_id").on(table.workspaceId, table.id),
     // A workspace's drafts, newest first: ids are UUIDv7s.

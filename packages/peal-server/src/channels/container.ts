@@ -4,6 +4,7 @@ import { FetchHttpClient } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
+import { ChannelOverview } from "#channels/application/channel-overview.ts";
 import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
@@ -17,6 +18,7 @@ import { RefreshChannelTokens } from "#channels/application/refresh-channel-toke
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { analyticsChannelEvents } from "#channels/infrastructure/analytics-channel-events.ts";
 import { DrizzleChannelDirectory } from "#channels/infrastructure/drizzle-channel-directory.ts";
+import { DrizzleChannelOverviewReads } from "#channels/infrastructure/drizzle-channel-overview-reads.ts";
 import { DrizzleChannelRecords } from "#channels/infrastructure/drizzle-channel-records.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
@@ -122,6 +124,15 @@ const UseCasesLive = Layer.mergeAll(
  * PartnerOwnership and a ConnectLinkJournal.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
+
+/**
+ * The channels of several workspaces at once, by status, and their
+ * platforms, for the view across a person's workspaces (ChannelOverview).
+ * Needs the database (Drizzle).
+ */
+export const ChannelOverviewLive = ChannelOverview.layer.pipe(
+  Layer.provide(DrizzleChannelOverviewReads)
+);
 
 // The channels endpoints. They need the use cases ChannelsLive provides, and
 // the Authentication and WorkspaceAccess middleware of the workspace context,

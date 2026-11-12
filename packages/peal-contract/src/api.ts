@@ -30,6 +30,7 @@ import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
+import { OverviewApi } from "./overview.ts";
 import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerUsageApi } from "./partner-usage.ts";
 import { PartnerApi } from "./partner.ts";
@@ -441,6 +442,13 @@ export {
   AnalyticsApi,
   AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
+  BestTimesHourSchema,
+  bestTimesHours,
+  bestTimesMinimumPosts,
+  bestTimesMinimumPostsPerHour,
+  bestTimesPeriods,
+  BestTimesSchema,
+  bestTimesSettlingHours,
   CalendarDaySchema,
   ChannelDashboardSchema,
   ChannelDaySchema,
@@ -468,6 +476,8 @@ export {
 export type {
   AnalyticsDashboard,
   AnalyticsSummary,
+  BestTimes,
+  BestTimesHour,
   CalendarDay,
   ChannelDashboard,
   ChannelDay,
@@ -979,6 +989,42 @@ export type {
   UnreadNotices,
   WebhookTurnOffReason,
 } from "./notices.ts";
+
+export {
+  agendaExcerptLength,
+  AgendaItemSchema,
+  AgendaPageSchema,
+  defaultAgendaPageSize,
+  defaultReportDays,
+  maxAgendaDays,
+  maxAgendaPageSize,
+  maxOverviewPageSize,
+  OverviewApi,
+  OverviewChannelsSchema,
+  OverviewInboxSchema,
+  OverviewPostsSchema,
+  OverviewRefusalSchema,
+  OverviewSchema,
+  ReportAcrossWorkspacesSchema,
+  reportColumns,
+  WorkspaceAnalyticsSchema,
+  WorkspaceOverviewSchema,
+  WorkspaceReportSchema,
+} from "./overview.ts";
+
+export type {
+  AgendaItem,
+  AgendaPage,
+  Overview,
+  OverviewChannels,
+  OverviewInbox,
+  OverviewPosts,
+  OverviewRefusal,
+  ReportAcrossWorkspaces,
+  WorkspaceAnalytics,
+  WorkspaceOverview,
+  WorkspaceReport,
+} from "./overview.ts";
 
 export {
   NotificationPreferencesApi,
@@ -1997,6 +2043,7 @@ export class Api extends HttpApi.make("peal")
   .add(MediaApi)
   .add(NoticesApi)
   .add(NotificationPreferencesApi)
+  .add(OverviewApi)
   .add(AssistantApi)
   .add(WorkspacesApi)
   .add(MembersApi)

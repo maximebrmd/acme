@@ -60,6 +60,11 @@ module Peal
       @notification_preferences ||= Peal::NotificationPreferences::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Overview::Client]
+    def overview
+      @overview ||= Peal::Overview::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Assistant::Client]
     def assistant
       @assistant ||= Peal::Assistant::Client.new(client: @raw_client)
