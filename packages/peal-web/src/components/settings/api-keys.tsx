@@ -76,10 +76,10 @@ export const CreatedKey = ({
   const keyId = useId();
 
   const handleCopy = () => {
-    void navigator.clipboard.writeText(apiKey).then(
-      () => toast.success(t("copied")),
-      () => toast.error(t("copyFailed"))
-    );
+    void navigator.clipboard
+      .writeText(apiKey)
+      .then(() => toast.success(t("copied")))
+      .catch(() => toast.error(t("copyFailed")));
   };
 
   return (
