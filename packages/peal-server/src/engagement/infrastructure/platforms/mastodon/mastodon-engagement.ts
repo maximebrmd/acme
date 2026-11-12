@@ -27,7 +27,7 @@ import type {
   OutgoingReply,
   PlatformHttp,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
-import { textOfHtml } from "#engagement/infrastructure/platforms/html-text.ts";
+import { textOfHtml } from "#shared/domain/html-text.ts";
 import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 

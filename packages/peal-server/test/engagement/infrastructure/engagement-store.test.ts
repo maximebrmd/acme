@@ -35,7 +35,7 @@ import {
 import type { Thread } from "#engagement/domain/thread.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
-import { textOfHtml } from "#engagement/infrastructure/platforms/html-text.ts";
+import { textOfHtml } from "#shared/domain/html-text.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,

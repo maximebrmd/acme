@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { textOfHtml } from "#engagement/infrastructure/platforms/html-text.ts";
+import { textOfHtml } from "#shared/domain/html-text.ts";
 
-// A status's HTML as plain text: what a comment says, never markup.
+// HTML as plain text: what a comment or a feed's item says, never markup.
 
 describe(textOfHtml, () => {
   it("keeps paragraphs and line breaks, and drops every tag", () => {
@@ -26,5 +26,25 @@ describe(textOfHtml, () => {
 
     expect(text).toBe("a&#xD800;b&#xDFFF;c&#0;d&#x110000;");
     expect(text.isWellFormed()).toBeTruthy();
+  });
+
+  it("drops what a script or a style holds, however it is written", () => {
+    expect(
+      textOfHtml(
+        "<p>Before</p><SCRIPT type='x'>alert('a <b>')</SCRIPT ><style>p{}</style><p>after</p>"
+      )
+    ).toBe("Before\n\nafter");
+  });
+
+  it("drops the rest of a script that never closes", () => {
+    expect(textOfHtml("<p>Kept</p><script>never closed")).toBe("Kept");
+  });
+
+  it("reads a long run of unclosed scripts in linear time", () => {
+    const started = performance.now();
+
+    textOfHtml("<script>".repeat(200_000));
+
+    expect(performance.now() - started).toBeLessThan(2000);
   });
 });
