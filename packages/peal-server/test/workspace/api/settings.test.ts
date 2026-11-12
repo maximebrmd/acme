@@ -259,6 +259,13 @@ const PortsLive = Layer.mergeAll(
             accountAnalytics: [],
             ads: { accounts: [], audit: [], boosts: [], connections: [] },
             analytics: [],
+            // Where its images went and with which model: never the key.
+            assistantImageProvider: {
+              baseUrl: "https://images.example.com/v1",
+              model: "synthetic-image-model",
+              updatedAt: at,
+            },
+            assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
               meteredPosts: [
@@ -952,7 +959,17 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         );
         assert.deepStrictEqual(
           body.workspaces.map(
-            ({ assistantUsage, billing, name, saved, webhooks }) => ({
+            ({
+              assistantImageProvider,
+              assistantOwnImages,
+              assistantUsage,
+              billing,
+              name,
+              saved,
+              webhooks,
+            }) => ({
+              assistantImageProvider,
+              assistantOwnImages,
               assistantUsage,
               name,
               plan: billing.plan,
@@ -974,6 +991,12 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           ),
           [
             {
+              assistantImageProvider: {
+                baseUrl: "https://images.example.com/v1",
+                model: "synthetic-image-model",
+                updatedAt: at,
+              },
+              assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",

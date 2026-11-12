@@ -6,6 +6,7 @@ import { Link, usePathname } from "#i18n/navigation.ts";
 
 export type SettingsSection =
   | "apiKeys"
+  | "assistant"
   | "channelSets"
   | "general"
   | "invitations"
@@ -21,6 +22,7 @@ export type SettingsSection =
 
 const paths: Readonly<Record<SettingsSection, string>> = {
   apiKeys: "/api-keys",
+  assistant: "/assistant",
   channelSets: "/channel-sets",
   feeds: "/feeds",
   general: "",

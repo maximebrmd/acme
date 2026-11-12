@@ -2147,152 +2147,6 @@
       }
     },
     {
-      "id": "cf3e5553-9cde-4f5a-98a0-39d078c04ac1",
-      "name": "Get what needs attention across workspaces - default",
-      "request": {
-        "urlPathTemplate": "/api/me/overview",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"generatedAt\": \"generatedAt\",\n  \"nextCursor\": \"nextCursor\",\n  \"workspaces\": [\n    {\n      \"channels\": {\n        \"connected\": 1,\n        \"off\": 1,\n        \"toReconnect\": 1\n      },\n      \"id\": \"id\",\n      \"inbox\": {\n        \"unanswered\": 1\n      },\n      \"name\": \"name\",\n      \"overPlan\": true,\n      \"posts\": {\n        \"awaitingApproval\": 1,\n        \"failedLast7Days\": 1,\n        \"mayApprove\": true,\n        \"scheduledNext7Days\": 1,\n        \"unconfirmedLast7Days\": 1\n      },\n      \"refused\": \"twoStepRequired\",\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "cf3e5553-9cde-4f5a-98a0-39d078c04ac1",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "8c39aeb4-e020-45cb-900d-6aacc2d624c9",
-      "name": "List the agenda across workspaces - default",
-      "request": {
-        "urlPathTemplate": "/api/me/agenda",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "queryParameters": {
-          "from": {
-            "equalTo": "from"
-          },
-          "to": {
-            "equalTo": "to"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"excerpt\": \"excerpt\",\n      \"platforms\": [\n        \"x\"\n      ],\n      \"postId\": \"postId\",\n      \"scheduledAt\": \"scheduledAt\",\n      \"status\": \"draft\",\n      \"timeZone\": \"timeZone\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "8c39aeb4-e020-45cb-900d-6aacc2d624c9",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "7dd0b91b-26d2-420a-a6da-09df88d037c8",
-      "name": "Get a report across workspaces - default",
-      "request": {
-        "urlPathTemplate": "/api/me/report",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "queryParameters": {
-          "timeZone": {
-            "equalTo": "timeZone"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"from\": \"from\",\n  \"nextCursor\": \"nextCursor\",\n  \"previous\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"workspaces\": [\n    {\n      \"analytics\": {\n        \"followers\": {\n          \"current\": null,\n          \"gained\": null\n        },\n        \"previousFollowers\": {\n          \"current\": null,\n          \"gained\": null\n        },\n        \"previousKept\": true,\n        \"previousTotals\": {\n          \"clicks\": null,\n          \"engagement\": 1,\n          \"impressions\": null,\n          \"likes\": 1,\n          \"posts\": 1,\n          \"quotes\": null,\n          \"reach\": null,\n          \"replies\": 1,\n          \"reposts\": 1,\n          \"saves\": null\n        },\n        \"totals\": {\n          \"clicks\": null,\n          \"engagement\": 1,\n          \"impressions\": null,\n          \"likes\": 1,\n          \"posts\": 1,\n          \"quotes\": null,\n          \"reach\": null,\n          \"replies\": 1,\n          \"reposts\": 1,\n          \"saves\": null\n        }\n      },\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"refused\": \"twoStepRequired\",\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "7dd0b91b-26d2-420a-a6da-09df88d037c8",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
-      "id": "c510f5c9-93b5-4610-a73c-360cadefb637",
-      "name": "Export the report across workspaces - default",
-      "request": {
-        "urlPathTemplate": "/api/me/report/export",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "queryParameters": {
-          "timeZone": {
-            "equalTo": "timeZone"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "base64Body": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNjQgMDAwMDAgbiAKMDAwMDAwMDEyMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE5MgolJUVPRgo=",
-        "headers": {
-          "Content-Type": "application/octet-stream"
-        }
-      },
-      "uuid": "c510f5c9-93b5-4610-a73c-360cadefb637",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      },
-      "postServeActions": []
-    },
-    {
       "id": "e1107588-162c-4297-a5b8-4738e0a6617b",
       "name": "Get the assistant's status - default",
       "request": {
@@ -2311,7 +2165,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
+        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1,\n    \"source\": \"workspace\"\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2389,6 +2243,114 @@
         }
       },
       "uuid": "15ef68f1-3829-40d4-beda-15cc10681dc9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f9112b73-bb45-4b23-b204-2c746bc7fce1",
+      "name": "Get the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"provider\": {\n    \"baseUrl\": \"baseUrl\",\n    \"keySet\": true,\n    \"keyUnreadable\": true,\n    \"model\": \"model\",\n    \"updatedAt\": \"updatedAt\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f9112b73-bb45-4b23-b204-2c746bc7fce1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "cd9cd26c-04c8-4695-b876-20fffa1506cb",
+      "name": "Set the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"baseUrl\": \"baseUrl\",\n  \"keySet\": true,\n  \"keyUnreadable\": true,\n  \"model\": \"model\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "cd9cd26c-04c8-4695-b876-20fffa1506cb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c916cec5-7b48-436e-8490-68e997ffb9b7",
+      "name": "Remove the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c916cec5-7b48-436e-8490-68e997ffb9b7",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -2856,50 +2818,6 @@
         }
       },
       "uuid": "431b5524-3b90-44ed-85c4-4efce80febd5",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
-      "id": "01a435a6-5ceb-446e-8a8c-0fa0173f2eaa",
-      "name": "Get when a channel's posts did best - default",
-      "request": {
-        "urlPathTemplate": "/api/workspaces/{workspaceId}/analytics/best-times",
-        "method": "GET",
-        "headers": {
-          "Authorization": {
-            "matches": "Bearer .+"
-          }
-        },
-        "pathParameters": {
-          "workspaceId": {
-            "equalTo": "workspaceId"
-          }
-        },
-        "queryParameters": {
-          "channelId": {
-            "equalTo": "channelId"
-          },
-          "timeZone": {
-            "equalTo": "timeZone"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"best\": [\n    {\n      \"hour\": 1,\n      \"median\": \"Infinity\",\n      \"posts\": 1,\n      \"weekday\": \"monday\"\n    }\n  ],\n  \"buckets\": [\n    {\n      \"hour\": 1,\n      \"median\": \"Infinity\",\n      \"posts\": 1,\n      \"weekday\": \"monday\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"counted\": true,\n  \"days\": 1,\n  \"enough\": true,\n  \"from\": \"from\",\n  \"minimumPosts\": 1,\n  \"minimumPostsPerHour\": 1,\n  \"platform\": \"x\",\n  \"posts\": 1,\n  \"recent\": 1,\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\"\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "01a435a6-5ceb-446e-8a8c-0fa0173f2eaa",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -7360,6 +7278,6 @@
     }
   ],
   "meta": {
-    "total": 196
+    "total": 194
   }
 }

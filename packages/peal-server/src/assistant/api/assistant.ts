@@ -6,13 +6,19 @@ import {
   AssistantFailed,
   AssistantInputRejected,
   AssistantQuotaExceeded,
+  AssistantSecretsNotConfigured,
   AssistantUnavailable,
   CurrentMember,
+  ImageProviderAddressRefused,
+  ImageProviderKeyRequired,
+  ImageProviderRefused,
   MediaImportBusy,
   MediaStoreUnavailable,
+  OwnImageLimitReached,
 } from "peal-contract";
 
 import type { ImageFailed } from "#assistant/application/image-failed.ts";
+import type { ImageProviderView } from "#assistant/application/use-cases/image-provider-settings.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { imageRequestCost } from "#assistant/domain/image-limits.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -30,6 +36,21 @@ const imageReasons: Readonly<
   unreachable: "unreachable",
   unusableAnswer: "invalidAnswer",
 };
+
+// The provider as the contract answers it: never its key.
+const providerOf = (view: ImageProviderView) => ({
+  baseUrl: view.baseUrl,
+  keySet: view.keySet,
+  keyUnreadable: view.keyUnreadable,
+  model: view.model,
+  updatedAt: view.updatedAt,
+});
+
+// The contract takes the domain's rules for a model and a key (kept equal
+// by test/assistant/api/contract.test.ts): one it let through and the
+// domain refuses is a bug.
+const settingRejected = ({ field }: { readonly field: "apiKey" | "model" }) =>
+  Effect.die(`The contract let through a provider ${field} the domain refuses`);
 
 // The answers say what went wrong by kind only: neither the text nor what
 // the model answered ever reaches an error or a log.
@@ -93,11 +114,64 @@ export const AssistantHandlers = HttpApiBuilder.group(
                   new AssistantFailed({ reason: imageReasons[reason] })
                 ),
               ImageNotStored: () => Effect.fail(new MediaStoreUnavailable()),
+              // The workspace's own provider: what the adapter logged is
+              // all that is said of it.
+              ImageProviderRefused: ({ reason, status }) =>
+                Effect.fail(new ImageProviderRefused({ reason, status })),
               ImagesBusy: () => Effect.fail(new MediaImportBusy()),
               MissingPermission: forbidden,
+              OwnImagesExhausted: ({ dailyLimit, resetsAt }) =>
+                Effect.fail(new OwnImageLimitReached({ dailyLimit, resetsAt })),
               PlanLimitReached: limitReached,
             })
           );
+        }),
+      imageProvider: () =>
+        Effect.gen(function* imageProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const provider = yield* assistant
+            .imageProvider(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+
+          return {
+            provider: Option.getOrNull(provider.pipe(Option.map(providerOf))),
+          };
+        }),
+      removeImageProvider: () =>
+        Effect.gen(function* removeImageProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          yield* assistant
+            .removeImageProvider(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+        }),
+      setImageProvider: ({ payload }) =>
+        Effect.gen(function* setImageProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const saved = yield* assistant.saveImageProvider(actor, payload).pipe(
+            Effect.catchTags({
+              ImageProviderKeyRequired: () =>
+                Effect.fail(new ImageProviderKeyRequired()),
+              MissingPermission: forbidden,
+              ProviderAddressNotPublic: ({ reason }) =>
+                Effect.fail(new ImageProviderAddressRefused({ reason })),
+              ProviderAddressRejected: ({ reason }) =>
+                Effect.fail(new ImageProviderAddressRefused({ reason })),
+              ProviderSecretsNotConfigured: () =>
+                Effect.logWarning(
+                  "A workspace's image provider was not saved: the server has no keyring (PEAL_TOKEN_KEYS)"
+                ).pipe(
+                  Effect.andThen(
+                    Effect.fail(new AssistantSecretsNotConfigured())
+                  )
+                ),
+              ProviderSettingRejected: settingRejected,
+            })
+          );
+
+          return providerOf(saved);
         }),
       status: () =>
         Effect.gen(function* status() {

@@ -102,6 +102,12 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM analytics.tracked_posts WHERE workspace_id = ${id}`,
   "assistant.daily_usage": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM assistant.daily_usage WHERE workspace_id = ${id}`,
+  // The image provider it brought, with its sealed key.
+  "assistant.image_providers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.image_providers WHERE workspace_id = ${id}`,
+  // How many images it asked its own provider for, by day.
+  "assistant.own_image_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.own_image_days WHERE workspace_id = ${id}`,
   "auth.apikey": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.apikey WHERE reference_id = ${id}`,
   "auth.invitation": (sql, id) =>
@@ -569,6 +575,12 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
     VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
   yield* seedUsage(workspaceId, 2);
+  yield* sql`INSERT INTO assistant.own_image_days (workspace_id, day, images)
+    VALUES (${workspaceId}, '2026-11-09', 3)`;
+  // The image provider the workspace brought, its key sealed (a synthetic
+  // stand-in here: nothing opens it).
+  yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, updated_at)
+    VALUES (${workspaceId}, 'https://images.example.com/v1', 'synthetic-image-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', now())`;
   yield* seedSubscription(workspaceId, "canceled");
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)

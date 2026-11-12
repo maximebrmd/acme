@@ -24,7 +24,8 @@ public class StatusTest : BaseMockServerTest
                 "available": true,
                 "dailyLimit": 1,
                 "maxPromptLength": 1,
-                "requestCost": 1
+                "requestCost": 1,
+                "source": "workspace"
               },
               "maxTextLength": 1,
               "remaining": 1,
@@ -66,7 +67,8 @@ public class StatusTest : BaseMockServerTest
                 "available": true,
                 "dailyLimit": 1,
                 "maxPromptLength": 1,
-                "requestCost": 1
+                "requestCost": 1,
+                "source": "workspace"
               },
               "maxTextLength": 1,
               "remaining": 1,

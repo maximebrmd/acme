@@ -1,9 +1,7 @@
 pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct AssistantFailedEncoded {
-    #[serde(rename = "_tag")]
-    pub tag: AssistantFailedEncodedTag,
+pub struct ImageProviderAddressRefusedEncoded {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11,31 +9,25 @@ pub struct AssistantFailedEncoded {
     #[serde(rename = "requestId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
-    pub reason: AssistantFailedEncodedReason,
+    pub reason: ImageProviderAddressRefusal,
 }
 
-impl AssistantFailedEncoded {
-    pub fn builder() -> AssistantFailedEncodedBuilder {
-        <AssistantFailedEncodedBuilder as Default>::default()
+impl ImageProviderAddressRefusedEncoded {
+    pub fn builder() -> ImageProviderAddressRefusedEncodedBuilder {
+        <ImageProviderAddressRefusedEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct AssistantFailedEncodedBuilder {
-    tag: Option<AssistantFailedEncodedTag>,
+pub struct ImageProviderAddressRefusedEncodedBuilder {
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
-    reason: Option<AssistantFailedEncodedReason>,
+    reason: Option<ImageProviderAddressRefusal>,
 }
 
-impl AssistantFailedEncodedBuilder {
-    pub fn tag(mut self, value: AssistantFailedEncodedTag) -> Self {
-        self.tag = Some(value);
-        self
-    }
-
+impl ImageProviderAddressRefusedEncodedBuilder {
     pub fn code(mut self, value: impl Into<String>) -> Self {
         self.code = Some(value.into());
         self
@@ -51,18 +43,16 @@ impl AssistantFailedEncodedBuilder {
         self
     }
 
-    pub fn reason(mut self, value: AssistantFailedEncodedReason) -> Self {
+    pub fn reason(mut self, value: ImageProviderAddressRefusal) -> Self {
         self.reason = Some(value);
         self
     }
 
-    /// Consumes the builder and constructs a [`AssistantFailedEncoded`].
+    /// Consumes the builder and constructs a [`ImageProviderAddressRefusedEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](AssistantFailedEncodedBuilder::tag)
-    /// - [`reason`](AssistantFailedEncodedBuilder::reason)
-    pub fn build(self) -> Result<AssistantFailedEncoded, BuildError> {
-        Ok(AssistantFailedEncoded {
-            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+    /// - [`reason`](ImageProviderAddressRefusedEncodedBuilder::reason)
+    pub fn build(self) -> Result<ImageProviderAddressRefusedEncoded, BuildError> {
+        Ok(ImageProviderAddressRefusedEncoded {
             code: self.code,
             message: self.message,
             request_id: self.request_id,

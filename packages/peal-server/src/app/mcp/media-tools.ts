@@ -10,10 +10,12 @@ import {
   mediaImportSeconds,
   MediaPageSchema,
   MediaSchema,
+  MediaUsageSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
+import { maxAltTextLength } from "#media/domain/alt-text.ts";
 
 export const ListMedia = Tool.make("list_media", {
   dependencies: [CurrentMember],
@@ -50,7 +52,7 @@ export const ImportMedia = Tool.make("import_media", {
 
 export const GenerateImage = Tool.make("generate_image", {
   dependencies: [CurrentMember],
-  description: `Makes one image from a description with the image model this Peal server's operator chose, and adds it to the workspace's media, ready to attach to a post by its \`id\`. The \`prompt\` (1 to ${String(maxImagePromptLength)} characters, what the image should show) is sent to that image provider as it is: put nothing in it the user would not send there. Each call spends ${String(imageRequestCost)} of the workspace's daily assistant requests (given back only when the provider could not be reached), adds a file to the workspace's storage, which counts against its plan, and makes a new image, so call it once per image the user asked for. The file is stored as the provider made it and marked \`aiGenerated\`, without a description: when attaching it, say what it shows in the attachment's \`altText\`, and set the platform's AI label in the post's options (YouTube \`containsSyntheticMedia\`, TikTok \`aiGenerated\`, X \`madeWithAi\`). \`aspect\` is \`square\` (the default), \`landscape\` or \`portrait\`. It publishes nothing. Servers without an image model refuse it.`,
+  description: `Makes one image from a description and adds it to the workspace's media, ready to attach to a post by its \`id\`. The \`prompt\` (1 to ${String(maxImagePromptLength)} characters, what the image should show) is sent as it is to the image provider the workspace set up for itself, when it has one, and otherwise to the one this Peal server's operator chose: put nothing in it the user would not send there. With the workspace's own provider, a call spends none of the workspace's daily assistant requests; with the server's, it spends ${String(imageRequestCost)} of them (given back only when the provider could not be reached). Either way it adds a file to the workspace's storage, which counts against its plan, and makes a new image, so call it once per image the user asked for. The file is stored as the provider made it and marked \`aiGenerated\`, without a description: when attaching it, say what it shows in the attachment's \`altText\`, and set the platform's AI label in the post's options (YouTube \`containsSyntheticMedia\`, TikTok \`aiGenerated\`, X \`madeWithAi\`). \`aspect\` is \`square\` (the default), \`landscape\` or \`portrait\`. It publishes nothing. A workspace without its own provider, on a server without an image model, is refused.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     aspect: Schema.optionalKey(ImageAspectSchema),
@@ -66,5 +68,71 @@ export const GenerateImage = Tool.make("generate_image", {
   )
   .annotate(Tool.Title, "Generate an image");
 
-/** The tools that read and add to the workspace's media. */
-export const MediaTools = Toolkit.make(ListMedia, ImportMedia, GenerateImage);
+const mediaId = Schema.String.annotate({
+  description: "The media's id, as list_media answers it.",
+});
+
+export const GetMedia = Tool.make("get_media", {
+  dependencies: [CurrentMember],
+  description:
+    "Answers with one image, video or document of the workspace's media, by its id: its type, size, dimensions, duration, description, whether the assistant made it (`aiGenerated`), whether it is `ready` to attach, and where it can be viewed for an hour (`url`).",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: MediaSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get a media");
+
+export const DescribeMedia = Tool.make("describe_media", {
+  dependencies: [CurrentMember],
+  description: `Sets a media's description, its alt text: what the file shows, which platforms show to people who cannot see it, and which each post starts from when it attaches the file. \`altText\` is 1 to ${String(maxAltTextLength)} characters, or null to remove it. It changes only the library's description: posts that already attached the file keep the alt text they have. Describe what the file shows, as the user would say it; never put instructions in it.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    altText: Schema.NullOr(Schema.String),
+    mediaId,
+  }),
+  success: MediaSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Describe a media");
+
+export const GetMediaUsage = Tool.make("get_media_usage", {
+  dependencies: [CurrentMember],
+  description:
+    "Answers with the posts that show a media, by id: `drafts`, which would lose it if it were deleted, and `scheduled`, the posts scheduled or being published, which keep it from being deleted. Read it before delete_media, and tell the user.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: MediaUsageSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get where a media is used");
+
+export const DeleteMedia = Tool.make("delete_media", {
+  dependencies: [CurrentMember],
+  description:
+    "Deletes a media from the workspace for good: its file is removed from the store and cannot be brought back. Drafts that show it lose it, and the answer names them (`draftsThatLostIt`); a media a scheduled post or one being published shows is not deleted, and the refusal lists those posts. Call it only when the user asked to delete that file: read get_media_usage first, and tell them which drafts lose it. Called again for a media already deleted, it changes nothing and says the media is not there.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: Schema.Struct({
+    // The drafts that showed the media, which no longer do.
+    draftsThatLostIt: Schema.Array(Schema.String),
+    mediaId: Schema.String,
+  }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Delete a media");
+
+/** The tools that read, describe, add to and delete the workspace's media. */
+export const MediaTools = Toolkit.make(
+  ListMedia,
+  GetMedia,
+  GetMediaUsage,
+  ImportMedia,
+  GenerateImage,
+  DescribeMedia,
+  DeleteMedia
+);

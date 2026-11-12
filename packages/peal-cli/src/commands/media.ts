@@ -10,10 +10,12 @@ import {
 } from "peal-contract";
 import type { Media } from "peal-contract";
 
+import { confirmed, neverAsksInJson, yesFlagName } from "#confirm.ts";
 import { explain } from "#explain.ts";
-import { jsonFlag, printJson } from "#json.ts";
+import { jsonFlag, printJson, printNothing } from "#json.ts";
 import { importAddress, statusOf, uploadFile } from "#media-files.ts";
 import { columns, excerpt, instant } from "#print.ts";
+import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const altFlag = Flag.String("alt").pipe(
@@ -103,7 +105,7 @@ const generate = Command.make(
     prompt: Flag.String("prompt").pipe(
       Flag.withMetavar("<text>"),
       Flag.withDescription(
-        `What the image should show, 1 to ${String(maxImagePromptLength)} characters: it is sent as it is to the image provider the server's operator chose.`
+        `What the image should show, 1 to ${String(maxImagePromptLength)} characters: it is sent as it is to the workspace's own image provider, or else to the one the server's operator chose.`
       )
     ),
     workspace: workspaceFlag,
@@ -130,7 +132,7 @@ const generate = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    `Have the server's image model make an image into the workspace's media, marked as made by AI. It costs ${String(imageRequestCost)} of the workspace's daily assistant requests; servers without an image model refuse it.`
+    `Have the workspace's own image provider, or else the server's image model, make an image into the workspace's media, marked as made by AI. With the server's model it costs ${String(imageRequestCost)} of the workspace's daily assistant requests, with the workspace's own provider none; without either it is refused.`
   )
 );
 
@@ -247,9 +249,119 @@ const list = Command.make(
   )
 );
 
+const mediaArgument = Argument.String("media-id").pipe(
+  Argument.withDescription("The media, as peal media list shows its id.")
+);
+
+const describe = Command.make(
+  "describe",
+  {
+    clear: Flag.Boolean("clear").pipe(
+      Flag.withDescription("Remove the description instead."),
+      Flag.withDefault(false)
+    ),
+    json: jsonFlag,
+    mediaId: mediaArgument,
+    text: Flag.String("text").pipe(
+      Flag.withMetavar("<text>"),
+      Flag.withDescription(
+        "What it shows, for people who cannot see it: platforms show it with the post, and each post that attaches the file starts from it."
+      ),
+      Flag.optional
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("media.describe")(function* describe(input) {
+    if (input.clear === Option.isSome(input.text)) {
+      return yield* new Refused({
+        reason:
+          "Give the description with --text, or --clear to remove it: one of them.",
+      });
+    }
+
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const described = yield* client.media
+      .describe({
+        params: { mediaId: input.mediaId, workspaceId: workspace.id },
+        payload: { altText: Option.getOrNull(input.text) },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      return yield* printJson(MediaSchema, described);
+    }
+
+    return yield* Console.log(
+      described.altText === null
+        ? `Media ${described.id} has no description now.`
+        : `Described media ${described.id}: ${excerpt(described.altText)}. Posts that already attached it keep the alt text they have.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Set or remove a media's description, its alt text, which platforms show to people who cannot see the file."
+  )
+);
+
+const remove = Command.make(
+  "delete",
+  {
+    json: jsonFlag,
+    mediaId: mediaArgument,
+    workspace: workspaceFlag,
+    yes: Flag.Boolean(yesFlagName).pipe(
+      Flag.withDescription(
+        "The person who decides agreed to delete the file for good: do not ask again."
+      ),
+      Flag.withDefault(false)
+    ),
+  },
+  Effect.fn("media.delete")(function* remove(input) {
+    yield* neverAsksInJson({
+      json: input.json,
+      why: "it deletes the file for good, and drafts that show it lose it",
+      yes: input.yes,
+    });
+
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const params = { mediaId: input.mediaId, workspaceId: workspace.id };
+
+    const usage = yield* client.media
+      .usage({ params })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (!input.json) {
+      yield* Console.log(
+        `This deletes media ${input.mediaId} of ${workspace.name} for good.${usage.drafts.length === 0 ? "" : ` ${String(usage.drafts.length)} ${usage.drafts.length === 1 ? "draft shows it and loses it" : "drafts show it and lose it"}: ${usage.drafts.join(", ")}.`}`
+      );
+    }
+
+    yield* confirmed({ question: "Delete it?", yes: input.yes });
+
+    yield* client.media.delete({ params }).pipe(Effect.mapError(explain(url)));
+
+    yield* input.json
+      ? printNothing
+      : Console.log(`Deleted media ${input.mediaId}.`);
+  })
+).pipe(
+  Command.withDescription(
+    "Delete a media for good: drafts that show it lose it, and a post that is scheduled or being published keeps it from going. Asks first; --yes otherwise."
+  )
+);
+
 export const media = Command.make("media").pipe(
   Command.withDescription(
-    "A workspace's images and videos: uploading files, importing them from an address, having the assistant make an image, listing them and showing one."
+    "A workspace's images and videos: uploading files, importing them from an address, having the assistant make an image, listing them, showing, describing and deleting one."
   ),
-  Command.withSubcommands([upload, importMedia, generate, list, show])
+  Command.withSubcommands([
+    upload,
+    importMedia,
+    generate,
+    list,
+    show,
+    describe,
+    remove,
+  ])
 );

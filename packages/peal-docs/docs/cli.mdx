@@ -429,16 +429,33 @@ peal media import https://files.example/spring/cover.jpg --alt "A paper catalogu
 peal media generate --prompt "A paper catalogue open on a wooden table, morning light" --aspect landscape
 peal media list                   # newest first; --limit and --cursor page through them
 peal media show <media-id>
+peal media describe <media-id> --text "A paper catalogue open on a wooden table"
+peal media delete <media-id>
 ```
 
 - `peal media upload` sends a file to the workspace's media: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, or a PDF document up to 100 MiB and 300 pages, told by its extension. The file goes straight to the media store, then Peal checks and reads it.
 - `peal media import` has the server fetch an image, a video or a PDF document from a public `https://` address, without credentials, within 90 seconds ([Images and videos](/media#import)). Upload larger or slower files instead.
-- `peal media generate` has the instance's image model make an image from `--prompt` (1 to 1,000 characters, sent as it is to its provider) into the workspace's media, `--aspect` `square` (the default), `landscape` or `portrait` ([Generate an image](/media#generate)). It costs 5 of the workspace's daily assistant requests, and the image is marked as made by AI: set the platform's AI label in the post's options, and describe it with `--alt` when you attach it. Instances without an image model refuse it.
+- `peal media generate` has the workspace's own [image provider](/settings#image-provider), or else the instance's image model, make an image from `--prompt` (1 to 1,000 characters, sent as it is to that provider) into the workspace's media, `--aspect` `square` (the default), `landscape` or `portrait` ([Generate an image](/media#generate)). With the instance's model it costs 5 of the workspace's daily assistant requests, with the workspace's own provider none; the image is marked as made by AI: set the platform's AI label in the post's options, and describe it with `--alt` when you attach it. A workspace without its own provider, on an instance without an image model, is refused.
 - `peal media list` lists the workspace's images and videos, newest first, with the ids posts attach and whether each is ready. `--limit` takes 100 at most.
 - `peal media show` prints one media: its type, its size, when it was stored, whether it is ready to attach, and its description. After an upload or an import, it tells when a video Peal is still reading becomes `ready`.
+- `peal media describe` sets a media's description in the library with `--text`, or removes it with `--clear`. Posts that already attached it keep the alt text they have.
+- `peal media delete` deletes a media for good. It first says which drafts show it and lose it, then asks (`--yes` otherwise, and with `--json`); a media a scheduled post shows is refused, with those posts.
 - `--alt` says what the file shows, for people who cannot see it.
 
 Each command prints the media's id. Only a media that is `ready` goes in a post.
+
+## The assistant's image provider [#assistant]
+
+```sh
+peal assistant image-provider show
+peal assistant image-provider set --base-url https://images.example.com/v1 --model <your-provider-model> < key.txt
+peal assistant image-provider set --base-url https://images.example.com/v2 --model <your-provider-model> --keep-key
+peal assistant image-provider clear
+```
+
+- These keep the workspace's own [image provider](/settings#image-provider), and need `assistant:configure` (owners, admins, and the keys given it).
+- `set` never takes the key as an argument, which the shell's history and the list of processes would keep: at a terminal it asks for it, without showing what you type; otherwise it reads it from standard input, to its end, without its last line break. `--keep-key` keeps the key already saved, which the server takes only while `--base-url` stays exactly the same (to change the model alone); any other address asks for the key again.
+- `show` prints the address, the model and whether the key can still be read, never the key. `clear` removes the provider and deletes its key, after asking (`--yes` otherwise).
 
 ## Reviews and approvals [#review]
 

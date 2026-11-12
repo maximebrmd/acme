@@ -449,6 +449,23 @@ export interface UserReviewRecord {
   })[];
 }
 
+/**
+ * The image provider a workspace brought to the assistant: where its
+ * prompts go and with which model, never its key, sealed or not.
+ */
+export interface ImageProviderRecord {
+  readonly baseUrl: string;
+  readonly model: string;
+  readonly updatedAt: DateTime.Utc;
+}
+
+/** How many images a workspace asked its own provider for one UTC day. */
+export interface OwnImagesRecord {
+  /** YYYY-MM-DD. */
+  readonly day: string;
+  readonly images: number;
+}
+
 /** How many requests a workspace sent the writing assistant one UTC day. */
 export interface UsageRecord {
   /** YYYY-MM-DD. */

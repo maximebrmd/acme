@@ -18,6 +18,7 @@ module Peal
       API_KEY_UPDATE = "apiKey:update"
       API_KEY_DELETE = "apiKey:delete"
       ASSISTANT_USE = "assistant:use"
+      ASSISTANT_CONFIGURE = "assistant:configure"
       BILLING_READ = "billing:read"
       BILLING_MANAGE = "billing:manage"
       CHANNEL_READ = "channel:read"

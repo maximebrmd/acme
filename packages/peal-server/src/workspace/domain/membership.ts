@@ -43,6 +43,7 @@ export type Membership = typeof MembershipSchema.Type;
  * What staff impersonating a member may not do in the member's name:
  * schedule, approve or publish, connect accounts, change billing, handle
  * API keys, manage webhooks, a partner account or delete the workspace,
+ * set the image provider the workspace's prompts and key go to,
  * connect an ad account, spend on ads or decide what ads may spend,
  * or require two-step verification of the workspace's members, which all
  * outlive the impersonation or reach outside Peal; nor answer
@@ -60,6 +61,7 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "apiKey:delete",
   "apiKey:read",
   "apiKey:update",
+  "assistant:configure",
   "billing:manage",
   "channel:connect",
   "engagement:read",

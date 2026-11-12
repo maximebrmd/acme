@@ -2,7 +2,8 @@
 // connect link's token, a review link's, a partner key, the token of a
 // link that applies a request to cancel, the value of a header a webhook
 // endpoint's deliveries carry, two-step verification's key, codes and
-// recovery codes, or the image provider's key (nor the prompt sent to it). The app runs here as production
+// recovery codes, the image provider's key, or the key of a provider a
+// workspace brought (nor the prompt sent to either). The app runs here as production
 // runs it, logging each request and tracing it, and everything a log line
 // or a span would export is searched for each secret.
 import { once } from "node:events";
@@ -21,8 +22,12 @@ import {
   Schema,
   Tracer,
 } from "effect";
+import { SqlClient } from "effect/sql";
 import sharp from "sharp";
 
+import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
+import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import {
   ChannelIdSchema,
@@ -32,7 +37,13 @@ import {
 } from "#shared/domain/ids.ts";
 import { ShortLinks } from "#shortlinks/application/short-links.ts";
 import { ShortLinksLive } from "#shortlinks/container.ts";
-import { DatabaseTest } from "#test/channels/support.ts";
+import {
+  actorIn,
+  DatabaseTest as AssistantDatabaseTest,
+  imagesTest,
+} from "#test/assistant/support.ts";
+import { DatabaseTest, syntheticKeyring } from "#test/channels/support.ts";
+import { storageSettings } from "#test/media/support.ts";
 import {
   facebookPageId,
   fakeMetaGraph,
@@ -82,6 +93,7 @@ import { toDeliveryView, toEndpointView } from "#webhooks/api/webhook-view.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
+import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const CreatedLinkSchema = Schema.Struct({ url: Schema.String });
 
@@ -582,6 +594,225 @@ layer(ImagesTest, { excludeTestServices: true, timeout: "180 seconds" })(
         assert.notInclude(written(), imageKey);
         assert.notInclude(written(), inPrompt);
       })
+    );
+  }
+);
+
+// The key a workspace gave for its own image provider, and what it asks
+// for: neither is ever written, in a log, a span, the activity log or an
+// answer. Saving calls no provider, so the app saves one at a public
+// literal address it never reaches, and is refused one inside.
+const workspaceKey = "synthetic-workspace-image-key";
+const inOwnPrompt = "synthetic-prompt-marker-for-a-workspace-provider";
+
+const OwnProviderAppTest = Layer.mergeAll(
+  TestApp.layerWith(
+    { ...unconfirmedEmails, PEAL_TOKEN_KEYS: syntheticKeyring },
+    Layer.merge(capture, Layer.succeed(Tracer.Tracer, tracer))
+  ),
+  MigratedSqlLive
+);
+
+const ActivityRowsSchema = Schema.Array(Schema.Struct({ row: Schema.String }));
+
+layer(OwnProviderAppTest, {
+  excludeTestServices: true,
+  timeout: "180 seconds",
+})("what the server writes about a workspace's image provider", (it) => {
+  it.effect(
+    "holds its key nowhere: logs, spans, the activity log, the answers",
+    () =>
+      Effect.gen(function* searched() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("secrets-own-images");
+        const workspaceId = yield* workspaceOf(owner, "Own images");
+        const headers = { cookie: owner.cookies };
+        const path = `/api/workspaces/${workspaceId}/assistant/image-provider`;
+
+        const saved = yield* app.request(path, {
+          body: {
+            apiKey: workspaceKey,
+            baseUrl: "https://1.1.1.1/v1",
+            model: "synthetic-image-model",
+          },
+          headers,
+          method: "PUT",
+        });
+
+        const inside = yield* app.request(path, {
+          body: {
+            apiKey: workspaceKey,
+            baseUrl: "https://10.0.0.8/v1",
+            model: "synthetic-image-model",
+          },
+          headers,
+          method: "PUT",
+        });
+
+        const read = yield* app.request(path, { headers });
+
+        const status = yield* app.request(
+          `/api/workspaces/${workspaceId}/assistant`,
+          { headers }
+        );
+
+        const removed = yield* app.request(path, { headers, method: "DELETE" });
+
+        assert.deepStrictEqual(
+          [
+            saved.status,
+            inside.status,
+            read.status,
+            status.status,
+            removed.status,
+          ],
+          [200, 422, 200, 200, 204]
+        );
+
+        const activity =
+          yield* sql`SELECT row_to_json(e)::text AS row FROM activity.events e WHERE workspace_id = ${workspaceId}`.pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(ActivityRowsSchema))
+          );
+
+        // The writes were kept, done and refused, without their bodies.
+        assert.isAtLeast(activity.length, 3);
+
+        const answers = JSON.stringify(
+          [saved, inside, read, status].map(({ body }) => body)
+        );
+
+        for (const text of [written(), answers, JSON.stringify(activity)]) {
+          assert.notInclude(text, workspaceKey);
+        }
+
+        // Nor the host of an address refused when it was saved.
+        assert.notInclude(written(), "10.0.0.8");
+      })
+  );
+});
+
+const OwnImagesTest = Layer.mergeAll(
+  S3MediaStorageLive,
+  DrizzleMediaAssetsLive,
+  capture,
+  Layer.succeed(Tracer.Tracer, tracer)
+).pipe(
+  Layer.provideMerge(AssistantDatabaseTest),
+  Layer.provide(storageSettings)
+);
+
+// A provider on loopback that refuses a prompt naming "refused" with 401,
+// quoting the key it was sent, and answers any other with an image.
+const ownProvider = Effect.acquireRelease(
+  Effect.promise(async () => {
+    const png = await sharp({
+      create: { background: "#446622", channels: 3, height: 16, width: 16 },
+    })
+      .png()
+      .toBuffer();
+
+    const server = createServer((request, response) => {
+      const chunks: Buffer[] = [];
+
+      request.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+      request.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf-8");
+        const refused = body.includes("refused");
+
+        response.writeHead(refused ? 401 : 200, {
+          "content-type": "application/json",
+        });
+        response.end(
+          JSON.stringify(
+            refused
+              ? {
+                  error: {
+                    message: `Invalid key ${request.headers.authorization ?? ""} for ${body}`,
+                  },
+                }
+              : { created: 1, data: [{ b64_json: png.toString("base64") }] }
+          )
+        );
+      });
+    });
+
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+
+    return {
+      server,
+      url: `http://127.0.0.1:${String(decodePort(server.address()).port)}/v1`,
+    };
+  }),
+  ({ server }) =>
+    Effect.promise(async () => {
+      server.closeAllConnections();
+      server.close();
+      await once(server, "close");
+    })
+);
+
+layer(OwnImagesTest, { excludeTestServices: true, timeout: "120 seconds" })(
+  "what the server writes about a workspace's own images",
+  (it) => {
+    it.effect(
+      "holds neither the workspace's key, its provider's address nor the prompt",
+      () =>
+        Effect.gen(function* images() {
+          const assistant = yield* WritingAssistant;
+          const sql = yield* SqlClient.SqlClient;
+          const host = yield* ownProvider;
+          const workspaceId = WorkspaceIdSchema.make(crypto.randomUUID());
+          const admin = actorIn(workspaceId, permissionsFor("admin"));
+
+          yield* Effect.addFinalizer(() =>
+            sql`DELETE FROM assistant.image_providers WHERE workspace_id = ${workspaceId}`.pipe(
+              Effect.andThen(
+                sql`DELETE FROM media.media_assets WHERE workspace_id = ${workspaceId}`
+              ),
+              Effect.ignore
+            )
+          );
+
+          const saved = yield* assistant.saveImageProvider(admin, {
+            apiKey: workspaceKey,
+            baseUrl: host.url,
+            model: "synthetic-image-model",
+          });
+
+          const made = yield* assistant.generateImage(actorIn(workspaceId), {
+            aspect: "square",
+            prompt: `A field of wheat. ${inOwnPrompt}`,
+          });
+
+          const refused = yield* assistant
+            .generateImage(actorIn(workspaceId), {
+              aspect: "square",
+              prompt: `It is refused. ${inOwnPrompt}`,
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(made.kind, "image");
+          assert.deepInclude(refused, {
+            _tag: "ImageProviderRefused",
+            status: 401,
+          });
+
+          const all = written();
+
+          // The refusal was told, by its status.
+          assert.include(all, "refused its settings");
+
+          for (const text of [all, JSON.stringify([saved, made, refused])]) {
+            assert.notInclude(text, workspaceKey);
+            assert.notInclude(text, inOwnPrompt);
+          }
+
+          assert.notInclude(all, new URL(host.url).host);
+        }).pipe(Effect.provide(imagesTest({ providers: "loopback" })))
     );
   }
 );

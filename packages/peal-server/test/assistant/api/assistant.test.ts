@@ -76,6 +76,7 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
             dailyLimit: 2,
             maxPromptLength: 1000,
             requestCost: 5,
+            source: null,
           },
           maxTextLength: 5000,
           remaining: 2,

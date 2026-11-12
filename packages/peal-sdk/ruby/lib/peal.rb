@@ -98,15 +98,13 @@ require_relative "peal/notices/types/list_notices_request"
 require_relative "peal/notices/types/mark_notices_read"
 require_relative "peal/notification_preferences/client"
 require_relative "peal/notification_preferences/types/notification_preferences_change"
-require_relative "peal/overview/client"
-require_relative "peal/overview/types/get_overview_request"
-require_relative "peal/overview/types/agenda_overview_request"
-require_relative "peal/overview/types/report_overview_request"
-require_relative "peal/overview/types/report_export_overview_request"
 require_relative "peal/assistant/client"
 require_relative "peal/assistant/types/status_assistant_request"
 require_relative "peal/assistant/types/suggestion_request"
 require_relative "peal/assistant/types/image_request"
+require_relative "peal/assistant/types/image_provider_assistant_request"
+require_relative "peal/assistant/types/image_provider_change"
+require_relative "peal/assistant/types/remove_image_provider_assistant_request"
 require_relative "peal/members/client"
 require_relative "peal/members/types/list_members_request"
 require_relative "peal/invitations/client"
@@ -124,7 +122,6 @@ require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/dashboard_analytics_request"
 require_relative "peal/analytics/types/channel_analytics_request"
 require_relative "peal/analytics/types/export_analytics_request"
-require_relative "peal/analytics/types/best_times_analytics_request"
 require_relative "peal/analytics/types/post_analytics_request"
 require_relative "peal/tiktok/client"
 require_relative "peal/tiktok/types/creator_tiktok_request"
@@ -325,6 +322,12 @@ module Peal
     autoload :TooManyRequestsEncodedTag, ::File.join(__dir__, "peal/types/too_many_requests_encoded_tag")
     autoload :TooManyRequestsEncoded, ::File.join(__dir__, "peal/types/too_many_requests_encoded")
     autoload :TooManyRequestsErrorBody, ::File.join(__dir__, "peal/types/too_many_requests_error_body")
+    autoload :AssistantFailedEncodedTag, ::File.join(__dir__, "peal/types/assistant_failed_encoded_tag")
+    autoload :AssistantFailedEncodedReason, ::File.join(__dir__, "peal/types/assistant_failed_encoded_reason")
+    autoload :AssistantFailedEncoded, ::File.join(__dir__, "peal/types/assistant_failed_encoded")
+    autoload :ImageProviderRefusedEncodedReason, ::File.join(__dir__, "peal/types/image_provider_refused_encoded_reason")
+    autoload :ImageProviderRefusedEncoded, ::File.join(__dir__, "peal/types/image_provider_refused_encoded")
+    autoload :BadGatewayErrorBody, ::File.join(__dir__, "peal/types/bad_gateway_error_body")
     autoload :BillingUnavailableEncoded, ::File.join(__dir__, "peal/types/billing_unavailable_encoded")
     autoload :MediaStoreUnavailableEncodedTag, ::File.join(__dir__, "peal/types/media_store_unavailable_encoded_tag")
     autoload :MediaStoreUnavailableEncoded, ::File.join(__dir__, "peal/types/media_store_unavailable_encoded")
@@ -398,16 +401,13 @@ module Peal
     autoload :AdsMode, ::File.join(__dir__, "peal/types/ads_mode")
     autoload :AdsStatus, ::File.join(__dir__, "peal/types/ads_status")
     autoload :AdsUnavailableEncoded, ::File.join(__dir__, "peal/types/ads_unavailable_encoded")
-    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
-    autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
-    autoload :AgendaItem, ::File.join(__dir__, "peal/types/agenda_item")
-    autoload :AgendaPage, ::File.join(__dir__, "peal/types/agenda_page")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :AltTextTooLongEncodedTag, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded_tag")
     autoload :AltTextTooLongEncoded, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded")
     autoload :AnalyticsDashboardPrevious, ::File.join(__dir__, "peal/types/analytics_dashboard_previous")
     autoload :DashboardTotals, ::File.join(__dir__, "peal/types/dashboard_totals")
     autoload :FollowerChange, ::File.join(__dir__, "peal/types/follower_change")
+    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
     autoload :ChannelDashboard, ::File.join(__dir__, "peal/types/channel_dashboard")
     autoload :DashboardDay, ::File.join(__dir__, "peal/types/dashboard_day")
     autoload :PlatformDashboard, ::File.join(__dir__, "peal/types/platform_dashboard")
@@ -444,9 +444,7 @@ module Peal
     autoload :AssistantActionTranslate, ::File.join(__dir__, "peal/types/assistant_action_translate")
     autoload :AssistantActionWrite, ::File.join(__dir__, "peal/types/assistant_action_write")
     autoload :AssistantAction, ::File.join(__dir__, "peal/types/assistant_action")
-    autoload :AssistantFailedEncodedTag, ::File.join(__dir__, "peal/types/assistant_failed_encoded_tag")
-    autoload :AssistantFailedEncodedReason, ::File.join(__dir__, "peal/types/assistant_failed_encoded_reason")
-    autoload :AssistantFailedEncoded, ::File.join(__dir__, "peal/types/assistant_failed_encoded")
+    autoload :AssistantImageSource, ::File.join(__dir__, "peal/types/assistant_image_source")
     autoload :ImageAspect, ::File.join(__dir__, "peal/types/image_aspect")
     autoload :AssistantImagesStatus, ::File.join(__dir__, "peal/types/assistant_images_status")
     autoload :AssistantInputRejectedEncodedTag, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_tag")
@@ -455,16 +453,13 @@ module Peal
     autoload :PaidPlan, ::File.join(__dir__, "peal/types/paid_plan")
     autoload :Plan, ::File.join(__dir__, "peal/types/plan")
     autoload :AssistantQuotaExceededEncoded, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded")
+    autoload :AssistantSecretsNotConfiguredEncodedTag, ::File.join(__dir__, "peal/types/assistant_secrets_not_configured_encoded_tag")
+    autoload :AssistantSecretsNotConfiguredEncoded, ::File.join(__dir__, "peal/types/assistant_secrets_not_configured_encoded")
     autoload :AssistantStatus, ::File.join(__dir__, "peal/types/assistant_status")
     autoload :AssistantUnavailableEncodedTag, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded_tag")
     autoload :AssistantUnavailableEncoded, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded")
     autoload :AttemptResult, ::File.join(__dir__, "peal/types/attempt_result")
     autoload :Authorization, ::File.join(__dir__, "peal/types/authorization")
-    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
-    autoload :BestTimesHourMedian, ::File.join(__dir__, "peal/types/best_times_hour_median")
-    autoload :Weekday, ::File.join(__dir__, "peal/types/weekday")
-    autoload :BestTimesHour, ::File.join(__dir__, "peal/types/best_times_hour")
-    autoload :BestTimes, ::File.join(__dir__, "peal/types/best_times")
     autoload :BillingInterval, ::File.join(__dir__, "peal/types/billing_interval")
     autoload :SubscriptionStatus, ::File.join(__dir__, "peal/types/subscription_status")
     autoload :BillingSubscription, ::File.join(__dir__, "peal/types/billing_subscription")
@@ -537,6 +532,7 @@ module Peal
     autoload :PostOriginVia, ::File.join(__dir__, "peal/types/post_origin_via")
     autoload :PostOrigin, ::File.join(__dir__, "peal/types/post_origin")
     autoload :PostOutcome, ::File.join(__dir__, "peal/types/post_outcome")
+    autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
     autoload :PostTargetStatus, ::File.join(__dir__, "peal/types/post_target_status")
     autoload :TargetParts, ::File.join(__dir__, "peal/types/target_parts")
     autoload :UnconfirmedReason, ::File.join(__dir__, "peal/types/unconfirmed_reason")
@@ -548,6 +544,7 @@ module Peal
     autoload :BulkPostResultCreated, ::File.join(__dir__, "peal/types/bulk_post_result_created")
     autoload :ChannelSetNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_set_not_found_encoded")
     autoload :ContentViolationAltTextTooLong, ::File.join(__dir__, "peal/types/content_violation_alt_text_too_long")
+    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
     autoload :ContentViolationAspectRatioUnsupportedMaximum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_maximum")
     autoload :ContentViolationAspectRatioUnsupportedMinimum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_minimum")
     autoload :ContentViolationAspectRatioUnsupported, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported")
@@ -716,6 +713,11 @@ module Peal
     autoload :FeedPreviewItem, ::File.join(__dir__, "peal/types/feed_preview_item")
     autoload :FeedPreview, ::File.join(__dir__, "peal/types/feed_preview")
     autoload :FeedStopReason, ::File.join(__dir__, "peal/types/feed_stop_reason")
+    autoload :ImageProvider, ::File.join(__dir__, "peal/types/image_provider")
+    autoload :ImageProviderAddressRefusal, ::File.join(__dir__, "peal/types/image_provider_address_refusal")
+    autoload :ImageProviderAddressRefusedEncoded, ::File.join(__dir__, "peal/types/image_provider_address_refused_encoded")
+    autoload :ImageProviderKeyRequiredEncoded, ::File.join(__dir__, "peal/types/image_provider_key_required_encoded")
+    autoload :ImageProviderSetting, ::File.join(__dir__, "peal/types/image_provider_setting")
     autoload :ImportCellProblemProblem, ::File.join(__dir__, "peal/types/import_cell_problem_problem")
     autoload :ImportColumn, ::File.join(__dir__, "peal/types/import_column")
     autoload :ImportCellProblem, ::File.join(__dir__, "peal/types/import_cell_problem")
@@ -844,12 +846,7 @@ module Peal
     autoload :NotificationPreferencesEmail, ::File.join(__dir__, "peal/types/notification_preferences_email")
     autoload :NotificationPreferences, ::File.join(__dir__, "peal/types/notification_preferences")
     autoload :OrganicCounts, ::File.join(__dir__, "peal/types/organic_counts")
-    autoload :OverviewChannels, ::File.join(__dir__, "peal/types/overview_channels")
-    autoload :OverviewInbox, ::File.join(__dir__, "peal/types/overview_inbox")
-    autoload :OverviewPosts, ::File.join(__dir__, "peal/types/overview_posts")
-    autoload :OverviewRefusal, ::File.join(__dir__, "peal/types/overview_refusal")
-    autoload :WorkspaceOverview, ::File.join(__dir__, "peal/types/workspace_overview")
-    autoload :Overview, ::File.join(__dir__, "peal/types/overview")
+    autoload :OwnImageLimitReachedEncoded, ::File.join(__dir__, "peal/types/own_image_limit_reached_encoded")
     autoload :Partner, ::File.join(__dir__, "peal/types/partner")
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
@@ -905,6 +902,7 @@ module Peal
     autoload :PreviewSlot, ::File.join(__dir__, "peal/types/preview_slot")
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
     autoload :SlotTime, ::File.join(__dir__, "peal/types/slot_time")
+    autoload :Weekday, ::File.join(__dir__, "peal/types/weekday")
     autoload :QueueSlot, ::File.join(__dir__, "peal/types/queue_slot")
     autoload :Queue, ::File.join(__dir__, "peal/types/queue")
     autoload :QueueDetails, ::File.join(__dir__, "peal/types/queue_details")
@@ -932,10 +930,6 @@ module Peal
     autoload :ReplyPendingEncoded, ::File.join(__dir__, "peal/types/reply_pending_encoded")
     autoload :ReplyStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded_tag")
     autoload :ReplyStatusConflictEncoded, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded")
-    autoload :ReportAcrossWorkspacesPrevious, ::File.join(__dir__, "peal/types/report_across_workspaces_previous")
-    autoload :WorkspaceAnalytics, ::File.join(__dir__, "peal/types/workspace_analytics")
-    autoload :WorkspaceReport, ::File.join(__dir__, "peal/types/workspace_report")
-    autoload :ReportAcrossWorkspaces, ::File.join(__dir__, "peal/types/report_across_workspaces")
     autoload :ReturnURLNotAllowedEncoded, ::File.join(__dir__, "peal/types/return_url_not_allowed_encoded")
     autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")

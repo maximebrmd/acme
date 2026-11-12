@@ -429,6 +429,14 @@ const ExportedUsageSchema = Schema.Struct({
   requests: Schema.Int,
 });
 
+// The image provider the workspace brought to the assistant: where its
+// prompts went and with which model, never its key.
+const ExportedImageProviderSchema = Schema.Struct({
+  baseUrl: Schema.String,
+  model: Schema.String,
+  updatedAt: instant,
+});
+
 // A post analytics followed on a channel, and each reading of its counts.
 // Quotes, impressions, clicks, reach and saves are null where the platform
 // gives none.
@@ -731,6 +739,22 @@ const ExportedWorkspaceSchema = Schema.Struct({
   ads: ExportedAdsSchema,
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
+  // The image provider the workspace brought, or null; absent from exports
+  // made before workspaces could bring one.
+  assistantImageProvider: Schema.optionalKey(
+    Schema.NullOr(ExportedImageProviderSchema)
+  ),
+  // How many images it asked that provider for each UTC day; absent from
+  // exports made before workspaces could bring one.
+  assistantOwnImages: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        // A UTC day, as YYYY-MM-DD.
+        day: Schema.String,
+        images: Schema.Int,
+      })
+    )
+  ),
   assistantUsage: Schema.Array(ExportedUsageSchema),
   billing: ExportedBillingSchema,
   channels: Schema.Array(ExportedChannelSchema),

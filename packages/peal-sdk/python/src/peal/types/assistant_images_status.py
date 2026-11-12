@@ -6,6 +6,7 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .assistant_image_source import AssistantImageSource
 from .image_aspect import ImageAspect
 
 
@@ -19,6 +20,7 @@ class AssistantImagesStatus(UniversalBaseModel):
     request_cost: typing_extensions.Annotated[
         int, FieldMetadata(alias="requestCost"), pydantic.Field(alias="requestCost")
     ]
+    source: typing.Optional[AssistantImageSource] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

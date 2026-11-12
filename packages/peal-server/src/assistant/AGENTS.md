@@ -77,3 +77,42 @@
   Bytes the library does not take are `ImageFailed` `unusableAnswer`, and
   count. Never log or trace a prompt, an image or a provider's error;
   `ImageFailed` carries no cause.
+- A workspace may bring its own image provider (`ImageProviders`,
+  `assistant.image_providers`, one row a workspace): an address
+  (`checkProviderAddress`: HTTPS on the default port, as the outbound guard
+  takes, no credentials, query or fragment, 2,048 characters, stored
+  without its final slashes),
+  a model (one line, `providerModelPattern`) and a key, sealed through the
+  `ProviderSecrets` port on the channels context's `TokenCipher`
+  (`CipherProviderSecrets`), bound to `assistant:<workspace>:<address>`,
+  the whole address: a row whose address changed in any way, or moved to
+  another workspace, opens without its key (`keyUnreadable`), so a key
+  never reaches an address it was not typed for. No crypto here. Saving checks the address with the outbound
+  guard once (`ProviderAddressCheck`), never calls the provider, and keeps
+  the stored key only while the address stays exactly the same
+  (`ImageProviderKeyRequired` otherwise); without a keyring nothing is stored
+  (`ProviderSecretsNotConfigured`, 503). `assistant:configure` (owners,
+  admins, keys and partner keys given it; withheld from staff
+  impersonating) reads, sets and removes it; no MCP tool does. Staff
+  impersonating a member make no image with it either: the workspace's
+  account pays.
+- With a provider, `generateImage` asks `OwnImageModel` only
+  (`openai-compatible-own-image-model.ts`, the same request and answer
+  reading as the server's adapter, `images-api.ts`): through
+  `publicHttpClientWith` (the guard on every call, no redirect, the answer
+  bounded), with slots of its own (`ImageSlots.take(…, "workspace")`, as
+  many as the server model's, so a silent endpoint starves nobody else),
+  the storage check, and `ownImagesPerDay` (50) a workspace and UTC day,
+  counted whatever each ends with (`OwnImageCounts`,
+  `assistant.own_image_days`; `OwnImagesExhausted`, 429). It reads and
+  counts nothing of `AssistantAllowance` or `AssistantUsage`, on any plan. Never
+  the server's `ImageModel`, not even when it fails, nor with a key that no
+  longer opens (`ImageProviderRefused` `keyUnreadable`). 401 to 404 and an
+  address the guard refuses are `ImageProviderRefused`, with no state: the
+  next call tries again. Its logs and span say `workspace`, the status and
+  the kind of failure: never the host, the model, the prompt or the key.
+  The status answers `images.source` (`workspace`, `server` or null), and
+  `requestCost` 0 for the workspace's own. Exports give the address, the
+  model and the date (`UsageRecords.exportImageProvider`), never the key;
+  erasing a workspace deletes the row. The row names no member: the
+  activity log keeps who saved it.

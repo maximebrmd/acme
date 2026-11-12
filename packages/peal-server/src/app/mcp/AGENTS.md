@@ -63,11 +63,26 @@
   data (its export, its applications) has no tool.
 - `generate_image` (`MediaTools`, a content tool, open world, never
   idempotent) calls the assistant's `generateImage`: its description says
-  the prompt goes to the operator's image provider, what it spends of the
-  day's requests, that the file is marked as made by AI, and that the
-  caller sets the platforms' AI labels; it refuses in words on a server
-  without an image model. The journal keeps the call by name, never the
-  prompt. The text assistant has no tool: an agent writes its own text.
+  the prompt goes to the workspace's own image provider when it set one,
+  and then spends none of the day's requests, else to the operator's,
+  what that spends, that the file is marked as made by AI, and that the
+  caller sets the platforms' AI labels; it refuses in words without
+  either, and says who fixes a workspace provider that refused
+  (`ImageProviderRefused`). No tool reads or sets the workspace's
+  provider: a key typed into a chat reaches a model. The journal keeps
+  the call by name, never the prompt. The text assistant has no tool: an
+  agent writes its own text.
+- `get_media`, `get_media_usage` (reading), `describe_media` (not
+  destructive, idempotent) and `delete_media` (destructive: its
+  description says an agent calls it only when the user asked for that
+  file; drafts lose it and the answer names them, a scheduled post refuses
+  it in a `ToolRefused` listing the posts) answer the media API's views.
+  `list_review_links` (reading, never a token), `create_review_link` (view
+  or comment only: its input cannot ask for `approve`, made by a person in
+  the web app; the answer holds the address once, which the agent gives
+  the user; open world) and `revoke_review_link` (destructive) are in
+  `publishingTools`, as `ReviewLinks` checks post:approve. The CLI's are
+  `peal media describe|delete` and `peal review links|link|revoke`.
 - `best_times` (`reports-tools.ts`) answers `GET …/analytics/best-times`'s
   view for one channel; its description says it describes the past of
   that channel, is no prediction, and that `enough: false` ranks nothing.

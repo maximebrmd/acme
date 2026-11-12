@@ -162,3 +162,83 @@ func TestAssistantGenerateImageWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestAssistantGenerateImageWithWireMock", "POST", "/api/workspaces/workspaceId/assistant/images", nil, 1)
 }
+
+func TestAssistantImageProviderWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ImageProviderAssistantRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Assistant.ImageProvider(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssistantImageProviderWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssistantImageProviderWithWireMock", "GET", "/api/workspaces/workspaceId/assistant/image-provider", nil, 1)
+}
+
+func TestAssistantSetImageProviderWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ImageProviderChange{
+		WorkspaceID: "workspaceId",
+		BaseURL:     "baseUrl",
+		Model:       "model",
+	}
+	_, invocationErr := client.Assistant.SetImageProvider(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssistantSetImageProviderWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssistantSetImageProviderWithWireMock", "PUT", "/api/workspaces/workspaceId/assistant/image-provider", nil, 1)
+}
+
+func TestAssistantRemoveImageProviderWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.RemoveImageProviderAssistantRequest{
+		WorkspaceID: "workspaceId",
+	}
+	invocationErr := client.Assistant.RemoveImageProvider(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssistantRemoveImageProviderWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssistantRemoveImageProviderWithWireMock", "DELETE", "/api/workspaces/workspaceId/assistant/image-provider", nil, 1)
+}

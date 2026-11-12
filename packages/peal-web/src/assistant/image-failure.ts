@@ -6,8 +6,10 @@ import type {
   AssistantQuotaExceeded,
   AssistantUnavailable,
   Forbidden,
+  ImageProviderRefused,
   MediaImportBusy,
   MediaStoreUnavailable,
+  OwnImageLimitReached,
   PlanLimitReached,
   TooManyRequests,
   Unauthenticated,
@@ -21,14 +23,25 @@ export type ImageFailure =
   | AssistantQuotaExceeded
   | AssistantUnavailable
   | Forbidden
+  | ImageProviderRefused
   | MediaImportBusy
   | MediaStoreUnavailable
+  | OwnImageLimitReached
   | PlanLimitReached
   | TooManyRequests
   | Unauthenticated
   | WorkspaceNotFound
   // The request failed in a way the API does not declare.
   | { readonly _tag: "Unexpected" };
+
+// The workspace's own provider's refusals: its settings are to fix, by
+// those who may change them.
+const providerKeys = {
+  addressRefused: "providerAddress",
+  keyUnreadable: "providerKey",
+  redirected: "providerRedirected",
+  settingsRefused: "providerRefused",
+} as const;
 
 /** The message of `Assistant.images.errors` that says why. */
 export type ImageFailureKey =
@@ -38,6 +51,11 @@ export type ImageFailureKey =
   | "forbidden"
   | "generic"
   | "invalidAnswer"
+  | "ownLimit"
+  | "providerAddress"
+  | "providerKey"
+  | "providerRedirected"
+  | "providerRefused"
   | "quota"
   | "storage"
   | "storeDown"
@@ -57,8 +75,10 @@ export const imageFailureKey = (failure: ImageFailure): ImageFailureKey =>
     AssistantQuotaExceeded: (): ImageFailureKey => "quota",
     AssistantUnavailable: (): ImageFailureKey => "unavailable",
     Forbidden: (): ImageFailureKey => "forbidden",
+    ImageProviderRefused: ({ reason }): ImageFailureKey => providerKeys[reason],
     MediaImportBusy: (): ImageFailureKey => "busy",
     MediaStoreUnavailable: (): ImageFailureKey => "storeDown",
+    OwnImageLimitReached: (): ImageFailureKey => "ownLimit",
     PlanLimitReached: (): ImageFailureKey => "storage",
     TooManyRequests: (): ImageFailureKey => "generic",
     Unauthenticated: (): ImageFailureKey => "generic",
@@ -81,19 +101,31 @@ export const isImageRetryable = (failure: ImageFailure): boolean =>
     "unreachable",
   ].includes(imageFailureKey(failure));
 
+/** Whether the refusal is the workspace's own provider's, to fix in its settings. */
+export const isProviderRefusal = (failure: ImageFailure): boolean =>
+  failure._tag === "ImageProviderRefused";
+
 /**
  * What the dialog says before an image is asked for: the plan's day holds
  * fewer requests than an image costs (as on the free plan, or during a
  * trial), or today's are spent. Either way the request may still be sent:
- * its refusal opens the upgrade dialog.
+ * its refusal opens the upgrade dialog. Nothing, when the workspace's own
+ * provider makes its images, which cost none of them.
  */
 export const imageAllowanceHint = ({
   images,
   remaining,
 }: {
-  readonly images: Pick<AssistantImagesStatus, "dailyLimit" | "requestCost">;
+  readonly images: Pick<
+    AssistantImagesStatus,
+    "dailyLimit" | "requestCost" | "source"
+  >;
   readonly remaining: number;
 }): "noImagesOnPlan" | "notEnoughToday" | null => {
+  if (images.source === "workspace") {
+    return null;
+  }
+
   if (images.dailyLimit < images.requestCost) {
     return "noImagesOnPlan";
   }

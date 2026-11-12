@@ -13,6 +13,7 @@ export const Permission = {
         ApiKeyUpdate: "apiKey:update",
         ApiKeyDelete: "apiKey:delete",
         AssistantUse: "assistant:use",
+        AssistantConfigure: "assistant:configure",
         BillingRead: "billing:read",
         BillingManage: "billing:manage",
         ChannelRead: "channel:read",

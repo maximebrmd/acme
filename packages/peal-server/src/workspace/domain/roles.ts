@@ -16,7 +16,8 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  *   verification of every member. Whoever creates a workspace owns it.
  * - `admin`: everything but deleting the workspace, reading its activity
  *   log, deciding what ads may spend and requiring two-step verification. Owners and admins alone manage
- *   members, API keys, billing, webhooks and ad accounts, and spend on ads
+ *   members, API keys, billing, webhooks, ad accounts and the image
+ *   provider the workspace brings to the assistant, and spend on ads
  *   within the ceiling an owner set.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
  *   asks the writing assistant, reads channels, analytics and ads, and

@@ -147,6 +147,8 @@ export const ContextRecordsLive = Layer.effect(
           accountAnalytics: analytics.exportAccounts(workspaceId),
           ads: adRecords.exportWorkspace(workspaceId),
           analytics: analytics.exportWorkspace(workspaceId),
+          assistantImageProvider: usage.exportImageProvider(workspaceId),
+          assistantOwnImages: usage.exportOwnImages(workspaceId),
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),
           channels: channels.exportWorkspace(workspaceId),

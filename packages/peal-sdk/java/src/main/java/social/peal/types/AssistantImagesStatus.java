@@ -5,6 +5,7 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -31,6 +35,8 @@ public final class AssistantImagesStatus {
 
     private final int requestCost;
 
+    private final Optional<AssistantImageSource> source;
+
     private final Map<String, Object> additionalProperties;
 
     private AssistantImagesStatus(
@@ -39,12 +45,14 @@ public final class AssistantImagesStatus {
             int dailyLimit,
             int maxPromptLength,
             int requestCost,
+            Optional<AssistantImageSource> source,
             Map<String, Object> additionalProperties) {
         this.aspects = aspects;
         this.available = available;
         this.dailyLimit = dailyLimit;
         this.maxPromptLength = maxPromptLength;
         this.requestCost = requestCost;
+        this.source = source;
         this.additionalProperties = additionalProperties;
     }
 
@@ -73,6 +81,20 @@ public final class AssistantImagesStatus {
         return requestCost;
     }
 
+    @JsonIgnore
+    public Optional<AssistantImageSource> getSource() {
+        if (source == null) {
+            return Optional.empty();
+        }
+        return source;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("source")
+    private Optional<AssistantImageSource> _getSource() {
+        return source;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -89,12 +111,14 @@ public final class AssistantImagesStatus {
                 && available == other.available
                 && dailyLimit == other.dailyLimit
                 && maxPromptLength == other.maxPromptLength
-                && requestCost == other.requestCost;
+                && requestCost == other.requestCost
+                && source.equals(other.source);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.aspects, this.available, this.dailyLimit, this.maxPromptLength, this.requestCost);
+        return Objects.hash(
+                this.aspects, this.available, this.dailyLimit, this.maxPromptLength, this.requestCost, this.source);
     }
 
     @java.lang.Override
@@ -136,6 +160,12 @@ public final class AssistantImagesStatus {
         _FinalStage addAspects(ImageAspect aspects);
 
         _FinalStage addAllAspects(List<ImageAspect> aspects);
+
+        _FinalStage source(Optional<AssistantImageSource> source);
+
+        _FinalStage source(AssistantImageSource source);
+
+        _FinalStage source(Nullable<AssistantImageSource> source);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -148,6 +178,8 @@ public final class AssistantImagesStatus {
         private int maxPromptLength;
 
         private int requestCost;
+
+        private Optional<AssistantImageSource> source = Optional.empty();
 
         private List<ImageAspect> aspects = new ArrayList<>();
 
@@ -162,6 +194,7 @@ public final class AssistantImagesStatus {
             dailyLimit(other.getDailyLimit());
             maxPromptLength(other.getMaxPromptLength());
             requestCost(other.getRequestCost());
+            source(other.getSource());
             return this;
         }
 
@@ -194,6 +227,31 @@ public final class AssistantImagesStatus {
         }
 
         @java.lang.Override
+        public _FinalStage source(Nullable<AssistantImageSource> source) {
+            if (source.isNull()) {
+                this.source = null;
+            } else if (source.isEmpty()) {
+                this.source = Optional.empty();
+            } else {
+                this.source = Optional.of(source.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage source(AssistantImageSource source) {
+            this.source = Optional.ofNullable(source);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "source", nulls = Nulls.SKIP)
+        public _FinalStage source(Optional<AssistantImageSource> source) {
+            this.source = source;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllAspects(List<ImageAspect> aspects) {
             if (aspects != null) {
                 this.aspects.addAll(aspects);
@@ -220,7 +278,7 @@ public final class AssistantImagesStatus {
         @java.lang.Override
         public AssistantImagesStatus build() {
             return new AssistantImagesStatus(
-                    aspects, available, dailyLimit, maxPromptLength, requestCost, additionalProperties);
+                    aspects, available, dailyLimit, maxPromptLength, requestCost, source, additionalProperties);
         }
 
         @JsonAnySetter
@@ -229,7 +287,8 @@ public final class AssistantImagesStatus {
                     || key.equalsIgnoreCase("available")
                     || key.equalsIgnoreCase("dailyLimit")
                     || key.equalsIgnoreCase("maxPromptLength")
-                    || key.equalsIgnoreCase("requestCost")) {
+                    || key.equalsIgnoreCase("requestCost")
+                    || key.equalsIgnoreCase("source")) {
                 return;
             }
             this.additionalProperties.put(key, value);
