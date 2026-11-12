@@ -87,6 +87,12 @@ Choisissez les 7, 30 ou 90 derniers jours. Les jours suivent le fuseau horaire d
 
 Pour tous les espaces de travail auxquels vous appartenez, **Rapport de tous les espaces**, sur la page d’accueil, montre les mêmes chiffres côte à côte, un espace par ligne, avec un export CSV ([Dans tous vos espaces de travail](/settings#across-workspaces)).
 
+## Quand les publications ont le mieux marché [#best-times]
+
+Sous les totaux, **Quand les publications de ce canal ont le mieux marché** prend un canal à la fois, sur les 30, 90 ou 180 derniers jours (moins quand les conditions d’une plateforme laissent Peal garder moins, comme les 90 jours de Pinterest) : pour chaque jour de la semaine et chaque heure dans votre fuseau horaire, combien de ses publications sont parues à ce moment-là, et la médiane de ce que chacune a reçu, j’aime, partages, réponses et citations ensemble, ceux que sa plateforme donne. Une grille montre où elles sont parues, les meilleures heures sont marquées, et un tableau donne les mêmes chiffres. Cela dit ce qui s’est passé sur ce canal, jamais ce qui se passera : une heure de moins de 3 publications n’a pas de médiane, un canal de moins de 20 publications sur la période n’a pas de classement, les publications de moins de 48 heures sont laissées de côté tant que leurs comptes bougent, comme celles que Peal a supprimées de la plateforme. Les comptes de plateformes différentes ne sont jamais additionnés. Un jour de changement d’heure a une heure de moins ou de plus : l’heure sautée n’a pas de publication, et l’heure répétée compte pour une.
+
+`GET /api/workspaces/{workspaceId}/analytics/best-times?channelId=…&days=90&timeZone=Europe/Paris` répond la même chose (`buckets`, `best`, `enough`, `counted`, `recent`), la [ligne de commande](/cli#analytics) propose `peal analytics best-times`, et les clients MCP `best_times` ([MCP](/mcp#tools)).
+
 ## Les chiffres d’une publication [#post]
 
 La page d’une publication montre ce qu’elle a donné sur chaque canal où elle est parue : ses derniers chiffres, quand ils ont été relevés, et un graphique de chaque relevé, avec les mêmes chiffres en tableau. Une publication parue il y a moins d’une heure dit quand ses chiffres arrivent, et une publication parue sur une plateforme dont Peal ne relève pas les chiffres dit qu’ils n’y sont pas disponibles.

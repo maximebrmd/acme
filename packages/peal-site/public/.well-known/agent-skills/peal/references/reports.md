@@ -12,11 +12,23 @@ peal analytics post <post-id> --json
 peal analytics summary --from 2026-11-01 --to 2026-11-30 --json
 peal analytics dashboard --days 30 --json
 peal analytics channel <channel-id> --days 30 --json
+peal analytics best-times --channel <channel-id> --days 90 --json
 peal analytics export posts --output posts.csv --days 30
 ```
 
 A thread's counts are its first part's. A number a platform does not give
 is `null`, never zero.
+
+`best-times` describes when one channel's posts did best in the past, by
+weekday and hour: never a prediction, and never compare one channel's with
+another's, as platforms count differently. With `enough: false` the
+channel has too few posts and nothing is ranked: say so, rather than pick
+an hour. With `counted: false` its platform gives no counts to weigh.
+
+Across the workspaces a person belongs to, `peal overview` says what needs
+attention in each, `peal agenda` what goes out, and `peal report` how each
+did beside the days before (`--csv report.csv` saves it). They need a person
+signed in: a key belongs to one workspace.
 
 ## Usage
 

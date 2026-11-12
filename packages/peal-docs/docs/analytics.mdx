@@ -87,6 +87,12 @@ Pick the last 7, 30 or 90 days. Days run in your browser's time zone, or in UTC 
 
 Across the workspaces you belong to, **Report across workspaces** on the home page shows the same figures side by side, one workspace a row, with a CSV export ([Across your workspaces](/settings#across-workspaces)).
 
+## When posts did best [#best-times]
+
+Below the totals, **When this channel's posts did best** takes one channel at a time, over the last 30, 90 or 180 days (fewer where a platform's terms let Peal keep less, as Pinterest's 90 days): for each weekday and hour in your time zone, how many of its posts went live then, and the median of what each was given, likes, reposts, replies and quotes together, those its platform gives. A grid shows where they went out, the best hours are marked, and a table gives the same figures. It tells what happened on this channel, never what will: an hour with fewer than 3 posts has no median, a channel with fewer than 20 posts in the range has no ranking, posts less than 48 hours old are left out while their counts still move, and so are posts Peal deleted from the platform. Counts of different platforms are never added together. A day the clocks change has one hour fewer or one more: the skipped hour has no posts, and the repeated hour counts as one.
+
+`GET /api/workspaces/{workspaceId}/analytics/best-times?channelId=…&days=90&timeZone=Europe/Paris` answers the same (`buckets`, `best`, `enough`, `counted`, `recent`), the [command line](/cli#analytics) has `peal analytics best-times`, and MCP clients `best_times` ([MCP](/mcp#tools)).
+
 ## A post's counts [#post]
 
 A post's page shows how it did on each channel it went out on: its latest counts, when they were read, and a chart of each reading, with the same figures as a table. A post that went out less than an hour ago says when its counts come, and one that went out on a platform Peal reads no counts on says they are not available there.
@@ -108,5 +114,6 @@ Every endpoint is under `/api/workspaces/{workspaceId}/analytics` and needs the 
 | `GET /export?kind=posts&format=csv&days=90&timeZone=UTC`                        | A file, streamed: `kind=posts` or `accounts`, `format=csv` (RFC 4180, a header line first) or `json` (one object a line)                                                 |
 | `GET /summary?from=…&to=…&timeZone=…`                                           | The posts of a range summed up, by channel and day, with the five that did best                                                                                          |
 | `GET /posts/{postId}`                                                           | A post's counts on each channel, every reading                                                                                                                           |
+| `GET /best-times?channelId=…&days=90&timeZone=Europe/Paris`                     | When one channel's posts did best, by weekday and hour ([When posts did best](#best-times))                                                                              |
 
 A number a platform does not give is `null` in JSON and empty in CSV, never `0`. The same is in the [command line](/cli#analytics) (`peal analytics dashboard`, `channel`, `export`) and the [MCP tools](/mcp) (`analytics_dashboard`, `channel_analytics`). See the [API reference](/reference).
