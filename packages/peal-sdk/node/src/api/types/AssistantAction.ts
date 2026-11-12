@@ -6,7 +6,8 @@ export type AssistantAction =
     | Peal.AssistantAction.Rewrite
     | Peal.AssistantAction.Shorten
     | Peal.AssistantAction.Translate
-    | Peal.AssistantAction.Hashtags;
+    | Peal.AssistantAction.Hashtags
+    | Peal.AssistantAction.Write;
 
 export namespace AssistantAction {
     export interface Rewrite extends Peal.AssistantActionRewrite {
@@ -23,5 +24,9 @@ export namespace AssistantAction {
 
     export interface Hashtags extends Peal.AssistantActionHashtags {
         _tag: "hashtags";
+    }
+
+    export interface Write extends Peal.AssistantActionWrite {
+        _tag: "write";
     }
 }

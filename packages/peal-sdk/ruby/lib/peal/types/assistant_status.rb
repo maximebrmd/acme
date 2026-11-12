@@ -9,6 +9,8 @@ module Peal
 
       field :daily_limit, -> { Integer }, optional: false, nullable: false, api_name: "dailyLimit"
 
+      field :images, -> { Peal::Types::AssistantImagesStatus }, optional: false, nullable: false
+
       field :max_text_length, -> { Integer }, optional: false, nullable: false, api_name: "maxTextLength"
 
       field :remaining, -> { Integer }, optional: false, nullable: false

@@ -23,6 +23,8 @@ public final class AssistantStatus {
 
     private final int dailyLimit;
 
+    private final AssistantImagesStatus images;
+
     private final int maxTextLength;
 
     private final int remaining;
@@ -34,12 +36,14 @@ public final class AssistantStatus {
     private AssistantStatus(
             boolean available,
             int dailyLimit,
+            AssistantImagesStatus images,
             int maxTextLength,
             int remaining,
             String resetsAt,
             Map<String, Object> additionalProperties) {
         this.available = available;
         this.dailyLimit = dailyLimit;
+        this.images = images;
         this.maxTextLength = maxTextLength;
         this.remaining = remaining;
         this.resetsAt = resetsAt;
@@ -54,6 +58,11 @@ public final class AssistantStatus {
     @JsonProperty("dailyLimit")
     public int getDailyLimit() {
         return dailyLimit;
+    }
+
+    @JsonProperty("images")
+    public AssistantImagesStatus getImages() {
+        return images;
     }
 
     @JsonProperty("maxTextLength")
@@ -85,6 +94,7 @@ public final class AssistantStatus {
     private boolean equalTo(AssistantStatus other) {
         return available == other.available
                 && dailyLimit == other.dailyLimit
+                && images.equals(other.images)
                 && maxTextLength == other.maxTextLength
                 && remaining == other.remaining
                 && resetsAt.equals(other.resetsAt);
@@ -92,7 +102,8 @@ public final class AssistantStatus {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.available, this.dailyLimit, this.maxTextLength, this.remaining, this.resetsAt);
+        return Objects.hash(
+                this.available, this.dailyLimit, this.images, this.maxTextLength, this.remaining, this.resetsAt);
     }
 
     @java.lang.Override
@@ -111,7 +122,11 @@ public final class AssistantStatus {
     }
 
     public interface DailyLimitStage {
-        MaxTextLengthStage dailyLimit(int dailyLimit);
+        ImagesStage dailyLimit(int dailyLimit);
+    }
+
+    public interface ImagesStage {
+        MaxTextLengthStage images(@NotNull AssistantImagesStatus images);
     }
 
     public interface MaxTextLengthStage {
@@ -136,10 +151,18 @@ public final class AssistantStatus {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AvailableStage, DailyLimitStage, MaxTextLengthStage, RemainingStage, ResetsAtStage, _FinalStage {
+            implements AvailableStage,
+                    DailyLimitStage,
+                    ImagesStage,
+                    MaxTextLengthStage,
+                    RemainingStage,
+                    ResetsAtStage,
+                    _FinalStage {
         private boolean available;
 
         private int dailyLimit;
+
+        private AssistantImagesStatus images;
 
         private int maxTextLength;
 
@@ -155,6 +178,7 @@ public final class AssistantStatus {
         public Builder from(AssistantStatus other) {
             available(other.getAvailable());
             dailyLimit(other.getDailyLimit());
+            images(other.getImages());
             maxTextLength(other.getMaxTextLength());
             remaining(other.getRemaining());
             resetsAt(other.getResetsAt());
@@ -170,8 +194,15 @@ public final class AssistantStatus {
 
         @java.lang.Override
         @JsonSetter("dailyLimit")
-        public MaxTextLengthStage dailyLimit(int dailyLimit) {
+        public ImagesStage dailyLimit(int dailyLimit) {
             this.dailyLimit = dailyLimit;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("images")
+        public MaxTextLengthStage images(@NotNull AssistantImagesStatus images) {
+            this.images = Objects.requireNonNull(images, "images must not be null");
             return this;
         }
 
@@ -198,13 +229,15 @@ public final class AssistantStatus {
 
         @java.lang.Override
         public AssistantStatus build() {
-            return new AssistantStatus(available, dailyLimit, maxTextLength, remaining, resetsAt, additionalProperties);
+            return new AssistantStatus(
+                    available, dailyLimit, images, maxTextLength, remaining, resetsAt, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("available")
                     || key.equalsIgnoreCase("dailyLimit")
+                    || key.equalsIgnoreCase("images")
                     || key.equalsIgnoreCase("maxTextLength")
                     || key.equalsIgnoreCase("remaining")
                     || key.equalsIgnoreCase("resetsAt")) {

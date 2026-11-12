@@ -409,6 +409,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           edit_published_post: [false, false, true, true],
           enable_channel: [false, false, true, false],
           find_tools: [true, false, true, false],
+          generate_image: [false, false, false, true],
           get_ad_account: [true, false, true, false],
           get_ad_insights: [true, false, true, false],
           get_ads_status: [true, false, true, false],
@@ -585,7 +586,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.deepStrictEqual(
             media.tools.map(({ name }) => name),
-            ["list_media", "import_media"]
+            ["list_media", "import_media", "generate_image"]
           );
 
           // So is what a workspace saves to write its posts with.
@@ -3240,6 +3241,24 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             url
           );
         }
+      })
+    );
+
+    it.effect("make no image on a server without an image model", () =>
+      Effect.gen(function* images() {
+        const fixture = yield* ToolsFixture;
+        const reader = yield* connected(fixture.reading);
+        const writer = yield* connected(fixture.writing);
+        const lighthouse = { prompt: "A lighthouse at dawn, in watercolour." };
+
+        assert.include(
+          yield* reader.refused("generate_image", lighthouse),
+          "scope workspace:write"
+        );
+        assert.include(
+          yield* writer.refused("generate_image", lighthouse),
+          "This Peal server makes no images"
+        );
       })
     );
 

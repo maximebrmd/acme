@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class Media extends JsonSerializableType
 {
     /**
+     * @var bool $aiGenerated
+     */
+    #[JsonProperty('aiGenerated')]
+    public bool $aiGenerated;
+
+    /**
      * @var ?string $altText
      */
     #[JsonProperty('altText')]
@@ -87,6 +93,7 @@ class Media extends JsonSerializableType
 
     /**
      * @param array{
+     *   aiGenerated: bool,
      *   byteSize: int,
      *   contentType: value-of<MediaContentType>,
      *   createdAt: string,
@@ -105,6 +112,7 @@ class Media extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->aiGenerated = $values['aiGenerated'];
         $this->altText = $values['altText'] ?? null;
         $this->byteSize = $values['byteSize'];
         $this->codec = $values['codec'] ?? null;

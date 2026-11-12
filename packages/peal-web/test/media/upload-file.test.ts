@@ -20,6 +20,7 @@ const createdAt = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 const mediaId = "00000000-0000-7000-8000-000000000001";
 
 const pending: Media = {
+  aiGenerated: false,
   altText: null,
   byteSize: 0,
   codec: null,

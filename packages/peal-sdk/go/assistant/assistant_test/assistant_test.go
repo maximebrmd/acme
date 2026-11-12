@@ -134,3 +134,31 @@ func TestAssistantSuggestWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestAssistantSuggestWithWireMock", "POST", "/api/workspaces/workspaceId/assistant/suggestions", nil, 1)
 }
+
+func TestAssistantGenerateImageWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ImageRequest{
+		WorkspaceID: "workspaceId",
+		Aspect:      peal.ImageAspectSquare,
+		Prompt:      "prompt",
+	}
+	_, invocationErr := client.Assistant.GenerateImage(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssistantGenerateImageWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssistantGenerateImageWithWireMock", "POST", "/api/workspaces/workspaceId/assistant/images", nil, 1)
+}

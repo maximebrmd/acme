@@ -4,6 +4,8 @@ import {
   acceptedText,
   languageLabel,
   shortenablePlatforms,
+  writeAction,
+  writablePlatforms,
 } from "#assistant/suggestion.ts";
 
 describe(acceptedText, () => {
@@ -60,5 +62,31 @@ describe(languageLabel, () => {
 
     expect(languageLabel(french, "fr", "de")).toBe("Allemand");
     expect(languageLabel(english, "en", "zh-Hans")).toBe("Simplified Chinese");
+  });
+});
+
+describe(writablePlatforms, () => {
+  it("offers the post's platforms whose text limit is short", () => {
+    expect(
+      writablePlatforms(["linkedin", "threads", "x", "pinterest", "x"])
+    ).toStrictEqual(["x", "threads"]);
+  });
+
+  it("offers none for a post without such a platform", () => {
+    expect(writablePlatforms([])).toStrictEqual([]);
+    expect(writablePlatforms(["linkedin", "youtube"])).toStrictEqual([]);
+  });
+});
+
+describe(writeAction, () => {
+  it("names only what the person chose", () => {
+    expect(writeAction({ platform: null, tone: null })).toStrictEqual({
+      _tag: "write",
+    });
+    expect(writeAction({ platform: "x", tone: "witty" })).toStrictEqual({
+      _tag: "write",
+      platform: "x",
+      tone: "witty",
+    });
   });
 });

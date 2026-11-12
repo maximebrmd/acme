@@ -2,6 +2,9 @@ import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 import {
   CurrentMember,
+  ImageAspectSchema,
+  imageRequestCost,
+  maxImagePromptLength,
   maxMediaPageSize,
   maxMediaUrlLength,
   mediaImportSeconds,
@@ -14,7 +17,7 @@ import { ToolRefused } from "#app/mcp/tool-refused.ts";
 
 export const ListMedia = Tool.make("list_media", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's images and videos, newest first, with their type, size, dimensions, duration and description, and where each can be viewed for an hour (\`url\`). Only media whose status is \`ready\` can be attached to a post, by its \`id\`. Answers 30 a page unless \`limit\` (at most ${String(maxMediaPageSize)}) says otherwise; pass \`nextCursor\` as \`cursor\` for the next page.`,
+  description: `Lists the workspace's images and videos, newest first, with their type, size, dimensions, duration and description, whether the assistant made the file (\`aiGenerated\`), and where each can be viewed for an hour (\`url\`). Only media whose status is \`ready\` can be attached to a post, by its \`id\`. Before attaching a file made by AI, set the platform's AI label in the post's options where it has one (YouTube \`containsSyntheticMedia\`, TikTok \`aiGenerated\`, X \`madeWithAi\`): Peal sets none on its own. Answers 30 a page unless \`limit\` (at most ${String(maxMediaPageSize)}) says otherwise; pass \`nextCursor\` as \`cursor\` for the next page.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     cursor: Schema.optionalKey(Schema.String),
@@ -45,5 +48,23 @@ export const ImportMedia = Tool.make("import_media", {
   )
   .annotate(Tool.Title, "Import media from a URL");
 
+export const GenerateImage = Tool.make("generate_image", {
+  dependencies: [CurrentMember],
+  description: `Makes one image from a description with the image model this Peal server's operator chose, and adds it to the workspace's media, ready to attach to a post by its \`id\`. The \`prompt\` (1 to ${String(maxImagePromptLength)} characters, what the image should show) is sent to that image provider as it is: put nothing in it the user would not send there. Each call spends ${String(imageRequestCost)} of the workspace's daily assistant requests (given back only when the provider could not be reached), adds a file to the workspace's storage, which counts against its plan, and makes a new image, so call it once per image the user asked for. The file is stored as the provider made it and marked \`aiGenerated\`, without a description: when attaching it, say what it shows in the attachment's \`altText\`, and set the platform's AI label in the post's options (YouTube \`containsSyntheticMedia\`, TikTok \`aiGenerated\`, X \`madeWithAi\`). \`aspect\` is \`square\` (the default), \`landscape\` or \`portrait\`. It publishes nothing. Servers without an image model refuse it.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    aspect: Schema.optionalKey(ImageAspectSchema),
+    prompt: Schema.String.check(
+      Schema.isBetweenLength(1, maxImagePromptLength)
+    ),
+  }),
+  success: MediaSchema,
+})
+  // It asks a provider outside Peal, and adds to the workspace.
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Generate an image");
+
 /** The tools that read and add to the workspace's media. */
-export const MediaTools = Toolkit.make(ListMedia, ImportMedia);
+export const MediaTools = Toolkit.make(ListMedia, ImportMedia, GenerateImage);

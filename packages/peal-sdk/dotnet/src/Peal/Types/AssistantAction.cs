@@ -55,6 +55,15 @@ public record AssistantAction
     }
 
     /// <summary>
+    /// Create an instance of AssistantAction with <see cref="AssistantAction.Write"/>.
+    /// </summary>
+    public AssistantAction(AssistantAction.Write value)
+    {
+        Type = "write";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -84,6 +93,11 @@ public record AssistantAction
     /// Returns true if <see cref="Type"/> is "hashtags"
     /// </summary>
     public bool IsHashtags => Type == "hashtags";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "write"
+    /// </summary>
+    public bool IsWrite => Type == "write";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.AssistantActionRewrite"/> if <see cref="Type"/> is 'rewrite', otherwise throws an exception.
@@ -121,11 +135,21 @@ public record AssistantAction
             ? (Peal.AssistantActionHashtags)Value!
             : throw new global::System.Exception("AssistantAction.Type is not 'hashtags'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.AssistantActionWrite"/> if <see cref="Type"/> is 'write', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'write'.</exception>
+    public Peal.AssistantActionWrite AsWrite() =>
+        IsWrite
+            ? (Peal.AssistantActionWrite)Value!
+            : throw new global::System.Exception("AssistantAction.Type is not 'write'");
+
     public T Match<T>(
         Func<Peal.AssistantActionRewrite, T> onRewrite,
         Func<Peal.AssistantActionShorten, T> onShorten,
         Func<Peal.AssistantActionTranslate, T> onTranslate,
         Func<Peal.AssistantActionHashtags, T> onHashtags,
+        Func<Peal.AssistantActionWrite, T> onWrite,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -135,6 +159,7 @@ public record AssistantAction
             "shorten" => onShorten(AsShorten()),
             "translate" => onTranslate(AsTranslate()),
             "hashtags" => onHashtags(AsHashtags()),
+            "write" => onWrite(AsWrite()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -144,6 +169,7 @@ public record AssistantAction
         Action<Peal.AssistantActionShorten> onShorten,
         Action<Peal.AssistantActionTranslate> onTranslate,
         Action<Peal.AssistantActionHashtags> onHashtags,
+        Action<Peal.AssistantActionWrite> onWrite,
         Action<string, object?> onUnknown_
     )
     {
@@ -160,6 +186,9 @@ public record AssistantAction
                 break;
             case "hashtags":
                 onHashtags(AsHashtags());
+                break;
+            case "write":
+                onWrite(AsWrite());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -223,6 +252,20 @@ public record AssistantAction
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.AssistantActionWrite"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsWrite(out Peal.AssistantActionWrite? value)
+    {
+        if (Type == "write")
+        {
+            value = (Peal.AssistantActionWrite)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator AssistantAction(AssistantAction.Rewrite value) => new(value);
@@ -232,6 +275,8 @@ public record AssistantAction
     public static implicit operator AssistantAction(AssistantAction.Translate value) => new(value);
 
     public static implicit operator AssistantAction(AssistantAction.Hashtags value) => new(value);
+
+    public static implicit operator AssistantAction(AssistantAction.Write value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<AssistantAction>
@@ -286,6 +331,8 @@ public record AssistantAction
                 "hashtags" => jsonWithoutDiscriminator.Deserialize<Peal.AssistantActionHashtags?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.AssistantActionHashtags"),
+                "write" => jsonWithoutDiscriminator.Deserialize<Peal.AssistantActionWrite?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.AssistantActionWrite"),
                 _ => json.Deserialize<object?>(options),
             };
             return new AssistantAction(discriminator, value);
@@ -304,6 +351,7 @@ public record AssistantAction
                     "shorten" => JsonSerializer.SerializeToNode(value.Value, options),
                     "translate" => JsonSerializer.SerializeToNode(value.Value, options),
                     "hashtags" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "write" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -410,5 +458,24 @@ public record AssistantAction
         public static implicit operator AssistantAction.Hashtags(
             Peal.AssistantActionHashtags value
         ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for write
+    /// </summary>
+    [Serializable]
+    public struct Write
+    {
+        public Write(Peal.AssistantActionWrite value)
+        {
+            Value = value;
+        }
+
+        internal Peal.AssistantActionWrite Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator AssistantAction.Write(Peal.AssistantActionWrite value) =>
+            new(value);
     }
 }

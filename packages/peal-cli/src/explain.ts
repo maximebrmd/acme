@@ -4,6 +4,7 @@ import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
 import {
   duplicateWindowHours,
+  imageRequestCost,
   maxImportRows,
   queueHorizonDays,
 } from "peal-contract";
@@ -48,6 +49,18 @@ const size = (bytes: number): string => `${(bytes / mebibyte).toFixed(1)} MiB`;
 
 const seconds = (milliseconds: number): string =>
   `${String(milliseconds / 1000)} s`;
+
+// Why the assistant's provider made nothing usable, and what to do.
+const assistantFailures = {
+  declined:
+    "The image provider refused this description, under its content rules: nothing was made or spent. Try another description.",
+  invalidAnswer:
+    "The image provider answered with nothing Peal stores as an image: nothing was stored, and the requests it cost are spent.",
+  timedOut:
+    "The image provider took too long to answer: nothing was stored, and the requests it cost are spent, as it may have made the image.",
+  unreachable:
+    "The image provider could not be reached: nothing was spent or stored. Try again in a few minutes.",
+} as const;
 
 /** What a platform counts a text in. */
 export const units: Readonly<Record<TextUnit, string>> = {
@@ -344,6 +357,30 @@ const reasonOf =
         refused(
           "The post does not wait for an approval: none was asked, or it was already decided, withdrawn or scheduled. peal approvals list shows those that wait."
         ),
+      AssistantFailed: ({ reason }) => refused(assistantFailures[reason]),
+      AssistantInputRejected: ({ maxLength, reason }) =>
+        refused(
+          reason === "empty"
+            ? "The prompt is blank: say what the image should show."
+            : `The prompt is longer than the ${String(maxLength)} characters the assistant takes: shorten it.`
+        ),
+      // The command line asks the assistant for images only.
+      AssistantQuotaExceeded: ({ dailyLimit, planWithRoom }) => {
+        const larger =
+          planWithRoom === null
+            ? ""
+            : `, or move to the ${planWithRoom} plan, which allows more`;
+
+        return refused(
+          dailyLimit < imageRequestCost
+            ? `The workspace's plan makes no image: an image costs ${String(imageRequestCost)} assistant requests, and its day holds ${String(dailyLimit)} for images (none while a plan is on trial). Nothing was made. Upload or import a picture instead${larger}.`
+            : `The workspace has fewer of its ${String(dailyLimit)} daily assistant requests left than an image costs: nothing was made. Try again after midnight UTC${larger}.`
+        );
+      },
+      AssistantUnavailable: () =>
+        refused(
+          "This Peal server makes no images: its operator has not set up an image model, or the image provider refused the server's settings. Upload or import a picture instead."
+        ),
       BadRequest: () => refused("Peal could not read the request."),
       BoostInvalid: ({ violations }) =>
         refused(
@@ -492,7 +529,7 @@ const reasonOf =
         ),
       MediaImportBusy: () =>
         refused(
-          "The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched. Try again in a moment."
+          "The workspace already imports two files at once, or has two images being made, or the server runs as many as it takes together: nothing was fetched or made. Try again in a moment."
         ),
       MediaNotFound: () => refused("The workspace has no such media."),
       MediaSourceNotPublic: () =>

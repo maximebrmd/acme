@@ -16,6 +16,7 @@ public class ListTest : BaseMockServerTest
             {
               "items": [
                 {
+                  "aiGenerated": true,
                   "altText": "altText",
                   "byteSize": 1000000,
                   "codec": "codec",
@@ -36,6 +37,7 @@ public class ListTest : BaseMockServerTest
                   "url": "url"
                 },
                 {
+                  "aiGenerated": true,
                   "altText": "altText",
                   "byteSize": 1000000,
                   "codec": "codec",
@@ -87,6 +89,7 @@ public class ListTest : BaseMockServerTest
             {
               "items": [
                 {
+                  "aiGenerated": true,
                   "altText": "altText",
                   "byteSize": 1000000,
                   "codec": "codec",

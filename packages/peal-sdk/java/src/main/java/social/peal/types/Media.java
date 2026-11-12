@@ -24,6 +24,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Media.Builder.class)
 public final class Media {
+    private final boolean aiGenerated;
+
     private final Optional<String> altText;
 
     private final long byteSize;
@@ -53,6 +55,7 @@ public final class Media {
     private final Map<String, Object> additionalProperties;
 
     private Media(
+            boolean aiGenerated,
             Optional<String> altText,
             long byteSize,
             Optional<String> codec,
@@ -67,6 +70,7 @@ public final class Media {
             String updatedAt,
             Optional<String> url,
             Map<String, Object> additionalProperties) {
+        this.aiGenerated = aiGenerated;
         this.altText = altText;
         this.byteSize = byteSize;
         this.codec = codec;
@@ -81,6 +85,11 @@ public final class Media {
         this.updatedAt = updatedAt;
         this.url = url;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("aiGenerated")
+    public boolean getAiGenerated() {
+        return aiGenerated;
     }
 
     @JsonIgnore
@@ -214,7 +223,8 @@ public final class Media {
     }
 
     private boolean equalTo(Media other) {
-        return altText.equals(other.altText)
+        return aiGenerated == other.aiGenerated
+                && altText.equals(other.altText)
                 && byteSize == other.byteSize
                 && codec.equals(other.codec)
                 && contentType.equals(other.contentType)
@@ -232,6 +242,7 @@ public final class Media {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.aiGenerated,
                 this.altText,
                 this.byteSize,
                 this.codec,
@@ -252,14 +263,18 @@ public final class Media {
         return ObjectMappers.stringify(this);
     }
 
-    public static ByteSizeStage builder() {
+    public static AiGeneratedStage builder() {
         return new Builder();
+    }
+
+    public interface AiGeneratedStage {
+        ByteSizeStage aiGenerated(boolean aiGenerated);
+
+        Builder from(Media other);
     }
 
     public interface ByteSizeStage {
         ContentTypeStage byteSize(long byteSize);
-
-        Builder from(Media other);
     }
 
     public interface ContentTypeStage {
@@ -332,7 +347,8 @@ public final class Media {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements ByteSizeStage,
+            implements AiGeneratedStage,
+                    ByteSizeStage,
                     ContentTypeStage,
                     CreatedAtStage,
                     IdStage,
@@ -340,6 +356,8 @@ public final class Media {
                     StatusStage,
                     UpdatedAtStage,
                     _FinalStage {
+        private boolean aiGenerated;
+
         private long byteSize;
 
         private MediaContentType contentType;
@@ -372,6 +390,7 @@ public final class Media {
 
         @java.lang.Override
         public Builder from(Media other) {
+            aiGenerated(other.getAiGenerated());
             altText(other.getAltText());
             byteSize(other.getByteSize());
             codec(other.getCodec());
@@ -385,6 +404,13 @@ public final class Media {
             status(other.getStatus());
             updatedAt(other.getUpdatedAt());
             url(other.getUrl());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("aiGenerated")
+        public ByteSizeStage aiGenerated(boolean aiGenerated) {
+            this.aiGenerated = aiGenerated;
             return this;
         }
 
@@ -590,6 +616,7 @@ public final class Media {
         @java.lang.Override
         public Media build() {
             return new Media(
+                    aiGenerated,
                     altText,
                     byteSize,
                     codec,
@@ -608,7 +635,8 @@ public final class Media {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("altText")
+            if (key.equalsIgnoreCase("aiGenerated")
+                    || key.equalsIgnoreCase("altText")
                     || key.equalsIgnoreCase("byteSize")
                     || key.equalsIgnoreCase("codec")
                     || key.equalsIgnoreCase("contentType")

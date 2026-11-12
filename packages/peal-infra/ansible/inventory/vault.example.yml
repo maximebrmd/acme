@@ -46,6 +46,7 @@ peal_credentials:
   # PINTEREST_APP_ID, GOOGLE_BUSINESS_CLIENT_ID). Use the sandbox's Stripe
   # account and apps in the sandbox's vault.
   # PEAL_AI_API_KEY: REPLACE
+  # PEAL_AI_IMAGE_API_KEY: REPLACE
   # STRIPE_SECRET_KEY: REPLACE
   # STRIPE_WEBHOOK_SECRET: REPLACE
   # TURNSTILE_SECRET_KEY: REPLACE

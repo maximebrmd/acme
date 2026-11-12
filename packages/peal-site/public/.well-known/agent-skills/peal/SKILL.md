@@ -148,7 +148,7 @@ tell the user, who reconnects it in the web app. `disabled`: someone turned
 it off. Finding a channel by its name, naming it, and turning it off or on:
 [references/saved.md](references/saved.md).
 
-Store media before attaching it:
+Store media before attaching it, or have the server make an image ([references/images.md](references/images.md)):
 
 ```sh
 peal media upload ./cover.png --alt "The spring catalogue's cover" --json
