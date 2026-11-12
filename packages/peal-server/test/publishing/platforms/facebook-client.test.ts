@@ -13,6 +13,7 @@ import {
   graphAppSecret,
   metaError,
 } from "#test/publishing/fakes/fake-meta-graph.ts";
+import type { FakeMetaGraphOptions } from "#test/publishing/fakes/fake-meta-graph.ts";
 import {
   dropped,
   empty,
@@ -33,9 +34,12 @@ const pageToken = "page-token-1";
 
 // The fake Graph API, and the client publishing to it as the Page.
 const onPage = Effect.fn("test.onPage")(function* onPage(
-  options: { readonly files?: readonly TestFile[] } = {}
+  options: {
+    readonly files?: readonly TestFile[];
+    readonly graph?: FakeMetaGraphOptions;
+  } = {}
 ) {
-  const graph = yield* fakeMetaGraph([pageToken]);
+  const graph = yield* fakeMetaGraph([pageToken], options.graph);
 
   const client = yield* metaClientWith({
     appSecret: graphAppSecret,
@@ -328,6 +332,8 @@ describe("a Facebook reel", () => {
           `POST /video-upload/v27.0/${video?.id ?? ""}`,
           `GET /v27.0/${video?.id ?? ""}`,
           `POST /v27.0/${facebookPageId}/video_reels finish`,
+          // Read again for a processing error.
+          `GET /v27.0/${video?.id ?? ""}`,
         ]);
 
         const [, upload] = graph.requests();
@@ -475,6 +481,101 @@ describe("a Facebook reel", () => {
       );
     }).pipe(Effect.scoped)
   );
+
+  it.live(
+    "is left unconfirmed, never finished again, when its finish's answer is lost and publishing has not begun",
+    () =>
+      Effect.gen(function* lostNotStarted() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoPublishLag: 10 },
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        );
+
+        assert.deepStrictEqual(result, {
+          _tag: "unconfirmed",
+          reason: "noResponse",
+        });
+        assert.lengthOf(
+          steps(graph).filter((step) => step.endsWith("video_reels finish")),
+          1
+        );
+        assert.lengthOf(graph.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "waits for the upload itself, not the video's status, before the finish",
+    () =>
+      Effect.gen(function* interrupted() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoUploadReads: 2 },
+        });
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        );
+
+        const [video] = graph.videos();
+
+        assert.strictEqual(result._tag, "published");
+        assert.deepStrictEqual(steps(graph).slice(2), [
+          `GET /v27.0/${video?.id ?? ""}`,
+          `GET /v27.0/${video?.id ?? ""}`,
+          `GET /v27.0/${video?.id ?? ""}`,
+          `POST /v27.0/${facebookPageId}/video_reels finish`,
+          `GET /v27.0/${video?.id ?? ""}`,
+        ]);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("fails with Meta's processing error, and is never finished", () =>
+    Effect.gen(function* processingError() {
+      const clip = testFile("video", 4096);
+
+      const { client, graph } = yield* onPage({
+        files: [clip],
+        graph: { videoProcessingError: true },
+      });
+
+      const failure = yield* Effect.flip(
+        client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        )
+      );
+
+      assert.strictEqual(failure._tag, "MediaRejected");
+      assert.strictEqual(
+        "code" in failure ? failure.code : undefined,
+        "processingFailed"
+      );
+      assert.isFalse(
+        steps(graph).some((step) => step.endsWith("video_reels finish"))
+      );
+    }).pipe(Effect.scoped)
+  );
 });
 
 describe("a Facebook story", () => {
@@ -500,6 +601,8 @@ describe("a Facebook story", () => {
         `POST /video-upload/v27.0/${video?.id ?? ""}`,
         `GET /v27.0/${video?.id ?? ""}`,
         `POST /v27.0/${facebookPageId}/video_stories finish`,
+        // Read again for a processing error.
+        `GET /v27.0/${video?.id ?? ""}`,
       ]);
       assert.deepStrictEqual(graph.posts()[0]?.params, {
         upload_phase: "finish",
@@ -622,5 +725,65 @@ describe("a Facebook story", () => {
       });
       assert.lengthOf(callsTo(graph, "/photo_stories"), 1);
     }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video is left unconfirmed, never finished again, while Meta says published but has not begun",
+    () =>
+      Effect.gen(function* storyLag() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoPublishLag: 10 },
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_stories#finish`);
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: story,
+          })
+        );
+
+        assert.deepStrictEqual(result, {
+          _tag: "unconfirmed",
+          reason: "noResponse",
+        });
+        assert.lengthOf(
+          steps(graph).filter((step) => step.endsWith("video_stories finish")),
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video is kept under its story's post id when the finish gives none",
+    () =>
+      Effect.gen(function* withoutPostId() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { storyFinishWithoutPostId: true },
+        });
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: story,
+          })
+        );
+
+        assert.deepStrictEqual(result, {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(
+            graph.stories()[0]?.postId ?? "missing"
+          ),
+        });
+      }).pipe(Effect.scoped)
   );
 });

@@ -50,6 +50,12 @@ export interface FakeVideo {
   /** The URL Meta was told to fetch it from, once uploaded. */
   fileUrl: string | undefined;
   finished: boolean;
+  /** Status reads that still show the upload in progress. */
+  uploadReads: number;
+  /** Status reads after the finish that show publishing not begun. */
+  publishLag: number;
+  /** A story the finish made, listed once `publishLag` is over. */
+  pendingStory: FakeStory | undefined;
 }
 
 /** A story the fake's Page shows. */
@@ -60,6 +66,26 @@ export interface FakeStory {
 }
 
 export interface FakeMetaGraphOptions {
+  /**
+   * Status reads a reel's or a video story's upload shows in progress
+   * after Meta was told its URL, with `video_status: "processing"`, as
+   * Meta's sample of an interrupted upload does. Its finish is refused
+   * until the upload shows complete.
+   */
+  readonly videoUploadReads?: number;
+  /**
+   * Status reads after an accepted finish that still show publishing not
+   * begun (`not_started`, a story's `publish_status: "published"` beside
+   * it, as Meta's stories sample shows), the story not listed meanwhile.
+   */
+  readonly videoPublishLag?: number;
+  /**
+   * Meta's processing refuses every video (its sample: resolution too
+   * low), and its finish still answers success, posting nothing.
+   */
+  readonly videoProcessingError?: boolean;
+  /** A video story's finish answers success without its post id. */
+  readonly storyFinishWithoutPostId?: boolean;
   /** Polls a video container stays IN_PROGRESS for. */
   readonly videoPolls?: number;
   /** Containers whose media fails, by their media URL. */
@@ -327,6 +353,9 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
           fileUrl: undefined,
           finished: false,
           id: nextId(),
+          pendingStory: undefined,
+          publishLag: options.videoPublishLag ?? 0,
+          uploadReads: options.videoUploadReads ?? 0,
         };
 
         videos.set(video.id, video);
@@ -344,6 +373,7 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
         video === undefined ||
         video.edge !== edge ||
         video.fileUrl === undefined ||
+        video.uploadReads > 0 ||
         video.finished ||
         (edge === "video_reels" && params["video_state"] !== "PUBLISHED")
       ) {
@@ -352,6 +382,10 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
       video.finished = true;
 
+      if (options.videoProcessingError === true) {
+        return json({ success: true });
+      }
+
       if (edge === "video_reels") {
         posted(video.id, params, params["description"] ?? "");
 
@@ -359,11 +393,19 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
       }
 
       const postId = `${facebookPageId}_${nextId()}`;
+      const made: FakeStory = { mediaId: video.id, mediaType: "video", postId };
 
       posted(postId, params, "");
-      stories.push({ mediaId: video.id, mediaType: "video", postId });
 
-      return json({ post_id: postId, success: true });
+      if (video.publishLag > 0) {
+        video.pendingStory = made;
+      } else {
+        stories.push(made);
+      }
+
+      return options.storyFinishWithoutPostId === true
+        ? json({ success: true })
+        : json({ post_id: postId, success: true });
     };
 
   // A story of a photo uploaded unpublished, which no post used before.
@@ -395,22 +437,67 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
       })),
     });
 
+  // What a video's publishing shows, once its finish was accepted: not
+  // begun for `publishLag` reads, then done.
+  const publishingOf = (video: FakeVideo) => {
+    if (!video.finished || options.videoProcessingError === true) {
+      return { status: "not_started" };
+    }
+
+    if (video.publishLag > 0) {
+      video.publishLag -= 1;
+
+      if (video.publishLag === 0 && video.pendingStory !== undefined) {
+        stories.push(video.pendingStory);
+      }
+
+      return video.edge === "video_stories"
+        ? { publish_status: "published", status: "not_started" }
+        : { status: "not_started" };
+    }
+
+    return { publish_status: "published", status: "complete" };
+  };
+
   // A video's status, as Meta reports each phase.
-  const videoStatus = (video: FakeVideo): PlatformAnswer =>
-    json({
+  const videoStatus = (video: FakeVideo): PlatformAnswer => {
+    const uploaded = video.fileUrl !== undefined && video.uploadReads === 0;
+
+    if (video.fileUrl !== undefined && video.uploadReads > 0) {
+      video.uploadReads -= 1;
+    }
+
+    const processingError = options.videoProcessingError === true && uploaded;
+
+    let upload = "complete";
+    let state = processingError ? "processing" : "upload_complete";
+
+    if (video.fileUrl === undefined) {
+      upload = "not_started";
+      state = "uploading";
+    } else if (!uploaded) {
+      upload = "in_progress";
+      state = "processing";
+    }
+
+    return json({
       id: video.id,
       status: {
-        publishing_phase: {
-          publish_status: video.finished ? "published" : "draft",
-          status: video.finished ? "complete" : "not_started",
-        },
-        uploading_phase: {
-          status: video.fileUrl === undefined ? "not_started" : "complete",
-        },
-        video_status:
-          video.fileUrl === undefined ? "uploading" : "upload_complete",
+        processing_phase: processingError
+          ? {
+              error: {
+                message:
+                  "Resolution too low. Video must have a minimum resolution of 540p.",
+              },
+              status: "not_started",
+            }
+          : { status: video.finished ? "complete" : "not_started" },
+        publishing_phase: publishingOf(video),
+        uploading_phase: { status: upload },
+        video_status: state,
       },
     });
+  };
 
   // The upload host takes the Page's token in its Authorization header,
   // and the file's address in `file_url`.

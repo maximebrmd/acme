@@ -56,6 +56,15 @@ import type { GraphAuth, graphCalls, MetaHttp } from "./graph-calls.ts";
 // with its code, as any other. Nothing here searches by text, and what
 // `prepare` made lives in the run's memory only: a resumed run cannot tell
 // whether its reel or story went out, and ends unconfirmed.
+//
+// Neither page says what the status shows after an accepted finish whose
+// publishing has not begun: their samples show `not_started` beside an
+// upload done, and the stories page `publish_status: "published"` beside
+// it. So the status never rules a post out (nothing is finished twice),
+// and only a publishing phase done, or for a story its listing, confirms
+// one. A processing error (`processing_phase.error`, the reels guide's
+// sample: "Resolution too low") fails the post with MediaRejected,
+// whether it shows before the finish or right after it.
 
 /** The finish of a reel's and a video story's upload, as Meta's example writes it. */
 export const finishPhase = "finish";
@@ -84,9 +93,15 @@ const PhaseSchema = Schema.Struct({
   status: Schema.optionalKey(Schema.String),
 });
 
+const ProcessingSchema = Schema.Struct({
+  error: Schema.optionalKey(Schema.Unknown),
+  status: Schema.optionalKey(Schema.String),
+});
+
 const VideoStatusSchema = Schema.Struct({
   status: Schema.optionalKey(
     Schema.Struct({
+      processing_phase: Schema.optionalKey(ProcessingSchema),
       publishing_phase: Schema.optionalKey(PhaseSchema),
       uploading_phase: Schema.optionalKey(PhaseSchema),
       video_status: Schema.optionalKey(Schema.String),
@@ -121,8 +136,21 @@ export type StoryMedia =
 const isDone = (status: string | undefined) =>
   status === "complete" || status === "completed";
 
+// Whether Meta's processing refused the video.
+const processingFailed = (status: VideoStatus): boolean => {
+  const processing = status?.processing_phase;
+
+  return (
+    status?.video_status === "error" ||
+    processing?.status === "error" ||
+    (processing !== undefined && processing.error !== undefined)
+  );
+};
+
 // What a video's status says of its upload: refused, expired (a later
-// attempt starts again), fetched, or still being fetched.
+// attempt starts again), fetched, or still being fetched. The upload's own
+// phase decides: `video_status` says `processing` while it is still in
+// progress too (the reels guide's interrupted upload).
 const uploadReadiness = <P>(
   status: VideoStatus,
   prepared: P
@@ -133,7 +161,7 @@ const uploadReadiness = <P>(
     return Effect.fail(new MediaRejected({ code: "uploadFailed" }));
   }
 
-  if (videoStatus === "error") {
+  if (processingFailed(status)) {
     return Effect.fail(new MediaRejected({ code: "processingFailed" }));
   }
 
@@ -141,28 +169,26 @@ const uploadReadiness = <P>(
     return Effect.fail(new PlatformUnavailable());
   }
 
+  const upload = status?.uploading_phase?.status;
+
+  const uploaded =
+    upload === undefined
+      ? videoStatus === "upload_complete" || videoStatus === "ready"
+      : isDone(upload);
+
   return Effect.succeed(
-    isDone(status?.uploading_phase?.status) ||
-      videoStatus === "upload_complete" ||
-      videoStatus === "processing" ||
-      videoStatus === "ready"
+    uploaded
       ? { _tag: "ready", prepared }
       : { _tag: "processing", pollAfter: uploadPoll, prepared }
   );
 };
 
 // What a video's status says of its publishing, once its finish was
-// sent: published; never begun, so the finish did not reach Meta and may
-// be sent again (a video is published once at most); or not known.
-const publishingOf = (status: VideoStatus): LookUp["_tag"] => {
-  const phase = status?.publishing_phase;
-
-  if (phase?.publish_status === "published" || isDone(phase?.status)) {
-    return "found";
-  }
-
-  return phase?.status === "not_started" ? "absent" : "unknown";
-};
+// sent: done, or not known. Never ruled out: Meta's pages show
+// `not_started` after an upload, and do not say it means the finish did
+// not arrive, so a finish is never sent twice.
+const isPublished = (status: VideoStatus): boolean =>
+  isDone(status?.publishing_phase?.status);
 
 const published = (postId: string): Published => ({
   _tag: "published",
@@ -280,9 +306,11 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
       VideoStatusSchema
     ).pipe(Effect.map(({ status }) => status));
 
-  // The finish on `edge`: published at once, by its post id or, for a
-  // reel, its video's. An answer that does not say it succeeded settles
-  // nothing: the video's status does.
+  // The finish on `edge`: published, by its post id or, for a reel, its
+  // video's, unless the video's status read right after it shows Meta's
+  // processing refused it (a status that cannot be read says nothing). A
+  // story's finish without its post id, or an answer that does not say it
+  // succeeded, settles nothing: the lookUp does.
   const finish = (
     post: OutgoingPost,
     edge: "/video_reels" | "/video_stories",
@@ -303,10 +331,26 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
       (answer) => Effect.succeed(answer),
       (answer) => answer
     ).pipe(
-      Effect.flatMap(({ post_id: postId, success }) =>
-        success
-          ? Effect.succeed(published(idText(postId) ?? videoId))
-          : Effect.fail(new OutcomeUnknown({ reason: "unreadableResponse" }))
+      Effect.flatMap(({ post_id: postId, success }) => {
+        const id =
+          edge === "/video_reels"
+            ? (idText(postId) ?? videoId)
+            : idText(postId);
+
+        return success && id !== undefined
+          ? Effect.succeed(id)
+          : Effect.fail(new OutcomeUnknown({ reason: "unreadableResponse" }));
+      }),
+      Effect.flatMap((id) =>
+        statusOf(post, videoId).pipe(
+          Effect.map(processingFailed),
+          Effect.orElseSucceed(() => false),
+          Effect.flatMap((failed) =>
+            failed
+              ? Effect.fail(new MediaRejected({ code: "processingFailed" }))
+              : Effect.succeed(published(id))
+          )
+        )
       )
     );
 
@@ -332,35 +376,33 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
       )
     );
 
-  // A video's lookUp: its status, then, for a story, its post id among
-  // the Page's stories (the video's own id when it is not listed yet).
+  // A video's lookUp: a reel by its status's publishing phase, done; a
+  // story by its listing among the Page's stories, under its post id as
+  // the finish gives it. Anything else is not known.
   const videoLookUp = (
     post: OutgoingPost,
     videoId: string,
     story: boolean
   ): Effect.Effect<LookUp, PublishFailure> =>
-    statusOf(post, videoId).pipe(
-      Effect.flatMap((status): Effect.Effect<LookUp, PublishFailure> => {
-        const found = publishingOf(status);
-
-        if (found !== "found") {
-          return Effect.succeed({ _tag: found });
-        }
-
-        return (
-          story
-            ? listedStory(post, videoId).pipe(
-                Effect.orElseSucceed(() => Option.none<string>())
-              )
-            : Effect.succeed(Option.none<string>())
-        ).pipe(
-          Effect.map((postId) => ({
-            _tag: "found",
-            published: published(Option.getOrElse(postId, () => videoId)),
-          }))
+    story
+      ? listedStory(post, videoId).pipe(
+          Effect.map(
+            Option.match({
+              onNone: (): LookUp => ({ _tag: "unknown" }),
+              onSome: (postId): LookUp => ({
+                _tag: "found",
+                published: published(postId),
+              }),
+            })
+          )
+        )
+      : statusOf(post, videoId).pipe(
+          Effect.map((status): LookUp =>
+            isPublished(status)
+              ? { _tag: "found", published: published(videoId) }
+              : { _tag: "unknown" }
+          )
         );
-      })
-    );
 
   const unknown = Effect.succeed<LookUp>({ _tag: "unknown" });
 

@@ -549,15 +549,20 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   stories (`meta/facebook-formats.ts`) start on `video_reels` or
   `video_stories`, have Meta fetch the file on the upload host
   (`MetaHosts.facebookUpload`, the Page's token in the `Authorization`
-  header, which traces redact), poll `?fields=status` until uploaded, and
-  publish with the `finish` phase (`finishPhase`); a photo story uploads
-  its photo unpublished in `prepare`, every run its own, and publishes it
-  with `photo_stories`. Their `lookUp` reads what the run holds (a video's
-  `publishing_phase`: not started is `absent`; a story among the Page's
-  `stories` by its `media_id`, `found` or `unknown`); a resumed run
-  answers `unknown`, so a story or a reel is never sent twice. A reel is
-  published under its video's id, a story under its `post_id`, neither
-  with a permalink. Meta's 30 reels a Page a day have no endpoint or
+  header, which traces redact), poll `?fields=status` until the
+  `uploading_phase` is done (`video_status` says `processing` mid-upload
+  too), and publish with the `finish` phase (`finishPhase`), then read the
+  status once more: a `processing_phase` error, before or right after the
+  finish, is MediaRejected `processingFailed`. A photo story uploads its
+  photo unpublished in `prepare`, every run its own, and publishes it with
+  `photo_stories`. Their `lookUp` reads what the run holds and never
+  answers `absent` (Meta's samples show `not_started` after an upload, and
+  `publish_status: "published"` before a story is): a reel is `found` when
+  its `publishing_phase` is done, a story when the Page's `stories` list it
+  by its `media_id`, `unknown` otherwise; a resumed run answers `unknown`,
+  so a story or a reel is never sent twice. A reel is published under its
+  video's id, a story under its `post_id` only (a finish without it is
+  confirmed by the listing), neither with a permalink. Meta's 30 reels a Page a day have no endpoint or
   documented code: its refusal keeps Meta's code.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
