@@ -990,25 +990,6 @@ func (o *OverviewPosts) String() string {
 	return fmt.Sprintf("%#v", o)
 }
 
-type OverviewRefusal string
-
-const (
-	OverviewRefusalTwoStepRequired OverviewRefusal = "twoStepRequired"
-)
-
-func NewOverviewRefusalFromString(s string) (OverviewRefusal, error) {
-	switch s {
-	case "twoStepRequired":
-		return OverviewRefusalTwoStepRequired, nil
-	}
-	var t OverviewRefusal
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (o OverviewRefusal) Ptr() *OverviewRefusal {
-	return &o
-}
-
 var (
 	reportAcrossWorkspacesFieldFrom       = big.NewInt(1 << 0)
 	reportAcrossWorkspacesFieldNextCursor = big.NewInt(1 << 1)

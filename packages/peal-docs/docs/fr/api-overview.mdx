@@ -36,7 +36,7 @@ En dehors des sondes de santé et des documents que les plateformes lisent sur P
 - **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté : `workspace:read` lit, `workspace:write` fait ce que votre rôle permet, sauf ce qui fait partir des publications, et `workspace:publish` programme et publie ([Ce que permet chaque permission](/agents#scopes)). Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui. Un quatrième scope, `workspace:ads`, n’ouvre rien seul : avec `workspace:write` il gère les comptes publicitaires, et avec `workspace:publish` il dépense en [publicités](/ads#access).
 - **Le cookie de session** de l’application web, pour l’application web elle-même. Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.
 
-Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste vos espaces de travail, avec votre rôle et vos permissions dans chacun. Une clé d’API appartient à un espace de travail, pas à une personne, et y reçoit 403.
+Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste vos espaces de travail, avec votre rôle et vos permissions dans chacun. Une clé d’API appartient à un espace de travail, pas à une personne, et y reçoit 403. Tout identifiant, une clé ou une clé partenaire comprise, demande à `GET /api/credential` qui il est et ce qu’il peut faire : le nom, l’espace de travail, les permissions et l’expiration d’une clé d’API, le partenaire, les portées et les permissions d’une clé partenaire, jamais la clé elle-même ([SDK](/sdks#credential)).
 
 ## Espaces de travail [#workspaces]
 
@@ -118,4 +118,4 @@ Le catalogue d’API, à `/.well-known/api-catalog` (RFC 9727), indique aux prog
 
 ## Référence [#reference]
 
-La [référence de l’API](/reference) propose une page par point d’accès, avec ses paramètres, les schémas de requête et de réponse, et des exemples de code ; les pages sont regroupées par tag.
+La [référence de l’API](/reference) propose une page par point d’accès, avec ses paramètres, les schémas de requête et de réponse, et des exemples de code ; les pages sont regroupées par tag. Les [SDK](/sdks) les appellent depuis huit langages.

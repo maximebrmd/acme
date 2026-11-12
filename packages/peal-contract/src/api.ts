@@ -19,6 +19,7 @@ import { ConnectLinksApi } from "./connect-links.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
+import { CredentialApi } from "./credential.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { FeedsApi } from "./feeds.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
@@ -1424,6 +1425,23 @@ export { MeSchema, MembershipSchema } from "./session.ts";
 
 export type { Me, Membership } from "./session.ts";
 
+export {
+  CredentialApi,
+  CredentialApplicationSchema,
+  CredentialBindingSchema,
+  CredentialPartnerSchema,
+  CredentialSchema,
+  CredentialWorkspaceSchema,
+} from "./credential.ts";
+
+export type {
+  Credential,
+  CredentialApplication,
+  CredentialBinding,
+  CredentialPartner,
+  CredentialWorkspace,
+} from "./credential.ts";
+
 export { ScheduleInPast } from "./schedule-in-past.ts";
 
 export {
@@ -2042,6 +2060,7 @@ export { WorkspaceNotFound } from "./workspace-not-found.ts";
 export class Api extends HttpApi.make("peal")
   .add(SystemApi)
   .add(SessionApi)
+  .add(CredentialApi)
   .add(ApiKeysApi)
   .add(ChannelsApi)
   .add(ChannelOAuthApi)

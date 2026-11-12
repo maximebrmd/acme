@@ -430,6 +430,11 @@ The staff context follows these rules too. What the law has a host keep is in
   partner owns and answers 404 for every other, the home workspace
   included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for
   people answer it 403, and `/api/partner` answers 403 to anything else.
+  `GET /api/credential` (`CredentialCheck`) answers every principal, a
+  partner key included, with its partner, scopes and permissions, never
+  its workspaces; a session or token of a member a workspace refuses is
+  answered too (the bound workspace `refused`), as it names no data, and
+  `Authentication` alone guards it: never add the workspace policy there.
   `test/workspace/integration/partners.test.ts` holds the matrix: add a
   new workspace group to it.
 - `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,

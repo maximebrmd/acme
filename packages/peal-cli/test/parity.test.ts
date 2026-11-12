@@ -121,6 +121,7 @@ const coverage = {
   "connectLinks.get": by("links show"),
   "connectLinks.list": by("links list"),
   "connectLinks.revoke": by("links revoke"),
+  "credential.get": by("whoami"),
   "feeds.create": by("feeds add"),
   "feeds.delete": by("feeds remove"),
   "feeds.get": by("feeds show"),

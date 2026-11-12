@@ -85,7 +85,9 @@ export const authorize = Effect.fn("authorize")(function* authorize(
   person: Person,
   clientId: string,
   workspaceId: string,
-  scope: string
+  scope: string,
+  // The API the token is for: the MCP endpoint unless told otherwise.
+  resource: string = mcpResource
 ) {
   const app = yield* TestApp;
   const verifier = base64Url(randomBytes(32));
@@ -96,7 +98,7 @@ export const authorize = Effect.fn("authorize")(function* authorize(
     code_challenge: challenge,
     code_challenge_method: "S256",
     redirect_uri: redirectUri,
-    resource: mcpResource,
+    resource,
     response_type: "code",
     scope,
     state: "mcp-test",
@@ -162,7 +164,7 @@ export const authorize = Effect.fn("authorize")(function* authorize(
       code_verifier: verifier,
       grant_type: "authorization_code",
       redirect_uri: redirectUri,
-      resource: mcpResource,
+      resource,
     },
   });
 

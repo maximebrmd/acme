@@ -4669,28 +4669,6 @@ func TestStringWorkspaceReport(t *testing.T) {
 	})
 }
 
-func TestEnumOverviewRefusal(t *testing.T) {
-	t.Run("NewFromString_twoStepRequired", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewOverviewRefusalFromString("twoStepRequired")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, OverviewRefusal("twoStepRequired"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewOverviewRefusalFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewOverviewRefusalFromString("twoStepRequired")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestExtraPropertiesAgendaItem(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()

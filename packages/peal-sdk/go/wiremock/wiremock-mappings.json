@@ -114,6 +114,38 @@
       "postServeActions": []
     },
     {
+      "id": "bfba20ae-8cbc-4673-a866-70c67b47be8d",
+      "name": "Check the credential - default",
+      "request": {
+        "urlPathTemplate": "/api/credential",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"application\": {\n    \"binding\": {\n      \"_tag\": \"unbound\"\n    },\n    \"clientId\": \"clientId\",\n    \"scopes\": [\n      \"scopes\"\n    ]\n  },\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"userId\": \"userId\",\n  \"_tag\": \"user\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "bfba20ae-8cbc-4673-a866-70c67b47be8d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "56689693-bb24-454a-9822-9af707ec0061",
       "name": "List API keys - default",
       "request": {
@@ -7468,6 +7500,6 @@
     }
   ],
   "meta": {
-    "total": 199
+    "total": 200
   }
 }

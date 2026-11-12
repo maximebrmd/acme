@@ -626,32 +626,6 @@ func (p *PartnerKey) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// What a partner key may do with its partner's workspaces.
-type PartnerScope string
-
-const (
-	PartnerScopeWorkspacesRead   PartnerScope = "workspaces:read"
-	PartnerScopeWorkspacesWrite  PartnerScope = "workspaces:write"
-	PartnerScopeWorkspacesDelete PartnerScope = "workspaces:delete"
-)
-
-func NewPartnerScopeFromString(s string) (PartnerScope, error) {
-	switch s {
-	case "workspaces:read":
-		return PartnerScopeWorkspacesRead, nil
-	case "workspaces:write":
-		return PartnerScopeWorkspacesWrite, nil
-	case "workspaces:delete":
-		return PartnerScopeWorkspacesDelete, nil
-	}
-	var t PartnerScope
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (p PartnerScope) Ptr() *PartnerScope {
-	return &p
-}
-
 var (
 	partnerStandingFieldCanOpen = big.NewInt(1 << 0)
 	partnerStandingFieldPartner = big.NewInt(1 << 1)
