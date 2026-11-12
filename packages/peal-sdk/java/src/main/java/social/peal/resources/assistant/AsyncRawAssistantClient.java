@@ -34,10 +34,15 @@ import social.peal.errors.ServiceUnavailableError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
+import social.peal.resources.assistant.requests.ImageProviderAssistantRequest;
+import social.peal.resources.assistant.requests.ImageProviderChange;
 import social.peal.resources.assistant.requests.ImageRequest;
+import social.peal.resources.assistant.requests.RemoveImageProviderAssistantRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
+import social.peal.types.ImageProvider;
+import social.peal.types.ImageProviderSetting;
 import social.peal.types.Media;
 import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Suggestion;
@@ -51,14 +56,14 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(String workspaceId) {
         return status(workspaceId, StatusAssistantRequest.builder().build());
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, RequestOptions requestOptions) {
@@ -66,7 +71,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request) {
@@ -74,7 +79,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -300,14 +305,14 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included; if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
      */
     public CompletableFuture<PealClientHttpResponse<Media>> generateImage(String workspaceId, ImageRequest request) {
         return generateImage(workspaceId, request, null);
     }
 
     /**
-     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included; if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
      */
     public CompletableFuture<PealClientHttpResponse<Media>> generateImage(
             String workspaceId, ImageRequest request, RequestOptions requestOptions) {
@@ -399,6 +404,385 @@ public class AsyncRawAssistantClient {
                                 return;
                             case 503:
                                 future.completeExceptionally(new ServiceUnavailableError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(String workspaceId) {
+        return imageProvider(
+                workspaceId, ImageProviderAssistantRequest.builder().build());
+    }
+
+    /**
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
+            String workspaceId, RequestOptions requestOptions) {
+        return imageProvider(
+                workspaceId, ImageProviderAssistantRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
+            String workspaceId, ImageProviderAssistantRequest request) {
+        return imageProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
+            String workspaceId, ImageProviderAssistantRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("image-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ImageProviderSetting.class),
+                                response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address's origin, never shows it again, and never sends it to another origin: <code>apiKey</code> may be left out to keep the stored one while the origin stays the same. The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
+            String workspaceId, ImageProviderChange request) {
+        return setImageProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address's origin, never shows it again, and never sends it to another origin: <code>apiKey</code> may be left out to keep the stored one while the origin stays the same. The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
+            String workspaceId, ImageProviderChange request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("image-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
+                .url(httpUrl.build())
+                .method("PUT", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<ImageProvider>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ImageProvider.class),
+                                response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 422:
+                                future.completeExceptionally(new UnprocessableEntityError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 503:
+                                future.completeExceptionally(new ServiceUnavailableError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(String workspaceId) {
+        return removeImageProvider(
+                workspaceId, RemoveImageProviderAssistantRequest.builder().build());
+    }
+
+    /**
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
+            String workspaceId, RequestOptions requestOptions) {
+        return removeImageProvider(
+                workspaceId, RemoveImageProviderAssistantRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
+            String workspaceId, RemoveImageProviderAssistantRequest request) {
+        return removeImageProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
+            String workspaceId, RemoveImageProviderAssistantRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("image-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "DELETE",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null, null))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<Void>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(null, response));
+                        return;
+                    }
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;

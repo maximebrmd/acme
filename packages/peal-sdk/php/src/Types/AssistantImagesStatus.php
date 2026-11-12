@@ -39,12 +39,19 @@ class AssistantImagesStatus extends JsonSerializableType
     public int $requestCost;
 
     /**
+     * @var ?value-of<AssistantImageSource> $source
+     */
+    #[JsonProperty('source')]
+    public ?string $source;
+
+    /**
      * @param array{
      *   aspects: array<value-of<ImageAspect>>,
      *   available: bool,
      *   dailyLimit: int,
      *   maxPromptLength: int,
      *   requestCost: int,
+     *   source?: ?value-of<AssistantImageSource>,
      * } $values
      */
     public function __construct(
@@ -55,6 +62,7 @@ class AssistantImagesStatus extends JsonSerializableType
         $this->dailyLimit = $values['dailyLimit'];
         $this->maxPromptLength = $values['maxPromptLength'];
         $this->requestCost = $values['requestCost'];
+        $this->source = $values['source'] ?? null;
     }
 
     /**

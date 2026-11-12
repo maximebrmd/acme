@@ -111,17 +111,25 @@ if typing.TYPE_CHECKING:
     from .assistant_failed_encoded import AssistantFailedEncoded
     from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
     from .assistant_failed_encoded_tag import AssistantFailedEncodedTag
+    from .assistant_image_source import AssistantImageSource
     from .assistant_images_status import AssistantImagesStatus
     from .assistant_input_rejected_encoded import AssistantInputRejectedEncoded
     from .assistant_input_rejected_encoded_reason import AssistantInputRejectedEncodedReason
     from .assistant_input_rejected_encoded_tag import AssistantInputRejectedEncodedTag
     from .assistant_quota_exceeded_encoded import AssistantQuotaExceededEncoded
+    from .assistant_secrets_not_configured_encoded import AssistantSecretsNotConfiguredEncoded
+    from .assistant_secrets_not_configured_encoded_tag import AssistantSecretsNotConfiguredEncodedTag
     from .assistant_status import AssistantStatus
     from .assistant_tone import AssistantTone
     from .assistant_unavailable_encoded import AssistantUnavailableEncoded
     from .assistant_unavailable_encoded_tag import AssistantUnavailableEncodedTag
     from .attempt_result import AttemptResult
     from .authorization import Authorization
+    from .bad_gateway_error_body import (
+        BadGatewayErrorBody,
+        BadGatewayErrorBody_AssistantFailed,
+        BadGatewayErrorBody_ImageProviderRefused,
+    )
     from .bad_request_error_body import (
         BadRequestErrorBody,
         BadRequestErrorBody_BadRequest,
@@ -342,6 +350,13 @@ if typing.TYPE_CHECKING:
     from .hosted_connect_failure import HostedConnectFailure
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
     from .image_aspect import ImageAspect
+    from .image_provider import ImageProvider
+    from .image_provider_address_refusal import ImageProviderAddressRefusal
+    from .image_provider_address_refused_encoded import ImageProviderAddressRefusedEncoded
+    from .image_provider_key_required_encoded import ImageProviderKeyRequiredEncoded
+    from .image_provider_refused_encoded import ImageProviderRefusedEncoded
+    from .image_provider_refused_encoded_reason import ImageProviderRefusedEncodedReason
+    from .image_provider_setting import ImageProviderSetting
     from .import_cell_problem import ImportCellProblem
     from .import_cell_problem_problem import ImportCellProblemProblem
     from .import_column import ImportColumn
@@ -985,17 +1000,23 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantFailedEncoded": ".assistant_failed_encoded",
     "AssistantFailedEncodedReason": ".assistant_failed_encoded_reason",
     "AssistantFailedEncodedTag": ".assistant_failed_encoded_tag",
+    "AssistantImageSource": ".assistant_image_source",
     "AssistantImagesStatus": ".assistant_images_status",
     "AssistantInputRejectedEncoded": ".assistant_input_rejected_encoded",
     "AssistantInputRejectedEncodedReason": ".assistant_input_rejected_encoded_reason",
     "AssistantInputRejectedEncodedTag": ".assistant_input_rejected_encoded_tag",
     "AssistantQuotaExceededEncoded": ".assistant_quota_exceeded_encoded",
+    "AssistantSecretsNotConfiguredEncoded": ".assistant_secrets_not_configured_encoded",
+    "AssistantSecretsNotConfiguredEncodedTag": ".assistant_secrets_not_configured_encoded_tag",
     "AssistantStatus": ".assistant_status",
     "AssistantTone": ".assistant_tone",
     "AssistantUnavailableEncoded": ".assistant_unavailable_encoded",
     "AssistantUnavailableEncodedTag": ".assistant_unavailable_encoded_tag",
     "AttemptResult": ".attempt_result",
     "Authorization": ".authorization",
+    "BadGatewayErrorBody": ".bad_gateway_error_body",
+    "BadGatewayErrorBody_AssistantFailed": ".bad_gateway_error_body",
+    "BadGatewayErrorBody_ImageProviderRefused": ".bad_gateway_error_body",
     "BadRequestErrorBody": ".bad_request_error_body",
     "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
     "BadRequestErrorBody_InvalidDateRange": ".bad_request_error_body",
@@ -1215,6 +1236,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "HostedConnectFailure": ".hosted_connect_failure",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
     "ImageAspect": ".image_aspect",
+    "ImageProvider": ".image_provider",
+    "ImageProviderAddressRefusal": ".image_provider_address_refusal",
+    "ImageProviderAddressRefusedEncoded": ".image_provider_address_refused_encoded",
+    "ImageProviderKeyRequiredEncoded": ".image_provider_key_required_encoded",
+    "ImageProviderRefusedEncoded": ".image_provider_refused_encoded",
+    "ImageProviderRefusedEncodedReason": ".image_provider_refused_encoded_reason",
+    "ImageProviderSetting": ".image_provider_setting",
     "ImportCellProblem": ".import_cell_problem",
     "ImportCellProblemProblem": ".import_cell_problem_problem",
     "ImportColumn": ".import_column",
@@ -1871,17 +1899,23 @@ __all__ = [
     "AssistantFailedEncoded",
     "AssistantFailedEncodedReason",
     "AssistantFailedEncodedTag",
+    "AssistantImageSource",
     "AssistantImagesStatus",
     "AssistantInputRejectedEncoded",
     "AssistantInputRejectedEncodedReason",
     "AssistantInputRejectedEncodedTag",
     "AssistantQuotaExceededEncoded",
+    "AssistantSecretsNotConfiguredEncoded",
+    "AssistantSecretsNotConfiguredEncodedTag",
     "AssistantStatus",
     "AssistantTone",
     "AssistantUnavailableEncoded",
     "AssistantUnavailableEncodedTag",
     "AttemptResult",
     "Authorization",
+    "BadGatewayErrorBody",
+    "BadGatewayErrorBody_AssistantFailed",
+    "BadGatewayErrorBody_ImageProviderRefused",
     "BadRequestErrorBody",
     "BadRequestErrorBody_BadRequest",
     "BadRequestErrorBody_InvalidDateRange",
@@ -2101,6 +2135,13 @@ __all__ = [
     "HostedConnectFailure",
     "IdempotencyKeyReusedEncoded",
     "ImageAspect",
+    "ImageProvider",
+    "ImageProviderAddressRefusal",
+    "ImageProviderAddressRefusedEncoded",
+    "ImageProviderKeyRequiredEncoded",
+    "ImageProviderRefusedEncoded",
+    "ImageProviderRefusedEncodedReason",
+    "ImageProviderSetting",
     "ImportCellProblem",
     "ImportCellProblemProblem",
     "ImportColumn",

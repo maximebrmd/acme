@@ -7,6 +7,8 @@ from ..core.request_options import RequestOptions
 from ..types.assistant_action import AssistantAction
 from ..types.assistant_status import AssistantStatus
 from ..types.image_aspect import ImageAspect
+from ..types.image_provider import ImageProvider
+from ..types.image_provider_setting import ImageProviderSetting
 from ..types.media import Media
 from ..types.suggestion import Suggestion
 from .raw_client import AsyncRawAssistantClient, RawAssistantClient
@@ -32,7 +34,7 @@ class AssistantClient:
 
     def status(self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AssistantStatus:
         """
-        Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
+        Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
 
         Parameters
         ----------
@@ -114,7 +116,7 @@ class AssistantClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Media:
         """
-        Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+        Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included; if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (`images.source`).
 
         Parameters
         ----------
@@ -150,6 +152,117 @@ class AssistantClient:
         )
         return _response.data
 
+    def image_provider(
+        self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> ImageProviderSetting:
+        """
+        Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (`POST {baseUrl}/images/generations`), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ImageProviderSetting
+            ImageProviderSetting
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.assistant.image_provider(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.image_provider(workspace_id, request_options=request_options)
+        return _response.data
+
+    def set_image_provider(
+        self,
+        workspace_id: str,
+        *,
+        base_url: str,
+        model: str,
+        api_key: typing.Optional[str] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ImageProvider:
+        """
+        Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (`POST {baseUrl}/images/generations`), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to `baseUrl` with `apiKey` as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address's origin, never shows it again, and never sends it to another origin: `apiKey` may be left out to keep the stored one while the origin stays the same. The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        base_url : str
+
+        model : str
+
+        api_key : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ImageProvider
+            ImageProvider
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.assistant.set_image_provider(
+            workspace_id="workspaceId",
+            base_url="baseUrl",
+            model="model",
+        )
+        """
+        _response = self._raw_client.set_image_provider(
+            workspace_id, base_url=base_url, model=model, api_key=api_key, request_options=request_options
+        )
+        return _response.data
+
+    def remove_image_provider(
+        self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> None:
+        """
+        Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.assistant.remove_image_provider(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.remove_image_provider(workspace_id, request_options=request_options)
+        return _response.data
+
 
 class AsyncAssistantClient:
     def __init__(self, *, client_wrapper: AsyncClientWrapper):
@@ -170,7 +283,7 @@ class AsyncAssistantClient:
         self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AssistantStatus:
         """
-        Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
+        Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
 
         Parameters
         ----------
@@ -270,7 +383,7 @@ class AsyncAssistantClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Media:
         """
-        Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+        Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included; if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (`images.source`).
 
         Parameters
         ----------
@@ -312,4 +425,139 @@ class AsyncAssistantClient:
         _response = await self._raw_client.generate_image(
             workspace_id, aspect=aspect, prompt=prompt, request_options=request_options
         )
+        return _response.data
+
+    async def image_provider(
+        self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> ImageProviderSetting:
+        """
+        Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (`POST {baseUrl}/images/generations`), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ImageProviderSetting
+            ImageProviderSetting
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.assistant.image_provider(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.image_provider(workspace_id, request_options=request_options)
+        return _response.data
+
+    async def set_image_provider(
+        self,
+        workspace_id: str,
+        *,
+        base_url: str,
+        model: str,
+        api_key: typing.Optional[str] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ImageProvider:
+        """
+        Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (`POST {baseUrl}/images/generations`), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to `baseUrl` with `apiKey` as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address's origin, never shows it again, and never sends it to another origin: `apiKey` may be left out to keep the stored one while the origin stays the same. The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        base_url : str
+
+        model : str
+
+        api_key : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ImageProvider
+            ImageProvider
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.assistant.set_image_provider(
+                workspace_id="workspaceId",
+                base_url="baseUrl",
+                model="model",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.set_image_provider(
+            workspace_id, base_url=base_url, model=model, api_key=api_key, request_options=request_options
+        )
+        return _response.data
+
+    async def remove_image_provider(
+        self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> None:
+        """
+        Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.assistant.remove_image_provider(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.remove_image_provider(workspace_id, request_options=request_options)
         return _response.data

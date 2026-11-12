@@ -15,6 +15,7 @@ enum Permission: string
     case ApiKeyUpdate = "apiKey:update";
     case ApiKeyDelete = "apiKey:delete";
     case AssistantUse = "assistant:use";
+    case AssistantConfigure = "assistant:configure";
     case BillingRead = "billing:read";
     case BillingManage = "billing:manage";
     case ChannelRead = "channel:read";

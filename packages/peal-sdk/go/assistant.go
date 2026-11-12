@@ -76,6 +76,135 @@ func (i *ImageRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	imageProviderAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type ImageProviderAssistantRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (i *ImageProviderAssistantRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderAssistantRequest) SetWorkspaceID(workspaceID string) {
+	i.WorkspaceID = workspaceID
+	i.require(imageProviderAssistantRequestFieldWorkspaceID)
+}
+
+var (
+	removeImageProviderAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type RemoveImageProviderAssistantRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *RemoveImageProviderAssistantRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RemoveImageProviderAssistantRequest) SetWorkspaceID(workspaceID string) {
+	r.WorkspaceID = workspaceID
+	r.require(removeImageProviderAssistantRequestFieldWorkspaceID)
+}
+
+var (
+	imageProviderChangeFieldWorkspaceID = big.NewInt(1 << 0)
+	imageProviderChangeFieldAPIKey      = big.NewInt(1 << 1)
+	imageProviderChangeFieldBaseURL     = big.NewInt(1 << 2)
+	imageProviderChangeFieldModel       = big.NewInt(1 << 3)
+)
+
+type ImageProviderChange struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	APIKey      *string `json:"apiKey,omitempty" url:"-"`
+	BaseURL     string  `json:"baseUrl" url:"-"`
+	Model       string  `json:"model" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (i *ImageProviderChange) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderChange) SetWorkspaceID(workspaceID string) {
+	i.WorkspaceID = workspaceID
+	i.require(imageProviderChangeFieldWorkspaceID)
+}
+
+// SetAPIKey sets the APIKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderChange) SetAPIKey(apiKey *string) {
+	i.APIKey = apiKey
+	i.require(imageProviderChangeFieldAPIKey)
+}
+
+// SetBaseURL sets the BaseURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderChange) SetBaseURL(baseURL string) {
+	i.BaseURL = baseURL
+	i.require(imageProviderChangeFieldBaseURL)
+}
+
+// SetModel sets the Model field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderChange) SetModel(model string) {
+	i.Model = model
+	i.require(imageProviderChangeFieldModel)
+}
+
+func (i *ImageProviderChange) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProviderChange
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*i = ImageProviderChange(body)
+	return nil
+}
+
+func (i *ImageProviderChange) MarshalJSON() ([]byte, error) {
+	type embed ImageProviderChange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	statusAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
 )
 
@@ -809,20 +938,49 @@ func (a *AssistantActionWrite) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AssistantImageSource string
+
+const (
+	AssistantImageSourceWorkspace AssistantImageSource = "workspace"
+	AssistantImageSourceServer    AssistantImageSource = "server"
+)
+
+func NewAssistantImageSourceFromString(s string) (AssistantImageSource, error) {
+	switch s {
+	case "workspace":
+		return AssistantImageSourceWorkspace, nil
+	case "server":
+		return AssistantImageSourceServer, nil
+	}
+	var t AssistantImageSource
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantImageSource) Ptr() *AssistantImageSource {
+	return &a
+}
+
 var (
 	assistantImagesStatusFieldAspects         = big.NewInt(1 << 0)
 	assistantImagesStatusFieldAvailable       = big.NewInt(1 << 1)
 	assistantImagesStatusFieldDailyLimit      = big.NewInt(1 << 2)
 	assistantImagesStatusFieldMaxPromptLength = big.NewInt(1 << 3)
 	assistantImagesStatusFieldRequestCost     = big.NewInt(1 << 4)
+	assistantImagesStatusFieldSource          = big.NewInt(1 << 5)
 )
 
+// assistantImagesStatusNullableFields maps the wire names of AssistantImagesStatus's nullable fields (required or optional) to their field bits.
+var assistantImagesStatusNullableFields = map[string]*big.Int{
+	"source": assistantImagesStatusFieldSource,
+}
+
 type AssistantImagesStatus struct {
-	Aspects         []ImageAspect `json:"aspects" url:"aspects"`
-	Available       bool          `json:"available" url:"available"`
-	DailyLimit      int           `json:"dailyLimit" url:"dailyLimit"`
-	MaxPromptLength int           `json:"maxPromptLength" url:"maxPromptLength"`
-	RequestCost     int           `json:"requestCost" url:"requestCost"`
+	Aspects         []ImageAspect         `json:"aspects" url:"aspects"`
+	Available       bool                  `json:"available" url:"available"`
+	DailyLimit      int                   `json:"dailyLimit" url:"dailyLimit"`
+	MaxPromptLength int                   `json:"maxPromptLength" url:"maxPromptLength"`
+	RequestCost     int                   `json:"requestCost" url:"requestCost"`
+	Source          *AssistantImageSource `json:"source,omitempty" url:"source,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -864,6 +1022,13 @@ func (a *AssistantImagesStatus) GetRequestCost() int {
 		return 0
 	}
 	return a.RequestCost
+}
+
+func (a *AssistantImagesStatus) GetSource() *AssistantImageSource {
+	if a == nil {
+		return nil
+	}
+	return a.Source
 }
 
 func (a *AssistantImagesStatus) GetExtraProperties() map[string]interface{} {
@@ -917,6 +1082,13 @@ func (a *AssistantImagesStatus) SetRequestCost(requestCost int) {
 	a.require(assistantImagesStatusFieldRequestCost)
 }
 
+// SetSource sets the Source field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetSource(source *AssistantImageSource) {
+	a.Source = source
+	a.require(assistantImagesStatusFieldSource)
+}
+
 func (a *AssistantImagesStatus) UnmarshalJSON(data []byte) error {
 	type unmarshaler AssistantImagesStatus
 	var value unmarshaler
@@ -929,6 +1101,13 @@ func (a *AssistantImagesStatus) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	a.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, assistantImagesStatusNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		a.require(presentFields)
+	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -1179,6 +1358,254 @@ func NewImageAspectFromString(s string) (ImageAspect, error) {
 
 func (i ImageAspect) Ptr() *ImageAspect {
 	return &i
+}
+
+var (
+	imageProviderFieldBaseURL       = big.NewInt(1 << 0)
+	imageProviderFieldKeySet        = big.NewInt(1 << 1)
+	imageProviderFieldKeyUnreadable = big.NewInt(1 << 2)
+	imageProviderFieldModel         = big.NewInt(1 << 3)
+	imageProviderFieldUpdatedAt     = big.NewInt(1 << 4)
+)
+
+type ImageProvider struct {
+	BaseURL       string `json:"baseUrl" url:"baseUrl"`
+	KeySet        bool   `json:"keySet" url:"keySet"`
+	KeyUnreadable bool   `json:"keyUnreadable" url:"keyUnreadable"`
+	Model         string `json:"model" url:"model"`
+	UpdatedAt     string `json:"updatedAt" url:"updatedAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImageProvider) GetBaseURL() string {
+	if i == nil {
+		return ""
+	}
+	return i.BaseURL
+}
+
+func (i *ImageProvider) GetKeySet() bool {
+	if i == nil {
+		return false
+	}
+	return i.KeySet
+}
+
+func (i *ImageProvider) GetKeyUnreadable() bool {
+	if i == nil {
+		return false
+	}
+	return i.KeyUnreadable
+}
+
+func (i *ImageProvider) GetModel() string {
+	if i == nil {
+		return ""
+	}
+	return i.Model
+}
+
+func (i *ImageProvider) GetUpdatedAt() string {
+	if i == nil {
+		return ""
+	}
+	return i.UpdatedAt
+}
+
+func (i *ImageProvider) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImageProvider) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetBaseURL sets the BaseURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProvider) SetBaseURL(baseURL string) {
+	i.BaseURL = baseURL
+	i.require(imageProviderFieldBaseURL)
+}
+
+// SetKeySet sets the KeySet field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProvider) SetKeySet(keySet bool) {
+	i.KeySet = keySet
+	i.require(imageProviderFieldKeySet)
+}
+
+// SetKeyUnreadable sets the KeyUnreadable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProvider) SetKeyUnreadable(keyUnreadable bool) {
+	i.KeyUnreadable = keyUnreadable
+	i.require(imageProviderFieldKeyUnreadable)
+}
+
+// SetModel sets the Model field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProvider) SetModel(model string) {
+	i.Model = model
+	i.require(imageProviderFieldModel)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProvider) SetUpdatedAt(updatedAt string) {
+	i.UpdatedAt = updatedAt
+	i.require(imageProviderFieldUpdatedAt)
+}
+
+func (i *ImageProvider) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProvider
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImageProvider(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImageProvider) MarshalJSON() ([]byte, error) {
+	type embed ImageProvider
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImageProvider) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	imageProviderSettingFieldProvider = big.NewInt(1 << 0)
+)
+
+// imageProviderSettingNullableFields maps the wire names of ImageProviderSetting's nullable fields (required or optional) to their field bits.
+var imageProviderSettingNullableFields = map[string]*big.Int{
+	"provider": imageProviderSettingFieldProvider,
+}
+
+type ImageProviderSetting struct {
+	Provider *ImageProvider `json:"provider,omitempty" url:"provider,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImageProviderSetting) GetProvider() *ImageProvider {
+	if i == nil {
+		return nil
+	}
+	return i.Provider
+}
+
+func (i *ImageProviderSetting) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImageProviderSetting) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderSetting) SetProvider(provider *ImageProvider) {
+	i.Provider = provider
+	i.require(imageProviderSettingFieldProvider)
+}
+
+func (i *ImageProviderSetting) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProviderSetting
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImageProviderSetting(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, imageProviderSettingNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		i.require(presentFields)
+	}
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImageProviderSetting) MarshalJSON() ([]byte, error) {
+	type embed ImageProviderSetting
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImageProviderSetting) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
 }
 
 type Suggestion struct {
