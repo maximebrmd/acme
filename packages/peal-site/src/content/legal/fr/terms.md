@@ -8,17 +8,19 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de ces conditions
 
-Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par Maxime Bourmaud EI (« nous »), 15 rue Paul Verlaine, 85710 La Garnache, France, SIREN 991 631 607. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
+Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par Maxime Bourmaud EI (« nous »), 15 rue Paul Verlaine, 85710 La Garnache, France, SIREN 991 631 607. Vous acceptez ces conditions en créant un compte, puis de nouveau en souscrivant un abonnement payant.
 
 Elles ne couvrent pas le code source de Peal. Le code source fait l’objet d’une licence distincte, la Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), qui encadre son auto-hébergement, sa modification et sa redistribution, à l’exception des SDK et du contrat de l’API à partir duquel ils sont générés, qui relèvent de la licence Apache, version 2.0.
 
 ## Le service
 
-Peal vous permet de rédiger des publications, de les planifier sur les plateformes de réseaux sociaux que vous connectez et de suivre leurs performances. [Décrire les offres et fonctionnalités proposées, ou renvoyer à leur description.]
+Peal vous permet de rédiger des publications, de les planifier sur les plateformes de réseaux sociaux que vous connectez et de suivre leurs performances. Chaque abonnement, y compris le gratuit, comprend toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande ; les abonnements diffèrent par le nombre de canaux, de membres, de publications et de demandes à l’assistant de rédaction, et par l’espace de stockage des médias qu’ils permettent. La [page des tarifs](/fr/pricing/) les présente, avec leurs prix, et l’essai gratuit.
 
 ## Comptes et organisations
 
-[Qui peut créer un compte, y compris l’âge minimum ; l’exactitude des informations du compte ; la confidentialité des identifiants de connexion ; et ce que les propriétaires et administrateurs d’une organisation peuvent faire pour le compte de ses membres.]
+Vous devez avoir au moins 18 ans, ou être majeur là où vous vivez, pour créer un compte. Donnez des informations exactes, tenez-les à jour, et gardez pour vous votre mot de passe et votre éventuelle seconde étape de connexion : ce qui est fait avec votre compte, ses clés d’API et les applications que vous y connectez est fait en votre nom. Prévenez-nous sans attendre à hello@peal.social si vous pensez que quelqu’un d’autre l’a utilisé.
+
+Une organisation est l’espace que partage une équipe. Ses propriétaires et administrateurs invitent et retirent des membres, fixent leurs rôles, connectent et déconnectent des canaux, et, pour les membres qui gèrent la facturation, choisissent et paient son abonnement. Ce que les membres créent dans une organisation appartient à cette organisation : cela y reste lorsqu’un membre la quitte.
 
 ## Plateformes connectées
 
@@ -26,9 +28,9 @@ Lorsque vous connectez un compte de réseau social, vous autorisez Peal à agir 
 
 Votre utilisation de chaque plateforme reste soumise à ses propres conditions. Les plateformes peuvent modifier ou restreindre l’accès à leurs services, ce qui peut changer ce que Peal est en mesure d’y faire.
 
-[À confirmer une fois la fonctionnalité livrée : lorsqu’une plateforme ne confirme pas si une publication a bien été mise en ligne, Peal la marque comme non confirmée au lieu de réessayer, afin qu’elle ne soit pas diffusée deux fois. Vérifiez sur la plateforme avant de republier une telle publication.]
+Lorsqu’une plateforme ne confirme pas si une publication a bien été publiée, Peal la marque comme non confirmée au lieu de réessayer, pour qu’elle ne soit pas publiée deux fois. Vérifiez sur la plateforme avant de publier de nouveau une telle publication.
 
-[Responsabilités et limites applicables à la publication via des plateformes tierces.]
+Nous ne contrôlons pas les plateformes. Une plateforme peut refuser, retarder, modifier ou retirer une publication, restreindre un compte ou être indisponible, et nous ne répondons ni de ses décisions ni de ses pannes. Peal indique le résultat de chaque publication tel que la plateforme l’a communiqué : vérifiez que ce qui compte pour vous est bien parti comme prévu. Il vous appartient de respecter les règles de chaque plateforme lorsque vous y publiez.
 
 ## Publicités et dépenses par l’intermédiaire de Peal
 
@@ -56,11 +58,21 @@ Lorsqu’une organisation connecte un compte publicitaire, Peal peut lire les ca
 
 ## Vos contenus
 
-[À qui appartiennent les contenus que vous ajoutez à Peal, la licence que vous nous accordez pour les stocker et les publier là où vous le demandez, et votre responsabilité quant à ce que vous publiez.]
+Vous conservez tous les droits que vous détenez sur les contenus que vous ajoutez à Peal : publications, médias, commentaires et réponses. Vous nous accordez, tant qu’ils sont stockés dans Peal, une licence mondiale, non exclusive et gratuite pour les héberger, les reproduire, les adapter (par exemple redimensionner une image ou convertir une vidéo au format qu’exige une plateforme) et les envoyer là où vous le demandez, dans le seul but de vous fournir le service.
+
+Vous garantissez détenir les droits nécessaires pour publier ce que vous ajoutez, et vous êtes responsable de ce que vous publiez. En tant qu’hébergeur, nous ne surveillons pas ce qui est stocké, mais nous agissons promptement sur les contenus qui nous sont signalés comme illicites : signalez-les à hello@peal.social, en indiquant où ils se trouvent et pourquoi ils sont illicites.
 
 ## Utilisation acceptable
 
-[Les usages interdits du service, comme les contenus illicites, le spam ou la violation des règles d’une plateforme, et les conséquences d’un manquement à ces conditions.]
+Vous ne devez pas utiliser Peal pour :
+
+- publier ou stocker des contenus illicites, comme des contenus qui incitent à la haine ou à la violence, portent atteinte aux droits d’autrui ou trompent le public ;
+- envoyer du spam, ou publier en masse sur des comptes pour lesquels vous n’êtes pas autorisé à agir ;
+- enfreindre les règles d’une plateforme à laquelle Peal se connecte, ou contourner ses limites ;
+- attaquer, surcharger ou sonder le service, contourner ses limites, ou accéder à des données qui ne sont pas les vôtres ;
+- revendre l’accès au service sans notre accord.
+
+En cas de manquement à ces conditions, nous pouvons désactiver ce qui cause le dommage, comme un lien court, et suspendre le compte en cause, pour un jour, une semaine, 30 jours ou jusqu’à ce que le manquement cesse, selon sa gravité. Nous en indiquons la raison au titulaire du compte par e-mail, au préalable sauf s’il faut faire cesser le dommage immédiatement. Un manquement grave ou répété peut entraîner la fin du contrat, comme le prévoit la section Suspension et résiliation.
 
 ## Offres, prix et paiement
 
@@ -136,15 +148,21 @@ Les articles L215-1 à L215-3 et L241-3 du Code de la consommation sont reprodui
 
 ## Disponibilité et évolutions du service
 
-[La disponibilité du service, la maintenance, et la manière dont les évolutions des fonctionnalités sont annoncées.]
+Nous faisons en sorte que Peal soit disponible en permanence, sans garantir qu’il le sera toujours. La maintenance et les nouvelles versions peuvent l’interrompre brièvement ; nous les faisons aux heures creuses lorsque c’est possible. La page d’état status.peal.social indique si le service fonctionne. Nous améliorons Peal au fil du temps et pouvons en modifier les fonctionnalités ; nous annonçons par e-mail, au moins 30 jours à l’avance, toute modification qui supprime ou réduit substantiellement une fonctionnalité d’un abonnement payant, et un client qui ne l’accepte pas peut résilier avant sa prise d’effet, avec le remboursement de la part non utilisée de la période payée.
 
 ## Suspension et résiliation
 
-[Quand vous ou nous pouvons mettre fin au contrat ou suspendre un compte, le préavis applicable, et ce que deviennent vos données ensuite.] La page [Suppression des données](/fr/data-deletion/) explique comment supprimer votre compte et vos données.
+Vous pouvez fermer votre compte à tout moment depuis ses réglages, et résilier un abonnement payant comme le prévoit la section Résiliation. Nous pouvons suspendre un compte qui manque à ces conditions, comme le prévoit la section Utilisation acceptable. Nous pouvons mettre fin au contrat en cas de manquement grave ou répété, après en avoir indiqué la raison au titulaire du compte par e-mail et lui avoir laissé 15 jours pour y remédier, sauf si le manquement le rend impossible, ou, sans faute de sa part, avec un préavis de 3 mois par e-mail, en remboursant la part non utilisée de toute période payée. Pendant la suspension d’un compte, ses données sont conservées ; vous pouvez toujours en demander une copie à privacy@peal.social. À la fin du contrat, le compte et ses données sont supprimés comme le décrit la page sur la suppression des données. La page [Suppression des données](/fr/data-deletion/) explique comment supprimer votre compte et vos données.
 
 ## Garanties et responsabilité
 
-[Les garanties, exclusions et limitations de responsabilité, dans les limites permises par les dispositions impératives. Les consommateurs conservent les droits que leur confèrent les dispositions impératives.]
+Nous fournissons le service avec soin et diligence : notre obligation est une obligation de moyens, et non de résultat, notamment lorsqu’une plateforme intervient.
+
+À l’égard d’un client professionnel, nous ne répondons que des dommages directs causés par notre faute, et notre responsabilité totale sur toute période de 12 mois est limitée aux sommes que le client nous a versées pour le service au cours de ces 12 mois ; nous ne répondons pas des dommages indirects, comme le manque à gagner, la perte de clientèle ou l’atteinte à la réputation.
+
+À l’égard d’un consommateur, nous répondons des dommages prévisibles que cause notre manquement à ces conditions. Les consommateurs conservent la garantie légale de conformité des contenus et services numériques (articles L224-25-12 et suivants du Code de la consommation) et tous les autres droits que leur donnent les dispositions impératives.
+
+Rien dans ces conditions ne limite notre responsabilité en cas de faute intentionnelle ou de faute lourde, ni en cas de décès ou de dommage corporel.
 
 ## Données personnelles
 
@@ -152,11 +170,15 @@ La [politique de confidentialité](/fr/privacy/) explique comment nous traitons 
 
 ## Droit applicable et litiges
 
-[Le droit applicable, les juridictions compétentes, et les informations sur la médiation de la consommation applicables.]
+Ces conditions sont régies par le droit français. Un consommateur conserve en outre la protection des dispositions impératives du pays où il réside.
+
+Avant toute action, écrivez-nous à hello@peal.social pour que nous tentions de régler le différend. Un consommateur dont la réclamation écrite ne l’a pas réglé peut ensuite saisir gratuitement le médiateur de la consommation : [Nom, adresse et site du médiateur de la consommation], dans l’année qui suit sa réclamation (articles L612-1 et suivants du Code de la consommation).
+
+Un litige avec un client professionnel relève des tribunaux du ressort de notre siège. Un consommateur peut saisir les juridictions que la loi lui ouvre, y compris celles du lieu où il réside.
 
 ## Modifications de ces conditions
 
-[Comment les modifications sont annoncées, le préavis applicable, et leur date d’effet.]
+Nous prévenons par e-mail les titulaires de compte au moins 30 jours avant qu’une modification de ces conditions ne prenne effet, et indiquons sa date en haut de cette page. Un client qui n’accepte pas une modification peut fermer son compte, ou résilier sans frais un abonnement payant, avant sa prise d’effet, et se voit rembourser la part non utilisée de la période payée. Les modifications qu’impose une loi ou une décision de justice peuvent prendre effet plus tôt, lorsqu’elles l’exigent.
 
 ## Contact
 
