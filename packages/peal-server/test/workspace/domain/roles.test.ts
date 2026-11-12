@@ -54,6 +54,16 @@ describe(permissionsFor, () => {
     expect(permissionsFor("viewer")).not.toContain("assistant:use");
   });
 
+  it("lets owners and admins alone set the workspace's image provider", () => {
+    for (const role of ["owner", "admin"]) {
+      expect(permissionsFor(role)).toContain("assistant:configure");
+    }
+
+    for (const role of ["editor", "contributor", "viewer"]) {
+      expect(permissionsFor(role)).not.toContain("assistant:configure");
+    }
+  });
+
   it("lets a viewer read only", () => {
     expect(permissionsFor("viewer")).toStrictEqual([
       "analytics:read",
