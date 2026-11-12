@@ -7,6 +7,7 @@ import { SqlClient } from "effect/sql";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest } from "#test/channels/support.ts";
+import { statementsOf } from "#test/shared/support.ts";
 import { WorkspaceRoster } from "#workspace/application/workspace-roster.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 
@@ -99,6 +100,46 @@ layer(RosterTest)("the workspace roster in Postgres", (it) => {
         );
 
         yield* removed([...made, today]);
+      })
+  );
+
+  it.effect(
+    "counts several workspaces' members at once as it lists each one's, in one statement",
+    () =>
+      Effect.gen(function* seatsIn() {
+        const roster = yield* WorkspaceRoster;
+        const sql = yield* SqlClient.SqlClient;
+        const two = yield* workspaceWith(2, yesterday);
+        const none = yield* workspaceWith(0, yesterday);
+        const one = yield* workspaceWith(1, yesterday);
+
+        // A person in two of them counts in each.
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) SELECT ${one}, id, 'member', now() FROM auth.user WHERE id IN (SELECT user_id FROM auth.member WHERE organization_id = ${two}) LIMIT 1`;
+
+        const ids = [two, none, one];
+
+        const { result, statements } = yield* statementsOf(roster.seatsIn(ids));
+
+        for (const id of ids) {
+          assert.strictEqual(
+            result.get(id) ?? 0,
+            (yield* roster.members(id)).pipe(
+              Option.match({
+                onNone: () => 0,
+                onSome: ({ members }) => members.length,
+              })
+            )
+          );
+        }
+
+        assert.strictEqual(statements, 1);
+        assert.isFalse(result.has(none));
+        assert.deepStrictEqual(yield* statementsOf(roster.seatsIn([])), {
+          result: new Map(),
+          statements: 0,
+        });
+
+        yield* removed(ids);
       })
   );
 });
