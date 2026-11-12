@@ -762,7 +762,7 @@
       "editing": "Saving the change…",
       "editRequested": "Editing the post on {channel}.",
       "edited": "Edited on {at, date, medium}",
-      "editFailed": "The edit failed ({code}). The post says what it said before.",
+      "editFailed": "The edit failed ({code}). Peal kept the earlier text; if the platform did not answer, it may show the new one: check it before you try again.",
       "editBlocked": "{by, select, noApi {{platform} offers no way for Peal to edit posts.} permission {{platform} does not let Peal edit posts yet.} unverified {Peal does not edit posts on {platform} yet.} other {Peal cannot edit posts on {platform}.}}",
       "editRefused": "{reason, select, notPublished {The post is not live on this channel.} alreadyRemoved {The post was removed from this channel.} noPlatformId {Peal has no id for this part on the platform: edit it there.} notSupported {The platform does not let Peal edit this post: edit it there.} changeInProgress {Another change of this post is under way.} channelUnavailable {The channel is disconnected, turned off or must be reconnected.} approvalRequired {Your posts need approval: ask an approver to make this change.} invalid {The platform would refuse this text: check its length and characters.} forbidden {Your role does not let you edit published posts.} other {The post could not be edited. Try again.}}"
     },

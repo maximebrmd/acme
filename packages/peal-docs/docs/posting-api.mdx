@@ -511,7 +511,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
   -d '{"text": "Doors open at 7 pm, not 6."}'
 ```
 
-- The text is checked as that channel's text is when a post is scheduled, a Mastodon content warning counted: a text the platform would refuse answers 422 `post_content_invalid` with every violation, and an empty one too.
+- The text is checked as that channel's text is when a post is scheduled, a Mastodon content warning counted: a text the platform would refuse answers 422 `post_content_invalid` with every violation, and so does a text of spaces alone; an empty `text` answers 400 `invalid_request`.
 - The request is accepted (202) with the change (`kind: "edit"`), and a job makes the edit, tried again as a deletion is; `?wait=<seconds>` waits for it to end. A change that `failed` has its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied` for a Mastodon channel to reconnect, or the platform's own), and may be asked again. The change never holds the text.
 - Once done, the text is that part's own text on that channel (`content.overrides`, or the part's in `content.followUps`), the other channels keep theirs, and the target has its `editedAt`. Peal keeps no earlier text.
 - Before anything is called, 409 `live_post_not_changeable` says why not, as for a deletion, with `approvalRequired` too; a part the post does not have live there is `noPlatformId`.

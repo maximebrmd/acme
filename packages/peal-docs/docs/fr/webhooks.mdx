@@ -527,7 +527,7 @@ Peal a remplacé le texte d’une partie de la publication sur la plateforme du 
 
 ### post.edit_failed [#post-edit-failed]
 
-Peal n’a pas pu modifier la partie de la publication sur la plateforme du canal, après les essais qu’une modification fait : `code` dit pourquoi, comme le `code` du changement (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme). La publication dit ce qu’elle disait, et le texte de Peal n’a pas changé : un membre peut redemander.
+Peal n’a pas pu modifier la partie de la publication sur la plateforme du canal, après les essais qu’une modification fait : `code` dit pourquoi, comme le `code` du changement (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme). Le texte de Peal n’a pas changé, et la publication dit très probablement ce qu’elle disait ; après `unavailable` ou `rateLimited`, une réponse a pu se perdre, et la plateforme affiche peut-être le nouveau texte : regardez-y avant qu’un membre ne redemande.
 
 | Champ         | Type           | Ce qu’il contient                                          |
 | ------------- | -------------- | ---------------------------------------------------------- |

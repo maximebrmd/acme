@@ -36,7 +36,8 @@ export type LiveState =
  * - `none`: nothing to offer, as it is not live there, or was removed.
  * - `busy`: another change of it (a removal) is pending.
  * - `editing`: an edit is pending.
- * - `failed`: the last edit gave up (`code`); the post says what it said.
+ * - `failed`: the last edit gave up (`code`); Peal kept the earlier text,
+ *   which the platform most likely shows too.
  * - `offered`: it can be edited.
  * - `blocked`: the platform does not let Peal (`by` says why).
  */

@@ -482,4 +482,65 @@ describe("the editing endpoint", () => {
       ),
     timeout
   );
+
+  it.effect(
+    "finds no target of another post, nor a post of another workspace",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* scoped() {
+          const workspaceId = yield* freshId;
+          const elsewhere = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+
+          const stranger = yield* clientAs(yield* freshId, elsewhere, "editor");
+
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const first = yield* sentOn(editor, workspaceId, [mastodon], "First");
+
+          const second = yield* sentOn(
+            editor,
+            workspaceId,
+            [mastodon],
+            "Second"
+          );
+
+          const [ofSecond] = second.targets;
+
+          assert(ofSecond !== undefined);
+
+          const fix = { text: "Corrected" };
+
+          const otherPost = yield* editor.posts
+            .editTarget({
+              params: { postId: first.id, targetId: ofSecond.id, workspaceId },
+              payload: fix,
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          const otherWorkspace = yield* stranger.posts
+            .editTarget({
+              params: {
+                postId: second.id,
+                targetId: ofSecond.id,
+                workspaceId: elsewhere,
+              },
+              payload: fix,
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(otherPost, PostNotFound);
+          assert.instanceOf(otherWorkspace, PostNotFound);
+
+          const changes = yield* editor.posts.changes({
+            params: { postId: second.id, workspaceId },
+          });
+
+          assert.lengthOf(changes.items, 0);
+        })
+      ),
+    timeout
+  );
 });

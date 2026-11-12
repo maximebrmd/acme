@@ -41,7 +41,7 @@ export const changeLine = (
     }
 
     return change.status === "failed"
-      ? `Could not edit it on ${channel} (${change.code ?? "unknown"}): it says what it said before. Ask again to edit it.`
+      ? `Could not edit it on ${channel} (${change.code ?? "unknown"}): Peal kept the earlier text${change.code === "unavailable" || change.code === "rateLimited" ? `, though ${channel} may show the new one if an answer was lost: look there before you ask again` : ". Ask again to edit it"}.`
       : `Editing it on ${channel}. peal posts changes ${change.postId} says how it goes.`;
   }
 

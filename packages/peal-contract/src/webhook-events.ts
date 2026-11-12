@@ -355,8 +355,10 @@ export const WebhookPayloadSchema = Schema.Union([
   }),
   // Peal could not edit the post's part on the channel's platform: `code`
   // says why (as the change's `code`, `postGone` when the platform no
-  // longer has it); the post says what it said before, and a member may
-  // ask again.
+  // longer has it); Peal's text is unchanged, and the post most likely
+  // says what it said before (after `unavailable` or `rateLimited`, an
+  // answer may have been lost, and the platform may show the new text);
+  // a member may ask again.
   Schema.Struct({
     ...envelope,
     data: Schema.Struct({

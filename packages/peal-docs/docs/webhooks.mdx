@@ -527,7 +527,7 @@ Peal replaced the text of one part of the post on the channel's platform, at som
 
 ### post.edit_failed [#post-edit-failed]
 
-Peal could not edit the post's part on the channel's platform, after the tries an edit makes: `code` says why, as the change's `code` does (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own). The post says what it said before, and Peal's text is unchanged: a member may ask again.
+Peal could not edit the post's part on the channel's platform, after the tries an edit makes: `code` says why, as the change's `code` does (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own). Peal's text is unchanged, and the post most likely says what it said before; after `unavailable` or `rateLimited`, an answer may have been lost, and the platform may show the new text: look there before a member asks again.
 
 | Field         | Type           | What it holds                                                  |
 | ------------- | -------------- | -------------------------------------------------------------- |

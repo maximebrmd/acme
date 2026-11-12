@@ -511,7 +511,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
   -d '{"text": "Ouverture des portes à 19 h, pas 18 h."}'
 ```
 
-- Le texte est vérifié comme le texte de ce canal l’est quand une publication est programmée, avertissement de contenu Mastodon compris : un texte que la plateforme refuserait répond 422 `post_content_invalid` avec chaque violation, et un texte vide aussi.
+- Le texte est vérifié comme le texte de ce canal l’est quand une publication est programmée, avertissement de contenu Mastodon compris : un texte que la plateforme refuserait répond 422 `post_content_invalid` avec chaque violation, tout comme un texte fait seulement d’espaces ; un `text` vide répond 400 `invalid_request`.
 - La demande est acceptée (202) avec le changement (`kind: "edit"`), et une tâche fait la modification, relancée comme une suppression ; `?wait=<secondes>` attend qu’elle se termine. Un changement `failed` a son `code` (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied` pour un canal Mastodon à reconnecter, ou celui de la plateforme), et peut être redemandé. Le changement ne garde jamais le texte.
 - Une fois fait, le texte est celui de cette partie sur ce canal (`content.overrides`, ou celui de la partie dans `content.followUps`), les autres canaux gardent le leur, et la cible a son `editedAt`. Peal ne garde aucun texte précédent.
 - Avant tout appel, 409 `live_post_not_changeable` dit pourquoi pas, comme pour une suppression, avec aussi `approvalRequired` ; une partie que la publication n’a pas en ligne là est `noPlatformId`.

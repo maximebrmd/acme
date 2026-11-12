@@ -762,7 +762,7 @@
       "editing": "Enregistrement de la modification…",
       "editRequested": "Modification du post sur {channel}.",
       "edited": "Modifié le {at, date, medium}",
-      "editFailed": "La modification a échoué ({code}). Le post dit ce qu’il disait avant.",
+      "editFailed": "La modification a échoué ({code}). Peal a gardé le texte d’avant ; si la plateforme n’a pas répondu, elle affiche peut-être le nouveau : vérifiez-la avant de réessayer.",
       "editBlocked": "{by, select, noApi {{platform} n’offre aucun moyen à Peal de modifier des posts.} permission {{platform} ne permet pas encore à Peal de modifier des posts.} unverified {Peal ne modifie pas encore de posts sur {platform}.} other {Peal ne peut pas modifier de posts sur {platform}.}}",
       "editRefused": "{reason, select, notPublished {Le post n’est pas en ligne sur ce canal.} alreadyRemoved {Le post a été supprimé de ce canal.} noPlatformId {Peal n’a pas l’identifiant de cette partie sur la plateforme : modifiez-la là-bas.} notSupported {La plateforme ne permet pas à Peal de modifier ce post : modifiez-le là-bas.} changeInProgress {Une autre modification de ce post est en cours.} channelUnavailable {Le canal est déconnecté, désactivé ou doit être reconnecté.} approvalRequired {Vos posts doivent être approuvés : demandez à un approbateur de faire cette modification.} invalid {La plateforme refuserait ce texte : vérifiez sa longueur et ses caractères.} forbidden {Votre rôle ne vous permet pas de modifier des posts publiés.} other {Le post n’a pas pu être modifié. Réessayez.}}"
     },
