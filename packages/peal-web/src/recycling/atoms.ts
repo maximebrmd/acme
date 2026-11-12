@@ -1,5 +1,7 @@
+import { Effect } from "effect";
 import { Atom } from "effect/reactivity";
 import { maxRecyclingPageSize } from "peal-contract";
+import type { RecyclingRule, RecyclingRulePage } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -13,13 +15,45 @@ export const rulesChanged = (workspaceId: string) => [
   `recycling:${workspaceId}`,
 ];
 
-/** The workspace's rules, oldest first: a workspace keeps 100 at most going. */
+/**
+ * Every rule of the workspace, oldest first, read page after page: ended
+ * rules stay, so a workspace may have many more than the 100 it keeps
+ * going.
+ */
+export const everyRule = <E, R>(
+  read: (cursor: string | undefined) => Effect.Effect<RecyclingRulePage, E, R>
+): Effect.Effect<{ readonly items: readonly RecyclingRule[] }, E, R> =>
+  Effect.gen(function* everyRulePage() {
+    const items: RecyclingRule[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const page: RecyclingRulePage = yield* read(cursor);
+
+      items.push(...page.items);
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor !== undefined);
+
+    return { items };
+  });
+
+/** The workspace's rules, every page of them, read again once one changes. */
 export const workspaceRules = Atom.family((workspaceId: string) =>
-  PealApi.query("recycling", "list", {
-    params: { workspaceId },
-    query: { limit: maxRecyclingPageSize },
-    reactivityKeys: [...rulesChanged(workspaceId), "posts"],
-  })
+  Atom.withReactivity([...rulesChanged(workspaceId), "posts"])(
+    PealApi.runtime.atom(
+      PealApi.use((client) =>
+        everyRule((cursor) =>
+          client.recycling.list({
+            params: { workspaceId },
+            query:
+              cursor === undefined
+                ? { limit: maxRecyclingPageSize }
+                : { cursor, limit: maxRecyclingPageSize },
+          })
+        )
+      )
+    )
+  )
 );
 
 export const startRule = PealApi.mutation("recycling", "create");

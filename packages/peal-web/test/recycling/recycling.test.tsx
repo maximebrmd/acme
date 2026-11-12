@@ -1,7 +1,7 @@
-import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Option } from "effect";
+import { assert, describe, expect, it } from "@effect/vitest";
+import { DateTime, Effect, Option } from "effect";
 import { NextIntlClientProvider } from "next-intl";
-import type { RecyclingRule } from "peal-contract";
+import type { RecyclingRule, RecyclingRulePage } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
@@ -9,6 +9,7 @@ import {
   RuleItemView,
 } from "#components/recycling/recycling-views.tsx";
 import { loadMessages } from "#i18n/messages.ts";
+import { everyRule } from "#recycling/atoms.ts";
 import {
   freshRepeat,
   isResumable,
@@ -56,6 +57,34 @@ const render = async (locale: "en" | "fr", node: React.ReactNode) =>
       {node}
     </NextIntlClientProvider>
   );
+
+describe("the workspace's rules", () => {
+  it.effect("are read page after page, every one of them", () =>
+    Effect.gen(function* paged() {
+      const asked: (string | undefined)[] = [];
+
+      const pages = new Map<string | undefined, RecyclingRulePage>([
+        [undefined, { items: [rule], nextCursor: "a" }],
+        ["a", { items: [{ ...rule, id: "second" }], nextCursor: "b" }],
+        ["b", { items: [{ ...rule, id: "third" }], nextCursor: null }],
+      ]);
+
+      const all = yield* everyRule((cursor) => {
+        asked.push(cursor);
+
+        return Effect.succeed(
+          pages.get(cursor) ?? { items: [], nextCursor: null }
+        );
+      });
+
+      assert.deepStrictEqual(
+        all.items.map(({ id }) => id),
+        [rule.id, "second", "third"]
+      );
+      assert.deepStrictEqual(asked, [undefined, "a", "b"]);
+    })
+  );
+});
 
 describe("the repeat form's request", () => {
   it("asks for what the form holds, and nothing it leaves empty", () => {
