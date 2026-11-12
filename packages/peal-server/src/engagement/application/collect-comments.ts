@@ -268,8 +268,12 @@ export const reconcile = (
 
   if (read.complete) {
     for (const comment of kept) {
-      if (!seen.has(comment.platformCommentId) && isOnPlatform(comment)) {
-        next.set(comment.platformCommentId, forgetComment(comment));
+      if (!seen.has(comment.platformCommentId)) {
+        // Forgotten for its age, and now gone from the platform too: it
+        // is no longer said to be kept for a limited time.
+        if (isOnPlatform(comment) || Option.isSome(comment.expiredAt)) {
+          next.set(comment.platformCommentId, forgetComment(comment));
+        }
       }
     }
   }
@@ -290,6 +294,7 @@ export const reconcile = (
       before.state !== comment.state ||
       before.text !== comment.text ||
       before.liked !== comment.liked ||
+      Option.isSome(before.expiredAt) !== Option.isSome(comment.expiredAt) ||
       Option.getOrNull(before.permalink) !==
         Option.getOrNull(comment.permalink) ||
       JSON.stringify(before.author) !== JSON.stringify(comment.author)
@@ -460,7 +465,12 @@ export class CollectComments extends Context.Service<
               const kept = yield* store.commentsOf(thread.id);
 
               yield* store.saveComments(
-                kept.filter(isOnPlatform).map(forgetComment)
+                kept
+                  .filter(
+                    (comment) =>
+                      isOnPlatform(comment) || Option.isSome(comment.expiredAt)
+                  )
+                  .map(forgetComment)
               );
 
               return yield* ending([thread], "missing", at);

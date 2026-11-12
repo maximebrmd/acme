@@ -383,4 +383,36 @@ describe("the refresh bound", () => {
       }).pipe(Effect.provide(world.layer));
     }
   );
+
+  it.effect(
+    "stops calling a forgotten comment expired once a complete read shows it deleted",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1), reading(2)], day);
+
+      return Effect.gen(function* deleted() {
+        yield* runAt(after("10 minutes"));
+        yield* forgetAt(after("1450 minutes"));
+
+        // Its author deleted comment 1; comment 2 is read again.
+        world.state.read = showing([reading(2)], day);
+        yield* runAt(after("1460 minutes"));
+
+        assert.deepStrictEqual(
+          comments(world).map(({ expired, platformCommentId, state }) => ({
+            expired,
+            platformCommentId,
+            state,
+          })),
+          [
+            { expired: false, platformCommentId: "2001", state: "deleted" },
+            { expired: false, platformCommentId: "2002", state: "new" },
+          ]
+        );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
 });
