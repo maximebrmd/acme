@@ -395,6 +395,10 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
 const imageKey = "sk_test_synthetic_image_provider_key";
 const inPrompt = "synthetic-prompt-marker-in-a-secret-test";
 
+const decodePort = Schema.decodeUnknownSync(
+  Schema.Struct({ port: Schema.Number })
+);
+
 const imageProvider = Effect.acquireRelease(
   Effect.promise(async () => {
     const png = await sharp({
@@ -441,10 +445,6 @@ const imageProvider = Effect.acquireRelease(
       server.close();
       await once(server, "close");
     })
-);
-
-const decodePort = Schema.decodeUnknownSync(
-  Schema.Struct({ port: Schema.Number })
 );
 
 const ImagesTest = Layer.unwrap(
