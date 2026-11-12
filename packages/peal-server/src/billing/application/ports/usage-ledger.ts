@@ -39,6 +39,23 @@ export class UsageLedger extends Context.Service<
       period: UsagePeriod
     ) => Effect.Effect<readonly UsageRecord[], DatabaseError>;
     /**
+     * The records of these workspaces over the period's days, in one read:
+     * nothing is asked for none.
+     */
+    readonly ofWorkspaces: (
+      workspaceIds: readonly WorkspaceId[],
+      period: UsagePeriod
+    ) => Effect.Effect<readonly WorkspaceUsageRecord[], DatabaseError>;
+    /**
+     * The posts that went out in these workspaces over the period's days,
+     * added up by day and platform, oldest first: nothing is asked for
+     * none.
+     */
+    readonly postsAcross: (
+      workspaceIds: readonly WorkspaceId[],
+      period: UsagePeriod
+    ) => Effect.Effect<readonly UsageRecord[], DatabaseError>;
+    /**
      * Every record the ledger keeps of the workspace, oldest day first, for
      * its export.
      */

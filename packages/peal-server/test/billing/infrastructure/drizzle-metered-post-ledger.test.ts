@@ -52,4 +52,64 @@ layer(LedgerTest)("the metered posts' counts in Postgres", (it) => {
         yield* ledger.eraseWorkspace(other);
       })
   );
+
+  it.effect(
+    "reads the months a period touches of several workspaces, and nothing for none",
+    () =>
+      Effect.gen(function* several() {
+        const ledger = yield* MeteredPostLedger;
+        const first = yield* freshWorkspace;
+        const second = yield* freshWorkspace;
+        const stranger = yield* freshWorkspace;
+        const september = DateTime.makeUnsafe("2026-09-01T00:00:00Z");
+
+        for (const [workspaceId, month] of [
+          [first, september],
+          [first, october],
+          [second, november],
+          [stranger, october],
+        ] as const) {
+          yield* ledger.add({
+            month,
+            platform: "x",
+            withLink: true,
+            workspaceId,
+          });
+        }
+
+        const period = {
+          from: DateTime.makeUnsafe("2026-10-20T00:00:00Z"),
+          to: DateTime.makeUnsafe("2026-11-05T00:00:00Z"),
+        };
+
+        assert.deepStrictEqual(yield* ledger.ofWorkspaces([], period), []);
+        assert.sameDeepMembers(
+          [...(yield* ledger.ofWorkspaces([first, second], period))],
+          [
+            {
+              count: {
+                month: october,
+                platform: "x",
+                posts: 1,
+                postsWithLinks: 1,
+              },
+              workspaceId: first,
+            },
+            {
+              count: {
+                month: november,
+                platform: "x",
+                posts: 1,
+                postsWithLinks: 1,
+              },
+              workspaceId: second,
+            },
+          ]
+        );
+
+        for (const workspaceId of [first, second, stranger]) {
+          yield* ledger.eraseWorkspace(workspaceId);
+        }
+      })
+  );
 });

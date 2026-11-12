@@ -1,4 +1,4 @@
-import { and, asc, between, eq, sql } from "drizzle-orm";
+import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -6,6 +6,7 @@ import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
 import { UsageRecordSchema } from "#billing/domain/usage-meter.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { usageDays } from "./schema.ts";
@@ -25,6 +26,14 @@ const toRecord = (row: Row) =>
     meter: row.meter,
     quantity: row.quantity,
   }).pipe(Effect.orDie);
+
+const decodeWorkspaceId = Schema.decodeUnknownEffect(WorkspaceIdSchema);
+
+const toEntry = (row: Row) =>
+  Effect.all({
+    record: toRecord(row),
+    workspaceId: decodeWorkspaceId(row.workspaceId).pipe(Effect.orDie),
+  });
 
 const toRow = ({ record, workspaceId }: WorkspaceUsageRecord) => ({
   day: DateTime.toDateUtc(record.day),
@@ -112,6 +121,71 @@ export const DrizzleUsageLedgerLive = Layer.effect(
             Effect.flatMap(Effect.forEach(toRecord)),
             Effect.withSpan("UsageLedger.ofWorkspace")
           ),
+      // One read for the whole list (`workspace_id = any(…)`), on the
+      // primary key, which starts with the workspace and the day.
+      ofWorkspaces: (workspaceIds, { from, to }) =>
+        workspaceIds.length === 0
+          ? Effect.succeed([])
+          : db
+              .select()
+              .from(usageDays)
+              .where(
+                and(
+                  inArray(usageDays.workspaceId, [...workspaceIds]),
+                  between(
+                    usageDays.day,
+                    DateTime.toDateUtc(from),
+                    DateTime.toDateUtc(to)
+                  )
+                )
+              )
+              .orderBy(asc(usageDays.workspaceId), ...ordered)
+              .pipe(
+                Effect.mapError(failed),
+                Effect.flatMap(Effect.forEach(toEntry)),
+                Effect.withSpan("UsageLedger.ofWorkspaces")
+              ),
+      // Added up in the database, which reads the rows of every workspace
+      // and returns one a day and platform.
+      postsAcross: (workspaceIds, { from, to }) =>
+        workspaceIds.length === 0
+          ? Effect.succeed([])
+          : db
+              .select({
+                day: usageDays.day,
+                dimension: usageDays.dimension,
+                meter: usageDays.meter,
+                // A sum of bigints is a numeric, which the driver hands as text.
+                quantity: sql`sum(${usageDays.quantity})`.mapWith(Number),
+              })
+              .from(usageDays)
+              .where(
+                and(
+                  inArray(usageDays.workspaceId, [...workspaceIds]),
+                  eq(usageDays.meter, "publishedPosts"),
+                  between(
+                    usageDays.day,
+                    DateTime.toDateUtc(from),
+                    DateTime.toDateUtc(to)
+                  )
+                )
+              )
+              .groupBy(usageDays.day, usageDays.meter, usageDays.dimension)
+              .orderBy(asc(usageDays.day), asc(usageDays.dimension))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.flatMap(
+                  Effect.forEach((row) =>
+                    decodeRecord({
+                      day: DateTime.fromDateUnsafe(row.day),
+                      dimension: row.dimension,
+                      meter: row.meter,
+                      quantity: row.quantity,
+                    }).pipe(Effect.orDie)
+                  )
+                ),
+                Effect.withSpan("UsageLedger.postsAcross")
+              ),
       // Counted in the database: a day's purge may be many rows.
       purgeBefore: (day) =>
         client<{

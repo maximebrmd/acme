@@ -14,6 +14,7 @@ import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
 import { UsageApiLive } from "#billing/container.ts";
+import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -57,6 +58,13 @@ const same = (entry: WorkspaceUsageRecord) => (other: WorkspaceUsageRecord) =>
   other.record.dimension === entry.record.dimension &&
   DateTime.Equivalence(other.record.day, entry.record.day);
 
+// Whether a record's day is one of the period's.
+const within =
+  (period: { readonly from: DateTime.Utc; readonly to: DateTime.Utc }) =>
+  (record: UsageRecord) =>
+    !DateTime.isLessThan(record.day, period.from) &&
+    !DateTime.isGreaterThan(record.day, period.to);
+
 // Every workspace's ledger in memory.
 const LedgerInMemory = Layer.effect(
   UsageLedger,
@@ -89,12 +97,45 @@ const LedgerInMemory = Layer.effect(
             all
               .filter(
                 ({ record, workspaceId: of }) =>
-                  of === id &&
-                  !DateTime.isLessThan(record.day, period.from) &&
-                  !DateTime.isGreaterThan(record.day, period.to)
+                  of === id && within(period)(record)
               )
               .map(({ record }) => record)
           )
+        ),
+      ofWorkspaces: (ids, period) =>
+        Ref.get(kept).pipe(
+          Effect.map((all) =>
+            all.filter(
+              ({ record, workspaceId: of }) =>
+                ids.includes(of) && within(period)(record)
+            )
+          )
+        ),
+      postsAcross: (ids, period) =>
+        Ref.get(kept).pipe(
+          Effect.map((all) => {
+            const summed = new Map<string, UsageRecord>();
+
+            for (const { record, workspaceId: of } of all) {
+              if (
+                ids.includes(of) &&
+                within(period)(record) &&
+                record.meter === "publishedPosts"
+              ) {
+                const key = `${DateTime.formatIso(record.day)} ${record.dimension}`;
+                const found = summed.get(key);
+
+                summed.set(
+                  key,
+                  found === undefined
+                    ? record
+                    : { ...found, quantity: found.quantity + record.quantity }
+                );
+              }
+            }
+
+            return [...summed.values()];
+          })
         ),
       purgeBefore: () => Effect.succeed(0),
       set: (entries) =>
@@ -115,6 +156,7 @@ const MeteredTest = Layer.mock(MeteredPostLedger, {
       { month: day("2026-10-01"), platform: "x", posts: 7, postsWithLinks: 2 },
       { month: day("2026-11-01"), platform: "x", posts: 2, postsWithLinks: 0 },
     ]),
+  ofWorkspaces: () => Effect.succeed([]),
 });
 
 const reportsOn = (entitlements: typeof UnmeteredTest) =>

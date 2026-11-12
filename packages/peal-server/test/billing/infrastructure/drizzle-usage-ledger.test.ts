@@ -145,4 +145,65 @@ layer(LedgerTest)("the usage ledger in Postgres", (it) => {
       yield* ledger.eraseWorkspace(workspaceId);
     })
   );
+
+  it.effect(
+    "reads the period's records of several workspaces in one query, and nothing for none",
+    () =>
+      Effect.gen(function* several() {
+        const ledger = yield* UsageLedger;
+        const first = yield* freshWorkspace;
+        const second = yield* freshWorkspace;
+        // Another partner's tenant, whose rows never come with the others.
+        const stranger = yield* freshWorkspace;
+
+        yield* ledger.add({
+          record: posts("2026-10-08", 2),
+          workspaceId: first,
+        });
+        yield* ledger.add({
+          record: posts("2026-10-08", 1, "bluesky"),
+          workspaceId: second,
+        });
+        yield* ledger.add({
+          record: posts("2026-10-08", 5),
+          workspaceId: second,
+        });
+        yield* ledger.add({ record: posts("2026-11-02"), workspaceId: first });
+        yield* ledger.add({
+          record: posts("2026-10-08", 7),
+          workspaceId: stranger,
+        });
+        yield* ledger.set([
+          { record: channels("2026-10-08", 3), workspaceId: first },
+          { record: channels("2026-10-08", 4), workspaceId: second },
+          { record: channels("2026-10-08", 8), workspaceId: stranger },
+        ]);
+
+        assert.deepStrictEqual(yield* ledger.ofWorkspaces([], period), []);
+
+        const read = yield* ledger.ofWorkspaces([first, second], period);
+
+        assert.sameDeepMembers(
+          [...read],
+          [
+            { record: channels("2026-10-08", 3), workspaceId: first },
+            { record: posts("2026-10-08", 2), workspaceId: first },
+            { record: channels("2026-10-08", 4), workspaceId: second },
+            { record: posts("2026-10-08", 1, "bluesky"), workspaceId: second },
+            { record: posts("2026-10-08", 5), workspaceId: second },
+          ]
+        );
+
+        // The posts of them all, summed by day and platform.
+        assert.deepStrictEqual(yield* ledger.postsAcross([], period), []);
+        assert.deepStrictEqual(
+          yield* ledger.postsAcross([first, second], period),
+          [posts("2026-10-08", 1, "bluesky"), posts("2026-10-08", 7)]
+        );
+
+        for (const workspaceId of [first, second, stranger]) {
+          yield* ledger.eraseWorkspace(workspaceId);
+        }
+      })
+  );
 });
