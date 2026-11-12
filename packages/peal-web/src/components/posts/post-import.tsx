@@ -15,13 +15,14 @@ import { useHydrated } from "#components/media/use-hydrated.ts";
 import { Link } from "#i18n/navigation.ts";
 import { importPosts, postsKeys, workspaceChannels } from "#posts/api.ts";
 import { readImportFile } from "#posts/import-file.ts";
+import { newImportKey } from "#posts/import-key.ts";
 import { sampleCsv } from "#posts/import-sample.ts";
 import {
-  answerOf,
   canImport,
   idleImport,
   isBusy,
   nextImport,
+  settle,
 } from "#posts/import-state.ts";
 import type { ImportState } from "#posts/import-state.ts";
 import { oneAtATime } from "#posts/one-at-a-time.ts";
@@ -64,7 +65,10 @@ const download = (name: string, text: string) => {
   anchor.href = url;
   anchor.download = name;
   anchor.click();
-  URL.revokeObjectURL(url);
+  // Some browsers start the download after the click returns.
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 };
 
 // The screen once hydrated: its requests carry the visitor's cookies,
@@ -87,25 +91,37 @@ const LoadedImport = ({ workspaceId }: { readonly workspaceId: string }) => {
 
   const sets = Option.getOrElse(AsyncResult.value(setsResult), () => noSets);
 
+  // The check's key is made before it is sent, kept only if every row
+  // passes.
   const check = async (csv: string) => {
-    const exit = await send({
-      headers: {},
-      params: { workspaceId },
-      payload: { csv, dryRun: true },
-    });
-
-    dispatch(answerOf(exit, "check", () => crypto.randomUUID()));
+    dispatch(
+      await settle(
+        "check",
+        () => newImportKey(crypto),
+        async () =>
+          await send({
+            headers: {},
+            params: { workspaceId },
+            payload: { csv, dryRun: true },
+          })
+      )
+    );
   };
 
   const make = async (csv: string, key: string) => {
-    const exit = await send({
-      headers: { "idempotency-key": key },
-      params: { workspaceId },
-      payload: { csv },
-      reactivityKeys: postsKeys,
-    });
-
-    dispatch(answerOf(exit, "import", () => key));
+    dispatch(
+      await settle(
+        "import",
+        () => key,
+        async (sent) =>
+          await send({
+            headers: { "idempotency-key": sent },
+            params: { workspaceId },
+            payload: { csv },
+            reactivityKeys: postsKeys,
+          })
+      )
+    );
   };
 
   const handleChoose = (file: File) => {

@@ -24,6 +24,9 @@ export interface RunningImport {
   readonly _tag: "importing";
   readonly csv: string;
   readonly key: string;
+  // Whether this import is sent again after a failure: the attempt whose
+  // answer was lost may have made posts.
+  readonly retried: boolean;
   readonly rows: readonly ImportRowResult[];
 }
 
@@ -53,6 +56,7 @@ export type ImportState =
   | {
       readonly _tag: "imported";
       readonly created: number;
+      readonly retried: boolean;
       readonly rows: readonly ImportRowResult[];
     }
   // A request failed whole: retrying sends the same step again.
@@ -142,6 +146,7 @@ export const nextImport = (
             _tag: "importing",
             csv: state.csv,
             key: state.key,
+            retried: false,
             rows: state.rows,
           }
         : state;
@@ -152,6 +157,7 @@ export const nextImport = (
         ? {
             _tag: "imported",
             created: event.result.created,
+            retried: state.retried,
             rows: event.result.rows,
           }
         : state;
@@ -164,7 +170,13 @@ export const nextImport = (
     }
 
     case "retried": {
-      return state._tag === "failed" ? state.step : state;
+      if (state._tag !== "failed") {
+        return state;
+      }
+
+      return state.step._tag === "importing"
+        ? { ...state.step, retried: true }
+        : state.step;
     }
 
     default: {
@@ -209,4 +221,24 @@ export const answerOf = <E>(
     }),
     Option.getOrElse((): ImportEvent => ({ _tag: "failed", reason: "unknown" }))
   );
+};
+
+/**
+ * Sends one step and makes its event, whatever happens: the key is made
+ * before the request (a check's new one, or an import's own), and a throw,
+ * from making the key or from the request, ends the step `failed` rather
+ * than leaving the screen busy.
+ */
+export const settle = async <E>(
+  step: "check" | "import",
+  key: () => string,
+  request: (key: string) => Promise<Exit.Exit<ImportResult, E>>
+): Promise<ImportEvent> => {
+  try {
+    const made = key();
+
+    return answerOf(await request(made), step, () => made);
+  } catch {
+    return { _tag: "failed", reason: "unknown" };
+  }
 };

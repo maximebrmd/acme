@@ -14,6 +14,7 @@ import {
   idleImport,
   nextImport,
   refusedMeanwhile,
+  settle,
 } from "#posts/import-state.ts";
 import type { ImportEvent, ImportState } from "#posts/import-state.ts";
 
@@ -107,6 +108,7 @@ describe(nextImport, () => {
       _tag: "importing",
       csv,
       key: "key-1",
+      retried: false,
       rows: [valid(1), valid(2)],
     });
   });
@@ -146,7 +148,7 @@ describe(nextImport, () => {
           result: answer(rows, false, 0),
         }
       )
-    ).toStrictEqual({ _tag: "imported", created: 0, rows });
+    ).toStrictEqual({ _tag: "imported", created: 0, retried: false, rows });
   });
 
   it("retries a failed import with the same key", () => {
@@ -158,7 +160,10 @@ describe(nextImport, () => {
       reason: "unknown",
       step: importing,
     });
-    expect(nextImport(failed, { _tag: "retried" })).toStrictEqual(importing);
+    expect(nextImport(failed, { _tag: "retried" })).toStrictEqual({
+      ...importing,
+      retried: true,
+    });
   });
 
   it("retries a failed check with the same file", () => {
@@ -195,6 +200,21 @@ describe(nextImport, () => {
       checked
     );
     expect(nextImport(idleImport, checkedValid)).toBe(idleImport);
+  });
+});
+
+describe("a retried import", () => {
+  it("remembers it was retried, as the lost attempt may have made posts", () => {
+    const retried = after(
+      chosen,
+      checkedValid,
+      { _tag: "confirmed" },
+      { _tag: "failed", reason: "unknown" },
+      { _tag: "retried" },
+      { _tag: "imported", result: answer([refused(1)], false, 0) }
+    );
+
+    expect(retried).toMatchObject({ _tag: "imported", retried: true });
   });
 });
 
@@ -297,5 +317,57 @@ describe(answerOf, () => {
     expect(
       answerOf(Exit.die("offline"), "import", () => "unused")
     ).toStrictEqual({ _tag: "failed", reason: "unknown" });
+  });
+});
+
+describe(settle, () => {
+  const result = answer([valid(1)]);
+
+  it("hands the answer over with the key made before the request", async () => {
+    const keys: string[] = [];
+
+    await expect(
+      settle(
+        "check",
+        () => "key-7",
+        async (key) => {
+          await Promise.resolve();
+          keys.push(key);
+
+          return Exit.succeed(result);
+        }
+      )
+    ).resolves.toStrictEqual({ _tag: "checked", key: "key-7", result });
+    expect(keys).toStrictEqual(["key-7"]);
+  });
+
+  it("fails, never stays busy, when no key can be made", async () => {
+    await expect(
+      settle(
+        "check",
+        () => {
+          throw new Error("no randomUUID outside a secure context");
+        },
+        async () => {
+          await Promise.resolve();
+
+          return Exit.succeed(result);
+        }
+      )
+    ).resolves.toStrictEqual({ _tag: "failed", reason: "unknown" });
+  });
+
+  it("fails when the request throws", async () => {
+    await expect(
+      settle(
+        "import",
+        () => "key-1",
+        async () => {
+          await Promise.resolve();
+
+          throw new Error("synthetic");
+        }
+      )
+    ).resolves.toStrictEqual({ _tag: "failed", reason: "unknown" });
   });
 });
