@@ -297,10 +297,15 @@ The staff context follows these rules too. What the law has a host keep is in
 - Better Auth's `/organization/*` and `/subscription/*` routes, which never
   pass `WorkspaceAccess`, are guarded in its before hook
   (`refuseLockedOutMembers`, `auth/two-step.ts`: 403 `TWO_STEP_REQUIRED`)
-  for the workspace a request names (id, slug, invitation, `referenceId`;
-  `INVALID_ID` for one it cannot read) or the session's active one; the
-  picker, invitations, leaving and creating stay open. Every route of the
-  two prefixes is placed in `exempt` or `guarded`
+  for every workspace a request names (id, slug, invitation, `referenceId`;
+  `INVALID_ID` for one it cannot read) and the session's active one, all
+  together: a route falls back to the active one when its field is empty.
+  `guarded` gives each route the naming fields it reads, body or query, as
+  Better Auth's routes and the Stripe plugin read them; any other is
+  refused (400 `WORKSPACE_FIELD_NOT_READ`), so no decoy is checked in place
+  of the workspace acted on. Recheck the fields on a Better Auth upgrade.
+  The picker, invitations, leaving and creating stay open. Every route of
+  the two prefixes is placed in `exempt` or `guarded`
   (`two-step-routes.test.ts`); one in neither is guarded. Turning it on
   waits for a confirmed address; turning it off is refused while a
   workspace of the user requires it. Staff acting as someone are refused

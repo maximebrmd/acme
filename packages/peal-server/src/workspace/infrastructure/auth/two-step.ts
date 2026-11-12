@@ -26,6 +26,22 @@ export interface TwoStepPolicy {
   readonly requiredBy: (userId: string) => Promise<readonly string[]>;
 }
 
+// What a request may name a workspace by: its id (the Stripe plugin's
+// `referenceId` for a subscription), its slug, or an invitation of it.
+const namingKeys = [
+  "invitationId",
+  "organizationId",
+  "organizationSlug",
+  "referenceId",
+] as const;
+
+type NamingKey = (typeof namingKeys)[number];
+
+type Where = "body" | "query";
+
+// A field naming a workspace, in the part of the request it is read from.
+type NamingField = `${Where}.${NamingKey}`;
+
 // Better Auth's routes of a workspace that a member the workspace refuses
 // for want of two-step verification still reaches: those that list their
 // workspaces and invitations or switch between them (the picker), answer
@@ -45,27 +61,42 @@ const exempt: ReadonlySet<string> = new Set([
 // The others, which read or change one workspace: its members, roles,
 // invitations, settings and subscriptions. Listed so a test fails on a
 // route an upgrade adds until it is placed in one set or the other; a
-// route of these prefixes in neither is guarded anyway.
-const guarded: ReadonlySet<string> = new Set([
-  "/organization/cancel-invitation",
-  "/organization/delete",
-  "/organization/get-active-member",
-  "/organization/get-active-member-role",
-  "/organization/get-full-organization",
-  "/organization/get-organization",
-  "/organization/has-permission",
-  "/organization/invite-member",
-  "/organization/list-invitations",
-  "/organization/list-members",
-  "/organization/remove-member",
-  "/organization/update",
-  "/organization/update-member-role",
-  "/subscription/billing-portal",
-  "/subscription/cancel",
-  "/subscription/list",
-  "/subscription/restore",
-  "/subscription/success",
-  "/subscription/upgrade",
+// route of these prefixes in neither is guarded anyway. Each with the
+// fields that name a workspace it reads, where it reads them, as Better
+// Auth 1.7's routes and the Stripe plugin's reference middleware do: a
+// request that names one in another field is refused, since the route
+// would act on another workspace than the one checked.
+const subscriptionNaming: readonly NamingField[] = [
+  "body.referenceId",
+  "query.referenceId",
+];
+
+const bySlugOrId: readonly NamingField[] = [
+  "query.organizationId",
+  "query.organizationSlug",
+];
+
+const guarded: ReadonlyMap<string, readonly NamingField[]> = new Map([
+  ["/organization/cancel-invitation", ["body.invitationId"]],
+  ["/organization/delete", ["body.organizationId"]],
+  ["/organization/get-active-member", []],
+  ["/organization/get-active-member-role", bySlugOrId],
+  ["/organization/get-full-organization", bySlugOrId],
+  ["/organization/get-organization", bySlugOrId],
+  ["/organization/has-permission", ["body.organizationId"]],
+  ["/organization/invite-member", ["body.organizationId"]],
+  ["/organization/list-invitations", ["query.organizationId"]],
+  ["/organization/list-members", bySlugOrId],
+  ["/organization/remove-member", ["body.organizationId"]],
+  ["/organization/update", ["body.organizationId"]],
+  ["/organization/update-member-role", ["body.organizationId"]],
+  ["/subscription/billing-portal", subscriptionNaming],
+  ["/subscription/cancel", subscriptionNaming],
+  ["/subscription/list", subscriptionNaming],
+  ["/subscription/restore", subscriptionNaming],
+  // It acts on the subscription its checkout session names.
+  ["/subscription/success", []],
+  ["/subscription/upgrade", subscriptionNaming],
 ]);
 
 /** How the guard treats a route of Better Auth's workspace prefixes. */
@@ -91,8 +122,6 @@ const decodeSession = Schema.decodeUnknownOption(
   })
 );
 
-// What a request may name a workspace by: its id (the Stripe plugin's
-// `referenceId` for a subscription), its slug, or an invitation of it.
 const NamingSchema = Schema.Struct({
   invitationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   organizationId: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -179,13 +208,27 @@ const workspacesNamedBy = async (
   ];
 };
 
-/** The workspaces a request names, in its body and its query. */
+const notRead = (path: string, field: NamingField) =>
+  APIError.from("BAD_REQUEST", {
+    code: "WORKSPACE_FIELD_NOT_READ",
+    message: `${path} does not read ${field}, which names a workspace: leave it out`,
+  });
+
+/**
+ * The workspaces a request names, in its body and its query. On a guarded
+ * route, a field the route does not read is refused.
+ */
 const namedWorkspaces = async (
   ctx: GenericEndpointContext
 ): Promise<readonly WorkspaceId[]> => {
-  const parts: readonly unknown[] = [ctx.body ?? {}, ctx.query ?? {}];
+  const reads = guarded.get(ctx.path);
 
-  const namings = parts.flatMap((part) =>
+  const parts: readonly (readonly [Where, unknown])[] = [
+    ["body", ctx.body ?? {}],
+    ["query", ctx.query ?? {}],
+  ];
+
+  const namings = parts.flatMap(([where, part]) =>
     Option.match(decodeNaming(part), {
       // A name that is not text cannot be read: refused.
       onNone: () => {
@@ -195,7 +238,19 @@ const namedWorkspaces = async (
 
         return [];
       },
-      onSome: (naming) => [naming],
+      onSome: (naming) => {
+        if (reads !== undefined) {
+          for (const key of namingKeys) {
+            const field: NamingField = `${where}.${key}`;
+
+            if (naming[key] !== undefined && !reads.includes(field)) {
+              throw notRead(ctx.path, field);
+            }
+          }
+        }
+
+        return [naming];
+      },
     })
   );
 
@@ -210,8 +265,10 @@ const namedWorkspaces = async (
  * Part of Better Auth's before hook: its routes that read or change one
  * workspace never pass WorkspaceAccess, so a member whose account lacks the
  * two-step verification the workspace requires is refused them here, as
- * the API refuses them. The workspace is the one the request names, or the
- * session's active one. The routes a refused member needs (their
+ * the API refuses them. The workspaces checked are the session's active
+ * one and every one the request names, together: a route falls back to the
+ * active one when the field it reads is empty, so neither alone is the one
+ * it acts on. The routes a refused member needs (their
  * workspaces, the picker, invitations, leaving, making one of their own)
  * stay open. Better Auth's calls from Peal's own API carry no request:
  * WorkspaceAccess checked them.
@@ -243,14 +300,12 @@ export const refuseLockedOutMembers = async (
   const { session, user } = found.value;
   const named = await namedWorkspaces(ctx);
 
-  const workspaceIds =
-    named.length > 0
-      ? named
-      : Option.toArray(
-          Option.fromNullishOr(session.activeOrganizationId).pipe(
-            Option.map(idOf)
-          )
-        );
+  const workspaceIds = [
+    ...named,
+    ...Option.toArray(
+      Option.fromNullishOr(session.activeOrganizationId).pipe(Option.map(idOf))
+    ),
+  ];
 
   if (
     workspaceIds.length > 0 &&

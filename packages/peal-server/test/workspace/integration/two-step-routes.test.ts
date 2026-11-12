@@ -160,6 +160,10 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
             "admin"
           );
 
+          // A workspace of the member's own, which requires nothing: the
+          // decoy a request may name beside the one it acts on.
+          const ownId = yield* workspaceOf(member, "Decoy");
+
           const { cookies } = yield* enrolled(owner);
 
           const { slug } = yield* bodyOf(
@@ -214,6 +218,80 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
               `${call.path}: ${JSON.stringify(refused.body)}`
             );
             assert.strictEqual(codeOf(refused), "TWO_STEP_REQUIRED", call.path);
+          }
+
+          // Naming their own workspace in a field the route does not read
+          // is refused, and naming it where the route reads it is checked
+          // with the session's active workspace, which requires it.
+          const decoys: readonly (Call & { readonly code: string })[] = [
+            {
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: `/organization/list-members?referenceId=${ownId}`,
+            },
+            {
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: `/organization/get-full-organization?referenceId=${ownId}`,
+            },
+            {
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: `/organization/list-invitations?referenceId=${ownId}`,
+            },
+            {
+              body: { data: { name: "Renamed" }, referenceId: ownId },
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: "/organization/update",
+            },
+            {
+              body: { data: { name: "Renamed" } },
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: `/organization/update?organizationId=${ownId}`,
+            },
+            {
+              body: {
+                email: `invitee+${randomUUID()}@example.test`,
+                referenceId: ownId,
+                role: "viewer",
+              },
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: "/organization/invite-member",
+            },
+            {
+              body: { memberIdOrEmail: owner.email, referenceId: ownId },
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: "/organization/remove-member",
+            },
+            {
+              body: {
+                customerType: "organization",
+                organizationId: ownId,
+                plan: "starter",
+              },
+              code: "WORKSPACE_FIELD_NOT_READ",
+              path: "/subscription/upgrade",
+            },
+            {
+              code: "TWO_STEP_REQUIRED",
+              path: `/organization/list-members?organizationId=${ownId}`,
+            },
+            {
+              body: {
+                customerType: "organization",
+                plan: "starter",
+                referenceId: ownId,
+              },
+              code: "TWO_STEP_REQUIRED",
+              path: "/subscription/upgrade",
+            },
+          ];
+
+          for (const { code, ...call } of decoys) {
+            const refused = yield* send(browser, call);
+
+            assert.strictEqual(
+              codeOf(refused),
+              code,
+              `${call.path}: ${refused.status} ${JSON.stringify(refused.body)}`
+            );
           }
 
           // What they still reach.
