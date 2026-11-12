@@ -10,11 +10,8 @@ import {
   maxProviderModelLength,
 } from "#assistant/domain/image-provider.ts";
 
-const outside = { production: false };
-const production = { production: true };
-
-const reasonOf = (text: string, where = production) =>
-  Result.match(checkProviderAddress(text, where), {
+const reasonOf = (text: string) =>
+  Result.match(checkProviderAddress(text), {
     onFailure: ({ reason }) => reason,
     onSuccess: (address) => `accepted ${address}`,
   });
@@ -35,16 +32,19 @@ describe(checkProviderAddress, () => {
     );
   });
 
-  it("refuses http in production and takes it outside", () => {
-    expect(reasonOf("http://images.example.com/v1")).toBe("notHttps");
-    expect(reasonOf("http://images.example.com/v1", outside)).toBe(
-      "accepted http://images.example.com/v1"
+  it("takes https on the default port only, as the outbound guard does", () => {
+    expect(reasonOf("https://images.example.com:443/v1")).toBe(
+      "accepted https://images.example.com/v1"
     );
-  });
 
-  it("refuses an address of another scheme anywhere", () => {
-    expect(reasonOf("ftp://images.example.com/v1", outside)).toBe("notHttps");
-    expect(reasonOf("file:///etc/passwd", outside)).toBe("notHttps");
+    for (const text of [
+      "http://images.example.com/v1",
+      "https://images.example.com:8443/v1",
+      "ftp://images.example.com/v1",
+      "file:///etc/passwd",
+    ]) {
+      expect(reasonOf(text)).toBe("notHttps");
+    }
   });
 
   it("refuses a user or a password", () => {
@@ -81,7 +81,7 @@ describe(checkProviderAddress, () => {
   it("writes the address a key is bound to one way", () => {
     expect(
       Result.getOrThrow(
-        checkProviderAddress("https://Images.Example.com:443/v1/", production)
+        checkProviderAddress("https://Images.Example.com:443/v1/")
       )
     ).toBe("https://images.example.com/v1");
   });

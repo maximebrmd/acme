@@ -4,12 +4,10 @@ import { ProviderAddressCheck } from "#assistant/application/ports/provider-addr
 import { ProviderAddressNotPublic } from "#assistant/application/provider-address-not-public.ts";
 import { checkProviderAddress } from "#assistant/domain/image-provider.ts";
 import { ProviderAddressRejected } from "#assistant/domain/provider-address-rejected.ts";
-import { isProduction } from "#shared/infrastructure/environment.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
- * ProviderAddressCheck on the domain's rules, with production read from
- * `NODE_ENV` when the server starts, then the outbound guard, as every
+ * ProviderAddressCheck on the domain's rules, then the outbound guard, as every
  * call to the provider will be checked: an address the guard refuses for
  * its scheme or port is `notHttps`, a host that is not public or does not
  * resolve ProviderAddressNotPublic, and one that cannot be looked up for
@@ -18,14 +16,11 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 export const GuardedProviderAddressCheck = Layer.effect(
   ProviderAddressCheck,
   Effect.gen(function* GuardedProviderAddressCheck() {
-    const production = yield* isProduction;
     const guard = yield* OutboundGuard;
 
     return ProviderAddressCheck.of({
       check: Effect.fn("ProviderAddressCheck.check")(function* check(text) {
-        const address = yield* Effect.fromResult(
-          checkProviderAddress(text, { production })
-        );
+        const address = yield* Effect.fromResult(checkProviderAddress(text));
 
         yield* guard.check(new URL(address)).pipe(
           Effect.catchTag(

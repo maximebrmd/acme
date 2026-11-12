@@ -8,7 +8,9 @@ import { SqlClient } from "effect/sql";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { GeneratedImages } from "#assistant/application/ports/generated-images.ts";
+import { ProviderAddressCheck } from "#assistant/application/ports/provider-address-check.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { ProviderAddressSchema } from "#assistant/domain/image-provider.ts";
 import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider-secrets.ts";
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
@@ -212,18 +214,25 @@ export const ImageProvidersTest = Layer.mergeAll(
 );
 
 /**
+ * Every address taken as it is written: for a provider on loopback, which
+ * the domain's rules (HTTPS on 443) and the real guard refuse. Both are
+ * tested on their own.
+ */
+const AnyProviderAddress = Layer.succeed(
+  ProviderAddressCheck,
+  ProviderAddressCheck.of({
+    check: (text) => Effect.succeed(ProviderAddressSchema.make(text)),
+  })
+);
+
+/**
  * The image providers workspaces brought, with the real adapter behind
- * them and a guard that lets every address through, saving included: for
- * a provider on loopback, which the real guard refuses. The guard itself
- * is tested on its own.
+ * them and a guard that lets every address through, saving included.
  */
 export const LoopbackImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
   DrizzleOwnImageCountsLive,
-  GuardedProviderAddressCheck.pipe(
-    Layer.provide(OpenOutboundGuard),
-    Layer.orDie
-  ),
+  AnyProviderAddress,
   openAiCompatibleOwnImageModel({ timeout: "10 seconds" }).pipe(
     Layer.provide(OpenOutboundGuard),
     Layer.provide(FetchHttpClient.layer)

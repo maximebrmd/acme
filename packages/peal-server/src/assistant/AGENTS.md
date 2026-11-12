@@ -79,8 +79,9 @@
   `ImageFailed` carries no cause.
 - A workspace may bring its own image provider (`ImageProviders`,
   `assistant.image_providers`, one row a workspace): an address
-  (`checkProviderAddress`: HTTPS, HTTP outside production, no credentials,
-  query or fragment, 2,048 characters, stored without its final slashes),
+  (`checkProviderAddress`: HTTPS on the default port, as the outbound guard
+  takes, no credentials, query or fragment, 2,048 characters, stored
+  without its final slashes),
   a model (one line, `providerModelPattern`) and a key, sealed through the
   `ProviderSecrets` port on the channels context's `TokenCipher`
   (`CipherProviderSecrets`), bound to `assistant:<workspace>:<address>`,

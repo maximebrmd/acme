@@ -14,7 +14,7 @@ export const maxProviderKeyLength = 500;
 
 /**
  * Where a workspace's image provider is reached: an absolute HTTPS address
- * (HTTP outside production), without a user, a password, a query or a
+ * on the default port, without a user, a password, a query or a
  * fragment, and without the slashes that end it, so the API's paths
  * (`/images/generations`) follow it. Whether its host is public is the
  * outbound guard's to say, when it is saved and before every call.
@@ -49,13 +49,12 @@ const refused = (reason: ProviderAddressRejected["reason"]) =>
   Result.fail(new ProviderAddressRejected({ reason }));
 
 /**
- * The address as a workspace's provider keeps it, or why it is refused.
- * `production` says whether plain HTTP is refused too; the infrastructure
- * knows, the domain is told.
+ * The address as a workspace's provider keeps it, or why it is refused:
+ * HTTPS on the default port only, which is all the outbound guard lets a
+ * request reach.
  */
 export const checkProviderAddress = (
-  text: string,
-  { production }: { readonly production: boolean }
+  text: string
 ): Result.Result<ProviderAddress, ProviderAddressRejected> => {
   const url = URL.parse(text.trim());
 
@@ -63,7 +62,7 @@ export const checkProviderAddress = (
     return refused("malformed");
   }
 
-  if (url.protocol !== "https:" && (production || url.protocol !== "http:")) {
+  if (url.protocol !== "https:" || url.port !== "") {
     return refused("notHttps");
   }
 
