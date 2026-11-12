@@ -1,9 +1,8 @@
 ---
 # Production, on peal.social. The host names are the official ones; the
-# Cloudflare values (the Access team and audience tags, the buckets and
-# their endpoints) are placeholders until production's Pulumi stack is up
-# and scripts/cloudflare_from_pulumi.py writes cloudflare.yml, as the
-# comment above cloudflare_access_team says. The server's address stays off
+# Cloudflare values (the audience tags, the buckets and their endpoints)
+# come from production's Pulumi stack, in cloudflare.yml, which
+# scripts/cloudflare_from_pulumi.py writes. The server's address stays off
 # Git, in host_vars/peal-production/local.yml (inventory/hosts.yml).
 server_hostname: peal-production
 peal_environment: production
@@ -69,13 +68,8 @@ peal_short_link_hostname: peal.link
 # check. Production's Pulumi stack makes the applications, and
 # scripts/cloudflare_from_pulumi.py writes their tags, the buckets and
 # their endpoints into cloudflare.yml. This file is read after it and would
-# win: the commit that adds cloudflare.yml removes cloudflare_access_aud and
-# the four storage values below, as the sandbox's main.yml did.
-cloudflare_access_team: example-team
-cloudflare_access_aud:
-  admin: REPLACE-WITH-THE-ADMIN-APPLICATION-AUD
-  grafana: REPLACE-WITH-THE-GRAFANA-APPLICATION-AUD
-  ssh: REPLACE-WITH-THE-SSH-APPLICATION-AUD
+# win, so it holds none of them.
+cloudflare_access_team: winter-resonance-b4ec
 # Production is public; Access guards Grafana, SSH and peal_access_paths.
 peal_access_everything: false
 
@@ -93,11 +87,8 @@ peal_heartbeat_url: https://uptime.peal.social/api/v1/endpoints/production_grafa
 # media endpoint is an https:// URL, the backup endpoint a host. These name
 # Cloudflare R2, in the account whose id names the endpoint: both buckets
 # are created in R2's EU jurisdiction, which cannot change afterwards and
-# whose endpoints carry `.eu.`, so the data stays in the EU.
-peal_media_endpoint: https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
-peal_media_bucket: peal-production-media
-peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
-peal_backup_bucket: peal-production-backups
+# whose endpoints carry `.eu.`, so the data stays in the EU. The buckets and
+# endpoints are in cloudflare.yml.
 peal_backup_path: /production
 
 # The server samples one trace in ten that begins there, and follows the

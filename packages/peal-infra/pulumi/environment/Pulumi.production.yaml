@@ -11,3 +11,4 @@ config:
     grafana: grafana
     ssh: ssh
   peal:shortLinkHost: peal.link
+encryptionsalt: v1:ldzigfjYqpY=:v1:z2ruP+pPeGn6d6GC:3pUNz1HeyTiTqNVAUwxl+cu8KCkspg==
