@@ -31,6 +31,11 @@ bootstrap_user: root
 # port 22 is then open, rate limited, and Ansible connects to ansible_host.
 ssh_via_tunnel: true
 
+# The swap file, made of swap_size_mb when it does not exist. A server whose
+# image already made one names it in its group (/swap.img, from Ubuntu's
+# installer), and the system role reuses it as it is: swap_size_mb is read
+# only when the file is made.
+swap_file: /swapfile
 swap_size_mb: 2048
 # Security updates install daily; a kernel update reboots at this time (UTC).
 unattended_reboot_time: "03:30"

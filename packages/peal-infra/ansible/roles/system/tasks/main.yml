@@ -86,20 +86,21 @@
 
 # Swap absorbs a memory spike, such as many images probed at once, instead
 # of the kernel killing a process (videos are streamed to the platforms, a
-# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is made under
-# another name and renamed once it is a swap area, so a run cut short leaves
-# no /swapfile half made; `creates` skips it once /swapfile exists, and check
-# mode says it would run.
+# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is swap_file, which
+# may be one the image made. It is made under another name and renamed once
+# it is a swap area, so a run cut short leaves no swap file half made;
+# `creates` skips it once the file exists, whatever its size, and check mode
+# says it would run.
 - name: Create the swap file
   ansible.builtin.shell: |
     set -eu
     umask 077
-    rm -f /swapfile.new
-    fallocate -l {{ swap_size_mb }}M /swapfile.new
-    mkswap /swapfile.new
-    mv /swapfile.new /swapfile
+    rm -f {{ swap_file }}.new
+    fallocate -l {{ swap_size_mb }}M {{ swap_file }}.new
+    mkswap {{ swap_file }}.new
+    mv {{ swap_file }}.new {{ swap_file }}
   args:
-    creates: /swapfile
+    creates: "{{ swap_file }}"
 
 # Read-only, so it runs in check mode too.
 - name: Read the active swap
@@ -109,13 +110,14 @@
   check_mode: false
 
 - name: Turn the swap on
-  ansible.builtin.command: swapon /swapfile
-  when: "'/swapfile' not in system_swap_active.stdout_lines"
+  ansible.builtin.command: swapon {{ swap_file }}
+  when: swap_file not in system_swap_active.stdout_lines
   changed_when: true
 
+# Found by its file: an image's own line for it is the same, and stays.
 - name: Mount the swap at boot
   ansible.posix.mount:
-    src: /swapfile
+    src: "{{ swap_file }}"
     path: none
     fstype: swap
     opts: sw

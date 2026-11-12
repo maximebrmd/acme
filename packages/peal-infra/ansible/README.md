@@ -933,8 +933,9 @@ A second run of `site.yml` reports no change:
 - Templates for sshd, sudoers and cloudflared's routes are validated before
   they replace the live files; `sshd -t` runs again on the whole
   configuration and reports no change.
-- The swap file is created only when `/swapfile` is missing, and the secrets
-  only when `secrets.env` is (`creates`). The swap file is made under another
+- The swap file is created only when `swap_file` is missing (`/swapfile`, or
+  the file the image made), and the secrets only when `secrets.env` is
+  (`creates`). The swap file is made under another
   name and renamed once it is a swap area, so a run cut short leaves none
   half made.
 - cloudflared's package is downloaded only when its digest differs, and
