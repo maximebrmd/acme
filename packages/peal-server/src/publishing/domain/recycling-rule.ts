@@ -146,9 +146,11 @@ const isAfter = (left: LocalDate, right: LocalDate): boolean =>
   left.year * 10_000 + left.month * 100 + left.day >
   right.year * 10_000 + right.month * 100 + right.day;
 
-// Whether an occurrence due at `at`, the `number`-th, is one the rule
-// still makes.
-const within = (
+/**
+ * Whether an occurrence going out at `at`, the `number`-th, is one the
+ * rule still makes: within its count, and on or before its last day.
+ */
+export const isWithinEnding = (
   { count, timeZone, until }: RecyclingEnding & { timeZone: TimeZoneId },
   number: number,
   at: DateTime.Utc
@@ -209,7 +211,7 @@ export const startRule = (
     later(rule.anchorAt, now)
   );
 
-  if (!within(rule, 2, next)) {
+  if (!isWithinEnding(rule, 2, next)) {
     return Result.fail(new RecyclingEndsTooSoon({ firstDueAt: next }));
   }
 
@@ -279,7 +281,7 @@ export const occurrenceMade = (
   const made = rule.made + 1;
   const next = nextDueAfter(rule.interval, rule.anchorAt, rule.timeZone, dueAt);
 
-  return within(rule, made + 1, next)
+  return isWithinEnding(rule, made + 1, next)
     ? changed(rule, { lastDueAt: at, made, nextDueAt: Option.some(next) })
     : changed(rule, {
         lastDueAt: at,
@@ -358,7 +360,7 @@ export const resumeRule = (
           later(rule.lastDueAt, now)
         );
 
-  if (!within(rule, rule.made + 1, next)) {
+  if (!isWithinEnding(rule, rule.made + 1, next)) {
     return Result.fail(new RecyclingEndsTooSoon({ firstDueAt: next }));
   }
 
@@ -404,7 +406,7 @@ export const editRule = (
   return Option.match(edited.nextDueAt, {
     onNone: () => Result.succeed(edited),
     onSome: (next) =>
-      within(edited, edited.made + 1, next)
+      isWithinEnding(edited, edited.made + 1, next)
         ? Result.succeed(edited)
         : Result.fail(new RecyclingEndsTooSoon({ firstDueAt: next })),
   });
@@ -430,7 +432,7 @@ export const comingDue = (
   let at = plannedAt(rule, now);
   let occurrence = rule.made + 1;
 
-  while (coming.length < count && within(rule, occurrence, at)) {
+  while (coming.length < count && isWithinEnding(rule, occurrence, at)) {
     coming.push({ at, occurrence });
     at = nextDueAfter(rule.interval, rule.anchorAt, rule.timeZone, at);
     occurrence += 1;

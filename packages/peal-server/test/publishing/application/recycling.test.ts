@@ -502,6 +502,72 @@ describe("making a rule's occurrences", () => {
   );
 
   it.effect(
+    "makes nothing past its last day, when the instant it would take is after it, and ends completed",
+    () =>
+      onServer(
+        Effect.gen(function* pastUntil() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const source = yield* published(workspaceId, channel);
+
+          // Due on the 22nd, its queue's slot a Friday after its last day.
+          const queue = yield* Queues.use((queues) =>
+            queues.create(actorIn(workspaceId), {
+              channelIds: [],
+              channelSetId: Option.none(),
+              isDefault: false,
+              name: "Fridays",
+              slots: [{ day: "friday", time: { hour: 9, minute: 1 } }],
+              timeZone: paris,
+            })
+          ).pipe(Effect.map(({ queue: made }) => made));
+
+          const another = yield* published(workspaceId, channel, "Fridays.");
+
+          const queued = yield* started(
+            workspaceId,
+            weekly(another, {
+              queueId: Option.some(queue.id),
+              until: Option.some({ day: 23, month: 6, year: 2026 }),
+            })
+          );
+
+          // A run before the 22nd: the queue's slot is the 26th.
+          yield* setTime("2026-06-20T08:00:00Z");
+          yield* makeDue;
+
+          assert.lengthOf(yield* occurrencesOf(queued.id), 0);
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, queued.id)).status._tag,
+            "ended"
+          );
+
+          // Due on the 22nd, last day the 25th; no run until the 23rd.
+          const missed = yield* started(
+            workspaceId,
+            weekly(source, {
+              until: Option.some({ day: 25, month: 6, year: 2026 }),
+            })
+          );
+
+          yield* setTime("2026-06-23T08:00:00Z");
+          yield* makeDue;
+
+          assert.lengthOf(yield* occurrencesOf(missed.id), 0);
+
+          const ended = (yield* ruleNow(workspaceId, missed.id)).status;
+
+          assert.strictEqual(
+            ended._tag === "ended" ? ended.reason : ended._tag,
+            "completed"
+          );
+          assert.lengthOf(yield* toldOf([missed.id, queued.id]), 0);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "ends when its queue is gone, whether the deletion comes before or meets the run",
     () =>
       onServer(

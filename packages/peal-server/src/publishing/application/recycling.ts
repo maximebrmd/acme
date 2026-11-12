@@ -24,6 +24,7 @@ import {
   editRule,
   endRule,
   isDue,
+  isWithinEnding,
   maxRecyclingRulesPerWorkspace,
   occurrenceMade,
   pauseRule,
@@ -66,6 +67,7 @@ import { violationsOf } from "./publishability.ts";
 import type { QueueNotFound } from "./queue-not-found.ts";
 import type { QueueStore } from "./queue-store.ts";
 import { RecyclingActors } from "./recycling-actors.ts";
+import { RecyclingEndingPassed } from "./recycling-ending-passed.ts";
 import { RecyclingNotices } from "./recycling-notices.ts";
 import { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
 import { RecyclingStore } from "./recycling-store.ts";
@@ -725,6 +727,11 @@ export class Recycling extends Context.Service<
         const number = planned.made + 1;
         const dueAt = plannedAt(planned, now);
 
+        // Missed until past its ending: nothing more to make.
+        if (!isWithinEnding(planned, number, dueAt)) {
+          return yield* ended(planned, "completed");
+        }
+
         const outcome = yield* scheduling
           .sendOccurrence(actor, {
             channelIds: copy.value.channelIds,
@@ -745,7 +752,15 @@ export class Recycling extends Context.Service<
               Effect.gen(function* written() {
                 const at = scheduledAt(made) ?? dueAt;
 
-                yield* store.update(
+                // A queue's slot past the rule's last day: the send rolls
+                // back, and the rule ends completed.
+                if (!isWithinEnding(planned, number, at)) {
+                  return yield* new RecyclingEndingPassed({
+                    ruleId: planned.id,
+                  });
+                }
+
+                return yield* store.update(
                   occurrenceMade(planned, dueAt, at, yield* DateTime.now)
                 );
               }),
@@ -768,6 +783,7 @@ export class Recycling extends Context.Service<
                 Effect.succeed("contentRejected" as const),
               QueueHasNoRoom: () => Effect.succeed("queueFull" as const),
               QueueNotFound: () => Effect.succeed("queueGone" as const),
+              RecyclingEndingPassed: () => Effect.succeed("completed" as const),
               // Gone between the copy and the send: the next run copies
               // what is left.
               ScheduleInPast: () => Effect.succeed("left" as const),
