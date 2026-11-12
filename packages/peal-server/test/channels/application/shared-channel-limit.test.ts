@@ -32,6 +32,7 @@ import {
   syntheticCredentials,
   TokenCipherTest,
 } from "#test/channels/support.ts";
+import { statementsOf } from "#test/shared/support.ts";
 import { PartnerOwnershipLive } from "#workspace/container.ts";
 
 // A partner account whose home workspace is the first, owning the others:
@@ -242,5 +243,45 @@ layer(SharedFreePlanTest)("a partner's workspaces on one plan", (it) => {
 
       assert.strictEqual(channel.workspaceId, outside);
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "count several workspaces' pools at once as each one's, each pool once, holding none",
+    () =>
+      Effect.gen(function* across() {
+        const usage = yield* ChannelUsage;
+        const home = yield* freshWorkspace;
+        const owned = yield* freshWorkspace;
+        const unlisted = yield* freshWorkspace;
+        const outside = yield* freshWorkspace;
+        const empty = yield* freshWorkspace;
+
+        yield* share(home, [owned, unlisted]);
+        yield* fill(home, 1);
+        yield* fill(owned, 1);
+        yield* fill(unlisted, 2);
+        yield* fill(outside, 2);
+
+        const ids = [home, owned, outside, empty];
+
+        const { result, statements } = yield* statementsOf(
+          usage.connectedAcross(ids)
+        );
+
+        for (const id of ids) {
+          assert.strictEqual(result.get(id), yield* usage.connected(id));
+        }
+
+        assert.deepStrictEqual(
+          ids.map((id) => result.get(id)),
+          [4, 4, 2, 0]
+        );
+        // The pools (owners, homes, their members) and one count; no lock.
+        assert.strictEqual(statements, 4);
+        assert.deepStrictEqual(yield* statementsOf(usage.connectedAcross([])), {
+          result: new Map(),
+          statements: 0,
+        });
+      })
   );
 });

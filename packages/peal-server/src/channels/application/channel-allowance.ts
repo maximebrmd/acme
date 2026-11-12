@@ -27,5 +27,16 @@ export class ChannelAllowance extends Context.Service<
     readonly sharedWith: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly WorkspaceId[], DatabaseError>;
+    /**
+     * The same, for each of these workspaces at once, without holding
+     * anything: for reports of how workspaces stand, never to count and
+     * then add. One that shares its plan with none is left out.
+     */
+    readonly sharingIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<WorkspaceId, readonly WorkspaceId[]>,
+      DatabaseError
+    >;
   }
 >()("peal-server/channels/application/ChannelAllowance") {}

@@ -9,6 +9,7 @@ import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscr
 import { Ids } from "#shared/application/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { statementsOf } from "#test/shared/support.ts";
 
 const RepositoryTest = DrizzleSubscriptionsLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -207,5 +208,51 @@ layer(RepositoryTest)("the subscriptions in Postgres", (it) => {
       assert.deepStrictEqual(yield* statusesOf(mine), []);
       assert.deepStrictEqual(yield* statusesOf(other), ["active"]);
     })
+  );
+
+  it.effect(
+    "list several workspaces' subscriptions at once as each one's, in one statement",
+    () =>
+      Effect.gen(function* several() {
+        const subscriptions = yield* Subscriptions;
+        const twice = yield* freshWorkspace;
+        const once = yield* freshWorkspace;
+        const never = yield* freshWorkspace;
+
+        for (const [workspaceId, status] of [
+          [twice, "canceled"],
+          [twice, "active"],
+          [once, "trialing"],
+        ] as const) {
+          yield* subscriptions.record(
+            changeOf(workspaceId, {
+              eventId: yield* freshStripeId("evt"),
+              occurredAt: "2026-11-09T10:00:00Z",
+              status,
+              subscriptionId: yield* freshStripeId("sub"),
+            })
+          );
+        }
+
+        const ids = [twice, once, never];
+
+        const { result, statements } = yield* statementsOf(
+          subscriptions.ofWorkspaces(ids)
+        );
+
+        for (const id of ids) {
+          assert.deepStrictEqual(
+            result.get(id) ?? [],
+            yield* subscriptions.ofWorkspace(id)
+          );
+        }
+
+        assert.strictEqual(statements, 1);
+        assert.isFalse(result.has(never));
+        assert.deepStrictEqual(
+          yield* statementsOf(subscriptions.ofWorkspaces([])),
+          { result: new Map(), statements: 0 }
+        );
+      })
   );
 });

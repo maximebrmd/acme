@@ -2,6 +2,7 @@ import { Context, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { PartnerId } from "#workspace/domain/partner-id.ts";
 import type { Partner } from "#workspace/domain/partner.ts";
 import { allowsReturnTo } from "#workspace/domain/return-origin.ts";
 
@@ -49,6 +50,20 @@ export class PartnerOwnership extends Context.Service<
     readonly poolOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<PlanPool>, DatabaseError>;
+    /** The partner that owns each of these workspaces; others left out. */
+    readonly ownersIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, WorkspaceOwner>, DatabaseError>;
+    /**
+     * The pool each of these workspaces is in, as `poolOf` answers it, in
+     * three reads whatever their number; one in no pool is left out. It
+     * holds nothing, so what it answers may change before the caller acts:
+     * for reports of a state (the overview's standing), never to count
+     * and then add.
+     */
+    readonly poolsIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, PlanPool>, DatabaseError>;
     /**
      * Who a hosted page of the workspace says asks: its partner, the one
      * that owns it or whose home workspace it is, by the name and logo its
@@ -126,6 +141,54 @@ export class PartnerOwnership extends Context.Service<
           holder,
           others: [holder, ...owned].filter((id) => id !== workspaceId),
         });
+      });
+
+      const poolsIn = Effect.fn("PartnerOwnership.poolsIn")(function* poolsIn(
+        workspaceIds: readonly WorkspaceId[]
+      ) {
+        if (workspaceIds.length === 0) {
+          return new Map<WorkspaceId, PlanPool>();
+        }
+
+        const owners = yield* workspaces.ownersIn(workspaceIds);
+
+        const homes = yield* partners.ofWorkspaces(
+          workspaceIds.filter((id) => !owners.has(id))
+        );
+
+        // Each workspace's partner, and the home workspace whose plan it
+        // takes.
+        const partnerOf = new Map<
+          WorkspaceId,
+          { readonly holder: WorkspaceId; readonly partnerId: PartnerId }
+        >([
+          ...[...owners].map(
+            ([id, { homeWorkspaceId, partnerId }]) =>
+              [id, { holder: homeWorkspaceId, partnerId }] as const
+          ),
+          ...[...homes].map(
+            ([id, partner]) =>
+              [id, { holder: id, partnerId: partner.id }] as const
+          ),
+        ]);
+
+        const partnerIds = [
+          ...new Set([...partnerOf.values()].map(({ partnerId }) => partnerId)),
+        ];
+
+        const owned = yield* workspaces.idsOfEach(partnerIds);
+
+        return new Map(
+          [...partnerOf].map(([workspaceId, { holder, partnerId }]) => [
+            workspaceId,
+            {
+              holder,
+              others: [holder, ...(owned.get(partnerId) ?? [])].filter(
+                (id) => id !== workspaceId
+              ),
+            } satisfies PlanPool,
+          ])
+        );
       });
 
       // The partner account behind a workspace: the one that owns it, or
@@ -217,7 +280,9 @@ export class PartnerOwnership extends Context.Service<
         isHome: (workspaceId) =>
           partners.ofWorkspace(workspaceId).pipe(Effect.map(Option.isSome)),
         ownerOf: (workspaceId) => workspaces.ownerOf(workspaceId),
+        ownersIn: (workspaceIds) => workspaces.ownersIn(workspaceIds),
         poolOf,
+        poolsIn,
         presentedAs,
       });
     })
@@ -232,7 +297,9 @@ export class PartnerOwnership extends Context.Service<
       ensureDeletable: () => Effect.void,
       isHome: () => Effect.succeed(false),
       ownerOf: () => Effect.succeedNone,
+      ownersIn: () => Effect.succeed(new Map()),
       poolOf: () => Effect.succeedNone,
+      poolsIn: () => Effect.succeed(new Map()),
       presentedAs: () => Effect.succeedNone,
     })
   );

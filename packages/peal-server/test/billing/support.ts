@@ -18,17 +18,18 @@ import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 
+const entitlementsOn = (plan: Plan) =>
+  new Entitlements({ plan: Option.some(plan), subscription: Option.none() });
+
 /** Every workspace on `plan`, without a subscription. */
 export const everyWorkspaceOn = (plan: Plan) =>
   Layer.succeed(
     WorkspaceEntitlements,
     WorkspaceEntitlements.of({
-      of: () =>
+      of: () => Effect.succeed(entitlementsOn(plan)),
+      ofEach: (workspaceIds) =>
         Effect.succeed(
-          new Entitlements({
-            plan: Option.some(plan),
-            subscription: Option.none(),
-          })
+          new Map(workspaceIds.map((id) => [id, entitlementsOn(plan)]))
         ),
     })
   );
@@ -36,7 +37,11 @@ export const everyWorkspaceOn = (plan: Plan) =>
 /** A server that does not bill: nothing is limited. */
 export const UnmeteredTest = Layer.succeed(
   WorkspaceEntitlements,
-  WorkspaceEntitlements.of({ of: () => Effect.succeed(unmetered) })
+  WorkspaceEntitlements.of({
+    of: () => Effect.succeed(unmetered),
+    ofEach: (workspaceIds) =>
+      Effect.succeed(new Map(workspaceIds.map((id) => [id, unmetered]))),
+  })
 );
 
 /** What a subscription needs, the rest left to defaults. */
@@ -124,6 +129,18 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
         Effect.succeed(
           held.filter(
             (subscription) => subscription.workspaceId === workspaceId
+          )
+        ),
+      ofWorkspaces: (workspaceIds) =>
+        Effect.succeed(
+          new Map(
+            workspaceIds.flatMap((workspaceId) => {
+              const of = held.filter(
+                (subscription) => subscription.workspaceId === workspaceId
+              );
+
+              return of.length === 0 ? [] : [[workspaceId, of] as const];
+            })
           )
         ),
       record: () => Effect.succeed("recorded" as const),

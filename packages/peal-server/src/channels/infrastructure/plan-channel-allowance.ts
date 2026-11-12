@@ -20,6 +20,7 @@ export const PlanChannelAllowanceLive = Layer.effect(
           .of(workspaceId)
           .pipe(Effect.map(({ allowances }) => allowances.channels)),
       sharedWith: () => Effect.succeed([]),
+      sharingIn: () => Effect.succeed(new Map()),
     });
   })
 );
@@ -49,6 +50,15 @@ export const SharedChannelAllowanceLive = Layer.effect(
             })
           )
         ),
+      sharingIn: (workspaceIds) =>
+        ownership
+          .poolsIn(workspaceIds)
+          .pipe(
+            Effect.map(
+              (pools) =>
+                new Map([...pools].map(([id, { others }]) => [id, others]))
+            )
+          ),
     });
   })
 );

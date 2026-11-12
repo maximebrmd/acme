@@ -74,12 +74,16 @@ const reportsOn = (entitlements: typeof UnmeteredTest) =>
         PartnerTenancy.layerNone,
         Layer.succeed(
           WorkspaceUsage,
-          WorkspaceUsage.of({ of: () => Effect.succeed(current) })
+          WorkspaceUsage.of({
+            heldIn: () => Effect.die("not read here"),
+            of: () => Effect.succeed(current),
+          })
         ),
         Layer.succeed(
           PlanHolders,
           PlanHolders.of({
             holderOf: (id) => Effect.succeed(id === tenantId ? homeId : id),
+            holdersOf: () => Effect.die("not read here"),
           })
         )
       )

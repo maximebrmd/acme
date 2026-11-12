@@ -131,6 +131,7 @@ const UsageTest = Layer.effect(
   BillingLog.use(({ holdings }) =>
     Effect.succeed(
       WorkspaceUsage.of({
+        heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(holdings).pipe(
             Effect.map((held) => ({
@@ -168,6 +169,7 @@ const PortsInMemory = Layer.mergeAll(
           eraseWorkspace: () => Effect.void,
           forgetUser: () => Effect.void,
           ofWorkspace: () => Ref.get(held),
+          ofWorkspaces: () => Effect.die("not read here"),
           record: () => Effect.succeed("recorded" as const),
           remindable: () => Ref.get(held),
         })

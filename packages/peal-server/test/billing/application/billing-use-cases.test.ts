@@ -56,6 +56,7 @@ const SubscriptionsInMemory = Layer.effect(
       eraseWorkspace: () => Ref.set(saved, []),
       forgetUser: () => Effect.void,
       ofWorkspace: () => Ref.get(saved),
+      ofWorkspaces: () => Effect.die("not read here"),
       record: (change) =>
         Ref.update(saved, (all) => [...all, change.subscription]).pipe(
           Effect.as("recorded" as const)
@@ -68,6 +69,7 @@ const SubscriptionsInMemory = Layer.effect(
 const UsageTest = Layer.succeed(
   WorkspaceUsage,
   WorkspaceUsage.of({
+    heldIn: () => Effect.die("not read here"),
     of: () =>
       Effect.succeed({
         assistantRequests: { resetsAt: midnight, used: 4 },
@@ -747,6 +749,7 @@ const UnreadTest = Layer.mergeAll(
           eraseWorkspace: () => Effect.void,
           forgetUser: () => Effect.void,
           ofWorkspace: () => Effect.die("read while billing is off"),
+          ofWorkspaces: () => Effect.die("read while billing is off"),
           record: () => Effect.die("not used"),
           remindable: () => Effect.die("not used"),
         })

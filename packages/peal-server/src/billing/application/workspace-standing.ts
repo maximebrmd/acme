@@ -8,6 +8,7 @@ import {
 import type { Excess } from "#billing/domain/standing.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
@@ -47,6 +48,19 @@ export class WorkspaceStanding extends Context.Service<
   WorkspaceStanding,
   {
     readonly of: (actor: Actor) => Effect.Effect<Standing, DatabaseError>;
+    /**
+     * Those of these workspaces for which `of` answers `mustReduce`, for
+     * views across workspaces: a few reads whatever their number (the
+     * plans' holders and their subscriptions, the pools, the channels,
+     * the members), only what decides it. It holds no partner's pool, as
+     * connecting a channel does: it reports a state and adds nothing, and
+     * a page of workspaces would queue behind every connection. Nothing
+     * on a server that does not bill. It must stay equal to `of`
+     * (`test/billing/integration/standing-across-workspaces.test.ts`).
+     */
+    readonly overPlanIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlySet<WorkspaceId>, DatabaseError>;
   }
 >()("peal-server/billing/application/WorkspaceStanding") {
   static readonly layer = Layer.effect(
@@ -74,7 +88,39 @@ export class WorkspaceStanding extends Context.Service<
         return standing;
       });
 
-      return WorkspaceStanding.of({ of });
+      const overPlanIn = Effect.fn("WorkspaceStanding.overPlanIn")(
+        function* overPlanIn(workspaceIds: readonly WorkspaceId[]) {
+          const plans = yield* entitlements.ofEach(workspaceIds);
+
+          const metered = workspaceIds.filter((id) =>
+            Option.isSome(plans.get(id)?.plan ?? Option.none())
+          );
+
+          if (metered.length === 0) {
+            return new Set<WorkspaceId>();
+          }
+
+          const held = yield* usage.heldIn(metered);
+
+          return new Set(
+            metered.filter((id) => {
+              const plan = plans.get(id);
+              const seated = held.get(id);
+
+              return (
+                plan !== undefined &&
+                seated !== undefined &&
+                // Media never decides it, and is not read.
+                mustReduce(
+                  excessesOf(plan.allowances, { ...seated, mediaStorage: 0 })
+                )
+              );
+            })
+          );
+        }
+      );
+
+      return WorkspaceStanding.of({ of, overPlanIn });
     })
   );
 }

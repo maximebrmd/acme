@@ -75,9 +75,9 @@ The staff context follows these rules too. What the law has a host keep is in
   which `ContextOverviewSourcesLive` backs at the composition root with
   one set-based read per context (publishing's `PostAttention`, the
   channels' `ChannelOverview`, engagement's `InboxWaiting`, all ids in one
-  `anyUuid` parameter) and billing's `WorkspaceStanding`, which has no
-  form across workspaces and is asked per workspace of the page (50 at
-  most). Workspaces page by name then id (`workspacePage`), the agenda by
+  `anyUuid` parameter) and billing's `WorkspaceStanding.overPlanIn`, asked
+  once for the page (seven statements for 50 workspaces, a partner's pool
+  among them). Workspaces page by name then id (`workspacePage`), the agenda by
   time then id, 31 days at most; cursors are opaque. `Overview.report`
   passes analytics the actors with `analytics:read` alone
   (`AnalyticsQueries.acrossWorkspaces`); its CSV (`/api/me/report/export`)
@@ -447,6 +447,9 @@ The staff context follows these rules too. What the law has a host keep is in
   home workspace and every workspace the partner owns, under the partner's
   advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
   `SharedChannelAllowanceLive`); the other limits apply per workspace.
+  What only reports how workspaces stand reads their pools a set at a time
+  and without the hold (`PartnerOwnership.poolsIn`, `ownersIn`): never
+  count with it and then add.
   Locks are taken in one order, never the other way: a connect link's row
   (`ConnectLinkStore.lock`), then the workspace's channel additions
   (`ChannelRepository.addingTo`), then the partner's hold, which
