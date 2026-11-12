@@ -9,6 +9,7 @@ const draft: PublishNowState = {
   canReschedule: false,
   canSchedule: true,
   channels: 2,
+  policyKnown: true,
   publishable: true,
   running: false,
   status: "draft",
@@ -44,6 +45,15 @@ describe(publishNowOf, () => {
       _tag: "none",
     });
     expect(publishNowOf({ ...scheduled, willWait: true })).toStrictEqual({
+      _tag: "none",
+    });
+  });
+
+  it("waits for the workspace's approval policy, never assuming one", () => {
+    expect(publishNowOf({ ...draft, policyKnown: false })).toStrictEqual({
+      _tag: "none",
+    });
+    expect(publishNowOf({ ...scheduled, policyKnown: false })).toStrictEqual({
       _tag: "none",
     });
   });

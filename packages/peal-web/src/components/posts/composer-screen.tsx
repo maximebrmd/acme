@@ -64,14 +64,15 @@ const Failed = ({
   );
 };
 
-// The workspace's approval policy; never, until it is known, so nothing
-// offers to ask for an approval the server would not take.
+// The workspace's approval policy, or none while it is not known: the
+// composer then asks for no approval the server would not take, and
+// offers nothing that only holds where posts never wait.
 const useApprovalPolicy = (workspaceId: string) => {
   const settings = useAtomValue(reviewSettings(workspaceId));
 
   return AsyncResult.isSuccess(settings)
     ? settings.value.approvalPolicy
-    : "never";
+    : undefined;
 };
 
 // While a scheduled post is due, how often its page asks whether it went

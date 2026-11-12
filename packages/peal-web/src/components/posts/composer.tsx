@@ -234,8 +234,8 @@ const startOf = (post: Post | undefined) => ({
 });
 
 interface ComposerProps {
-  /** Which of the workspace's posts wait for an approval. */
-  readonly approvalPolicy: ApprovalPolicy;
+  /** Which of the workspace's posts wait for an approval; none while unknown. */
+  readonly approvalPolicy: ApprovalPolicy | undefined;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   /** None for a new post. */
@@ -521,10 +521,15 @@ export const Composer = ({
     }
   };
 
-  // A post sent out now: its page shows how it goes.
-  const wentOut = (id: string) => {
-    toast.success(t("publishedNow"));
-    router.push(`/app/${workspaceId}/posts/${id}`);
+  // A post sent out now, or held for an approval after all: its page shows
+  // how it goes.
+  const wentOut = (sent: Post, at: DateTime.Utc) => {
+    toast.success(
+      sent.status === "awaitingApproval"
+        ? t("sentForApproval", { at: formatted(at, browserTimeZone()) })
+        : t("publishedNow")
+    );
+    router.push(`/app/${workspaceId}/posts/${sent.id}`);
   };
 
   const saveDraft = async () => {
@@ -627,7 +632,7 @@ export const Composer = ({
     }
 
     if (now !== undefined) {
-      wentOut(scheduled.value.id);
+      wentOut(scheduled.value, now);
 
       return;
     }
@@ -653,7 +658,7 @@ export const Composer = ({
       });
 
       if (Option.isSome(moved)) {
-        wentOut(id);
+        wentOut(moved.value, now);
       }
 
       return;
@@ -1033,6 +1038,7 @@ export const Composer = ({
             canReschedule,
             canSchedule: schedulable,
             channels: selected.length,
+            policyKnown: approvalPolicy !== undefined,
             publishable,
             running: busy !== null,
             status,

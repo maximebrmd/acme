@@ -9,6 +9,11 @@ export interface PublishNowState {
   readonly canSchedule: boolean;
   /** How many channels the post goes to. */
   readonly channels: number;
+  /**
+   * Whether the workspace's approval policy is known: until it is, the
+   * post might wait for an approval, so nothing is offered.
+   */
+  readonly policyKnown: boolean;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
   /** Whether another action of the composer runs. */
@@ -38,6 +43,7 @@ export const publishNowOf = ({
   canReschedule,
   canSchedule,
   channels,
+  policyKnown,
   publishable,
   running,
   status,
@@ -45,7 +51,7 @@ export const publishNowOf = ({
 }: PublishNowState): PublishNow => {
   const enabled = publishable && !running && channels > 0;
 
-  if (willWait) {
+  if (willWait || !policyKnown) {
     return { _tag: "none" };
   }
 
