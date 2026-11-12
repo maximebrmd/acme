@@ -152,16 +152,38 @@
   read 25 comments a page (Facebook `filter=stream`; Instagram's top-level
   comments with their replies, then a comment's further replies), carry
   `appsecret_proof` through Facebook Login and none through Instagram
-  Login, take a missing permission (Graph code 10, 200 to 299:
-  `GraphRefusal`'s `permission`) as nothing to reconnect, and code 100
-  subcode 33 alone as an object gone. Facebook gives no handle (an empty
+  Login, and take a missing permission (Graph code 10, 200 to 299:
+  `GraphRefusal`'s `permission`) as nothing to reconnect: on a batch's
+  first thread it pauses the channel, on a later one (Meta answers 210
+  "User not visible" for one object) only that thread fails. Code 100
+  subcode 33 also means "cannot be loaded due to missing permissions", so
+  it proves nothing alone: a thread is `missing` only while the same
+  token loads the account's own node (otherwise the channel is paused,
+  nothing erased), and a hide or a withdrawal is done on it only while the
+  token loads the thread's post (`confirmedAction`, which also reads
+  `success` in a 2xx). A read stops for the run once Meta's usage headers
+  pass `commentsUsageCeiling` (50 %), as the Page's or account's calls
+  are shared with its publishing. A resume never takes an id another
+  reply of the thread holds (`takenIds`), and on Instagram looks under the
+  top-level comment, where Meta puts a reply to a reply (which the next
+  read then shows as answering the top-level comment). Facebook gives no handle (an empty
   one, which the web app does not show) and says nothing of a comment
   being hidden (`hidden` none: Peal's state stands). Their reply limits
   are the posts' own: Meta's pages state none for a comment. They were
   written from Meta's reference and never run against Meta: before the
   setting is turned on anywhere, read, answer, hide and withdraw one
   comment on a test Page and a test Instagram account, through each way
-  in.
+  in, a Facebook feed video's among them (followed under its video's id,
+  as a reel would be, which is left out: include reels or leave videos
+  out by what it shows), watch `X-Business-Use-Case-Usage` there, and
+  have the privacy policy name the two platforms (the registry's `inbox`
+  entry, then the legal pages, through counsel).
+- Threads of a platform that is off end `unsupported` at their first
+  read, and stay ended when the setting is turned on: only posts published
+  afterwards are read. They are not reopened, because a thread does not
+  know its platform (the channels context does) and reopening every
+  `unsupported` thread would read each other platform's again at every
+  start; the docs' Inbox page says so.
   Platform events will name threads to read through `CommentSource`: what
   a platform pushes is an id to fetch, never content to trust.
 - Adapters reach platforms through `publicHttpClient` and `ChannelAccess`

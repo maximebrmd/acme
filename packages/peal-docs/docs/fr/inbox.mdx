@@ -105,7 +105,9 @@ Sur ces plateformes :
 - Facebook montre le nom de la personne ou de la Page qui a commenté, et pas d’identifiant public ; il peut ne pas montrer du tout qui a écrit un commentaire, que la boîte de réception attribue alors à « Quelqu’un ». Il ne dit pas si un commentaire est masqué : Peal montre ce qui a été fait depuis Peal.
 - Instagram ne prend de réponses qu’aux commentaires de premier niveau : une réponse à une réponse va sous le commentaire auquel celle-ci répond. Il n’en prend aucune à un commentaire masqué.
 - Meta ne prend aucune clé qui rendrait une réponse sûre à envoyer deux fois. Quand on ne sait pas comment l’envoi d’une réponse s’est terminé, Peal la cherche parmi les réponses sous le commentaire, et ne la trouve que si exactement une, du compte, écrite depuis que vous l’avez écrite, a son texte ; sinon elle reste `unconfirmed`, à vous de trancher. Elle n’est jamais envoyée de nouveau.
-- Peal lit les commentaires toutes les dix minutes, comme sur les autres plateformes ; les notifications de nouveaux commentaires de Meta ne sont pas encore utilisées.
+- Instagram place une réponse à une réponse sous le commentaire de premier niveau : la lecture suivante montre donc aussi ce commentaire comme répondu.
+- Peal lit les commentaires toutes les dix minutes, comme sur les autres plateformes, et s’arrête pour la passe dès que Meta indique que la moitié des appels du compte sont utilisés, pour que la publication garde le reste ; les notifications de nouveaux commentaires de Meta ne sont pas encore utilisées.
+- Seules les publications mises en ligne après l’activation de la plateforme sont lues : celles d’avant n’ont pas de boîte de réception.
 
 ### Autres plateformes [#other-platforms]
 

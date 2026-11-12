@@ -105,7 +105,9 @@ On these platforms:
 - Facebook shows the name of the person or Page who commented, and no handle; it may not show who wrote a comment at all, which the inbox then calls "Someone". It does not say whether a comment is hidden: Peal shows what was done from Peal.
 - Instagram answers only top-level comments: a reply to a reply goes under the comment it answers. It takes no reply to a hidden comment.
 - Meta takes no key that would make a reply safe to send twice. When a reply's outcome is unknown, Peal looks for it among the replies under the comment, and finds it only when exactly one by the account, since you wrote it, has its text; otherwise it stays `unconfirmed` for you to settle. It is never sent again.
-- Peal reads comments every ten minutes, as on the other platforms; Meta's notifications of new comments are not used yet.
+- Instagram puts a reply to a reply under the top-level comment, so the next reading shows that comment as answered too.
+- Peal reads comments every ten minutes, as on the other platforms, and stops for the run once Meta says half the account's calls are used, so that publishing keeps the rest; Meta's notifications of new comments are not used yet.
+- Only posts published after the platform was turned on are read: those published before keep no inbox.
 
 ### Other platforms [#other-platforms]
 
