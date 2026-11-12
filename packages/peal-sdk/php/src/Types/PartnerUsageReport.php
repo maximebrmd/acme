@@ -15,16 +15,16 @@ class PartnerUsageReport extends JsonSerializableType
     public ?PlanAllowances $allowances;
 
     /**
-     * @var PartnerHoldings $current
+     * @var ?PartnerHoldings $current
      */
     #[JsonProperty('current')]
-    public PartnerHoldings $current;
+    public ?PartnerHoldings $current;
 
     /**
-     * @var array<PartnerUsageReportDay> $days
+     * @var ?array<PartnerUsageReportDay> $days
      */
     #[JsonProperty('days'), ArrayType([PartnerUsageReportDay::class])]
-    public array $days;
+    public ?array $days;
 
     /**
      * @var UsagePeriod $period
@@ -39,10 +39,10 @@ class PartnerUsageReport extends JsonSerializableType
     public ?string $plan;
 
     /**
-     * @var UsageTotals $totals
+     * @var ?UsageTotals $totals
      */
     #[JsonProperty('totals')]
-    public UsageTotals $totals;
+    public ?UsageTotals $totals;
 
     /**
      * @var TenantUsagePage $workspaces
@@ -52,24 +52,24 @@ class PartnerUsageReport extends JsonSerializableType
 
     /**
      * @param array{
-     *   current: PartnerHoldings,
-     *   days: array<PartnerUsageReportDay>,
      *   period: UsagePeriod,
-     *   totals: UsageTotals,
      *   workspaces: TenantUsagePage,
      *   allowances?: ?PlanAllowances,
+     *   current?: ?PartnerHoldings,
+     *   days?: ?array<PartnerUsageReportDay>,
      *   plan?: ?value-of<Plan>,
+     *   totals?: ?UsageTotals,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->allowances = $values['allowances'] ?? null;
-        $this->current = $values['current'];
-        $this->days = $values['days'];
+        $this->current = $values['current'] ?? null;
+        $this->days = $values['days'] ?? null;
         $this->period = $values['period'];
         $this->plan = $values['plan'] ?? null;
-        $this->totals = $values['totals'];
+        $this->totals = $values['totals'] ?? null;
         $this->workspaces = $values['workspaces'];
     }
 

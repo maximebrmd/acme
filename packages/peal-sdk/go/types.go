@@ -13114,16 +13114,19 @@ var (
 // partnerUsageReportNullableFields maps the wire names of PartnerUsageReport's nullable fields (required or optional) to their field bits.
 var partnerUsageReportNullableFields = map[string]*big.Int{
 	"allowances": partnerUsageReportFieldAllowances,
+	"current":    partnerUsageReportFieldCurrent,
+	"days":       partnerUsageReportFieldDays,
 	"plan":       partnerUsageReportFieldPlan,
+	"totals":     partnerUsageReportFieldTotals,
 }
 
 type PartnerUsageReport struct {
 	Allowances *PlanAllowances          `json:"allowances,omitempty" url:"allowances,omitempty"`
-	Current    *PartnerHoldings         `json:"current" url:"current"`
-	Days       []*PartnerUsageReportDay `json:"days" url:"days"`
+	Current    *PartnerHoldings         `json:"current,omitempty" url:"current,omitempty"`
+	Days       []*PartnerUsageReportDay `json:"days,omitempty" url:"days,omitempty"`
 	Period     *UsagePeriod             `json:"period" url:"period"`
 	Plan       *Plan                    `json:"plan,omitempty" url:"plan,omitempty"`
-	Totals     *UsageTotals             `json:"totals" url:"totals"`
+	Totals     *UsageTotals             `json:"totals,omitempty" url:"totals,omitempty"`
 	Workspaces *TenantUsagePage         `json:"workspaces" url:"workspaces"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

@@ -15,11 +15,10 @@ public record PartnerUsageReport : IJsonOnDeserialized
     public PlanAllowances? Allowances { get; set; }
 
     [JsonPropertyName("current")]
-    public required PartnerHoldings Current { get; set; }
+    public PartnerHoldings? Current { get; set; }
 
     [JsonPropertyName("days")]
-    public IEnumerable<PartnerUsageReportDay> Days { get; set; } =
-        new List<PartnerUsageReportDay>();
+    public IEnumerable<PartnerUsageReportDay>? Days { get; set; }
 
     [JsonPropertyName("period")]
     public required UsagePeriod Period { get; set; }
@@ -28,7 +27,7 @@ public record PartnerUsageReport : IJsonOnDeserialized
     public Plan? Plan { get; set; }
 
     [JsonPropertyName("totals")]
-    public required UsageTotals Totals { get; set; }
+    public UsageTotals? Totals { get; set; }
 
     [JsonPropertyName("workspaces")]
     public required TenantUsagePage Workspaces { get; set; }

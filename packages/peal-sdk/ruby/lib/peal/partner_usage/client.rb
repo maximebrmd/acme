@@ -20,11 +20,13 @@ module Peal
       # media storage and, for each calendar month the period touches, posts on platforms that bill the server per post:
       # newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the
       # list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400); the home workspace
-      # comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer
-      # listed, and its posts leave the sums, as its counts were erased with it; the daily `workspaces` and `channels`
-      # still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything.
-      # On a server that does not bill, `plan` and `allowances` are null. Needs the scope workspaces:read. Takes a
-      # partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+      # comes first, on the first page only, one more than asked. `current`, `days` and `totals`, which cover the whole
+      # account, come with the first page only, and are null on the pages after it, which read their own workspaces
+      # alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts
+      # were erased with it; the daily `workspaces` and `channels` still count it for the days it existed. Kept 400
+      # days. Counts only: nothing here is priced or limits anything. On a server that does not bill, `plan` and
+      # `allowances` are null. Needs the scope workspaces:read. Takes a partner key (`Authorization: Bearer
+      # peal_partner_…`): any other credential answers 403.
       #
       # @param request_options [Hash]
       # @param params [Hash]

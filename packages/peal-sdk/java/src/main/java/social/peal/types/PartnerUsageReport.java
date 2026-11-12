@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,15 +27,15 @@ import social.peal.core.ObjectMappers;
 public final class PartnerUsageReport {
     private final Optional<PlanAllowances> allowances;
 
-    private final PartnerHoldings current;
+    private final Optional<PartnerHoldings> current;
 
-    private final List<PartnerUsageReportDay> days;
+    private final Optional<List<PartnerUsageReportDay>> days;
 
     private final UsagePeriod period;
 
     private final Optional<Plan> plan;
 
-    private final UsageTotals totals;
+    private final Optional<UsageTotals> totals;
 
     private final TenantUsagePage workspaces;
 
@@ -44,11 +43,11 @@ public final class PartnerUsageReport {
 
     private PartnerUsageReport(
             Optional<PlanAllowances> allowances,
-            PartnerHoldings current,
-            List<PartnerUsageReportDay> days,
+            Optional<PartnerHoldings> current,
+            Optional<List<PartnerUsageReportDay>> days,
             UsagePeriod period,
             Optional<Plan> plan,
-            UsageTotals totals,
+            Optional<UsageTotals> totals,
             TenantUsagePage workspaces,
             Map<String, Object> additionalProperties) {
         this.allowances = allowances;
@@ -69,13 +68,19 @@ public final class PartnerUsageReport {
         return allowances;
     }
 
-    @JsonProperty("current")
-    public PartnerHoldings getCurrent() {
+    @JsonIgnore
+    public Optional<PartnerHoldings> getCurrent() {
+        if (current == null) {
+            return Optional.empty();
+        }
         return current;
     }
 
-    @JsonProperty("days")
-    public List<PartnerUsageReportDay> getDays() {
+    @JsonIgnore
+    public Optional<List<PartnerUsageReportDay>> getDays() {
+        if (days == null) {
+            return Optional.empty();
+        }
         return days;
     }
 
@@ -92,8 +97,11 @@ public final class PartnerUsageReport {
         return plan;
     }
 
-    @JsonProperty("totals")
-    public UsageTotals getTotals() {
+    @JsonIgnore
+    public Optional<UsageTotals> getTotals() {
+        if (totals == null) {
+            return Optional.empty();
+        }
         return totals;
     }
 
@@ -109,9 +117,27 @@ public final class PartnerUsageReport {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("current")
+    private Optional<PartnerHoldings> _getCurrent() {
+        return current;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("days")
+    private Optional<List<PartnerUsageReportDay>> _getDays() {
+        return days;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("plan")
     private Optional<Plan> _getPlan() {
         return plan;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("totals")
+    private Optional<UsageTotals> _getTotals() {
+        return totals;
     }
 
     @java.lang.Override
@@ -146,22 +172,14 @@ public final class PartnerUsageReport {
         return ObjectMappers.stringify(this);
     }
 
-    public static CurrentStage builder() {
+    public static PeriodStage builder() {
         return new Builder();
     }
 
-    public interface CurrentStage {
-        PeriodStage current(@NotNull PartnerHoldings current);
+    public interface PeriodStage {
+        WorkspacesStage period(@NotNull UsagePeriod period);
 
         Builder from(PartnerUsageReport other);
-    }
-
-    public interface PeriodStage {
-        TotalsStage period(@NotNull UsagePeriod period);
-    }
-
-    public interface TotalsStage {
-        WorkspacesStage totals(@NotNull UsageTotals totals);
     }
 
     public interface WorkspacesStage {
@@ -181,32 +199,44 @@ public final class PartnerUsageReport {
 
         _FinalStage allowances(Nullable<PlanAllowances> allowances);
 
+        _FinalStage current(Optional<PartnerHoldings> current);
+
+        _FinalStage current(PartnerHoldings current);
+
+        _FinalStage current(Nullable<PartnerHoldings> current);
+
+        _FinalStage days(Optional<List<PartnerUsageReportDay>> days);
+
         _FinalStage days(List<PartnerUsageReportDay> days);
 
-        _FinalStage addDays(PartnerUsageReportDay days);
-
-        _FinalStage addAllDays(List<PartnerUsageReportDay> days);
+        _FinalStage days(Nullable<List<PartnerUsageReportDay>> days);
 
         _FinalStage plan(Optional<Plan> plan);
 
         _FinalStage plan(Plan plan);
 
         _FinalStage plan(Nullable<Plan> plan);
+
+        _FinalStage totals(Optional<UsageTotals> totals);
+
+        _FinalStage totals(UsageTotals totals);
+
+        _FinalStage totals(Nullable<UsageTotals> totals);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements CurrentStage, PeriodStage, TotalsStage, WorkspacesStage, _FinalStage {
-        private PartnerHoldings current;
-
+    public static final class Builder implements PeriodStage, WorkspacesStage, _FinalStage {
         private UsagePeriod period;
-
-        private UsageTotals totals;
 
         private TenantUsagePage workspaces;
 
+        private Optional<UsageTotals> totals = Optional.empty();
+
         private Optional<Plan> plan = Optional.empty();
 
-        private List<PartnerUsageReportDay> days = new ArrayList<>();
+        private Optional<List<PartnerUsageReportDay>> days = Optional.empty();
+
+        private Optional<PartnerHoldings> current = Optional.empty();
 
         private Optional<PlanAllowances> allowances = Optional.empty();
 
@@ -227,23 +257,9 @@ public final class PartnerUsageReport {
         }
 
         @java.lang.Override
-        @JsonSetter("current")
-        public PeriodStage current(@NotNull PartnerHoldings current) {
-            this.current = Objects.requireNonNull(current, "current must not be null");
-            return this;
-        }
-
-        @java.lang.Override
         @JsonSetter("period")
-        public TotalsStage period(@NotNull UsagePeriod period) {
+        public WorkspacesStage period(@NotNull UsagePeriod period) {
             this.period = Objects.requireNonNull(period, "period must not be null");
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("totals")
-        public WorkspacesStage totals(@NotNull UsageTotals totals) {
-            this.totals = Objects.requireNonNull(totals, "totals must not be null");
             return this;
         }
 
@@ -251,6 +267,31 @@ public final class PartnerUsageReport {
         @JsonSetter("workspaces")
         public _FinalStage workspaces(@NotNull TenantUsagePage workspaces) {
             this.workspaces = Objects.requireNonNull(workspaces, "workspaces must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage totals(Nullable<UsageTotals> totals) {
+            if (totals.isNull()) {
+                this.totals = null;
+            } else if (totals.isEmpty()) {
+                this.totals = Optional.empty();
+            } else {
+                this.totals = Optional.of(totals.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage totals(UsageTotals totals) {
+            this.totals = Optional.ofNullable(totals);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "totals", nulls = Nulls.SKIP)
+        public _FinalStage totals(Optional<UsageTotals> totals) {
+            this.totals = totals;
             return this;
         }
 
@@ -280,26 +321,52 @@ public final class PartnerUsageReport {
         }
 
         @java.lang.Override
-        public _FinalStage addAllDays(List<PartnerUsageReportDay> days) {
-            if (days != null) {
-                this.days.addAll(days);
+        public _FinalStage days(Nullable<List<PartnerUsageReportDay>> days) {
+            if (days.isNull()) {
+                this.days = null;
+            } else if (days.isEmpty()) {
+                this.days = Optional.empty();
+            } else {
+                this.days = Optional.of(days.get());
             }
             return this;
         }
 
         @java.lang.Override
-        public _FinalStage addDays(PartnerUsageReportDay days) {
-            this.days.add(days);
+        public _FinalStage days(List<PartnerUsageReportDay> days) {
+            this.days = Optional.ofNullable(days);
             return this;
         }
 
         @java.lang.Override
         @JsonSetter(value = "days", nulls = Nulls.SKIP)
-        public _FinalStage days(List<PartnerUsageReportDay> days) {
-            this.days.clear();
-            if (days != null) {
-                this.days.addAll(days);
+        public _FinalStage days(Optional<List<PartnerUsageReportDay>> days) {
+            this.days = days;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage current(Nullable<PartnerHoldings> current) {
+            if (current.isNull()) {
+                this.current = null;
+            } else if (current.isEmpty()) {
+                this.current = Optional.empty();
+            } else {
+                this.current = Optional.of(current.get());
             }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage current(PartnerHoldings current) {
+            this.current = Optional.ofNullable(current);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "current", nulls = Nulls.SKIP)
+        public _FinalStage current(Optional<PartnerHoldings> current) {
+            this.current = current;
             return this;
         }
 

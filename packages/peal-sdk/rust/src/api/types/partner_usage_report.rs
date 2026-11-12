@@ -4,16 +4,16 @@ pub use crate::prelude::*;
 pub struct PartnerUsageReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowances: Option<PlanAllowances>,
-    #[serde(default)]
-    pub current: PartnerHoldings,
-    #[serde(default)]
-    pub days: Vec<PartnerUsageReportDay>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current: Option<PartnerHoldings>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days: Option<Vec<PartnerUsageReportDay>>,
     #[serde(default)]
     pub period: UsagePeriod,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plan: Option<Plan>,
-    #[serde(default)]
-    pub totals: UsageTotals,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub totals: Option<UsageTotals>,
     #[serde(default)]
     pub workspaces: TenantUsagePage,
 }
@@ -74,25 +74,18 @@ impl PartnerUsageReportBuilder {
 
     /// Consumes the builder and constructs a [`PartnerUsageReport`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`current`](PartnerUsageReportBuilder::current)
-    /// - [`days`](PartnerUsageReportBuilder::days)
     /// - [`period`](PartnerUsageReportBuilder::period)
-    /// - [`totals`](PartnerUsageReportBuilder::totals)
     /// - [`workspaces`](PartnerUsageReportBuilder::workspaces)
     pub fn build(self) -> Result<PartnerUsageReport, BuildError> {
         Ok(PartnerUsageReport {
             allowances: self.allowances,
-            current: self
-                .current
-                .ok_or_else(|| BuildError::missing_field("current"))?,
-            days: self.days.ok_or_else(|| BuildError::missing_field("days"))?,
+            current: self.current,
+            days: self.days,
             period: self
                 .period
                 .ok_or_else(|| BuildError::missing_field("period"))?,
             plan: self.plan,
-            totals: self
-                .totals
-                .ok_or_else(|| BuildError::missing_field("totals"))?,
+            totals: self.totals,
             workspaces: self
                 .workspaces
                 .ok_or_else(|| BuildError::missing_field("workspaces"))?,

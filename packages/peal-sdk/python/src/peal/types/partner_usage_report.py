@@ -15,11 +15,11 @@ from .usage_totals import UsageTotals
 
 class PartnerUsageReport(UniversalBaseModel):
     allowances: typing.Optional[PlanAllowances] = None
-    current: PartnerHoldings
-    days: typing.List[PartnerUsageReportDay]
+    current: typing.Optional[PartnerHoldings] = None
+    days: typing.Optional[typing.List[PartnerUsageReportDay]] = None
     period: UsagePeriod
     plan: typing.Optional[Plan] = None
-    totals: UsageTotals
+    totals: typing.Optional[UsageTotals] = None
     workspaces: TenantUsagePage
 
     if IS_PYDANTIC_V2:

@@ -51770,7 +51770,10 @@ func TestRequiredNullableRoundTripPartner(t *testing.T) {
 func TestRequiredNullableRoundTripPartnerUsageReport(t *testing.T) {
 	requiredNullableKeys := []string{
 		"allowances",
+		"current",
+		"days",
 		"plan",
+		"totals",
 	}
 	marshalToMap := func(t *testing.T, obj *PartnerUsageReport) map[string]json.RawMessage {
 		data, err := json.Marshal(obj)
@@ -51783,7 +51786,7 @@ func TestRequiredNullableRoundTripPartnerUsageReport(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj PartnerUsageReport
-		require.NoError(t, json.Unmarshal([]byte(`{"allowances":null,"plan":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"allowances":null,"current":null,"days":null,"plan":null,"totals":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

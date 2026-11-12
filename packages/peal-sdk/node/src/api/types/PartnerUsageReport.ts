@@ -4,10 +4,10 @@ import * as Peal from "../index.js";
 
 export interface PartnerUsageReport {
     allowances: Peal.PlanAllowances | null;
-    current: Peal.PartnerHoldings;
-    days: Peal.PartnerUsageReportDay[];
+    current: Peal.PartnerHoldings | null;
+    days: Peal.PartnerUsageReportDay[] | null;
     period: Peal.UsagePeriod;
     plan: Peal.Plan | null;
-    totals: Peal.UsageTotals;
+    totals: Peal.UsageTotals | null;
     workspaces: Peal.TenantUsagePage;
 }
