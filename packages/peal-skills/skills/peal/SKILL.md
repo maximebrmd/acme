@@ -76,12 +76,9 @@ export PEAL_WORKSPACE=5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60
 - The key wins over a saved sign-in.
 - A key is nobody. It cannot look workspaces up: `PEAL_WORKSPACE` or
   `--workspace` must be the workspace's id, not its slug. The id is in the
-  address of the workspace's pages in the web app (`/app/<id>/settings`), and
-  `peal whoami` with the key prints it: the key's name, its workspace's
-  name and id, its permissions and when it expires (`GET /api/credential`
-  over HTTP). Run it first to check the key works.
+  address of the workspace's pages, and `peal whoami` with the key prints
+  it, with the key's permissions and expiry: run it first.
 - `peal login`, `account`, `members` and `invitations` are for a person.
-  With a key they refuse at once.
 
 Ask for the least a task needs.
 
