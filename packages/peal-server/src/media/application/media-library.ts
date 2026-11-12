@@ -1,6 +1,7 @@
 import { Context, Effect, Layer } from "effect";
 import type { Option } from "effect";
 
+import type { GeneratedImageUnusable } from "#media/application/generated-image-unusable.ts";
 import type { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts";
 import type { MediaImportBusy } from "#media/application/media-import-busy.ts";
 import type { MediaInUse } from "#media/application/media-in-use.ts";
@@ -32,6 +33,10 @@ import { importMedia } from "#media/application/use-cases/import-media.ts";
 import type { ImportMediaRequest } from "#media/application/use-cases/import-media.ts";
 import { probeMedia } from "#media/application/use-cases/probe-media.ts";
 import type { ProbedMedia } from "#media/application/use-cases/probe-media.ts";
+import {
+  roomForImage,
+  storeGenerated,
+} from "#media/application/use-cases/store-generated.ts";
 import {
   getMedia,
   listMedia,
@@ -100,7 +105,8 @@ type CompleteFailure =
  * | -------------------------------------------- | ------------ |
  * | getMedia, listMedia, mediaUsage              | media:read   |
  * | createUpload, completeUpload, finishUpload,  | media:upload |
- * | importMedia, probeMedia, describeMedia       |              |
+ * | importMedia, probeMedia, describeMedia,      |              |
+ * | roomForImage, storeGenerated                 |              |
  * | deleteMedia                                  | media:delete |
  */
 export class MediaLibrary extends Context.Service<
@@ -137,6 +143,27 @@ export class MediaLibrary extends Context.Service<
       | PlanLimitReached
       | UnsupportedMediaType
       | UploadRejected
+    >;
+    /**
+     * Whether the workspace's storage has room for the largest image the
+     * library takes, before one is made (see `roomForImage`).
+     */
+    readonly roomForImage: (
+      actor: Actor
+    ) => Effect.Effect<void, MissingPermission | PlanLimitReached>;
+    /**
+     * Stores an image the writing assistant made, marked as such, and
+     * probes it (see `storeGenerated`).
+     */
+    readonly storeGenerated: (
+      actor: Actor,
+      bytes: Uint8Array
+    ) => Effect.Effect<
+      MediaItem,
+      | GeneratedImageUnusable
+      | MediaStorageFailed
+      | MissingPermission
+      | PlanLimitReached
     >;
     /** Checks the stored file, without probing it (see `finishUpload`). */
     readonly completeUpload: (
@@ -266,6 +293,21 @@ export class MediaLibrary extends Context.Service<
           ),
         probeMedia: (actor, assetId) =>
           uploading(actor, probeMedia(target(actor, assetId))),
+        roomForImage: (actor) =>
+          uploading(actor, roomForImage(actor.workspaceId)),
+        storeGenerated: (actor, bytes) =>
+          uploading(
+            actor,
+            storeGenerated({ bytes, workspaceId: actor.workspaceId }).pipe(
+              // The asset was recorded a moment ago, by this very call.
+              Effect.catchTags({
+                InvalidMediaTransition: Effect.die,
+                MediaAssetNotFound: Effect.die,
+                MediaInUse: Effect.die,
+                UploadIncomplete: Effect.die,
+              })
+            )
+          ),
       });
     })
   );
