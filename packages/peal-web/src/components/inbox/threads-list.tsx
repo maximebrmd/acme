@@ -208,7 +208,9 @@ export const ThreadsList = ({
           <Checkbox
             id={unansweredId}
             checked={unanswered}
-            onCheckedChange={setUnanswered}
+            onCheckedChange={(checked) => {
+              setUnanswered(checked === true);
+            }}
           />
           <Label htmlFor={unansweredId}>{t("filter.unanswered")}</Label>
         </div>

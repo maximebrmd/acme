@@ -133,7 +133,9 @@ const PermissionChoice = ({
         id={id}
         checked={checked}
         disabled={disabled}
-        onCheckedChange={onChange}
+        onCheckedChange={(next) => {
+          onChange(next === true);
+        }}
       />
       <Label htmlFor={id}>
         <code className="font-mono text-sm">{permission}</code>

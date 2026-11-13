@@ -97,7 +97,7 @@ const Choice = ({
         checked={checked}
         disabled={disabled}
         onCheckedChange={(next) => {
-          onChange(next);
+          onChange(next === true);
         }}
       />
       <Label htmlFor={id}>{label}</Label>
@@ -202,7 +202,7 @@ const Choosing = ({
               checked={confirmed}
               disabled={applying}
               onCheckedChange={(next) => {
-                onConfirm(next);
+                onConfirm(next === true);
               }}
             />
             <Label htmlFor={confirmId}>{t("confirm", leaving)}</Label>

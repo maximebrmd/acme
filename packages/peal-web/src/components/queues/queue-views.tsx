@@ -287,7 +287,7 @@ export const QueueFieldsView = ({
                           draft.channelIds,
                           channels,
                           channel.id,
-                          checked
+                          checked === true
                         ),
                       });
                     }}
@@ -345,7 +345,7 @@ export const QueueFieldsView = ({
           checked={draft.isDefault}
           disabled={disabled}
           onCheckedChange={(checked) => {
-            onChange({ ...draft, isDefault: checked });
+            onChange({ ...draft, isDefault: checked === true });
           }}
         />
         <Label htmlFor={defaultId}>{t("isDefault")}</Label>

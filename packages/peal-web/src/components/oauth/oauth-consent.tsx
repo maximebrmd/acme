@@ -45,7 +45,9 @@ const PublishingChoice = ({
         checked={checked}
         disabled={disabled}
         aria-describedby={hintId}
-        onCheckedChange={onChange}
+        onCheckedChange={(next) => {
+          onChange(next === true);
+        }}
       />
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{t("publish")}</Label>
@@ -81,7 +83,9 @@ const AdsChoice = ({
         checked={checked}
         disabled={disabled}
         aria-describedby={hintId}
-        onCheckedChange={onChange}
+        onCheckedChange={(next) => {
+          onChange(next === true);
+        }}
       />
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{t("ads")}</Label>

@@ -251,7 +251,7 @@ export const SignatureFieldsView = ({
           disabled={disabled}
           aria-describedby={`${defaultId}-hint`}
           onCheckedChange={(checked) => {
-            onChange({ ...draft, isDefault: checked });
+            onChange({ ...draft, isDefault: checked === true });
           }}
         />
         <div className="flex flex-col gap-1">

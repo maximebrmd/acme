@@ -115,7 +115,9 @@ export const ShortenLinks = ({
         checked={linking.wanted}
         disabled={disabled}
         aria-describedby={`${id}-hint`}
-        onCheckedChange={handleChange}
+        onCheckedChange={(checked) => {
+          handleChange(checked === true);
+        }}
       />
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{t("label")}</Label>

@@ -95,7 +95,7 @@ export const TagChoicesView = ({
                 checked={chosen}
                 disabled={disabled || (full && !chosen)}
                 onCheckedChange={(checked) => {
-                  onToggle(tag.id, checked);
+                  onToggle(tag.id, checked === true);
                 }}
               />
               <Label htmlFor={id} className="min-w-0">

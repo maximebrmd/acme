@@ -207,8 +207,12 @@ describe(TagChoicesView, () => {
       />
     );
 
-    expect(html).toMatch(/<input[^>]*id="post-tag-t2"[^>]*checked=""/u);
-    expect(html).not.toMatch(/<input[^>]*id="post-tag-t1"[^>]*checked=""/u);
+    expect(html).toMatch(
+      /<button[^>]*id="post-tag-t2"[^>]*aria-checked="true"/u
+    );
+    expect(html).not.toMatch(
+      /<button[^>]*id="post-tag-t1"[^>]*aria-checked="true"/u
+    );
     expect(html).not.toContain("tags at most");
   });
 
@@ -230,9 +234,12 @@ describe(TagChoicesView, () => {
 
     expect(html).toContain("A post has 10 tags at most.");
     expect(html).toMatch(
-      new RegExp(`<input disabled=""[^>]*id="post-tag-t${maxTagsPerPost}"`, "u")
+      new RegExp(
+        `<button[^>]*id="post-tag-t${maxTagsPerPost}"[^>]* disabled=""`,
+        "u"
+      )
     );
-    expect(html).not.toMatch(/<input disabled=""[^>]*id="post-tag-t0"/u);
+    expect(html).not.toMatch(/<button[^>]*id="post-tag-t0"[^>]* disabled=""/u);
   });
 });
 

@@ -144,7 +144,9 @@ export const TwoStepChallengeView = ({
             <Checkbox
               id={trustId}
               checked={trust}
-              onCheckedChange={handleTrust}
+              onCheckedChange={(checked) => {
+                handleTrust(checked === true);
+              }}
             />
             <Label htmlFor={trustId}>{t("trust")}</Label>
           </div>

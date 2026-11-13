@@ -93,7 +93,7 @@ export const ChannelSetFieldsView = ({
                           draft.channelIds,
                           channels,
                           channel.id,
-                          checked
+                          checked === true
                         ),
                       });
                     }}

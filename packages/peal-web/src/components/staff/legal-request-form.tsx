@@ -118,7 +118,13 @@ const Cover = ({
 
   return (
     <div className="flex items-start gap-3">
-      <Checkbox id={id} checked={checked} onCheckedChange={handleChange} />
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={(next) => {
+          handleChange(next === true);
+        }}
+      />
       <Label htmlFor={id}>{t(cover)}</Label>
     </div>
   );
