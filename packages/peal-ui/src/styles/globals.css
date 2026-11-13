@@ -3,6 +3,9 @@
    repository's root, says what each value is for; change both together. An app imports this once from its global stylesheet and puts the
    GeistSans and GeistMono `variable` class names from "peal-ui/lib/fonts" on
    <html>. */
+/* ui-sdk adds the little CSS its behaviours need in this layer; declared
+   first, it ranks below Tailwind's, so the components' classes win. */
+@layer ui-sdk;
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
