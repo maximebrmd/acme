@@ -77,8 +77,10 @@ A limit applies when something is added, so a workspace on a smaller plan than i
     </CodeGroup>
 
   </Step>
-  <Step title="Create the plans' prices">
-    Create them by hand, as [The plans' prices](#plan-prices) says.
+  <Step title="Keep the old plans' prices, if any">
+    A new Stripe account needs none: the plans priced by channels are no longer
+    sold. A server where a subscription to one still runs keeps their prices,
+    as [The plans' prices](#plan-prices) says.
   </Step>
   <Step title="Add the webhook endpoint">
     Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the
@@ -163,7 +165,7 @@ The command's key needs write access to meters, products and prices. It prints w
 
 ### The plans' prices [#plan-prices]
 
-The plans are still sold until per-account pricing is. Create by hand a product for each paid plan, with a monthly and a yearly EUR price, both tax-exclusive, under the lookup keys `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), with the same prefix.
+The plans priced by channels are no longer sold, and a new Stripe account needs none of their prices. The server checks them only while a subscription to one still runs: keep then a product for each paid plan, with a monthly and a yearly EUR price, both tax-exclusive, under the lookup keys `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), with the same prefix.
 
 Their amounts are those of [Plans and billing](/guides/workspace/billing#plans): Peal shows them before checkout, so keep them equal. The server checks that each one exists, is active, costs what Peal publishes at the right interval, and is tax-exclusive.
 
@@ -172,9 +174,9 @@ Their amounts are those of [Plans and billing](/guides/workspace/billing#plans):
 - Owners and admins order, cancel and withdraw from the workspace's billing page, in their own session; staff impersonating them, API keys and OAuth clients cannot.
 - A checkout starts only for an order placed there in the last 30 minutes, which records the request to start at once.
 - A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one.
-- A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan.
-- A trial is set to end, cancelled, with its trial, even if a payment method is added, so it never turns into a charge: its workspace is then on the free plan, and a paid plan ordered during the trial ends the trial once it is paid for.
-- The `billing.reminders` job reminds, every hour, the trials that end within three days and the yearly plans that renew within 45 days, always more than a month ahead.
+- A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free tier.
+- A trial already started (Peal offers no new ones) is set to end, cancelled, with its trial, even if a payment method is added, so it never turns into a charge: its workspace is then on the free tier, and a paid plan ordered during the trial ends the trial once it is paid for.
+- The `billing.reminders` job reminds, every hour, the trials that end within three days and the yearly plans priced by channels that renew within 45 days, always more than a month ahead.
 
 <Callout type="warning" title="Deleting a workspace that pays">
   A workspace with a subscription Stripe may still bill, unpaid and paused ones

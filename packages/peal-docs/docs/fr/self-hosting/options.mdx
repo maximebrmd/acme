@@ -79,8 +79,11 @@ Une limite s’applique quand on ajoute quelque chose : un espace de travail pas
     </CodeGroup>
 
   </Step>
-  <Step title="Créer les prix des abonnements">
-    Créez-les à la main, comme le dit [Les prix des abonnements](#plan-prices).
+  <Step title="Garder les prix des anciens abonnements, s’il y en a">
+    Un nouveau compte Stripe n’en a besoin d’aucun : les abonnements par paliers
+    de canaux ne sont plus vendus. Un serveur où un abonnement à l’un d’eux
+    court encore garde leurs prix, comme le dit
+    [Les prix des abonnements](#plan-prices).
   </Step>
   <Step title="Ajouter le webhook">
     Ajoutez un webhook vers `PUBLIC_URL/api/auth/stripe/webhook` avec les
@@ -170,7 +173,7 @@ La clé de la commande doit pouvoir écrire les compteurs, les produits et les p
 
 ### Les prix des abonnements [#plan-prices]
 
-Les abonnements restent vendus tant que la tarification par compte ne l’est pas. Créez à la main un produit pour chaque abonnement payant, avec un prix mensuel et un prix annuel en euros, tous deux hors taxes, sous les clés de recherche `peal_<plan>_monthly` et `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), avec le même préfixe.
+Les abonnements par paliers de canaux ne sont plus vendus, et un nouveau compte Stripe n’a besoin d’aucun de leurs prix. Le serveur ne les vérifie que tant qu’un abonnement à l’un d’eux court encore : gardez alors un produit pour chaque abonnement payant, avec un prix mensuel et un prix annuel en euros, tous deux hors taxes, sous les clés de recherche `peal_<plan>_monthly` et `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), avec le même préfixe.
 
 Leurs montants sont ceux d’[Abonnements et facturation](/guides/workspace/billing#plans) : Peal les affiche avant le paiement, gardez-les égaux. Le serveur vérifie que chacun existe, est actif, coûte ce que Peal publie à la bonne périodicité et est hors taxes.
 
@@ -180,8 +183,8 @@ Leurs montants sont ceux d’[Abonnements et facturation](/guides/workspace/bill
 - Un paiement ne commence que pour une commande passée là dans les 30 dernières minutes, qui enregistre la demande de commencer immédiatement.
 - L’état d’un abonnement ne vient que de ses événements de webhook, vérifiés avec le secret de signature : un événement envoyé deux fois n’est enregistré qu’une fois, et un événement plus ancien ne remplace jamais un plus récent.
 - Un abonnement reste payé tant que Stripe retente un paiement échoué ; impayé, suspendu ou résilié, l’espace de travail revient à l’offre gratuite.
-- Un essai est programmé pour prendre fin, résilié, avec son essai, même si un moyen de paiement est ajouté, si bien qu’il ne devient jamais payant : son espace de travail revient alors à l’offre gratuite, et un abonnement payant commandé pendant l’essai y met fin une fois payé.
-- La tâche `billing.reminders` rappelle chaque heure les essais qui se terminent dans les trois jours et les abonnements annuels qui se renouvellent dans les 45 jours, toujours plus d’un mois à l’avance.
+- Un essai déjà commencé (Peal n’en propose plus) est programmé pour prendre fin, résilié, avec son essai, même si un moyen de paiement est ajouté, si bien qu’il ne devient jamais payant : son espace de travail revient alors à l’offre gratuite, et un abonnement payant commandé pendant l’essai y met fin une fois payé.
+- La tâche `billing.reminders` rappelle chaque heure les essais qui se terminent dans les trois jours et les abonnements annuels par paliers de canaux qui se renouvellent dans les 45 jours, toujours plus d’un mois à l’avance.
 
 <Callout type="warning" title="Supprimer un espace de travail qui paie">
   Un espace de travail dont un abonnement peut encore être facturé par Stripe,
