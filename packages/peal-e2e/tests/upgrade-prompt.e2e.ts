@@ -185,7 +185,7 @@ describe("per-account pricing", { serial: true }, () => {
     ).toBeVisible();
     await expect(
       dialog.getByText(
-        "The 3rd costs $5.00 a month, excluding tax ($6.00 with 20% VAT), counted by the day; the first 2 stay free."
+        "The 3rd costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT, counted by the day; the first 2 stay free."
       )
     ).toBeVisible();
 
@@ -211,6 +211,9 @@ describe("per-account pricing", { serial: true }, () => {
     await opened("fr", { height: 568, width: 320 });
     await opened("fr", { height: 667, width: 375 });
     await browser.setViewport({ height: 720, width: 1280 });
+    // Back to English, which the French pages' language cookie replaced.
+    await app.open(`/en/app/${workspaceId}/channels`);
+    await expect(screen.getByLabel("Server")).toBeVisible();
   });
 
   test("the order waits for the request to start at once, then goes through checkout and back", async ({
