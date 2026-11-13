@@ -1049,6 +1049,35 @@ layer(ActionsTest)("billing's actions", (it) => {
       })
   );
 
+  it.effect(
+    "credits nothing on a withdrawal from per-account pricing, whose paid invoices were for usage supplied",
+    () =>
+      Effect.gen(function* perAccountWithdrawal() {
+        // The month past's arrears, paid on the 1st, its lines without a
+        // period: the running month's would otherwise refund part of it.
+        yield* setNow("2026-11-04T00:00:00Z");
+        yield* holding(paid({ plan: "payAsYouGo" }));
+        yield* paying({
+          invoiceId: "in_synthetic_arrears",
+          lines: [],
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
+
+        const preview = yield* (yield* Withdraw).preview(actorAs());
+
+        assert.deepStrictEqual(preview.refund, { amount: 0, currency: "eur" });
+
+        const done = yield* (yield* Withdraw).confirm(actorAs());
+
+        assert.deepStrictEqual(done.refunded, { amount: 0, currency: "eur" });
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endAndInvoice sub_synthetic_paid withdrawn",
+        ]);
+      })
+  );
+
   it.effect("offers no trial: the free accounts replace it", () =>
     Effect.gen(function* noTrial() {
       yield* setNow("2026-11-09T10:00:00Z");
