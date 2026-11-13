@@ -111,7 +111,7 @@ A redirect is a `302` with `Cache-Control: no-store`, so every visit reaches the
 
 ## Database [#database]
 
-At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`. The migrations create the `pg_trgm` extension, which the media library's search reads: it ships with PostgreSQL, and as a trusted extension the database's owner may create it. On a managed Postgres, connect as the database's owner, or create it once beforehand (`CREATE EXTENSION pg_trgm;`).
 
 The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks. Each server process opens up to 10 connections, and up to 5 more for sign-in (`AUTH_DB_POOL_MAX`).
 

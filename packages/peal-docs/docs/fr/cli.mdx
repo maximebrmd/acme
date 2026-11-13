@@ -433,7 +433,7 @@ peal channels defaults clear <channel-id>
 peal media upload ./couverture.jpg --alt "Un catalogue papier ouvert sur une table en bois"
 peal media import https://files.example/printemps/couverture.jpg --alt "Un catalogue papier ouvert sur une table en bois"
 peal media generate --prompt "Un catalogue papier ouvert sur une table en bois, lumière du matin" --aspect landscape
-peal media list                   # du plus récent au plus ancien ; --limit et --cursor les parcourent
+peal media list                   # du plus récent au plus ancien ; --search, --kind, --limit et --cursor
 peal media show <media-id>
 peal media describe <media-id> --text "Un catalogue papier ouvert sur une table en bois"
 peal media delete <media-id>
@@ -442,7 +442,7 @@ peal media delete <media-id>
 - `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, ou un document PDF jusqu’à 100 Mio et 300 pages, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
 - `peal media import` fait récupérer au serveur une image, une vidéo ou un document PDF à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
 - `peal media generate` fait créer au [fournisseur d’images](/settings#image-provider) de l’espace de travail, ou sinon au modèle d’images de l’instance, une image d’après `--prompt` (de 1 à 1 000 caractères, envoyés tels quels à ce fournisseur) dans les médias de l’espace de travail, au format `--aspect` `square` (par défaut), `landscape` ou `portrait` ([Générer une image](/media#generate)). Avec le modèle de l’instance, elle coûte 5 des demandes à l’assistant du jour de l’espace de travail, avec le fournisseur de l’espace de travail aucune ; l’image est marquée comme créée par IA : réglez la mention IA de la plateforme dans les options de la publication, et décrivez-la avec `--alt` quand vous la joignez. Un espace de travail sans fournisseur à lui, sur une instance sans modèle d’images, est refusé.
-- `peal media list` liste les images et vidéos de l’espace de travail, de la plus récente à la plus ancienne, avec les identifiants que les publications prennent et si chacune est prête. `--limit` prend 100 au plus.
+- `peal media list` liste les images, vidéos et documents de l’espace de travail, du plus récent au plus ancien, avec les identifiants que les publications prennent, si chacun est prêt, son nom de fichier et sa description. `--search <texte>` garde ceux dont le nom ou la description contient le texte, quelle que soit la casse (100 caractères au plus), et `--kind image|video|document` ceux d’un type ; `--limit` prend 100 au plus. `peal media upload` envoie le nom du fichier avec lui, que la recherche retrouve.
 - `peal media show` affiche un média : son type, sa taille, quand il a été stocké, s’il est prêt à être joint, et sa description. Après un envoi ou une récupération, il dit quand une vidéo que Peal lit encore devient `ready`.
 - `peal media describe` règle la description d’un média dans la médiathèque avec `--text`, ou la retire avec `--clear`. Les publications qui l’ont déjà joint gardent leur texte alternatif.
 - `peal media delete` supprime un média définitivement. Il dit d’abord quels brouillons le montrent et le perdent, puis demande (`--yes` sinon, et avec `--json`) ; un média qu’une publication programmée montre est refusé, avec ces publications.

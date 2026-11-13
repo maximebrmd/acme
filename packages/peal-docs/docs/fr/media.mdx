@@ -21,6 +21,14 @@ Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dim
 
 Sur une instance qui facture, chaque abonnement contient un nombre d’octets de médias ([Abonnements et facturation](/billing#limits)), envois en cours compris : un envoi pour lequel l’espace de travail n’a pas de place est refusé avant que rien ne parte, et supprimer des médias libère de la place.
 
+## Retrouver un fichier [#find]
+
+Chaque fichier garde le nom qu’il avait : celui du fichier que vous avez envoyé, ou la dernière partie de l’adresse d’où il a été importé (après ses redirections, jamais sa requête). Peal le garde sur une ligne, sans les dossiers qui le précèdent ni caractères de contrôle, et le coupe à 255 caractères. Une image créée par l’assistant n’a pas de nom, pas plus qu’un fichier ajouté avant que Peal garde les noms : la médiathèque appelle chacun par son type (**Image**, **Vidéo**, **Document PDF**).
+
+La barre d’outils de la médiathèque trouve les fichiers par un texte de leur nom ou de leur description, quelle que soit la casse, et les filtre par type ; les deux réduisent la liste ensemble, du plus récent au plus ancien, et **Afficher plus** poursuit la même recherche. Un fichier sans nom ne se trouve que par sa description. Choisissez une miniature pour voir le fichier en grand : une image entière, une vidéo à lire, et, pour un document, un lien qui l’ouvre dans un onglet à part.
+
+`peal media list --search "…" --kind image` fait de même depuis la [ligne de commande](/cli#media), les paramètres `q` et `kind` de l’outil `list_media` depuis un [client MCP](/mcp#tools), et `GET /api/workspaces/{workspaceId}/media?q=…&kind=…` depuis l’API, avec `fileName` dans chaque média qu’elle renvoie. Un envoi donne le nom dans `fileName` quand il commence (`POST …/media`). Le nom est le texte du membre : affichez-le comme du texte.
+
 ## Récupérer depuis une adresse [#import]
 
 Un fichier déjà en ligne peut rejoindre la médiathèque sans passer par votre ordinateur : le serveur Peal va le chercher lui-même. `peal media import <url>` le fait depuis la [ligne de commande](/cli#media), l’outil `import_media` depuis un [client MCP](/mcp#tools), et `POST /api/workspaces/{workspaceId}/media/import` depuis l’API, avec l’adresse du fichier (`url`) et, si vous le souhaitez, son texte alternatif (`altText`). Tous trois demandent le droit d’importer des médias.

@@ -21,6 +21,14 @@ Peal reads each file once it is stored: an image's dimensions, a video's dimensi
 
 On an instance that bills, each plan holds a number of bytes of media ([Plans and billing](/billing#limits)), uploads in progress included: an upload the workspace has no room for is refused before anything is sent, and deleting media makes room.
 
+## Find a file [#find]
+
+Each file keeps the name it had: the name of the file you uploaded, or the last part of the address it was imported from (after its redirects, never its query). Peal keeps it on one line, without the folders before it or control characters, and cuts it at 255 characters. An image the assistant made has no name, and neither does a file added before Peal kept names: the library calls each by its kind (**Image**, **Video**, **PDF document**).
+
+The library's toolbar finds files by text in their name or their description, whatever its case, and filters them by kind; both narrow the list together, newest first, and **Show more** goes on with the same search. A file without a name is found by its description only. Choose a thumbnail to see the file at full size: an image whole, a video to play, and, for a document, a link that opens it in a tab of its own.
+
+`peal media list --search "…" --kind image` does the same from the [command line](/cli#media), the `list_media` tool's `q` and `kind` from an [MCP client](/mcp#tools), and `GET /api/workspaces/{workspaceId}/media?q=…&kind=…` from the API, with `fileName` in each media it answers. An upload gives the name as `fileName` when it starts (`POST …/media`). The name is the member's text: show it as text.
+
 ## Import from an address [#import]
 
 A file that is already online can come into the library without passing through your computer: the Peal server fetches it itself. `peal media import <url>` does it from the [command line](/cli#media), the `import_media` tool from an [MCP client](/mcp#tools), and `POST /api/workspaces/{workspaceId}/media/import` from the API, with the file's `url` and, if you like, its `altText`. All three need the right to upload.

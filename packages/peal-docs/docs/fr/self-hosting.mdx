@@ -111,7 +111,7 @@ Une redirection est une `302` avec `Cache-Control: no-store`, pour que chaque vi
 
 ## Base de données [#database]
 
-Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
+Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`. Les migrations créent l’extension `pg_trgm`, que lit la recherche de la médiathèque : elle est livrée avec PostgreSQL et, en tant qu’extension de confiance, le propriétaire de la base de données peut la créer. Sur un Postgres géré, connectez-vous en tant que propriétaire de la base, ou créez-la une fois au préalable (`CREATE EXTENSION pg_trgm;`).
 
 Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous. Chaque processus serveur ouvre jusqu’à 10 connexions, et jusqu’à 5 de plus pour la connexion des utilisateurs (`AUTH_DB_POOL_MAX`).
 
