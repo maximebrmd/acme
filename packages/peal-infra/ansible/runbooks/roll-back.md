@@ -73,3 +73,54 @@ channel off a scheduled post (`post_targets.dropped`, migration
    workspaces of the drafts listed not to schedule or duplicate them until
    this release is back. Keep the roll-back short, and run the checks
    again before releasing this one once more.
+
+## Past first comments and polls
+
+The release that sends a post's first comment on Facebook Pages,
+Instagram, LinkedIn pages and YouTube, and a post's poll on X, Mastodon
+and Threads (`posts.poll`, migration `post-polls`), stores two things the
+release before it misreads:
+
+- a poll (`publishing.posts.poll`): the release before ignores the
+  column, so the post goes out without it, its question alone, and a
+  copy or a recycled occurrence it makes has none; the approval subject
+  it writes leaves the poll out, so a post that waits for an approval is
+  asked for one again rather than released;
+- a first comment (the one part in `follow_ups` on those four
+  platforms): the release before takes those platforms for ones that
+  take a post alone, so the router refuses the comment
+  (`partsNotSupported`) once the post is live, and the channel ends
+  **Failed**, the post partly published, never sent again from Peal.
+  Scheduling a draft with one refuses it (`tooManyParts`), which the
+  member sees.
+
+1. **Posts still to go out that ask a poll:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT id FROM publishing.posts WHERE status IN ('scheduled', 'awaitingApproval', 'publishing') AND poll IS NOT NULL"
+   ```
+
+2. **Posts still to go out with a first comment:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT DISTINCT p.id FROM publishing.posts p JOIN publishing.post_targets t ON t.post_id = p.id JOIN channels.channels c ON c.id = t.channel_id WHERE p.status IN ('scheduled', 'awaitingApproval', 'publishing') AND NOT t.dropped AND jsonb_array_length(p.follow_ups) > 0 AND c.platform IN ('facebook', 'instagram', 'linkedin', 'youtube')"
+   ```
+
+3. **Drafts, and the sources of recycling rules, that ask a poll:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT p.id, p.workspace_id, p.status, r.id AS rule FROM publishing.posts p LEFT JOIN publishing.recycling_rules r ON r.source_post_id = p.id AND r.status IN ('active', 'paused') WHERE p.poll IS NOT NULL AND (p.status = 'draft' OR r.id IS NOT NULL)"
+   ```
+
+4. **Checks 1 or 2 list a post:** do not roll back yet. Wait until those
+   posts have gone out, or have their workspace take them back to draft,
+   then run the checks again. Never change the rows by hand.
+
+5. **Check 3 lists a post:** while the release before runs, a draft
+   scheduled with a poll goes out without it, and an active rule's next
+   occurrence too. Have the workspaces of the active rules listed pause
+   them and tell those of the drafts listed not to schedule them until
+   this release is back, as for per-channel posts above.

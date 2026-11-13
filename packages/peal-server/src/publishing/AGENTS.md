@@ -52,12 +52,54 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `post-parts-storage.test.ts`; rolling back past them is in the server
   guide.
 - `platformRules[platform].followUps` says what parts become there
-  (`thread`: X, Bluesky, Mastodon; `comment`: none yet) and how many; the
+  (`thread`: X, Bluesky, Mastodon; `comment`: Facebook Pages, Instagram,
+  LinkedIn pages, YouTube, one first comment) and how many; the
   contract's copy and the capabilities' `followUps` follow it. Scheduling
-  checks each part as a post of the platform (violations carry `part`, its
-  place from 1) and refuses parts elsewhere (`tooManyParts`). A platform
-  joins only with an adapter that reads `OutgoingPost.replyTo`: the router
-  refuses a later part to any other (`partsNotSupported`).
+  checks each part as a post of the platform, a comment by its own
+  `comment` rules (`partRulesFor`: text alone, its limits; violations
+  carry `part`, its place from 1) and refuses parts elsewhere
+  (`tooManyParts`), on a LinkedIn profile too (`followUpsThrough`, by the
+  channel's connection, which the router and the capabilities read). A
+  platform joins only with an adapter that reads `OutgoingPost.replyTo`:
+  the router refuses a later part to any other (`partsNotSupported`).
+- A first comment takes the inbox's comment permission, so the server
+  sends comments only where `PEAL_INBOX_PLATFORMS` names the platform
+  (`threadedPlatformsWith`, in `XThreadsLive`, beside `X_THREADS`; the
+  reference's default sends none): elsewhere it is a part too many, and
+  the capabilities give `followUps` null. A channel whose grant lacks the
+  scope (`commentScopesOn`, `domain/first-comments.ts`, the inbox's
+  constants) is refused `partsNeedReconnect` by `AccountRules`, and
+  `AccountStandings` says so (`partsNeedReconnect` restriction). The
+  adapters wrap the platform's client in `withFirstComments`
+  (`platforms/first-comment.ts`): part 0 is the post, part 1 a comment
+  under `replyTo.root` through `sequenced` steps whose commit is the one
+  comment call (Facebook's and Instagram's `POST /{id}/comments`,
+  LinkedIn's socialActions comments as the page, YouTube's
+  `commentThreads.insert`, 50 units of the project's quota, uncounted by
+  `PlatformQuota` as the inbox's replies are) and whose `lookUp` lists
+  the post's newest comments (`commentAmong`: the only one by the account
+  since `startedAt` less a minute with the same text, `found` or
+  `unknown`, never `absent`; a list a next page may extend past the
+  attempt's start settles nothing). A comment that fails after the post
+  went live leaves the target failed with its live post, the post
+  `partiallyPublished`, and a repost sends the comment alone. None of the
+  four platforms deletes or edits a live post from Peal; the day one does,
+  its adapter must delete the comment with the comment call
+  (`first-comment-live-post.test.ts` fails first).
+- A post's poll (`PostContent.poll`, `domain/poll.ts`, in
+  `publishing.posts.poll`, null without one) goes with its first part:
+  `platformRules[platform].poll` (X, Mastodon with its defaults, Threads,
+  whose duration is its own: `platformDecides`) bounds it, and
+  `pollViolationsOn` (run by `checkPublishable`) refuses it elsewhere
+  (`pollNotSupported`) and past each bound, a file beside it included.
+  The approval subject and the duplicate digest add it only when there is
+  one; copies, signatures, recycling variants, media removal and the
+  export keep it, as every `new PostContent` must (it defaults to none).
+  The router hands it to part 0 (`OutgoingPost.poll`) and refuses one the
+  platform's rules do not take (`pollNotSupported`); X sends `poll`,
+  Mastodon `poll` without `media_ids`, Threads `poll_attachment` on a
+  text container. LinkedIn's poll (a question of its own) and Instagram's
+  (Facebook Login only) are not sent yet.
 - `PublishTargetV2` (`workflows/publish-parts.ts`) sends a target part by
   part: `claim-target` answers the parts left, then for each `delay/<part>`
   (a durable sleep), `publish/<part>/<n>` with `retry/<part>/<n>`, and

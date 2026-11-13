@@ -408,6 +408,12 @@ Un canal déjà retiré répond la publication telle qu’elle est : une requêt
 
 Il faut post:schedule, ou, sur une publication en attente d’approbation, le droit de demander que des publications partent. Un client OAuth a besoin du scope `workspace:publish`.
 
+## Sondages et premiers commentaires [#polls]
+
+`content.poll` pose un sondage avec la première partie de la publication, dont le texte est la question : `choices` (2 à 4), `durationMinutes`, et `multipleChoice` (faux quand il est omis). Peal ne le renvoie que sur une publication qui en pose un ; envoyez `null`, ou omettez-le, pour aucun. Les capacités d’une plateforme donnent son `poll` : le nombre de choix, leur `choiceLimit`, `durationMinutes` (`null` là où la plateforme décide de la durée) et `multipleChoice`. Là où elles n’en donnent pas, une publication avec un sondage est refusée avec `pollNotSupported`, et chaque limite dépassée a sa violation (`pollChoiceCount`, `pollChoiceLength`, `pollDurationOutOfRange`, `pollMultipleChoice`, `pollWithMedia`).
+
+Un premier commentaire est l’unique partie après la première (`content.followUps`), là où les capacités d’une plateforme donnent des `followUps` de type `comment` : du texte seul, dans les `commentTextLimits`. Elles ne le donnent que là où le serveur lit les commentaires de cette plateforme, et un canal connecté avant est refusé avec `partsNeedReconnect`, ce que ses capacités disent à l’avance (`account.restrictions`). Un commentaire qui échoue après la mise en ligne de la publication la laisse `partiallyPublished` ; une republication envoie le commentaire seul. Le [guide des publications](/guides/posts#first-comment) dit comment une réponse perdue est tranchée.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
 | Requête                                      | Outil MCP                         | Commande                                         |
