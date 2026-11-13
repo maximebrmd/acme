@@ -1218,21 +1218,24 @@ func (p *PlanPrice) String() string {
 
 var (
 	standingFieldAccount        = big.NewInt(1 << 0)
-	standingFieldMustReduce     = big.NewInt(1 << 1)
-	standingFieldOver           = big.NewInt(1 << 2)
-	standingFieldPlan           = big.NewInt(1 << 3)
-	standingFieldPlanWithRoom   = big.NewInt(1 << 4)
-	standingFieldScheduledPosts = big.NewInt(1 << 5)
+	standingFieldGraceUntil     = big.NewInt(1 << 1)
+	standingFieldMustReduce     = big.NewInt(1 << 2)
+	standingFieldOver           = big.NewInt(1 << 3)
+	standingFieldPlan           = big.NewInt(1 << 4)
+	standingFieldPlanWithRoom   = big.NewInt(1 << 5)
+	standingFieldScheduledPosts = big.NewInt(1 << 6)
 )
 
 // standingNullableFields maps the wire names of Standing's nullable fields (required or optional) to their field bits.
 var standingNullableFields = map[string]*big.Int{
+	"graceUntil":   standingFieldGraceUntil,
 	"plan":         standingFieldPlan,
 	"planWithRoom": standingFieldPlanWithRoom,
 }
 
 type Standing struct {
 	Account        *BillingAccount `json:"account,omitempty" url:"account,omitempty"`
+	GraceUntil     *string         `json:"graceUntil,omitempty" url:"graceUntil,omitempty"`
 	MustReduce     bool            `json:"mustReduce" url:"mustReduce"`
 	Over           []*Excess       `json:"over" url:"over"`
 	Plan           *Plan           `json:"plan,omitempty" url:"plan,omitempty"`
@@ -1251,6 +1254,13 @@ func (s *Standing) GetAccount() *BillingAccount {
 		return nil
 	}
 	return s.Account
+}
+
+func (s *Standing) GetGraceUntil() *string {
+	if s == nil {
+		return nil
+	}
+	return s.GraceUntil
 }
 
 func (s *Standing) GetMustReduce() bool {
@@ -1309,6 +1319,13 @@ func (s *Standing) require(field *big.Int) {
 func (s *Standing) SetAccount(account *BillingAccount) {
 	s.Account = account
 	s.require(standingFieldAccount)
+}
+
+// SetGraceUntil sets the GraceUntil field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetGraceUntil(graceUntil *string) {
+	s.GraceUntil = graceUntil
+	s.require(standingFieldGraceUntil)
 }
 
 // SetMustReduce sets the MustReduce field and marks it as non-optional;

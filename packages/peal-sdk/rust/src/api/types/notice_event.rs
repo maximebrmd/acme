@@ -118,6 +118,17 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    PaymentMethodNeeded {
+        #[serde(default)]
+        accounts: i64,
+        #[serde(default)]
+        allowed: i64,
+        #[serde(rename = "graceUntil")]
+        #[serde(default)]
+        grace_until: String,
+    },
+
+    #[non_exhaustive]
     SubscriptionRenewing {
         plan: PaidPlan,
         #[serde(default)]
@@ -300,6 +311,14 @@ impl NoticeEvent {
             ends_at,
             over,
             plan,
+        }
+    }
+
+    pub fn payment_method_needed(accounts: i64, allowed: i64, grace_until: String) -> Self {
+        Self::PaymentMethodNeeded {
+            accounts,
+            allowed,
+            grace_until,
         }
     }
 

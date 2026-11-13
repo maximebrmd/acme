@@ -15,6 +15,7 @@ export type NoticeEvent =
     | Peal.NoticeEvent.ChannelReconnectSoon
     | Peal.NoticeEvent.SubscriptionStarted
     | Peal.NoticeEvent.TrialEnding
+    | Peal.NoticeEvent.PaymentMethodNeeded
     | Peal.NoticeEvent.SubscriptionRenewing
     | Peal.NoticeEvent.SubscriptionCancelled
     | Peal.NoticeEvent.SubscriptionWithdrawn
@@ -72,6 +73,10 @@ export namespace NoticeEvent {
 
     export interface TrialEnding extends Peal.NoticeEventTrialEnding {
         _tag: "TrialEnding";
+    }
+
+    export interface PaymentMethodNeeded extends Peal.NoticeEventPaymentMethodNeeded {
+        _tag: "PaymentMethodNeeded";
     }
 
     export interface SubscriptionRenewing extends Peal.NoticeEventSubscriptionRenewing {

@@ -74,6 +74,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new TrialEndingValue(value));
     }
 
+    public static NoticeEvent paymentMethodNeeded(NoticeEventPaymentMethodNeeded value) {
+        return new NoticeEvent(new PaymentMethodNeededValue(value));
+    }
+
     public static NoticeEvent subscriptionRenewing(NoticeEventSubscriptionRenewing value) {
         return new NoticeEvent(new SubscriptionRenewingValue(value));
     }
@@ -156,6 +160,10 @@ public final class NoticeEvent {
 
     public boolean isTrialEnding() {
         return value instanceof TrialEndingValue;
+    }
+
+    public boolean isPaymentMethodNeeded() {
+        return value instanceof PaymentMethodNeededValue;
     }
 
     public boolean isSubscriptionRenewing() {
@@ -282,6 +290,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventPaymentMethodNeeded> getPaymentMethodNeeded() {
+        if (isPaymentMethodNeeded()) {
+            return Optional.of(((PaymentMethodNeededValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<NoticeEventSubscriptionRenewing> getSubscriptionRenewing() {
         if (isSubscriptionRenewing()) {
             return Optional.of(((SubscriptionRenewingValue) value).value);
@@ -398,6 +413,8 @@ public final class NoticeEvent {
 
         T visitTrialEnding(NoticeEventTrialEnding trialEnding);
 
+        T visitPaymentMethodNeeded(NoticeEventPaymentMethodNeeded paymentMethodNeeded);
+
         T visitSubscriptionRenewing(NoticeEventSubscriptionRenewing subscriptionRenewing);
 
         T visitSubscriptionCancelled(NoticeEventSubscriptionCancelled subscriptionCancelled);
@@ -433,6 +450,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(ChannelReconnectSoonValue.class),
         @JsonSubTypes.Type(SubscriptionStartedValue.class),
         @JsonSubTypes.Type(TrialEndingValue.class),
+        @JsonSubTypes.Type(PaymentMethodNeededValue.class),
         @JsonSubTypes.Type(SubscriptionRenewingValue.class),
         @JsonSubTypes.Type(SubscriptionCancelledValue.class),
         @JsonSubTypes.Type(SubscriptionWithdrawnValue.class),
@@ -914,6 +932,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(TrialEndingValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PaymentMethodNeeded")
+    @JsonIgnoreProperties("_tag")
+    private static final class PaymentMethodNeededValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPaymentMethodNeeded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PaymentMethodNeededValue() {}
+
+        private PaymentMethodNeededValue(NoticeEventPaymentMethodNeeded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPaymentMethodNeeded(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PaymentMethodNeededValue && equalTo((PaymentMethodNeededValue) other);
+        }
+
+        private boolean equalTo(PaymentMethodNeededValue other) {
             return value.equals(other.value);
         }
 

@@ -14,6 +14,9 @@ from .plan import Plan
 
 class Standing(UniversalBaseModel):
     account: typing.Optional[BillingAccount] = None
+    grace_until: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="graceUntil"), pydantic.Field(alias="graceUntil")
+    ] = None
     must_reduce: typing_extensions.Annotated[
         bool, FieldMetadata(alias="mustReduce"), pydantic.Field(alias="mustReduce")
     ]

@@ -30,7 +30,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public CompletableFuture<Billing> get(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<Billing>> rawFuture = this.rawClient.get(workspaceId);
@@ -44,7 +44,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public CompletableFuture<Billing> get(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Billing>> rawFuture = this.rawClient.get(workspaceId, requestOptions);
@@ -58,7 +58,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public CompletableFuture<Billing> get(String workspaceId, GetBillingRequest request) {
         CompletableFuture<PealClientHttpResponse<Billing>> rawFuture = this.rawClient.get(workspaceId, request);
@@ -72,7 +72,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public CompletableFuture<Billing> get(
             String workspaceId, GetBillingRequest request, RequestOptions requestOptions) {
@@ -88,7 +88,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public CompletableFuture<Standing> standing(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<Standing>> rawFuture = this.rawClient.standing(workspaceId);
@@ -102,7 +102,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public CompletableFuture<Standing> standing(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Standing>> rawFuture =
@@ -117,7 +117,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public CompletableFuture<Standing> standing(String workspaceId, StandingBillingRequest request) {
         CompletableFuture<PealClientHttpResponse<Standing>> rawFuture = this.rawClient.standing(workspaceId, request);
@@ -131,7 +131,7 @@ public class AsyncBillingClient {
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public CompletableFuture<Standing> standing(
             String workspaceId, StandingBillingRequest request, RequestOptions requestOptions) {

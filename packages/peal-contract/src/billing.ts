@@ -104,7 +104,10 @@ export const UsageSchema = Schema.Struct({
 
 export type Usage = typeof UsageSchema.Type;
 
-/** The trial a workspace may start once, without a payment method. */
+/**
+ * The trial a workspace could start once, without a payment method. No new
+ * trial is offered: `available` is false, the free accounts replace it.
+ */
 export const TrialOfferSchema = Schema.Struct({
   // Whether the member asking may start it for this workspace now.
   available: Schema.Boolean,
@@ -164,20 +167,29 @@ export const BillingAccountSchema = Schema.Struct({
 export type BillingAccount = typeof BillingAccountSchema.Type;
 
 /**
- * A workspace's billing. On a server that does not bill, `enabled` is false,
- * `plan`, `subscription`, `trial` and `withdrawableUntil` are null, every
- * allowance is null and `plans` is empty: nothing is limited.
+ * A workspace's billing. On a server that bills, a workspace is on the
+ * free tier (`free`: 2 connected accounts across its billing account, no
+ * payment method) or on per-account pricing (`payAsYouGo`: a payment
+ * method, each account past the free ones and each use past its allowance
+ * billed monthly at the rate card's prices); a subscription to a plan
+ * priced by tiers of channels keeps its plan until it ends. On a server
+ * that does not bill, `enabled` is false, `plan`, `subscription`, `trial`
+ * and `withdrawableUntil` are null, every allowance is null and `plans` is
+ * empty: nothing is limited.
  */
 export const BillingSchema = Schema.Struct({
   // The billing account the workspace is on, on a server that does not
   // bill too. Older servers leave it out.
   account: Schema.optionalKey(BillingAccountSchema),
   allowances: PlanAllowancesSchema,
-  // The currency of every price.
+  // The currency of the prices of the plans priced by tiers of channels.
+  // Per-account pricing is in US dollars (`peal-contract/rate-card`).
   currency: Schema.String,
   enabled: Schema.Boolean,
   plan: Schema.NullOr(PlanSchema),
-  // Every plan, from the smallest, to compare and move to.
+  // The plans a workspace can be on, from the smallest: `free` and
+  // `payAsYouGo`, which the rate card prices (`price` null for both), with
+  // what each allows the billing account.
   plans: Schema.Array(PlanOfferSchema),
   subscription: Schema.NullOr(BillingSubscriptionSchema),
   trial: Schema.NullOr(TrialOfferSchema),
@@ -232,8 +244,9 @@ export const StandingSchema = Schema.Struct({
   over: Schema.Array(ExcessSchema),
   // Null on a server that does not bill.
   plan: Schema.NullOr(PlanSchema),
-  // The smallest plan that holds everything it has, when it is over its
-  // own; null within it, and past the largest plan.
+  // The plan that holds everything it has, when it is over its own:
+  // `payAsYouGo`, with a payment method; null within it, or when no plan
+  // holds that much.
   planWithRoom: Schema.NullOr(PaidPlanSchema),
   // The posts scheduled to go out this month (UTC). While `mustReduce`,
   // each fails when due, with `planLimit` as its reason, and can be posted
@@ -365,7 +378,7 @@ export class BillingApi extends HttpApiGroup.make("billing")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.",
+          "Answers with the workspace's plan (`free`, `payAsYouGo`, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.",
         summary: "Get the workspace's billing",
       })
     )
@@ -377,7 +390,7 @@ export class BillingApi extends HttpApiGroup.make("billing")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.",
+          "Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), until when a grace keeps it publishing (`graceUntil`), the plan that holds everything (`payAsYouGo`, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.",
         summary: "Get the workspace's standing",
       })
     )

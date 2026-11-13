@@ -534,6 +534,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_CommentsReceived,
         NoticeEvent_FeedStopped,
+        NoticeEvent_PaymentMethodNeeded,
         NoticeEvent_PostApprovalRequested,
         NoticeEvent_PostApproved,
         NoticeEvent_PostChangesRequested,
@@ -557,6 +558,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
     from .notice_event_comments_received import NoticeEventCommentsReceived
     from .notice_event_feed_stopped import NoticeEventFeedStopped
+    from .notice_event_payment_method_needed import NoticeEventPaymentMethodNeeded
     from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
     from .notice_event_post_approved import NoticeEventPostApproved
     from .notice_event_post_changes_requested import NoticeEventPostChangesRequested
@@ -1462,6 +1464,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventChannelReconnectSoon": ".notice_event_channel_reconnect_soon",
     "NoticeEventCommentsReceived": ".notice_event_comments_received",
     "NoticeEventFeedStopped": ".notice_event_feed_stopped",
+    "NoticeEventPaymentMethodNeeded": ".notice_event_payment_method_needed",
     "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
     "NoticeEventPostApproved": ".notice_event_post_approved",
     "NoticeEventPostChangesRequested": ".notice_event_post_changes_requested",
@@ -1483,6 +1486,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
     "NoticeEvent_CommentsReceived": ".notice_event",
     "NoticeEvent_FeedStopped": ".notice_event",
+    "NoticeEvent_PaymentMethodNeeded": ".notice_event",
     "NoticeEvent_PostApprovalRequested": ".notice_event",
     "NoticeEvent_PostApproved": ".notice_event",
     "NoticeEvent_PostChangesRequested": ".notice_event",
@@ -2411,6 +2415,7 @@ __all__ = [
     "NoticeEventChannelReconnectSoon",
     "NoticeEventCommentsReceived",
     "NoticeEventFeedStopped",
+    "NoticeEventPaymentMethodNeeded",
     "NoticeEventPostApprovalRequested",
     "NoticeEventPostApproved",
     "NoticeEventPostChangesRequested",
@@ -2432,6 +2437,7 @@ __all__ = [
     "NoticeEvent_ChannelReconnectSoon",
     "NoticeEvent_CommentsReceived",
     "NoticeEvent_FeedStopped",
+    "NoticeEvent_PaymentMethodNeeded",
     "NoticeEvent_PostApprovalRequested",
     "NoticeEvent_PostApproved",
     "NoticeEvent_PostChangesRequested",
