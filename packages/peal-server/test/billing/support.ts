@@ -109,7 +109,9 @@ const AloneAccountsOnly = Layer.mock(BillingAccounts, {
         ])
       )
     ),
+  repair: () => Effect.succeed({ lapsed: 0, repaired: 0 }),
   subscriptionChanged: () => Effect.void,
+  sweepIn: () => Effect.succeed(0),
 });
 
 /** Accounts nobody pays for, nor offers, nor any payment method required. */

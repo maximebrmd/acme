@@ -109,10 +109,9 @@ const RecordingLedger = Layer.effect(
 const resolved = Ref.makeUnsafe<readonly (readonly WorkspaceId[])[]>([]);
 
 const AccountsResolvedTest = Layer.mock(BillingAccounts, {
-  accountsIn: (workspaceIds) =>
-    Ref.update(resolved, (all) => [...all, workspaceIds]).pipe(
-      Effect.as(new Map())
-    ),
+  repair: () => Effect.succeed({ lapsed: 0, repaired: 0 }),
+  sweepIn: (workspaceIds) =>
+    Ref.update(resolved, (all) => [...all, workspaceIds]).pipe(Effect.as(0)),
 });
 
 const SnapshotTest = SnapshotUsage.make(2).pipe(

@@ -3,19 +3,34 @@
 // account per person whatever the reads sent together; a partner's pool
 // on the partner's account; a workspace a plan of its own entitles alone
 // until it ends.
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
-import { Effect, Option } from "effect";
+import { Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountPayers } from "#billing/application/ports/account-payers.ts";
+import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
+import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
+import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
   accountsTest,
   cleanUpAccounts,
   partnerOf,
   person,
+  PlainPseudonymsTest,
   subscribe,
   workspaceOwnedBy,
 } from "#test/billing/support.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
+import {
+  PartnerOwnershipLive,
+  WorkspaceOwnersLive,
+} from "#workspace/container.ts";
 
 // The rows the billing accounts hold for these workspaces.
 const attachmentsOf = (workspaceIds: readonly string[]) =>
@@ -346,5 +361,102 @@ layer(accountsTest)("billing accounts", (it) => {
 
         yield* cleanUpAccounts([workspace]);
       })
+  );
+
+  it.effect(
+    "repair an account whose billing workspace is gone, and delete lapsed offers",
+    () =>
+      Effect.gen(function* repaired() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const payer = yield* person;
+        const other = yield* person;
+        const first = yield* workspaceOwnedBy([payer]);
+        const second = yield* workspaceOwnedBy([payer, other]);
+        const account = yield* accounts.of(second);
+
+        // Erased by a release that did not know of billing accounts.
+        yield* sql`DELETE FROM auth.organization WHERE id = ${first}`.pipe(
+          Effect.orDie
+        );
+        yield* sql`INSERT INTO billing.account_transfers (id, workspace_id, from_account_id, to_user_id, offered_by, offered_at, expires_at) VALUES (${randomUUID()}, ${second}, ${account.id}, ${other}, ${payer}, '1969-12-24T00:00:00Z', '1969-12-31T00:00:00Z')`.pipe(
+          Effect.orDie
+        );
+
+        const done = yield* accounts.repair(500);
+
+        assert.isAtLeast(done.repaired, 1);
+        assert.isAtLeast(done.lapsed, 1);
+        assert.strictEqual((yield* accounts.of(second)).holder, second);
+        assert.lengthOf(
+          yield* sql`SELECT 1 FROM billing.account_transfers WHERE workspace_id = ${second}`.pipe(
+            Effect.orDie
+          ),
+          0
+        );
+
+        yield* cleanUpAccounts([first, second]);
+      })
+  );
+});
+
+// The workspace the stand-in below fails for, set by the test.
+const broken = { id: WorkspaceIdSchema.make(randomUUID()) };
+
+// One workspace whose owners cannot be read: the sweep goes on past it.
+const FailingOwnersTest = BillingAccounts.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleBillingAccountStoreLive,
+      DrizzleSubscriptionsLive,
+      PlainPseudonymsTest,
+      Layer.effect(
+        AccountPayers,
+        Effect.gen(function* failingFor() {
+          const payers = yield* AccountPayers;
+
+          return AccountPayers.of({
+            ...payers,
+            ownersOf: (workspaceId) =>
+              workspaceId === broken.id
+                ? Effect.fail(new DatabaseError({ cause: "synthetic" }))
+                : payers.ownersOf(workspaceId),
+          });
+        })
+      ).pipe(
+        Layer.provide(
+          WorkspaceAccountPayersLive.pipe(
+            Layer.provide(
+              Layer.merge(PartnerOwnershipLive, WorkspaceOwnersLive)
+            )
+          )
+        )
+      )
+    )
+  ),
+  Layer.provideMerge(TransactionsTest),
+  Layer.provideMerge(DatabaseTest)
+);
+
+layer(FailingOwnersTest)("the daily sweep", (it) => {
+  it.effect("goes on past a workspace it cannot give an account", () =>
+    Effect.gen(function* past() {
+      const accounts = yield* BillingAccounts;
+      const payer = yield* person;
+      const failing = yield* workspaceOwnedBy([payer]);
+      const fine = yield* workspaceOwnedBy([payer]);
+
+      broken.id = failing;
+
+      const failed = yield* accounts.sweepIn([failing, fine]);
+
+      assert.strictEqual(failed, 1);
+      assert.deepStrictEqual(
+        (yield* accounts.poolOf(fine)).account.payer,
+        Option.some(payer)
+      );
+
+      yield* cleanUpAccounts([failing, fine]);
+    })
   );
 });

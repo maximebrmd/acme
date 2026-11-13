@@ -101,18 +101,10 @@ export class SnapshotUsage extends Context.Service<
               { discard: true }
             );
 
-            // The sweep: each workspace nobody read is given its billing
-            // account. A failure leaves it to the next read, or run.
-            yield* accounts
-              .accountsIn(page.map(({ workspaceId }) => workspaceId))
-              .pipe(
-                Effect.catchCause((cause) =>
-                  Effect.logWarning(
-                    "Giving workspaces their billing accounts failed",
-                    cause
-                  )
-                )
-              );
+            // The sweep: each workspace is given its billing account, or
+            // the one it belongs on now; one that fails is left to the next
+            // read, or run, and stops none of the others.
+            yield* accounts.sweepIn(page.map(({ workspaceId }) => workspaceId));
 
             workspaces += page.length;
             more = page.length === batchSize;
@@ -130,6 +122,15 @@ export class SnapshotUsage extends Context.Service<
           // The purge runs whatever became of the snapshot, so rows past
           // their days go even on a day the states cannot be read.
           const taken = yield* snapshot(today, day).pipe(Effect.exit);
+
+          // Accounts whose billing workspace is gone, and lapsed offers.
+          yield* accounts
+            .repair(batchSize)
+            .pipe(
+              Effect.catchCause((cause) =>
+                Effect.logWarning("Repairing billing accounts failed", cause)
+              )
+            );
           const purged = yield* ledger.purgeBefore(usageCutoff(now));
           const workspaces = yield* taken;
           const done: UsageSnapshotRun = { day, purged, workspaces };

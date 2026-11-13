@@ -553,6 +553,83 @@ const make = Effect.gen(function* BillingAccountsLive() {
     }
   );
 
+  // The daily sweep, for these workspaces: each one's account, one at a
+  // time, a failure logged and left to the next read or run.
+  const sweepIn = Effect.fn("BillingAccounts.sweepIn")(function* sweepIn(
+    workspaceIds: readonly WorkspaceId[]
+  ) {
+    const held = yield* store.accountsIn(workspaceIds);
+
+    const [owners, merged, partnered] = yield* Effect.all([
+      payers.ownersIn(workspaceIds),
+      store.mergedIn(workspaceIds),
+      payers.partnersIn(workspaceIds),
+    ]);
+
+    let failed = 0;
+
+    for (const workspaceId of workspaceIds) {
+      const account = held.get(workspaceId);
+      const partner = partnered.get(workspaceId);
+
+      const right =
+        account !== undefined &&
+        (partner === undefined
+          ? Option.isNone(account.partnerId)
+          : Option.contains(account.partnerId, partner.partnerId)) &&
+        (Option.isNone(account.payer) ||
+          merged.has(workspaceId) ||
+          (owners.get(workspaceId) ?? []).includes(account.payer.value));
+
+      if (!right) {
+        const ended = yield* of(workspaceId).pipe(Effect.exit);
+
+        if (ended._tag === "Failure") {
+          failed += 1;
+          yield* Effect.logWarning(
+            "Giving a workspace its billing account failed",
+            ended.cause
+          ).pipe(Effect.annotateLogs({ workspaceId }));
+        }
+      }
+    }
+
+    return failed;
+  });
+
+  // Accounts whose billing workspace is gone (erased by a release that did
+  // not know of them): the oldest workspace left bills, or the account
+  // goes. Then the offers that lapsed. A page at a time.
+  const repair = Effect.fn("BillingAccounts.repair")(function* repair(
+    pageSize: number
+  ) {
+    let after = Option.none<BillingAccount["id"]>();
+    let repaired = 0;
+    let more = true;
+
+    while (more) {
+      const page = yield* store.page(after, pageSize);
+
+      const made = new Set(
+        (yield* payers.madeIn(page.map(({ holder }) => holder))).map(
+          ({ workspaceId }) => workspaceId
+        )
+      );
+
+      for (const account of page.filter(({ holder }) => !made.has(holder))) {
+        yield* transaction(leave(account.holder, account));
+        repaired += 1;
+      }
+
+      more = page.length === pageSize;
+      after = Option.fromUndefinedOr(page.at(-1)?.id);
+    }
+
+    const lapsed = yield* store.purgeLapsedTransfers(yield* DateTime.now);
+
+    return { lapsed, repaired };
+  });
+
   return {
     accountsIn,
     eraseWorkspace,
@@ -562,7 +639,9 @@ const make = Effect.gen(function* BillingAccountsLive() {
     of,
     poolOf,
     poolsIn,
+    repair,
     subscriptionChanged,
+    sweepIn,
   };
 });
 
@@ -626,6 +705,24 @@ export class BillingAccounts extends Context.Service<
     readonly subscriptionChanged: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The daily sweep's part for these workspaces: each is given its
+     * account, or the one it should be on now, one at a time, a failure
+     * logged rather than stopping the others. Says how many failed.
+     */
+    readonly sweepIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * Repairs the accounts whose billing workspace is gone, `pageSize` at
+     * a time, and deletes the offers that lapsed.
+     */
+    readonly repair: (
+      pageSize: number
+    ) => Effect.Effect<
+      { readonly lapsed: number; readonly repaired: number },
+      DatabaseError
+    >;
     /** Forgets the workspace, in the erasure's transaction. */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
