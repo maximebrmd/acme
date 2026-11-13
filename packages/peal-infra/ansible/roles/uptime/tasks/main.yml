@@ -270,6 +270,54 @@
                       | rejectattr('value', 'none') | map(attribute='key') | list)
          if uptime_credentials is defined else uptime_unset.stdout_lines }}
 
+# The status page's mark, icon and fonts, from the repository: the web
+# app's, and peal-ui's Geist (DESIGN.md). Readable by anyone, as a site's
+# files are: a shared host's Caddy serves them as its own user.
+- name: Require the status page's fonts
+  ansible.builtin.stat:
+    path: "{{ item.src }}"
+  loop: "{{ uptime_brand_files }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  delegate_to: localhost
+  become: false
+  register: uptime_brand_sources
+  when: uptime_public_status
+
+- name: Refuse a status page without its fonts
+  ansible.builtin.assert:
+    that: uptime_brand_sources.results | rejectattr('stat.exists') | list | length == 0
+    fail_msg: >-
+      The status page needs {{ uptime_brand_sources.results | rejectattr('stat.exists')
+      | map(attribute='item.src') | join(', ') }}: run
+      `bun install --frozen-lockfile` at the repository's root first.
+    quiet: true
+  when: uptime_public_status
+
+- name: Create the status page's folder
+  ansible.builtin.file:
+    path: "{{ uptime_brand_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  register: uptime_brand_folder
+  when: uptime_public_status
+
+- name: Copy the status page's mark and fonts
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ uptime_brand_root }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ uptime_brand_files }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when:
+    - uptime_public_status
+    - not (ansible_check_mode and uptime_brand_folder is changed)
+
 - name: Render the configuration
   ansible.builtin.set_fact:
     uptime_gatus_config: "{{ lookup('ansible.builtin.template', 'config.yaml.j2') }}"
