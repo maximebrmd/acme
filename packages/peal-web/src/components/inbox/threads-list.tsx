@@ -109,7 +109,7 @@ const ThreadPages = ({
 
       return (
         <>
-          <ul className="flex flex-col gap-3">
+          <ul className="bg-card divide-y overflow-hidden rounded-md border">
             {value.items.map((thread) => (
               <ThreadRowView
                 key={thread.id}
@@ -208,7 +208,9 @@ export const ThreadsList = ({
           <Checkbox
             id={unansweredId}
             checked={unanswered}
-            onCheckedChange={setUnanswered}
+            onCheckedChange={(checked) => {
+              setUnanswered(checked === true);
+            }}
           />
           <Label htmlFor={unansweredId}>{t("filter.unanswered")}</Label>
         </div>

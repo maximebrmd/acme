@@ -2,7 +2,7 @@ import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { NoticeList } from "#components/notices/notice-list.tsx";
@@ -34,19 +34,17 @@ const NoticesPage = async ({ params }: PageProps<"/[locale]/app/notices">) => {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href="/app/notices/preferences" />}
-          nativeButton={false}
+        <Link
+          href="/app/notices/preferences"
+          className={buttonVariants({ size: "sm", variant: "outline" })}
         >
           {t("preferences")}
-        </Button>
+        </Link>
       </div>
       <NoticeList workspaces={workspaces} />
     </div>

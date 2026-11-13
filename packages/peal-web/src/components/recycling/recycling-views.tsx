@@ -238,7 +238,7 @@ export const RepeatFormView = ({
             className="w-24"
             min={1}
             max={maxRecyclingInterval[draft.unit]}
-            value={draft.every}
+            value={String(draft.every)}
             onChange={(event) => {
               set({ every: Number(event.target.value) });
             }}
@@ -299,7 +299,7 @@ export const RepeatFormView = ({
               className="w-24"
               min={minOccurrences}
               max={maxOccurrences}
-              value={draft.count}
+              value={String(draft.count)}
               onChange={(event) => {
                 set({ count: Number(event.target.value) });
               }}

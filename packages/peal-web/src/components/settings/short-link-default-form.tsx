@@ -68,7 +68,9 @@ export const ShortLinkDefaultForm = ({
         checked={status.value.byDefault}
         disabled={!mayChange || isPending}
         aria-describedby={`${id}-hint`}
-        onCheckedChange={change}
+        onCheckedChange={(checked) => {
+          change(checked === true);
+        }}
       />
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{t("label")}</Label>

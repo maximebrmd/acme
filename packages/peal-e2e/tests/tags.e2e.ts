@@ -78,7 +78,7 @@ describe("a member's tags", { serial: true }, () => {
     await seedChannel(workspaceId, handle);
     await app.open(`/app/${workspaceId}/settings`);
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Tags")
       .tap();
 

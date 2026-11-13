@@ -101,7 +101,9 @@ export const PasswordForm = () => {
           id={signOutId}
           checked={signOutOthers}
           disabled={isPending}
-          onCheckedChange={setSignOutOthers}
+          onCheckedChange={(checked) => {
+            setSignOutOthers(checked === true);
+          }}
         />
         <Label htmlFor={signOutId}>{t("signOutOthers")}</Label>
       </div>

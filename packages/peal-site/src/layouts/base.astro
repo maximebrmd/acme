@@ -39,7 +39,7 @@ const fallback = absolute(defaultLocale);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -71,7 +71,7 @@ const fallback = absolute(defaultLocale);
     }
   </head>
   <body
-    class="flex min-h-dvh flex-col bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100"
+    class="flex min-h-dvh flex-col bg-white text-neutral-900 antialiased"
   >
     <Header locale={locale} path={path} />
     <main class="flex-1">

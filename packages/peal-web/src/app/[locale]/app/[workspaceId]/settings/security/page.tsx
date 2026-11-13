@@ -2,7 +2,7 @@ import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { WorkspaceSecurityForm } from "#components/settings/workspace-security-form.tsx";
@@ -47,13 +47,12 @@ const SecurityPage = async ({
         managesMembers={may.has("member:update")}
         ownEnabled={me.value.user.twoStepEnabled}
         accountLink={
-          <Button
-            variant="outline"
-            render={<Link href="/app/account" />}
-            nativeButton={false}
+          <Link
+            href="/app/account"
+            className={buttonVariants({ variant: "outline" })}
           >
             {t("goToAccount")}
-          </Button>
+          </Link>
         }
       />
     </div>

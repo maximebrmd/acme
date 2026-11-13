@@ -664,7 +664,7 @@ export const Consent = ({
           id={id}
           checked={consented}
           onCheckedChange={(checked) => {
-            onConsent(checked);
+            onConsent(checked === true);
           }}
         />
         <Label htmlFor={id}>{t("startNow")}</Label>

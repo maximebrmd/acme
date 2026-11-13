@@ -26,7 +26,7 @@ export const ApprovalItemView = ({
     });
 
   return (
-    <li className="flex flex-col gap-1 rounded-lg border p-4">
+    <li className="flex flex-col gap-1 px-4 py-3">
       {children}
       <p className="text-sm">
         {t("approval.askedFor", { at: instant(approval.schedule.at) })}

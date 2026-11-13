@@ -88,7 +88,7 @@ const Actions = ({ locale, names, onAction, platforms }: ActionsProps) => {
           {AssistantToneSchema.literals.map((tone) => (
             <DropdownMenuItem
               key={tone}
-              onClick={() => {
+              onSelect={() => {
                 onAction({ _tag: "rewrite", tone });
               }}
             >
@@ -103,7 +103,7 @@ const Actions = ({ locale, names, onAction, platforms }: ActionsProps) => {
           {shortenablePlatforms(platforms).map((platform) => (
             <DropdownMenuItem
               key={platform}
-              onClick={() => {
+              onSelect={() => {
                 onAction({ _tag: "shorten", platform });
               }}
             >
@@ -118,7 +118,7 @@ const Actions = ({ locale, names, onAction, platforms }: ActionsProps) => {
           {TranslationLanguageSchema.literals.map((language) => (
             <DropdownMenuItem
               key={language}
-              onClick={() => {
+              onSelect={() => {
                 onAction({ _tag: "translate", language });
               }}
             >
@@ -128,7 +128,7 @@ const Actions = ({ locale, names, onAction, platforms }: ActionsProps) => {
         </DropdownMenuSubContent>
       </DropdownMenuSub>
       <DropdownMenuItem
-        onClick={() => {
+        onSelect={() => {
           onAction({ _tag: "hashtags" });
         }}
       >
@@ -259,7 +259,7 @@ const Controls = ({
           <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={blocked === "noRequestsLeft"}
-            onClick={() => {
+            onSelect={() => {
               setComposing(true);
             }}
           >

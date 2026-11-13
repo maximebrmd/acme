@@ -38,13 +38,13 @@ const t = messages(locale);
   title={`${entry.data.title} · ${t.nav.brand}`}
 >
   <article
-    class="prose mx-auto max-w-3xl px-6 py-16 prose-neutral dark:prose-invert prose-table:text-sm"
+    class="prose mx-auto max-w-3xl px-6 py-16 prose-neutral prose-table:text-sm"
   >
     {
       entry.data.draft && (
         <aside
           role="note"
-          class="not-prose mb-10 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          class="not-prose mb-10 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950"
         >
           <p class="font-semibold">{t.draft.title}</p>
           <p class="mt-1 text-sm">{t.draft.body}</p>

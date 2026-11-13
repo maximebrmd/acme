@@ -392,7 +392,6 @@ export const AccountNumbers = ({
         <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
-            nativeButton={false}
             render={
               <a href={exports.posts} download>
                 {t("export.posts")}
@@ -401,7 +400,6 @@ export const AccountNumbers = ({
           />
           <Button
             variant="outline"
-            nativeButton={false}
             render={
               <a href={exports.accounts} download>
                 {t("export.accounts")}

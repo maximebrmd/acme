@@ -49,18 +49,13 @@ const Failed = ({ message, workspaceId }: FailedProps) => {
         <AlertDescription>{message}</AlertDescription>
       </Alert>
       {workspaceId === null ? (
-        <Button
-          variant="outline"
-          render={<Link href="/app" />}
-          nativeButton={false}
-        >
+        <Button variant="outline" render={<Link href="/app" />}>
           {t("toWorkspaces")}
         </Button>
       ) : (
         <Button
           variant="outline"
           render={<Link href={`/app/${workspaceId}/channels`} />}
-          nativeButton={false}
         >
           {t("toChannels")}
         </Button>

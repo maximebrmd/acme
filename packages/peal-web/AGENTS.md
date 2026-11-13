@@ -12,16 +12,34 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Build screens from `peal-ui` components and Tailwind classes; add no other
   stylesheet.
+- peal-ui's components are shadcn/ui's look on ui-sdk (`@ui-sdk/react`, on
+  `@ui-sdk/core`), which gives their unstyled behaviour (keyboard, focus,
+  selection, popups, ARIA), as it does for what peal-ui does not cover:
+  nothing imports Base UI. Its clone in `.local/references/ui-sdk` is the source of
+  truth: before using it, read the skill in `packages/core/skills/ui-sdk`,
+  then the React pages in `apps/docs/content/docs/react` (`components/`
+  holds one per component). To build a new component, also read
+  `apps/docs/content/docs/core` and `react/rendering.mdx`. Style its parts
+  as shadcn/ui's are, with peal-ui's theme tokens and Tailwind classes on
+  their `data-*` state attributes; never import `@ui-sdk/core/web.css`, its
+  default look.
 - Add a shadcn component by running `bunx shadcn add <name>` in
-  `packages/peal-ui`, which reads its `components.json`. Point the component's
+  `packages/peal-ui`, which reads its `components.json`. Its style
+  (`base-nova`) writes the component on Base UI: put the matching ui-sdk
+  part in place of each Base UI one, its classes on ui-sdk's state
+  attributes (a bare `data-selected` takes `data-[selected]:`, as shadcn's
+  `data-selected:` reads `data-selected="true"`), and add no
+  `@base-ui/react`. Point the component's
   `cn` import (the CLI writes `"cn"`) at `../lib/utils` and its sibling imports
   at `./`, rewrite function components as arrow functions, take every
   user-facing string (labels such as a dialog's close button) as a prop, then
-  run `bun run fix`.
+  run `bun run fix`. `@shadcn/lint` proves a wrapper classless only around
+  Base UI, so it reads every peal-ui wrapper as styled: classes on an
+  element a peal-ui part renders go on a component of the screen's own.
 - Use theme tokens (`text-muted-foreground`, not `text-gray-500`) and
   component variants and sizes rather than restyling a component; the
-  `@shadcn/lint` rules check pages against peal-ui. Dark mode follows the
-  operating system (`prefers-color-scheme`).
+  `@shadcn/lint` rules check pages against peal-ui. Peal is light only
+  ([DESIGN.md](../../DESIGN.md)): write no `dark:` class.
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
   the contract functions anyone reaches (`cancel`, `withdraw`, and
@@ -35,7 +53,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `review` (no sign-in, noindex; the token is the address's fragment, read
   in the browser), and the signed-in
   app: `app` (workspaces), `app/agenda`, `app/report`, `app/notices`, `app/notices/preferences`,
-  `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
+  `app/account` (in the `(personal)` route group), `app/[workspaceId]`
+  (the workspace's home: connecting channels and assistants, a
+  quickstart), `…/platforms` (Console's, for channel:read),
+  `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
   `…/drafts`, `…/posts` (every post, whatever its state, for post:read
@@ -64,6 +85,34 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   says before anything is entered that each answer is recorded, as staff
   must be told (Code du travail, art. L1222-4): keep that notice.
   `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
+- The signed-in app has its own frame (DESIGN.md, "The frame"):
+  `ShellFrame` leaves every page under `/app` to its layouts (`frameOf`
+  answers `own`). `FrameView` (`components/shell/`) is the frame both
+  draw: a sidebar beside the page (in a `Sheet` on a phone; its links close
+  it through `useCloseMenu`), `TopBarView` (the breadcrumb, **Docs** at
+  `PEAL_DOCS_URL` and **Support** at `PEAL_CONTACT_URL` when set, the
+  language switcher and the account menu) and the contract functions at
+  the foot. `app/[workspaceId]/layout.tsx` gives a workspace's pages
+  `WorkspaceShell`, whose `SidebarView` holds the Studio and Console
+  switch with Peal's mark, the mode's pages, a section's pages under a way
+  back, Settings and the workspace switcher; `app/(personal)/layout.tsx`
+  gives the person's pages `PersonalShell` (their pages, then each
+  workspace). Someone signed out, not a member, or who must first turn on
+  two-step verification, gets the app's `PlainFrame`. Which workspace pages
+  exist, their mode, their section and the permission each asks is one
+  table, `#shell/navigation.ts` (`navigationOf`, tested): add a workspace
+  page there, with its name in `WorkspaceShell.pages`; the person's are in
+  `#shell/personal.ts`. Settings pages without a heading of their own get
+  the page's name from `PageHeading`. Page titles are `text-2xl`; a list
+  page puts its actions at the end of its filters' row, and its items in
+  one bordered list with a line between them, never a card each.
+- The workspace's home builds each assistant's setup (`#home/agents.ts`,
+  tested) from the MCP endpoint at the address the browser has Peal open
+  at, after hydration: never a key. Brand marks come from simple-icons
+  (`BrandMark`); LinkedIn and OpenAI, which are not in it, get a plain
+  tile. Console's Platforms lists `platformRowsOf`
+  (`#platforms/rows.ts`): this server's capabilities beside the
+  workspace's channels.
 - The web app reports its errors to `POST /api/client-errors`:
   `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
   `app/[locale]/error.tsx` and `app/global-error.tsx` (the error pages, in

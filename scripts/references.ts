@@ -60,17 +60,18 @@ const references: readonly Reference[] = [
     tag: (version) => `@effect/tsgo@${version}`,
   },
   {
-    // The components peal-ui's shadcn/ui layer is built on.
-    name: "base-ui",
-    packageName: "@base-ui/react",
-    repository: "mui/base-ui",
-    tag: (version) => `v${version}`,
-  },
-  {
     name: "tiptap",
     packageName: "@tiptap/react",
     repository: "ueberdosis/tiptap",
     tag: (version) => `v${version}`,
+  },
+  {
+    // One monorepo for the core and each framework's package, tagged per
+    // package: the React tag carries the core it was released with.
+    name: "ui-sdk",
+    packageName: "@ui-sdk/react",
+    repository: "vercel-labs/ui",
+    tag: (version) => `@ui-sdk/react@${version}`,
   },
   {
     name: "blume",

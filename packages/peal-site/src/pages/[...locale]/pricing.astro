@@ -21,10 +21,10 @@ const notes = pricingNotes(t);
 <Base description={t.description} path="pricing" title={`${t.title} · Peal`}>
   <section class="mx-auto max-w-6xl px-6 pt-16 pb-8">
     <h1 class="text-4xl font-semibold tracking-tight">{t.title}</h1>
-    <p class="mt-4 max-w-3xl text-lg text-neutral-600 dark:text-neutral-400">
+    <p class="mt-4 max-w-3xl text-lg text-neutral-600">
       {t.lead}
     </p>
-    <p class="mt-4 max-w-3xl text-sm text-neutral-600 dark:text-neutral-400">
+    <p class="mt-4 max-w-3xl text-sm text-neutral-600">
       {notes.vat}
     </p>
   </section>
@@ -33,7 +33,7 @@ const notes = pricingNotes(t);
     <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {
         cards.map((card) => (
-          <li class="flex flex-col gap-4 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
+          <li class="flex flex-col gap-4 rounded-2xl border border-neutral-200 p-5">
             <h2 class="text-lg font-semibold">{card.name}</h2>
             {card.prices === undefined ? (
               <p class="text-2xl font-semibold">{t.freePrice}</p>
@@ -42,19 +42,19 @@ const notes = pricingNotes(t);
                 <p class="text-2xl font-semibold tabular-nums">
                   {card.prices.monthly}
                 </p>
-                <p class="text-sm text-neutral-600 tabular-nums dark:text-neutral-400">
+                <p class="text-sm text-neutral-600 tabular-nums">
                   {card.prices.monthlyExcluded}
                 </p>
                 <p class="mt-2 text-sm tabular-nums">{card.prices.yearly}</p>
-                <p class="text-sm text-neutral-600 tabular-nums dark:text-neutral-400">
+                <p class="text-sm text-neutral-600 tabular-nums">
                   {card.prices.yearlyMonthly} · {card.prices.yearlyExcluded}
                 </p>
-                <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                <p class="mt-2 text-sm text-neutral-600">
                   {card.prices.perChannel}
                 </p>
               </div>
             )}
-            <ul class="flex flex-col gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <ul class="flex flex-col gap-1 text-sm text-neutral-600">
               {card.limits.map((line) => (
                 <li>{line}</li>
               ))}
@@ -64,7 +64,7 @@ const notes = pricingNotes(t);
       }
     </ul>
     <p
-      class="mt-6 rounded-2xl bg-neutral-100 p-5 text-sm dark:bg-neutral-900"
+      class="mt-6 rounded-2xl bg-neutral-100 p-5 text-sm"
       role="note"
     >
       {notes.trial}
@@ -74,7 +74,7 @@ const notes = pricingNotes(t);
   <section class="mx-auto max-w-6xl px-6 pt-8 pb-24">
     <h2 class="text-2xl font-semibold tracking-tight">{t.legal.title}</h2>
     <ul
-      class="mt-4 flex max-w-3xl list-disc flex-col gap-2 pl-5 text-neutral-600 dark:text-neutral-400"
+      class="mt-4 flex max-w-3xl list-disc flex-col gap-2 pl-5 text-neutral-600"
     >
       <li>{t.legal.cancel}</li>
       <li>{t.legal.withdrawal}</li>

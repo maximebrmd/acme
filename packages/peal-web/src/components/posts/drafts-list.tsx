@@ -102,7 +102,7 @@ const DraftPages = ({
 
       return (
         <>
-          <ul className="flex flex-col gap-3">
+          <ul className="bg-card divide-y overflow-hidden rounded-md border">
             {value.items.map((post) => (
               <DraftItem key={post.id} post={post} workspaceId={workspaceId} />
             ))}

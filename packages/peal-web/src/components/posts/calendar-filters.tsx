@@ -58,8 +58,9 @@ export const CalendarFilters = ({
               {tags.map((tag) => (
                 <DropdownMenuCheckboxItem
                   key={tag.id}
+                  value={tag.id}
                   checked={filter.tagIds.includes(tag.id)}
-                  closeOnClick={false}
+                  closeOnSelect={false}
                   onCheckedChange={(checked) => {
                     onChange({
                       ...filter,
@@ -86,8 +87,9 @@ export const CalendarFilters = ({
               {channels.map((channel) => (
                 <DropdownMenuCheckboxItem
                   key={channel.id}
+                  value={channel.id}
                   checked={filter.channelIds.includes(channel.id)}
-                  closeOnClick={false}
+                  closeOnSelect={false}
                   onCheckedChange={(checked) => {
                     onChange({
                       ...filter,
@@ -124,8 +126,9 @@ export const CalendarFilters = ({
               {queues.map((queue) => (
                 <DropdownMenuCheckboxItem
                   key={queue.id}
+                  value={queue.id}
                   checked={filter.queueIds.includes(queue.id)}
-                  closeOnClick={false}
+                  closeOnSelect={false}
                   onCheckedChange={(checked) => {
                     onChange({
                       ...filter,

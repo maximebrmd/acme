@@ -3,11 +3,13 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
+import { FileUpIcon, PlusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Channel, Post, Tag } from "peal-contract";
-import { Button } from "peal-ui/components/button";
+import { Button, buttonVariants } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { Link, useRouter } from "#i18n/navigation.ts";
@@ -119,7 +121,7 @@ const PostPages = ({
 
       return (
         <>
-          <ul className="flex flex-col gap-3">
+          <ul className="bg-card divide-y overflow-hidden rounded-md border">
             {value.items.map((post) => (
               <PostItem
                 key={post.id}
@@ -153,9 +155,12 @@ const PostPages = ({
 };
 
 const LoadedList = ({
+  actions,
   filters,
   workspaceId,
 }: {
+  /** The page's actions, at the end of the filters' row. */
+  readonly actions: ReactNode;
   readonly filters: PostListFilters;
   readonly workspaceId: string;
 }) => {
@@ -191,12 +196,15 @@ const LoadedList = ({
 
   return (
     <>
-      <PostListFiltersView
-        channels={channels}
-        filters={filters}
-        tags={tags}
-        onChange={handleFilters}
-      />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <PostListFiltersView
+          channels={channels}
+          filters={filters}
+          tags={tags}
+          onChange={handleFilters}
+        />
+        {actions}
+      </div>
       <PostPages
         channels={channels}
         cursor={Option.none()}
@@ -234,35 +242,43 @@ export const PostList = ({
   // sends.
   const hydrated = useHydrated();
 
+  const actions =
+    canCreate || canImport ? (
+      <div className="flex flex-wrap gap-2">
+        {canImport ? (
+          <Link
+            href={`/app/${workspaceId}/posts/import`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <FileUpIcon aria-hidden />
+            {t("importPosts")}
+          </Link>
+        ) : null}
+        {canCreate ? (
+          <Link
+            href={`/app/${workspaceId}/posts/new`}
+            className={buttonVariants()}
+          >
+            <PlusIcon aria-hidden />
+            {t("newPost")}
+          </Link>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <section className="flex flex-col gap-4">
-      {canCreate || canImport ? (
-        <div className="flex flex-wrap gap-4">
-          {canCreate ? (
-            <Link
-              href={`/app/${workspaceId}/posts/new`}
-              className="text-sm underline-offset-4 hover:underline"
-            >
-              {t("newPost")}
-            </Link>
-          ) : null}
-          {canImport ? (
-            <Link
-              href={`/app/${workspaceId}/posts/import`}
-              className="text-sm underline-offset-4 hover:underline"
-            >
-              {t("importPosts")}
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
       {hydrated ? (
         <LoadedList
+          actions={actions}
           filters={filtersOf(new URLSearchParams(query))}
           workspaceId={workspaceId}
         />
       ) : (
-        <LoadingList />
+        <>
+          <div className="flex justify-end">{actions}</div>
+          <LoadingList />
+        </>
       )}
     </section>
   );

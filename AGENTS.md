@@ -31,9 +31,9 @@ one per tool under `packages/peal-infra/`:
   `openapi.json` for the docs.
 - `peal-server`: the Effect server on Bun: the bounded contexts below, Better
   Auth, the MCP endpoint, and the cluster that runs durable jobs and crons.
-- `peal-ui`: the design system, shipped as sources that apps compile: shadcn/ui
-  on Base UI (Nova style, lucide icons), the Tailwind CSS v4 theme and the
-  Geist fonts.
+- `peal-ui`: the design system, shipped as sources that apps compile:
+  shadcn/ui's look (Nova style, lucide icons) on ui-sdk's behaviour, the
+  Tailwind CSS v4 theme and the Geist fonts.
 - `peal-web`: the Next.js App Router app, with next-intl, `@effect/atom-react`,
   Better Auth's client and Tiptap.
 - `peal-cli`: the `peal` command line, `effect/cli` on Bun, a client of the API
@@ -171,7 +171,7 @@ several:
 ## Read the sources, not memory
 
 Effect 4 and its language service, Drizzle 1.0, Better Auth, the AT Protocol
-OAuth client, Stripe's SDK, Base UI, Tiptap, Blume, Astro, the e2e runner and
+OAuth client, Stripe's SDK, ui-sdk, Tiptap, Blume, Astro, the e2e runner and
 Ultracite's presets move faster than any training data. `bun run references`
 (`scripts/references.ts`, which skips a package not installed) clones each
 one's source, at the version this workspace installs, into
@@ -179,6 +179,18 @@ one's source, at the version this workspace installs, into
 tests and docs there before using an API, and rerun the command after an
 upgrade. Effect also ships agent docs in `.local/references/effect/ai-docs`,
 and Next.js ships its docs in `packages/peal-web/node_modules/next/dist/docs`.
+
+## Design
+
+[`DESIGN.md`](DESIGN.md) is the design system: the colours of the mark,
+type, shape, the frame (Studio and Console, the drill-down sidebar, the top
+bar) and the page patterns. Read it before changing a screen of the web
+app, the site or the docs. Peal is light only: no dark mode, no `dark:`
+class in Peal's own code.
+
+Look for patterns through the MCP servers in `.mcp.json` (shadcn/ui's
+registry, and 21st.dev's with `TWENTYFIRST_API_KEY`), then build them from
+peal-ui and its theme: a reference is a starting point, not code to paste.
 
 ## Development stack
 

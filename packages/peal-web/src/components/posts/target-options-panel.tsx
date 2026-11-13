@@ -390,7 +390,9 @@ const ToggleInput = ({
           aria-invalid={problem !== undefined}
           aria-describedby={describedBy(field, id, problem)}
           onCheckedChange={(ticked) => {
-            onValue(field.inverted === true ? !ticked : ticked);
+            onValue(
+              field.inverted === true ? ticked !== true : ticked === true
+            );
           }}
         />
         <Label htmlFor={id}>{t(field.label)}</Label>

@@ -18,7 +18,7 @@ export const NotificationBellView = ({
 }: {
   // What the status region says: new notices since the page opened.
   readonly announcement: string;
-  readonly link: ReactElement;
+  readonly link: ReactElement<{ readonly href: string }>;
   readonly unread: Option.Option<number>;
 }) => {
   const t = useTranslations("Notices.bell");
@@ -30,7 +30,6 @@ export const NotificationBellView = ({
         variant="ghost"
         size="sm"
         render={link}
-        nativeButton={false}
         aria-label={t("label", { count })}
       >
         <BellIcon data-icon="inline-start" aria-hidden />

@@ -1,6 +1,6 @@
 import { Option } from "effect";
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { AcceptInvitation } from "#components/accept-invitation.tsx";
@@ -26,20 +26,15 @@ const InvitationPage = async ({
         <div className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">{t("signedOut")}</p>
           <div className="flex gap-2">
-            <Button render={<Link href="/sign-in" />} nativeButton={false}>
+            <Link href="/sign-in" className={buttonVariants()}>
               {t("signIn")}
-            </Button>
-            <Button
-              variant="outline"
-              render={
-                <Link
-                  href={{ pathname: "/sign-up", query: { invitation: id } }}
-                />
-              }
-              nativeButton={false}
+            </Link>
+            <Link
+              href={{ pathname: "/sign-up", query: { invitation: id } }}
+              className={buttonVariants({ variant: "outline" })}
             >
               {t("signUp")}
-            </Button>
+            </Link>
           </div>
         </div>
       )}

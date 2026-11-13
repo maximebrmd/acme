@@ -73,7 +73,7 @@ export const PostItemView = ({
   });
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border p-4">
+    <li className="flex flex-col gap-1.5 px-4 py-3">
       {children}
       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
         <span>

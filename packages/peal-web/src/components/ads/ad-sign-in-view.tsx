@@ -106,7 +106,9 @@ const Account = ({
         aria-describedby={`${id}-detail`}
         checked={checked}
         disabled={disabled || !isChoosable(account)}
-        onCheckedChange={onToggle}
+        onCheckedChange={(next) => {
+          onToggle(next === true);
+        }}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <Label htmlFor={id}>{account.name}</Label>

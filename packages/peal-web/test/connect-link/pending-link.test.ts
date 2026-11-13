@@ -58,7 +58,7 @@ describe(frameOf, () => {
     ["/connect/mastodon/callback", true, "hosted"],
     ["/connect/mastodon/callback", false, "app"],
     ["/connect/link/more", false, "app"],
-    ["/app", true, "app"],
+    ["/app", true, "own"],
     ["/", false, "app"],
   ] as const)(
     "frames %s, for a tab that came through a link: %s, as %s",

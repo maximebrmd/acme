@@ -137,9 +137,11 @@ describe(ChannelSetFieldsView, () => {
       />
     );
 
-    expect(html).toMatch(/<input[^>]*id="new-set-channel-b"[^>]*checked=""/u);
+    expect(html).toMatch(
+      /<button[^>]*id="new-set-channel-b"[^>]*aria-checked="true"/u
+    );
     expect(html).not.toMatch(
-      /<input[^>]*id="new-set-channel-a"[^>]*checked=""/u
+      /<button[^>]*id="new-set-channel-a"[^>]*aria-checked="true"/u
     );
     expect(
       missingFrom(html, [

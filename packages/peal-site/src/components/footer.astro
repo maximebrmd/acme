@@ -24,9 +24,9 @@ const contract = [
 ].flatMap(({ href, label }) => (href === undefined ? [] : [{ href, label }]));
 ---
 
-<footer class="border-t border-neutral-200 dark:border-neutral-800">
+<footer class="border-t border-neutral-200">
   <div
-    class="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 text-sm text-neutral-600 sm:flex-row sm:items-start sm:justify-between dark:text-neutral-400"
+    class="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 text-sm text-neutral-600 sm:flex-row sm:items-start sm:justify-between"
   >
     <nav aria-label={t.footer.legal}>
       <ul class="flex flex-col gap-2">
@@ -35,7 +35,7 @@ const contract = [
             <li>
               <a
                 href={getRelativeLocaleUrl(locale, document)}
-                class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+                class="hover:text-neutral-900 hover:underline"
               >
                 {t.legal[document]}
               </a>
@@ -52,7 +52,7 @@ const contract = [
               <li>
                 <a
                   href={href}
-                  class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+                  class="hover:text-neutral-900 hover:underline"
                 >
                   {label}
                 </a>
@@ -67,7 +67,7 @@ const contract = [
       <p class="max-w-sm sm:text-right">{t.footer.license}</p>
       <a
         href={repositoryUrl}
-        class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+        class="hover:text-neutral-900 hover:underline"
       >
         {t.footer.source}
       </a>

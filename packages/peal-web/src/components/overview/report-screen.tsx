@@ -175,7 +175,6 @@ const ReportView = ({ timeZone }: { readonly timeZone: string }) => {
         </div>
         <Button
           variant="outline"
-          nativeButton={false}
           render={
             <a href={download} download>
               {t("download")}

@@ -106,7 +106,7 @@ export const AccountPickerView = ({
                   checked={selected.includes(account.accountId)}
                   disabled={isPending || spent}
                   onCheckedChange={(checked) => {
-                    onToggle(account.accountId, checked);
+                    onToggle(account.accountId, checked === true);
                   }}
                 />
                 <Avatar size="sm">

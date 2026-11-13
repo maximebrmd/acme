@@ -28,7 +28,7 @@ const ReportPage = async ({ params }: PageProps<"/[locale]/app/report">) => {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <ReportScreen />
     </div>
   );

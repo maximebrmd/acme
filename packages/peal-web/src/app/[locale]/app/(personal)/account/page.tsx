@@ -70,7 +70,7 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
           {t("description", { email: user.email })}
         </p>

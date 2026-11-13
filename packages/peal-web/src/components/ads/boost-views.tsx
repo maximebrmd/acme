@@ -388,7 +388,7 @@ export const BoostFormView = ({
           disabled={pending}
           aria-describedby={`${id("declaration")}-hint`}
           onCheckedChange={(declared) => {
-            onChange({ ...draft, declared });
+            onChange({ ...draft, declared: declared === true });
           }}
         />
         <div className="flex flex-col gap-1">

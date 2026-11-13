@@ -96,7 +96,9 @@ export const DefaultSignaturesView = ({
         checked={wanted}
         disabled={disabled}
         aria-describedby={`${id}-hint`}
-        onCheckedChange={onChange}
+        onCheckedChange={(checked) => {
+          onChange(checked === true);
+        }}
       />
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{t("addDefault", { count: names.length })}</Label>
