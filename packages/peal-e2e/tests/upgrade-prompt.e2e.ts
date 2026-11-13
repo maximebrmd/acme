@@ -7,9 +7,9 @@ import { confirmedAccount } from "./support/accounts.ts";
 import { seedChannel } from "./support/channels.ts";
 
 // The run's server bills (scripts/serve.ts): a new workspace is on the free
-// plan, which allows three channels. Connecting a fourth is refused, and
-// the upgrade dialog offers the smallest plan with room. Nothing is ordered:
-// the test stops before checkout.
+// tier, which allows two accounts. Connecting a third is refused, and the
+// upgrade dialog offers per-account pricing at the rate card's price.
+// Nothing is ordered: the test stops before checkout.
 const run = randomUUID();
 const name = "Robin Example";
 const workspace = "Tide Tables";
@@ -24,7 +24,7 @@ const password = "synthetic upgrade dialog password";
 let workspaceId = "";
 
 describe("the upgrade dialog", { serial: true }, () => {
-  test("a member fills the free plan's channels", async ({
+  test("a member fills the free tier's accounts", async ({
     app,
     browser,
     screen,
@@ -56,13 +56,13 @@ describe("the upgrade dialog", { serial: true }, () => {
     expect(workspaceId).not.toBe("");
 
     await Promise.all(
-      ["one", "two", "three"].map(async (handle) => {
+      ["one", "two"].map(async (handle) => {
         await seedChannel(workspaceId, `@${handle}@social.example`);
       })
     );
   });
 
-  test("a fourth channel opens the upgrade dialog, with the plan that has room", async ({
+  test("a third account opens the upgrade dialog, with per-account pricing", async ({
     app,
     screen,
   }) => {
@@ -77,14 +77,19 @@ describe("the upgrade dialog", { serial: true }, () => {
     ).toBeVisible();
     await expect(
       dialog.getByText(
-        `The Free plan of ${workspace} allows 3 channels, and it has 3.`
+        `The Free plan of ${workspace} allows 2 channels, and it has 2.`
       )
     ).toBeVisible();
     await expect(
-      dialog.getByText("The Starter plan has room: 5 channels")
+      dialog.getByText(
+        "The Per-account pricing plan has room: Unlimited channels"
+      )
     ).toBeVisible();
-    await expect(dialog.getByText("€9.00 a month, VAT incl.")).toBeVisible();
-    await expect(dialog.getByText("€7.50 excl. VAT")).toBeVisible();
+    await expect(
+      dialog.getByText(
+        "$5.00 a month for each account past the first 2, excl. tax ($6.00 with 20% VAT), counted by the day; less each from account 11 on"
+      )
+    ).toBeVisible();
   });
 
   test("the order waits for the request to start at once, and is worded as an obligation to pay", async ({
@@ -95,12 +100,12 @@ describe("the upgrade dialog", { serial: true }, () => {
 
     await expect(order).toBeDisabled();
     await dialog
-      .getByRole("checkbox", /^I ask Peal to start my subscription now/u)
+      .getByRole("checkbox", /^I ask Peal to start per-account pricing now/u)
       .check();
     await expect(order).toBeEnabled();
 
-    await dialog.getByRole("button", "Yearly").tap();
-    await expect(dialog.getByText("€90.00 a year, VAT incl.")).toBeVisible();
+    // Monthly only: no period to choose.
+    await expect(dialog.getByRole("button", "Yearly")).toBeHidden();
 
     await dialog.getByRole("button", "Not now").tap();
     await expect(screen.getByRole("dialog")).toBeHidden();
