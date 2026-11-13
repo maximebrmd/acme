@@ -233,8 +233,10 @@ export const StandingSchema = Schema.Struct({
   // Until when a workspace on the free tier that holds more accounts than
   // it allows still schedules and publishes, as when billing was turned on
   // after it connected them: it connects no more meanwhile, and must
-  // reduce or add a payment method by then. Null when no grace applies.
-  graceUntil: Schema.NullOr(Schema.DateTimeUtc),
+  // reduce or add a payment method by then; only the accounts it had
+  // connected before the grace started are graced. Null when no grace
+  // applies; older servers leave it out.
+  graceUntil: Schema.optionalKey(Schema.NullOr(Schema.DateTimeUtc)),
   // Whether the workspace must come back within its plan before anything
   // else: it holds more channels or members than the plan allows, and
   // schedules and publishes nothing until it does. Media over the plan

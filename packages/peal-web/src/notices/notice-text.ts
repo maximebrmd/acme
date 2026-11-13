@@ -227,7 +227,14 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
           t("event.PaymentMethodNeeded", {
             accounts,
             allowed,
-            graceUntil: DateTime.toDate(graceUntil),
+            // The exact instant, in UTC: a day alone reads as included,
+            // and shifts west of UTC.
+            graceUntil: DateTime.format(graceUntil, {
+              dateStyle: "long",
+              locale,
+              timeStyle: "short",
+              timeZone: "UTC",
+            }),
             workspace,
           })
         ),

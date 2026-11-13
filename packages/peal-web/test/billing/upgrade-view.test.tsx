@@ -66,6 +66,16 @@ const perAccount: UpgradeReason = {
 };
 
 describe(UpgradeView, () => {
+  it("tells a legacy plan's member that moving gives no credit yet", async () => {
+    const html = await render("en", {
+      reason: { ...perAccount, plan: "starter" },
+    });
+
+    expect(html).toContain(
+      "Moving gives no credit for its unused time yet: it stays paid until its period ends"
+    );
+  });
+
   it("offers per-account pricing at the rate card's price, monthly, in both languages", async () => {
     const english = await render("en", { reason: perAccount });
 

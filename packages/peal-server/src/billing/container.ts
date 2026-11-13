@@ -9,6 +9,7 @@ import { CancelSubscription } from "#billing/application/cancel-subscription.ts"
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { ConfirmContractRequest } from "#billing/application/confirm-contract-request.ts";
 import { ContractRequestDesk } from "#billing/application/contract-request-desk.ts";
+import { GraceWarningLive } from "#billing/application/grace-warning.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { UsageAtCheckout } from "#billing/application/ports/usage-at-checkout.ts";
@@ -189,7 +190,10 @@ export const BillingOverviewLive = Layer.mergeAll(
   SnapshotUsage.layer,
   UsageReports.layer,
   UsageAtCheckoutBound,
-  AccountActionsLive
+  AccountActionsLive,
+  // The start's warning about a free tier over its accounts, without a
+  // grace: read through the standing, once built.
+  GraceWarningLive.pipe(Layer.provide(WorkspaceStanding.layer))
 ).pipe(
   Layer.provide(
     Layer.mergeAll(

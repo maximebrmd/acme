@@ -246,6 +246,18 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       {trialing && canManage && planWithRoom !== null ? (
         <p>{t("trial", { workspace: workspaceName })}</p>
       ) : null}
+      {canManage &&
+      planWithRoom === "payAsYouGo" &&
+      !trialing &&
+      reason.plan !== "free" &&
+      reason.plan !== "payAsYouGo" ? (
+        <p>
+          {t("legacyMove", {
+            plan: billing("plan", { plan: reason.plan }),
+            workspace: workspaceName,
+          })}
+        </p>
+      ) : null}
       {error === null ? null : (
         <Alert variant="destructive" aria-live="assertive">
           <AlertDescription>{billing(`errors.${error}`)}</AlertDescription>

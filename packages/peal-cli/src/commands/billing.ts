@@ -107,10 +107,12 @@ const standingLines = (standing: Standing): string[] => {
       ];
     }
 
-    return standing.graceUntil === null
+    const graceUntil = standing.graceUntil ?? null;
+
+    return graceUntil === null
       ? ["Until it is back within its plan's storage, it uploads nothing."]
       : [
-          `Until ${instant(standing.graceUntil)} it still schedules and publishes, and connects no more accounts; after that, nothing is published until it is back within its plan.`,
+          `Until ${instant(graceUntil)} it still schedules and publishes on the accounts it had connected before the grace began, and connects no more; after that, nothing is published until it is back within its plan.`,
         ];
   };
 
