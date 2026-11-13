@@ -8,6 +8,8 @@ import { SqlClient } from "effect/sql";
 import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
+import type { MeterReport } from "#billing/application/ports/account-day-store.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -23,6 +25,7 @@ import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import type { AccountDay } from "#billing/domain/account-days.ts";
 import {
   BillingAccount,
   BillingAccountIdSchema,
@@ -112,6 +115,95 @@ export const UsageBillingUncalledTest = Layer.mock(UsageBilling, {
     xApi: "peal_x_api",
   },
 });
+
+const sameDay = (left: AccountDay, right: Pick<AccountDay, "day" | "holder">) =>
+  left.holder === right.holder && DateTime.Equivalence(left.day, right.day);
+
+/**
+ * The account-days and the outbox in memory: raised, enqueued, read
+ * back, erased. The reporter's reads are not kept.
+ */
+export const AccountDaysInMemory = Layer.effect(
+  AccountDayStore,
+  Effect.gen(function* inMemory() {
+    const days = yield* Ref.make<readonly AccountDay[]>([]);
+    const reports = yield* Ref.make<readonly MeterReport[]>([]);
+
+    const unkept = Effect.die("not kept in memory");
+
+    return AccountDayStore.of({
+      allOf: (workspaceId) =>
+        Effect.all({
+          days: Ref.get(days).pipe(
+            Effect.map((all) =>
+              all.filter(({ holder }) => holder === workspaceId)
+            )
+          ),
+          reports: Ref.get(reports).pipe(
+            Effect.map((all) =>
+              all
+                .filter(({ holder }) => holder === workspaceId)
+                .map((report) => ({ ...report, sentAt: Option.none() }))
+            )
+          ),
+        }),
+      enqueue: (added, reported) =>
+        Effect.all([
+          Ref.update(reports, (all) => [
+            ...all,
+            ...added.filter(
+              ({ identifier }) =>
+                !all.some((kept) => kept.identifier === identifier)
+            ),
+          ]),
+          Ref.update(days, (all) =>
+            all.map((row) => {
+              const found = reported.find((each) => sameDay(row, each));
+
+              return found === undefined
+                ? row
+                : { ...row, reported: Math.max(row.reported, found.reported) };
+            })
+          ),
+        ]).pipe(Effect.asVoid),
+      eraseWorkspace: (workspaceId) =>
+        Effect.all([
+          Ref.update(days, (all) =>
+            all.filter(({ holder }) => holder !== workspaceId)
+          ),
+          Ref.update(reports, (all) =>
+            all.filter(({ holder }) => holder !== workspaceId)
+          ),
+        ]).pipe(Effect.asVoid),
+      backlog: unkept,
+      markRefused: () => unkept,
+      markSent: () => unkept,
+      ofHolders: () => unkept,
+      purgeBefore: () => unkept,
+      raise: (day, counts) =>
+        Ref.modify(days, (all) => {
+          const raised = counts.map(({ count, holder }): AccountDay => {
+            const found = all.find((row) => sameDay(row, { day, holder }));
+
+            return found === undefined
+              ? { day, holder, peak: count, reported: 0 }
+              : { ...found, peak: Math.max(found.peak, count) };
+          });
+
+          return [
+            raised,
+            [
+              ...all.filter(
+                (row) => !raised.some((each) => sameDay(row, each))
+              ),
+              ...raised,
+            ],
+          ];
+        }),
+      unsent: () => unkept,
+    });
+  })
+);
 
 /** A server that does not bill: nothing is limited, nothing pooled. */
 export const UnmeteredTest = Layer.mergeAll(

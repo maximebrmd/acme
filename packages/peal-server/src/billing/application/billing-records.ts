@@ -16,6 +16,7 @@ import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
+import { AccountDayStore } from "./ports/account-day-store.ts";
 import { AccountPayers } from "./ports/account-payers.ts";
 import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
@@ -178,6 +179,7 @@ export class BillingRecords extends Context.Service<
       const checkouts = yield* Checkouts;
       const metered = yield* MeteredPostLedger;
       const usage = yield* UsageLedger;
+      const accountDays = yield* AccountDayStore;
       const contracts = yield* ContractRecords;
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
@@ -269,8 +271,14 @@ export class BillingRecords extends Context.Service<
           const held = yield* subscriptions.ofWorkspace(workspaceId);
           const counted = yield* metered.ofWorkspace(workspaceId);
           const used = yield* usage.allOf(workspaceId);
+          const daysKept = yield* accountDays.allOf(workspaceId);
 
           const record: BillingRecord = {
+            accountDays: daysKept.days.map(({ day, peak, reported }) => ({
+              day: DateTime.formatIsoDateUtc(day),
+              peak,
+              reported,
+            })),
             meteredPosts: counted.map((count) => ({
               month: count.month,
               platform: count.platform,
@@ -290,6 +298,14 @@ export class BillingRecords extends Context.Service<
               meter: entry.meter,
               quantity: entry.quantity,
             })),
+            usageReports: daysKept.reports.map(
+              ({ eventName, occurredAt, sentAt, value }) => ({
+                eventName,
+                occurredAt,
+                sentAt: Option.getOrNull(sentAt),
+                value,
+              })
+            ),
           };
 
           return record;
@@ -394,6 +410,7 @@ export class BillingRecords extends Context.Service<
           yield* subscriptions.eraseWorkspace(workspaceId);
           yield* metered.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
+          yield* accountDays.eraseWorkspace(workspaceId);
           // Its requests stay without it, as its orders do; its contract
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);

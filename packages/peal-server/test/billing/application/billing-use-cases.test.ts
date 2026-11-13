@@ -5,6 +5,7 @@ import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -25,6 +26,7 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  AccountDaysInMemory,
   AccountDaysUncountedTest,
   AloneInAccountsTest,
   NoAddressesTest,
@@ -397,6 +399,7 @@ const recordsWith = (enabled: boolean) =>
       )
     ),
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
+    Layer.provideMerge(AccountDaysInMemory),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(
@@ -486,10 +489,57 @@ layer(recordsWith(false))("posts on platforms that bill per post", (it) => {
           ]
         );
 
+        // Its billing account's days, as their billing workspace, and the
+        // usage reported of them.
+        const days = yield* AccountDayStore;
+        const on = DateTime.makeUnsafe("2026-11-09T10:00:00Z");
+
+        yield* days.raise(DateTime.startOf(on, "day"), [
+          { count: 3, holder: workspaceId },
+        ]);
+        yield* days.enqueue(
+          [
+            {
+              createdAt: on,
+              eventName: "peal_accounts",
+              holder: workspaceId,
+              identifier: `acc:${workspaceId}:2026-11-09:3`,
+              occurredAt: on,
+              stripeCustomerId: "cus_synthetic",
+              value: 3,
+            },
+          ],
+          [
+            {
+              day: DateTime.startOf(on, "day"),
+              holder: workspaceId,
+              reported: 3,
+            },
+          ]
+        );
+
+        const exported = yield* records.exportWorkspace(workspaceId);
+
+        assert.deepStrictEqual(exported.accountDays, [
+          { day: "2026-11-09", peak: 3, reported: 3 },
+        ]);
+        assert.deepStrictEqual(exported.usageReports, [
+          {
+            eventName: "peal_accounts",
+            occurredAt: on,
+            sentAt: null,
+            value: 3,
+          },
+        ]);
+
         yield* erase();
 
         assert.lengthOf(yield* metered.ofWorkspace(workspaceId), 0);
         assert.lengthOf((yield* records.exportWorkspace(workspaceId)).usage, 0);
+        assert.deepStrictEqual(yield* days.allOf(workspaceId), {
+          days: [],
+          reports: [],
+        });
       })
   );
 });
@@ -506,6 +556,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         );
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "business",
           subscriptions: [
@@ -517,6 +568,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
             },
           ],
           usage: [],
+          usageReports: [],
         });
 
         const refused = yield* erase().pipe(Effect.flip);
@@ -562,10 +614,12 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         // Its open checkouts went first, so none starts another.
         assert.strictEqual(yield* Ref.get(log.expired), 1);
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
       })
   );
@@ -721,10 +775,12 @@ layer(recordsWith(true))(
         yield* erase();
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
       })
     );
@@ -775,6 +831,7 @@ const UnreadTest = Layer.mergeAll(
           graceUntil: Option.none(),
         })
       ),
+      AccountDaysInMemory,
       Layer.succeed(
         Checkouts,
         Checkouts.of({
@@ -831,6 +888,7 @@ const RememberedTest = BillingRecords.layer.pipe(
       NoContractsTest,
       MeteredPostsInMemory,
       UsageInMemory,
+      AccountDaysInMemory,
       CheckoutsInMemory,
       PlainPseudonymsTest,
       Layer.mock(BillingAccounts, {}),
