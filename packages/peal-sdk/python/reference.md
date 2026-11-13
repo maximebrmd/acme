@@ -4267,7 +4267,7 @@ client.posts.cancel(
 </details>
 
 ## media
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L33-L80">list</a>(...) -> MediaPage</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L34-L81">list</a>(...) -> MediaPage</code></summary>
 <dl>
 <dd>
 
@@ -4352,7 +4352,7 @@ client.media.list(
 <dl>
 <dd>
 
-**q:** `typing.Optional[str]` 
+**q:** `typing.Optional[MediaQuery]` 
     
 </dd>
 </dl>
@@ -4372,7 +4372,7 @@ client.media.list(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L82-L136">create</a>(...) -> PreparedUpload</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L83-L137">create</a>(...) -> PreparedUpload</code></summary>
 <dl>
 <dd>
 
@@ -4479,7 +4479,7 @@ client.media.create(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L138-L180">import_from_url</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L139-L181">import_from_url</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -4569,7 +4569,7 @@ client.media.import_from_url(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L182-L215">get</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L183-L216">get</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -4651,7 +4651,7 @@ client.media.get(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L217-L249">delete</a>(...)</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L218-L250">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -4733,7 +4733,7 @@ client.media.delete(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L251-L293">describe</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L252-L294">describe</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -4824,7 +4824,7 @@ client.media.describe(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L295-L328">complete</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L296-L329">complete</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -4906,7 +4906,7 @@ client.media.complete(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L330-L363">usage</a>(...) -> MediaUsage</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L331-L364">usage</a>(...) -> MediaUsage</code></summary>
 <dl>
 <dd>
 

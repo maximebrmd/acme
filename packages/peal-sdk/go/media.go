@@ -342,11 +342,11 @@ var (
 )
 
 type ListMediaRequest struct {
-	WorkspaceID string     `json:"-" url:"-"`
-	Cursor      *string    `json:"-" url:"cursor,omitempty"`
-	Kind        *MediaKind `json:"-" url:"kind,omitempty"`
-	Limit       *string    `json:"-" url:"limit,omitempty"`
-	Q           *string    `json:"-" url:"q,omitempty"`
+	WorkspaceID string      `json:"-" url:"-"`
+	Cursor      *string     `json:"-" url:"cursor,omitempty"`
+	Kind        *MediaKind  `json:"-" url:"kind,omitempty"`
+	Limit       *string     `json:"-" url:"limit,omitempty"`
+	Q           *MediaQuery `json:"-" url:"q,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -391,7 +391,7 @@ func (l *ListMediaRequest) SetLimit(limit *string) {
 
 // SetQ sets the Q field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListMediaRequest) SetQ(q *string) {
+func (l *ListMediaRequest) SetQ(q *MediaQuery) {
 	l.Q = q
 	l.require(listMediaRequestFieldQ)
 }
@@ -509,6 +509,8 @@ func (m *MediaPage) String() string {
 	}
 	return fmt.Sprintf("%#v", m)
 }
+
+type MediaQuery = string
 
 var (
 	mediaUsageFieldDrafts    = big.NewInt(1 << 0)

@@ -4024,7 +4024,7 @@ async fn main() {
 </details>
 
 ## media
-<details><summary><code>client.media.<a href="/src/api/resources/media/client.rs">list</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, kind: Option&lt;Option&lt;MediaKind&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, q: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;MediaPage, ApiError&gt;</code></summary>
+<details><summary><code>client.media.<a href="/src/api/resources/media/client.rs">list</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, kind: Option&lt;Option&lt;MediaKind&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, q: Option&lt;Option&lt;MediaQuery&gt;&gt;) -> Result&lt;MediaPage, ApiError&gt;</code></summary>
 <dl>
 <dd>
 
@@ -4117,7 +4117,7 @@ async fn main() {
 <dl>
 <dd>
 
-**q:** `Option<String>` 
+**q:** `Option<MediaQuery>` 
     
 </dd>
 </dl>

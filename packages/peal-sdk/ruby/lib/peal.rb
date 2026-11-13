@@ -844,6 +844,7 @@ module Peal
     autoload :MediaInUseEncoded, ::File.join(__dir__, "peal/types/media_in_use_encoded")
     autoload :MediaNotFoundEncoded, ::File.join(__dir__, "peal/types/media_not_found_encoded")
     autoload :MediaPage, ::File.join(__dir__, "peal/types/media_page")
+    autoload :MediaQuery, ::File.join(__dir__, "peal/types/media_query")
     autoload :MediaSourceFailure, ::File.join(__dir__, "peal/types/media_source_failure")
     autoload :MediaSourceNotPublicEncoded, ::File.join(__dir__, "peal/types/media_source_not_public_encoded")
     autoload :MediaSourceUnreachableEncoded, ::File.join(__dir__, "peal/types/media_source_unreachable_encoded")

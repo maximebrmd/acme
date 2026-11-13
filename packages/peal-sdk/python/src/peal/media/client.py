@@ -7,6 +7,7 @@ from ..core.request_options import RequestOptions
 from ..types.media import Media
 from ..types.media_kind import MediaKind
 from ..types.media_page import MediaPage
+from ..types.media_query import MediaQuery
 from ..types.media_usage import MediaUsage
 from ..types.prepared_upload import PreparedUpload
 from .raw_client import AsyncRawMediaClient, RawMediaClient
@@ -37,7 +38,7 @@ class MediaClient:
         cursor: typing.Optional[str] = None,
         kind: typing.Optional[MediaKind] = None,
         limit: typing.Optional[str] = None,
-        q: typing.Optional[str] = None,
+        q: typing.Optional[MediaQuery] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> MediaPage:
         """
@@ -53,7 +54,7 @@ class MediaClient:
 
         limit : typing.Optional[str]
 
-        q : typing.Optional[str]
+        q : typing.Optional[MediaQuery]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -385,7 +386,7 @@ class AsyncMediaClient:
         cursor: typing.Optional[str] = None,
         kind: typing.Optional[MediaKind] = None,
         limit: typing.Optional[str] = None,
-        q: typing.Optional[str] = None,
+        q: typing.Optional[MediaQuery] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> MediaPage:
         """
@@ -401,7 +402,7 @@ class AsyncMediaClient:
 
         limit : typing.Optional[str]
 
-        q : typing.Optional[str]
+        q : typing.Optional[MediaQuery]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

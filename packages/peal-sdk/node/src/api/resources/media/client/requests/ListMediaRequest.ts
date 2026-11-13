@@ -13,5 +13,5 @@ export interface ListMediaRequest {
     cursor?: string;
     kind?: Peal.MediaKind;
     limit?: string;
-    q?: string;
+    q?: Peal.MediaQuery;
 }

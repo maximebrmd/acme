@@ -3726,7 +3726,7 @@ _, err := client.Media.List(
 <dl>
 <dd>
 
-**q:** `*string` 
+**q:** `*peal.MediaQuery` 
     
 </dd>
 </dl>

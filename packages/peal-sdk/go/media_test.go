@@ -743,7 +743,7 @@ func TestSettersListMediaRequest(t *testing.T) {
 
 	t.Run("SetQ", func(t *testing.T) {
 		obj := &ListMediaRequest{}
-		var fernTestValueQ *string
+		var fernTestValueQ *MediaQuery
 		obj.SetQ(fernTestValueQ)
 		assert.Equal(t, fernTestValueQ, obj.Q)
 		assert.NotNil(t, obj.explicitFields)
@@ -880,7 +880,7 @@ func TestSettersMarkExplicitListMediaRequest(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &ListMediaRequest{}
-		var fernTestValueQ *string
+		var fernTestValueQ *MediaQuery
 
 		// Act
 		obj.SetQ(fernTestValueQ)

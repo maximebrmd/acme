@@ -10,7 +10,7 @@ pub struct MediaListQueryRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub q: Option<String>,
+    pub q: Option<MediaQuery>,
 }
 
 impl MediaListQueryRequest {
@@ -25,7 +25,7 @@ pub struct MediaListQueryRequestBuilder {
     cursor: Option<String>,
     kind: Option<MediaKind>,
     limit: Option<String>,
-    q: Option<String>,
+    q: Option<MediaQuery>,
 }
 
 impl MediaListQueryRequestBuilder {
@@ -44,8 +44,8 @@ impl MediaListQueryRequestBuilder {
         self
     }
 
-    pub fn q(mut self, value: impl Into<String>) -> Self {
-        self.q = Some(value.into());
+    pub fn q(mut self, value: MediaQuery) -> Self {
+        self.q = Some(value);
         self
     }
 

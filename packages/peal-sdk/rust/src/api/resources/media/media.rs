@@ -62,7 +62,7 @@ impl MediaClient {
                     .string("cursor", request.cursor.clone())
                     .serialize("kind", request.kind.clone())
                     .string("limit", request.limit.clone())
-                    .string("q", request.q.clone())
+                    .serialize("q", request.q.clone())
                     .build(),
                 options,
             )

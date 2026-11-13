@@ -22,6 +22,7 @@ from ..errors.unprocessable_entity_error import UnprocessableEntityError
 from ..types.media import Media
 from ..types.media_kind import MediaKind
 from ..types.media_page import MediaPage
+from ..types.media_query import MediaQuery
 from ..types.media_usage import MediaUsage
 from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.prepared_upload import PreparedUpload
@@ -43,7 +44,7 @@ class RawMediaClient:
         cursor: typing.Optional[str] = None,
         kind: typing.Optional[MediaKind] = None,
         limit: typing.Optional[str] = None,
-        q: typing.Optional[str] = None,
+        q: typing.Optional[MediaQuery] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[MediaPage]:
         """
@@ -59,7 +60,7 @@ class RawMediaClient:
 
         limit : typing.Optional[str]
 
-        q : typing.Optional[str]
+        q : typing.Optional[MediaQuery]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1014,7 +1015,7 @@ class AsyncRawMediaClient:
         cursor: typing.Optional[str] = None,
         kind: typing.Optional[MediaKind] = None,
         limit: typing.Optional[str] = None,
-        q: typing.Optional[str] = None,
+        q: typing.Optional[MediaQuery] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[MediaPage]:
         """
@@ -1030,7 +1031,7 @@ class AsyncRawMediaClient:
 
         limit : typing.Optional[str]
 
-        q : typing.Optional[str]
+        q : typing.Optional[MediaQuery]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
