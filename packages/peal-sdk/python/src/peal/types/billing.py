@@ -25,6 +25,9 @@ class Billing(UniversalBaseModel):
     currency: str
     enabled: bool
     estimate: typing.Optional[Money] = None
+    payment_failed: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="paymentFailed"), pydantic.Field(alias="paymentFailed")
+    ] = None
     payment_method: typing_extensions.Annotated[
         bool, FieldMetadata(alias="paymentMethod"), pydantic.Field(alias="paymentMethod")
     ]

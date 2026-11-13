@@ -2086,17 +2086,16 @@
     "open": "Billing",
     "openLabel": "Billing of {workspace}",
     "title": "Billing",
-    "description": "The plan of {workspace}, and how much of it the workspace uses.",
+    "description": "How {workspace} is billed, and what it uses.",
     "loadFailed": "The billing could not be loaded.",
     "retry": "Try again",
-    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
+    "plan": "{plan, select, free {Free tier} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "off": {
       "title": "Nothing is limited",
       "description": "This server does not bill workspaces: there is no plan, and every feature is available without limits."
     },
     "current": {
-      "title": "Current plan",
-      "free": "The workspace has no subscription.",
+      "title": "Your plan",
       "status": "{status, select, active {Active} trialing {Trial} past_due {Payment due} canceled {Cancelled} unpaid {Unpaid} paused {Paused} incomplete {Incomplete} incomplete_expired {Expired} other {{status}}}",
       "renews": "Renews on {date}, {interval, select, month {each month} other {each year}} until cancelled",
       "ends": "Ends on {date}",
@@ -2108,7 +2107,14 @@
       "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices and receipts, in Stripe’s billing portal.",
       "trialEnds": "The trial ends on {date}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
       "withdrawable": "Until {date}, as a consumer you may withdraw from the contract, here or with “Withdraw from contract here” at the foot of every page: it ends at once and the unused part is refunded.",
-      "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial."
+      "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial.",
+      "freeTier": "Up to {free, number} connected accounts across the billing account, without a payment method.",
+      "perAccount": "Each connected account past the first {free, number}, counted by the day, is billed each month for the month past, at the rates below.",
+      "legacy": "{plan} is priced by tiers of channels, no longer sold: the workspace keeps it, with its allowances, until it ends.",
+      "nextInvoice": "Next invoice on {date}, for the month’s use, until cancelled",
+      "unpaid": "The last payments for per-account pricing did not go through, so the billing account is back on the free tier. Its contract still runs: update the payment method in the billing portal rather than ordering again.",
+      "freeTierRevoked": "This billing account connects no account without a payment method.",
+      "updatePaymentMethod": "Update the payment method"
     },
     "usage": {
       "title": "Usage",
@@ -2146,68 +2152,45 @@
         "note": "Counts only, kept {days, number} days: nothing here is priced. A dash is a day without a snapshot."
       }
     },
-    "plans": {
-      "title": "Plans",
-      "allowance": "{limit, select, channels {{count, plural, one {# channel} other {# channels}}} members {{count, plural, one {# member} other {# members}}} scheduledPosts {{count, plural, one {# post a month} other {# posts a month}}} assistantRequests {{count, plural, one {# assistant request a day} other {# assistant requests a day}}} other {{count}}}",
-      "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} mediaStorage {Unlimited media} other {Unlimited}}",
-      "yours": "Your plan",
-      "inPortal": "Moving to a smaller plan needs the workspace to fit it first: its channels, members and media.",
-      "askAdmin": "Owners and admins of the workspace order and cancel its plan.",
-      "storage": "{size} of media",
-      "order": "Order with obligation to pay",
-      "ordering": "Opening checkout…",
-      "renewal": "{interval, select, month {Renews each month until cancelled.} other {Renews each year until cancelled; you are reminded 45 days before.}}"
-    },
     "checkout": {
-      "done": "Thank you. The plan changes as soon as Stripe confirms the payment, usually within seconds.",
+      "done": "Thank you: per-account pricing starts as soon as Stripe confirms the payment method, usually within seconds.",
       "refresh": "Refresh"
     },
     "errors": {
       "forbidden": "Only owners and admins of the workspace, in their own session, can change its billing.",
       "generic": "Stripe could not be reached. Try again in a moment.",
-      "noInvoices": "This workspace has no invoice: it never had a paid plan.",
+      "noInvoices": "This workspace has no invoice: it never had a paid contract.",
       "nothingToCancel": "The subscription is already cancelled.",
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
       "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
       "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
       "planTooSmall": "This plan does not hold what the workspace has.",
       "alreadySubscribed": "This billing account already has per-account pricing. If a payment failed, update the payment method from the billing page instead.",
-      "consentChanged": "The words of the order box changed since this page was loaded. Load the page again, read the box, and order again."
+      "consentChanged": "The words of the order box changed since this page was loaded. Load the page again, read the box, and order again.",
+      "billedElsewhere": "Another workspace bills this billing account: its payment method is added there.",
+      "unknown": "That did not work. Try again in a moment.",
+      "planNotSold": "This plan is no longer sold: per-account pricing is the one on offer.",
+      "notEnabled": "This server does not bill: there is nothing to order."
     },
-    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
+    "limitReached": "{limit, select, channels {The workspace’s billing account connects no more accounts for now: see its billing page, or disconnect an account first.} members {The workspace’s plan allows no more members. An owner or an admin can see its billing page.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, or cancel a post.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s billing account has no room for this file. Delete media, or see its billing page.} other {The workspace’s plan allows no more of this.}}",
     "prices": {
-      "vat": "Prices include {rate}% VAT, France’s. In another EU country, its own VAT applies at checkout; a business with a valid VAT number pays the price excluding VAT.",
-      "included": "{price} {interval, select, month {a month} other {a year}}, VAT incl.",
-      "excluded": "{price} excl. VAT",
-      "yearlyMonth": "That is {price} a month",
-      "perChannel": "{price} per channel a month",
-      "perAccount": "{price} a month for each account past the first {free}, excl. tax ({included} with {rate}% VAT), counted by the day; less each from account {from} on",
-      "perAccountNote": "Prices are in US dollars, excluding tax. VAT is added at checkout for customers in the EU, at their country’s rate. At checkout you can pay in your own currency, converted by our payment provider at the day’s rate; otherwise your card is charged in US dollars.",
-      "free": "Free",
-      "interval": "{interval, select, month {Monthly} other {Yearly}}",
-      "intervalLabel": "Billing period"
+      "perAccountNote": "Prices are in US dollars. At checkout you can pay in your own currency, converted by our payment provider at the day’s rate; otherwise your card is charged in US dollars."
     },
     "consent": {
       "startNow": "I ask Peal to start per-account pricing now: each connected account past the free ones, counted by the day, and each use past its monthly allowance are billed at the rate card’s prices, excluding tax, each month for the month past. I know that, as a consumer, I may withdraw within 14 days, with “Withdraw from contract here”, at the foot of every page and on this one, and then pay only for what was used.",
       "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
-      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
-      "needed": "Tick the box above to add a payment method."
-    },
-    "trial": {
-      "title": "Try {plan} free for {days} days",
-      "description": "No payment method needed, and nothing is charged. When the trial ends, the workspace moves back to the free plan unless you order {plan}. One trial per account and per workspace.",
-      "start": "Start the free trial",
-      "starting": "Opening checkout…"
+      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form."
     },
     "cancel": {
       "open": "Cancel your contract",
       "title": "Cancel your contract",
-      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content. To end it on a later day instead, use “Cancel your contract” at the foot of the page.",
-      "summaryNow": "The {plan} trial ends now, and nothing is charged. The workspace moves to the free plan, with its content.",
+      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free tier, with its content. To end it on a later day instead, use “Cancel your contract” at the foot of the page.",
+      "summaryNow": "The {plan} trial ends now, and nothing is charged. The workspace moves to the free tier, with its content.",
       "confirm": "Notify the cancellation",
       "confirming": "Cancelling…",
       "doneTitle": "Subscription cancelled",
-      "done": "It ends on {date}. A confirmation was emailed to the members who manage billing."
+      "done": "It ends on {date}. A confirmation was emailed to the members who manage billing.",
+      "summaryPerAccount": "Per-account pricing ends on {date}, at the end of the month: that month’s use is invoiced then, and nothing after. The workspace then moves to the free tier, with its content. To end it on a later day instead, use “Cancel your contract” at the foot of the page."
     },
     "withdraw": {
       "open": "Withdraw from contract here",
@@ -2217,9 +2200,46 @@
       "confirm": "Confirm withdrawal",
       "confirming": "Withdrawing…",
       "doneTitle": "Withdrawal received",
-      "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you."
+      "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you.",
+      "summaryPerAccount": "You ordered per-account pricing on {started}. Withdrawing ends it now: what was used since then is invoiced at once, and nothing is refunded, as nothing is paid in advance.",
+      "doneNothing": "The subscription has ended: what was used is invoiced, and nothing was paid in advance to refund. An acknowledgement with its date and time was emailed to you."
     },
-    "keep": "Keep the subscription"
+    "keep": "Keep the subscription",
+    "month": {
+      "title": "This month",
+      "accounts": "Connected accounts",
+      "pooledHere": "{pooled, plural, one {# account connected} other {# accounts connected}}.",
+      "pooledAcross": "{pooled, plural, one {# account} other {# accounts}} across the account’s {workspaces, number} workspaces, {connected, number} of them on this one.",
+      "accountDays": "{days, plural, one {# account-day so far} other {# account-days so far}}",
+      "estimateFree": "With a payment method, the month so far would cost {estimate} excl. VAT · {included} with France’s {rate}% VAT.",
+      "estimatePaying": "So far this month: {estimate} excl. VAT · {included} with France’s {rate}% VAT.",
+      "nextAccount": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, costs a month: {price} excl. VAT · {included} with France’s {rate}% VAT.",
+      "upcoming": "Stripe’s next invoice: {amount}, tax included. The invoice is the one that counts.",
+      "elsewhere": "They count with the other workspaces of its billing account. The workspace that bills the account shows the month’s account-days and their cost to its members.",
+      "nextAccountFree": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, is free: the first {free, number} are."
+    },
+    "ladder": {
+      "title": "Rates",
+      "description": "Every connected account of the billing account counts, across its workspaces. Members, workspaces and posts are not counted.",
+      "caption": "What each connected account costs a month, by its place in the billing account",
+      "accounts": "Accounts",
+      "price": "Each, a month, excl. VAT",
+      "band": "Accounts {from, number} to {to, number}",
+      "from": "From account {from, number}",
+      "free": "Free",
+      "dayRule": "Each UTC day counts the most accounts connected at once across the billing account, for days 1 to {days, number} of the month: the {after, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free. Each of those days costs a {days, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} of an account’s monthly rate, so an account connected for part of a month costs part of its rate.",
+      "priceIncluded": "With France’s {rate}% VAT",
+      "vatNote": "The VAT you pay depends on your country: it is added at checkout for customers in the EU, at their country’s rate. A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies."
+    },
+    "payment": {
+      "title": "Add a payment method",
+      "description": "With a payment method, the billing account connects more than {free, number} accounts, up to {ceiling, number} until its first invoice is paid. Nothing is charged now: each month’s invoice bills the month past.",
+      "askAdmin": "Owners and admins of the workspace add its payment method.",
+      "order": "Order with obligation to pay",
+      "ordering": "Opening checkout…",
+      "needed": "Tick the box above to add a payment method.",
+      "card": "Payment is by card, on Stripe’s checkout. You then come back to this page."
+    }
   },
   "BillingAccount": {
     "title": "Billing account",
@@ -2336,21 +2356,32 @@
     "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} other {The plan’s limit is reached}}",
     "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
     "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
-    "offer": "The {plan} plan has room:",
-    "trial": "{workspace} is in its trial: ordering starts the paid plan, and ends the trial once it is paid for. Nothing is charged for the trial.",
+    "trial": "{workspace} is in its trial: ordering starts per-account pricing, and ends the trial once Stripe confirms it. Nothing is charged for the trial.",
     "legacyMove": "{workspace} is on {plan}, priced by channels. Moving gives no credit for its unused time yet: it stays paid until its period ends, while the accounts are billed per account from the move.",
-    "comeBack": "Payment is by card, on Stripe’s checkout. You then come back to this page; the plan changes as soon as Stripe confirms the payment, usually within seconds.",
-    "largest": "{workspace} is on the largest plan. For more, write to us: we make an offer for larger needs.",
-    "largestOperator": "{workspace} is on the largest plan. For more, write to the people who run this server.",
     "contact": "Write to us",
     "orRemove": "{limit, select, channels {Or disconnect a channel to make room.} members {Or remove a member, or revoke a pending invitation, to make room.} scheduledPosts {Or pick another month, or cancel a post of that month.} assistantRequests {Or ask again tomorrow.} mediaStorage {Or delete media to make room.} other {}}",
-    "askManagers": "Owners and admins of {workspace} order its plan: {names}.",
-    "askSomeone": "An owner or an admin of the workspace orders its plan: ask one of them.",
+    "askManagers": "Owners and admins of {workspace} add its payment method: {names}.",
+    "askSomeone": "An owner or an admin of the workspace adds its payment method: ask one of them.",
     "close": "Not now",
-    "tooSmall": "This plan does not hold what the workspace has. Remove these first, or order a larger plan:",
-    "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
-    "excessStorage": "{used} of media, {allowed} allowed",
-    "closeLabel": "Close"
+    "closeLabel": "Close",
+    "titlePerAccount": "{limit, select, channels {Add a payment method to connect another account} mediaStorage {Add a payment method for more media storage} other {Add a payment method for more}}",
+    "reachedFree": "The billing account of {workspace} is on the free tier, which connects {allowed, plural, one {# account} other {# accounts}} across its workspaces, and it has {used, number}.",
+    "reachedFreeStorage": "The billing account of {workspace} stores {used} of media, uploads in progress included, and the free tier holds {allowed}.",
+    "reachedCeiling": "Until its first invoice is paid, the billing account of {workspace} connects up to {allowed, plural, one {# account} other {# accounts}}, and it has {used, number}. Once an invoice is paid, there is no limit.",
+    "givesAccounts": "With a payment method, the billing account connects more accounts.",
+    "nextAccount": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} costs a month, counted by the day: {price} excl. VAT · {included} with France’s {rate}% VAT; the first {free, number} stay free.",
+    "givesStorage": "With a payment method, media storage is {perAccount} per connected account, {minimum} at least.",
+    "gives": "With a payment method, the billing account moves to per-account pricing.",
+    "noRoom": "For more, write to us.",
+    "noRoomOperator": "For more, write to the people who run this server.",
+    "billedElsewhere": "The billing account of {workspace} is billed on <billing></billing>: its owners and admins add the payment method there.",
+    "billedElsewhereUnnamed": "The billing account of {workspace} is billed on another of its workspaces: its owners and admins add the payment method there.",
+    "reachedFreeRevoked": "The billing account of {workspace} connects no account without a payment method.",
+    "held": "{used, plural, one {The account connected costs} other {The # accounts connected cost}} a month, counted by the day: {price} excl. VAT · {included} with France’s {rate}% VAT.",
+    "nextAccountAdds": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} adds a month: {price} excl. VAT · {included} with France’s {rate}% VAT.",
+    "nextAccountFree": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free: the first {free, number} are.",
+    "noRoomCeiling": "For more before then, write to us.",
+    "noRoomCeilingOperator": "For more before then, write to the people who run this server."
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
@@ -2360,7 +2391,7 @@
     "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
     "excessStorage": "{used} of media stored, {allowed} allowed: uploads are refused until media is deleted or the plan is larger",
     "posts": "{count, plural, =0 {Until then, nothing is scheduled or published.} one {Until then, nothing is scheduled or published. The post scheduled this month fails at its time, with “plan limit” as its reason; it keeps its text and channels, and can be posted again from its page once the workspace is within its plan.} other {Until then, nothing is scheduled or published. The # posts scheduled this month each fail at their time, with “plan limit” as their reason; they keep their text and channels, and can be posted again from their page once the workspace is within its plan.}}",
-    "upgradeTitle": "Move to a plan that holds everything",
+    "upgradeTitle": "Add a payment method",
     "noPlan": "No plan holds this much. Choose what stays below, or write to us for an offer.",
     "chooseTitle": "Or choose what stays",
     "chooseDescription": "Everything else is disconnected or removed at once, in one step that cannot be undone.",
@@ -2375,8 +2406,8 @@
     "applying": "Removing…",
     "tooMany": "Keep at most what the plan allows.",
     "done": "The workspace is back within its plan.",
-    "others": "Owners and admins of {workspace} can order a larger plan or choose what stays: {names}.",
-    "othersUnknown": "An owner or an admin of the workspace can order a larger plan or choose what stays.",
+    "others": "Owners and admins of {workspace} can add a payment method or choose what stays: {names}.",
+    "othersUnknown": "An owner or an admin of the workspace can add a payment method or choose what stays.",
     "billing": "Open billing",
     "loadFailed": "The channels and members could not be loaded.",
     "errors": {
@@ -2389,7 +2420,10 @@
       "ownerRequired": "Only an owner removes an owner.",
       "payerRequired": "The owner who pays for the workspace stays among its members: they hand it to another owner on its billing page first.",
       "generic": "That did not work. Try again in a moment."
-    }
+    },
+    "titleFree": "{workspace} holds more than the free tier allows",
+    "descriptionFree": "Its billing account holds more than {free, number} connected accounts without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or {free, number} accounts are kept.",
+    "descriptionRevoked": "Its billing account connects no account without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or its accounts are disconnected."
   },
   "Captcha": {
     "label": "Check that you are a person"

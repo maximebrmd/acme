@@ -207,9 +207,10 @@ describe(MediaPreviewDialog, () => {
     // The name comes before the region that scrolls, never in it.
     expect(header).toContain("Harbour.png");
     expect(body).toMatch(/^ class="[^"]*overflow-y-auto/u);
-    // The close button is pinned to the box, out of the scrolling region.
+    // The close button is pinned to the box's top, out of the scrolling
+    // region: a row of its own that sticks.
     expect(body).toMatch(
-      /<\/div><\/div><button[^>]*absolute top-2 right-2[^>]*>.*Close/u
+      /<\/div><\/div><div class="sticky top-2[^"]*"><button[^>]*>.*Close/u
     );
   });
 });

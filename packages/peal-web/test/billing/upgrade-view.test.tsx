@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
+import { rateCard } from "peal-contract/rate-card";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { UpgradeReason } from "#billing/upgrade.ts";
@@ -11,18 +12,20 @@ const nothing = () => {
   // Rendered once: nothing is clicked.
 };
 
-const channels: UpgradeReason = {
-  allowed: 3,
+// The free tier's third account, refused.
+const third: UpgradeReason = {
+  allowed: 2,
   limit: "channels",
   plan: "free",
-  planWithRoom: "starter",
-  used: 3,
+  planWithRoom: "payAsYouGo",
+  used: 2,
 };
 
-const largest: UpgradeReason = {
+// Per-account pricing before a first invoice is paid: no plan holds more.
+const ceiling: UpgradeReason = {
   allowed: 100,
   limit: "channels",
-  plan: "agency",
+  plan: "payAsYouGo",
   planWithRoom: null,
   used: 100,
 };
@@ -37,19 +40,18 @@ const render = async (
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <UpgradeView
         canManage
+        card={rateCard}
         consented={false}
         contactUrl={null}
+        elsewhere={null}
         error={null}
-        interval="month"
         managers={[]}
         ordering={false}
-        reason={channels}
+        reason={third}
         termsUrl={null}
-        tooSmall={null}
         trialing={false}
         workspaceName="Studio Nord"
         onConsent={nothing}
-        onInterval={nothing}
         onOrder={nothing}
         {...props}
       />
@@ -57,117 +59,184 @@ const render = async (
   );
 };
 
-const perAccount: UpgradeReason = {
-  allowed: 2,
-  limit: "channels",
-  plan: "free",
-  planWithRoom: "payAsYouGo",
-  used: 2,
-};
+// What a page does not say that it should.
+const missing = (html: string, texts: readonly string[]) =>
+  texts.filter((text) => !html.includes(text));
 
 describe(UpgradeView, () => {
-  it("tells a legacy plan's member that moving gives no credit yet", async () => {
+  it("says the free tier's accounts are taken, across the billing account", async () => {
+    const html = await render("en");
+
+    expect(
+      missing(html, [
+        "The billing account of Studio Nord is on the free tier, which connects 2 accounts across its workspaces, and it has 2.",
+        "Or disconnect a channel to make room.",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("prices the next account from the rate card, with and without VAT, in dollars", async () => {
+    const english = await render("en");
+
+    expect(
+      missing(english, [
+        "With a payment method, the billing account connects more accounts.",
+        "The 3rd costs a month, counted by the day: $5.00 excl. VAT · $6.00 with France’s 20% VAT; the first 2 stay free.",
+        "A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies.",
+        "it is added at checkout for customers in the EU",
+        "At checkout you can pay in your own currency",
+      ])
+    ).toStrictEqual([]);
+    expect(english).not.toContain("Billing period");
+    expect(english).not.toContain("€");
+
+    // The eleventh account falls in the next band.
+    const eleventh = await render("en", {
+      reason: { ...third, allowed: 10, used: 10 },
+    });
+
+    expect(eleventh).toContain("The 11th adds a month: $3.00");
+
+    const french = await render("fr");
+
+    expect(
+      missing(french, [
+        "Le 3e coûte par mois, compté au jour : 5,00 $US HT · 6,00 $US avec la TVA française de 20 %",
+        "Au paiement, vous pouvez payer dans votre devise",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("quotes what the order bills for the accounts held, then the next one, from the ladder", async () => {
     const html = await render("en", {
-      reason: { ...perAccount, plan: "starter" },
+      reason: { ...third, used: 8 },
+    });
+
+    expect(
+      missing(html, [
+        "The 8 accounts connected cost a month, counted by the day: $30.00 excl. VAT · $36.00 with France’s 20% VAT.",
+        "The 9th adds a month: $5.00 excl. VAT · $6.00 with France’s 20% VAT.",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("The 9th costs");
+  });
+
+  it("says a free next account is free, never $0.00", async () => {
+    const html = await render("en", { reason: { ...third, used: 1 } });
+
+    expect(html).toContain("The 2nd is free: the first 2 are.");
+    expect(html).not.toContain("$0.00");
+  });
+
+  it("prices from the rate card the server answered", async () => {
+    const card = {
+      ...rateCard,
+      prices: {
+        usd: {
+          ...rateCard.prices.usd,
+          accounts: {
+            bands: [
+              { monthly: 0, upTo: 2 },
+              { monthly: 700, upTo: null },
+            ],
+          },
+        },
+      },
+    };
+
+    await expect(render("en", { card })).resolves.toContain(
+      "The 3rd costs a month, counted by the day: $7.00"
+    );
+  });
+
+  it("says when staff took the free tier away", async () => {
+    const html = await render("en", {
+      reason: { ...third, allowed: 0, used: 0 },
     });
 
     expect(html).toContain(
-      "Moving gives no credit for its unused time yet: it stays paid until its period ends"
+      "The billing account of Studio Nord connects no account without a payment method."
     );
   });
 
-  it("offers per-account pricing at the rate card's price, monthly, in both languages", async () => {
-    const english = await render("en", { reason: perAccount });
-
-    expect(english).toContain(
-      "$5.00 a month for each account past the first 2, excl. tax ($6.00 with 20% VAT), counted by the day; less each from account 11 on"
-    );
-    expect(english).toContain("At checkout you can pay in your own currency");
-    expect(english).not.toContain("Billing period");
-
-    const french = await render("fr", { reason: perAccount });
-
-    expect(french).toContain(
-      "par mois pour chaque compte au-delà des 2 premiers"
-    );
-    expect(french).toContain(
-      "Au paiement, vous pouvez payer dans votre devise"
-    );
-  });
-
-  it("says which limit was reached, with the usage and the plan", async () => {
-    const html = await render("en");
+  it("asks for more without a deadline where none applies", async () => {
+    const html = await render("en", {
+      reason: {
+        allowed: 35_000_000_000,
+        limit: "mediaStorage",
+        plan: "payAsYouGo",
+        planWithRoom: null,
+        used: 35_000_000_000,
+      },
+    });
 
     expect(html).toContain(
-      "The Free plan of Studio Nord allows 3 channels, and it has 3."
+      "For more, write to the people who run this server."
     );
-    expect(html).toContain("Or disconnect a channel to make room.");
+    expect(html).not.toContain("before then");
   });
 
-  it("offers the plan with room, its price with VAT first, then without", async () => {
-    const html = await render("en");
-
-    expect(html).toContain("The Starter plan has room:");
-    expect(html).toContain("5 channels");
-    expect(html.indexOf("€9.00 a month, VAT incl.")).toBeGreaterThan(-1);
-    expect(html.indexOf("€7.50 excl. VAT")).toBeGreaterThan(
-      html.indexOf("€9.00 a month, VAT incl.")
-    );
-  });
-
-  it("prices a year as its own price", async () => {
-    const yearly = await render("fr", { interval: "year" });
-
-    expect(yearly).toContain("90,00\u00A0€ TTC par an");
-    expect(yearly).toContain("75,00\u00A0€ HT");
-  });
-
-  it("orders with the words of an obligation to pay, and a request to start that is not ticked", async () => {
+  it("asks for a card behind the unticked box, with the button the law words", async () => {
     const unticked = await render("en");
 
-    expect(unticked).toContain("Order with obligation to pay");
-    expect(unticked).toContain("I ask Peal to start per-account pricing now");
+    expect(
+      missing(unticked, [
+        "I ask Peal to start per-account pricing now",
+        "Order with obligation to pay",
+        "Payment is by card, on Stripe’s checkout",
+      ])
+    ).toStrictEqual([]);
     expect(unticked).toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation/u
     );
     expect(unticked).not.toContain('aria-checked="true"');
-  });
 
-  it("lets the order go once the request to start is ticked, in each language", async () => {
     const ticked = await render("en", { consented: true });
-    const french = await render("fr");
 
     expect(ticked).not.toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation/u
     );
-    expect(french).toContain("Commander avec obligation de paiement");
+    await expect(render("fr")).resolves.toContain(
+      "Commander avec obligation de paiement"
+    );
   });
 
-  it("says a trial's order starts the paid plan", async () => {
-    const html = await render("en", { trialing: true });
+  it("names the workspace that bills the account, and orders nothing here", async () => {
+    const html = await render("en", {
+      elsewhere: { link: <a href="#studio">Studio Sud</a> },
+    });
 
     expect(html).toContain(
-      "Studio Nord is in its trial: ordering starts the paid plan"
+      'The billing account of Studio Nord is billed on <a href="#studio">Studio Sud</a>: its owners and admins add the payment method there.'
+    );
+    expect(html).not.toContain("Order with obligation to pay");
+
+    const unnamed = await render("fr", { elsewhere: { link: null } });
+
+    expect(unnamed).toContain(
+      "Le compte de facturation de Studio Nord est facturé sur un autre de ses espaces de travail"
     );
   });
 
-  it("says how to ask for more on the largest plan", async () => {
-    const operator = await render("en", { reason: largest });
+  it("says the ceiling before a first paid invoice, and how to ask for more", async () => {
+    const operator = await render("en", { reason: ceiling });
 
     const hosted = await render("en", {
       contactUrl: "mailto:hello@example.test",
-      reason: largest,
+      reason: ceiling,
     });
 
     expect(operator).toContain(
-      "Studio Nord is on the largest plan. For more, write to the people who run this server."
+      "Until its first invoice is paid, the billing account of Studio Nord connects up to 100 accounts, and it has 100."
+    );
+    expect(operator).toContain(
+      "For more before then, write to the people who run this server."
     );
     expect(operator).not.toContain("Order with obligation to pay");
     expect(hosted).toContain('href="mailto:hello@example.test"');
-    expect(hosted).toContain("we make an offer for larger needs");
   });
 
-  it("names who can upgrade to a member who cannot", async () => {
+  it("names who can add a payment method to a member who cannot", async () => {
     const html = await render("en", {
       canManage: false,
       managers: ["Ana Example", "Sam Example"],
@@ -176,41 +245,49 @@ describe(UpgradeView, () => {
     const unnamed = await render("en", { canManage: false });
 
     expect(html).toContain(
-      "Owners and admins of Studio Nord order its plan: Ana Example, Sam Example."
+      "Owners and admins of Studio Nord add its payment method: Ana Example, Sam Example."
     );
     expect(html).not.toContain("Order with obligation to pay");
     expect(unnamed).toContain(
-      "An owner or an admin of the workspace orders its plan: ask one of them."
+      "An owner or an admin of the workspace adds its payment method: ask one of them."
     );
   });
 
-  it("writes storage in the units plans are sold in", async () => {
+  it("writes the free tier's storage, and what a payment method gives", async () => {
     const html = await render("en", {
       reason: {
-        allowed: 500_000_000,
+        allowed: 1_000_000_000,
         limit: "mediaStorage",
         plan: "free",
-        planWithRoom: "starter",
-        used: 480_000_000,
+        planWithRoom: "payAsYouGo",
+        used: 980_000_000,
       },
     });
 
-    expect(html).toContain(
-      "The Free plan of Studio Nord allows 500 MB of media, and it stores 480 MB"
-    );
-    expect(html).toContain("5 GB of media");
+    expect(
+      missing(html, [
+        "The billing account of Studio Nord stores 980 MB of media, uploads in progress included, and the free tier holds 1 GB.",
+        "With a payment method, media storage is 5 GB per connected account, 5 GB at least.",
+      ])
+    ).toStrictEqual([]);
   });
 
-  it("lists what to remove before a plan too small", async () => {
+  it("tells a legacy plan's member that moving gives no credit yet", async () => {
     const html = await render("en", {
-      tooSmall: [
-        { allowed: 5, limit: "channels", used: 8 },
-        { allowed: 5_000_000_000, limit: "mediaStorage", used: 7_000_000_000 },
-      ],
+      reason: { ...third, allowed: 5, plan: "starter", used: 5 },
     });
 
-    expect(html).toContain("Remove these first, or order a larger plan:");
-    expect(html).toContain("8 channels, 5 allowed");
-    expect(html).toContain("7 GB of media, 5 GB allowed");
+    expect(html).toContain("The Starter plan of Studio Nord allows 5 channels");
+    expect(html).toContain(
+      "Moving gives no credit for its unused time yet: it stays paid until its period ends"
+    );
+  });
+
+  it("says a trial's order starts per-account pricing", async () => {
+    const html = await render("en", { trialing: true });
+
+    expect(html).toContain(
+      "Studio Nord is in its trial: ordering starts per-account pricing"
+    );
   });
 });

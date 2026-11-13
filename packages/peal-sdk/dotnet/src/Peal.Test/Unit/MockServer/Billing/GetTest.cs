@@ -64,6 +64,7 @@ public class GetTest : BaseMockServerTest
                 "amount": 1,
                 "currency": "currency"
               },
+              "paymentFailed": true,
               "paymentMethod": true,
               "plan": "free",
               "plans": [
@@ -298,6 +299,7 @@ public class GetTest : BaseMockServerTest
                 "amount": 1,
                 "currency": "currency"
               },
+              "paymentFailed": true,
               "paymentMethod": true,
               "plan": "free",
               "plans": [

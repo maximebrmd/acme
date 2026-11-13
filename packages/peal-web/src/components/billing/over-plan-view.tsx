@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
+import { freeAccountsOf } from "peal-contract";
 import type { Standing } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -252,18 +253,33 @@ export const OverPlanView = (props: OverPlanViewProps) => {
   // The account's other workspaces the reader is a member of, on a server
   // that bills.
   const shared = standing.account?.otherWorkspaces ?? [];
+  // The free tier, over its accounts: a payment method or fewer accounts.
+  const free = (standing.plan ?? "free") === "free";
+  // What the free tier allows this account: none once staff required a
+  // payment method.
+  const freeAllowed = allowedOf(standing, "channels") ?? freeAccountsOf();
+
+  const description = () => {
+    if (!free) {
+      return t("description", {
+        plan: billing("plan", { plan: standing.plan ?? "free" }),
+      });
+    }
+
+    return freeAllowed === 0
+      ? t("descriptionRevoked")
+      : t("descriptionFree", { free: freeAllowed });
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {t("title", { workspace: workspaceName })}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {free
+            ? t("titleFree", { workspace: workspaceName })
+            : t("title", { workspace: workspaceName })}
         </h1>
-        <p className="text-muted-foreground">
-          {t("description", {
-            plan: billing("plan", { plan: standing.plan ?? "free" }),
-          })}
-        </p>
+        <p className="text-muted-foreground">{description()}</p>
       </div>
       <ExcessList excesses={standing.over} namespace="OverPlan" />
       {shared.length === 0 ? null : (
