@@ -27,14 +27,14 @@ With Maven:
 <dependency>
     <groupId>social.peal</groupId>
     <artifactId>peal</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.1</version>
 </dependency>
 ```
 
 With Gradle:
 
 ```groovy
-implementation 'social.peal:peal:0.3.0'
+implementation 'social.peal:peal:0.3.1'
 ```
 
 ## Reference
