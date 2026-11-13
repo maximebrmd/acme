@@ -1,4 +1,5 @@
 import { Cause, Exit, Option, Schema } from "effect";
+import type { DateTime } from "effect";
 import type { BillingAccount } from "peal-contract";
 import {
   AssistantQuotaExceeded,
@@ -6,6 +7,7 @@ import {
   PlanLimitReached,
   PlanLimitSchema,
   PlanSchema,
+  UsageAllowanceReached,
   withDisplayVat,
 } from "peal-contract";
 
@@ -26,8 +28,32 @@ export const LimitReachedSchema = Schema.Struct({
 
 export type LimitReached = typeof LimitReachedSchema.Type;
 
-/** Why something was refused that a larger plan allows. */
-export type UpgradeReason = LimitReached;
+/**
+ * A meter the billing account, without a payment method, used for the
+ * month (UTC): what it allows and used, and when it starts again. A
+ * payment method lets it go on.
+ */
+export interface MeterReached {
+  readonly allowed: number;
+  readonly kind: "meter";
+  readonly meter: UsageAllowanceReached["meter"];
+  readonly plan: "free";
+  readonly planWithRoom: "payAsYouGo";
+  readonly resetsAt: DateTime.Utc;
+  readonly used: number;
+}
+
+/**
+ * Why something was refused that a larger plan, or a payment method,
+ * allows.
+ */
+export type UpgradeReason = LimitReached | MeterReached;
+
+/** Whether the reason is a meter's, rather than a plan's limit. */
+export const isMeterReason = (reason: UpgradeReason): reason is MeterReached =>
+  "kind" in reason;
+
+const isUsage = Schema.is(UsageAllowanceReached);
 
 const isLimit = Schema.is(PlanLimitReached);
 
@@ -38,7 +64,23 @@ interface Tagged {
   readonly _tag: string;
 }
 
-const reasonOf = (failure: Tagged): Option.Option<LimitReached> => {
+const reasonOf = (failure: Tagged): Option.Option<UpgradeReason> => {
+  // Only the lack of a payment method is a way out the dialog offers: a
+  // ceiling is raised on the billing page.
+  if (isUsage(failure)) {
+    return failure.reason === "paymentMethodRequired"
+      ? Option.some({
+          allowed: failure.allowed,
+          kind: "meter",
+          meter: failure.meter,
+          plan: "free",
+          planWithRoom: "payAsYouGo",
+          resetsAt: failure.resetsAt,
+          used: failure.used,
+        })
+      : Option.none();
+  }
+
   if (isLimit(failure)) {
     return Option.some({
       allowed: failure.allowed,
@@ -68,7 +110,7 @@ const reasonOf = (failure: Tagged): Option.Option<LimitReached> => {
  */
 export const limitIn = <A, E extends Tagged>(
   exit: Exit.Exit<A, E>
-): Option.Option<LimitReached> =>
+): Option.Option<UpgradeReason> =>
   Exit.isFailure(exit)
     ? Cause.findErrorOption(exit.cause).pipe(Option.flatMap(reasonOf))
     : Option.none();

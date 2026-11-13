@@ -2244,6 +2244,41 @@
       "ordering": "Ouverture du paiement…",
       "needed": "Cochez la case ci-dessus pour ajouter un moyen de paiement.",
       "card": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page."
+    },
+    "meters": {
+      "title": "Utilisation ce mois-ci",
+      "description": "Ce que le compte de facturation a utilisé ce mois civil (UTC), sur tous ses espaces de travail. Sans moyen de paiement, chaque compteur s’arrête à ce qui est inclus jusqu’au premier du mois suivant ; la lecture et la publication continuent.",
+      "caption": "Chaque compteur du compte de facturation ce mois-ci",
+      "meter": "Compteur",
+      "used": "Utilisé",
+      "allowance": "Inclus",
+      "price": "Au-delà, HT",
+      "priceIncluded": "Avec la TVA française de {rate} %",
+      "soFar": "À ce jour",
+      "resets": "Repart le",
+      "names": {
+        "assistantImages": "Images de l’assistant de rédaction",
+        "assistantRequests": "Demandes à l’assistant de rédaction",
+        "managedAds": "Publicités gérées actives",
+        "outboundMessages": "Messages envoyés depuis la boîte de réception",
+        "xApi": "Utilisation de l’API de X"
+      },
+      "usedOf": "{used, number} sur {most, number}",
+      "usedOpen": "{used, number}",
+      "included": "{allowance, number}",
+      "unitPrice": "{per, plural, =1 {{price} l’unité} other {{price} les {per, number}}}",
+      "coming": "À venir",
+      "estimate": "{estimate} HT, {included} avec la TVA française de {rate} %",
+      "billedThere": "Indiqué sur l’espace de facturation",
+      "withCard": "Avec un moyen de paiement, ce qui dépasse l’inclus est facturé chaque mois pour le mois écoulé. L’assistant de rédaction s’arrête à l’inclus sauf si son plafond est relevé.",
+      "withoutCard": "L’assistant de rédaction de Peal demande un moyen de paiement ; un fournisseur propre à l’espace de travail fonctionne sans.",
+      "ceiling": {
+        "assistant": "Le plafond mensuel de l’assistant de rédaction au-delà de l’inclus, en dollars américains HT",
+        "x": "Le plafond mensuel de X, en dollars américains HT",
+        "now": "Actuellement {ceiling} HT, {included} avec la TVA française de {rate} %.",
+        "save": "Enregistrer le plafond",
+        "failed": "Le plafond n’a pas été enregistré. Réessayez."
+      }
     }
   },
   "BillingAccount": {
@@ -2386,7 +2421,12 @@
     "nextAccountAdds": "Le {position, selectordinal, one {#er} other {#e}} ajoute par mois : {price} HT · {included} avec la TVA française de {rate} %.",
     "nextAccountFree": "Le {position, selectordinal, one {#er} other {#e}} est gratuit : les {free, number} premiers le sont.",
     "noRoomCeiling": "Pour davantage d’ici là, écrivez-nous.",
-    "noRoomCeilingOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur."
+    "noRoomCeilingOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur.",
+    "titleMeter": "Ajoutez un moyen de paiement pour continuer : {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}}",
+    "reachedMeter": "Le compte de facturation de {workspace} a utilisé les {allowed, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} qu’il peut utiliser ce mois-ci sans moyen de paiement. Le compte repart le {resetsAt}.",
+    "givesMeter": "Avec un moyen de paiement, {included, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} sont inclus chaque mois, et ceux au-delà sont facturés au prix de la grille tarifaire, HT, chaque mois pour le mois écoulé.",
+    "givesMeterComing": "Avec un moyen de paiement, l’assistant de rédaction sur les modèles de Peal a une quantité incluse chaque mois ; son prix au-delà est à venir.",
+    "orWait": "Ou attendez le mois prochain : la lecture et la publication continuent en attendant."
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
@@ -3972,7 +4012,8 @@
       "unavailable": "{standing, select, reconnect {L’autorisation du compte ne le permet pas. Connectez à nouveau le compte depuis la page Canaux, sans le déconnecter : le canal reste, avec son historique.} other {Ce n’est pas possible sur ce canal : sa plateforme ne le propose pas au compte, ou Peal ne le fait pas encore là-bas.}}",
       "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
-      "unknown": "Une erreur est survenue. Réessayez."
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci sans moyen de paiement. Ajoutez-en un sur la page de facturation pour continuer, ou attendez le premier du mois prochain."
     }
   },
   "TwoStep": {

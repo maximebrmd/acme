@@ -50,6 +50,7 @@ import type { ReactElement } from "react";
 
 import { ladderOf, nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
+import { MeterTable } from "#components/billing/meter-table.tsx";
 
 /** What the person asked for, while it is under way. */
 export type BillingAction =
@@ -1199,6 +1200,7 @@ export const BillingView = (props: BillingViewProps) => {
         <AddPaymentMethod {...props} refusal={refusal} />
       ) : null}
       <Ladder billing={billing} />
+      <MeterTable billing={billing} canManage={canManage} />
       <Usage billing={billing} limits={usageLimits} />
     </div>
   );

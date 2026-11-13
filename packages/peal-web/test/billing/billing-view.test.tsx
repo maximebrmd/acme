@@ -575,4 +575,64 @@ describe(BillingView, () => {
       render("en", { billing: onFree, canManage: false })
     ).resolves.not.toContain("Invoices and receipts");
   });
+
+  it("shows the meters with their prices excluding VAT and with France's, their money to the billing workspace only, and an unconfirmed price as coming", async () => {
+    const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
+
+    const meters: NonNullable<Billing["meters"]> = [
+      {
+        allowance: 10_000,
+        billable: 15_000,
+        ceiling: null,
+        estimate: { amount: 150, currency: "usd" },
+        group: null,
+        meter: "outboundMessages",
+        most: null,
+        price: { cents: 100, per: 10_000 },
+        priceConfirmed: true,
+        resetsAt,
+        used: 25_000,
+      },
+      {
+        allowance: 100,
+        billable: 0,
+        ceiling: { amount: 0, currency: "usd" },
+        estimate: { amount: 0, currency: "usd" },
+        group: "assistant",
+        meter: "assistantRequests",
+        most: 100,
+        price: { cents: 1, per: 1 },
+        priceConfirmed: false,
+        resetsAt,
+        used: 7,
+      },
+    ];
+
+    const paying = await render("en", {
+      billing: { ...onPerAccount, meters },
+    });
+
+    expect(
+      missing(paying, [
+        "Inbox messages sent",
+        "$1.00 per 10,000",
+        "$1.20 per 10,000",
+        "$1.50 excl. VAT, $1.80 with France’s 20% VAT",
+        "Coming",
+        "7 of 100",
+      ])
+    ).toStrictEqual([]);
+
+    const elsewhere = await render("en", {
+      billing: {
+        ...customer,
+        meters: meters.map((meter) => ({ ...meter, estimate: null })),
+      },
+    });
+
+    expect(
+      missing(elsewhere, ["25,000", "Told on the billing workspace"])
+    ).toStrictEqual([]);
+    expect(elsewhere).not.toContain("$1.50");
+  });
 });

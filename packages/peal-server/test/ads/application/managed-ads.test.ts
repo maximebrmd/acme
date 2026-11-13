@@ -76,6 +76,7 @@ layer(OneLeftTest, { excludeTestServices: true })(
 
           const campaign = api.hold("campaign", "1001", { name: "Autumn" });
           const adSet = api.hold("adset", "1001", { campaign_id: campaign.id });
+
           const first = api.hold("ad", "1001", {
             adset_id: adSet.id,
             name: "One",

@@ -2244,6 +2244,41 @@
       "ordering": "Opening checkout…",
       "needed": "Tick the box above to add a payment method.",
       "card": "Payment is by card, on Stripe’s checkout. You then come back to this page."
+    },
+    "meters": {
+      "title": "Use this month",
+      "description": "What the billing account used this calendar month (UTC), across its workspaces. Without a payment method, each pauses at what is included until the first of next month; reading and publishing go on.",
+      "caption": "Each meter of the billing account this month",
+      "meter": "Meter",
+      "used": "Used",
+      "allowance": "Included",
+      "price": "Past it, excl. VAT",
+      "priceIncluded": "With France’s {rate}% VAT",
+      "soFar": "So far",
+      "resets": "Starts again",
+      "names": {
+        "assistantImages": "Writing assistant images",
+        "assistantRequests": "Writing assistant requests",
+        "managedAds": "Managed ads active",
+        "outboundMessages": "Inbox messages sent",
+        "xApi": "X API usage"
+      },
+      "usedOf": "{used, number} of {most, number}",
+      "usedOpen": "{used, number}",
+      "included": "{allowance, number}",
+      "unitPrice": "{per, plural, =1 {{price} each} other {{price} per {per, number}}}",
+      "coming": "Coming",
+      "estimate": "{estimate} excl. VAT, {included} with France’s {rate}% VAT",
+      "billedThere": "Told on the billing workspace",
+      "withCard": "With a payment method, what passes the included units is billed each month for the month past. The writing assistant stops at what is included unless its ceiling is raised.",
+      "withoutCard": "Peal’s writing assistant needs a payment method; a provider of the workspace’s own works without one.",
+      "ceiling": {
+        "assistant": "The writing assistant’s monthly ceiling past what is included, in US dollars excl. VAT",
+        "x": "X’s monthly ceiling, in US dollars excl. VAT",
+        "now": "Now {ceiling} excl. VAT, {included} with France’s {rate}% VAT.",
+        "save": "Save the ceiling",
+        "failed": "The ceiling was not saved. Try again."
+      }
     }
   },
   "BillingAccount": {
@@ -2386,7 +2421,12 @@
     "nextAccountAdds": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} adds a month: {price} excl. VAT · {included} with France’s {rate}% VAT.",
     "nextAccountFree": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free: the first {free, number} are.",
     "noRoomCeiling": "For more before then, write to us.",
-    "noRoomCeilingOperator": "For more before then, write to the people who run this server."
+    "noRoomCeilingOperator": "For more before then, write to the people who run this server.",
+    "titleMeter": "Add a payment method to go on: {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}}",
+    "reachedMeter": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} it may use this month without a payment method. They start again on {resetsAt}.",
+    "givesMeter": "With a payment method, {included, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} are included each month, and those past them are billed at the rate card's price, excl. VAT, each month for the month past.",
+    "givesMeterComing": "With a payment method, the writing assistant on Peal's models has a monthly allowance; its price past the allowance is coming.",
+    "orWait": "Or wait for next month: reading and publishing go on meanwhile."
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
@@ -3972,7 +4012,8 @@
       "unavailable": "{standing, select, reconnect {The account’s authorization does not allow this. Connect the account again on the Channels page, without disconnecting it: the channel stays, with its history.} other {This is not possible on this channel: its platform does not offer it to the account, or Peal does not do it there yet.}}",
       "actionFailed": "The platform did not do it, and nothing changed: {reason, select, rateLimited {it asked to slow down. Try again in a moment.} platformUnavailable {it could not be reached. Try again later.} reconnectNeeded {it refuses the account’s authorization. Disconnect the channel and connect the account again.} channelUnavailable {the channel was disconnected or turned off.} commentGone {the comment is no longer there.} refused {it refused.} other {{reason}}}",
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
-      "unknown": "Something went wrong. Try again."
+      "unknown": "Something went wrong. Try again.",
+      "messagesUsed": "Your billing account sent the inbox messages it may send this month without a payment method. Add one on the billing page to go on, or wait for the first of next month."
     }
   },
   "TwoStep": {

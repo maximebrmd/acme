@@ -18,7 +18,7 @@ import { useState, useTransition } from "react";
 
 import { billingOf } from "#billing/api.ts";
 import { managesBilling, membersOf, standingOf } from "#billing/members.ts";
-import { billedElsewhereOf } from "#billing/upgrade.ts";
+import { billedElsewhereOf, isMeterReason } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
 import { useCheckout } from "#billing/use-checkout.ts";
 import type { BillingError } from "#components/billing/billing-view.tsx";
@@ -188,6 +188,20 @@ export const UpgradeOffer = (offer: Omit<UpgradeDialogProps, "onClose">) =>
     <AskManagers {...offer} />
   );
 
+// The dialog's title: the meter used, or the limit reached.
+const titleOf = (
+  t: ReturnType<typeof useTranslations<"Upgrade">>,
+  reason: UpgradeReason
+) => {
+  if (isMeterReason(reason)) {
+    return t("titleMeter", { meter: reason.meter });
+  }
+
+  return reason.planWithRoom === "payAsYouGo"
+    ? t("titlePerAccount", { limit: reason.limit })
+    : t("title", { limit: reason.limit });
+};
+
 /**
  * The dialog shown wherever a plan's limit refuses something: the offer of
  * a payment method for the workspace's billing account, which a member who
@@ -210,11 +224,7 @@ export const UpgradeDialog = ({ onClose, ...offer }: UpgradeDialogProps) => {
         <DialogHeader>
           <DialogTitle>
             {/* Clear of the close button, at the top right. */}
-            <span className="block pe-8">
-              {offer.reason.planWithRoom === "payAsYouGo"
-                ? t("titlePerAccount", { limit: offer.reason.limit })
-                : t("title", { limit: offer.reason.limit })}
-            </span>
+            <span className="block pe-8">{titleOf(t, offer.reason)}</span>
           </DialogTitle>
         </DialogHeader>
         <UpgradeOffer {...offer} />

@@ -231,6 +231,7 @@ export class BillingOverview extends Context.Service<
           }),
         };
       });
+
       const subscriptions = yield* Subscriptions;
 
       // What Stripe's next invoice of the subscription takes: none when it

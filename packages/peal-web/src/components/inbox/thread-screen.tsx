@@ -31,6 +31,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { channelsOf } from "#channels/channels-api.ts";
+import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { Link } from "#i18n/navigation.ts";
 import {
@@ -346,6 +347,7 @@ const ReplyBox = ({
   const t = useTranslations("Inbox");
   const explain = useInboxErrorText();
   const send = useAtomSet(replyToComment, { mode: "promiseExit" });
+  const offerUpgrade = useOfferUpgrade();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSending, startSending] = useTransition();
@@ -360,6 +362,8 @@ const ReplyBox = ({
         payload: { text },
         reactivityKeys: inboxChanged(context.workspaceId, comment.threadId),
       });
+
+      offerUpgrade(exit);
 
       if (Exit.isSuccess(exit)) {
         onSent(exit.value);
