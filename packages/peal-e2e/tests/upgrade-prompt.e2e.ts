@@ -88,7 +88,14 @@ const fits = async (dialog: Locator, locale: Locale, size: Size) => {
 
   const button = await boxOf(order);
 
+  const stillClose = await boxOf(
+    dialog.getByRole("button", words[locale].close)
+  );
+
   expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width);
+  // The close button stays in sight once the dialog is scrolled.
+  expect(stillClose.y).toBeGreaterThanOrEqual(box.y);
+  expect(stillClose.y + stillClose.height).toBeLessThanOrEqual(size.height);
 
   await dialog.getByRole("button", words[locale].notNow).tap();
   await expect(dialog).toBeHidden();

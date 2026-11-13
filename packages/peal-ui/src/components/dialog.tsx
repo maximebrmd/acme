@@ -71,18 +71,23 @@ const DialogContent = ({
     >
       {children}
       {closeLabel === undefined ? null : (
-        <DialogClosePrimitive
-          render={
-            <Button
-              variant="ghost"
-              className="absolute top-2 right-2"
-              size="icon-sm"
-            />
-          }
-        >
-          <XIcon />
-          <span className="sr-only">{closeLabel}</span>
-        </DialogClosePrimitive>
+        // Laid out first (order-first) but after the content for focus, a
+        // row of no height that sticks to the top: the close button stays
+        // in sight while a tall dialog scrolls.
+        <div className="sticky top-2 z-10 order-first -mt-2 -mb-2 h-0">
+          <DialogClosePrimitive
+            render={
+              <Button
+                variant="ghost"
+                className="bg-popover absolute top-0 -right-2"
+                size="icon-sm"
+              />
+            }
+          >
+            <XIcon />
+            <span className="sr-only">{closeLabel}</span>
+          </DialogClosePrimitive>
+        </div>
       )}
     </DialogContentPrimitive>
   </>
