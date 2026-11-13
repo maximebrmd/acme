@@ -1,5 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
@@ -149,11 +150,19 @@ const storedOwner = (channel: Channel) =>
 const readsLinkedIn: InboxPlatforms = new Set(["linkedin"]);
 
 // The daily run that forgets owners, on a server whose inbox reads `inbox`.
-const forgetOwners = (inbox: InboxPlatforms) =>
+const forgetOwners = (
+  inbox: InboxPlatforms,
+  repository: Layer.Layer<ChannelRepository, never, ChannelRepository>
+) =>
   ForgetTokenOwners.use((forget) => forget.run).pipe(
     Effect.provide(
       ForgetTokenOwners.layer.pipe(
-        Layer.provide(Layer.succeed(CurrentInboxPlatforms, inbox))
+        Layer.provide(
+          Layer.mergeAll(
+            Layer.succeed(CurrentInboxPlatforms, inbox),
+            repository
+          )
+        )
       )
     )
   );
@@ -364,17 +373,64 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
   );
 
   it.effect(
-    "forgets every owner kept, daily, once the inbox no longer reads LinkedIn",
+    "forgets the owners kept, daily, only once the inbox no longer reads LinkedIn",
     () =>
-      Effect.gen(function* forgets() {
+      Effect.gen(function* gate() {
+        let asked = 0;
+
+        // The repository's statement counted, never run: the daily run
+        // asks it only where the inbox does not read LinkedIn.
+        const counting = Layer.effect(
+          ChannelRepository,
+          Effect.gen(function* countingRepository() {
+            const channels = yield* ChannelRepository;
+
+            return ChannelRepository.of({
+              ...channels,
+              forgetTokenOwners: Effect.sync(() => {
+                asked += 1;
+
+                return 0;
+              }),
+            });
+          })
+        );
+
+        yield* forgetOwners(readsLinkedIn, counting);
+        assert.strictEqual(asked, 0);
+
+        yield* forgetOwners(new Set(), counting);
+        assert.strictEqual(asked, 1);
+      })
+  );
+
+  it.effect(
+    "forgets every owner kept in one statement, which a rolled back transaction keeps from other tests",
+    () =>
+      Effect.gen(function* statement() {
+        const sql = yield* SqlClient.SqlClient;
         const on = yield* onLinkedIn(undefined, readsLinkedIn);
         const channel = yield* connectedPage(on, yield* freshWorkspace);
 
-        assert.strictEqual(yield* forgetOwners(readsLinkedIn), 0);
-        assert.isDefined(yield* storedOwner(channel));
+        // Every row of the shared database would lose its owner: the
+        // statement runs in a transaction this test rolls back.
+        const ended = yield* sql
+          .withTransaction(
+            Effect.gen(function* forgetting() {
+              const forgot = yield* ChannelRepository.use(
+                (channels) => channels.forgetTokenOwners
+              );
 
-        assert.isAtLeast(yield* forgetOwners(new Set()), 1);
-        assert.isUndefined(yield* storedOwner(channel));
+              assert.isAtLeast(forgot, 1);
+              assert.isUndefined(yield* storedOwner(channel));
+
+              return yield* Effect.fail("rolledBack" as const);
+            })
+          )
+          .pipe(Effect.flip);
+
+        assert.strictEqual(ended, "rolledBack");
+        assert.isDefined(yield* storedOwner(channel));
       }).pipe(Effect.scoped)
   );
 
