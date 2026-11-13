@@ -47,7 +47,11 @@
   posts out (`schedule_post`, `publish_post`, `reschedule_post`,
   `create_post`, `repost_target`) are `openWorld`, say in their description
   that what goes out is public and cannot be taken back, and check
-  post:schedule before reading the post. `unpublish_post` (in
+  post:schedule before reading the post. `remove_post_target` (in
+  `publishingTools`) is `destructive`, idempotent and not `openWorld`: it
+  takes one channel off a post that waits and reaches no platform; its
+  refusals have their words in `posts-handlers.ts`, never in
+  `refusals.ts`. `unpublish_post` (in
   `publishingTools`) is `destructive` and `openWorld`: its description
   says the post is deleted from the platform for everyone, for good, and
   that an agent calls it only when the user asked for that post;

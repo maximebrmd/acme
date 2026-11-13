@@ -17,6 +17,27 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   keep `fixtures/persisted/posts/follow-ups.json` decoding. Read parts with
   `partsOn`, every file with `shownMedia`; an approval's subject covers
   them, written for a post of one part as it was before.
+- An override (`TextOverride`, any part's) may give its channel media of
+  its own (`media`, absent for the part's, written only when given, so
+  subjects and digests of posts without stay as they were). Read a
+  channel's through `partsOn` or `sentTo` (the content as the channel gets
+  it: what `checkPublishable`, the account rules and the preview check),
+  never `content.media` for a channel. `shownMedia` lists every channel's,
+  so `mediaFor`, `MediaInPosts` (`showingMedia`'s SQL reads
+  `text_overrides` and the parts' `overrides`) and copies see them; a
+  change of an override keeps its media (`changedOverride`).
+- `PostScheduling.dropTarget` (`removeTarget`, `remove_post_target`, `peal
+  posts remove-target`) takes a pending target off a scheduled or held
+  post (`target-removal.ts`): cancelled with `dropped`
+  (`post_targets.dropped`), the last one refused (`LastTargetLeft`), under
+  the post's then the targets' locks, so a job's claim is either before
+  (refused) or after (it skips the cancelled target). It passes the gate
+  as a move does (`throughGate`; a held post `keptWaiting`), and the job
+  stays unless the post is held. Dropped targets count for nothing in
+  `outcomeOf` and the approval subject, are not copied, stay cancelled
+  when a post is missed, and are deleted when the post goes back to
+  draft. Webhooks hear `post.cancelled` naming the target alone
+  (`PostEvents.dropped`).
 - `platformRules[platform].followUps` says what parts become there
   (`thread`: X, Bluesky, Mastodon; `comment`: none yet) and how many; the
   contract's copy and the capabilities' `followUps` follow it. Scheduling
@@ -703,7 +724,7 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `fromWallClock`), checks every row (`PostBatches.check`, which skips a row
   its key already made) and makes nothing unless all are valid. A time of
   its own on each channel is several items: a post has one schedule. Media
-  of its own on a channel is not built: a post has one media list. The web
+  of its own on a channel is that channel's override's `media`. The web
   app's import page (`…/posts/import`) calls `posts.import`, a dry run
   then the import; it has no bulk screen.
 - `PostAttention` counts several workspaces' posts at once for the

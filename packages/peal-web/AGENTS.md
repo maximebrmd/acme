@@ -384,6 +384,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   chosen, and code that formats a time itself adds `useTimeOptions()` to
   its options. The server renders the language's clock; the preference
   applies after hydration.
+- A channel's tab in `TextTabs` takes `renderChannelMedia`: the composer
+  puts `ChannelMediaField` there, a channel's own media (`MediaAttachments`
+  with a `label` of its own), started from the post's. `#posts/channel-media.ts`
+  (tested) turns the texts and media by channel into overrides: a channel
+  with media and no text of its own sends the post's text, and reads back
+  as following it (`channelTextsOf`); with no text at all its media are
+  not sent and the field says so (`mediaWaitingForText`). Counters and
+  media checks read each channel's own (`attachedOn`). A scheduled or held
+  post's page lists its channels in `PostChannels`
+  (`components/posts/post-channels.tsx`, through `posts.removeTarget`,
+  for those who may cancel it), every one removable but the last;
+  `connectedTargets` leaves a `dropped` target out, and the composer is
+  keyed by the count of them so it starts again after a removal.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the
