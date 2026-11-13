@@ -2,6 +2,7 @@
 // claims the billing account's meters, a workspace's own provider none.
 import { assert, layer } from "@effect/vitest";
 import { Effect, Fiber, Option, Ref } from "effect";
+import { AiError } from "effect/ai";
 import { TestClock } from "effect/testing";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
@@ -13,6 +14,7 @@ import {
   answer,
   assistantTest,
   DatabaseTest,
+  failure,
   FakeModel,
   FakeOwnWritingModel,
   freshWorkspace,
@@ -120,7 +122,29 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
         }).pipe(Effect.provide(freeTier))
     );
 
-    it.effect("gives the request back when the answer is unusable", () =>
+    it.effect("gives back a request the provider never ran", () =>
+      Effect.gen(function* unreachable() {
+        const workspaceId = yield* freshWorkspace;
+
+        yield* FakeModel.use((model) =>
+          model.replyWith(failure(new AiError.RateLimitError({})))
+        );
+
+        const refusal = yield* ask(workspaceId).pipe(Effect.flip);
+
+        assert.deepInclude(refusal, {
+          _tag: "WritingFailed",
+          reason: "unreachable",
+        });
+
+        const { forgiven, givenBack } = yield* ledger;
+
+        assert.lengthOf(givenBack, 1);
+        assert.lengthOf(forgiven, 0);
+      }).pipe(Effect.provide(paying(2)))
+    );
+
+    it.effect("forgives the request whose answer is unusable", () =>
       Effect.gen(function* unusable() {
         const workspaceId = yield* freshWorkspace;
 
@@ -130,15 +154,15 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
 
         assert.notStrictEqual(refusal._tag, "AllowanceReached");
 
-        const { claims, givenBack, used } = yield* ledger;
+        const { claims, forgiven, used } = yield* ledger;
 
         assert.lengthOf(claims, 1);
-        assert.lengthOf(givenBack, 1);
+        assert.lengthOf(forgiven, 1);
         assert.strictEqual(used.get("assistantRequests"), 0);
       }).pipe(Effect.provide(paying(2)))
     );
 
-    it.effect("gives the request back when the model times out", () =>
+    it.effect("forgives the request the model timed out on", () =>
       Effect.gen(function* timesOut() {
         const workspaceId = yield* freshWorkspace;
 
@@ -149,16 +173,17 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
           Effect.forkChild
         );
 
-        for (let round = 0; round < 500; round += 1) {
-          if ((yield* prompts).length > 0) {
+        // Move the clock past the answer's time until the request ends:
+        // whenever its timeout's sleep is registered, the next move wakes
+        // it, however long the database took before.
+        for (let round = 0; round < 2000; round += 1) {
+          if (asking.pollUnsafe() !== undefined) {
             break;
           }
 
-          yield* TestClock.withLive(Effect.sleep("10 millis"));
+          yield* TestClock.adjust(answerTimeout);
+          yield* TestClock.withLive(Effect.sleep("5 millis"));
         }
-
-        yield* TestClock.withLive(Effect.sleep("10 millis"));
-        yield* TestClock.adjust(answerTimeout);
 
         const refusal = yield* Fiber.join(asking);
 
@@ -167,9 +192,9 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
           reason: "timedOut",
         });
 
-        const { givenBack, used } = yield* ledger;
+        const { forgiven, used } = yield* ledger;
 
-        assert.lengthOf(givenBack, 1);
+        assert.lengthOf(forgiven, 1);
         assert.strictEqual(used.get("assistantRequests"), 0);
       }).pipe(Effect.provide(paying(2)))
     );

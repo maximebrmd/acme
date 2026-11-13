@@ -5,9 +5,11 @@ import type { MeterClaim } from "#shared/application/metered-usage.ts";
 import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import type { Meter } from "#shared/domain/meter.ts";
 
-/** What the fake meters counted: units in use, and every claim and give-back. */
+/** What the fake meters counted: units in use, every claim, give-back and forgiven failure. */
 export interface MetersLedger {
   readonly claims: readonly MeterClaim[];
+  /** Failures taken back (`forgive`). */
+  readonly forgiven: readonly MeterClaim[];
   readonly givenBack: readonly MeterClaim[];
   readonly used: ReadonlyMap<Meter, number>;
 }
@@ -34,6 +36,7 @@ export const fakeMeters = ({
     Effect.gen(function* metersInMemory() {
       const ledger = yield* Ref.make<MetersLedger>({
         claims: [],
+        forgiven: [],
         givenBack: [],
         used: new Map(),
       });
@@ -79,7 +82,7 @@ export const fakeMeters = ({
         forgive: (given) =>
           Ref.update(ledger, (now) => ({
             ...now,
-            givenBack: [...now.givenBack, given],
+            forgiven: [...now.forgiven, given],
             used: new Map([
               ...now.used,
               [

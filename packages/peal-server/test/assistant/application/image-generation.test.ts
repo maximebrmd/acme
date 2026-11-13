@@ -890,7 +890,7 @@ layer(ImagesTest, { timeout: "60 seconds" })(
       )
     );
 
-    it.effect("gives the image back when none came of it", () =>
+    it.effect("forgives an image that came back unusable", () =>
       Effect.gen(function* failed() {
         const workspaceId = yield* freshWorkspace;
 
@@ -903,9 +903,9 @@ layer(ImagesTest, { timeout: "60 seconds" })(
 
         assert.strictEqual(refusal._tag, "ImageFailed");
 
-        const { givenBack, used } = yield* FakeMetersLedger.use(Ref.get);
+        const { forgiven, used } = yield* FakeMetersLedger.use(Ref.get);
 
-        assert.lengthOf(givenBack, 1);
+        assert.lengthOf(forgiven, 1);
         assert.strictEqual(used.get("assistantImages"), 0);
       }).pipe(
         Effect.provide(

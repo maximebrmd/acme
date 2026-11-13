@@ -1,5 +1,4 @@
-import { DateTime, Effect, Option } from "effect";
-import type { Schema } from "effect";
+import { Cause, DateTime, Effect, Option, Schema } from "effect";
 
 import { AssistantQuotaExceeded } from "#assistant/application/assistant-quota-exceeded.ts";
 import { AssistantUnavailable } from "#assistant/application/assistant-unavailable.ts";
@@ -9,7 +8,7 @@ import { PlatformLimits } from "#assistant/application/ports/platform-limits.ts"
 import { TextProviders } from "#assistant/application/ports/text-providers.ts";
 import { WritingModel } from "#assistant/application/ports/writing-model.ts";
 import { askOwnProvider } from "#assistant/application/use-cases/own-suggestion.ts";
-import type { WritingFailed } from "#assistant/application/writing-failed.ts";
+import { WritingFailed } from "#assistant/application/writing-failed.ts";
 import type { AssistantAction } from "#assistant/domain/assistant-action.ts";
 import { checkDraft } from "#assistant/domain/draft.ts";
 import type { Draft } from "#assistant/domain/draft.ts";
@@ -34,6 +33,8 @@ export interface SuggestionRequest {
 }
 
 const noLimits: readonly TextLimit[] = [];
+
+const isWritingFailed = Schema.is(WritingFailed);
 
 // The limits of the platform a post is shortened or written for; the other
 // actions have none.
@@ -113,9 +114,10 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
 
   // On a server that bills: one of the billing account's requests this
   // month, claimed before the model is asked (none without a payment
-  // method), and given back whenever no suggestion came of it, a timeout,
-  // a refusal and an unusable answer included. The day's count is kept
-  // too, unbounded, for the usage ledger's snapshot.
+  // method). One the provider never ran is given back; one that failed
+  // once it had it (a timeout, a refusal, an unusable answer, the caller
+  // gone) is forgiven, up to the meter's allowance a month. The day's
+  // count is kept too, unbounded, for the usage ledger's snapshot.
   if (yield* allowance.metered(workspaceId)) {
     const meters = yield* MeteredUsage;
 
@@ -124,18 +126,29 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
       .claim(workspaceId, "assistantRequests", 1)
       .pipe(Effect.catchTag("DatabaseError", Effect.die));
 
-    yield* usage.claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1);
+    yield* usage
+      .claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1)
+      .pipe(Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie)));
 
-    const giveBack = meters
-      .giveBack(claim)
-      .pipe(
-        Effect.andThen(usage.release(workspaceId, window.day, 1)),
-        Effect.orDie
-      );
+    const takenBack = (cause: Cause.Cause<unknown>) =>
+      Option.exists(
+        Cause.findErrorOption(cause),
+        (failure) =>
+          isWritingFailed(failure) && failure.reason === "unreachable"
+      )
+        ? meters.giveBack(claim)
+        : meters.forgive(claim);
 
     return yield* acceptedFrom(plan, draft, (answer) =>
       model.write(plan.prompt, answer)
-    ).pipe(Effect.onError(() => giveBack));
+    ).pipe(
+      Effect.onError((cause) =>
+        takenBack(cause).pipe(
+          Effect.andThen(usage.release(workspaceId, window.day, 1)),
+          Effect.orDie
+        )
+      )
+    );
   }
 
   const dailyLimit = yield* allowance.dailyRequests(workspaceId);

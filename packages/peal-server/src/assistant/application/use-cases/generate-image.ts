@@ -1,8 +1,8 @@
-import { DateTime, Effect, Option } from "effect";
+import { Cause, DateTime, Effect, Option, Schema } from "effect";
 
 import { AssistantQuotaExceeded } from "#assistant/application/assistant-quota-exceeded.ts";
 import { AssistantUnavailable } from "#assistant/application/assistant-unavailable.ts";
-import type { ImageFailed } from "#assistant/application/image-failed.ts";
+import { ImageFailed } from "#assistant/application/image-failed.ts";
 import { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import { ImagesBusy } from "#assistant/application/images-busy.ts";
 import { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
@@ -25,6 +25,18 @@ import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+
+const isUnavailable = Schema.is(AssistantUnavailable);
+const isImageFailed = Schema.is(ImageFailed);
+const isLimitReached = Schema.is(PlanLimitReached);
+
+// The provider made nothing, or the library kept nothing.
+const madeNone = (failure: unknown): boolean =>
+  isUnavailable(failure) ||
+  isLimitReached(failure) ||
+  (isImageFailed(failure) &&
+    (failure.reason === "unreachable" || failure.reason === "refused"));
 
 /** What image to make, for the actor's workspace. */
 export interface ImageGenerationRequest {
@@ -167,8 +179,11 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
     const allowance = yield* AssistantAllowance;
 
     // On a server that bills: one of the billing account's images this
-    // month, claimed now (none without a payment method), and given back
-    // whenever no image was stored, whatever the reason.
+    // month, claimed now (none without a payment method). An image the
+    // provider made none of (out of reach, refused, the settings refused)
+    // or the library could not hold is given back; one that failed once
+    // the provider had it (a timeout, an unusable answer, the caller gone)
+    // is forgiven, up to the meter's allowance a month.
     if (yield* allowance.metered(workspaceId)) {
       const meters = yield* MeteredUsage;
 
@@ -177,9 +192,14 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
         .claim(workspaceId, "assistantImages", 1)
         .pipe(Effect.catchTag("DatabaseError", Effect.die));
 
+      const takenBack = (cause: Cause.Cause<unknown>) =>
+        Option.exists(Cause.findErrorOption(cause), madeNone)
+          ? meters.giveBack(claim)
+          : meters.forgive(claim);
+
       return yield* model.generate({ aspect, prompt: checked }).pipe(
         Effect.flatMap((made) => images.store(actor, made.bytes)),
-        Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie))
+        Effect.onError((cause) => takenBack(cause).pipe(Effect.orDie))
       );
     }
 
