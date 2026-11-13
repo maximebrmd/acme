@@ -27,7 +27,10 @@
         "...",
         { "env": "DOCS_SITE_URL" },
         { "env": "DOCS_PLAUSIBLE_DOMAIN" },
-        { "env": "DOCS_PLAUSIBLE_HOST" }
+        { "env": "DOCS_PLAUSIBLE_HOST" },
+        { "env": "DOCS_APP_URL" },
+        { "env": "DOCS_ASSISTANT_MODEL" },
+        { "env": "DOCS_TURNSTILE_SITE_KEY" }
       ],
       "outputs": ["{projectRoot}/dist"]
     },

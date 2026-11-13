@@ -6,6 +6,7 @@ export interface ReviewedChannel {
     channelId: string;
     followUps: Peal.ReviewedPart[];
     handle: string | null;
+    media?: Peal.ReviewedMedia[] | undefined;
     options: Peal.TargetOptions | null;
     platform: Peal.Platform | null;
     text: string;

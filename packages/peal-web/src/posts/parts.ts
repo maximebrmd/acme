@@ -89,8 +89,9 @@ export const partTextOn = (
   part.text;
 
 /**
- * A part's overrides with the channel's own text changed, or, with `null`,
- * without it: the channel then takes the text for all channels.
+ * A part's overrides with the channel's own text changed (its media of its
+ * own kept), or, with `null`, without it: the channel then takes the text
+ * for all channels.
  */
 export const withPartOverride = (
   overrides: readonly TextOverride[],
@@ -100,7 +101,7 @@ export const withPartOverride = (
   text === null
     ? overrides.filter((override) => override.channelId !== channelId)
     : overrides.map((override) =>
-        override.channelId === channelId ? { channelId, text } : override
+        override.channelId === channelId ? { ...override, text } : override
       );
 
 /** The parts with `changes` made to this one. */

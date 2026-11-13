@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Check the [Self-hosting](https://docs.peal.social/self-hosting) and
-        [Environment variables](https://docs.peal.social/environment-variables) pages first.
+        [Environment variables](https://docs.peal.social/self-hosting/environment-variables) pages first.
         Give setting **names**, never their values.
   - type: dropdown
     id: setup

@@ -16,6 +16,7 @@ export type { PostImport } from "./PostImport.js";
 export type { PostTags } from "./PostTags.js";
 export type { PostToValidate } from "./PostToValidate.js";
 export type { QueuePost } from "./QueuePost.js";
+export type { RemoveTargetPostsRequest } from "./RemoveTargetPostsRequest.js";
 export type { RepostPostsRequest } from "./RepostPostsRequest.js";
 export type { ReschedulePostsRequest } from "./ReschedulePostsRequest.js";
 export type { SchedulePost } from "./SchedulePost.js";

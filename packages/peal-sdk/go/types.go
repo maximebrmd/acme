@@ -11297,6 +11297,124 @@ func (i *InvitationNotFoundEncoded) String() string {
 }
 
 var (
+	lastTargetLeftEncodedFieldCode      = big.NewInt(1 << 0)
+	lastTargetLeftEncodedFieldMessage   = big.NewInt(1 << 1)
+	lastTargetLeftEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type LastTargetLeftEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LastTargetLeftEncoded) GetCode() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Code
+}
+
+func (l *LastTargetLeftEncoded) GetMessage() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Message
+}
+
+func (l *LastTargetLeftEncoded) GetRequestID() *string {
+	if l == nil {
+		return nil
+	}
+	return l.RequestID
+}
+
+func (l *LastTargetLeftEncoded) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LastTargetLeftEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LastTargetLeftEncoded) SetCode(code *string) {
+	l.Code = code
+	l.require(lastTargetLeftEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LastTargetLeftEncoded) SetMessage(message *string) {
+	l.Message = message
+	l.require(lastTargetLeftEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LastTargetLeftEncoded) SetRequestID(requestID *string) {
+	l.RequestID = requestID
+	l.require(lastTargetLeftEncodedFieldRequestID)
+}
+
+func (l *LastTargetLeftEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler LastTargetLeftEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LastTargetLeftEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LastTargetLeftEncoded) MarshalJSON() ([]byte, error) {
+	type embed LastTargetLeftEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LastTargetLeftEncoded) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
 	linkedInMentionFieldName = big.NewInt(1 << 0)
 	linkedInMentionFieldUrn  = big.NewInt(1 << 1)
 )
@@ -12728,6 +12846,108 @@ func (m *Media) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Media) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
+	mediaAttachmentFieldAltText = big.NewInt(1 << 0)
+	mediaAttachmentFieldMediaID = big.NewInt(1 << 1)
+)
+
+type MediaAttachment struct {
+	AltText string `json:"altText" url:"altText"`
+	MediaID string `json:"mediaId" url:"mediaId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaAttachment) GetAltText() string {
+	if m == nil {
+		return ""
+	}
+	return m.AltText
+}
+
+func (m *MediaAttachment) GetMediaID() string {
+	if m == nil {
+		return ""
+	}
+	return m.MediaID
+}
+
+func (m *MediaAttachment) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaAttachment) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetAltText sets the AltText field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaAttachment) SetAltText(altText string) {
+	m.AltText = altText
+	m.require(mediaAttachmentFieldAltText)
+}
+
+// SetMediaID sets the MediaID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaAttachment) SetMediaID(mediaID string) {
+	m.MediaID = mediaID
+	m.require(mediaAttachmentFieldMediaID)
+}
+
+func (m *MediaAttachment) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaAttachment
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaAttachment(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaAttachment) MarshalJSON() ([]byte, error) {
+	type embed MediaAttachment
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaAttachment) String() string {
 	if m == nil {
 		return "<nil>"
 	}
@@ -22845,12 +23065,14 @@ func (t *TenantUsagePage) String() string {
 
 var (
 	textOverrideFieldChannelID = big.NewInt(1 << 0)
-	textOverrideFieldText      = big.NewInt(1 << 1)
+	textOverrideFieldMedia     = big.NewInt(1 << 1)
+	textOverrideFieldText      = big.NewInt(1 << 2)
 )
 
 type TextOverride struct {
-	ChannelID string `json:"channelId" url:"channelId"`
-	Text      string `json:"text" url:"text"`
+	ChannelID string             `json:"channelId" url:"channelId"`
+	Media     []*MediaAttachment `json:"media,omitempty" url:"media,omitempty"`
+	Text      string             `json:"text" url:"text"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -22864,6 +23086,13 @@ func (t *TextOverride) GetChannelID() string {
 		return ""
 	}
 	return t.ChannelID
+}
+
+func (t *TextOverride) GetMedia() []*MediaAttachment {
+	if t == nil {
+		return nil
+	}
+	return t.Media
 }
 
 func (t *TextOverride) GetText() string {
@@ -22894,6 +23123,13 @@ func (t *TextOverride) require(field *big.Int) {
 func (t *TextOverride) SetChannelID(channelID string) {
 	t.ChannelID = channelID
 	t.require(textOverrideFieldChannelID)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextOverride) SetMedia(media []*MediaAttachment) {
+	t.Media = media
+	t.require(textOverrideFieldMedia)
 }
 
 // SetText sets the Text field and marks it as non-optional;

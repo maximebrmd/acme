@@ -1,0 +1,494 @@
+---
+title: Platform apps
+description: "Register Peal's app on each platform a self-hosted server offers, with the addresses it prints for them."
+sidebar:
+  icon: layout-grid
+---
+
+A self-hosted server offers a platform once you register an app for it on that platform and give the server its credentials. Start with the token keys and the addresses below, then follow the section of each platform you want.
+
+## Register the apps [#channels]
+
+| Platform                                    | Settings                                                                                                             | Before serving other people                    |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| [Bluesky](#bluesky)                         | `BLUESKY_CLIENT_KEYS`                                                                                                | Nothing to register                            |
+| [LinkedIn](#linkedin)                       | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`                                                                       | Nothing: both products are granted at once     |
+| [LinkedIn company pages](#linkedin-pages)   | `LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`                                                           | LinkedIn's review, then its Standard tier      |
+| [X](#x)                                     | `X_CLIENT_ID`, `X_CLIENT_SECRET`                                                                                     | Credits bought ahead                           |
+| [TikTok](#tiktok)                           | `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`                                                                          | TikTok's audit                                 |
+| [Threads, Instagram, Facebook Pages](#meta) | `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `THREADS_APP_ID`, `THREADS_APP_SECRET` | Meta's App Review and Business Verification    |
+| [YouTube](#youtube)                         | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`                                                                         | A published consent screen, verified by Google |
+| [Pinterest](#pinterest)                     | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`                                                                           | Pinterest's Standard access                    |
+| [Google Business Profile](#google-business) | `GOOGLE_BUSINESS_CLIENT_ID`, `GOOGLE_BUSINESS_CLIENT_SECRET`                                                         | Google's access to the Business Profile APIs   |
+
+For LinkedIn, X, YouTube, Pinterest and Google Business Profile, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform. [Environment variables](/self-hosting/environment-variables#channels) lists every platform setting, with its default.
+
+### Token keys [#token-keys]
+
+The server encrypts the tokens of connected accounts, and the signing secrets of [webhooks](/developers/webhooks#self-hosting), with the keys in `PEAL_TOKEN_KEYS`. Without it, the server starts, and connecting an account or adding a webhook endpoint fails. Create a key with:
+
+```sh
+echo "k1:$(openssl rand -base64 32)"
+```
+
+The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup.
+
+<Callout type="warning" title="Keep a copy of the keys">
+  Keep the keys secret, and keep a copy: without them, every channel must be
+  reconnected.
+</Callout>
+
+### Network and memory [#network]
+
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet, to connect accounts and to publish. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network.
+
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it, unless the platform takes videos in parts. Give the server the memory for the largest files your members post.
+
+| Platform                | The server calls                                                                                                                                      | Media                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Mastodon                | Each account's Mastodon server                                                                                                                        | Images and videos read whole                                                                 |
+| Bluesky                 | The Bluesky server that holds each account, and Bluesky's video service, `https://video.bsky.app`, for videos                                         | Images and videos read whole: a Bluesky video can take up to 300 MB                          |
+| LinkedIn                | `www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives                                                                        | Videos in parts of 4 MiB, one held at a time                                                 |
+| X                       | `api.x.com`                                                                                                                                           | Videos in parts of 4 MiB, one held at a time                                                 |
+| TikTok                  | `open.tiktokapis.com` and the upload addresses TikTok gives                                                                                           | Videos in parts of 10 MB, one held at a time, unless TikTok fetches them ([TikTok](#tiktok)) |
+| Meta                    | `graph.facebook.com`, `graph.instagram.com`, `api.instagram.com` and `graph.threads.com`                                                              | Images and videos fetched by Meta from the media store                                       |
+| YouTube                 | `oauth2.googleapis.com` and `www.googleapis.com`                                                                                                      | Videos in parts of 8 MiB, one held at a time                                                 |
+| Pinterest               | `api.pinterest.com` (or the Sandbox), and the address Pinterest names for each video, an object store's                                               | Videos sent as they are read, never held whole; images fetched by Pinterest                  |
+| Google Business Profile | `oauth2.googleapis.com`, `mybusinessaccountmanagement.googleapis.com`, `mybusinessbusinessinformation.googleapis.com` and `mybusiness.googleapis.com` | Photos fetched by Google from the media store                                                |
+
+The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser. They never call the server themselves, apart from Bluesky reading Peal's client description, and Meta's data deletion requests.
+
+### Addresses to register [#platform-addresses]
+
+Each platform's app is given addresses on your server: where the platform sends people back after they sign in and, for Meta, where its servers call yours. One command prints them all for your `PUBLIC_URL`, each beside the setting it goes in, from the paths the server itself answers and sends. Run it from the repository, or on a running server, which answers for its own `PUBLIC_URL`, with the stack's files and settings as in [With Docker Compose and Caddy](/self-hosting#compose):
+
+<CodeGroup>
+
+```sh From the repository
+PUBLIC_URL=https://peal.example.com bun nx run peal-server:platform-addresses
+```
+
+```sh On a running server
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+  exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+</CodeGroup>
+
+With `--json`, it prints the same list for a program to read. Run it again after changing `PUBLIC_URL`, and after an upgrade that adds a platform.
+
+<Callout type="warning" title="Copy the addresses exactly">
+  Register what the command prints, copied, rather than addresses written by
+  hand: a platform refuses a sign-in whose redirect address differs from the one
+  registered by a single character, a trailing slash included.
+</Callout>
+
+The addresses it marks as called by the platform's servers, Meta's two callbacks and Bluesky's client documents, must answer the internet with no sign-in in front of them: let them through any login page or allow list you put before the server. The others are opened by people's browsers.
+
+## Bluesky [#bluesky]
+
+A production server connects Bluesky accounts only with keys of its own, which identify it to Bluesky. Nothing is registered with Bluesky: its servers read Peal's client description, and its public keys beside it, at the addresses [the command](#platform-addresses) prints for Bluesky.
+
+<Steps>
+  <Step title="Check the address">
+    `PUBLIC_URL` must be HTTPS, without a port.
+  </Step>
+  <Step title="Create a key">
+    From the repository:
+
+    ```sh
+    bun nx run peal-server:bluesky-key
+    ```
+
+  </Step>
+  <Step title="Set the key">
+    Put the line it prints in `BLUESKY_CLIENT_KEYS`.
+  </Step>
+</Steps>
+
+Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed.
+
+Without keys, a server running from source on `localhost` uses Bluesky's development client, whose sessions last two weeks, and any other server cannot connect Bluesky.
+
+## LinkedIn [#linkedin]
+
+A server connects LinkedIn members once you register an app for it on LinkedIn's developer portal, which asks for a LinkedIn page to own it.
+
+<Steps>
+  <Step title="Add the products">
+    Add the **Sign In with LinkedIn using OpenID Connect** and **Share on
+    LinkedIn** products. Both are granted at once, without review.
+  </Step>
+  <Step title="Add the redirect URL">
+    Under **Auth**, add the address [the command](#platform-addresses) prints
+    for LinkedIn as an authorized redirect URL.
+  </Step>
+  <Step title="Set the credentials">
+    Put the app's client id in `LINKEDIN_CLIENT_ID` and its primary client
+    secret in `LINKEDIN_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+These apps get no refresh token: members reconnect their channel every 60 days, and are told a week before.
+
+<Callout type="warning" title="LinkedIn's API versions">
+  Peal calls LinkedIn's API in the version `LINKEDIN_API_VERSION` names, a
+  recent one unless set. LinkedIn retires each version a year after its release,
+  and a retired one fails every post.
+</Callout>
+
+## LinkedIn company pages [#linkedin-pages]
+
+Posting to company pages takes LinkedIn's **Community Management API**, which LinkedIn reviews, and grants only to an app that has no other product: it cannot be added to the app above. A server that has the first app alone keeps connecting profiles, unchanged.
+
+<Steps>
+  <Step title="Create a second app">
+    Create it on LinkedIn's developer portal, for the same LinkedIn page, with
+    no product on it. LinkedIn asks that a super admin of that page verify the
+    app.
+  </Step>
+  <Step title="Request the Community Management API">
+    LinkedIn grants it to registered legal organizations, for commercial uses,
+    and checks a business email address, the organization, and its website; a
+    personal email address does not pass. Its terms keep what the API serves for
+    your own organization's clients: read them with the use you make of your
+    server in mind.
+  </Step>
+  <Step title="Move to the Standard tier">
+    LinkedIn first grants the **Development tier**, for building: 500 calls a
+    day for the app and 100 for each member, and no batch read, which Peal does
+    not use. Ask for the **Standard tier** before real use: LinkedIn then asks
+    for a screen recording of each use, here connecting a page, posting to it,
+    and reading its posts' statistics, and for your privacy policy.
+  </Step>
+  <Step title="Add the redirect URL">
+    Under **Auth**, add the same redirect URL,
+    `PUBLIC_URL/connect/linkedin/callback`.
+  </Step>
+  <Step title="Set the credentials">
+    Put the app's client id in `LINKEDIN_PAGES_CLIENT_ID` and its primary client
+    secret in `LINKEDIN_PAGES_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Peal asks members for `w_organization_social`, `r_organization_social` and `rw_organization_admin`, lists the pages each one administers, and posts to those they choose with their own access, which lasts 60 days. LinkedIn gives refresh tokens to approved partners only: when your app gets them, Peal renews a page's access by itself for a year after the sign-in; otherwise the page is reconnected every 60 days, like a profile. Pages are the only LinkedIn channels whose posts Peal reads counts on, and finds after a lost answer.
+
+<Accordion>
+  <AccordionItem title="Comments in the inbox">
+    To read and answer pages' comments in the
+    [inbox](/guides/engage/inbox#linkedin), add `linkedin` to
+    `PEAL_INBOX_PLATFORMS` once the app's **Products** tab lists
+    `r_organization_social_feed` and `w_organization_social_feed` among the
+    Community Management API's scopes. The pages' sign-in then asks for them,
+    and LinkedIn refuses the whole sign-in to an app that does not hold them.
+
+    On the Development tier, LinkedIn allows the app 500 calls a day and each
+    member 100, posting included. Comment reads take at most 200 of the app's
+    and 40 of each member's, the member being who connected the page
+    (`LINKEDIN_DAILY_COMMENT_CALLS`, `LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER`),
+    then stop for the day so posting keeps the rest. Raise both on the Standard
+    tier.
+
+    The Standard tier's review asks to be shown how a member's comment on a
+    page's post is displayed in the app, and which of the commenter's profile
+    fields are. Peal shows the comment's text and when it was written, and no
+    profile field (the commenter is "A LinkedIn member"). Record that with the
+    setting on.
+
+  </AccordionItem>
+</Accordion>
+
+## X [#x]
+
+A server connects X accounts once you register an app for it in X's developer console.
+
+<Steps>
+  <Step title="Turn on OAuth 2.0">
+    Under the app's user authentication settings, turn on OAuth 2.0, as a **Web
+    App, Automated App or Bot**, with **Read and write** permissions.
+  </Step>
+  <Step title="Add the callback URI">
+    Add the address [the command](#platform-addresses) prints for X as a
+    callback URI, exactly. X refuses `localhost`: in development, use
+    `http://127.0.0.1` and its port.
+  </Step>
+  <Step title="Set the credentials">
+    Put the OAuth 2.0 client id in `X_CLIENT_ID` and its client secret in
+    `X_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+<Callout type="warning" title="X bills the app">
+  X bills each request of the API to the app, from credits bought ahead
+  ([pricing](https://docs.x.com/x-api/getting-started/pricing)), and a post with
+  a link costs about 13 times one without. Buy credits and set a spending limit
+  in X's console.
+</Callout>
+
+Once the credits run out (X answers `402`) or the limit is reached (`usage-capped`), X refuses every post of the app until you add credits or raise the limit. The posts are not at fault, so Peal keeps them waiting and tries each again every half hour, and they go out once you have paid. A post still refused a day after its time fails with the reason "the platform refused this server's app until its operator pays for it".
+
+Peal logs an error at the first refusal, then once an hour while it lasts, whatever the number of posts waiting (`event.name` `peal.app_refused`), which the alert "A platform refuses the server's app until it is paid for" reports. It counts every refused attempt in the metric `peal.publishing.app_refusals`.
+
+Peal counts each workspace's posts on X, and how many held a link, by calendar month (UTC), in `billing.metered_posts`, so you can see who spends what; plans do not limit them yet. The counts go with the workspace's export and its deletion.
+
+X's access lasts two hours. Peal renews it when it posts, and renews that of an account that has not posted for 30 days, so X keeps it connected without a rotation every two hours.
+
+## TikTok [#tiktok]
+
+A server connects TikTok creators once you register an app for it on TikTok for Developers.
+
+<Steps>
+  <Step title="Add Login Kit">
+    Add the **Login Kit** product, with the address [the
+    command](#platform-addresses) prints for TikTok as its redirect URI for the
+    web. TikTok takes HTTPS redirect URIs only: in development, use an HTTPS
+    tunnel.
+  </Step>
+  <Step title="Add the posting and display APIs">
+    Add the **Content Posting API**, with **Direct Post** on, and the **Display
+    API**, for analytics. Add the scopes `user.info.basic`, `user.info.profile`,
+    `video.publish` and `video.list`.
+  </Step>
+  <Step title="Set the credentials">
+    Put the app's client key in `TIKTOK_CLIENT_KEY` and its client secret in
+    `TIKTOK_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Until TikTok audits the app, it takes up to five creators a day, whose accounts must be private, and only posts they alone see: other posts fail with their reason, "the platform takes only private posts from this server's app". Ask for the audit from the app's page once you have tried it. Peal shows the creator's nickname, the audiences their account offers, the interactions they allow and TikTok's consent before scheduling, as TikTok's guidelines ask.
+
+TikTok fetches photos only from a URL prefix or a domain you verified for the app, under **URL properties**. Serve the media store at a public address (`PEAL_MEDIA_PUBLIC_BASE_URL`), verify it, and set `TIKTOK_MEDIA_URL_PREFIX` to it. TikTok then fetches videos too, as its guidelines prefer for media already on a server. Without it, Peal sends videos in parts of 10 MB, holding one part at a time, and refuses TikTok posts with photos when they are scheduled.
+
+## Threads, Instagram and Facebook Pages [#meta]
+
+One app in Meta's developer dashboard connects all three, through three use cases, each with its own credentials:
+
+| Use case                                                                                            | Connects                                     | Permissions                                                                                                                                                                                                                                   | Settings, from                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Facebook Login**                                                                                  | Facebook Pages, and Instagram through a Page | `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages; `instagram_basic`, `instagram_content_publish` and `instagram_manage_insights` for Instagram (insights only for analytics: a member may decline them) | `META_APP_ID` and `META_APP_SECRET`, from the app's basic settings                                                                                      |
+| **Instagram** ("Manage messaging and content on Instagram", the Instagram API with Instagram Login) | Instagram professional accounts              | `instagram_business_basic`, `instagram_business_content_publish` and `instagram_business_manage_insights`                                                                                                                                     | `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`, from its **Business login settings**, which show an Instagram app id and secret apart from the main ones |
+| **Threads**                                                                                         | Threads accounts                             | `threads_basic` and `threads_content_publish`                                                                                                                                                                                                 | `THREADS_APP_ID` and `THREADS_APP_SECRET`, from its Threads settings                                                                                    |
+
+A platform whose settings are missing is not offered. Instagram is offered with either of its settings; with both, members connect with Instagram first, and through a Facebook Page as the other way:
+
+| Way in                                        | Needs                                   | Access                                | Gives                                                                                                                                        |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Instagram Login (`INSTAGRAM_APP_ID`)          | A professional account, no Page         | 60 days, renewed by Peal a week ahead | Publishing (images, reels, carousels), insights; calls `graph.instagram.com`                                                                 |
+| Facebook Login through a Page (`META_APP_ID`) | A professional account linked to a Page | The Page's, which does not expire     | The same, plus what only that API has (product tags, collaborators, hashtag search), which Peal does not use yet; calls `graph.facebook.com` |
+
+In the dashboard, give each use case the addresses [the command](#platform-addresses) prints for it:
+
+| Use case       | Settings the addresses go in                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login | Its valid OAuth redirect URIs, two of them, for Facebook Pages and for Instagram; its data deletion request URL; its deauthorize callback URL |
+| Instagram      | Its business login's OAuth redirect URIs; its data deletion request URL; its deauthorize callback URL                                         |
+| Threads        | Its redirect callback URL; its data deletion request URL; its deauthorize callback URL                                                        |
+
+Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. The server signs every call through Facebook Login with the main app's secret, so you may turn on **Require App Secret** in the app's advanced settings. Calls with an Instagram Login token carry no proof.
+
+While the app is in development mode, only people with a role on it can connect their accounts: add yourself, Instagram testers and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission and Business Verification, for each use case. Instagram accounts must be professional ones (business or creator), and, through Facebook Login, linked to a Facebook Page. Each account publishes at most 100 posts in 24 hours through Meta's API, which Peal checks before each one.
+
+<Accordion>
+  <AccordionItem title="Comments in the inbox">
+    To read and answer comments on Facebook Pages and Instagram in the
+    [inbox](/guides/engage/inbox#meta), set `PEAL_INBOX_PLATFORMS` to
+    `facebook`, `instagram` or both, and add the comment permissions to the use
+    cases: `pages_read_user_content` and `pages_manage_engagement` to Facebook
+    Login for Pages, `instagram_manage_comments` to it for Instagram,
+    `instagram_business_manage_comments` to the Instagram use case. The sign-ins
+    then ask for them, and a member may decline them. Meta grants them to
+    accounts your own app's people manage at once, and to anyone else's only
+    after its App Review.
+  </AccordionItem>
+  <AccordionItem title="Data deletion requests">
+    When one of its users asks Meta to delete what Peal holds about them, Meta
+    calls the data deletion address with a request signed with that use case's
+    secret. Peal checks the signature, deletes, in every workspace, the channels
+    that person connected through it and their tokens, and the accounts their
+    sign-in still offers a member to choose from. It answers with a confirmation
+    code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`.
+
+    The same request sent again, as Meta may retry it, gets the same answer and
+    deletes nothing more. An Instagram request names the account by its
+    app-scoped id or its own: Peal takes either.
+
+  </AccordionItem>
+  <AccordionItem title="Deauthorize callbacks">
+    When someone removes Peal from their account, Meta calls the deauthorize
+    address the same way. Peal marks the channels that person connected through
+    it to be reconnected, in every workspace, and tells the members who manage
+    them; it deletes nothing. A channel connected again since the request was
+    made is left as it is.
+  </AccordionItem>
+</Accordion>
+
+## YouTube [#youtube]
+
+A server connects YouTube channels once you make an OAuth client for it in a Google Cloud project.
+
+<Steps>
+  <Step title="Create a project">
+    In the Google Cloud console, create a project, and turn on the **YouTube
+    Data API v3** under APIs and services.
+  </Step>
+  <Step title="Set up the consent screen">
+    Under **Google Auth Platform**, set up the consent screen for **External**
+    users, and add the scopes `https://www.googleapis.com/auth/youtube.upload`
+    and `https://www.googleapis.com/auth/youtube.readonly`.
+  </Step>
+  <Step title="Create the client">
+    Under **Clients**, create a **Web application** client, with the address
+    [the command](#platform-addresses) prints for YouTube as an authorized
+    redirect URI.
+  </Step>
+  <Step title="Set the credentials">
+    Put the client id in `YOUTUBE_CLIENT_ID` and its secret in
+    `YOUTUBE_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Members sign in with Google and pick the channel, a brand account's included, on Google's account chooser: one connection is one channel. Peal asks to upload videos and to read the channel and its videos, nothing more. It renews its access, which lasts an hour, when it uploads or reads counts, and once a month for a channel it does nothing with. Disconnecting a channel revokes that access at Google, unless another workspace still connects the same channel.
+
+<Callout type="warning" title="A consent screen in Testing">
+  While the project's consent screen is in **Testing**, only the test users you
+  list can sign in, and Google ends their access seven days after they connect:
+  their channels must then be reconnected, and Peal tells the workspace. Publish
+  the consent screen, and have Google verify the app for its scopes, to serve
+  anyone for good.
+</Callout>
+
+The server uploads each video in parts of 8 MiB, holding one at a time; an upload cut off, even by a restart, resumes where YouTube stands. Peal counts against two quotas of the project:
+
+| Quota         | Per day                                                                                   | What Peal does                                                                                                                                                          |
+| ------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Video Uploads | 100 unless Google grants more, reset at midnight Pacific Time                             | Counts uploads for the whole server. An upload past `YOUTUBE_DAILY_UPLOADS`, or one YouTube refuses for its quota or the channel's daily limit, waits for the next day. |
+| The other one | 10,000 units, for processing polls, analytics and custom thumbnails (about 50 units each) | Sets up to `YOUTUBE_DAILY_THUMBNAILS` thumbnails a day (80). A video past them goes out with the thumbnail YouTube picks.                                               |
+
+Until November 2026, Google kept the videos of API projects it had not audited private. It no longer does, but a channel's settings or Google's restrictions can still keep a video private: Peal compares what YouTube answers with the visibility the member chose, and says so on the post's page.
+
+<Accordion>
+  <AccordionItem title="Comments in the inbox">
+    To read and answer YouTube comments in the
+    [inbox](/guides/engage/inbox#youtube), add `youtube` to
+    `PEAL_INBOX_PLATFORMS`, and add the scope
+    `https://www.googleapis.com/auth/youtube.force-ssl` to the consent screen.
+    The sign-in then asks for it, as optional: an owner may untick it and still
+    connect. It is a sensitive scope: Google verifies an app that asks for it
+    before anyone but its test users may grant it, and the verification asks to
+    be shown what the app does with comments, which the setting lets you
+    record.
+
+    Peal splits the project's 10,000 daily units in three by default:
+
+    | Share       | Units                                                     | For                                                                                                     |
+    | ----------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+    | Comments    | At most 3,000 (`YOUTUBE_DAILY_COMMENT_UNITS`)             | Comment reads                                                                                           |
+    | Thumbnails  | About 4,000 (`YOUTUBE_DAILY_THUMBNAILS`, 80 at about 50 units each) | Custom thumbnails                                                                             |
+    | The rest    | 3,000                                                     | What Peal does not count: replies, hides and withdrawals (50 units each), publishing's status reads and lookups, and analytics |
+
+    Ask Google for a larger quota before many channels use the inbox.
+
+  </AccordionItem>
+</Accordion>
+
+## Pinterest [#pinterest]
+
+A server connects Pinterest accounts once you register an app for it on Pinterest's developer site.
+
+<Steps>
+  <Step title="Connect an app">
+    On `developers.pinterest.com`, under **My apps**, connect an app, with a
+    link to your privacy policy. Pinterest reviews the request and grants
+    **Trial access**.
+  </Step>
+  <Step title="Add the redirect URI">
+    In the app's settings, add `PUBLIC_URL/connect/pinterest/callback` as a
+    redirect URI, such as `https://peal.example.com/connect/pinterest/callback`:
+    Pinterest takes the exact address only.
+  </Step>
+  <Step title="Set the credentials">
+    Put the app id in `PINTEREST_APP_ID` and its secret key in
+    `PINTEREST_APP_SECRET`.
+  </Step>
+</Steps>
+
+Members sign in on Pinterest and allow Peal to read their boards and Pins, to create Pins and to read their account: Peal asks for `boards:read`, `boards:write`, `pins:read`, `pins:write` and `user_accounts:read`, and nothing about secret boards. Access lasts 30 days, and Peal renews it a week ahead with a refresh token Pinterest keeps good for 60 days after each renewal. Pinterest's API revokes no member's access: disconnecting a channel deletes Peal's tokens, and the member removes the app in their Pinterest settings.
+
+| Access              | Limits                                                      | What it publishes                                                                                                      | Setting                                                                        |
+| ------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Trial access**    | 1,000 calls a day in all                                    | Boards and Pins seen by their creator alone, in Pinterest's Sandbox, which creates no video Pin and gives no analytics | `PINTEREST_SANDBOX=true`, so that the server calls `api-sandbox.pinterest.com` |
+| **Standard access** | 100 writes and 60 analytics reads a minute for each account | Real Pins                                                                                                              | `PINTEREST_SANDBOX` unset                                                      |
+
+To publish for real, ask Pinterest for **Standard access** from the app's page, with a video of your server signing a member in through Pinterest and creating a Pin.
+
+<Callout type="warning" title="Leaving the Sandbox">
+  Once Standard access is granted, unset `PINTEREST_SANDBOX`, and have members
+  connect their accounts again, as a Sandbox token works nowhere else.
+</Callout>
+
+Pinterest fetches a Pin's images from links to the media store, valid for two hours: the store must answer Pinterest's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Pinterest's developer guidelines ask that each Pin be chosen by the member who publishes it, which scheduling a post is, and limit what an app may keep of what it reads: Peal keeps a Pin's id and its counts, for the workspace that published it.
+
+## Google Business Profile [#google-business]
+
+A server connects Business Profile locations once Google has given one of your Google Cloud projects access to the Business Profile APIs, which it does on request.
+
+<Steps>
+  <Step title="Pick a project">
+    In the Google Cloud console, create a project, or pick one, and note its
+    project number.
+  </Step>
+  <Step title="Ask Google for access">
+    Use the [GBP API contact
+    form](https://support.google.com/business/contact/api_default), choosing
+    **Application for Basic API Access**, from an email address that owns or
+    manages a Business Profile. Google asks that the profile be verified and
+    active for 60 days or more, and that the business have a website. It answers
+    by email once it has reviewed the request.
+  </Step>
+  <Step title="Check the quota">
+    Look at the project's quota for the Business Profile APIs: 300 requests a
+    minute means access is granted, 0 that it is not yet. A quota increase does
+    not replace the request.
+  </Step>
+  <Step title="Enable the APIs">
+    Under APIs and services, enable the **Google My Business API**, which makes
+    the posts and shows in the console only once access is granted, the **My
+    Business Account Management API** and the **My Business Business Information
+    API**, which list accounts and locations.
+  </Step>
+  <Step title="Set up the consent screen">
+    Under **Google Auth Platform**, set up the consent screen for **External**
+    users, and add the scope `https://www.googleapis.com/auth/business.manage`.
+  </Step>
+  <Step title="Create the client">
+    Under **Clients**, create a **Web application** client, with
+    `PUBLIC_URL/connect/googleBusiness/callback` as an authorized redirect URI,
+    such as `https://peal.example.com/connect/googleBusiness/callback`.
+  </Step>
+  <Step title="Set the credentials">
+    Put the client id in `GOOGLE_BUSINESS_CLIENT_ID` and its secret in
+    `GOOGLE_BUSINESS_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+The client is its own, apart from YouTube's, as Google gives access, counts quota and reviews apps project by project. A project that has both products serves both: give the same client id and secret under both names, with both redirect URIs on the client.
+
+Members sign in with Google and choose among the verified locations of the accounts they own or manage, 200 at most a sign-in: one connection is one location. Peal lists accounts and locations when a member connects, makes posts, and reads a location's posts back when Google's answer to one was lost. It changes nothing else on a profile, and reads no reviews. It renews its access, which lasts an hour, whenever it posts, and at least once a month for a location it posts nothing to, so Google never drops it. Disconnecting a location revokes that access at Google, unless another workspace still connects the same location.
+
+While the project has no access, Google answers every call with 429: connecting fails as the platform not answering, and the server's log says to check the project. While the consent screen is in **Testing**, only its test users sign in, and Google ends their access after seven days, as for YouTube.
+
+Google fetches each photo from a link to the media store, valid for two hours: the store must answer Google's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Every call draws on the project's 300 requests a minute; past them, a post waits and goes out a little later.
+
+<Callout type="warning" title="Google's policies bind you">
+  Google's [policies for these
+  APIs](https://developers.google.com/my-business/content/policies) bind you as
+  the project's owner. Among them: act only for businesses whose owners or
+  managers signed in themselves, tell them of a change to their profile within
+  48 hours (Peal tells a post's author in the app once it is live, and by email
+  if they chose so), let a business leave, which disconnecting a channel does,
+  and store what the APIs answer only within the limits Google sets. Of that,
+  Peal keeps a location's name and address, which label its channel, and each
+  post's name and address on Google, until the channel is disconnected or the
+  workspace deleted: read the policies, and decide whether that suits your use.
+</Callout>

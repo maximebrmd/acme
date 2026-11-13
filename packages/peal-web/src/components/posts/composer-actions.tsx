@@ -37,6 +37,11 @@ interface ComposerActionsProps {
   readonly canSave: boolean;
   readonly canSchedule: boolean;
   readonly canUnschedule: boolean;
+  /**
+   * Why the post can be neither saved nor scheduled as it is, said beside
+   * the buttons; none when it can.
+   */
+  readonly blocked?: string | undefined;
   /** The channels the post goes to, which "Publish now" lists. */
   readonly channels?: readonly Channel[];
   /** Another action shown with these, such as copying the post. */
@@ -103,6 +108,7 @@ const noChannels: readonly Channel[] = [];
 // as the post's status and the member's role allow. Buttons stay focusable while
 // something runs.
 export const ComposerActions = ({
+  blocked,
   busy,
   canCancel,
   canDiscard,
@@ -134,87 +140,92 @@ export const ComposerActions = ({
     ) : null;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {canSave ? (
-        <Button
-          variant="outline"
-          disabled={running || !savable}
-          focusableWhenDisabled
-          onClick={() => {
-            onAction("save");
-          }}
-        >
-          {busy === "save" ? t("saving") : t("saveDraft")}
-        </Button>
-      ) : null}
-      {canSchedule ? (
-        <Button
-          disabled={running || !publishable}
-          focusableWhenDisabled
-          onClick={() => {
-            onAction("schedule");
-          }}
-        >
-          {busy === "schedule"
-            ? t(willWait ? "askingApproval" : "scheduling")
-            : t(willWait ? "askApproval" : "schedule")}
-        </Button>
-      ) : null}
-      {now("draft")}
-      {canReschedule ? (
-        <Button
-          disabled={running}
-          focusableWhenDisabled
-          onClick={() => {
-            onAction("reschedule");
-          }}
-        >
-          {busy === "reschedule" ? t("rescheduling") : t("reschedule")}
-        </Button>
-      ) : null}
-      {now("scheduled")}
-      {canUnschedule ? (
-        <Button
-          variant="outline"
-          disabled={running}
-          focusableWhenDisabled
-          onClick={() => {
-            onAction("unschedule");
-          }}
-        >
-          {busy === "unschedule" ? t("unscheduling") : t("unschedule")}
-        </Button>
-      ) : null}
-      {extra}
-      {canDiscard ? <DiscardDraft busy={busy} onAction={onAction} /> : null}
-      {canCancel ? (
-        <Dialog>
-          <DialogTrigger
-            render={<Button variant="destructive" disabled={running} />}
+    <div className="flex flex-col gap-2">
+      {blocked === undefined ? null : (
+        <output className="text-destructive text-sm">{blocked}</output>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {canSave ? (
+          <Button
+            variant="outline"
+            disabled={running || !savable}
+            focusableWhenDisabled
+            onClick={() => {
+              onAction("save");
+            }}
           >
-            {busy === "cancel" ? t("cancelling") : t("cancelPost")}
-          </DialogTrigger>
-          <DialogContent closeLabel={t("closeDialog")}>
-            <DialogHeader>
-              <DialogTitle>{t("cancelTitle")}</DialogTitle>
-              <DialogDescription>{t("cancelDescription")}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>
-                {t("keepPost")}
-              </DialogClose>
-              <DialogClose
-                render={<Button variant="destructive" />}
-                onClick={() => {
-                  onAction("cancel");
-                }}
-              >
-                {t("confirmCancel")}
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+            {busy === "save" ? t("saving") : t("saveDraft")}
+          </Button>
+        ) : null}
+        {canSchedule ? (
+          <Button
+            disabled={running || !publishable}
+            focusableWhenDisabled
+            onClick={() => {
+              onAction("schedule");
+            }}
+          >
+            {busy === "schedule"
+              ? t(willWait ? "askingApproval" : "scheduling")
+              : t(willWait ? "askApproval" : "schedule")}
+          </Button>
+        ) : null}
+        {now("draft")}
+        {canReschedule ? (
+          <Button
+            disabled={running}
+            focusableWhenDisabled
+            onClick={() => {
+              onAction("reschedule");
+            }}
+          >
+            {busy === "reschedule" ? t("rescheduling") : t("reschedule")}
+          </Button>
+        ) : null}
+        {now("scheduled")}
+        {canUnschedule ? (
+          <Button
+            variant="outline"
+            disabled={running}
+            focusableWhenDisabled
+            onClick={() => {
+              onAction("unschedule");
+            }}
+          >
+            {busy === "unschedule" ? t("unscheduling") : t("unschedule")}
+          </Button>
+        ) : null}
+        {extra}
+        {canDiscard ? <DiscardDraft busy={busy} onAction={onAction} /> : null}
+        {canCancel ? (
+          <Dialog>
+            <DialogTrigger
+              render={<Button variant="destructive" disabled={running} />}
+            >
+              {busy === "cancel" ? t("cancelling") : t("cancelPost")}
+            </DialogTrigger>
+            <DialogContent closeLabel={t("closeDialog")}>
+              <DialogHeader>
+                <DialogTitle>{t("cancelTitle")}</DialogTitle>
+                <DialogDescription>{t("cancelDescription")}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>
+                  {t("keepPost")}
+                </DialogClose>
+                <DialogClose
+                  render={<Button variant="destructive" />}
+                  onClick={() => {
+                    onAction("cancel");
+                  }}
+                >
+                  {t("confirmCancel")}
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        ) : null}
+      </div>
     </div>
   );
 };

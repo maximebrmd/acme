@@ -1,0 +1,251 @@
+---
+title: Connecter des canaux
+description: "Connecter les comptes sur lesquels un espace de travail publie, laisser quelqu’un d’autre connecter les siens, et les garder connectés."
+sidebar:
+  icon: cable
+---
+
+Un canal est un compte social connecté à un espace de travail. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
+
+Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail. Seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
+
+<Callout type="note" title="Onze plateformes pour l’instant">
+  Peal connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram,
+  TikTok et Pinterest, les Pages Facebook, les chaînes YouTube et les
+  établissements Google Business Profile. **Canaux** ne propose que les
+  plateformes pour lesquelles le serveur Peal est configuré.
+</Callout>
+
+## Connecter un compte [#connect]
+
+<Steps>
+  <Step title="Ouvrez Canaux">
+    Sous la plateforme, choisissez son bouton **Connecter**, comme **Connecter
+    Bluesky**.
+  </Step>
+  <Step title="Connectez-vous sur la plateforme">
+    Connectez-vous, et acceptez ce que Peal demande.
+  </Step>
+  <Step title="Revenez sur Peal">
+    La plateforme vous renvoie vers Peal, qui termine la connexion.
+  </Step>
+</Steps>
+
+<Callout type="info">
+  Terminez dans l’onglet du navigateur où vous avez commencé, dans les 15
+  minutes.
+</Callout>
+
+Connecter un compte que l’espace de travail a déjà reconnecte son canal au lieu d’en ajouter un second. Plusieurs espaces de travail peuvent connecter le même compte.
+
+La page de chaque plateforme dit comment y connecter un compte : [Mastodon](/platforms/mastodon#connect), [Bluesky](/platforms/bluesky#connect), [Threads](/platforms/threads#connect), [X](/platforms/x#connect), [LinkedIn](/platforms/linkedin#connect), [Pages Facebook](/platforms/facebook#connect), [Instagram](/platforms/instagram#connect), [TikTok](/platforms/tiktok#connect), [YouTube](/platforms/youtube#connect), [Pinterest](/platforms/pinterest#connect), [Google Business Profile](/platforms/google-business#connect).
+
+## Laisser quelqu’un d’autre connecter son compte [#connect-links]
+
+Le compte à connecter peut être celui d’un client ou d’un collègue. Un **lien de connexion** ouvre une page hébergée où le propriétaire du compte se connecte chez la plateforme et connecte le compte à l’espace de travail. Il n’a besoin d’aucun compte Peal, et ne voit jamais l’espace de travail.
+
+Les membres qui peuvent connecter des canaux, et les clés d’API avec `channel:connect`, créent un lien pour une plateforme :
+
+<Tabs>
+  <Tab title="CLI">
+
+```sh
+peal links create --platform linkedin
+```
+
+Voyez [`peal links create`](/developers/cli/workspace#links).
+
+  </Tab>
+  <Tab title="API">
+
+```http
+POST /api/workspaces/{workspaceId}/connect-links
+```
+
+  </Tab>
+  <Tab title="MCP">
+    L’outil [MCP](/developers/mcp/tools#tools) `create_connect_link`.
+  </Tab>
+</Tabs>
+
+L’adresse du lien est affichée une seule fois. Remettez-la par un canal de confiance.
+
+| Question                        | Réponse                                                                                                                                                                                                   |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Combien de fois il sert         | Une fois. L’ouvrir ne consomme rien ; une connexion qui connecte un compte, si.                                                                                                                           |
+| Combien de temps il sert        | Une semaine sauf indication contraire (de 1 heure à 30 jours). Vous pouvez le révoquer.                                                                                                                   |
+| Ce que son détenteur peut faire | Connecter un compte à lui à l’espace de travail tant que le lien attend, et rien d’autre : il ne lit aucun canal ni aucune publication.                                                                   |
+| Reconnecter un canal            | Avec `channelId`, le lien reconnecte ce canal, et seule une connexion au même compte aboutit.                                                                                                             |
+| Ce que la page affiche          | Elle est en anglais ou en français, et nomme le [compte partenaire](/developers/embedding) de l’espace de travail quand il en a un, l’espace de travail sinon.                                            |
+| Comment le suivre               | Son `status` (`pending`, `completed` avec les canaux qu’il a connectés, `revoked` ou `expired`), et [`channel.connected`](/developers/webhooks/events/channels#channel-connected) prévient votre serveur. |
+
+[Intégrer Peal](/developers/embedding#connect) dit comment un produit fait passer ses propres clients par une telle page, puis les fait revenir.
+
+## États [#statuses]
+
+Chaque canal affiche l’un de ces états :
+
+| État          | Ce qu’il signifie                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Connecté      | Peal peut publier sur le compte.                                                                                                    |
+| À reconnecter | La plateforme n’accepte plus l’accès de Peal. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté.                     |
+| Désactivé     | Rien ne part sur le canal, et le reconnecter le laisse désactivé. Pour publier de nouveau sur le compte, [réactivez-le](#turn-off). |
+
+Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter. Les propriétaires et administrateurs de son espace de travail en sont prévenus avant cette date.
+
+## Garder les canaux connectés [#keep-connected]
+
+Peal renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire :
+
+| Plateforme                                                  | Comment Peal garde l’accès                                                                                                                                                                                                                                                               |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bluesky                                                     | Il rafraîchit la session un mois avant qu’elle ne tombe.                                                                                                                                                                                                                                 |
+| Threads, et comptes Instagram connectés avec Instagram      | L’accès dure 60 jours. Peal le renouvelle une semaine avant.                                                                                                                                                                                                                             |
+| Pinterest                                                   | L’accès dure 30 jours. Peal le renouvelle une semaine avant, et Pinterest le laisse faire aussi longtemps qu’il continue, chaque renouvellement dans les 60 jours du précédent.                                                                                                          |
+| X                                                           | L’accès dure deux heures. Peal le renouvelle chaque fois qu’il publie ou lit les chiffres des publications, et au moins une fois par mois pour un compte dont il ne fait rien, pour que la plateforme ne le perde jamais.                                                                |
+| TikTok                                                      | L’accès dure un jour ou moins, et se renouvelle comme celui de X. TikTok laisse Peal le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté.                                                                                          |
+| YouTube                                                     | L’accès dure une heure, et se renouvelle comme celui de X. Google y met fin quand le titulaire retire Peal de son compte Google, ou six mois après le dernier usage de Peal ; sur un serveur auto-hébergé dont le projet Google est en test, sept jours après la connexion de la chaîne. |
+| Google Business Profile                                     | L’accès dure une heure, et se renouvelle comme celui de X.                                                                                                                                                                                                                               |
+| Mastodon                                                    | L’accès n’expire pas tant que personne ne le révoque.                                                                                                                                                                                                                                    |
+| Pages Facebook, et comptes Instagram connectés via une Page | Ils publient avec l’accès de Page, qui n’expire pas tant que personne ne le révoque. Facebook le retire aussi quand la personne qui a connecté la Page change de mot de passe ou perd son rôle sur la Page.                                                                              |
+| LinkedIn                                                    | L’accès ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, avant la date qu’il affiche.                                                                                                                                                                                |
+
+Quand quelqu’un retire Peal de son compte Facebook, Instagram ou Threads, Meta en avertit Peal. Peal marque alors à reconnecter les canaux que cette personne a connectés, dans chaque espace de travail, et prévient les membres qui les gèrent, avant qu’une publication n’y échoue.
+
+### Quand une plateforme refuse l’accès [#refused]
+
+Quand une plateforme refuse l’accès de Peal pendant qu’il publie, Peal renouvelle l’accès quand la plateforme le permet, et réessaie une fois.
+
+Si la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé (par exemple parce que le titulaire du compte l’a révoqué), le canal passe à **À reconnecter**. Les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/guides/workspace/notifications)).
+
+Quand une plateforme ne répond pas, Peal réessaie plus tard et laisse le canal tel quel.
+
+## Ce que Peal publie [#posting]
+
+À l’heure d’une publication, Peal la publie au nom du compte du canal, avec son texte sur ce canal et ses images et vidéos, chacune avec son texte alternatif quand elle en a un. [Images et vidéos](/guides/media#platforms) liste ce que chaque plateforme accepte. Comment chaque plateforme reçoit la publication :
+
+<Accordion>
+  <AccordionItem title="Mastodon">
+    Peal publie sur le serveur du compte, avec la visibilité par défaut du compte. Le serveur transforme lui-même mentions, hashtags et liens en liens, et peut traiter une vidéo avant que la publication puisse la montrer.
+  </AccordionItem>
+  <AccordionItem title="Bluesky">
+    Peal publie sur le serveur qui héberge le compte. Les liens et les hashtags deviennent des liens ; les mentions restent du texte brut pour l’instant. Les vidéos passent par le service vidéo de Bluesky, qui les traite avant que la publication parte.
+  </AccordionItem>
+  <AccordionItem title="LinkedIn">
+    Peal publie au nom du membre, ou de la page d’entreprise, publiquement sauf si les options de la publication disent autre chose (les relations d’un profil seulement, ou les membres connectés). Les hashtags deviennent des hashtags LinkedIn.
+
+    Une page d’entreprise que le texte nomme après un `@`, par son nom complet exactement tel que LinkedIn l’affiche, devient une mention quand les options de la publication listent la page. Un canal de page d’entreprise trouve une page par le nom figurant dans son adresse. Les personnes ne peuvent pas être mentionnées, et tout autre `@` reste du texte brut.
+
+    Un lien peut s’afficher sous forme de carte, avec le titre et la description que vous lui donnez, car LinkedIn ne lit aucune page lui-même. Un PDF s’affiche page par page, seul, sous le titre que vous lui donnez. LinkedIn traite une vidéo ou un document avant que la publication parte.
+
+  </AccordionItem>
+  <AccordionItem title="X">
+    Peal publie au nom du compte. X transforme lui-même mentions, hashtags et liens en liens, un domaine sans `https://` comme `peal.social` aussi, et traite une vidéo avant que la publication parte.
+
+    Quand X refuse l’application du serveur parce que ses crédits sont épuisés, la publication n’y est pour rien. Peal la garde en attente et réessaie toutes les demi-heures, pour qu’elle parte dès que l’opérateur du serveur a réglé. Un jour après son heure, elle échoue avec sa raison (voyez [Notifications](/guides/workspace/notifications)).
+
+  </AccordionItem>
+  <AccordionItem title="Threads et Instagram">
+    Meta va chercher chaque image et chaque vidéo dans le stockage des médias et la traite, puis Peal publie. Plusieurs fichiers forment un carrousel. Une vidéo Instagram part en reel. Peal vérifie la limite quotidienne de publication du compte avant de commencer.
+  </AccordionItem>
+  <AccordionItem title="Pages Facebook">
+    Peal publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
+  </AccordionItem>
+  <AccordionItem title="TikTok">
+    Peal publie une vidéo, avec le texte de la publication comme légende, ou jusqu’à 35 photos, avec le texte comme description, comme vous l’avez choisi dans les [options TikTok](/guides/posts#options) de la publication. Juste avant, il relit les réglages du compte sur TikTok, et la publication échoue s’ils ne la permettent plus.
+
+    Une vidéo part en morceaux depuis le stockage des médias, sauf si TikTok peut aller la chercher lui-même (voyez [TikTok](/self-hosting/platforms#tiktok)). TikTok va toujours chercher les photos.
+
+    TikTok traite ensuite la publication, que Peal suit jusqu’à sa mise en ligne. Une publication que d’autres voient affiche un lien une fois validée par la modération de TikTok ; une publication que vous seul voyez n’en a pas. TikTok autorise environ 15 publications par jour et par compte, toutes applications confondues.
+
+  </AccordionItem>
+  <AccordionItem title="YouTube">
+    Peal met en ligne la vidéo de la publication sur la chaîne, avec le texte de la publication comme description et le titre, la visibilité, la réponse « conçue pour les enfants », les tags et la catégorie de ses [options](/guides/posts#options), puis attend que YouTube la traite.
+
+    Une vidéo que YouTube ne parvient pas à traiter ou refuse, comme doublon ou pour sa durée, échoue avec la raison de YouTube. Quand YouTube garde privée une vidéo que vous vouliez publique ou non répertoriée, la page de la publication le dit : changez sa visibilité dans YouTube Studio.
+
+    Un serveur Peal met en ligne un nombre limité de vidéos par jour, sur toutes ses chaînes. Au-delà, une vidéo attend minuit, heure du Pacifique, quand les quotas de YouTube repartent, et la page de la publication montre l’attente.
+
+  </AccordionItem>
+  <AccordionItem title="Google Business Profile">
+    Peal crée une publication sur l’établissement, avec le texte de la publication comme description et le type, les dates, le bouton et l’offre de ses [options](/guides/posts#options). Google va chercher chaque photo dans le stockage des médias ; une publication n’y prend aucune vidéo.
+
+    Google peut refuser une publication pour ses règles de contenu après l’avoir prise : elle échoue alors. Une fois la publication en ligne, sa page y renvoie sur Google.
+
+  </AccordionItem>
+  <AccordionItem title="Pinterest">
+    Peal crée une épingle sur le tableau, et la section du tableau, des [options de la plateforme](/guides/posts#options) de la publication, avec le texte de la publication pour description, le texte alternatif du premier fichier pour texte alternatif, et le titre et le lien que vous avez donnés.
+
+    Une image donne une épingle image, deux à cinq un carrousel, que Pinterest va chercher dans le stockage des médias. Une vidéo part du stockage des médias en une seule requête, et Pinterest la traite. Sa couverture est l’image à la seconde que vous avez choisie, la première sinon.
+
+    Pinterest ne donne à Peal aucun moyen de distinguer une épingle déjà créée d’une épingle qui ne l’a pas été. Quand sa réponse se perd, Peal cherche l’épingle sur le tableau, et ne l’envoie jamais deux fois.
+
+  </AccordionItem>
+</Accordion>
+
+## Nommer un canal [#name]
+
+Deux comptes d’une même plateforme peuvent se ressembler dans une liste. Choisissez **Renommer** à côté d’un canal pour lui donner un nom à vous, de 60 caractères au plus, comme « Client A » ou « Support ».
+
+Ce nom n’existe que dans Peal. Il s’affiche à côté de l’identifiant et du nom que la plateforme donne au compte, qui restent, et il n’est envoyé à aucune plateforme. Videz-le pour le retirer.
+
+## Désactiver un canal [#turn-off]
+
+Choisissez **Désactiver** à côté d’un canal pour cesser de publier sur un compte sans le déconnecter. Le canal garde sa connexion, son historique et son nom. Il compte toujours dans votre formule, et ne reçoit aucun rappel de reconnexion pendant ce temps.
+
+<Callout type="warning">
+  Une publication dont l’heure arrive alors que l’un de ses canaux est désactivé
+  échoue sur ce canal, avec le motif « Canal désactivé », et part sur les
+  autres. Elle n’est pas envoyée plus tard : réactivez le canal, puis
+  programmez-la dans une nouvelle publication.
+</Callout>
+
+Choisissez **Activer** pour publier de nouveau sur le compte. Si la plateforme a cessé d’accepter l’accès de Peal pendant que le canal était désactivé, il affiche **À reconnecter** : [reconnectez-le](#reconnect).
+
+Nommer un canal, le désactiver ou le réactiver demandent le droit de connecter des canaux. La même chose en ligne de commande ou par l’API :
+
+<Tabs>
+  <Tab title="CLI">
+
+```sh
+peal channels list --platform youtube --status disabled --search "client a"
+peal channels rename <channel-id> "Client A"
+peal channels rename <channel-id> --clear
+peal channels disable <channel-id>
+peal channels enable <channel-id>
+```
+
+  </Tab>
+  <Tab title="API">
+    `PATCH …/channels/{channelId}`, `POST …/channels/{channelId}/disable` et `…/enable`. `GET …/channels/search` liste les canaux d’un espace de travail page par page, par plateforme, par état ou par texte, avec leur nombre dans chaque état.
+  </Tab>
+</Tabs>
+
+## Reconnecter [#reconnect]
+
+Choisissez **Reconnecter** à côté du canal, puis connectez-vous sur la plateforme avec le même compte. La connexion avec un autre compte est refusée : pour publier dessus, connectez-le comme un nouveau canal.
+
+## Déconnecter [#disconnect]
+
+Choisissez **Déconnecter** à côté du canal et confirmez. Peal supprime les jetons qu’il détient pour le compte et n’y publie plus rien. Vous pourrez le connecter de nouveau plus tard.
+
+<Callout type="info">
+  La déconnexion ne prévient que TikTok, YouTube et Google Business Profile : à
+  moins qu’un autre espace de travail connecte encore le même compte, Peal y
+  révoque son accès et quitte les applications connectées du compte. Sur les
+  autres plateformes, révoquez l’accès de Peal dans les réglages du compte.
+</Callout>
+
+## Quand la connexion échoue [#errors]
+
+| Message                                                                       | Que faire                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Ce serveur n’est pas configuré pour connecter des comptes de cette plateforme | Demandez à l’administrateur de l’instance : il manque au serveur un réglage que la plateforme exige.                                                                                                                                                         |
+| Ce n’est pas l’adresse d’un serveur                                           | Vérifiez l’adresse du serveur Mastodon, par exemple `mastodon.social`.                                                                                                                                                                                       |
+| Peal ne se connecte qu’à des serveurs publics, en HTTPS                       | Le serveur est privé, ou ne répond pas en HTTPS.                                                                                                                                                                                                             |
+| Aucun compte ne correspond à cet identifiant                                  | Vérifiez l’identifiant Bluesky.                                                                                                                                                                                                                              |
+| Cette connexion a expiré ou a été lancée ailleurs                             | Recommencez depuis les canaux de l’espace de travail, dans cet onglet.                                                                                                                                                                                       |
+| La connexion a été annulée sur la plateforme                                  | Vous, ou la plateforme, avez refusé. Recommencez si vous vouliez connecter le compte.                                                                                                                                                                        |
+| Vous vous êtes connecté à un autre compte que celui de ce canal               | Reconnectez-vous avec le compte du canal.                                                                                                                                                                                                                    |
+| La connexion n’a atteint aucun compte à connecter                             | Gérez une Page Facebook, ou liez-y votre compte professionnel Instagram, ou connectez-le plutôt avec Instagram ; sur YouTube, choisissez un compte Google qui a une chaîne ; sur Google Business Profile, faites d’abord valider l’établissement par Google. |
+| La plateforme n’a pas répondu                                                 | Réessayez dans un instant.                                                                                                                                                                                                                                   |

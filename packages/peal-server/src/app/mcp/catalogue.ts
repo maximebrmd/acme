@@ -74,6 +74,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "publish_post",
   "queue_post",
   "recycle_post",
+  "remove_post_target",
   "reply_to_comment",
   "repost_target",
   "request_changes",

@@ -1,0 +1,27 @@
+---
+title: Identifiants et instants
+description: Comment l’API écrit les identifiants, les instants et les fuseaux horaires.
+sidebar:
+  icon: fingerprint
+---
+
+## Identifiants et instants [#ids]
+
+Les identifiants sont des chaînes de caractères, écrites en minuscules. Traitez chaque identifiant comme une chaîne opaque : comparez-le, stockez-le, renvoyez-le, et n’en déduisez rien.
+
+| Objets                                           | Identifiant                                          |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| Les publications, leurs cibles, canaux et médias | UUIDv7, comme `019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02` |
+| Les espaces de travail et les utilisateurs       | UUID aléatoires                                      |
+| Les clés d’API et les applications               | Identifiants d’une autre forme                       |
+
+### Instants et fuseaux horaires [#instants]
+
+| Valeur                         | Comment elle s’écrit                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Un instant                     | En ISO 8601, en UTC, comme `2026-11-16T08:00:00.000Z`. Les réponses donnent les instants ainsi ; envoyez-les de la même façon. |
+| Une heure de programmation     | Un instant et le fuseau horaire IANA dans lequel il a été choisi, comme `Europe/Paris`, que Peal garde avec la publication.    |
+| Un jour, pour les statistiques | Un jour calendaire, comme `2026-11-16`, avec le fuseau horaire dans lequel ces jours s’écoulent.                               |
+
+- Un décalage comme `+01:00` n’est pas un fuseau horaire, et répond 422 `invalid_time_zone`.
+- Une heure passée depuis une minute au plus vaut maintenant ; une heure plus ancienne répond 422 `schedule_in_past`.

@@ -104,6 +104,20 @@ public class ThreadTest : BaseMockServerTest
                     }
                   ],
                   "handle": "handle",
+                  "media": [
+                    {
+                      "altText": "altText",
+                      "kind": "image",
+                      "mediaId": "mediaId",
+                      "url": "url"
+                    },
+                    {
+                      "altText": "altText",
+                      "kind": "image",
+                      "mediaId": "mediaId",
+                      "url": "url"
+                    }
+                  ],
                   "options": {
                     "platform": "youtube",
                     "categoryId": "categoryId",
@@ -167,6 +181,20 @@ public class ThreadTest : BaseMockServerTest
                     }
                   ],
                   "handle": "handle",
+                  "media": [
+                    {
+                      "altText": "altText",
+                      "kind": "image",
+                      "mediaId": "mediaId",
+                      "url": "url"
+                    },
+                    {
+                      "altText": "altText",
+                      "kind": "image",
+                      "mediaId": "mediaId",
+                      "url": "url"
+                    }
+                  ],
                   "options": {
                     "platform": "youtube",
                     "categoryId": "categoryId",
@@ -338,6 +366,12 @@ public class ThreadTest : BaseMockServerTest
                     }
                   ],
                   "handle": "handle",
+                  "media": [
+                    {
+                      "altText": "altText",
+                      "mediaId": "mediaId"
+                    }
+                  ],
                   "options": {
                     "platform": "youtube"
                   },

@@ -524,10 +524,18 @@ environment:
 - `DOCS_PLAUSIBLE_DOMAIN` and `SITE_PLAUSIBLE_DOMAIN`: turn on Plausible.
 - `DOCS_PLAUSIBLE_HOST` and `SITE_PLAUSIBLE_HOST`: point Plausible at a
   self-hosted instance.
+- `DOCS_APP_URL`: the web app's origin, which the docs' sidebar links to
+  with an **Open Peal** button.
+- `DOCS_ASSISTANT_MODEL`: turns on the docs' assistant with this Anthropic
+  model, such as `claude-haiku-5-5`. The docs then build as a Node server
+  (`node dist/server/entry.mjs`, on `HOST` and `PORT`) instead of static
+  files, and read the key from `DOCS_ANTHROPIC_API_KEY` with each question.
+- `DOCS_TURNSTILE_SITE_KEY`: a Turnstile check before each question, whose
+  secret the server reads from `TURNSTILE_SECRET_KEY`.
 
 ## Settings
 
-The docs' [environment variables](../packages/peal-docs/docs/environment-variables.mdx)
+The docs' [environment variables](../packages/peal-docs/docs/self-hosting/environment-variables.mdx)
 page lists every variable the server, the web app and the command line read.
 In development, these are the ones you may want:
 

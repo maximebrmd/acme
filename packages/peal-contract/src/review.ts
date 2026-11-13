@@ -264,6 +264,10 @@ export const ReviewedChannelSchema = Schema.Struct({
   ),
   // The account's name on its platform; null once it was disconnected.
   handle: Schema.NullOr(Schema.String),
+  // The files the post shows there instead of its own (the review's
+  // `media`), in order, when the channel has some of its own: an approval
+  // covers them. Left out where the channel shows the post's.
+  media: Schema.optionalKey(Schema.Array(ReviewedMediaSchema)),
   // What the post has there that only the platform knows (a Pin's link and
   // board, a video's title and privacy): an approval covers them. Null
   // where the platform takes none.

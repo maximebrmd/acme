@@ -19,6 +19,7 @@ import { PostAttribution, PostAttributionField } from "./post-origin.ts";
 import type { PostOrigin } from "./post-origin.ts";
 import { PostStatusSchema } from "./post-status.ts";
 import type { PostOutcome, PostStatus } from "./post-status.ts";
+import { isDropped } from "./post-target.ts";
 import type { PostTarget } from "./post-target.ts";
 import { QueueIdSchema } from "./queue-id.ts";
 import type { QueueId } from "./queue-id.ts";
@@ -490,9 +491,13 @@ export const startPublishing = (
  * channel may have it live (the user has to check), published when every
  * channel has it whole, partially when some do or when a channel has some
  * of its parts only, cancelled when every target was cancelled, failed
- * otherwise.
+ * otherwise. A channel taken off the post before it went out (`dropped`)
+ * counts for nothing.
  */
-export const outcomeOf = (targets: readonly PostTarget[]): PostOutcome => {
+export const outcomeOf = (all: readonly PostTarget[]): PostOutcome => {
+  // A channel taken off the post before it went out is none of its own.
+  const kept = all.filter((target) => !isDropped(target));
+  const targets = kept.length === 0 ? all : kept;
   const statuses = targets.map((target) => target.status._tag);
   const published = statuses.filter((status) => status === "published").length;
 

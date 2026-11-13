@@ -8,8 +8,8 @@ import {
   Schema,
 } from "effect";
 
+import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
-import { PostContent as Content } from "#publishing/domain/post-content.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { RecyclingEndReason } from "#publishing/domain/recycling-end-reason.ts";
@@ -37,8 +37,11 @@ import type {
   RecyclingChange,
   RecyclingStatus,
 } from "#publishing/domain/recycling-rule.ts";
+import {
+  mediaWithoutTextOf,
+  sayingVariant,
+} from "#publishing/domain/recycling-variant.ts";
 import type { RecyclingVariant } from "#publishing/domain/recycling-variant.ts";
-import { TextOverride } from "#publishing/domain/text-override.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -151,25 +154,14 @@ type Ports =
   | WorkspaceChannels;
 
 // What a variant makes of the source's copy: its text, and its texts on
-// the channels the copy still goes to.
-const sayingVariant = (
+// the channels the copy still goes to, with their own media kept.
+const sayingVariantOf = (
   copy: PostCopy,
   variant: Option.Option<RecyclingVariant>
 ): PostContent =>
   Option.match(variant, {
     onNone: () => copy.content,
-    onSome: ({ overrides, text }) =>
-      new Content({
-        followUps: copy.content.followUps,
-        media: copy.content.media,
-        overrides: overrides
-          .filter(({ channelId }) => copy.channelIds.includes(channelId))
-          .map(
-            ({ channelId, text: own }) =>
-              new TextOverride({ channelId, text: own })
-          ),
-        text,
-      }),
+    onSome: (chosen) => sayingVariant(copy.content, copy.channelIds, chosen),
   });
 
 // The rule with its next due instants, and the variant each would say.
@@ -370,18 +362,40 @@ export class Recycling extends Context.Service<
           const refused = yield* Effect.forEach(
             variants,
             Effect.fnUntraced(function* checked(variant, place) {
-              const content = sayingVariant(copy, Option.some(variant));
+              const content = sayingVariantOf(copy, Option.some(variant));
 
               const files = yield* mediaFor(actor, content, copy.options).pipe(
                 Effect.catchTag("UnknownMedia", () => Effect.succeed([]))
               );
 
-              const violations = yield* violationsOf(
-                content,
-                channels,
-                files,
-                copy.options
+              // A channel whose own media the variant gives no text.
+              const unsaid: readonly ContentViolation[] = mediaWithoutTextOf(
+                copy.content,
+                copy.channelIds,
+                variant
+              ).flatMap((channelId) =>
+                channels.flatMap((channel) =>
+                  channel.channelId === channelId
+                    ? [
+                        {
+                          _tag: "empty" as const,
+                          channelId,
+                          platform: channel.platform,
+                        },
+                      ]
+                    : []
+                )
               );
+
+              const violations = [
+                ...unsaid,
+                ...(yield* violationsOf(
+                  content,
+                  channels,
+                  files,
+                  copy.options
+                )),
+              ];
 
               return Arr.isReadonlyArrayNonEmpty(violations)
                 ? [{ variant: place + 1, violations }]
@@ -808,7 +822,7 @@ export class Recycling extends Context.Service<
                 ? Effect.fail(new LeftForNextRun({ ruleId: planned.id }))
                 : Effect.void;
             }),
-            content: sayingVariant(copy.value, variantFor(planned, number)),
+            content: sayingVariantOf(copy.value, variantFor(planned, number)),
             dueAt,
             made: (made) =>
               Effect.gen(function* written() {

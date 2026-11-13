@@ -398,7 +398,7 @@ The staff context follows these rules too. What the law has a host keep is in
 ## Partner accounts
 
 - A partner account lets a product use Peal for its own customers
-  ([Embedding Peal](packages/peal-docs/docs/embedding.mdx)). It belongs to
+  ([Embedding Peal](packages/peal-docs/docs/developers/embedding/index.mdx)). It belongs to
   one **home workspace**, whose owners and admins manage it (`partner:read`,
   `partner:manage`, the second withheld while impersonating), and owns one
   workspace per customer: a Better Auth organization with no member, tied

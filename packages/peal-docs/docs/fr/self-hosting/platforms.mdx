@@ -1,0 +1,515 @@
+---
+title: Applications des plateformes
+description: Enregistrer l’application de Peal sur chaque plateforme qu’un serveur auto-hébergé propose, avec les adresses qu’il donne pour elles.
+sidebar:
+  icon: layout-grid
+---
+
+Un serveur auto-hébergé propose une plateforme une fois que vous y avez enregistré une application et donné ses identifiants au serveur. Commencez par les clés des jetons et les adresses ci-dessous, puis suivez la section de chaque plateforme voulue.
+
+## Enregistrer les applications [#channels]
+
+| Plateforme                                     | Réglages                                                                                                             | Avant de servir d’autres personnes                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [Bluesky](#bluesky)                            | `BLUESKY_CLIENT_KEYS`                                                                                                | Rien à enregistrer                                      |
+| [LinkedIn](#linkedin)                          | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`                                                                       | Rien : les deux produits sont accordés tout de suite    |
+| [Pages d’entreprise LinkedIn](#linkedin-pages) | `LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`                                                           | L’examen de LinkedIn, puis son niveau Standard          |
+| [X](#x)                                        | `X_CLIENT_ID`, `X_CLIENT_SECRET`                                                                                     | Des crédits achetés d’avance                            |
+| [TikTok](#tiktok)                              | `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`                                                                          | L’audit de TikTok                                       |
+| [Threads, Instagram, Pages Facebook](#meta)    | `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `THREADS_APP_ID`, `THREADS_APP_SECRET` | L’App Review de Meta et la vérification de l’entreprise |
+| [YouTube](#youtube)                            | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`                                                                         | Un écran de consentement publié, vérifié par Google     |
+| [Pinterest](#pinterest)                        | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`                                                                           | L’accès Standard de Pinterest                           |
+| [Google Business Profile](#google-business)    | `GOOGLE_BUSINESS_CLIENT_ID`, `GOOGLE_BUSINESS_CLIENT_SECRET`                                                         | L’accès de Google aux API Business Profile              |
+
+Pour LinkedIn, X, YouTube, Pinterest et Google Business Profile, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme. [Variables d’environnement](/self-hosting/environment-variables#channels) liste chaque réglage des plateformes, avec sa valeur par défaut.
+
+### Clés des jetons [#token-keys]
+
+Le serveur chiffre les jetons des comptes connectés, et les secrets de signature des [webhooks](/developers/webhooks#self-hosting), avec les clés de `PEAL_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte ou l’ajout d’un point de terminaison de webhook échoue. Créez une clé avec :
+
+```sh
+echo "k1:$(openssl rand -base64 32)"
+```
+
+La valeur liste des entrées `idDeClé:clé` séparées par des virgules, comme `k2:<clé>,k1:<clé>`. La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Une valeur mal formée arrête le serveur au démarrage.
+
+<Callout type="warning" title="Gardez une copie des clés">
+  Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal
+  doit être reconnecté.
+</Callout>
+
+### Réseau et mémoire [#network]
+
+Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé.
+
+Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie, sauf si la plateforme prend les vidéos par parties. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
+
+| Plateforme              | Le serveur appelle                                                                                                                                   | Médias                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Mastodon                | Le serveur Mastodon de chaque compte                                                                                                                 | Images et vidéos lues en entier                                                                             |
+| Bluesky                 | Le serveur Bluesky qui héberge chaque compte, et le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos                              | Images et vidéos lues en entier : une vidéo Bluesky peut prendre jusqu’à 300 Mo                             |
+| LinkedIn                | `www.linkedin.com`, `api.linkedin.com` et les adresses d’envoi que LinkedIn donne                                                                    | Vidéos par parties de 4 Mio, une seule gardée à la fois                                                     |
+| X                       | `api.x.com`                                                                                                                                          | Vidéos par parties de 4 Mio, une seule gardée à la fois                                                     |
+| TikTok                  | `open.tiktokapis.com` et les adresses d’envoi que donne TikTok                                                                                       | Vidéos par parties de 10 Mo, une seule gardée à la fois, sauf si TikTok va les chercher ([TikTok](#tiktok)) |
+| Meta                    | `graph.facebook.com`, `graph.instagram.com`, `api.instagram.com` et `graph.threads.com`                                                              | Images et vidéos que Meta va chercher dans le stockage des médias                                           |
+| YouTube                 | `oauth2.googleapis.com` et `www.googleapis.com`                                                                                                      | Vidéos par parties de 8 Mio, une seule gardée à la fois                                                     |
+| Pinterest               | `api.pinterest.com` (ou le bac à sable), et l’adresse que Pinterest nomme pour chaque vidéo, celle d’un stockage d’objets                            | Vidéos envoyées à mesure qu’elles sont lues, jamais gardées entières ; images que Pinterest va chercher     |
+| Google Business Profile | `oauth2.googleapis.com`, `mybusinessaccountmanagement.googleapis.com`, `mybusinessbusinessinformation.googleapis.com` et `mybusiness.googleapis.com` | Photos que Google va chercher dans le stockage des médias                                                   |
+
+Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur. Elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client de Peal, et les demandes de suppression de données de Meta.
+
+### Adresses à enregistrer [#platform-addresses]
+
+L’application de chaque plateforme reçoit des adresses de votre serveur : celle où la plateforme renvoie les personnes après leur connexion et, pour Meta, celles où ses serveurs appellent le vôtre. Une commande les affiche toutes pour votre `PUBLIC_URL`, chacune à côté du réglage où elle va, à partir des chemins que le serveur sert et envoie lui-même. Lancez-la depuis le dépôt, ou sur un serveur qui tourne, qui répond pour sa propre `PUBLIC_URL`, avec les fichiers et les réglages de la pile comme dans [Avec Docker Compose et Caddy](/self-hosting#compose) :
+
+<CodeGroup>
+
+```sh Depuis le dépôt
+PUBLIC_URL=https://peal.example.com bun nx run peal-server:platform-addresses
+```
+
+```sh Sur un serveur qui tourne
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+  exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+</CodeGroup>
+
+Avec `--json`, elle affiche la même liste pour un programme. Relancez-la après avoir changé `PUBLIC_URL`, et après une mise à jour qui ajoute une plateforme.
+
+<Callout type="warning" title="Copiez les adresses à l’identique">
+  Enregistrez ce qu’affiche la commande, par copie, plutôt que des adresses
+  écrites à la main : une plateforme refuse une connexion dont l’adresse de
+  redirection diffère d’un seul caractère de celle enregistrée, barre oblique
+  finale comprise.
+</Callout>
+
+Les adresses qu’elle signale comme appelées par les serveurs de la plateforme, les deux rappels de Meta et les documents du client Bluesky, doivent répondre à Internet sans connexion devant elles : laissez-les passer toute page de connexion ou liste d’autorisation placée devant le serveur. Les autres sont ouvertes par le navigateur des personnes.
+
+## Bluesky [#bluesky]
+
+Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à lui, qui l’identifient auprès de Bluesky. Rien n’est enregistré auprès de Bluesky : ses serveurs lisent la description du client de Peal, et ses clés publiques à côté, aux adresses que [la commande](#platform-addresses) affiche pour Bluesky.
+
+<Steps>
+  <Step title="Vérifier l’adresse">
+    `PUBLIC_URL` doit être en HTTPS, sans port.
+  </Step>
+  <Step title="Créer une clé">
+    Depuis le dépôt :
+
+    ```sh
+    bun nx run peal-server:bluesky-key
+    ```
+
+  </Step>
+  <Step title="Définir la clé">
+    Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`.
+  </Step>
+</Steps>
+
+Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies.
+
+Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
+
+## LinkedIn [#linkedin]
+
+Un serveur connecte des membres LinkedIn une fois que vous lui avez enregistré une application sur le portail développeurs de LinkedIn, qui demande une page LinkedIn pour la détenir.
+
+<Steps>
+  <Step title="Ajouter les produits">
+    Ajoutez les produits **Sign In with LinkedIn using OpenID Connect** et
+    **Share on LinkedIn**. Les deux sont accordés tout de suite, sans examen.
+  </Step>
+  <Step title="Ajouter l’URL de redirection">
+    Sous **Auth**, ajoutez l’adresse que [la commande](#platform-addresses)
+    affiche pour LinkedIn comme URL de redirection autorisée.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant client de l’application dans `LINKEDIN_CLIENT_ID` et
+    son secret client principal dans `LINKEDIN_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres reconnectent leur canal tous les 60 jours, et en sont prévenus une semaine avant.
+
+<Callout type="warning" title="Les versions de l’API de LinkedIn">
+  Peal appelle l’API de LinkedIn dans la version que nomme
+  `LINKEDIN_API_VERSION`, une version récente si elle n’est pas définie.
+  LinkedIn retire chaque version un an après sa sortie, et une version retirée
+  fait échouer chaque publication.
+</Callout>
+
+## Pages d’entreprise LinkedIn [#linkedin-pages]
+
+Publier sur des pages d’entreprise demande la **Community Management API** de LinkedIn, que LinkedIn examine, et n’accorde qu’à une application sans autre produit : elle ne peut pas s’ajouter à l’application ci-dessus. Un serveur qui n’a que la première application continue de connecter des profils, sans changement.
+
+<Steps>
+  <Step title="Créer une seconde application">
+    Créez-la sur le portail développeurs de LinkedIn, pour la même page
+    LinkedIn, sans aucun produit. LinkedIn demande qu’un super administrateur de
+    cette page vérifie l’application.
+  </Step>
+  <Step title="Demander la Community Management API">
+    LinkedIn l’accorde à des organisations légalement enregistrées, pour des
+    usages commerciaux, et vérifie une adresse e-mail professionnelle,
+    l’organisation et son site web ; une adresse personnelle ne passe pas. Ses
+    conditions réservent ce que l’API sert aux clients de votre propre
+    organisation : lisez-les en pensant à l’usage que vous faites de votre
+    serveur.
+  </Step>
+  <Step title="Passer au niveau Standard">
+    LinkedIn accorde d’abord le **niveau Development**, pour construire : 500
+    appels par jour pour l’application et 100 par membre, et aucune lecture par
+    lot, que Peal n’utilise pas. Demandez le **niveau Standard** avant un usage
+    réel : LinkedIn demande alors un enregistrement d’écran de chaque usage, ici
+    connecter une page, y publier, et lire les statistiques de ses publications,
+    ainsi que votre politique de confidentialité.
+  </Step>
+  <Step title="Ajouter l’URL de redirection">
+    Sous **Auth**, ajoutez la même URL de redirection,
+    `PUBLIC_URL/connect/linkedin/callback`.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant client de l’application dans `LINKEDIN_PAGES_CLIENT_ID`
+    et son secret client principal dans `LINKEDIN_PAGES_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Peal demande aux membres `w_organization_social`, `r_organization_social` et `rw_organization_admin`, liste les pages que chacun administre, et publie sur celles qu’ils choisissent avec leur propre accès, qui dure 60 jours. LinkedIn ne donne des jetons de rafraîchissement qu’à des partenaires approuvés : quand votre application en reçoit, Peal renouvelle seul l’accès d’une page pendant un an après la connexion ; sinon la page est reconnectée tous les 60 jours, comme un profil. Les pages sont les seuls canaux LinkedIn dont Peal relève les chiffres, et dont il retrouve une publication après une réponse perdue.
+
+<Accordion>
+  <AccordionItem title="Commentaires dans la boîte de réception">
+    Pour lire les commentaires des pages et y répondre dans la [boîte de
+    réception](/guides/engage/inbox#linkedin), ajoutez `linkedin` à
+    `PEAL_INBOX_PLATFORMS` une fois que l’onglet **Products** de l’application
+    liste `r_organization_social_feed` et `w_organization_social_feed` parmi les
+    champs d’application de la Community Management API. La connexion des pages
+    les demande alors, et LinkedIn refuse toute la connexion à une application
+    qui ne les détient pas.
+
+    Au niveau Development, LinkedIn permet à l’application 500 appels par jour
+    et à chaque membre 100, publication comprise. La lecture des commentaires en
+    prend au plus 200 de l’application et 40 par membre, le membre étant celui
+    qui a connecté la page (`LINKEDIN_DAILY_COMMENT_CALLS`,
+    `LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER`), puis s’arrête pour la journée
+    afin que la publication garde le reste. Relevez les deux au niveau
+    Standard.
+
+    L’examen du niveau Standard demande qu’on lui montre comment le commentaire
+    d’un membre sur une publication de la page s’affiche dans l’application, et
+    quels champs du profil de son auteur y apparaissent. Peal montre le texte du
+    commentaire et sa date, et aucun champ de profil (l’auteur est « Un membre
+    de LinkedIn »). Enregistrez-le avec le réglage activé.
+
+  </AccordionItem>
+</Accordion>
+
+## X [#x]
+
+Un serveur connecte des comptes X une fois que vous lui avez enregistré une application dans la console développeurs de X.
+
+<Steps>
+  <Step title="Activer OAuth 2.0">
+    Dans les réglages d’authentification des utilisateurs de l’application,
+    activez OAuth 2.0, comme **Web App, Automated App or Bot**, avec les
+    permissions **Read and write**.
+  </Step>
+  <Step title="Ajouter l’URI de rappel">
+    Ajoutez l’adresse que [la commande](#platform-addresses) affiche pour X
+    comme URI de rappel, exactement. X refuse `localhost` : en développement,
+    utilisez `http://127.0.0.1` et son port.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret
+    client dans `X_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+<Callout type="warning" title="X facture l’application">
+  X facture chaque requête de l’API à l’application, sur des crédits achetés
+  d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une
+  publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des
+  crédits et fixez une limite de dépenses dans la console de X.
+</Callout>
+
+Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite. Les publications n’y sont pour rien : Peal les garde en attente et réessaie chacune toutes les demi-heures, et elles partent dès que vous avez réglé. Une publication encore refusée un jour après son heure échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ».
+
+Peal journalise une erreur au premier refus, puis une fois par heure tant qu’il dure, quel que soit le nombre de publications en attente (`event.name` `peal.app_refused`), que signale l’alerte « A platform refuses the server's app until it is paid for ». Il compte chaque tentative refusée dans la métrique `peal.publishing.app_refusals`.
+
+Peal compte les publications de chaque espace de travail sur X, et combien contenaient un lien, par mois civil (UTC), dans `billing.metered_posts`, pour que vous voyiez qui dépense quoi ; les offres ne les limitent pas encore. Les comptes suivent l’export de l’espace de travail et sa suppression.
+
+L’accès à X dure deux heures. Peal le renouvelle quand il publie, et renouvelle celui d’un compte qui n’a pas publié depuis 30 jours, pour que X le garde connecté sans rotation toutes les deux heures.
+
+## TikTok [#tiktok]
+
+Un serveur connecte des créateurs TikTok une fois que vous lui avez enregistré une application sur TikTok for Developers.
+
+<Steps>
+  <Step title="Ajouter Login Kit">
+    Ajoutez le produit **Login Kit**, avec l’adresse que [la
+    commande](#platform-addresses) affiche pour TikTok comme URI de redirection
+    pour le web. TikTok n’accepte que des URI de redirection en HTTPS : en
+    développement, passez par un tunnel HTTPS.
+  </Step>
+  <Step title="Ajouter les API de publication et d’affichage">
+    Ajoutez la **Content Posting API**, avec **Direct Post** activé, et la
+    **Display API**, pour les statistiques. Ajoutez les scopes
+    `user.info.basic`, `user.info.profile`, `video.publish` et `video.list`.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez la clé client de l’application dans `TIKTOK_CLIENT_KEY` et son secret
+    client dans `TIKTOK_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Tant que TikTok n’a pas audité l’application, il accepte jusqu’à cinq créateurs par jour, dont les comptes doivent être privés, et seulement des publications qu’ils sont seuls à voir : les autres échouent avec leur raison, « la plateforme n’accepte que des publications privées de l’application de ce serveur ». Demandez l’audit depuis la page de l’application une fois que vous l’avez essayée. Peal montre le pseudonyme du créateur, les audiences que propose son compte, les interactions qu’il permet et le consentement de TikTok avant la programmation, comme le demandent les règles de TikTok.
+
+TikTok ne va chercher des photos qu’à un préfixe d’URL ou un domaine vérifié pour l’application, sous **URL properties**. Servez le stockage des médias à une adresse publique (`PEAL_MEDIA_PUBLIC_BASE_URL`), vérifiez-la, et mettez-la dans `TIKTOK_MEDIA_URL_PREFIX`. TikTok va alors chercher aussi les vidéos, comme ses règles le préfèrent pour des médias déjà sur un serveur. Sans lui, Peal envoie les vidéos en morceaux de 10 Mo, un seul à la fois en mémoire, et refuse à la programmation les publications TikTok avec des photos.
+
+## Threads, Instagram et Pages Facebook [#meta]
+
+Une application du tableau de bord des développeurs de Meta connecte les trois, par trois cas d’usage, chacun avec ses propres identifiants :
+
+| Cas d’usage                                                                                                  | Connecte                                      | Autorisations                                                                                                                                                                                                                                                                    | Réglages, d’après                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Facebook Login**                                                                                           | Les Pages Facebook, et Instagram via une Page | `pages_show_list`, `pages_read_engagement` et `pages_manage_posts` pour les Pages Facebook ; `instagram_basic`, `instagram_content_publish` et `instagram_manage_insights` pour Instagram (les statistiques ne servent qu’aux statistiques de Peal : un membre peut les refuser) | `META_APP_ID` et `META_APP_SECRET`, d’après les paramètres de base de l’application                                                                                                           |
+| **Instagram** (« Gérer les messages et le contenu sur Instagram », l’API Instagram avec connexion Instagram) | Les comptes professionnels Instagram          | `instagram_business_basic`, `instagram_business_content_publish` et `instagram_business_manage_insights`                                                                                                                                                                         | `INSTAGRAM_APP_ID` et `INSTAGRAM_APP_SECRET`, d’après ses **paramètres de connexion professionnelle**, qui montrent un identifiant et un secret d’application Instagram à part des principaux |
+| **Threads**                                                                                                  | Les comptes Threads                           | `threads_basic` et `threads_content_publish`                                                                                                                                                                                                                                     | `THREADS_APP_ID` et `THREADS_APP_SECRET`, d’après ses paramètres Threads                                                                                                                      |
+
+Une plateforme dont les paramètres manquent n’est pas proposée. Instagram l’est avec l’un ou l’autre de ses paramètres ; avec les deux, les membres se connectent d’abord avec Instagram, et via une Page Facebook comme autre voie :
+
+| Voie                                        | Demande                                | Accès                                          | Donne                                                                                                                                                                            |
+| ------------------------------------------- | -------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connexion Instagram (`INSTAGRAM_APP_ID`)    | Un compte professionnel, sans Page     | 60 jours, renouvelé par Peal une semaine avant | La publication (images, reels, carrousels), les statistiques ; appelle `graph.instagram.com`                                                                                     |
+| Facebook Login via une Page (`META_APP_ID`) | Un compte professionnel lié à une Page | Celui de la Page, qui n’expire pas             | La même chose, plus ce que seule cette API a (identification de produits, collaborateurs, recherche de hashtags), dont Peal ne se sert pas encore ; appelle `graph.facebook.com` |
+
+Dans le tableau de bord, donnez à chaque cas d’usage les adresses que [la commande](#platform-addresses) affiche pour lui :
+
+| Cas d’usage    | Paramètres où vont les adresses                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login | Ses URI de redirection OAuth valides, deux, pour les Pages Facebook et pour Instagram ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation |
+| Instagram      | Les URI de redirection OAuth de sa connexion professionnelle ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                          |
+| Threads        | Son URL de rappel de redirection ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                                                      |
+
+Meta va chercher les images et vidéos qu’il publie par des liens vers le stockage des médias, valables deux heures : le stockage doit répondre aux serveurs de Meta sur Internet, par des liens présignés ou `PEAL_MEDIA_PUBLIC_BASE_URL`. Le serveur signe chaque appel passant par Facebook Login avec le secret de l’application principale : vous pouvez activer **Exiger la clé secrète** dans les paramètres avancés de l’application. Les appels avec un jeton de connexion Instagram ne portent pas de preuve.
+
+Tant que l’application est en mode développement, seules les personnes qui y ont un rôle peuvent connecter leurs comptes : ajoutez-vous, ainsi que les testeurs Instagram et Threads, sous Rôles de l’application. Servir d’autres personnes demande l’examen par Meta de chaque autorisation et la vérification de l’entreprise, pour chaque cas d’usage. Les comptes Instagram doivent être des comptes professionnels (entreprise ou créateur) et, via Facebook Login, liés à une Page Facebook. Chaque compte publie au plus 100 publications en 24 heures par l’API de Meta, ce que Peal vérifie avant chacune.
+
+<Accordion>
+  <AccordionItem title="Commentaires dans la boîte de réception">
+    Pour lire les commentaires des Pages Facebook et d’Instagram et y répondre
+    dans la [boîte de réception](/guides/engage/inbox#meta), donnez à
+    `PEAL_INBOX_PLATFORMS` la valeur `facebook`, `instagram` ou les deux, et
+    ajoutez les autorisations des commentaires aux cas d’usage :
+    `pages_read_user_content` et `pages_manage_engagement` à Facebook Login pour
+    les Pages, `instagram_manage_comments` à celui-ci pour Instagram,
+    `instagram_business_manage_comments` au cas d’usage Instagram. Les
+    connexions les demandent alors, et un membre peut les refuser. Meta les
+    accorde aussitôt pour les comptes que gèrent les personnes de votre propre
+    application, et pour ceux des autres seulement après son App Review.
+  </AccordionItem>
+  <AccordionItem title="Demandes de suppression des données">
+    Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta
+    de supprimer ce que Peal détient sur elle ou lui, Meta appelle l’adresse de
+    suppression des données avec une demande signée avec le secret de ce cas
+    d’usage. Peal vérifie la signature, supprime, dans chaque espace de travail,
+    les canaux que la personne a connectés par là et leurs jetons, ainsi que les
+    comptes que sa connexion propose encore à un membre de choisir. Il répond
+    avec un code de confirmation et la page où s’affiche son état,
+    `PUBLIC_URL/data-deletion/<code>`.
+
+    La même demande envoyée à nouveau, comme Meta peut la renvoyer, reçoit la
+    même réponse et ne supprime rien de plus. Une demande d’Instagram désigne le
+    compte par son identifiant propre à l’application ou par le sien : Peal
+    prend l’un comme l’autre.
+
+  </AccordionItem>
+  <AccordionItem title="Rappels d’annulation d’autorisation">
+    Quand quelqu’un retire Peal de son compte, Meta appelle de même l’adresse
+    d’annulation d’autorisation. Peal marque à reconnecter les canaux que cette
+    personne a connectés par là, dans chaque espace de travail, et prévient les
+    membres qui les gèrent ; il ne supprime rien. Un canal reconnecté depuis la
+    demande reste tel quel.
+  </AccordionItem>
+</Accordion>
+
+## YouTube [#youtube]
+
+Un serveur connecte des chaînes YouTube une fois que vous lui avez créé un client OAuth dans un projet Google Cloud.
+
+<Steps>
+  <Step title="Créer un projet">
+    Dans la console Google Cloud, créez un projet, et activez la **YouTube Data
+    API v3** sous API et services.
+  </Step>
+  <Step title="Configurer l’écran de consentement">
+    Sous **Google Auth Platform**, configurez l’écran de consentement pour des
+    utilisateurs **Externes**, et ajoutez les champs d’application
+    `https://www.googleapis.com/auth/youtube.upload` et
+    `https://www.googleapis.com/auth/youtube.readonly`.
+  </Step>
+  <Step title="Créer le client">
+    Sous **Clients**, créez un client **Application Web**, avec l’adresse que
+    [la commande](#platform-addresses) affiche pour YouTube comme URI de
+    redirection autorisée.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant client dans `YOUTUBE_CLIENT_ID` et son secret dans
+    `YOUTUBE_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Les membres se connectent avec Google et choisissent la chaîne, celle d’un compte de marque comprise, dans le sélecteur de comptes de Google : une connexion est une chaîne. Peal demande à mettre en ligne des vidéos et à lire la chaîne et ses vidéos, rien de plus. Il renouvelle son accès, qui dure une heure, quand il met en ligne ou lit des chiffres, et une fois par mois pour une chaîne dont il ne fait rien. Déconnecter une chaîne révoque cet accès chez Google, sauf si un autre espace de travail connecte encore la même chaîne.
+
+<Callout type="warning" title="Un écran de consentement en Test">
+  Tant que l’écran de consentement du projet est en **Test**, seuls les
+  utilisateurs test que vous listez peuvent se connecter, et Google met fin à
+  leur accès sept jours après la connexion : leurs chaînes doivent alors être
+  reconnectées, et Peal prévient l’espace de travail. Publiez l’écran de
+  consentement, et faites vérifier l’application par Google pour ses champs
+  d’application, pour servir tout le monde durablement.
+</Callout>
+
+Le serveur envoie chaque vidéo par parties de 8 Mio, en n’en gardant qu’une à la fois ; un envoi coupé, même par un redémarrage, reprend là où en est YouTube. Peal compte sur deux quotas du projet :
+
+| Quota         | Par jour                                                                                                                  | Ce que fait Peal                                                                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Video Uploads | 100 sauf si Google en accorde plus, remis à zéro à minuit, heure du Pacifique                                             | Compte les mises en ligne pour tout le serveur. Une mise en ligne au-delà de `YOUTUBE_DAILY_UPLOADS`, ou que YouTube refuse pour son quota ou la limite quotidienne de la chaîne, attend le jour suivant. |
+| L’autre       | 10 000 unités, pour le suivi du traitement, les statistiques et les miniatures personnalisées (environ 50 unités chacune) | Définit au plus `YOUTUBE_DAILY_THUMBNAILS` miniatures par jour (80). Une vidéo au-delà part avec la miniature que choisit YouTube.                                                                        |
+
+Jusqu’en novembre 2026, Google gardait privées les vidéos des projets d’API qu’il n’avait pas audités. Il ne le fait plus, mais les réglages d’une chaîne ou les restrictions de Google peuvent encore garder une vidéo privée : Peal compare la réponse de YouTube à la visibilité choisie par le membre, et le dit sur la page de la publication.
+
+<Accordion>
+  <AccordionItem title="Commentaires dans la boîte de réception">
+    Pour lire les commentaires de YouTube et y répondre dans la [boîte de
+    réception](/guides/engage/inbox#youtube), ajoutez `youtube` à
+    `PEAL_INBOX_PLATFORMS`, et ajoutez le champ d’application
+    `https://www.googleapis.com/auth/youtube.force-ssl` à l’écran de
+    consentement. La connexion le demande alors, en option : un propriétaire
+    peut le décocher et se connecter quand même. C’est un champ d’application
+    sensible : Google vérifie une application qui le demande avant que d’autres
+    que ses utilisateurs test puissent l’accorder, et la vérification demande
+    qu’on lui montre ce que l’application fait des commentaires, ce que le
+    réglage permet d’enregistrer.
+
+    Peal partage par défaut les 10 000 unités quotidiennes du projet en trois :
+
+    | Part        | Unités                                                                    | Pour                                                                                                                                     |
+    | ----------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+    | Commentaires | Au plus 3 000 (`YOUTUBE_DAILY_COMMENT_UNITS`)                            | La lecture des commentaires                                                                                                              |
+    | Miniatures  | Environ 4 000 (`YOUTUBE_DAILY_THUMBNAILS`, 80 à environ 50 unités chacune) | Les miniatures personnalisées                                                                                                            |
+    | Le reste    | 3 000                                                                     | Ce que Peal ne compte pas : les réponses, masquages et retraits (50 unités chacun), le suivi des publications et les recherches, et les statistiques |
+
+    Demandez à Google un quota plus large avant que de nombreuses chaînes utilisent la boîte de réception.
+
+  </AccordionItem>
+</Accordion>
+
+## Pinterest [#pinterest]
+
+Un serveur connecte des comptes Pinterest une fois que vous avez enregistré une application pour lui sur le site des développeurs de Pinterest.
+
+<Steps>
+  <Step title="Connecter une application">
+    Sur `developers.pinterest.com`, sous **My apps**, connectez une application,
+    avec un lien vers votre politique de confidentialité. Pinterest examine la
+    demande et accorde l’accès **Trial**.
+  </Step>
+  <Step title="Ajouter l’URI de redirection">
+    Dans les réglages de l’application, ajoutez
+    `PUBLIC_URL/connect/pinterest/callback` comme URI de redirection, par
+    exemple `https://peal.example.com/connect/pinterest/callback` : Pinterest
+    n’accepte que l’adresse exacte.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant de l’application dans `PINTEREST_APP_ID` et sa clé
+    secrète dans `PINTEREST_APP_SECRET`.
+  </Step>
+</Steps>
+
+Les membres se connectent sur Pinterest et autorisent Peal à lire leurs tableaux et leurs épingles, à créer des épingles et à lire leur compte : Peal demande `boards:read`, `boards:write`, `pins:read`, `pins:write` et `user_accounts:read`, et rien sur les tableaux secrets. L’accès dure 30 jours, et Peal le renouvelle une semaine avant, avec un jeton de rafraîchissement que Pinterest garde valable 60 jours après chaque renouvellement. L’API de Pinterest ne révoque l’accès d’aucun membre : déconnecter un canal supprime les jetons de Peal, et le membre retire l’application dans ses réglages Pinterest.
+
+| Accès        | Limites                                                                    | Ce qu’il publie                                                                                                                                       | Réglage                                                                           |
+| ------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Trial**    | 1 000 appels par jour en tout                                              | Des tableaux et épingles vus de leur seul créateur, dans le bac à sable de Pinterest, qui ne crée aucune épingle vidéo et ne donne aucune statistique | `PINTEREST_SANDBOX=true`, pour que le serveur appelle `api-sandbox.pinterest.com` |
+| **Standard** | 100 écritures et 60 lectures de statistiques par minute pour chaque compte | De vraies épingles                                                                                                                                    | `PINTEREST_SANDBOX` non défini                                                    |
+
+Pour publier réellement, demandez à Pinterest l’accès **Standard** depuis la page de l’application, avec une vidéo de votre serveur connectant un membre par Pinterest et créant une épingle.
+
+<Callout type="warning" title="Quitter le bac à sable">
+  Une fois l’accès Standard accordé, retirez `PINTEREST_SANDBOX`, et faites
+  reconnecter leurs comptes aux membres, car un jeton du bac à sable ne sert
+  nulle part ailleurs.
+</Callout>
+
+Pinterest va chercher les images d’une épingle par des liens vers le stockage des médias, valables deux heures : le stockage doit répondre aux serveurs de Pinterest sur Internet, par des liens présignés ou par `PEAL_MEDIA_PUBLIC_BASE_URL`. Les règles de Pinterest pour les développeurs demandent que chaque épingle soit choisie par le membre qui la publie, ce qu’est la programmation d’une publication, et limitent ce qu’une application peut garder de ce qu’elle lit : Peal garde l’identifiant d’une épingle et ses chiffres, pour l’espace de travail qui l’a publiée.
+
+## Google Business Profile [#google-business]
+
+Un serveur connecte des établissements Google Business Profile une fois que Google a donné à l’un de vos projets Google Cloud l’accès aux API Business Profile, ce qu’il fait sur demande.
+
+<Steps>
+  <Step title="Choisir un projet">
+    Dans la console Google Cloud, créez un projet, ou choisissez-en un, et notez
+    son numéro de projet.
+  </Step>
+  <Step title="Demander l’accès à Google">
+    Utilisez le [formulaire de contact de l’API
+    GBP](https://support.google.com/business/contact/api_default), en
+    choisissant **Application for Basic API Access**, depuis une adresse e-mail
+    propriétaire ou gestionnaire d’une fiche d’établissement. Google demande que
+    la fiche soit validée et active depuis 60 jours ou plus, et que
+    l’établissement ait un site web. Il répond par e-mail une fois la demande
+    examinée.
+  </Step>
+  <Step title="Vérifier le quota">
+    Regardez le quota du projet pour les API Business Profile : 300 requêtes par
+    minute signifie que l’accès est donné, 0 qu’il ne l’est pas encore. Une
+    augmentation de quota ne remplace pas la demande.
+  </Step>
+  <Step title="Activer les API">
+    Sous API et services, activez la **Google My Business API**, qui crée les
+    publications et n’apparaît dans la console qu’une fois l’accès donné, la
+    **My Business Account Management API** et la **My Business Business
+    Information API**, qui listent les comptes et les établissements.
+  </Step>
+  <Step title="Configurer l’écran de consentement">
+    Sous **Google Auth Platform**, configurez l’écran de consentement pour des
+    utilisateurs **Externes**, et ajoutez le champ d’application
+    `https://www.googleapis.com/auth/business.manage`.
+  </Step>
+  <Step title="Créer le client">
+    Sous **Clients**, créez un client **Application Web**, avec
+    `PUBLIC_URL/connect/googleBusiness/callback` comme URI de redirection
+    autorisée, comme `https://peal.example.com/connect/googleBusiness/callback`.
+  </Step>
+  <Step title="Définir les identifiants">
+    Mettez l’identifiant client dans `GOOGLE_BUSINESS_CLIENT_ID` et son secret
+    dans `GOOGLE_BUSINESS_CLIENT_SECRET`.
+  </Step>
+</Steps>
+
+Ce client est à part de celui de YouTube, car Google donne l’accès, compte les quotas et examine les applications projet par projet. Un projet qui a les deux produits sert les deux : donnez le même identifiant client et le même secret sous les deux noms, avec les deux URI de redirection sur le client.
+
+Les membres se connectent avec Google et choisissent parmi les établissements validés des comptes dont ils sont propriétaires ou gestionnaires, 200 au plus par connexion : une connexion est un établissement. Peal liste les comptes et les établissements quand un membre se connecte, crée des publications, et relit celles d’un établissement quand la réponse de Google à l’une d’elles s’est perdue. Il ne change rien d’autre sur une fiche, et ne lit aucun avis. Il renouvelle son accès, qui dure une heure, chaque fois qu’il publie, et au moins une fois par mois pour un établissement où il ne publie rien, pour que Google ne le perde jamais. Déconnecter un établissement révoque cet accès chez Google, sauf si un autre espace de travail connecte encore le même établissement.
+
+Tant que le projet n’a pas l’accès, Google répond 429 à chaque appel : la connexion échoue comme si la plateforme ne répondait pas, et le journal du serveur dit de vérifier le projet. Tant que l’écran de consentement est en **Test**, seuls ses utilisateurs test se connectent, et Google met fin à leur accès au bout de sept jours, comme pour YouTube.
+
+Google va chercher chaque photo par un lien vers le stockage des médias, valable deux heures : le stockage doit répondre aux serveurs de Google sur Internet, par des liens présignés ou `PEAL_MEDIA_PUBLIC_BASE_URL`. Chaque appel puise dans les 300 requêtes par minute du projet ; au-delà, une publication attend et part un peu plus tard.
+
+<Callout type="warning" title="Les règles de Google vous engagent">
+  Les [règles de Google pour ces
+  API](https://developers.google.com/my-business/content/policies) vous engagent
+  en tant que propriétaire du projet. Entre autres : n’agir que pour des
+  établissements dont les propriétaires ou gestionnaires se sont connectés
+  eux-mêmes, les prévenir d’un changement sur leur fiche dans les 48 heures
+  (Peal prévient l’auteur d’une publication dans l’application une fois qu’elle
+  est en ligne, et par e-mail s’il l’a choisi), laisser un établissement partir,
+  ce que fait la déconnexion d’un canal, et ne conserver ce que répondent les
+  API que dans les limites fixées par Google. De cela, Peal garde le nom et
+  l’adresse d’un établissement, qui désignent son canal, et le nom et l’adresse
+  sur Google de chaque publication, jusqu’à la déconnexion du canal ou la
+  suppression de l’espace de travail : lisez ces règles, et jugez si cela
+  convient à votre usage.
+</Callout>

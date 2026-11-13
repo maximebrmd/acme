@@ -27,6 +27,12 @@ class ReviewedChannel extends JsonSerializableType
     public ?string $handle;
 
     /**
+     * @var ?array<ReviewedMedia> $media
+     */
+    #[JsonProperty('media'), ArrayType([ReviewedMedia::class])]
+    public ?array $media;
+
+    /**
      * @var ?TargetOptions $options
      */
     #[JsonProperty('options')]
@@ -50,6 +56,7 @@ class ReviewedChannel extends JsonSerializableType
      *   followUps: array<ReviewedPart>,
      *   text: string,
      *   handle?: ?string,
+     *   media?: ?array<ReviewedMedia>,
      *   options?: ?TargetOptions,
      *   platform?: ?value-of<Platform>,
      * } $values
@@ -60,6 +67,7 @@ class ReviewedChannel extends JsonSerializableType
         $this->channelId = $values['channelId'];
         $this->followUps = $values['followUps'];
         $this->handle = $values['handle'] ?? null;
+        $this->media = $values['media'] ?? null;
         $this->options = $values['options'] ?? null;
         $this->platform = $values['platform'] ?? null;
         $this->text = $values['text'];

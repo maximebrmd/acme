@@ -20,6 +20,10 @@ const isMediaId = Schema.is(MediaAssetIdSchema);
 
 const isTimeZone = Schema.is(TimeZoneIdSchema);
 
+const wellFormedMedia = <Media extends { readonly mediaId: string }>(
+  media: readonly Media[]
+) => media.filter(({ mediaId }) => isMediaId(mediaId));
+
 const decodeChannelIds = Schema.decodeUnknownEffect(
   Schema.Array(ChannelIdSchema)
 );
@@ -57,16 +61,25 @@ export const checkRequestFrom = (input: CheckInput) =>
     const wellFormed = <
       Part extends {
         readonly media: readonly { readonly mediaId: string }[];
-        readonly overrides: readonly { readonly channelId: string }[];
+        readonly overrides: readonly {
+          readonly channelId: string;
+          readonly media?: readonly { readonly mediaId: string }[];
+        }[];
       },
     >(
       part: Part
     ) => ({
       ...part,
-      media: part.media.filter(({ mediaId }) => isMediaId(mediaId)),
-      overrides: part.overrides.filter(({ channelId }) =>
-        isChannelId(channelId)
-      ),
+      media: wellFormedMedia(part.media),
+      overrides: part.overrides.flatMap((override) => {
+        if (!isChannelId(override.channelId)) {
+          return [];
+        }
+
+        return override.media === undefined
+          ? [override]
+          : [{ ...override, media: wellFormedMedia(override.media) }];
+      }),
     });
 
     const read: CheckInputRead = {
@@ -76,8 +89,11 @@ export const checkRequestFrom = (input: CheckInput) =>
       malformedMedia: [
         ...new Set(
           parts
-            .flatMap(({ media }) => media.map(({ mediaId }) => mediaId))
-            .filter((mediaId) => !isMediaId(mediaId))
+            .flatMap(({ media, overrides }) => [
+              ...media,
+              ...overrides.flatMap((override) => override.media ?? []),
+            ])
+            .flatMap(({ mediaId }) => (isMediaId(mediaId) ? [] : [mediaId]))
         ),
       ],
       request: {

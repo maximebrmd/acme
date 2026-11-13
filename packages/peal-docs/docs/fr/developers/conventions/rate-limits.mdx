@@ -1,0 +1,79 @@
+---
+title: Limites de débit
+description: Combien de requêtes une clé et une application peuvent envoyer, et ce que l’API répond au-delà.
+sidebar:
+  icon: gauge
+---
+
+## Limites de débit [#rate-limits]
+
+Un moyen d’authentification peut envoyer 600 requêtes par minute :
+
+| Moyen                                       | Compté                                                                                               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Une clé d’API                               | Seule                                                                                                |
+| Une [clé partenaire](/developers/embedding) | Tous espaces de travail où elle agit confondus                                                       |
+| Une application                             | Pour chaque membre au nom duquel elle agit, quel que soit celui de ses jetons d’accès qu’elle envoie |
+| Une session de l’application web            | Pas comptée                                                                                          |
+
+- Le compte est commun à l’API et au [point d’accès MCP](/developers/mcp).
+- Il est tenu par fenêtres fixes d’une minute, qui commencent à la minute ronde.
+- Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe un autre nombre ([Variables d’environnement](/self-hosting/environment-variables#core)).
+
+Chaque réponse à une clé ou à un jeton compté dit où il en est, dans les en-têtes du brouillon de l’IETF « RateLimit header fields for HTTP » :
+
+| En-tête            | Exemple                | Ce qu’il dit                                                                                   |
+| ------------------ | ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `RateLimit-Policy` | `"default";q=600;w=60` | La règle : `q` requêtes toutes les `w` secondes.                                               |
+| `RateLimit`        | `"default";r=412;t=23` | Ce qui reste : `r` requêtes, pendant encore `t` secondes, après quoi le compte repart de zéro. |
+| `Retry-After`      | `23`                   | Sur un 429 seulement : combien de secondes attendre.                                           |
+
+<Callout type="info">
+  Un 429 `platform_rate_limited` est autre chose : une plateforme a demandé à
+  Peal de ralentir, comme une [recherche](/developers) peut le constater, et ce
+  compte n’y est pour rien. Les pages hébergées des liens de connexion et des
+  liens de relecture, qui ne prennent aucune clé, ont leurs propres limites par
+  adresse.
+</Callout>
+
+### Au-delà de la limite [#too-many-requests]
+
+Passé la limite, la requête répond 429 `too_many_requests`, et rien n’a été fait :
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=0;t=17
+Retry-After: 17
+X-Request-Id: 019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a
+```
+
+```json
+{
+  "_tag": "TooManyRequests",
+  "code": "too_many_requests",
+  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.",
+  "requestId": "019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a",
+  "limit": 600,
+  "windowSeconds": 60,
+  "retryAfterSeconds": 17
+}
+```
+
+Attendez `retryAfterSeconds`, puis renvoyez la requête. Un client qui lit `RateLimit` ralentit avant d’être refusé.
+
+- Le point d’accès MCP répond le même statut et les mêmes en-têtes, avec une erreur JSON-RPC.
+- Quand le serveur ne parvient pas à tenir le compte, il laisse passer la requête.
+
+### Les limites d’une fonction [#feature-limits]
+
+Certaines fonctions ont leur propre limite, que celle-ci ne remplace pas :
+
+| Limite                                                                     | Erreur                     | Voir                                                                               |
+| -------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| Les demandes à l’assistant de rédaction, par espace de travail et par jour | `assistant_quota_exceeded` | [Demander de l’aide à l’assistant de rédaction](/guides/posts/assistant#assistant) |
+| Les imports en cours en même temps                                         | `media_import_busy`        | [Médias](/guides/media)                                                            |
+| Les événements de test et les renvois de webhooks, par heure               | `too_many_webhook_sends`   | [Le journal des livraisons](/developers/webhooks/delivery#log)                     |
+| Les invitations en attente d’un espace de travail                          | `too_many_invitations`     | [Invitations](/guides/workspace#invitations)                                       |
+| Ce que permet un abonnement, sur un serveur qui facture                    | `plan_limit_reached`       | [Abonnements et facturation](/guides/workspace/billing#limits)                     |

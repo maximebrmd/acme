@@ -56,10 +56,30 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         }
                       ],
@@ -69,10 +89,30 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         }
                       ],
@@ -121,10 +161,30 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         }
                       ],
@@ -134,10 +194,30 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            },
+                            {
+                              "altText": "altText",
+                              "mediaId": "mediaId"
+                            }
+                          ],
                           "text": "x"
                         }
                       ],

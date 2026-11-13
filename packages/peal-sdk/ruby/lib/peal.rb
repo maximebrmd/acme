@@ -79,6 +79,7 @@ require_relative "peal/posts/types/reschedule_posts_request"
 require_relative "peal/posts/types/queue_post"
 require_relative "peal/posts/types/unschedule_posts_request"
 require_relative "peal/posts/types/repost_posts_request"
+require_relative "peal/posts/types/remove_target_posts_request"
 require_relative "peal/posts/types/confirm_posts_request"
 require_relative "peal/posts/types/unpublish_target_posts_request"
 require_relative "peal/posts/types/live_post_edit"
@@ -814,6 +815,7 @@ module Peal
     autoload :InvalidTimeRangeEncoded, ::File.join(__dir__, "peal/types/invalid_time_range_encoded")
     autoload :Invitation, ::File.join(__dir__, "peal/types/invitation")
     autoload :InvitationNotFoundEncoded, ::File.join(__dir__, "peal/types/invitation_not_found_encoded")
+    autoload :LastTargetLeftEncoded, ::File.join(__dir__, "peal/types/last_target_left_encoded")
     autoload :LinkedInOrganization, ::File.join(__dir__, "peal/types/linked_in_organization")
     autoload :LivePostChangeKind, ::File.join(__dir__, "peal/types/live_post_change_kind")
     autoload :LivePostChangeStatus, ::File.join(__dir__, "peal/types/live_post_change_status")

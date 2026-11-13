@@ -1,0 +1,169 @@
+---
+title: Connect an MCP client
+description: Connect an AI assistant or any MCP client to Peal, sign it in to one workspace, and choose whether it may publish.
+sidebar:
+  icon: plug
+---
+
+Peal serves the Model Context Protocol (MCP), so an AI assistant or any other MCP client can work in a workspace for you. It reads the workspace's posts, media, analytics, billing and members, writes drafts, schedules and publishes posts when you allow it, follows up on posts that went out, and invites people.
+
+The client signs in as you, in a browser, and acts in the one workspace you pick, with no more than your role allows. An agent that runs with nobody to sign in connects with an [API key](#api-key) instead. [Posting from an AI agent](/developers/agents) walks through a whole post.
+
+## The endpoint [#endpoint]
+
+The endpoint is `/api/mcp` at the address you open Peal at, such as `https://peal.example.com/api/mcp`. It speaks Streamable HTTP, in the protocol revisions 2026-07-28, 2025-11-25 and 2025-06-18.
+
+`peal mcp`, from the [command line](/developers/cli#mcp), prints the endpoint and a configuration most MCP clients take:
+
+```json
+{
+  "mcpServers": {
+    "peal": {
+      "type": "http",
+      "url": "https://peal.example.com/api/mcp"
+    }
+  }
+}
+```
+
+Give the client this address, or this configuration, as its documentation says for a remote server over HTTP.
+
+Before it connects, a client can read the endpoint's server card at `/api/mcp/server-card`, such as `https://peal.example.com/api/mcp/server-card`. It gives the endpoint's address, the protocol revisions it speaks and the header that carries the credential. It needs no credential, and pages of any origin may read it ([Discovery](/developers/conventions/discovery#discovery)).
+
+## Sign the client in [#sign-in]
+
+Peal signs MCP clients in with OAuth, so you give the client no key. On its first request, Peal answers that it needs a token and tells it where to ask for one.
+
+<Steps>
+  <Step title="Sign in">
+    The client registers itself with Peal, then opens a browser on Peal's
+    sign-in page. Sign in if you are not signed in yet.
+  </Step>
+  <Step title="Pick a workspace">
+    The client acts in that one workspace only. To use it in another, connect it
+    again and pick the other one.
+  </Step>
+  <Step title="Check what it asks for">
+    Peal shows what the client asks for, and where it sends you back afterwards.
+    Publishing has a line of its own, with a box you may untick to let the
+    client write drafts only ([What the client may do](#scopes)). Check both,
+    then choose **Allow**, or **Deny**.
+  </Step>
+</Steps>
+
+Back in the client, its tools work. Peal remembers your answer for that client and workspace, so connecting it again skips the question.
+
+<Callout type="warning" title="Allow only a client you trust">
+  Peal does not check who made a client that registered itself, and says so on
+  the consent page. Allow one only if you trust it and started the connection
+  yourself.
+</Callout>
+
+<Callout type="note" title="If the client cannot register">
+  Most MCP clients register themselves before they sign in, which a Peal server
+  allows only when its administrator turns it on (`MCP_DYNAMIC_REGISTRATION`,
+  see [Self-hosting](/self-hosting#mcp)). `peal mcp` warns when it is off.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="With two-step verification">
+
+When your account has [two-step verification](/guides/workspace/account#two-step)
+on, the browser asks for the second step when you sign in there, and the
+connection goes on after it. A connection made before is not asked again.
+
+In a workspace that [requires it](/guides/workspace#require-two-step) while
+your account does not have it on, every request of a client acting for you is
+refused with a JSON-RPC error and status 403. The error says to turn it on in
+your Peal account settings; once it is on, the same connection works again.
+
+A client that uses an [API key](#api-key) is not concerned. No tool reads or
+changes two-step verification or a workspace's requirement: a person handles
+them, in a browser.
+
+  </AccordionItem>
+</Accordion>
+
+## Connect with an API key [#api-key]
+
+An agent that runs on a server, with nobody there to sign in, sends a workspace's [API key](/guides/workspace#api-keys) instead of an OAuth token, in the `Authorization` header. A [partner key](/developers/embedding) also sends a `Peal-Workspace` header ([below](#partner-key)).
+
+<CodeGroup>
+
+```json API key
+{
+  "mcpServers": {
+    "peal": {
+      "type": "http",
+      "url": "https://peal.example.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PEAL_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+```json Partner key
+"headers": {
+  "Authorization": "Bearer ${PEAL_PARTNER_KEY}",
+  "Peal-Workspace": "<workspace-id>"
+}
+```
+
+</CodeGroup>
+
+How a client reads a header from its environment depends on the client: see its documentation, and keep the key out of files you share.
+
+<Callout type="warning">
+  Send the key in that header only, never in the address: an address ends up in
+  logs and histories.
+</Callout>
+
+- The connection acts in the key's workspace, with the key's permissions, and no scope: a key without `post:schedule` writes drafts at most. Create a key with only what the agent needs.
+- `whoami` answers the key in `apiKey`, with its id and name, never the key itself. `user` and the workspace's `role` are `null`, since a key is nobody, and `permissions` lists what the key may do.
+- The tools that only a person uses refuse a key: `list_members`, `list_invitations`, `invite_member` and `revoke_invitation`.
+- What the key does is in the workspace's [activity log](/guides/workspace#activity), under the key's id and name.
+- Revoking the key, under **API keys** in the workspace's settings, stops the agent at once.
+
+### With a partner key [#partner-key]
+
+A partner key connects the same way, to one of the workspaces its partner account owns. Its key spans all of them, so the client names the workspace with every request, by its id, in a `Peal-Workspace` header beside `Authorization`.
+
+Without the header the endpoint answers 400, and 404 for a workspace the partner account does not own, its home workspace included. The tools then act in that workspace with the key's permissions, as for an API key.
+
+## What the client may do [#scopes]
+
+The consent page lists what the client asks for:
+
+| Permission                                                                                                                      | Scope               | What it allows                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Know that it is you                                                                                                             | `openid`            | Your account's id                                                                                                                                                          |
+| See your name and picture, see your email address                                                                               | `profile`, `email`  | Your profile                                                                                                                                                               |
+| Stay connected while you are away, until you disconnect it                                                                      | `offline_access`    | Renew its access without you                                                                                                                                               |
+| Read the workspace: posts, channels, media and analytics                                                                        | `workspace:read`    | Read, and change nothing                                                                                                                                                   |
+| Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything | `workspace:write`   | Anything your [role](/guides/posts#roles) allows, reading included, but what puts posts out: nothing it does reaches a platform                                            |
+| Let it schedule and publish posts to your connected accounts, and answer comments there, where everyone can see them            | `workspace:publish` | What your role allows of what puts posts out, and reading: scheduling, moving, publishing and reposting a post, unscheduling it, cancelling it, and confirming how it went |
+
+Publishing is a permission of its own. The consent page shows it on its own line, with a box that starts ticked. Untick it, and the client gets the rest of what it asked for, and no more. Without it, a client that may write still writes drafts, which you review and schedule yourself; one that may only read still reads.
+
+A client connected before publishing had its own permission holds the writing one alone. It publishes nothing, and no longer unschedules, reposts or confirms, until you connect it again and allow publishing. A connection keeps the permissions it was given until then.
+
+<Callout type="warning" title="Ads spend money">
+  A client may also ask for `workspace:ads`, for
+  [ads](/guides/engage/ads#access). It opens nothing alone. With the permission
+  to write, the client disconnects ad accounts and pauses or stops boosts. With
+  the permission to publish, it boosts posts, which spends money on an ad
+  network, within the monthly ceiling an owner set. No client turns spending on
+  or changes a ceiling.
+</Callout>
+
+A client that has none of the three workspace permissions above can do nothing. Its access lasts 15 minutes at a time, and the client renews it on its own. Every request checks that you still belong to the workspace and are not banned.
+
+## Limits [#limits]
+
+- A Peal instance serves MCP clients only when its address is HTTPS, or `localhost` for development. Elsewhere, the endpoint refuses every request.
+- The endpoint refuses requests sent from web pages (with an `Origin` header): connect a client that runs on your computer or on a server.
+- A connection may send 600 requests a minute, counted with the requests the same key or application sends to the API. Past it, the endpoint answers 429 with a `Retry-After` header ([Rate limits](/developers/conventions/rate-limits#rate-limits)).
+- Every answer carries an `X-Request-Id` header: quote it when you ask for help ([Requests and answers](/developers/conventions#requests)).
+- **Account settings**, in the web app, list the clients you allowed and disconnect them; `peal account apps` lists them from the [command line](/developers/cli/workspace#account). Leaving the workspace stops every client that acts in it.

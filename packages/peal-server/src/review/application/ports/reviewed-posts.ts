@@ -41,6 +41,12 @@ export interface ReviewedChannel {
   /** The account's name on its platform; none once it was disconnected. */
   readonly handle: Option.Option<string>;
   /**
+   * The files the post shows there instead of its own, in order, when the
+   * channel has some of its own; none when it shows the post's. An
+   * approval covers them.
+   */
+  readonly media: Option.Option<readonly ReviewedMedia[]>;
+  /**
    * What the post has there that only the channel's platform knows (a
    * Pin's link and board, a video's title and privacy), as plain values
    * tagged by `platform`; none where the platform takes none. An approval

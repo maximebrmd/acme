@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Schema } from "effect";
 
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
@@ -16,7 +17,11 @@ import {
 } from "#publishing/domain/signature.ts";
 import type { SignatureScope } from "#publishing/domain/signature.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
-import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import {
+  ChannelIdSchema,
+  MediaAssetIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import { contentOf } from "#test/publishing/support.ts";
 
@@ -368,5 +373,38 @@ describe("a post in several parts", () => {
     expect(
       withDefaultSignatures(content, [mastodon, bluesky], [general, onMastodon])
     ).toStrictEqual(content);
+  });
+});
+
+describe("signing a post with media of its own on a channel", () => {
+  const media = [
+    new MediaAttachment({
+      altText: "",
+      mediaId: MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000000d1"),
+    }),
+  ];
+
+  const content = new PostContent({
+    media: [],
+    overrides: [
+      new TextOverride({ channelId: bluesky.channelId, media, text: "Here" }),
+    ],
+    text: "The post",
+  });
+
+  it("keeps the media under a signature put in by hand", () => {
+    expect(
+      withSignature(content, signature("— Synthetic")).overrides[0]?.media
+    ).toStrictEqual(media);
+  });
+
+  it("keeps the media under a channel's default signature", () => {
+    const withDefaults = withDefaultSignatures(
+      content,
+      [bluesky],
+      [signature("— Bluesky", { _tag: "platform", platform: "bluesky" })]
+    );
+
+    expect(withDefaults.overrides[0]?.media).toStrictEqual(media);
   });
 });

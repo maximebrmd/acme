@@ -35,7 +35,10 @@ export const isFiltering = ({
 interface Filtered {
   readonly queueId: Post["queueId"];
   readonly tagIds: Post["tagIds"];
-  readonly targets: readonly Pick<Post["targets"][number], "channelId">[];
+  readonly targets: readonly Pick<
+    Post["targets"][number],
+    "channelId" | "dropped"
+  >[];
 }
 
 /**
@@ -49,7 +52,10 @@ export const matchesFilter = (
 ): boolean =>
   (tagIds.length === 0 || post.tagIds.some((id) => tagIds.includes(id))) &&
   (channelIds.length === 0 ||
-    post.targets.some(({ channelId }) => channelIds.includes(channelId))) &&
+    post.targets.some(
+      ({ channelId, dropped }) =>
+        dropped !== true && channelIds.includes(channelId)
+    )) &&
   (queueIds.length === 0 ||
     (post.queueId !== null && queueIds.includes(post.queueId)));
 

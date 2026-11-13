@@ -41,10 +41,30 @@ public class TagTest : BaseMockServerTest
                     "overrides": [
                       {
                         "channelId": "channelId",
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
                         "text": "x"
                       },
                       {
                         "channelId": "channelId",
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
                         "text": "x"
                       }
                     ],
@@ -65,10 +85,30 @@ public class TagTest : BaseMockServerTest
                     "overrides": [
                       {
                         "channelId": "channelId",
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
                         "text": "x"
                       },
                       {
                         "channelId": "channelId",
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
                         "text": "x"
                       }
                     ],
@@ -88,10 +128,30 @@ public class TagTest : BaseMockServerTest
                 "overrides": [
                   {
                     "channelId": "channelId",
+                    "media": [
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      },
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      }
+                    ],
                     "text": "x"
                   },
                   {
                     "channelId": "channelId",
+                    "media": [
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      },
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      }
+                    ],
                     "text": "x"
                   }
                 ],
@@ -126,6 +186,7 @@ public class TagTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "dropped": true,
                   "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
@@ -176,6 +237,7 @@ public class TagTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "dropped": true,
                   "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
@@ -350,6 +412,7 @@ public class TagTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "dropped": true,
                   "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",

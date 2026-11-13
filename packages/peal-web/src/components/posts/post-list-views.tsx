@@ -64,12 +64,19 @@ export const PostItemView = ({
   const format = useFormatter();
   const timeOptions = useTimeOptions();
 
-  const named = post.targets.map(({ channelId }) => {
+  // A channel taken off the post is none of its channels.
+  const named = post.targets.flatMap(({ channelId, dropped }) => {
+    if (dropped === true) {
+      return [];
+    }
+
     const channel = channels.find(({ id }) => id === channelId);
 
-    return channel === undefined
-      ? tPosts("disconnectedChannel")
-      : channelName(channel);
+    return [
+      channel === undefined
+        ? tPosts("disconnectedChannel")
+        : channelName(channel),
+    ];
   });
 
   return (

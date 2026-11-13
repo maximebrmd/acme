@@ -15,11 +15,12 @@
   the approval is refused (`PlanLimitReached`; `WorkspaceOverPlan` to a
   link's holder, who is told nothing of the plan), nothing is recorded,
   and the post keeps waiting.
-- A held post moved without being asked for again (a queue's reshuffle)
-  takes `ApprovalGate.follow` (`ApprovalIntake.followed`), never `admit`:
-  its pending request takes the new time and keeps its requester, those
-  who decide are not asked again, and the post is never admitted, whoever
-  moves it.
+- A held post moved without being asked for again (a queue's reshuffle),
+  or that lost a channel (publishing's `dropTarget`), takes
+  `ApprovalGate.follow` (`ApprovalIntake.followed`), never `admit`: its
+  pending request takes the new time and subject and keeps its requester,
+  those who decide are not asked again (a page read before answers
+  `ApprovalChanged`), and the post is never admitted, whoever moves it.
 - The policy is per workspace (`review/domain/approval-policy.ts`): `never`,
   `contributorsAndApplications`, `always`. An application is an API key or
   an OAuth client (`Actor.subject.clientId`). Where posts wait, whoever has
@@ -29,13 +30,15 @@
   commenting or resolving: a comment shows under the member's name to
   people outside the workspace.
 - An approval covers a subject, publishing's `approvalSubject`: the text,
-  the media in order with their alt text, the per-channel texts, the
-  channels and their options. Never the time. The review context keeps its
+  the media in order with their alt text, the per-channel texts and media,
+  the channels and their options (a `dropped` one is none of them). Never the time. The review context keeps its
   SHA-256 only (`subject_hash`). Add what a new kind of content says to the
   subject, or an approval would cover a post that changed. Reviewers are
   shown all of it: `ReviewedChannel.options` (publishing's `plainOptions`)
   on the link's page and the review, which the web app writes out with
-  `#review/shown-options.ts`, leaving none out.
+  `#review/shown-options.ts`, leaving none out, and `ReviewedChannel.media`
+  (publishing's `postOnChannel` `ownMedia`), a channel's own files, whose
+  previews `shownMedia` reads with the rest.
 - A decision is for what its reviewer was shown. The link's page and a
   post's review (`review.thread`, `get_post_review`, `peal review show`)
   answer the post with the request that waits, read request first, so the

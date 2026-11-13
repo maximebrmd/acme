@@ -20,6 +20,9 @@ public record ReviewedChannel : IJsonOnDeserialized
     [JsonPropertyName("handle")]
     public string? Handle { get; set; }
 
+    [JsonPropertyName("media")]
+    public IEnumerable<ReviewedMedia>? Media { get; set; }
+
     [JsonPropertyName("options")]
     public TargetOptions? Options { get; set; }
 

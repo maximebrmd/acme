@@ -1,0 +1,140 @@
+---
+title: After a post is published
+description: Delete a published post from a platform, edit its text there, and shorten its links.
+sidebar:
+  icon: send
+---
+
+Take back a post that went out, correct its text on the platforms that allow it, and send its links shortened.
+
+## Unpublish a post [#unpublish]
+
+**Unpublish**, on a post's page, deletes the post from that channel's platform for everyone. Where Peal deletes posts, and where it [edits them](#edit-live):
+
+| Platform                | Unpublish | Edit | Why not                                                                                |
+| ----------------------- | --------- | ---- | -------------------------------------------------------------------------------------- |
+| Mastodon                | Yes       | Yes  |                                                                                        |
+| Google Business Profile | Yes       | Yes  |                                                                                        |
+| Bluesky                 | Yes       | No   | Bluesky has no call to edit a post                                                     |
+| X                       | Yes       | No   | X does not say which posts may be edited, or on which access                           |
+| Pinterest               | Yes       | No   | Editing a Pin is in beta, not open to every app                                        |
+| LinkedIn                | No        | No   | LinkedIn does not say which permission a deletion or an edit needs                     |
+| Facebook Pages          | No        | No   | Meta says only some apps may delete Page posts, and not which permission an edit needs |
+| Threads                 | No        | No   | Deleting needs a permission Meta grants after a review; Threads has no call to edit    |
+| Instagram               | No        | No   | Deleting needs a permission Meta grants after a review; Instagram has no call to edit  |
+| YouTube                 | No        | No   | It needs a wider permission than the one Peal asks for                                 |
+| TikTok                  | No        | No   | TikTok's API has no call to delete or edit a post                                      |
+
+Where it cannot, delete the post on the platform itself. Peal cannot unpublish either:
+
+- a post confirmed by hand, as Peal has no id for it;
+- on a channel disconnected, turned off or to reconnect, until it is back.
+
+<Callout type="warning">
+  Unpublishing cannot be undone, from Peal or by the platform, so Peal asks
+  first, naming the channel. It deletes every part of a thread, the last first,
+  so a deletion that stops midway leaves a shorter thread that still reads from
+  its start.
+</Callout>
+
+Owners, admins and editors may unpublish (the permission that publishes, `post:publish`), and so may an API key given it, or an application allowed to publish. From the command line ([Posts](/developers/cli/posts#posts)):
+
+```sh
+peal posts unpublish <post-id> --channel <channel-id> --yes
+```
+
+### What happens next [#unpublish-progress]
+
+The deletion runs in the background, with the channel's other calls, one at a time. The channel reads **Removing…**, then **Removed from** the platform, with when.
+
+- The post stays **Published** in Peal, as it did go out, so the month's count and the usage do not change. Its address stays, struck through, as a record.
+- A part the platform no longer has, deleted there before, counts as deleted.
+- A platform that does not answer is tried again after 1, 5, 15, 60 and 60 minutes, and one that asks Peal to slow down, when it says. After that the removal **failed**, with why, and **Try again** deletes what is left.
+- Statistics stop: analytics reads the post no more and keeps the counts it read, and the inbox stops reading its comments and keeps those it has for their 30 days.
+
+<Callout type="warning" title="Boosted posts">
+  A post shown by a boost that is not over cannot be unpublished: stop the boost
+  first, as the ad would go on spending on a post that is gone.
+</Callout>
+
+## Edit a published post [#edit-live]
+
+A post that went out can have its text corrected on Mastodon and Google Business Profile.
+
+<Steps>
+  <Step title="Choose Edit">
+    On the post's page, choose **Edit** beside the channel. It opens the text of
+    that channel with the channel's counter.
+  </Step>
+  <Step title="Save">
+    Correct the text, then choose **Save**: it replaces the text on the
+    platform.
+  </Step>
+</Steps>
+
+From the command line:
+
+```sh
+peal posts edit <post-id> --channel <channel-id> --text "Doors open at 7 pm, not 6."
+```
+
+Only the text changes: never the media, the options, the audience or the time.
+
+<Callout type="warning">
+  The change is public at once. Whoever may unpublish may edit (`post:publish`),
+  but not a member whose posts need an [approval](/guides/posts/review): an
+  approver makes the edit for them, as it would put text nobody reviewed out.
+</Callout>
+
+- The new text is checked as the channel's text is when a post is scheduled: the platform's length (a Mastodon content warning counts), its characters, and the rest.
+- Once the platform took it, it is that part's own text on that channel in Peal (other channels keep theirs). The channel reads **Edited on** with the date, and webhooks hear `post.edited`.
+- Peal keeps no earlier text; Mastodon shows its own history of edits.
+- The edit runs in the background, with the channel's other calls, and is tried again as a deletion is. After that it **failed**, with why, and **Try again** asks again.
+
+<Accordion>
+  <AccordionItem title="Editing on Mastodon">
+    Mastodon is sent the post again with its media, its content warning and its sensitivity as they are on Mastodon at that moment, changes made there since included, as Mastodon clears whatever an edit leaves out. Its language is left as it is.
+
+    A post with a poll is refused, as the edit would remove the poll.
+
+    Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel.
+
+    Each part of a thread is edited on its own, by its place from 0 (the post itself).
+
+  </AccordionItem>
+</Accordion>
+
+## Shorten links [#short-links]
+
+On a server whose operator set where short links live (`PEAL_SHORT_LINK_BASE`), the composer shows **Shorten links** under the text. It is ticked for new posts when the workspace's settings say so.
+
+A post that asks goes out with each link replaced by a short address on each channel, when the link is written with `http://` or `https://` and is longer than a short address. The address redirects to the link and counts each visit.
+
+- Every channel, and every part of a thread, gets addresses of its own, so you can tell which channel brought visitors. A run that is tried again sends the same addresses.
+- A link without a scheme, a short one, or one naming a user and password is left as written. The line under the box says how many links will be shortened.
+- Peal never makes the text longer: a link is replaced only by an address that is not longer than it, so the counters, the previews and the checks made when the post was scheduled all still hold.
+- The text Peal keeps stays as you wrote it; only what the platform receives changes.
+
+Links stay as written:
+
+- on Pinterest, as its rules refuse link shorteners;
+- on Instagram and TikTok, whose captions make no link clickable;
+- for a link to a channel's own platform, as the platform shows it natively;
+- in an edit of a published post, which sends its text without short addresses.
+
+### The workspace's default [#short-links-default]
+
+Owners and admins choose whether new posts ask for short links by default, in the workspace's **Settings**. Whoever writes a post chooses for that post.
+
+- The default holds for every new post that does not say, wherever it is made: the composer, the API, an agent through MCP, the command line and feeds.
+- A post takes it when it is made and keeps it, so changing the default changes no post already made.
+- A post that says not to shorten its links never does.
+- On a server without short links, nothing is shortened, whatever the default.
+
+<Callout type="warning">
+  A short link goes with its workspace. Deleting the workspace, or the operator
+  changing or removing the short address, makes the short links in its published
+  posts stop working.
+</Callout>
+
+[Analytics](/guides/engage/analytics#short-links) says how clicks are counted.

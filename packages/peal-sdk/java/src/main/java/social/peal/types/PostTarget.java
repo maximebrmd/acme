@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 public final class PostTarget {
     private final String channelId;
 
+    private final Optional<Boolean> dropped;
+
     private final Optional<String> editedAt;
 
     private final Optional<FailureReason> failureReason;
@@ -56,6 +58,7 @@ public final class PostTarget {
 
     private PostTarget(
             String channelId,
+            Optional<Boolean> dropped,
             Optional<String> editedAt,
             Optional<FailureReason> failureReason,
             String id,
@@ -71,6 +74,7 @@ public final class PostTarget {
             Optional<UnconfirmedReason> unconfirmedReason,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.dropped = dropped;
         this.editedAt = editedAt;
         this.failureReason = failureReason;
         this.id = id;
@@ -90,6 +94,11 @@ public final class PostTarget {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("dropped")
+    public Optional<Boolean> getDropped() {
+        return dropped;
     }
 
     @JsonIgnore
@@ -233,6 +242,7 @@ public final class PostTarget {
 
     private boolean equalTo(PostTarget other) {
         return channelId.equals(other.channelId)
+                && dropped.equals(other.dropped)
                 && editedAt.equals(other.editedAt)
                 && failureReason.equals(other.failureReason)
                 && id.equals(other.id)
@@ -252,6 +262,7 @@ public final class PostTarget {
     public int hashCode() {
         return Objects.hash(
                 this.channelId,
+                this.dropped,
                 this.editedAt,
                 this.failureReason,
                 this.id,
@@ -304,6 +315,10 @@ public final class PostTarget {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage dropped(Optional<Boolean> dropped);
+
+        _FinalStage dropped(Boolean dropped);
 
         _FinalStage editedAt(Optional<String> editedAt);
 
@@ -387,6 +402,8 @@ public final class PostTarget {
 
         private Optional<String> editedAt = Optional.empty();
 
+        private Optional<Boolean> dropped = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -394,6 +411,7 @@ public final class PostTarget {
         @java.lang.Override
         public Builder from(PostTarget other) {
             channelId(other.getChannelId());
+            dropped(other.getDropped());
             editedAt(other.getEditedAt());
             failureReason(other.getFailureReason());
             id(other.getId());
@@ -647,9 +665,23 @@ public final class PostTarget {
         }
 
         @java.lang.Override
+        public _FinalStage dropped(Boolean dropped) {
+            this.dropped = Optional.ofNullable(dropped);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "dropped", nulls = Nulls.SKIP)
+        public _FinalStage dropped(Optional<Boolean> dropped) {
+            this.dropped = dropped;
+            return this;
+        }
+
+        @java.lang.Override
         public PostTarget build() {
             return new PostTarget(
                     channelId,
+                    dropped,
                     editedAt,
                     failureReason,
                     id,
@@ -669,6 +701,7 @@ public final class PostTarget {
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("dropped")
                     || key.equalsIgnoreCase("editedAt")
                     || key.equalsIgnoreCase("failureReason")
                     || key.equalsIgnoreCase("id")

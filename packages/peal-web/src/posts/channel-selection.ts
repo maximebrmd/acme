@@ -5,14 +5,17 @@ import type { Channel, Post } from "peal-contract";
  * the post's order. A channel disconnected since the draft was saved is left
  * out: the channel picker cannot show it, so the user could not unselect it,
  * and saving the draft with it again would name a channel the workspace no
- * longer has.
+ * longer has. A channel taken off the post (`dropped`) is no longer one of
+ * its channels.
  */
 export const connectedTargets = (
   post: Post | undefined,
   channels: readonly Channel[]
 ): readonly string[] =>
-  (post?.targets ?? []).flatMap(({ channelId }) =>
-    channels.some(({ id }) => id === channelId) ? [channelId] : []
+  (post?.targets ?? []).flatMap(({ channelId, dropped }) =>
+    dropped !== true && channels.some(({ id }) => id === channelId)
+      ? [channelId]
+      : []
   );
 
 /**

@@ -1,0 +1,189 @@
+---
+title: Mettre en avant une publication
+description: Mettre en avant une publication en ligne sur Facebook ou Instagram dans un plafond mensuel qu’un propriétaire fixe, la suivre et l’arrêter.
+sidebar:
+  icon: trending-up
+---
+
+Mettez en avant une publication que l’espace de travail a fait paraître avec Peal, sous la forme d’une publicité sur Facebook ou Instagram, dans un plafond mensuel qu’un propriétaire fixe, puis suivez-la, mettez-la en pause ou arrêtez-la. Le compte publicitaire doit d’abord être [connecté](/guides/engage/ads#connect) et autorisé à dépenser.
+
+<Callout type="warning" title="Une mise en avant dépense de l’argent réel">
+  Le réseau publicitaire facture directement l’annonceur, sur le moyen de
+  paiement du compte publicitaire. Peal ne manipule jamais l’argent, et ne prend
+  aucun moyen de paiement pour les publicités.
+</Callout>
+
+## Mettre en avant une publication [#boosts]
+
+Une mise en avant diffuse une publication que l’espace de travail a fait paraître avec Peal, sur un compte publicitaire, comme une publicité qui vise l’engagement. Seul un membre qui peut dépenser met une publication en avant.
+
+<Steps>
+  <Step title="Ouvrir la publication">
+    Ouvrez la page de la publication parue.
+  </Step>
+  <Step title="Choisir où elle est diffusée">
+    Choisissez le canal et le compte publicitaire.
+  </Step>
+  <Step title="Régler la mise en avant">
+    Réglez le budget, le début et la fin, l’audience, la catégorie, et le
+    bénéficiaire et le payeur quand il le faut. Le tableau ci-dessous en donne
+    les règles.
+  </Step>
+  <Step title="Vérifier le devis">
+    Avant la dernière étape, Peal affiche un devis : ce que la mise en avant
+    engage, les jours qu’elle touche, le plafond, ce que les autres mises en
+    avant du compte engagent déjà, et la marge que laisse le plafond propre au
+    compte. Un devis vérifie tout et ne réserve rien.
+  </Step>
+  <Step title="Confirmer">
+    La mise en avant est acceptée à l’état `requested`, et son engagement est
+    compté dans le plafond.
+  </Step>
+</Steps>
+
+| Quoi                   | Règle                                                                                                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| La publication         | Parue avec Peal sur une Page Facebook, ou sur un compte Instagram connecté par sa Page Facebook. Pas un compte Instagram connecté avec Instagram Login. Ni une [story ni un reel](/guides/posts#formats)                   |
+| Le budget              | `total` pour toute la diffusion, ou `daily` pour chacun de ses jours, supérieur à zéro, dans la devise du compte publicitaire                                                                                              |
+| La fin                 | Obligatoire. Au moins un jour après le début (plus d’un jour avec un budget quotidien), 90 jours au plus                                                                                                                   |
+| Le début               | Maintenant, ou jusqu’à 30 jours plus tard                                                                                                                                                                                  |
+| L’audience             | De 1 à 25 pays, et une tranche d’âge de 18 à 65 ans, où 65 signifie « 65 ans et plus ». Rien de plus fin                                                                                                                   |
+| La catégorie           | L’annonceur déclare que la publicité ne relève d’aucune catégorie spéciale. Une publicité sur le logement, l’emploi, les produits et services financiers, ou les enjeux sociaux, les élections ou la politique est refusée |
+| Bénéficiaire et payeur | Qui bénéficie de la publicité et qui la paie, 512 caractères chacun : obligatoires dès qu’un pays de l’audience est dans l’Union européenne                                                                                |
+
+Peal crée ensuite la mise en avant en arrière-plan. La campagne, son ensemble de publicités et sa publicité sont créés en pause, puis activés, la campagne en dernier. La page de la publication, et les [notifications](#notices), disent comment cela s’est terminé. Le réseau publicitaire peut encore examiner la publicité avant de la diffuser, la refuser ou l’arrêter, selon ses propres règles.
+
+### Mettre en pause, relancer et arrêter [#control]
+
+| Action              | Ce qu’elle fait                                                                                                                                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mettre en pause** | Demande au réseau de mettre en pause la campagne de la mise en avant. Celle-ci est `paused` une fois que le réseau l’a confirmé. Son budget reste compté.                                                             |
+| **Relancer**        | Diffuse de nouveau une mise en avant en pause, jusqu’à sa fin. Cela dépense : c’est donc vérifié comme une nouvelle mise en avant, dépenses toujours autorisées, compte utilisable, plafond tel qu’il est maintenant. |
+| **Arrêter**         | Met fin à une mise en avant pour de bon. Une mise en avant pas encore créée ne l’est jamais. Une mise en avant arrêtée ne reprend pas.                                                                                |
+
+Mettre en pause et arrêter sont toujours possibles, pour ceux qui peuvent dépenser comme pour ceux qui gèrent les comptes publicitaires. Demandés deux fois, ils sont faits une fois. Ils prennent effet lorsque le réseau les applique.
+
+Quand le réseau ne répond pas, la mise en avant reste où elle en était (`AdNetworkUnavailable`), et redemander plus tard est sans risque. Une mise en avant peut toujours être mise en pause ou supprimée sur le réseau lui-même.
+
+### États [#states]
+
+| État          | Ce qu’il signifie                                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requested`   | Acceptée, et en cours de création. En pause sur le réseau, sans rien dépenser                                                                               |
+| `active`      | Diffusée                                                                                                                                                    |
+| `paused`      | Mise en pause par un membre                                                                                                                                 |
+| `ended`       | Sa date de fin est passée                                                                                                                                   |
+| `stopped`     | Arrêtée par un membre, pour de bon                                                                                                                          |
+| `failed`      | Elle n’a pas pu être créée, et rien n’a été diffusé. `failureReason` dit pourquoi                                                                           |
+| `unconfirmed` | Peal a demandé au réseau de la diffuser et n’a pas pu relire si elle l’est. Elle dépense peut-être. Son budget reste compté, et l’arrêter règle la question |
+
+<Callout
+  type="warning"
+  title="Une mise en avant non confirmée dépense peut-être"
+>
+  Peal ne renvoie jamais de lui-même une mise en avant non confirmée. Quelqu’un
+  la vérifie, sur la page de la publication ou dans le compte publicitaire, et
+  l’arrête si elle ne doit pas être diffusée.
+</Callout>
+
+### Pourquoi une mise en avant a échoué [#failure-reasons]
+
+Une mise en avant échouée n’a rien dépensé.
+
+| `failureReason`       | Ce qui s’est passé                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `accountUnusable`     | Le compte publicitaire ne peut pas diffuser de publicités pour le moment.                                          |
+| `accountSpendCap`     | Le plafond de dépenses du compte laisse trop peu de marge.                                                         |
+| `ceilingExceeded`     | Le plafond mensuel a été abaissé entre-temps, et laisse trop peu de marge.                                         |
+| `spendingOff`         | Les dépenses ont été désactivées entre-temps pour le compte publicitaire.                                          |
+| `currencyMismatch`    | La devise du budget n’est pas celle du compte publicitaire.                                                        |
+| `budgetTooLow`        | Le budget est inférieur au minimum du réseau.                                                                      |
+| `postNotPromotable`   | La publication a été supprimée, ou ne peut pas être diffusée comme publicité.                                      |
+| `permissionMissing`   | La connexion n’a pas une autorisation que les publicités demandent.                                                |
+| `reconnectNeeded`     | Le réseau a refusé la connexion, que la personne concernée renouvelle en se connectant de nouveau.                 |
+| `networkUnavailable`  | Le réseau a continué de refuser pour le moment. Peal essaie quelques fois sur deux heures environ, puis abandonne. |
+| `refused`             | Le réseau a refusé pour une raison qui lui est propre, que porte `networkCode`.                                    |
+| `spendingUnavailable` | L’instance ne propose plus la dépense.                                                                             |
+
+## L’argent [#money]
+
+Chaque montant est un entier dans les unités mineures de la devise du compte publicitaire, telles que le réseau les compte : des centimes pour `EUR` et `USD`, des yens entiers pour `JPY`.
+
+- Le `minorUnitDigits` d’un compte publicitaire, 2 ou 0, dit comment en afficher un : divisez par 10 à cette puissance, avec la `currency` (un code ISO 4217). `5000` vaut 50,00 € sur un compte en `EUR`, et 5 000 ¥ sur un compte en `JPY`.
+- Faites les calculs sur les entiers, jamais sur des nombres décimaux.
+- Le budget d’une mise en avant est dans la devise de son compte publicitaire, et un budget dans une autre devise est refusé.
+
+### Ce qu’une mise en avant engage [#commitment]
+
+Avant d’accepter une mise en avant, Peal compte ce qu’elle peut coûter au plus, son engagement :
+
+| Budget  | Ce qu’il engage                                                                                                                                                                                                                           |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `total` | Son montant                                                                                                                                                                                                                               |
+| `daily` | Pour chaque semaine civile du fuseau horaire du compte (du dimanche au samedi) que touche la diffusion, son montant et 75 % de plus pour chaque jour de la diffusion dans cette semaine, et jamais plus de 7 fois son montant par semaine |
+
+La page de Meta « À propos des budgets quotidiens » en donne la raison : un jour donné, le réseau peut dépenser jusqu’à 75 % de plus qu’un budget quotidien, soit 175 %, et sur une semaine qui se termine le samedi à minuit, jamais plus de 7 fois ce budget.
+
+Un budget quotidien de 10,00 € sur une diffusion de deux jours engage 35,00 €. Sur une semaine entière, du dimanche au samedi, il engage 70,00 €.
+
+### Le plafond mensuel [#ceiling]
+
+Un propriétaire autorise un compte publicitaire à dépenser avec Peal, avec un plafond mensuel dans la devise du compte. Le plafond est le plus que les mises en avant créées avec Peal peuvent engager sur ce compte au cours d’un mois civil de son fuseau horaire.
+
+- Une mise en avant qui le dépasserait est refusée avant toute réservation et tout envoi (`SpendCeilingExceeded`), dans le mois le plus chargé que sa diffusion touche.
+- Un plafond peut toujours être abaissé, même sous des mises en avant en cours : elles continuent, et rien de nouveau ne démarre ni ne reprend tant qu’il n’y a pas de marge.
+- Désactiver les dépenses est refusé tant qu’une mise en avant est diffusée ou peut l’être : arrêtez-la d’abord.
+- Peal n’active jamais les dépenses, ne relève jamais un plafond ni un budget de lui-même.
+
+L’engagement d’une mise en avant arrêtée est ramené à ce qu’elle a pu coûter : rien si elle n’a jamais été diffusée, les jours de diffusion pour un budget quotidien, tout son budget pour un budget total.
+
+<Callout
+  type="warning"
+  title="Le plafond ne limite que les mises en avant de Peal"
+>
+  Ce n’est pas un plafond du compte publicitaire lui-même : les publicités
+  créées ailleurs, sur le réseau ou avec un autre outil, ne sont pas comptées,
+  ni retenues. Voir [le plafond de dépenses du compte](#spend-cap).
+</Callout>
+
+### Le plafond de dépenses du compte [#spend-cap]
+
+Un compte publicitaire peut avoir son propre plafond de dépenses, fixé sur le réseau, qui couvre tout ce que le compte dépense. Peal le lit, avec ce que le compte a dépensé au regard de lui, et refuse une mise en avant à laquelle il laisse trop peu de marge (`AdAccountSpendCapExceeded`). Ce plafond se relève sur le réseau, jamais par Peal. Pour limiter un compte publicitaire dans son ensemble, fixez ce plafond : le plafond mensuel ne limite que les mises en avant de Peal.
+
+## Règles de sécurité [#safety]
+
+Tout ce qui dépense suit les mêmes règles, quel que soit le demandeur :
+
+- Désactivé par défaut, deux fois. Les publicités sont désactivées tant que l’opérateur de l’instance ne les active pas, et les dépenses sont désactivées sur chaque compte publicitaire tant qu’un propriétaire ne les active pas, avec un plafond mensuel explicite.
+- Seul un propriétaire décide de ce qui peut être dépensé, en personne. Peal n’active jamais les dépenses, ne relève jamais un plafond ni un budget de lui-même.
+- Tout est vérifié avant toute réservation et tout envoi : les règles propres à la mise en avant, le plafond, le plafond de dépenses du compte, l’état du compte et sa connexion.
+- Une date de fin est obligatoire. Aucune mise en avant n’est diffusée sans elle, ni plus de 90 jours.
+- Une mise en avant est créée en pause et activée en dernier. Rien ne peut dépenser avant que toute la mise en avant existe telle qu’elle a été demandée.
+- Rien n’est renvoyé deux fois à l’aveugle. Une requête dont la réponse s’est perdue est recherchée sur le réseau avant tout nouvel envoi. Si Peal ne peut toujours pas savoir, la mise en avant est `unconfirmed`, et une personne décide.
+- Mettre en pause et arrêter sont toujours là, pour ceux qui dépensent et ceux qui gèrent les comptes publicitaires.
+- Chaque décision est consignée dans le [journal d’audit](#audit), avec son auteur et les montants.
+
+## Notifications [#notices]
+
+Les propriétaires de l’espace de travail sont prévenus pour chaque mise en avant, dans l’application et par e-mail :
+
+- elle a démarré ;
+- elle s’est terminée ;
+- elle a utilisé tout son budget ;
+- elle n’a pas pu être créée ;
+- Peal n’a pas pu confirmer qu’elle est diffusée.
+
+Les membres qui gèrent les comptes publicitaires sont prévenus lorsqu’une connexion à un réseau publicitaire doit être renouvelée. Ces e-mails sont toujours envoyés : un propriétaire répond de ce qui est dépensé. [Notifications](/guides/workspace/notifications#events) les liste avec les autres.
+
+## Le journal d’audit [#audit]
+
+Chaque décision sur les dépenses et chaque modification d’une mise en avant est consignée, avec son auteur et les montants :
+
+- un compte publicitaire connecté ou déconnecté ;
+- les dépenses activées ou désactivées ;
+- un plafond modifié ;
+- une mise en avant demandée, démarrée, non confirmée, échouée, mise en pause, relancée, arrêtée ou terminée.
+
+Une ligne nomme un membre, ou une clé d’API, et l’application qui a agi pour le membre le cas échéant. Ce que les tâches de Peal ont constaté d’elles-mêmes, comme une fin, ne nomme personne.
+
+Les propriétaires le lisent, et personne d’autre (`ads:authorize`), du plus récent au plus ancien, 100 lignes par page. Une ligne est conservée 396 jours (13 mois). Une fois le compte d’un membre fermé, ses lignes restent sans son nom.

@@ -1,0 +1,114 @@
+---
+title: Conventions de l’API
+description: "Ce que tous les points d’accès ont en commun : identifiants de requête, forme des réponses et authentification."
+sidebar:
+  icon: book-open
+---
+
+Tous les points d’accès de l’[API](/developers) suivent les règles de cette page : un client écrit pour l’un sait traiter les autres. La [référence de l’API](/reference) dit ce que chaque point d’accès attend et répond ; cette page dit ce qu’ils ont en commun.
+
+<CardGroup cols={2}>
+  <Card
+    title="Erreurs"
+    href="/developers/conventions/errors"
+    icon="circle-alert"
+  >
+    Le format des erreurs, que faire de chacune, et tous les codes.
+  </Card>
+  <Card
+    title="Identifiants et instants"
+    href="/developers/conventions/ids"
+    icon="fingerprint"
+  >
+    Comment s’écrivent les identifiants, les instants et les fuseaux horaires.
+  </Card>
+  <Card title="Pagination" href="/developers/conventions/paging" icon="list">
+    Lire une liste page par page.
+  </Card>
+  <Card
+    title="Idempotence"
+    href="/developers/conventions/idempotency"
+    icon="repeat"
+  >
+    Renvoyer une requête sans publier deux fois.
+  </Card>
+  <Card
+    title="Limites de débit"
+    href="/developers/conventions/rate-limits"
+    icon="gauge"
+  >
+    Combien de requêtes une clé peut envoyer.
+  </Card>
+  <Card
+    title="Versions et changements"
+    href="/developers/conventions/versioning"
+    icon="git-branch"
+  >
+    Comment l’API évolue, les dépréciations et le journal des modifications.
+  </Card>
+  <Card
+    title="Découverte"
+    href="/developers/conventions/discovery"
+    icon="radar"
+  >
+    Les documents qui disent à un programme où est l’API.
+  </Card>
+</CardGroup>
+
+## Requêtes et réponses [#requests]
+
+Les requêtes vont à l’adresse où vous ouvrez Peal, sous `/api`. Les corps sont en JSON, envoyés avec `Content-Type: application/json`, et les réponses aussi, sauf celles qui n’ont pas de corps (204).
+
+Chaque réponse porte un en-tête `X-Request-Id`, quel que soit ce qui a répondu, et que la requête ait abouti ou non :
+
+- Envoyez votre propre `X-Request-Id` et Peal le garde, s’il compte de 8 à 128 caractères parmi les lettres, les chiffres, `.`, `_`, `:` et `-`. Sinon le serveur en attribue un, un UUIDv7.
+- Cet identifiant figure sur chaque ligne que le serveur journalise pour la requête (`peal.request_id`), dans le corps de chaque erreur (`requestId`) et dans le [journal d’activité](/guides/workspace#activity) de l’espace de travail.
+- Journalisez-le de votre côté, et citez-le quand vous demandez de l’aide.
+
+```bash
+curl -i https://api.example.com/api/workspaces/$WORKSPACE_ID/channels \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "X-Request-Id: nightly-sync:2026-11-16:0042"
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Request-Id: nightly-sync:2026-11-16:0042
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=599;t=42
+```
+
+L’API ne fait qu’ajouter à ce qu’elle répond ([Versions](/developers/conventions/versioning#versioning)) : ignorez les champs, les valeurs et les erreurs que votre client ne connaît pas.
+
+## Authentification [#authentication]
+
+Chaque point d’accès de l’API demande un moyen d’authentification, envoyé en `Authorization: Bearer …`, en dehors des sondes de santé, du journal des modifications et des [documents de découverte](/developers/conventions/discovery#discovery). Quelques autres points d’accès répondent à quelqu’un qui n’est pas membre, par d’autres moyens :
+
+- les pages d’un [lien de connexion](/developers/embedding) ou d’un [lien de relecture](/guides/posts/review), qui répondent au jeton du lien ;
+- les rappels de suppression de données des plateformes, que la plateforme signe ;
+- ce que les pages de l’application web envoient avant toute connexion : ses rapports d’erreur, la clé de site du captcha, les routes de connexion sous `/api/auth`.
+
+Les moyens d’authentification :
+
+| Moyen                   | Agit en tant que                                                        | Ce qui lui est permis                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Une clé d’API, `peal_…` | La clé elle-même, dans le seul espace de travail auquel elle appartient | Les permissions choisies à sa création, comme `post:read` ou `post:schedule` ([Clés d’API](/guides/workspace#api-keys))                    |
+| Un jeton d’accès OAuth  | Le membre qui a connecté l’application                                  | Ce que le rôle du membre permet, dans la limite des scopes qu’il a accordés ([Ce que permet chaque permission](/developers/agents#scopes)) |
+
+Le cookie de session de l’application web est réservé à l’application web. La section [Authentification](/developers#authentication) de la présentation décrit chacun de ces moyens.
+
+La référence de chaque point d’accès nomme la permission qu’il demande. Un jeton OAuth doit aussi porter le scope qui la contient :
+
+| Scope               | Nécessaire pour                                                                                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace:read`    | Lire                                                                                                                                                                  |
+| `workspace:write`   | Changer quelque chose                                                                                                                                                 |
+| `workspace:publish` | Tout ce qui demande `post:schedule`                                                                                                                                   |
+| `workspace:ads`     | Ce qui atteint un réseau publicitaire : avec `workspace:write` pour `ads:manage`, avec `workspace:publish` pour `ads:spend` ([Publicités](/guides/engage/ads#access)) |
+
+| Statut | Code              | Quand                                                                                                                             |
+| ------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 401    | `unauthenticated` | Aucun moyen d’authentification, ou un moyen qui ne fonctionne plus : une clé révoquée ou expirée, un jeton périmé.                |
+| 403    | `forbidden`       | Le moyen fonctionne, mais ne permet pas la requête. `reason` dit pourquoi ([plus bas](/developers/conventions/errors#forbidden)). |
+| 404    | `not_found`       | Aucune ressource de ce nom, ou un espace de travail auquel l’appelant n’appartient pas.                                           |

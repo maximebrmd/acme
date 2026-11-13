@@ -100,9 +100,7 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
                 type: "application/openapi+json",
               },
             ],
-            "service-doc": [
-              { href: `${docs}/api-overview`, type: "text/html" },
-            ],
+            "service-doc": [{ href: `${docs}/developers`, type: "text/html" }],
             "service-meta": [
               {
                 href: `${origin}/.well-known/oauth-protected-resource/api`,
@@ -119,7 +117,9 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
                 type: "application/mcp-server-card+json",
               },
             ],
-            "service-doc": [{ href: `${docs}/mcp`, type: "text/html" }],
+            "service-doc": [
+              { href: `${docs}/developers/mcp`, type: "text/html" },
+            ],
             "service-meta": [
               {
                 href: `${origin}/.well-known/oauth-protected-resource/api/mcp`,
@@ -274,7 +274,7 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
         assert.isAbove(links.length, 6);
         assert.include(links, `${origin}/api/openapi.json`);
         assert.include(links, `${origin}/api/mcp`);
-        assert.include(links, `${docs}/api-conventions`);
+        assert.include(links, `${docs}/developers/conventions`);
 
         for (const link of links) {
           assert.isTrue(

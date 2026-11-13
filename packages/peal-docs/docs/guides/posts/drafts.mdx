@@ -1,0 +1,72 @@
+---
+title: Drafts and all posts
+description: Keep drafts, find any post of the workspace, and import posts from a file.
+sidebar:
+  icon: file-text
+---
+
+Find the posts that have no time yet, list every post of the workspace, and schedule many at once from a CSV file.
+
+## Drafts [#drafts]
+
+From a workspace's card, **Drafts** lists the posts without a time yet, newest first, 20 at a time. Each shows the start of its text, its channels and its media, and opens in the composer.
+
+To drop a draft, choose **Discard the draft** in the composer and confirm. It is deleted, and its images and videos stay in the media library. Owners, admins and editors discard any draft; a contributor discards those they wrote.
+
+From the command line ([Drafts](/developers/cli/posts#drafts)):
+
+```sh
+peal drafts list                  # newest first; --limit and --cursor page through them
+peal drafts discard <post-id>
+```
+
+## All posts [#all-posts]
+
+From a workspace's card, **All posts** lists its posts whatever their state, newest first, with **Show more** for the next page. Each opens on its page and shows:
+
+- the start of its text;
+- its time in your time zone;
+- its status and, once finished, its outcome;
+- its channels and its tags.
+
+Filter by status, by outcome (with finished posts), by channel and by tag, and order by creation or by time. Ordered by time, the list holds only the posts that have one. The filters are in the page's address, so a link shows the same list.
+
+## Import posts from a file [#import-screen]
+
+From **All posts**, **Import from a file** schedules up to 100 posts at once from a CSV file, one post a row. Owners, admins and editors may: it takes the right to schedule.
+
+The page lists the columns the file takes, offers a sample to start from, and lists the workspace's channels with their ids, to copy into the file's `channels` column, and its channel sets' names. [Import posts from a CSV file](/developers/posting/bulk#import) describes each column and every answer.
+
+<Steps>
+  <Step title="Choose a file">
+    Peal checks every row, and makes nothing. Each row shows as valid, refused
+    with the reason, or unreadable with the cells at fault.
+  </Step>
+  <Step title="Correct it until every row is valid">
+    It is all or nothing: **Import** is offered only once every row is valid.
+    Otherwise, correct the file and choose it again.
+  </Step>
+  <Step title="Import">
+    **Import** asks once, saying how many posts will be scheduled, then makes
+    them in order and links each one.
+  </Step>
+</Steps>
+
+<Callout type="warning">
+  A row dated `now` goes out as soon as it is made, in public. The others wait
+  for their time.
+</Callout>
+
+A row can still be refused while the file is imported, when something changed since the check, such as the month's room on the plan. The other rows' posts are still made, before it and after it, and the page says which rows were not.
+
+<Callout type="warning">
+  Correct the refused rows and import them in a file of their own. Importing the
+  same file again would make the others twice.
+</Callout>
+
+From the command line, `--dry-run` only checks the file, and `--idempotency-key` makes the import safe to run again within 24 hours ([Posts](/developers/cli/posts#posts)):
+
+```sh
+peal posts import posts.csv --dry-run
+peal posts import posts.csv --idempotency-key spring-campaign-2026-11
+```

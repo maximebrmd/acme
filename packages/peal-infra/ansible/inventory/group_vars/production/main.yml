@@ -142,11 +142,18 @@ peal_settings:
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"
 
-# Read when the static image is built.
+# Read when the static image is built, and the DOCS_* ones when the docs
+# image is: a model turns the docs' assistant on (group_vars/all,
+# peal_docs_server), with its Anthropic key, DOCS_ANTHROPIC_API_KEY, in the
+# vault. The assistant has no Turnstile check (DOCS_TURNSTILE_SITE_KEY)
+# until a widget for the docs' host name exists; the rate limit counts each
+# reader by cf-connecting-ip meanwhile.
 peal_static_build_args:
   SITE_URL: https://peal.social
   SITE_APP_URL: https://app.peal.social
   SITE_DOCS_URL: https://docs.peal.social
   DOCS_SITE_URL: https://docs.peal.social
+  DOCS_APP_URL: https://app.peal.social
+  DOCS_ASSISTANT_MODEL: claude-haiku-5-5
   SITE_PLAUSIBLE_DOMAIN: peal.social
   DOCS_PLAUSIBLE_DOMAIN: docs.peal.social

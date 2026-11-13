@@ -1,0 +1,55 @@
+---
+title: Media storage
+description: The S3-compatible store where a self-hosted Peal keeps images and videos, and the upload rule browsers need.
+sidebar:
+  icon: hard-drive
+---
+
+Peal keeps images and videos in any S3-compatible store. Browsers upload to the bucket directly, so the bucket needs an upload rule as well as the server's settings.
+
+## Media storage [#media-storage]
+
+| Setting                                                                                    | Required | What it does                                                                                   |
+| ------------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------- |
+| `PEAL_S3_ENDPOINT`, `PEAL_S3_BUCKET`, `PEAL_S3_ACCESS_KEY_ID`, `PEAL_S3_SECRET_ACCESS_KEY` | Yes      | The store, the bucket and the key. The server's key needs only to read and write objects.      |
+| `PEAL_MEDIA_PUBLIC_BASE_URL`                                                               | No       | The bucket's public address, if it is also served publicly (see [Public links](#public-links)) |
+
+[Environment variables](/self-hosting/environment-variables#media) lists the other media settings, with their defaults.
+
+### On Cloudflare R2 in the EU [#r2-eu]
+
+To keep media in the EU on Cloudflare R2, create the bucket in R2's EU jurisdiction, in the dashboard or with Wrangler:
+
+```sh
+wrangler r2 bucket create <name> --jurisdiction eu
+```
+
+Then reach it at the `.eu.` endpoint, `https://<account>.eu.r2.cloudflarestorage.com`, in `PEAL_S3_ENDPOINT`. Wrangler's other bucket commands need `--jurisdiction eu` too. The same goes for a backup bucket, whose endpoint is a host without a scheme.
+
+<Callout type="warning" title="The jurisdiction is for good">
+  A bucket's jurisdiction cannot be changed later.
+</Callout>
+
+### The upload rule [#cors]
+
+Browsers send media straight to the bucket, with requests the server signs. The bucket must let the web app's origin send them: a CORS rule that allows `PUT` from that origin with the `Content-Type` and `If-None-Match` headers.
+
+With the server's variables set, and `PUBLIC_URL` and `TRUSTED_ORIGINS` naming the web app's origins, this command puts the rule on the bucket, keeping its other rules:
+
+```sh
+bun nx run peal-server:media-cors
+```
+
+It also prints the same policy for Cloudflare R2's dashboard (R2 › the bucket › Settings › CORS policy). Running it again changes nothing. Its access key must be allowed to change the bucket's settings.
+
+### Unfinished uploads [#multipart]
+
+Large videos go up in parts. An upload left unfinished keeps its parts in the store, so add a lifecycle rule that aborts incomplete multipart uploads after a day, where your store supports one.
+
+### Reading the files [#probe]
+
+Once a file is stored, the server reads it: an image's dimensions with sharp, a video's dimensions, duration and codec with ffprobe, which the server's image ships. A video uploaded to a server without ffprobe stays uploaded, marked as unread, until it is completed again on a server that has it.
+
+### Public links [#public-links]
+
+Pages show media through short-lived signed links. If the bucket is also served publicly, as through an R2 custom domain, set `PEAL_MEDIA_PUBLIC_BASE_URL` to that address, and links to media use it instead.
