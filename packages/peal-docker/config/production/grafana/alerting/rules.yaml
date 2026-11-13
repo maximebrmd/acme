@@ -740,3 +740,101 @@ groups:
                 - evaluator:
                     type: gt
                     params: [0]
+
+      - uid: peal-usage-report-behind
+        title: Usage waits to reach Stripe
+        condition: B
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The oldest meter event in the outbox to Stripe was written more than 6 hours ago (peal.billing.usage_report.oldest_age, with peal.billing.usage_report.left the events waiting), so per-account pricing's usage is billed late, and may land on the next month's invoice. Look at the billing.usage-report cron's logs, which say how many events each run sent, deferred and left; Stripe not answering, or limiting the rate, defers a customer's events to the next run.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Set by each run on a server that bills; one that does not
+              # never sets it.
+              expr: max(peal_billing_usage_report_oldest_age) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [21600]
+
+      - uid: peal-usage-report-stopped
+        title: The reporter of usage to Stripe stopped
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The reporter of usage to Stripe (the billing.usage-report cron, every five minutes) has not ended a run for 30 minutes (peal.billing.usage_report.ran_at), so nothing of per-account pricing's usage reaches Stripe. Look at the server's logs for the cron's failures ("Reporting usage to Stripe failed") and at the cluster's runners.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Seconds since the last run ended; no data on a server that
+              # does not bill, or before its first run.
+              expr: time() - max(peal_billing_usage_report_ran_at)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1800]
+
+      - uid: peal-usage-report-refused
+        title: Stripe refused usage for good
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe refused a meter event for good (peal.billing.usage_report.refused), so that usage is not billed. The server's error log ("Stripe refused a meter event for good") gives Stripe's error code, the event name and its identifier; billing.meter_reports keeps the event with its refusal. Fix the cause (the catalogue's meters, the customer), then report the usage again by hand in Stripe's dashboard if it is to be billed.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Rare: any in the hour is one too many.
+              expr: sum(increase(peal_billing_usage_report_refused_total[1h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]

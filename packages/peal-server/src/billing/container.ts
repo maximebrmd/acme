@@ -20,9 +20,11 @@ import { ReceiveContractRequest } from "#billing/application/receive-contract-re
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
+import { ReportUsage } from "#billing/application/report-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
@@ -58,6 +60,7 @@ import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
 import { StripeUsageBillingLive } from "#billing/infrastructure/stripe-usage-billing.ts";
+import { usageReporting } from "#billing/infrastructure/usage-report-cron.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
 import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
@@ -73,6 +76,7 @@ const RecordsLive = Layer.mergeAll(
   DrizzleTrialsLive,
   DrizzleMeteredPostLedgerLive,
   DrizzleUsageLedgerLive,
+  DrizzleAccountDayStoreLive,
   ConfiguredBillingModeLive
 );
 
@@ -207,7 +211,14 @@ export const BillingOverviewLive = Layer.mergeAll(
   CancelSubscription.layer,
   Withdraw.layer,
   SendBillingReminders.layer,
-  SnapshotUsage.layer,
+  // Today's account-days start with the snapshot, from the channels the
+  // channels context counts.
+  ReportUsage.layer,
+  SnapshotUsage.layer.pipe(
+    Layer.provide(
+      StartAccountDays.layer.pipe(Layer.provide(ContextAccountChannelsLive))
+    )
+  ),
   UsageReports.layer,
   UsageAtCheckoutBound,
   AccountActionsLive,
@@ -225,6 +236,7 @@ export const BillingOverviewLive = Layer.mergeAll(
       WorkspaceAccountPayersLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
+      StripeUsageBillingLive,
       NotifiedBillingNoticesLive,
       ContextWorkspaceUsageLive.pipe(Layer.provide(ConfiguredBillingModeLive)),
       ContextMemberAddressesLive,
@@ -300,14 +312,16 @@ export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
 
 /**
  * The billing context's crons: the hourly confirmations and reminders, the
- * daily purge of erased workspaces' contract records, and the daily
- * snapshot of every workspace's usage.
+ * daily purge of erased workspaces' contract records, the daily snapshot
+ * of every workspace's usage, and, on a server that bills only, the
+ * reporter of usage to Stripe and its daily step.
  */
 export const BillingCronsLive = Layer.mergeAll(
   billingReminders,
   contractRequests,
   contractRetention,
-  usageSnapshot
+  usageSnapshot,
+  usageReporting
 );
 
 // The billing endpoints. They need the use cases BillingOverviewLive

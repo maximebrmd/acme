@@ -5,6 +5,7 @@ import { Clock, DateTime, Effect, Layer, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { UsageStates } from "#billing/application/ports/usage-states.ts";
 import type {
@@ -12,6 +13,7 @@ import type {
   WorkspaceDayState,
 } from "#billing/application/ports/usage-states.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import type { UsageRecord, UsageState } from "#billing/domain/usage-meter.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -114,9 +116,34 @@ const AccountsResolvedTest = Layer.mock(BillingAccounts, {
     Ref.update(resolved, (all) => [...all, workspaceIds]).pipe(Effect.as(0)),
 });
 
+// The days the snapshot started, and the account-days it purged before.
+const started = Ref.makeUnsafe(0);
+
+const accountDaysPurged = Ref.makeUnsafe<readonly DateTime.Utc[]>([]);
+
+const AccountDaysTest = Layer.mergeAll(
+  Layer.succeed(
+    StartAccountDays,
+    StartAccountDays.of({
+      run: Ref.updateAndGet(started, (runs) => runs + 1).pipe(Effect.as(3)),
+    })
+  ),
+  Layer.mock(AccountDayStore, {
+    purgeBefore: (cutoff) =>
+      Ref.update(accountDaysPurged, (all) => [...all, cutoff]).pipe(
+        Effect.as(0)
+      ),
+  })
+);
+
 const SnapshotTest = SnapshotUsage.make(2).pipe(
   Layer.provide(
-    Layer.mergeAll(StatesTest, RecordingLedger, AccountsResolvedTest)
+    Layer.mergeAll(
+      StatesTest,
+      RecordingLedger,
+      AccountsResolvedTest,
+      AccountDaysTest
+    )
   ),
   Layer.provideMerge(DrizzleUsageLedgerLive),
   Layer.provideMerge(DatabaseTest)
@@ -170,6 +197,12 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
 
         assert.deepStrictEqual(run.day, yesterday);
         assert.strictEqual(run.workspaces, 4);
+        // Today's account-days started, and those past 400 days purged.
+        assert.strictEqual(run.accountDays, 3);
+        assert.strictEqual(yield* Ref.get(started), 1);
+        assert.deepStrictEqual(yield* Ref.get(accountDaysPurged), [
+          day("2025-10-07"),
+        ]);
         // It purged the days past the 400 the ledger keeps, and says how
         // many rows went.
         assert.deepStrictEqual(yield* Ref.get(purges), [

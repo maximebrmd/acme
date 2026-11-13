@@ -31,6 +31,9 @@ const watched = [
   "peal_publishing_feeds_overdue",
   "peal_billing_stripe_catalogue_problems",
   "peal_billing_duplicate_subscriptions_total",
+  "peal_billing_usage_report_oldest_age",
+  "peal_billing_usage_report_ran_at",
+  "peal_billing_usage_report_refused_total",
 ];
 
 const RuleSchema = Schema.Struct({
@@ -100,6 +103,42 @@ describe("the production alert rules", () => {
       "sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)"
     );
   });
+
+  it.each([
+    [
+      "peal-usage-report-behind",
+      "max(peal_billing_usage_report_oldest_age) or vector(0)",
+      "warning",
+      21_600,
+    ],
+    [
+      "peal-usage-report-stopped",
+      "time() - max(peal_billing_usage_report_ran_at)",
+      "warning",
+      1800,
+    ],
+    [
+      "peal-usage-report-refused",
+      "sum(increase(peal_billing_usage_report_refused_total[1h])) or vector(0)",
+      "critical",
+      0,
+    ],
+  ])(
+    "alert from %s when usage stops reaching Stripe, quiet where nothing bills",
+    (uid, expr, severity, threshold) => {
+      const rule = ruleOf(uid);
+
+      expect(rule).toMatchObject({
+        execErrState: "Error",
+        labels: { severity },
+        noDataState: "OK",
+      });
+      expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
+        expr
+      );
+      expect(rules).toContain(`params: [${threshold}]`);
+    }
+  );
 
   it("give every rule its own uid", () => {
     const uids = [...rules.matchAll(/- uid: (?<uid>\S+)/gu)].map(

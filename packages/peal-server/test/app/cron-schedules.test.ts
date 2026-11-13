@@ -109,6 +109,27 @@ describe("the crons' schedules", () => {
     })
   );
 
+  it.effect(
+    "report usage to Stripe every five minutes from minute 3, never with a job that uses the gates",
+    () =>
+      Effect.gen(function* reporter() {
+        const crons = yield* everyCron;
+        const report = crons.find(
+          ({ name }) => name === "billing.usage-report"
+        );
+        const reported = report === undefined ? [] : minutesOf(report);
+
+        assert.deepStrictEqual(reported.slice(0, 4), [3, 8, 13, 18]);
+        assert.lengthOf(reported, 24 * 12);
+
+        const gates = new Set(
+          crons.filter(({ name }) => gated.includes(name)).flatMap(minutesOf)
+        );
+
+        assert.isFalse(reported.some((minute) => gates.has(minute)));
+      })
+  );
+
   it.effect("never start two jobs that use the gates on the same minute", () =>
     Effect.gen(function* takesTurns() {
       const crons = (yield* everyCron).filter(({ name }) =>

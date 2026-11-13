@@ -5,13 +5,19 @@ import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
+import { AccountDayStore } from "./ports/account-day-store.ts";
 import { UsageLedger } from "./ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "./ports/usage-ledger.ts";
 import { UsageStates } from "./ports/usage-states.ts";
 import type { WorkspaceDayState } from "./ports/usage-states.ts";
+import { StartAccountDays } from "./start-account-days.ts";
 
 /** What a snapshot did. */
 export interface UsageSnapshotRun {
+  /** The billing accounts whose day (today) it started. */
+  readonly accountDays: number;
+  /** The account-days and sent reports deleted, past their 400 days. */
+  readonly accountDaysPurged: number;
   /** The day (UTC, its first instant) it wrote the states of. */
   readonly day: DateTime.Utc;
   /** The ledger's rows deleted, past their 400 days. */
@@ -53,9 +59,11 @@ const recordsOf = (
  * second server, changes nothing. A day it never ran for keeps no state:
  * none is written for it later. A workspace erased while its batch was
  * written has those rows deleted again. Each batch's workspaces are given
- * their billing account, those nobody read yet included (the sweep). Then,
- * whether the snapshot went
- * through or not, it deletes the rows past their 400 days.
+ * their billing account, those nobody read yet included (the sweep). Then
+ * it starts today's account-days of every billing account
+ * (`StartAccountDays`, on a server that bills), and, whether the snapshot
+ * went through or not, it deletes the ledger's rows, the account-days and
+ * the reports sent past their 400 days.
  */
 export class SnapshotUsage extends Context.Service<
   SnapshotUsage,
@@ -69,6 +77,8 @@ export class SnapshotUsage extends Context.Service<
         const states = yield* UsageStates;
         const ledger = yield* UsageLedger;
         const accounts = yield* BillingAccounts;
+        const startDays = yield* StartAccountDays;
+        const accountDays = yield* AccountDayStore;
 
         // Every workspace's states, batch by batch: how many it wrote.
         const snapshot = Effect.fn("SnapshotUsage.snapshot")(function* snapshot(
@@ -131,9 +141,33 @@ export class SnapshotUsage extends Context.Service<
                 Effect.logWarning("Repairing billing accounts failed", cause)
               )
             );
+
+          // Today's account-days, once every workspace has its account; a
+          // failure leaves them to the day's first connection.
+          const started = yield* startDays.run.pipe(
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Starting the day's account-days failed",
+                cause
+              ).pipe(Effect.as(0))
+            )
+          );
+
           const purged = yield* ledger.purgeBefore(usageCutoff(now));
+
+          const accountDaysPurged = yield* accountDays.purgeBefore(
+            usageCutoff(now)
+          );
+
           const workspaces = yield* taken;
-          const done: UsageSnapshotRun = { day, purged, workspaces };
+
+          const done: UsageSnapshotRun = {
+            accountDays: started,
+            accountDaysPurged,
+            day,
+            purged,
+            workspaces,
+          };
 
           return done;
         }).pipe(Effect.withSpan("SnapshotUsage.run"));
