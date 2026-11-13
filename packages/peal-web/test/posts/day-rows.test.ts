@@ -6,6 +6,7 @@ import {
   dayRows,
   offsetChangesOn,
   queueSlotsOn,
+  slotHolders,
   slotStartOf,
 } from "#posts/day-rows.ts";
 import type { CalendarDate } from "#posts/zoned-time.ts";
@@ -205,6 +206,35 @@ describe(dayRows, () => {
 
   it("has no row on a day with nothing", () => {
     expect(dayRows([], [], [])).toStrictEqual([]);
+  });
+});
+
+describe(slotHolders, () => {
+  const placed = (iso: string, id: string, status: string) => ({
+    at: utc(iso),
+    post: { id, queueId: "a", status },
+  });
+
+  const now = utc("2026-03-29T12:00:00Z");
+
+  it("holds a slot ahead with a post still to go, a past one with any post", () => {
+    expect(
+      slotHolders(
+        [
+          placed("2026-03-29T15:00:00Z", "ahead", "scheduled"),
+          placed("2026-03-29T16:00:00Z", "waiting", "awaitingApproval"),
+          // Gone out: it held its slot then, and a future one is free
+          // again once the server says so.
+          placed("2026-03-29T09:00:00Z", "out", "finished"),
+          placed("2026-03-29T17:00:00Z", "early", "finished"),
+          {
+            at: utc("2026-03-29T10:00:00Z"),
+            post: { id: "free", queueId: null, status: "finished" },
+          },
+        ],
+        now
+      ).map(({ postId }) => postId)
+    ).toStrictEqual(["ahead", "waiting", "out"]);
   });
 });
 

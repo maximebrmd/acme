@@ -104,6 +104,37 @@ export interface SlotHolder {
   readonly queueId: string;
 }
 
+// The statuses of a post that holds its queue's slot ahead, as the server
+// counts one.
+const holdingStatuses: ReadonlySet<string> = new Set([
+  "awaitingApproval",
+  "publishing",
+  "scheduled",
+]);
+
+/**
+ * The loaded posts (the filters' hidden ones included) that hold their
+ * queue's slot: ahead of `now`, one scheduled, waiting for an approval or
+ * going out; at a time past, any post of the queue, as the slot was used.
+ */
+export const slotHolders = (
+  loaded: readonly {
+    readonly at: DateTime.Utc;
+    readonly post: {
+      readonly id: string;
+      readonly queueId: string | null;
+      readonly status: string;
+    };
+  }[],
+  now: DateTime.Utc
+): readonly SlotHolder[] =>
+  loaded.flatMap(({ at, post }) =>
+    post.queueId !== null &&
+    (holdingStatuses.has(post.status) || DateTime.isLessThan(at, now))
+      ? [{ at, postId: post.id, queueId: post.queueId }]
+      : []
+  );
+
 /** A time of the day, the posts at it and the queues' slots there. */
 export interface DayRow<Placed extends DayPlaced> {
   readonly at: DateTime.Utc;

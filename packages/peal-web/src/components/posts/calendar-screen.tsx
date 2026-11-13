@@ -43,8 +43,12 @@ import {
 } from "#posts/api.ts";
 import { filtered, knownFilter, noFilter } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
-import { dayRows, queueSlotsOn, slotStartOf } from "#posts/day-rows.ts";
-import type { SlotHolder } from "#posts/day-rows.ts";
+import {
+  dayRows,
+  queueSlotsOn,
+  slotHolders,
+  slotStartOf,
+} from "#posts/day-rows.ts";
 import { isRemovedEverywhere } from "#posts/live-post.ts";
 import { failureOf } from "#posts/outcome.ts";
 import { isAhead, startAtOf, startTimeOn } from "#posts/start-time.ts";
@@ -117,19 +121,6 @@ const placedIn = (posts: readonly Post[], timeZone: string): Placed[] =>
       ({ date, time }) => ({ at: schedule.at, date, hour: time.hour, post })
     );
   });
-
-// The posts that hold their queue's slot, as the server counts one, the
-// filters' hidden ones included: scheduled, waiting for an approval or
-// going out.
-const slotHolders = (loaded: readonly Placed[]): readonly SlotHolder[] =>
-  loaded.flatMap(({ at, post }) =>
-    post.queueId !== null &&
-    (post.status === "scheduled" ||
-      post.status === "awaitingApproval" ||
-      post.status === "publishing")
-      ? [{ at, postId: post.id, queueId: post.queueId }]
-      : []
-  );
 
 // A scheduled post moves, and so does one that waits for an approval: it
 // keeps waiting, for its new time.
@@ -895,7 +886,7 @@ const CalendarView = ({
                 })
               : null
           }
-          rows={dayRows(placed, daySlots, slotHolders(loaded))}
+          rows={dayRows(placed, daySlots, slotHolders(loaded, now))}
           timeZone={timeZone}
         />
       );
