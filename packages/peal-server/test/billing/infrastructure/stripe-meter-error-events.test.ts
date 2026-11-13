@@ -1,7 +1,7 @@
 // Stripe's meter error events as their destination receives them: thin
 // events, signed, read in full from Stripe's API (a stand-in here).
 import { assert, layer } from "@effect/vitest";
-import { ConfigProvider, Context, Effect, Layer } from "effect";
+import { ConfigProvider, Context, Effect, Layer, Logger } from "effect";
 import { Stripe } from "stripe";
 
 import { MeterErrorEvents } from "#billing/application/ports/meter-error-events.ts";
@@ -10,6 +10,7 @@ import {
   json,
   platformServer,
 } from "#test/publishing/fakes/platform-server.ts";
+import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 
 const secret = "whsec_synthetic_meter_errors";
 
@@ -127,6 +128,112 @@ layer(Layer.empty)("Stripe's meter error events", (it) => {
         assert.deepStrictEqual(yield* off.read(payload, signed(payload)), {
           _tag: "refused",
         });
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "count a signed report Stripe gives no sample of, or whose full event it refuses or the server cannot read, and wait on an outage, asked once",
+    () =>
+      Effect.gen(function* unreadable() {
+        // What the full event answers, by the event's id.
+        const answers = new Map<string, PlatformAnswer>(
+          Object.entries({
+            "/v2/core/events/evt_bare": json({
+              data: {
+                reason: {
+                  error_types: [{ code: "no_meter", error_count: 4 }],
+                },
+              },
+              id: "evt_bare",
+              object: "v2.core.event",
+            }),
+            "/v2/core/events/evt_gone": json(
+              {
+                error: { message: "synthetic", type: "invalid_request_error" },
+              },
+              404
+            ),
+            "/v2/core/events/evt_odd": json({
+              id: "evt_odd",
+              object: "v2.core.event",
+            }),
+            "/v2/core/events/evt_outage": json(
+              { error: { message: "synthetic", type: "api_error" } },
+              500
+            ),
+          })
+        );
+
+        const stripe = yield* platformServer(
+          ({ path }) => answers.get(path) ?? json({}, 404)
+        );
+
+        const events = yield* eventsOn(stripe.url, secret);
+
+        const of = (id: string) => {
+          const payload = JSON.stringify({
+            id,
+            object: "v2.core.event",
+            type: "v1.billing.meter.no_meter_found",
+          });
+
+          return events.read(payload, signed(payload));
+        };
+
+        assert.deepStrictEqual(yield* of("evt_bare"), {
+          _tag: "report",
+          report: {
+            errors: [{ code: "no_meter", count: 4, identifiers: [] }],
+            eventId: "evt_bare",
+          },
+        });
+
+        for (const id of ["evt_gone", "evt_odd"]) {
+          assert.deepStrictEqual(yield* of(id), {
+            _tag: "report",
+            report: {
+              errors: [{ code: "unreadable", count: 1, identifiers: [] }],
+              eventId: id,
+            },
+          });
+        }
+
+        const outage = yield* of("evt_outage").pipe(Effect.flip);
+
+        assert.strictEqual(outage._tag, "StripeUnreachable");
+        // Asked once: Stripe sends the event again, not the client.
+        assert.lengthOf(
+          stripe
+            .requests()
+            .filter(({ path }) => path === "/v2/core/events/evt_outage"),
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "say when the endpoint is on, and warn at the start of a server that bills without it",
+    () =>
+      Effect.gen(function* configured() {
+        const lines: string[] = [];
+
+        const logs = Logger.layer([
+          Logger.make(({ message }) => {
+            lines.push(JSON.stringify(message));
+          }),
+        ]);
+
+        const on = yield* eventsOn("http://127.0.0.1:1", secret);
+
+        const off = yield* eventsOn("http://127.0.0.1:1", "").pipe(
+          Effect.provide(logs)
+        );
+
+        assert.isTrue(on.enabled);
+        assert.isFalse(off.enabled);
+        assert.isTrue(
+          lines.some((line) => line.includes("STRIPE_METER_WEBHOOK_SECRET"))
+        );
       }).pipe(Effect.scoped)
   );
 });
