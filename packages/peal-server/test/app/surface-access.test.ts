@@ -170,6 +170,89 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             [200, 404, 404, 404, 404]
           );
 
+          // The billing accounts desk is the same: staff in their own
+          // session, and nobody else.
+          const accountsDesk = (headers: Readonly<Record<string, string>>) =>
+            app
+              .request("/api/admin/billing/shared-channels", { headers })
+              .pipe(Effect.map(({ status }) => status));
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              accountsDesk({ cookie: staffCookies }),
+              accountsDesk({ cookie: cookiesOf(impersonation) }),
+              accountsDesk({ cookie: owner.cookies }),
+              accountsDesk(publisher),
+              accountsDesk({ authorization: `Bearer ${key}` }),
+            ]),
+            [200, 404, 404, 404, 404]
+          );
+
+          const account = yield* app
+            .request(`/api/admin/billing/accounts?workspaceId=${workspaceId}`, {
+              headers: { cookie: staffCookies },
+            })
+            .pipe(
+              Effect.flatMap(({ body }) =>
+                Schema.decodeUnknownEffect(
+                  Schema.Struct({ id: Schema.String })
+                )(body)
+              ),
+              Effect.orDie
+            );
+
+          const required = (headers: Readonly<Record<string, string>>) =>
+            app
+              .request("/api/admin/billing/accounts/payment-method", {
+                body: {
+                  accountId: account.id,
+                  reason: "Synthetic abuse report 7",
+                  required: true,
+                },
+                headers,
+              })
+              .pipe(Effect.map(({ status }) => status));
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              required({ cookie: owner.cookies }),
+              required({ cookie: cookiesOf(impersonation) }),
+              required({ cookie: staffCookies }),
+            ]),
+            [404, 404, 200]
+          );
+
+          // Recorded in the audit log, by the account's id.
+          const audit = yield* app
+            .request("/api/admin/audit", { headers: { cookie: staffCookies } })
+            .pipe(
+              Effect.flatMap(({ body }) =>
+                Schema.decodeUnknownEffect(
+                  Schema.Struct({
+                    items: Schema.Array(
+                      Schema.Struct({
+                        action: Schema.String,
+                        objectIds: Schema.Record(Schema.String, Schema.String),
+                        reason: Schema.NullOr(Schema.String),
+                      })
+                    ),
+                  })
+                )(body)
+              ),
+              Effect.orDie
+            );
+
+          assert.deepInclude(
+            audit.items.filter(
+              ({ objectIds }) => objectIds["accountId"] === account.id
+            ),
+            {
+              action: "requirePaymentMethod",
+              objectIds: { accountId: account.id },
+              reason: "Synthetic abuse report 7",
+            }
+          );
+
           const callers = {
             apiKey: { authorization: `Bearer ${key}` },
             impersonating: { cookie: cookiesOf(impersonation) },
