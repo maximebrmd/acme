@@ -59,7 +59,7 @@
   Its answer says the file is marked as made by AI and that the post's
   options carry the platforms' AI labels.
 - `peal media list` takes `--search` (checked against
-  `maxMediaQueryLength` before any request) and `--kind`, and prints each
+  the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.
 - `peal media describe <id> --text …|--clear` sets a media's
   description; `peal media delete <id>` reads `media.usage` first to say

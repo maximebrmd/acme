@@ -1,4 +1,4 @@
-import { Console, Effect, Option } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   ImageAspectSchema,
@@ -8,6 +8,7 @@ import {
   maxMediaQueryLength,
   MediaKindSchema,
   MediaPageSchema,
+  MediaQuerySchema,
   MediaSchema,
 } from "peal-contract";
 import type { Media, MediaKind } from "peal-contract";
@@ -19,6 +20,8 @@ import { importAddress, statusOf, uploadFile } from "#media-files.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
+
+const isMediaQuery = Schema.is(MediaQuerySchema);
 
 // A filter the command was given, as the query names it; nothing otherwise.
 const given = <A, B extends object>(
@@ -228,13 +231,10 @@ const list = Command.make(
     const text = input.search.pipe(Option.map((written) => written.trim()));
 
     // Text the search would not take is refused before a request leaves.
-    yield* Option.exists(
-      text,
-      ({ length }) => length === 0 || length > maxMediaQueryLength
-    )
+    yield* Option.exists(text, (written) => !isMediaQuery(written))
       ? Effect.fail(
           new Refused({
-            reason: `--search takes 1 to ${String(maxMediaQueryLength)} characters.`,
+            reason: `--search takes 1 to ${String(maxMediaQueryLength)} characters, without a NUL.`,
           })
         )
       : Effect.void;

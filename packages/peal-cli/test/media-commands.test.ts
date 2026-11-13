@@ -72,7 +72,17 @@ describe("peal media list", () => {
           "  ",
           ...inStudio,
         ]),
-        "--search takes 1 to 100 characters"
+        "--search takes 1 to 100 characters, without a NUL"
+      );
+      assert.include(
+        yield* session.refused([
+          "media",
+          "list",
+          "--search",
+          "a\u0000b",
+          ...inStudio,
+        ]),
+        "without a NUL"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
