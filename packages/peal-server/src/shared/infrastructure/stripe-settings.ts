@@ -99,6 +99,17 @@ export const lookupKeysOf = (
   };
 };
 
+/**
+ * What the operator's `stripe-catalogue` command reads: STRIPE_SECRET_KEY,
+ * which it needs, STRIPE_API_URL and STRIPE_LOOKUP_KEY_PREFIX. No webhook
+ * secret: it only reads and writes the catalogue.
+ */
+export const stripeCatalogueConfig = Config.all({
+  apiUrl: Config.option(Config.URL("STRIPE_API_URL")),
+  prefix: lookupKeyPrefixConfig,
+  secretKey: requiredSecret("STRIPE_SECRET_KEY"),
+});
+
 const billing = (secretKey: Redacted.Redacted) =>
   Config.all({
     apiUrl: Config.option(Config.URL("STRIPE_API_URL")),

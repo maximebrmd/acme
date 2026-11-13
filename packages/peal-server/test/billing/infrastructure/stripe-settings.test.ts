@@ -1,7 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Option, Redacted } from "effect";
 
-import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  stripeCatalogueConfig,
+  stripeSettingsConfig,
+} from "#shared/infrastructure/stripe-settings.ts";
 
 const settingsFrom = (env: Record<string, string>) =>
   stripeSettingsConfig.parse(ConfigProvider.fromUnknown(env));
@@ -143,6 +146,37 @@ describe("the Stripe settings", () => {
       }).pipe(Effect.flip);
 
       assert.include(String(failure), "STRIPE_SECRET_KEY");
+    })
+  );
+});
+
+const commandFrom = (env: Record<string, string>) =>
+  stripeCatalogueConfig.parse(ConfigProvider.fromUnknown(env));
+
+describe("the Stripe catalogue command's settings", () => {
+  it.effect("need the key, and no webhook secret", () =>
+    Effect.gen(function* command() {
+      const settings = yield* commandFrom({
+        STRIPE_API_URL: "http://127.0.0.1:12111",
+        STRIPE_LOOKUP_KEY_PREFIX: "peal_sandbox",
+        STRIPE_SECRET_KEY: "sk_test_synthetic",
+      });
+
+      assert.strictEqual(
+        Redacted.value(settings.secretKey),
+        "sk_test_synthetic"
+      );
+      assert.strictEqual(settings.prefix, "peal_sandbox");
+      assert.deepStrictEqual(
+        settings.apiUrl.pipe(Option.map((url) => url.href)),
+        Option.some("http://127.0.0.1:12111/")
+      );
+
+      const missing = yield* commandFrom({
+        STRIPE_WEBHOOK_SECRET: "whsec_synthetic",
+      }).pipe(Effect.flip);
+
+      assert.include(String(missing), "STRIPE_SECRET_KEY");
     })
   );
 });
