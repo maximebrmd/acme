@@ -146,12 +146,19 @@ export class SendWeeklyDigests extends Context.Service<
         },
         (effect, userId) =>
           effect.pipe(
-            Effect.catchTag("RecipientsUnavailable", (failure) =>
-              Effect.logWarning(
-                "A weekly digest's reader could not be read",
-                failure.cause
-              ).pipe(Effect.as<Outcome>("failed"))
-            ),
+            // One reader that cannot be read stops no other's digest.
+            Effect.catchTags({
+              DatabaseError: (failure) =>
+                Effect.logWarning(
+                  "A weekly digest's reader could not be read",
+                  failure.cause
+                ).pipe(Effect.as<Outcome>("failed")),
+              RecipientsUnavailable: (failure) =>
+                Effect.logWarning(
+                  "A weekly digest's reader could not be read",
+                  failure.cause
+                ).pipe(Effect.as<Outcome>("failed")),
+            }),
             Effect.annotateLogs({ userId })
           )
       );

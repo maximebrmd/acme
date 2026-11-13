@@ -24,6 +24,7 @@ import {
 } from "#notifications/domain/notification-preferences.ts";
 import type { NotificationPreferences } from "#notifications/domain/notification-preferences.ts";
 import type { DigestWorkspace } from "#notifications/domain/weekly-digest.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { TestMailer } from "#test/notifications/test-mailer.ts";
@@ -75,7 +76,8 @@ const quiet: DigestWorkspace = {
 const runAt = DateTime.makeUnsafe("2026-11-16T06:23:00Z");
 
 interface World {
-  readonly failing: ReadonlySet<UserId>;
+  /** Readers the directory cannot read, or the database. */
+  readonly failing: ReadonlyMap<UserId, "database" | "directory">;
   readonly preferences: ReadonlyMap<UserId, NotificationPreferences>;
   readonly readers: ReadonlyMap<UserId, DigestReader>;
 }
@@ -149,12 +151,21 @@ const worldLayer = (world: World) =>
       });
 
       const sources = DigestSources.of({
-        readerOf: (userId) =>
-          world.failing.has(userId)
+        readerOf: (userId) => {
+          const failing = world.failing.get(userId);
+
+          if (failing === undefined) {
+            return Effect.succeed(
+              Option.fromUndefinedOr(world.readers.get(userId))
+            );
+          }
+
+          return failing === "directory"
             ? Effect.fail(
                 new RecipientsUnavailable({ cause: new Error("synthetic") })
               )
-            : Effect.succeed(Option.fromUndefinedOr(world.readers.get(userId))),
+            : Effect.fail(new DatabaseError({ cause: new Error("synthetic") }));
+        },
       });
 
       const links = AppLinks.of({
@@ -218,7 +229,7 @@ describe(SendWeeklyDigests, () => {
         ]);
 
         const { again, first, sent } = yield* run({
-          failing: new Set(),
+          failing: new Map(),
           // The fifth never asked.
           preferences: new Map(
             [1, 2, 3, 4].map((n) => [userOf(n), wanting] as const)
@@ -272,9 +283,12 @@ describe(SendWeeklyDigests, () => {
     () =>
       Effect.gen(function* quietWeek() {
         const { first, sent } = yield* run({
-          failing: new Set([userOf(3)]),
+          failing: new Map([
+            [userOf(3), "directory"],
+            [userOf(5), "database"],
+          ]),
           preferences: new Map(
-            [1, 2, 3, 4].map((n) => [userOf(n), wanting] as const)
+            [1, 2, 3, 4, 5].map((n) => [userOf(n), wanting] as const)
           ),
           // The second is gone.
           readers: new Map([
@@ -289,9 +303,9 @@ describe(SendWeeklyDigests, () => {
           ["reader4@example.test"]
         );
         assert.deepStrictEqual(first, {
-          failed: 1,
+          failed: 2,
           nothingToTell: 2,
-          readers: 4,
+          readers: 5,
           sent: 1,
           skipped: 0,
         });
@@ -306,7 +320,7 @@ describe(SendWeeklyDigests, () => {
         for (const mode of ["refuseForNow", "refuse"] as const) {
           const { again, first, sent } = yield* run(
             {
-              failing: new Set(),
+              failing: new Map(),
               preferences: new Map([[userOf(1), wanting]]),
               readers: new Map([reader(1, [busy])]),
             },
