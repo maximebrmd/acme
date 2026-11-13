@@ -117,18 +117,13 @@ const gigabytes = (count: number): number => count * 1_000_000_000;
  * the owner's figures before a pricing page shows them: the assistant's
  * allowances with a payment method, its two prices and its margin.
  * Recommended defaults awaiting confirmation: the X ceiling, the account
- * ceiling before a first paid invoice, storage and the API's rate limits.
+ * ceiling before a first paid invoice and the API's rate limits.
  */
 const awaitingDecision = {
   apiRequestsPerMinute: { onRequest: 1200, withoutPaymentMethod: 60 },
   assistantImages: { allowance: 10, cents: 5 },
   assistantMargin: 30,
   assistantRequests: { allowance: 100, cents: 1 },
-  storage: {
-    minimum: gigabytes(5),
-    perAccount: gigabytes(5),
-    withoutPaymentMethod: gigabytes(1),
-  },
   unverifiedCeiling: 100,
   xCeiling: 2500,
 } as const;
@@ -195,7 +190,13 @@ export const rateCard: RateCard = {
       },
     },
   },
-  storage: awaitingDecision.storage,
+  // Fair use across the billing account, decided: 1 GB without a
+  // payment method; with one, 5 GB per connected account, 5 GB at least.
+  storage: {
+    minimum: gigabytes(5),
+    perAccount: gigabytes(5),
+    withoutPaymentMethod: gigabytes(1),
+  },
   unverifiedCeiling: awaitingDecision.unverifiedCeiling,
   x: {
     defaultCeiling: awaitingDecision.xCeiling,
