@@ -660,8 +660,8 @@ groups:
             model:
               refId: A
               instant: true
-              # The sweeps run every hour. The increase, a restart's included, and a series born in the last five minutes counted whole: one present five minutes ago is not new, so a gap in the telemetry is not read as a birth.
-              expr: (sum(increase(peal_media_sweep_failures_total[3h])) or vector(0)) + (sum(peal_media_sweep_failures_total unless peal_media_sweep_failures_total offset 3h unless peal_media_sweep_failures_total offset 5m) or vector(0))
+              # The sweeps run every hour. A series that was there in the day before the window counts its increase, a restart's included; one born in the window, which increase never sees at its first sample, counts whole. A gap in the telemetry shorter than a day is not read as a birth.
+              expr: (sum(increase(peal_media_sweep_failures_total[3h]) unless (peal_media_sweep_failures_total unless max_over_time(peal_media_sweep_failures_total[1d] offset 3h))) or vector(0)) + (sum(peal_media_sweep_failures_total unless max_over_time(peal_media_sweep_failures_total[1d] offset 3h)) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -672,6 +672,38 @@ groups:
                 - evaluator:
                     type: gt
                     params: [2.5]
+
+      - uid: peal-media-sweep-refused
+        title: A sweep of the media store refuses to delete
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A sweep of the media store deleted nothing on purpose (peal.media.sweep.refusals, by sweep and reason). foreign - the media folder's owner marker (media/.owner) names another database; unmarked - this database claimed the folder and the marker is gone; breaker - a page of the bucket held more files this database does not know of than a sound one leaves. Each means this database may not be the bucket's newest truth (restored to an earlier time, or another's). Check before anything else - set PEAL_MEDIA_SWEEPS=off if in doubt, and hand the folder to this database (nx run peal-server:media:claim) only once it is meant to be the newest truth.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 7200
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The sweeps run every hour, and a refusing one refuses at each run: two hours see one. A series born in the window counts whole.
+              expr: (sum(increase(peal_media_sweep_refusals_total[2h]) unless (peal_media_sweep_refusals_total unless max_over_time(peal_media_sweep_refusals_total[1d] offset 2h))) or vector(0)) + (sum(peal_media_sweep_refusals_total unless max_over_time(peal_media_sweep_refusals_total[1d] offset 2h)) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
 
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
