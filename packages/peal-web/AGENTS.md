@@ -519,7 +519,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   only, behind the unticked box, and **Order with obligation to pay**;
   the ladder (`ladderOf`, from the answer's `rateCard`) with the day rule
   and the two currency sentences; and the other limits. Every price comes
-  from the rate card, in US dollars excluding tax: never type one. The
+  from the rate card, in US dollars, excluding tax with the amount with
+  France's VAT beside it (`withDisplayVat`, `displayVatRate`, labelled
+  as France's, with the line that the VAT paid depends on the country
+  and that a business with a valid VAT number pays the price excluding
+  it): the server knows no customer's own rate. Never type a price. The
   meters (assistant, messages, ads) are left out until they are built.
   It places the order (`#billing/api.ts`), then opens Stripe's checkout
   and customer portal through `billingClient` (`#auth/billing-client.ts`,

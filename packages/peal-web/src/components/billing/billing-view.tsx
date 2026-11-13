@@ -11,7 +11,12 @@ import type {
   WithdrawalPreview,
   RateCard,
 } from "peal-contract";
-import { freeAccountsOf, rateCard as publishedCard } from "peal-contract";
+import {
+  displayVatRate,
+  freeAccountsOf,
+  rateCard as publishedCard,
+  withDisplayVat,
+} from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
@@ -585,7 +590,15 @@ const MonthFigures = ({
   const workspaces = billing.account?.workspaces ?? 1;
   const next = nextAccountOf(accounts.pooled, card);
   const paying = billing.plan === "payAsYouGo";
-  const estimate = dollars(accounts.estimate?.amount ?? 0);
+  const cents = accounts.estimate?.amount ?? 0;
+
+  // Every figure with France's VAT beside it: the server knows no
+  // customer's own rate, so the rate shown is France's, and says so.
+  const estimate = {
+    estimate: dollars(cents),
+    included: dollars(withDisplayVat(cents)),
+    rate: displayVatRate,
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -613,16 +626,16 @@ const MonthFigures = ({
         {t("accountDays", { days: accountDays })}
       </p>
       <p className="text-sm tabular-nums">
-        {paying
-          ? t("estimatePaying", { estimate })
-          : t("estimateFree", { estimate })}
+        {paying ? t("estimatePaying", estimate) : t("estimateFree", estimate)}
       </p>
       <p className="text-muted-foreground text-sm tabular-nums">
         {next.price.excluded === 0
           ? t("nextAccountFree", { free, position: next.position })
           : t("nextAccount", {
+              included: dollars(next.price.included),
               position: next.position,
               price: dollars(next.price.excluded),
+              rate: displayVatRate,
             })}
       </p>
       {billing.upcomingInvoice === null ? null : (
@@ -699,6 +712,9 @@ const Ladder = ({ billing }: { readonly billing: Billing }) => {
               <TableHead scope="col" className="text-right">
                 {t("price")}
               </TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("priceIncluded", { rate: displayVatRate })}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -712,6 +728,11 @@ const Ladder = ({ billing }: { readonly billing: Billing }) => {
                     ? t("free")
                     : dollars(monthly.excluded)}
                 </TableCell>
+                <TableCell variant="numeric">
+                  {monthly.included === 0
+                    ? t("free")
+                    : dollars(monthly.included)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -722,6 +743,9 @@ const Ladder = ({ billing }: { readonly billing: Billing }) => {
           after: card.daysPerMonth + 1,
           days: card.daysPerMonth,
         })}
+      </p>
+      <p className="text-muted-foreground text-xs">
+        {t("vatNote", { rate: displayVatRate })}
       </p>
       <CurrencyNote />
     </section>

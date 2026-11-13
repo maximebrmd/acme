@@ -84,7 +84,7 @@ describe("per-account pricing", { serial: true }, () => {
     await expect(main.getByText("2 accounts connected.")).toBeVisible();
     await expect(
       main.getByText(
-        "One more account, the 3rd, costs $5.00 a month, excluding tax."
+        "One more account, the 3rd, costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT."
       )
     ).toBeVisible();
     await expect(main.getByRole("rowheader", "Accounts 3 to 10")).toBeVisible();

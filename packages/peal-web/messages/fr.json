@@ -2196,9 +2196,9 @@
       "pooledHere": "{pooled, plural, one {# compte connecté} other {# comptes connectés}}.",
       "pooledAcross": "{pooled, plural, one {# compte} other {# comptes}} sur les {workspaces, number} espaces de travail du compte, dont {connected, number} sur celui-ci.",
       "accountDays": "{days, plural, one {# compte-jour à ce jour} other {# comptes-jours à ce jour}}",
-      "estimateFree": "Avec un moyen de paiement, le mois jusqu’ici coûterait {estimate} HT.",
-      "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT.",
-      "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte {price} HT par mois.",
+      "estimateFree": "Avec un moyen de paiement, le mois jusqu’ici coûterait {estimate} HT, {included} avec la TVA française de {rate} %.",
+      "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT, {included} avec la TVA française de {rate} %.",
+      "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte {price} HT par mois, {included} avec la TVA française de {rate} %.",
       "upcoming": "Prochaine facture de Stripe : {amount} TTC. C’est la facture qui fait foi.",
       "own": "{connected, plural, one {# compte connecté sur cet espace de travail.} other {# comptes connectés sur cet espace de travail.}}",
       "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût.",
@@ -2213,7 +2213,9 @@
       "band": "Comptes {from, number} à {to, number}",
       "from": "À partir du compte {from, number}",
       "free": "Gratuit",
-      "dayRule": "Chaque jour UTC compte le plus grand nombre de comptes connectés en même temps sur l’ensemble du compte de facturation, du 1er au {days, number} du mois : le {after, number} est gratuit. Chacun de ces jours coûte un {days, selectordinal, one {#er} other {#e}} du tarif mensuel d’un compte : un compte connecté une partie du mois coûte une partie de son tarif."
+      "dayRule": "Chaque jour UTC compte le plus grand nombre de comptes connectés en même temps sur l’ensemble du compte de facturation, du 1er au {days, number} du mois : le {after, number} est gratuit. Chacun de ces jours coûte un {days, selectordinal, one {#er} other {#e}} du tarif mensuel d’un compte : un compte connecté une partie du mois coûte une partie de son tarif.",
+      "priceIncluded": "Avec la TVA française de {rate} %",
+      "vatNote": "Les prix TTC appliquent le taux français de {rate} %. La TVA que vous payez dépend de votre pays, et une entreprise avec un numéro de TVA valide paie le prix HT."
     },
     "payment": {
       "title": "Ajouter un moyen de paiement",

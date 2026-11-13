@@ -2196,9 +2196,9 @@
       "pooledHere": "{pooled, plural, one {# account connected} other {# accounts connected}}.",
       "pooledAcross": "{pooled, plural, one {# account} other {# accounts}} across the account’s {workspaces, number} workspaces, {connected, number} of them on this one.",
       "accountDays": "{days, plural, one {# account-day so far} other {# account-days so far}}",
-      "estimateFree": "With a payment method, the month so far would cost {estimate}, excluding tax.",
-      "estimatePaying": "So far this month: {estimate}, excluding tax.",
-      "nextAccount": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, costs {price} a month, excluding tax.",
+      "estimateFree": "With a payment method, the month so far would cost {estimate} excluding tax, {included} with France’s {rate}% VAT.",
+      "estimatePaying": "So far this month: {estimate} excluding tax, {included} with France’s {rate}% VAT.",
+      "nextAccount": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, costs {price} a month excluding tax, {included} with France’s {rate}% VAT.",
       "upcoming": "Stripe’s next invoice: {amount}, tax included. The invoice is the one that counts.",
       "own": "{connected, plural, one {# account connected on this workspace.} other {# accounts connected on this workspace.}}",
       "elsewhere": "They count with the other workspaces of its billing account. The workspace that bills the account shows the month’s account-days and their cost to its members.",
@@ -2213,7 +2213,9 @@
       "band": "Accounts {from, number} to {to, number}",
       "from": "From account {from, number}",
       "free": "Free",
-      "dayRule": "Each UTC day counts the most accounts connected at once across the billing account, for days 1 to {days, number} of the month: the {after, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free. Each of those days costs a {days, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} of an account’s monthly rate, so an account connected for part of a month costs part of its rate."
+      "dayRule": "Each UTC day counts the most accounts connected at once across the billing account, for days 1 to {days, number} of the month: the {after, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free. Each of those days costs a {days, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} of an account’s monthly rate, so an account connected for part of a month costs part of its rate.",
+      "priceIncluded": "With France’s {rate}% VAT",
+      "vatNote": "Prices with VAT use France’s {rate}% rate. The VAT you pay depends on your country, and a business with a valid VAT number pays the price excluding VAT."
     },
     "payment": {
       "title": "Add a payment method",
