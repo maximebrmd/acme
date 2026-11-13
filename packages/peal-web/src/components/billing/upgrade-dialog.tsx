@@ -202,9 +202,12 @@ export const UpgradeDialog = ({ onClose, ...offer }: UpgradeDialogProps) => {
       <DialogContent className="sm:max-w-lg" closeLabel={t("closeLabel")}>
         <DialogHeader>
           <DialogTitle>
-            {offer.reason.planWithRoom === "payAsYouGo"
-              ? t("titlePerAccount", { limit: offer.reason.limit })
-              : t("title", { limit: offer.reason.limit })}
+            {/* Clear of the close button, at the top right. */}
+            <span className="block pe-8">
+              {offer.reason.planWithRoom === "payAsYouGo"
+                ? t("titlePerAccount", { limit: offer.reason.limit })
+                : t("title", { limit: offer.reason.limit })}
+            </span>
           </DialogTitle>
         </DialogHeader>
         <UpgradeOffer {...offer} />
