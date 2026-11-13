@@ -43,7 +43,8 @@ import {
 } from "#posts/api.ts";
 import { filtered, knownFilter, noFilter } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
-import { dayRows, queueSlotsOn } from "#posts/day-rows.ts";
+import { dayRows, queueSlotsOn, slotStartOf } from "#posts/day-rows.ts";
+import type { SlotHolder } from "#posts/day-rows.ts";
 import { isRemovedEverywhere } from "#posts/live-post.ts";
 import { failureOf } from "#posts/outcome.ts";
 import { isAhead, startAtOf, startTimeOn } from "#posts/start-time.ts";
@@ -116,6 +117,19 @@ const placedIn = (posts: readonly Post[], timeZone: string): Placed[] =>
       ({ date, time }) => ({ at: schedule.at, date, hour: time.hour, post })
     );
   });
+
+// The posts that hold their queue's slot, as the server counts one, the
+// filters' hidden ones included: scheduled, waiting for an approval or
+// going out.
+const slotHolders = (loaded: readonly Placed[]): readonly SlotHolder[] =>
+  loaded.flatMap(({ at, post }) =>
+    post.queueId !== null &&
+    (post.status === "scheduled" ||
+      post.status === "awaitingApproval" ||
+      post.status === "publishing")
+      ? [{ at, postId: post.id, queueId: post.queueId }]
+      : []
+  );
 
 // A scheduled post moves, and so does one that waits for an approval: it
 // keeps waiting, for its new time.
@@ -660,7 +674,8 @@ const CalendarView = ({
     tagIds: tags.map(({ id }) => id),
   });
 
-  const { hidden, shown: placed } = filtered(filter, placedIn(posts, timeZone));
+  const loaded = placedIn(posts, timeZone);
+  const { hidden, shown: placed } = filtered(filter, loaded);
 
   const mayCreate = permissions.includes("post:create");
   const now = DateTime.nowUnsafe();
@@ -868,7 +883,7 @@ const CalendarView = ({
           )}
           renderStart={(at) =>
             mayCreate && DateTime.isGreaterThan(at, now)
-              ? Option.match(wallClockOf(at, timeZone), {
+              ? Option.match(slotStartOf(at, timeZone), {
                   onNone: () => null,
                   onSome: (wall) => (
                     <NewPostLink
@@ -880,7 +895,7 @@ const CalendarView = ({
                 })
               : null
           }
-          rows={dayRows(placed, daySlots)}
+          rows={dayRows(placed, daySlots, slotHolders(loaded))}
           timeZone={timeZone}
         />
       );

@@ -1513,7 +1513,8 @@
       "dayRows": "The day's posts and queue slots, by time",
       "emptyDay": "Nothing on this day: no post, and no queue slot.",
       "openSlot": "Free slot of {queue}",
-      "openDay": "Open {date} in the day view"
+      "openDay": "Open {date} in the day view",
+      "heldSlot": "Slot of {queue}, taken by a post the filters hide"
     },
     "Links": {
       "suspicious": "This does not look like a working link: {link}"

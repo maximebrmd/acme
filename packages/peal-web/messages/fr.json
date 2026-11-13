@@ -1513,7 +1513,8 @@
       "dayRows": "Les publications et créneaux de file du jour, par heure",
       "emptyDay": "Rien ce jour-là : aucune publication, et aucun créneau de file.",
       "openSlot": "Créneau libre de {queue}",
-      "openDay": "Ouvrir le {date} dans la vue par jour"
+      "openDay": "Ouvrir le {date} dans la vue par jour",
+      "heldSlot": "Créneau de {queue}, pris par une publication que les filtres masquent"
     },
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"

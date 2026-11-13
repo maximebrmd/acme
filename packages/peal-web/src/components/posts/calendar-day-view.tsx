@@ -26,7 +26,8 @@ export interface CalendarDayViewProps<Placed extends DayPlaced> {
 
 /**
  * The calendar's day: a row for each time that holds a post or a queue's
- * slot, on the viewer's clock, each free slot named by its queue. On a day
+ * slot, on the viewer's clock, each free slot named by its queue, and one
+ * held by a post the filters hide said to be taken, with no new post. On a day
  * the clocks change, every time carries its offset, as one may show twice.
  * Links come from the screen, so the view renders outside Next.
  */
@@ -88,6 +89,17 @@ export const CalendarDayView = <Placed extends DayPlaced>({
                       {t("openSlot", { queue: slot.queueName })}
                     </span>
                     {renderStart(slot.at)}
+                  </div>
+                ))}
+                {row.heldSlots.map((slot) => (
+                  <div
+                    key={slot.queueId}
+                    className="text-muted-foreground flex items-center gap-1 rounded-md border px-1 py-0.5 text-xs"
+                  >
+                    <ListOrderedIcon aria-hidden className="size-3 shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t("heldSlot", { queue: slot.queueName })}
+                    </span>
                   </div>
                 ))}
               </div>

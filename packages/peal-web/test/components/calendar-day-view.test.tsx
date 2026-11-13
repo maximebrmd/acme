@@ -71,7 +71,12 @@ const times = (html: string) =>
 describe(CalendarDayView, () => {
   it("lists a daylight saving day's posts and free slots by time, with their offsets", async () => {
     const slots = queueSlotsOn(queues, springForward, "Europe/Paris");
-    const html = await render("en", springForward, [placed, slots]);
+
+    const html = await render("en", springForward, [
+      placed,
+      slots,
+      [{ at: utc("2026-03-29T07:00:00Z"), postId: "p-queued", queueId: "q1" }],
+    ]);
 
     // Before the jump on UTC+1, after it on UTC+2; the slot of 02:30 is
     // free at 03:00, and the one at 09:00 is held by its queue's post.
@@ -100,14 +105,35 @@ describe(CalendarDayView, () => {
         },
       ],
       [],
+      [],
     ]);
 
     expect(times(html)).toStrictEqual([["2026-03-30T07:00:00.000Z", "09:00"]]);
     expect(html).toContain("Les publications et créneaux de file du jour");
   });
 
+  it("shows a slot whose post the filters hide as taken, with no new post", async () => {
+    const html = await render("en", springForward, [
+      [],
+      [
+        {
+          at: utc("2026-03-29T07:00:00Z"),
+          queueId: "q1",
+          queueName: "Mornings",
+        },
+      ],
+      [{ at: utc("2026-03-29T07:00:00Z"), postId: "hidden", queueId: "q1" }],
+    ]);
+
+    expect(html).toContain(
+      "Slot of Mornings, taken by a post the filters hide"
+    );
+    expect(html).not.toContain("Free slot");
+    expect(html).not.toContain("data-start");
+  });
+
   it("says when a day holds nothing", async () => {
-    const html = await render("en", springForward, [[], []]);
+    const html = await render("en", springForward, [[], [], []]);
 
     expect(html).toContain("Nothing on this day");
     expect(html).toContain('href="#start-day"');
