@@ -248,3 +248,30 @@ export const sentTo = (
     overrides: textsOnly(content.overrides),
     text: content.text,
   });
+
+/**
+ * The post's content without what any part has on these channels: their
+ * texts and media of their own go with the channels.
+ */
+export const withoutChannels = (
+  content: PostContent,
+  channelIds: readonly ChannelId[]
+): PostContent => {
+  const kept = (overrides: readonly TextOverride[]) =>
+    overrides.filter(({ channelId }) => !channelIds.includes(channelId));
+
+  return new PostContent({
+    followUps: content.followUps.map(
+      (part) =>
+        new PostPart({
+          delaySeconds: part.delaySeconds,
+          media: part.media,
+          overrides: kept(part.overrides),
+          text: part.text,
+        })
+    ),
+    media: content.media,
+    overrides: kept(content.overrides),
+    text: content.text,
+  });
+};

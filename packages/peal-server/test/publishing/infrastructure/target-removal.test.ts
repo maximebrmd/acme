@@ -2,7 +2,13 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Exit, Layer, Option, Scope } from "effect";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { isDropped } from "#publishing/domain/post-target.ts";
+import { TextOverride } from "#publishing/domain/text-override.ts";
+import { newId } from "#shared/application/ids.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { actorIn } from "#test/publishing/support.ts";
 
 import {
@@ -26,6 +32,8 @@ import {
 } from "./harness.ts";
 
 const timeout = 60_000;
+
+const newWorkspace = newId(WorkspaceIdSchema).pipe(Effect.provide(IdsLive));
 
 describe("PostScheduling.dropTarget", () => {
   it.effect(
@@ -188,12 +196,33 @@ describe("PostScheduling.dropTarget", () => {
           const kept = yield* newChannel;
           const removed = yield* newChannel;
 
-          const post = yield* schedulePost(
-            [kept, removed],
-            scheduleIn("2026-06-15T08:00:00Z")
-          );
+          const actor = actorIn(yield* newWorkspace);
 
-          const actor = actorIn(post.workspaceId);
+          // A text of its own on the channel taken off, in each part.
+          const { post } = yield* scheduling.schedule(actor, {
+            channelIds: [kept, removed],
+            content: new PostContent({
+              followUps: [
+                new PostPart({
+                  delaySeconds: 0,
+                  media: [],
+                  overrides: [
+                    new TextOverride({
+                      channelId: removed,
+                      text: "Later, there",
+                    }),
+                  ],
+                  text: "Later",
+                }),
+              ],
+              media: [],
+              overrides: [
+                new TextOverride({ channelId: removed, text: "There" }),
+              ],
+              text: "Everywhere",
+            }),
+            schedule: scheduleIn("2026-06-15T08:00:00Z"),
+          });
 
           const target = (yield* targetsOf(post.id)).find(
             ({ channelId }) => channelId === removed
@@ -210,6 +239,21 @@ describe("PostScheduling.dropTarget", () => {
             [kept]
           );
           assert.deepStrictEqual(targetStatuses(draft.targets), ["pending"]);
+          // Its texts went with it: the draft schedules as it is.
+          assert.deepStrictEqual(draft.post.content.overrides, []);
+          assert.deepStrictEqual(
+            draft.post.content.followUps[0]?.overrides,
+            []
+          );
+
+          const again = yield* scheduling.scheduleDraft(actor, post.id, {
+            channelIds: [kept],
+            schedule: scheduleIn("2026-06-15T09:00:00Z"),
+          });
+
+          assert.strictEqual(again.post.status._tag, "scheduled");
+
+          yield* scheduling.cancel(actor, post.id);
         })
       ),
     timeout

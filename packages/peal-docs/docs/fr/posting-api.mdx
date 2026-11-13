@@ -546,7 +546,7 @@ Chaque canal est vérifié sur les médias qu’il reçoit, par `validate` (son 
 - Le dernier canal sur lequel la publication part encore répond 409 `last_target_left` : annulez plutôt la publication (`POST …/posts/{postId}/cancel`).
 - Une publication en cours d’envoi ou terminée, ou un brouillon, dont les canaux changent par une mise à jour, répond 409 `post_status_conflict` ; un canal déjà annulé, 409 `target_status_conflict`.
 - C’est une modification de la publication : là où vos publications demandent une [approbation](/review), l’approbation donnée ne la couvre plus, et la réponse porte `awaitingApproval`, en attente d’une nouvelle. Une publication déjà en attente d’approbation garde sa demande, qui couvre ce qu’elle est maintenant.
-- Les webhooks reçoivent un [`post.cancelled`](/webhooks#post-cancelled) qui nomme ce seul canal. Une publication repassée en brouillon garde les canaux qu’elle avait encore.
+- Les webhooks reçoivent un [`post.cancelled`](/webhooks#post-cancelled) qui nomme ce seul canal. Une publication repassée en brouillon (`unschedule`, des changements demandés, ou une approbation après son heure) garde les canaux qu’elle avait encore : le canal retiré part avec sa cible et ses entrées d’`overrides` dans chaque partie, et nommé de nouveau dans `channelIds`, il reçoit une nouvelle cible, en attente.
 
 Il faut post:schedule, ou, sur une publication en attente d’approbation, le droit de demander que des publications partent ; un client OAuth a besoin du scope `workspace:publish`.
 

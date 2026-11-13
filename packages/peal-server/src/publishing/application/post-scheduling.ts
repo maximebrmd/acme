@@ -20,11 +20,7 @@ import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { PostOccurrence } from "#publishing/domain/post-occurrence.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
-import {
-  cancelTarget,
-  isDropped,
-  isSettled,
-} from "#publishing/domain/post-target.ts";
+import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
@@ -72,6 +68,7 @@ import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 import type { AccountRules } from "./account-rules.ts";
 import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
+import { saveBackToDraft } from "./back-to-draft.ts";
 import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import type { ContentFingerprints } from "./content-fingerprints.ts";
 import { admit, remember } from "./duplicate-guard.ts";
@@ -1837,18 +1834,10 @@ export class PostScheduling extends Context.Service<
 
               const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
-              yield* applied(yield* posts.update(draft, current.post));
-
-              // A draft is for the channels it still goes to: those taken
-              // off it are gone with their targets.
-              const targets = yield* posts.lockTargets(postId);
-
-              if (targets.some(isDropped)) {
-                yield* posts.setTargets(
-                  postId,
-                  targets.filter((target) => !isDropped(target))
-                );
-              }
+              // A draft is for the channels it still goes to.
+              const saved = yield* saveBackToDraft(draft, current.post).pipe(
+                Effect.provideService(PostRepository, posts)
+              );
 
               yield* stopJob(current);
               yield* noLongerWaits(current.post);
@@ -1856,9 +1845,9 @@ export class PostScheduling extends Context.Service<
               // A post that waited was never told as scheduled, yet those
               // who heard it waited (`post.approval_requested`) hear it no
               // longer does, as those who heard it scheduled do.
-              yield* events.unscheduled(draft);
+              yield* events.unscheduled(saved.post);
 
-              return { post: draft, targets: yield* posts.targets(postId) };
+              return saved;
             })
           );
         }

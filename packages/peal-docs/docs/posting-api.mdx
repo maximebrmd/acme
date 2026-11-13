@@ -543,7 +543,7 @@ Each channel is checked on the media it receives, by `validate` (its `media` cou
 - The last channel the post still goes out on answers 409 `last_target_left`: cancel the post instead (`POST …/posts/{postId}/cancel`).
 - A post publishing or done, or a draft, whose channels change with an update, answers 409 `post_status_conflict`; a channel already cancelled, 409 `target_status_conflict`.
 - It is an edit of the post: where your posts need an [approval](/review), the approval given no longer covers it, and it is answered `awaitingApproval`, waiting for one again. A post already awaiting approval keeps its request, which covers what the post now is.
-- Webhooks hear a [`post.cancelled`](/webhooks#post-cancelled) naming that channel alone. A post taken back to draft keeps the channels it still had.
+- Webhooks hear a [`post.cancelled`](/webhooks#post-cancelled) naming that channel alone. A post taken back to draft (`unschedule`, changes requested, or an approval after its time) keeps the channels it still had: the channel taken off it goes with its target and its overrides in every part, and named again in `channelIds` it gets a new, pending target.
 
 It needs post:schedule, or, on a post awaiting approval, leave to ask for posts to go out; an OAuth client needs the scope `workspace:publish`.
 
