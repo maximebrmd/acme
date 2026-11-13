@@ -149,11 +149,9 @@ describe("threads, analytics and the inbox", { serial: true }, () => {
     // And the same numbers as files.
     const exports = screen.getByRole("region", "Export");
 
+    await expect(exports.getByRole("link", "Posts of the range")).toBeVisible();
     await expect(
-      exports.getByRole("button", "Posts of the range")
-    ).toBeVisible();
-    await expect(
-      exports.getByRole("button", "Accounts, day by day")
+      exports.getByRole("link", "Accounts, day by day")
     ).toBeVisible();
   });
 

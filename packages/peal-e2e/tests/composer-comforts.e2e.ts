@@ -146,6 +146,9 @@ describe("the composer's comforts", { serial: true }, () => {
 
     // Nothing goes out in a run.
     await dialog.getByRole("button", "Not now").tap();
+    // A modal dialog swallows presses while it animates out, so a press
+    // that closed it cannot land on the page: wait until it is gone.
+    await expect(dialog).toBeHidden();
     await screen.getByRole("button", "Save as draft").tap();
     await expect(screen.getByText("Draft saved.")).toBeVisible();
   });

@@ -222,6 +222,7 @@ describe("a new member's first post", { serial: true }, () => {
 
     await picker.getByRole("button", /^Video added on/u).tap();
     await picker.getByRole("button", "Attach 1 item").tap();
+    await expect(picker).toBeHidden();
     await screen.getByRole("textbox", "Time").fill("23:59");
     await screen.getByRole("button", "Schedule").tap();
 
@@ -357,7 +358,7 @@ describe("a new member's first post", { serial: true }, () => {
       screen.getByRole("heading", "Bienvenue sur Peal")
     ).toBeVisible();
     await expect(
-      screen.getByRole("banner").getByRole("button", "Se connecter")
+      screen.getByRole("banner").getByRole("link", "Se connecter")
     ).toBeVisible();
     await app.open("/fr/app");
     await expect(browser).toHaveURL("/fr/sign-in");
