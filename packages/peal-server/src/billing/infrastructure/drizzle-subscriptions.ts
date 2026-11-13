@@ -8,6 +8,7 @@ import {
   isNull,
   lt,
   lte,
+  notInArray,
   or,
   sql,
 } from "drizzle-orm";
@@ -70,6 +71,7 @@ const toSubscription = (row: Row) =>
     currentPeriodEnd: instantOf(row.currentPeriodEnd),
     currentPeriodStart: instantOf(row.currentPeriodStart),
     interval: row.interval,
+    paidInvoiceAt: instantOf(row.paidInvoiceAt),
     plan: row.plan,
     startedAt: instantOf(row.startedAt),
     status: row.status,
@@ -338,6 +340,50 @@ export const DrizzleSubscriptionsLive = Layer.effect(
       return outcome;
     });
 
+    const perAccount = (after: Option.Option<string>, limit: number) =>
+      db
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.plan, "payAsYouGo"),
+            notInArray(subscriptions.status, [
+              "canceled",
+              "incomplete",
+              "incomplete_expired",
+            ]),
+            after.pipe(
+              Option.map((id) => gt(subscriptions.stripeSubscriptionId, id)),
+              Option.getOrUndefined
+            )
+          )
+        )
+        .orderBy(asc(subscriptions.stripeSubscriptionId))
+        .limit(limit)
+        .pipe(
+          Effect.mapError(failed),
+          Effect.flatMap((rows) =>
+            Effect.all(rows.map((row) => toSubscription(row)))
+          ),
+          Effect.withSpan("Subscriptions.perAccount")
+        );
+
+    const markPaidInvoice = (subscriptionId: string, at: DateTime.Utc) =>
+      db
+        .update(subscriptions)
+        .set({ paidInvoiceAt: date(at) })
+        .where(
+          and(
+            eq(subscriptions.stripeSubscriptionId, subscriptionId),
+            isNull(subscriptions.paidInvoiceAt)
+          )
+        )
+        .pipe(
+          Effect.mapError(failed),
+          Effect.asVoid,
+          Effect.withSpan("Subscriptions.markPaidInvoice")
+        );
+
     const record = (change: SubscriptionChange) =>
       client
         .withTransaction(save(change))
@@ -346,8 +392,10 @@ export const DrizzleSubscriptionsLive = Layer.effect(
     return Subscriptions.of({
       eraseWorkspace,
       forgetUser,
+      markPaidInvoice,
       ofWorkspace,
       ofWorkspaces,
+      perAccount,
       record,
       remindable,
     });

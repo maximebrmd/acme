@@ -64,6 +64,120 @@ func (s *StandingBillingRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
+	accountBandFieldMonthly = big.NewInt(1 << 0)
+	accountBandFieldUpTo    = big.NewInt(1 << 1)
+)
+
+// accountBandNullableFields maps the wire names of AccountBand's nullable fields (required or optional) to their field bits.
+var accountBandNullableFields = map[string]*big.Int{
+	"upTo": accountBandFieldUpTo,
+}
+
+type AccountBand struct {
+	Monthly int  `json:"monthly" url:"monthly"`
+	UpTo    *int `json:"upTo,omitempty" url:"upTo,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AccountBand) GetMonthly() int {
+	if a == nil {
+		return 0
+	}
+	return a.Monthly
+}
+
+func (a *AccountBand) GetUpTo() *int {
+	if a == nil {
+		return nil
+	}
+	return a.UpTo
+}
+
+func (a *AccountBand) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AccountBand) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetMonthly sets the Monthly field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AccountBand) SetMonthly(monthly int) {
+	a.Monthly = monthly
+	a.require(accountBandFieldMonthly)
+}
+
+// SetUpTo sets the UpTo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AccountBand) SetUpTo(upTo *int) {
+	a.UpTo = upTo
+	a.require(accountBandFieldUpTo)
+}
+
+func (a *AccountBand) UnmarshalJSON(data []byte) error {
+	type unmarshaler AccountBand
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AccountBand(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, accountBandNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		a.require(presentFields)
+	}
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AccountBand) MarshalJSON() ([]byte, error) {
+	type embed AccountBand
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AccountBand) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
 	accountWorkspaceFieldName        = big.NewInt(1 << 0)
 	accountWorkspaceFieldWorkspaceID = big.NewInt(1 << 1)
 )
@@ -167,38 +281,51 @@ func (a *AccountWorkspace) String() string {
 
 var (
 	billingFieldAccount           = big.NewInt(1 << 0)
-	billingFieldAllowances        = big.NewInt(1 << 1)
-	billingFieldCurrency          = big.NewInt(1 << 2)
-	billingFieldEnabled           = big.NewInt(1 << 3)
-	billingFieldPlan              = big.NewInt(1 << 4)
-	billingFieldPlans             = big.NewInt(1 << 5)
-	billingFieldSubscription      = big.NewInt(1 << 6)
-	billingFieldTrial             = big.NewInt(1 << 7)
-	billingFieldUsage             = big.NewInt(1 << 8)
-	billingFieldVatRate           = big.NewInt(1 << 9)
-	billingFieldWithdrawableUntil = big.NewInt(1 << 10)
+	billingFieldAccounts          = big.NewInt(1 << 1)
+	billingFieldAllowances        = big.NewInt(1 << 2)
+	billingFieldCurrency          = big.NewInt(1 << 3)
+	billingFieldEnabled           = big.NewInt(1 << 4)
+	billingFieldEstimate          = big.NewInt(1 << 5)
+	billingFieldPaymentMethod     = big.NewInt(1 << 6)
+	billingFieldPlan              = big.NewInt(1 << 7)
+	billingFieldPlans             = big.NewInt(1 << 8)
+	billingFieldRateCard          = big.NewInt(1 << 9)
+	billingFieldSubscription      = big.NewInt(1 << 10)
+	billingFieldTrial             = big.NewInt(1 << 11)
+	billingFieldUpcomingInvoice   = big.NewInt(1 << 12)
+	billingFieldUsage             = big.NewInt(1 << 13)
+	billingFieldVatRate           = big.NewInt(1 << 14)
+	billingFieldWithdrawableUntil = big.NewInt(1 << 15)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
 var billingNullableFields = map[string]*big.Int{
+	"estimate":          billingFieldEstimate,
 	"plan":              billingFieldPlan,
+	"rateCard":          billingFieldRateCard,
 	"subscription":      billingFieldSubscription,
 	"trial":             billingFieldTrial,
+	"upcomingInvoice":   billingFieldUpcomingInvoice,
 	"withdrawableUntil": billingFieldWithdrawableUntil,
 }
 
 type Billing struct {
-	Account           *BillingAccount      `json:"account,omitempty" url:"account,omitempty"`
-	Allowances        *PlanAllowances      `json:"allowances" url:"allowances"`
-	Currency          string               `json:"currency" url:"currency"`
-	Enabled           bool                 `json:"enabled" url:"enabled"`
-	Plan              *Plan                `json:"plan,omitempty" url:"plan,omitempty"`
-	Plans             []*PlanOffer         `json:"plans" url:"plans"`
-	Subscription      *BillingSubscription `json:"subscription,omitempty" url:"subscription,omitempty"`
-	Trial             *TrialOffer          `json:"trial,omitempty" url:"trial,omitempty"`
-	Usage             *Usage               `json:"usage" url:"usage"`
-	VatRate           int                  `json:"vatRate" url:"vatRate"`
-	WithdrawableUntil *string              `json:"withdrawableUntil,omitempty" url:"withdrawableUntil,omitempty"`
+	Account           *BillingAccount       `json:"account,omitempty" url:"account,omitempty"`
+	Accounts          *BillingAccountsUsage `json:"accounts" url:"accounts"`
+	Allowances        *PlanAllowances       `json:"allowances" url:"allowances"`
+	Currency          string                `json:"currency" url:"currency"`
+	Enabled           bool                  `json:"enabled" url:"enabled"`
+	Estimate          *Money                `json:"estimate,omitempty" url:"estimate,omitempty"`
+	PaymentMethod     bool                  `json:"paymentMethod" url:"paymentMethod"`
+	Plan              *Plan                 `json:"plan,omitempty" url:"plan,omitempty"`
+	Plans             []*PlanOffer          `json:"plans" url:"plans"`
+	RateCard          *RateCard             `json:"rateCard,omitempty" url:"rateCard,omitempty"`
+	Subscription      *BillingSubscription  `json:"subscription,omitempty" url:"subscription,omitempty"`
+	Trial             *TrialOffer           `json:"trial,omitempty" url:"trial,omitempty"`
+	UpcomingInvoice   *Money                `json:"upcomingInvoice,omitempty" url:"upcomingInvoice,omitempty"`
+	Usage             *Usage                `json:"usage" url:"usage"`
+	VatRate           int                   `json:"vatRate" url:"vatRate"`
+	WithdrawableUntil *string               `json:"withdrawableUntil,omitempty" url:"withdrawableUntil,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -212,6 +339,13 @@ func (b *Billing) GetAccount() *BillingAccount {
 		return nil
 	}
 	return b.Account
+}
+
+func (b *Billing) GetAccounts() *BillingAccountsUsage {
+	if b == nil {
+		return nil
+	}
+	return b.Accounts
 }
 
 func (b *Billing) GetAllowances() *PlanAllowances {
@@ -235,6 +369,20 @@ func (b *Billing) GetEnabled() bool {
 	return b.Enabled
 }
 
+func (b *Billing) GetEstimate() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.Estimate
+}
+
+func (b *Billing) GetPaymentMethod() bool {
+	if b == nil {
+		return false
+	}
+	return b.PaymentMethod
+}
+
 func (b *Billing) GetPlan() *Plan {
 	if b == nil {
 		return nil
@@ -249,6 +397,13 @@ func (b *Billing) GetPlans() []*PlanOffer {
 	return b.Plans
 }
 
+func (b *Billing) GetRateCard() *RateCard {
+	if b == nil {
+		return nil
+	}
+	return b.RateCard
+}
+
 func (b *Billing) GetSubscription() *BillingSubscription {
 	if b == nil {
 		return nil
@@ -261,6 +416,13 @@ func (b *Billing) GetTrial() *TrialOffer {
 		return nil
 	}
 	return b.Trial
+}
+
+func (b *Billing) GetUpcomingInvoice() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.UpcomingInvoice
 }
 
 func (b *Billing) GetUsage() *Usage {
@@ -307,6 +469,13 @@ func (b *Billing) SetAccount(account *BillingAccount) {
 	b.require(billingFieldAccount)
 }
 
+// SetAccounts sets the Accounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetAccounts(accounts *BillingAccountsUsage) {
+	b.Accounts = accounts
+	b.require(billingFieldAccounts)
+}
+
 // SetAllowances sets the Allowances field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *Billing) SetAllowances(allowances *PlanAllowances) {
@@ -328,6 +497,20 @@ func (b *Billing) SetEnabled(enabled bool) {
 	b.require(billingFieldEnabled)
 }
 
+// SetEstimate sets the Estimate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetEstimate(estimate *Money) {
+	b.Estimate = estimate
+	b.require(billingFieldEstimate)
+}
+
+// SetPaymentMethod sets the PaymentMethod field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetPaymentMethod(paymentMethod bool) {
+	b.PaymentMethod = paymentMethod
+	b.require(billingFieldPaymentMethod)
+}
+
 // SetPlan sets the Plan field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *Billing) SetPlan(plan *Plan) {
@@ -342,6 +525,13 @@ func (b *Billing) SetPlans(plans []*PlanOffer) {
 	b.require(billingFieldPlans)
 }
 
+// SetRateCard sets the RateCard field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetRateCard(rateCard *RateCard) {
+	b.RateCard = rateCard
+	b.require(billingFieldRateCard)
+}
+
 // SetSubscription sets the Subscription field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *Billing) SetSubscription(subscription *BillingSubscription) {
@@ -354,6 +544,13 @@ func (b *Billing) SetSubscription(subscription *BillingSubscription) {
 func (b *Billing) SetTrial(trial *TrialOffer) {
 	b.Trial = trial
 	b.require(billingFieldTrial)
+}
+
+// SetUpcomingInvoice sets the UpcomingInvoice field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetUpcomingInvoice(upcomingInvoice *Money) {
+	b.UpcomingInvoice = upcomingInvoice
+	b.require(billingFieldUpcomingInvoice)
 }
 
 // SetUsage sets the Usage field and marks it as non-optional;
@@ -623,6 +820,170 @@ func (b *BillingAccount) MarshalJSON() ([]byte, error) {
 }
 
 func (b *BillingAccount) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
+	billingAccountsUsageFieldAccountDays = big.NewInt(1 << 0)
+	billingAccountsUsageFieldConnected   = big.NewInt(1 << 1)
+	billingAccountsUsageFieldEstimate    = big.NewInt(1 << 2)
+	billingAccountsUsageFieldNextAccount = big.NewInt(1 << 3)
+	billingAccountsUsageFieldPooled      = big.NewInt(1 << 4)
+)
+
+// billingAccountsUsageNullableFields maps the wire names of BillingAccountsUsage's nullable fields (required or optional) to their field bits.
+var billingAccountsUsageNullableFields = map[string]*big.Int{
+	"accountDays": billingAccountsUsageFieldAccountDays,
+	"estimate":    billingAccountsUsageFieldEstimate,
+	"nextAccount": billingAccountsUsageFieldNextAccount,
+}
+
+type BillingAccountsUsage struct {
+	AccountDays *int64 `json:"accountDays,omitempty" url:"accountDays,omitempty"`
+	Connected   int    `json:"connected" url:"connected"`
+	Estimate    *Money `json:"estimate,omitempty" url:"estimate,omitempty"`
+	NextAccount *Money `json:"nextAccount,omitempty" url:"nextAccount,omitempty"`
+	Pooled      int    `json:"pooled" url:"pooled"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingAccountsUsage) GetAccountDays() *int64 {
+	if b == nil {
+		return nil
+	}
+	return b.AccountDays
+}
+
+func (b *BillingAccountsUsage) GetConnected() int {
+	if b == nil {
+		return 0
+	}
+	return b.Connected
+}
+
+func (b *BillingAccountsUsage) GetEstimate() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.Estimate
+}
+
+func (b *BillingAccountsUsage) GetNextAccount() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.NextAccount
+}
+
+func (b *BillingAccountsUsage) GetPooled() int {
+	if b == nil {
+		return 0
+	}
+	return b.Pooled
+}
+
+func (b *BillingAccountsUsage) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingAccountsUsage) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetAccountDays sets the AccountDays field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccountsUsage) SetAccountDays(accountDays *int64) {
+	b.AccountDays = accountDays
+	b.require(billingAccountsUsageFieldAccountDays)
+}
+
+// SetConnected sets the Connected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccountsUsage) SetConnected(connected int) {
+	b.Connected = connected
+	b.require(billingAccountsUsageFieldConnected)
+}
+
+// SetEstimate sets the Estimate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccountsUsage) SetEstimate(estimate *Money) {
+	b.Estimate = estimate
+	b.require(billingAccountsUsageFieldEstimate)
+}
+
+// SetNextAccount sets the NextAccount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccountsUsage) SetNextAccount(nextAccount *Money) {
+	b.NextAccount = nextAccount
+	b.require(billingAccountsUsageFieldNextAccount)
+}
+
+// SetPooled sets the Pooled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccountsUsage) SetPooled(pooled int) {
+	b.Pooled = pooled
+	b.require(billingAccountsUsageFieldPooled)
+}
+
+func (b *BillingAccountsUsage) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingAccountsUsage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingAccountsUsage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, billingAccountsUsageNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		b.require(presentFields)
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingAccountsUsage) MarshalJSON() ([]byte, error) {
+	type embed BillingAccountsUsage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingAccountsUsage) String() string {
 	if b == nil {
 		return "<nil>"
 	}
@@ -985,6 +1346,136 @@ func (b *BillingTransfer) String() string {
 }
 
 var (
+	meterTermsFieldAllowance        = big.NewInt(1 << 0)
+	meterTermsFieldAllowanceWithout = big.NewInt(1 << 1)
+	meterTermsFieldCeiling          = big.NewInt(1 << 2)
+)
+
+// meterTermsNullableFields maps the wire names of MeterTerms's nullable fields (required or optional) to their field bits.
+var meterTermsNullableFields = map[string]*big.Int{
+	"ceiling": meterTermsFieldCeiling,
+}
+
+type MeterTerms struct {
+	Allowance        int  `json:"allowance" url:"allowance"`
+	AllowanceWithout int  `json:"allowanceWithout" url:"allowanceWithout"`
+	Ceiling          *int `json:"ceiling,omitempty" url:"ceiling,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MeterTerms) GetAllowance() int {
+	if m == nil {
+		return 0
+	}
+	return m.Allowance
+}
+
+func (m *MeterTerms) GetAllowanceWithout() int {
+	if m == nil {
+		return 0
+	}
+	return m.AllowanceWithout
+}
+
+func (m *MeterTerms) GetCeiling() *int {
+	if m == nil {
+		return nil
+	}
+	return m.Ceiling
+}
+
+func (m *MeterTerms) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MeterTerms) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetAllowance sets the Allowance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MeterTerms) SetAllowance(allowance int) {
+	m.Allowance = allowance
+	m.require(meterTermsFieldAllowance)
+}
+
+// SetAllowanceWithout sets the AllowanceWithout field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MeterTerms) SetAllowanceWithout(allowanceWithout int) {
+	m.AllowanceWithout = allowanceWithout
+	m.require(meterTermsFieldAllowanceWithout)
+}
+
+// SetCeiling sets the Ceiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MeterTerms) SetCeiling(ceiling *int) {
+	m.Ceiling = ceiling
+	m.require(meterTermsFieldCeiling)
+}
+
+func (m *MeterTerms) UnmarshalJSON(data []byte) error {
+	type unmarshaler MeterTerms
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MeterTerms(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, meterTermsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		m.require(presentFields)
+	}
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MeterTerms) MarshalJSON() ([]byte, error) {
+	type embed MeterTerms
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MeterTerms) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
 	planOfferFieldAllowances = big.NewInt(1 << 0)
 	planOfferFieldPlan       = big.NewInt(1 << 1)
 	planOfferFieldPrice      = big.NewInt(1 << 2)
@@ -1214,6 +1705,1384 @@ func (p *PlanPrice) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pricesFieldAccounts = big.NewInt(1 << 0)
+	pricesFieldMeters   = big.NewInt(1 << 1)
+)
+
+type Prices struct {
+	Accounts *PricesAccounts `json:"accounts" url:"accounts"`
+	Meters   *PricesMeters   `json:"meters" url:"meters"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *Prices) GetAccounts() *PricesAccounts {
+	if p == nil {
+		return nil
+	}
+	return p.Accounts
+}
+
+func (p *Prices) GetMeters() *PricesMeters {
+	if p == nil {
+		return nil
+	}
+	return p.Meters
+}
+
+func (p *Prices) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *Prices) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetAccounts sets the Accounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Prices) SetAccounts(accounts *PricesAccounts) {
+	p.Accounts = accounts
+	p.require(pricesFieldAccounts)
+}
+
+// SetMeters sets the Meters field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Prices) SetMeters(meters *PricesMeters) {
+	p.Meters = meters
+	p.require(pricesFieldMeters)
+}
+
+func (p *Prices) UnmarshalJSON(data []byte) error {
+	type unmarshaler Prices
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = Prices(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *Prices) MarshalJSON() ([]byte, error) {
+	type embed Prices
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *Prices) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pricesAccountsFieldBands = big.NewInt(1 << 0)
+)
+
+type PricesAccounts struct {
+	Bands []*AccountBand `json:"bands" url:"bands"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PricesAccounts) GetBands() []*AccountBand {
+	if p == nil {
+		return nil
+	}
+	return p.Bands
+}
+
+func (p *PricesAccounts) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PricesAccounts) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetBands sets the Bands field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesAccounts) SetBands(bands []*AccountBand) {
+	p.Bands = bands
+	p.require(pricesAccountsFieldBands)
+}
+
+func (p *PricesAccounts) UnmarshalJSON(data []byte) error {
+	type unmarshaler PricesAccounts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PricesAccounts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PricesAccounts) MarshalJSON() ([]byte, error) {
+	type embed PricesAccounts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PricesAccounts) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pricesMetersFieldAssistantImages   = big.NewInt(1 << 0)
+	pricesMetersFieldAssistantRequests = big.NewInt(1 << 1)
+	pricesMetersFieldManagedAds        = big.NewInt(1 << 2)
+	pricesMetersFieldOutboundMessages  = big.NewInt(1 << 3)
+	pricesMetersFieldXAPI              = big.NewInt(1 << 4)
+)
+
+type PricesMeters struct {
+	AssistantImages   *UnitPrice `json:"assistantImages" url:"assistantImages"`
+	AssistantRequests *UnitPrice `json:"assistantRequests" url:"assistantRequests"`
+	ManagedAds        *UnitPrice `json:"managedAds" url:"managedAds"`
+	OutboundMessages  *UnitPrice `json:"outboundMessages" url:"outboundMessages"`
+	XAPI              *UnitPrice `json:"xApi" url:"xApi"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PricesMeters) GetAssistantImages() *UnitPrice {
+	if p == nil {
+		return nil
+	}
+	return p.AssistantImages
+}
+
+func (p *PricesMeters) GetAssistantRequests() *UnitPrice {
+	if p == nil {
+		return nil
+	}
+	return p.AssistantRequests
+}
+
+func (p *PricesMeters) GetManagedAds() *UnitPrice {
+	if p == nil {
+		return nil
+	}
+	return p.ManagedAds
+}
+
+func (p *PricesMeters) GetOutboundMessages() *UnitPrice {
+	if p == nil {
+		return nil
+	}
+	return p.OutboundMessages
+}
+
+func (p *PricesMeters) GetXAPI() *UnitPrice {
+	if p == nil {
+		return nil
+	}
+	return p.XAPI
+}
+
+func (p *PricesMeters) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PricesMeters) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetAssistantImages sets the AssistantImages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesMeters) SetAssistantImages(assistantImages *UnitPrice) {
+	p.AssistantImages = assistantImages
+	p.require(pricesMetersFieldAssistantImages)
+}
+
+// SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesMeters) SetAssistantRequests(assistantRequests *UnitPrice) {
+	p.AssistantRequests = assistantRequests
+	p.require(pricesMetersFieldAssistantRequests)
+}
+
+// SetManagedAds sets the ManagedAds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesMeters) SetManagedAds(managedAds *UnitPrice) {
+	p.ManagedAds = managedAds
+	p.require(pricesMetersFieldManagedAds)
+}
+
+// SetOutboundMessages sets the OutboundMessages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesMeters) SetOutboundMessages(outboundMessages *UnitPrice) {
+	p.OutboundMessages = outboundMessages
+	p.require(pricesMetersFieldOutboundMessages)
+}
+
+// SetXAPI sets the XAPI field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PricesMeters) SetXAPI(xAPI *UnitPrice) {
+	p.XAPI = xAPI
+	p.require(pricesMetersFieldXAPI)
+}
+
+func (p *PricesMeters) UnmarshalJSON(data []byte) error {
+	type unmarshaler PricesMeters
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PricesMeters(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PricesMeters) MarshalJSON() ([]byte, error) {
+	type embed PricesMeters
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PricesMeters) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	rateCardFieldAPIRequestsPerMinute = big.NewInt(1 << 0)
+	rateCardFieldAssistant            = big.NewInt(1 << 1)
+	rateCardFieldDaysPerMonth         = big.NewInt(1 << 2)
+	rateCardFieldDisplayVatRate       = big.NewInt(1 << 3)
+	rateCardFieldMeters               = big.NewInt(1 << 4)
+	rateCardFieldPrices               = big.NewInt(1 << 5)
+	rateCardFieldStorage              = big.NewInt(1 << 6)
+	rateCardFieldUnverifiedCeiling    = big.NewInt(1 << 7)
+	rateCardFieldX                    = big.NewInt(1 << 8)
+)
+
+type RateCard struct {
+	APIRequestsPerMinute *RateCardAPIRequestsPerMinute `json:"apiRequestsPerMinute" url:"apiRequestsPerMinute"`
+	Assistant            *RateCardAssistant            `json:"assistant" url:"assistant"`
+	DaysPerMonth         int                           `json:"daysPerMonth" url:"daysPerMonth"`
+	DisplayVatRate       int                           `json:"displayVatRate" url:"displayVatRate"`
+	Meters               *RateCardMeters               `json:"meters" url:"meters"`
+	Prices               *RateCardPrices               `json:"prices" url:"prices"`
+	Storage              *RateCardStorage              `json:"storage" url:"storage"`
+	UnverifiedCeiling    int                           `json:"unverifiedCeiling" url:"unverifiedCeiling"`
+	X                    *RateCardX                    `json:"x" url:"x"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCard) GetAPIRequestsPerMinute() *RateCardAPIRequestsPerMinute {
+	if r == nil {
+		return nil
+	}
+	return r.APIRequestsPerMinute
+}
+
+func (r *RateCard) GetAssistant() *RateCardAssistant {
+	if r == nil {
+		return nil
+	}
+	return r.Assistant
+}
+
+func (r *RateCard) GetDaysPerMonth() int {
+	if r == nil {
+		return 0
+	}
+	return r.DaysPerMonth
+}
+
+func (r *RateCard) GetDisplayVatRate() int {
+	if r == nil {
+		return 0
+	}
+	return r.DisplayVatRate
+}
+
+func (r *RateCard) GetMeters() *RateCardMeters {
+	if r == nil {
+		return nil
+	}
+	return r.Meters
+}
+
+func (r *RateCard) GetPrices() *RateCardPrices {
+	if r == nil {
+		return nil
+	}
+	return r.Prices
+}
+
+func (r *RateCard) GetStorage() *RateCardStorage {
+	if r == nil {
+		return nil
+	}
+	return r.Storage
+}
+
+func (r *RateCard) GetUnverifiedCeiling() int {
+	if r == nil {
+		return 0
+	}
+	return r.UnverifiedCeiling
+}
+
+func (r *RateCard) GetX() *RateCardX {
+	if r == nil {
+		return nil
+	}
+	return r.X
+}
+
+func (r *RateCard) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCard) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetAPIRequestsPerMinute sets the APIRequestsPerMinute field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetAPIRequestsPerMinute(apiRequestsPerMinute *RateCardAPIRequestsPerMinute) {
+	r.APIRequestsPerMinute = apiRequestsPerMinute
+	r.require(rateCardFieldAPIRequestsPerMinute)
+}
+
+// SetAssistant sets the Assistant field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetAssistant(assistant *RateCardAssistant) {
+	r.Assistant = assistant
+	r.require(rateCardFieldAssistant)
+}
+
+// SetDaysPerMonth sets the DaysPerMonth field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetDaysPerMonth(daysPerMonth int) {
+	r.DaysPerMonth = daysPerMonth
+	r.require(rateCardFieldDaysPerMonth)
+}
+
+// SetDisplayVatRate sets the DisplayVatRate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetDisplayVatRate(displayVatRate int) {
+	r.DisplayVatRate = displayVatRate
+	r.require(rateCardFieldDisplayVatRate)
+}
+
+// SetMeters sets the Meters field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetMeters(meters *RateCardMeters) {
+	r.Meters = meters
+	r.require(rateCardFieldMeters)
+}
+
+// SetPrices sets the Prices field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetPrices(prices *RateCardPrices) {
+	r.Prices = prices
+	r.require(rateCardFieldPrices)
+}
+
+// SetStorage sets the Storage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetStorage(storage *RateCardStorage) {
+	r.Storage = storage
+	r.require(rateCardFieldStorage)
+}
+
+// SetUnverifiedCeiling sets the UnverifiedCeiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetUnverifiedCeiling(unverifiedCeiling int) {
+	r.UnverifiedCeiling = unverifiedCeiling
+	r.require(rateCardFieldUnverifiedCeiling)
+}
+
+// SetX sets the X field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCard) SetX(x *RateCardX) {
+	r.X = x
+	r.require(rateCardFieldX)
+}
+
+func (r *RateCard) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCard
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCard(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCard) MarshalJSON() ([]byte, error) {
+	type embed RateCard
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCard) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardAPIRequestsPerMinuteFieldOnRequest            = big.NewInt(1 << 0)
+	rateCardAPIRequestsPerMinuteFieldWithoutPaymentMethod = big.NewInt(1 << 1)
+)
+
+type RateCardAPIRequestsPerMinute struct {
+	OnRequest            int `json:"onRequest" url:"onRequest"`
+	WithoutPaymentMethod int `json:"withoutPaymentMethod" url:"withoutPaymentMethod"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardAPIRequestsPerMinute) GetOnRequest() int {
+	if r == nil {
+		return 0
+	}
+	return r.OnRequest
+}
+
+func (r *RateCardAPIRequestsPerMinute) GetWithoutPaymentMethod() int {
+	if r == nil {
+		return 0
+	}
+	return r.WithoutPaymentMethod
+}
+
+func (r *RateCardAPIRequestsPerMinute) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardAPIRequestsPerMinute) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetOnRequest sets the OnRequest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardAPIRequestsPerMinute) SetOnRequest(onRequest int) {
+	r.OnRequest = onRequest
+	r.require(rateCardAPIRequestsPerMinuteFieldOnRequest)
+}
+
+// SetWithoutPaymentMethod sets the WithoutPaymentMethod field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardAPIRequestsPerMinute) SetWithoutPaymentMethod(withoutPaymentMethod int) {
+	r.WithoutPaymentMethod = withoutPaymentMethod
+	r.require(rateCardAPIRequestsPerMinuteFieldWithoutPaymentMethod)
+}
+
+func (r *RateCardAPIRequestsPerMinute) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardAPIRequestsPerMinute
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardAPIRequestsPerMinute(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardAPIRequestsPerMinute) MarshalJSON() ([]byte, error) {
+	type embed RateCardAPIRequestsPerMinute
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardAPIRequestsPerMinute) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardAssistantFieldMargin = big.NewInt(1 << 0)
+)
+
+type RateCardAssistant struct {
+	Margin int `json:"margin" url:"margin"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardAssistant) GetMargin() int {
+	if r == nil {
+		return 0
+	}
+	return r.Margin
+}
+
+func (r *RateCardAssistant) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardAssistant) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetMargin sets the Margin field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardAssistant) SetMargin(margin int) {
+	r.Margin = margin
+	r.require(rateCardAssistantFieldMargin)
+}
+
+func (r *RateCardAssistant) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardAssistant
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardAssistant(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardAssistant) MarshalJSON() ([]byte, error) {
+	type embed RateCardAssistant
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardAssistant) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardMetersFieldAssistantImages   = big.NewInt(1 << 0)
+	rateCardMetersFieldAssistantRequests = big.NewInt(1 << 1)
+	rateCardMetersFieldManagedAds        = big.NewInt(1 << 2)
+	rateCardMetersFieldOutboundMessages  = big.NewInt(1 << 3)
+	rateCardMetersFieldXAPI              = big.NewInt(1 << 4)
+)
+
+type RateCardMeters struct {
+	AssistantImages   *MeterTerms `json:"assistantImages" url:"assistantImages"`
+	AssistantRequests *MeterTerms `json:"assistantRequests" url:"assistantRequests"`
+	ManagedAds        *MeterTerms `json:"managedAds" url:"managedAds"`
+	OutboundMessages  *MeterTerms `json:"outboundMessages" url:"outboundMessages"`
+	XAPI              *MeterTerms `json:"xApi" url:"xApi"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardMeters) GetAssistantImages() *MeterTerms {
+	if r == nil {
+		return nil
+	}
+	return r.AssistantImages
+}
+
+func (r *RateCardMeters) GetAssistantRequests() *MeterTerms {
+	if r == nil {
+		return nil
+	}
+	return r.AssistantRequests
+}
+
+func (r *RateCardMeters) GetManagedAds() *MeterTerms {
+	if r == nil {
+		return nil
+	}
+	return r.ManagedAds
+}
+
+func (r *RateCardMeters) GetOutboundMessages() *MeterTerms {
+	if r == nil {
+		return nil
+	}
+	return r.OutboundMessages
+}
+
+func (r *RateCardMeters) GetXAPI() *MeterTerms {
+	if r == nil {
+		return nil
+	}
+	return r.XAPI
+}
+
+func (r *RateCardMeters) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardMeters) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetAssistantImages sets the AssistantImages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardMeters) SetAssistantImages(assistantImages *MeterTerms) {
+	r.AssistantImages = assistantImages
+	r.require(rateCardMetersFieldAssistantImages)
+}
+
+// SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardMeters) SetAssistantRequests(assistantRequests *MeterTerms) {
+	r.AssistantRequests = assistantRequests
+	r.require(rateCardMetersFieldAssistantRequests)
+}
+
+// SetManagedAds sets the ManagedAds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardMeters) SetManagedAds(managedAds *MeterTerms) {
+	r.ManagedAds = managedAds
+	r.require(rateCardMetersFieldManagedAds)
+}
+
+// SetOutboundMessages sets the OutboundMessages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardMeters) SetOutboundMessages(outboundMessages *MeterTerms) {
+	r.OutboundMessages = outboundMessages
+	r.require(rateCardMetersFieldOutboundMessages)
+}
+
+// SetXAPI sets the XAPI field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardMeters) SetXAPI(xAPI *MeterTerms) {
+	r.XAPI = xAPI
+	r.require(rateCardMetersFieldXAPI)
+}
+
+func (r *RateCardMeters) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardMeters
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardMeters(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardMeters) MarshalJSON() ([]byte, error) {
+	type embed RateCardMeters
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardMeters) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardPricesFieldUsd = big.NewInt(1 << 0)
+)
+
+type RateCardPrices struct {
+	Usd *Prices `json:"usd" url:"usd"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardPrices) GetUsd() *Prices {
+	if r == nil {
+		return nil
+	}
+	return r.Usd
+}
+
+func (r *RateCardPrices) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardPrices) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetUsd sets the Usd field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardPrices) SetUsd(usd *Prices) {
+	r.Usd = usd
+	r.require(rateCardPricesFieldUsd)
+}
+
+func (r *RateCardPrices) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardPrices
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardPrices(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardPrices) MarshalJSON() ([]byte, error) {
+	type embed RateCardPrices
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardPrices) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardStorageFieldMinimum              = big.NewInt(1 << 0)
+	rateCardStorageFieldPerAccount           = big.NewInt(1 << 1)
+	rateCardStorageFieldWithoutPaymentMethod = big.NewInt(1 << 2)
+)
+
+type RateCardStorage struct {
+	Minimum              int64 `json:"minimum" url:"minimum"`
+	PerAccount           int64 `json:"perAccount" url:"perAccount"`
+	WithoutPaymentMethod int64 `json:"withoutPaymentMethod" url:"withoutPaymentMethod"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardStorage) GetMinimum() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.Minimum
+}
+
+func (r *RateCardStorage) GetPerAccount() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.PerAccount
+}
+
+func (r *RateCardStorage) GetWithoutPaymentMethod() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.WithoutPaymentMethod
+}
+
+func (r *RateCardStorage) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardStorage) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetMinimum sets the Minimum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardStorage) SetMinimum(minimum int64) {
+	r.Minimum = minimum
+	r.require(rateCardStorageFieldMinimum)
+}
+
+// SetPerAccount sets the PerAccount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardStorage) SetPerAccount(perAccount int64) {
+	r.PerAccount = perAccount
+	r.require(rateCardStorageFieldPerAccount)
+}
+
+// SetWithoutPaymentMethod sets the WithoutPaymentMethod field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardStorage) SetWithoutPaymentMethod(withoutPaymentMethod int64) {
+	r.WithoutPaymentMethod = withoutPaymentMethod
+	r.require(rateCardStorageFieldWithoutPaymentMethod)
+}
+
+func (r *RateCardStorage) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardStorage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardStorage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardStorage) MarshalJSON() ([]byte, error) {
+	type embed RateCardStorage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardStorage) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardXFieldDefaultCeiling = big.NewInt(1 << 0)
+	rateCardXFieldRates          = big.NewInt(1 << 1)
+)
+
+type RateCardX struct {
+	DefaultCeiling int             `json:"defaultCeiling" url:"defaultCeiling"`
+	Rates          *RateCardXRates `json:"rates" url:"rates"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardX) GetDefaultCeiling() int {
+	if r == nil {
+		return 0
+	}
+	return r.DefaultCeiling
+}
+
+func (r *RateCardX) GetRates() *RateCardXRates {
+	if r == nil {
+		return nil
+	}
+	return r.Rates
+}
+
+func (r *RateCardX) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardX) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetDefaultCeiling sets the DefaultCeiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardX) SetDefaultCeiling(defaultCeiling int) {
+	r.DefaultCeiling = defaultCeiling
+	r.require(rateCardXFieldDefaultCeiling)
+}
+
+// SetRates sets the Rates field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardX) SetRates(rates *RateCardXRates) {
+	r.Rates = rates
+	r.require(rateCardXFieldRates)
+}
+
+func (r *RateCardX) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardX
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardX(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardX) MarshalJSON() ([]byte, error) {
+	type embed RateCardX
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardX) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rateCardXRatesFieldDmCreate          = big.NewInt(1 << 0)
+	rateCardXRatesFieldDmEventRead       = big.NewInt(1 << 1)
+	rateCardXRatesFieldOwnedRead         = big.NewInt(1 << 2)
+	rateCardXRatesFieldPostCreate        = big.NewInt(1 << 3)
+	rateCardXRatesFieldPostCreateWithURL = big.NewInt(1 << 4)
+	rateCardXRatesFieldPostRead          = big.NewInt(1 << 5)
+	rateCardXRatesFieldUserRead          = big.NewInt(1 << 6)
+)
+
+type RateCardXRates struct {
+	DmCreate          int `json:"dmCreate" url:"dmCreate"`
+	DmEventRead       int `json:"dmEventRead" url:"dmEventRead"`
+	OwnedRead         int `json:"ownedRead" url:"ownedRead"`
+	PostCreate        int `json:"postCreate" url:"postCreate"`
+	PostCreateWithURL int `json:"postCreateWithUrl" url:"postCreateWithUrl"`
+	PostRead          int `json:"postRead" url:"postRead"`
+	UserRead          int `json:"userRead" url:"userRead"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RateCardXRates) GetDmCreate() int {
+	if r == nil {
+		return 0
+	}
+	return r.DmCreate
+}
+
+func (r *RateCardXRates) GetDmEventRead() int {
+	if r == nil {
+		return 0
+	}
+	return r.DmEventRead
+}
+
+func (r *RateCardXRates) GetOwnedRead() int {
+	if r == nil {
+		return 0
+	}
+	return r.OwnedRead
+}
+
+func (r *RateCardXRates) GetPostCreate() int {
+	if r == nil {
+		return 0
+	}
+	return r.PostCreate
+}
+
+func (r *RateCardXRates) GetPostCreateWithURL() int {
+	if r == nil {
+		return 0
+	}
+	return r.PostCreateWithURL
+}
+
+func (r *RateCardXRates) GetPostRead() int {
+	if r == nil {
+		return 0
+	}
+	return r.PostRead
+}
+
+func (r *RateCardXRates) GetUserRead() int {
+	if r == nil {
+		return 0
+	}
+	return r.UserRead
+}
+
+func (r *RateCardXRates) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RateCardXRates) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetDmCreate sets the DmCreate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetDmCreate(dmCreate int) {
+	r.DmCreate = dmCreate
+	r.require(rateCardXRatesFieldDmCreate)
+}
+
+// SetDmEventRead sets the DmEventRead field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetDmEventRead(dmEventRead int) {
+	r.DmEventRead = dmEventRead
+	r.require(rateCardXRatesFieldDmEventRead)
+}
+
+// SetOwnedRead sets the OwnedRead field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetOwnedRead(ownedRead int) {
+	r.OwnedRead = ownedRead
+	r.require(rateCardXRatesFieldOwnedRead)
+}
+
+// SetPostCreate sets the PostCreate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetPostCreate(postCreate int) {
+	r.PostCreate = postCreate
+	r.require(rateCardXRatesFieldPostCreate)
+}
+
+// SetPostCreateWithURL sets the PostCreateWithURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetPostCreateWithURL(postCreateWithURL int) {
+	r.PostCreateWithURL = postCreateWithURL
+	r.require(rateCardXRatesFieldPostCreateWithURL)
+}
+
+// SetPostRead sets the PostRead field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetPostRead(postRead int) {
+	r.PostRead = postRead
+	r.require(rateCardXRatesFieldPostRead)
+}
+
+// SetUserRead sets the UserRead field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardXRates) SetUserRead(userRead int) {
+	r.UserRead = userRead
+	r.require(rateCardXRatesFieldUserRead)
+}
+
+func (r *RateCardXRates) UnmarshalJSON(data []byte) error {
+	type unmarshaler RateCardXRates
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RateCardXRates(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RateCardXRates) MarshalJSON() ([]byte, error) {
+	type embed RateCardXRates
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RateCardXRates) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
 }
 
 var (
@@ -1568,4 +3437,106 @@ func (t *TrialOffer) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	unitPriceFieldCents = big.NewInt(1 << 0)
+	unitPriceFieldPer   = big.NewInt(1 << 1)
+)
+
+type UnitPrice struct {
+	Cents int `json:"cents" url:"cents"`
+	Per   int `json:"per" url:"per"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UnitPrice) GetCents() int {
+	if u == nil {
+		return 0
+	}
+	return u.Cents
+}
+
+func (u *UnitPrice) GetPer() int {
+	if u == nil {
+		return 0
+	}
+	return u.Per
+}
+
+func (u *UnitPrice) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UnitPrice) require(field *big.Int) {
+	next := new(big.Int)
+	if u.explicitFields != nil {
+		next.Set(u.explicitFields)
+	}
+	next.Or(next, field)
+	u.explicitFields = next
+}
+
+// SetCents sets the Cents field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnitPrice) SetCents(cents int) {
+	u.Cents = cents
+	u.require(unitPriceFieldCents)
+}
+
+// SetPer sets the Per field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnitPrice) SetPer(per int) {
+	u.Per = per
+	u.require(unitPriceFieldPer)
+}
+
+func (u *UnitPrice) UnmarshalJSON(data []byte) error {
+	type unmarshaler UnitPrice
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UnitPrice(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UnitPrice) MarshalJSON() ([]byte, error) {
+	type embed UnitPrice
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UnitPrice) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
 }

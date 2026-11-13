@@ -489,7 +489,8 @@ The staff context follows these rules too. What the law has a host keep is in
   Locks are taken in one order, never the other way: a connect link's row
   (`ConnectLinkStore.lock`), then the workspace's channel additions
   (`ChannelRepository.addingTo`), then the partner's hold, which
-  `ChannelAllowance.sharedWith` takes inside `addingTo`; scheduling takes
+  `ChannelAllowance.sharedWith` takes inside `addingTo`, then billing's
+  row of the day (`ChannelAllowance.counted`, last); scheduling takes
   the partner's hold inside its own transaction, and holds no channel
   lock. Creating a customer's workspace and closing the account take the
   partner's hold alone. Tests that need no

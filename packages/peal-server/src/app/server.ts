@@ -31,6 +31,7 @@ import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { DiscoveryLive } from "#app/discovery/live.ts";
 import { McpLive } from "#app/mcp/server.ts";
+import { MeterErrorsLive } from "#app/meter-errors/route.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
 import {
@@ -219,6 +220,7 @@ export const RoutesLive = Layer.mergeAll(
   DiscoveryLive,
   ShortLinkRedirectsLive,
   ShortLinkRedirectsUntraced,
+  MeterErrorsLive,
   ApiAnswersLive
 );
 

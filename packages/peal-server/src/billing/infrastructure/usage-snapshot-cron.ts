@@ -5,16 +5,19 @@ import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 
 /**
  * Every day at 00:11 UTC: writes the day that just ended's states of every
- * workspace in the usage ledger, then deletes the rows past their 400 days.
+ * workspace in the usage ledger, starts today's account-days, then deletes
+ * the rows past their 400 days.
  * It calls no platform. A run skipped or failed leaves that day without
  * states; the next day's runs as usual.
  */
 export const usageSnapshot = ClusterCron.make({
   cron: Cron.parseUnsafe("11 0 * * *", "UTC"),
   execute: SnapshotUsage.use((snapshot) => snapshot.run).pipe(
-    Effect.tap(({ day, purged, workspaces }) =>
+    Effect.tap(({ accountDays, accountDaysPurged, day, purged, workspaces }) =>
       Effect.logInfo("Wrote the day's usage of every workspace").pipe(
         Effect.annotateLogs({
+          accountDays,
+          accountDaysPurged,
           day: DateTime.formatIsoDateUtc(day),
           purged,
           workspaces,

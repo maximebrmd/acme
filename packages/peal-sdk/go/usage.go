@@ -119,17 +119,19 @@ func (p *PartnerUsageRequest) SetTo(to *CalendarDay) {
 
 var (
 	usageDayFieldAssistantRequests = big.NewInt(1 << 0)
-	usageDayFieldByPlatform        = big.NewInt(1 << 1)
-	usageDayFieldChannels          = big.NewInt(1 << 2)
-	usageDayFieldDay               = big.NewInt(1 << 3)
-	usageDayFieldMediaStorage      = big.NewInt(1 << 4)
-	usageDayFieldMembers           = big.NewInt(1 << 5)
-	usageDayFieldPublishedPosts    = big.NewInt(1 << 6)
+	usageDayFieldBillableAccounts  = big.NewInt(1 << 1)
+	usageDayFieldByPlatform        = big.NewInt(1 << 2)
+	usageDayFieldChannels          = big.NewInt(1 << 3)
+	usageDayFieldDay               = big.NewInt(1 << 4)
+	usageDayFieldMediaStorage      = big.NewInt(1 << 5)
+	usageDayFieldMembers           = big.NewInt(1 << 6)
+	usageDayFieldPublishedPosts    = big.NewInt(1 << 7)
 )
 
 // usageDayNullableFields maps the wire names of UsageDay's nullable fields (required or optional) to their field bits.
 var usageDayNullableFields = map[string]*big.Int{
 	"assistantRequests": usageDayFieldAssistantRequests,
+	"billableAccounts":  usageDayFieldBillableAccounts,
 	"channels":          usageDayFieldChannels,
 	"mediaStorage":      usageDayFieldMediaStorage,
 	"members":           usageDayFieldMembers,
@@ -137,6 +139,7 @@ var usageDayNullableFields = map[string]*big.Int{
 
 type UsageDay struct {
 	AssistantRequests *int             `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
+	BillableAccounts  *int             `json:"billableAccounts,omitempty" url:"billableAccounts,omitempty"`
 	ByPlatform        []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
 	Channels          *int             `json:"channels,omitempty" url:"channels,omitempty"`
 	Day               CalendarDay      `json:"day" url:"day"`
@@ -156,6 +159,13 @@ func (u *UsageDay) GetAssistantRequests() *int {
 		return nil
 	}
 	return u.AssistantRequests
+}
+
+func (u *UsageDay) GetBillableAccounts() *int {
+	if u == nil {
+		return nil
+	}
+	return u.BillableAccounts
 }
 
 func (u *UsageDay) GetByPlatform() []*PlatformPosts {
@@ -221,6 +231,13 @@ func (u *UsageDay) require(field *big.Int) {
 func (u *UsageDay) SetAssistantRequests(assistantRequests *int) {
 	u.AssistantRequests = assistantRequests
 	u.require(usageDayFieldAssistantRequests)
+}
+
+// SetBillableAccounts sets the BillableAccounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageDay) SetBillableAccounts(billableAccounts *int) {
+	u.BillableAccounts = billableAccounts
+	u.require(usageDayFieldBillableAccounts)
 }
 
 // SetByPlatform sets the ByPlatform field and marks it as non-optional;

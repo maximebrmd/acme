@@ -14,6 +14,9 @@ class UsageDay(UniversalBaseModel):
     assistant_requests: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
     ] = None
+    billable_accounts: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="billableAccounts"), pydantic.Field(alias="billableAccounts")
+    ] = None
     by_platform: typing_extensions.Annotated[
         typing.List[PlatformPosts], FieldMetadata(alias="byPlatform"), pydantic.Field(alias="byPlatform")
     ]

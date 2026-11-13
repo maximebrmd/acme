@@ -342,6 +342,14 @@ func TestSettersUsageDay(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetBillableAccounts", func(t *testing.T) {
+		obj := &UsageDay{}
+		var fernTestValueBillableAccounts *int
+		obj.SetBillableAccounts(fernTestValueBillableAccounts)
+		assert.Equal(t, fernTestValueBillableAccounts, obj.BillableAccounts)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetByPlatform", func(t *testing.T) {
 		obj := &UsageDay{}
 		var fernTestValueByPlatform []*PlatformPosts
@@ -424,6 +432,39 @@ func TestGettersUsageDay(t *testing.T) {
 			}
 		}()
 		_ = obj.GetAssistantRequests() // Should return zero value
+	})
+
+	t.Run("GetBillableAccounts", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UsageDay{}
+		var expected *int
+		obj.BillableAccounts = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBillableAccounts(), "getter should return the property value")
+	})
+
+	t.Run("GetBillableAccounts_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UsageDay{}
+		obj.BillableAccounts = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBillableAccounts(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBillableAccounts_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UsageDay
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBillableAccounts() // Should return zero value
 	})
 
 	t.Run("GetByPlatform", func(t *testing.T) {
@@ -615,6 +656,37 @@ func TestSettersMarkExplicitUsageDay(t *testing.T) {
 
 		// Act
 		obj.SetAssistantRequests(fernTestValueAssistantRequests)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetBillableAccounts_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UsageDay{}
+		var fernTestValueBillableAccounts *int
+
+		// Act
+		obj.SetBillableAccounts(fernTestValueBillableAccounts)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1512,6 +1584,7 @@ func TestJSONMarshalingWorkspaceUsageReport(t *testing.T) {
 func TestRequiredNullableRoundTripUsageDay(t *testing.T) {
 	requiredNullableKeys := []string{
 		"assistantRequests",
+		"billableAccounts",
 		"channels",
 		"mediaStorage",
 		"members",
@@ -1527,7 +1600,7 @@ func TestRequiredNullableRoundTripUsageDay(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj UsageDay
-		require.NoError(t, json.Unmarshal([]byte(`{"assistantRequests":null,"channels":null,"mediaStorage":null,"members":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"assistantRequests":null,"billableAccounts":null,"channels":null,"mediaStorage":null,"members":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

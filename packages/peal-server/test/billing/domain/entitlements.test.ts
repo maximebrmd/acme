@@ -15,10 +15,15 @@ const workspaceId = WorkspaceIdSchema.make(
 
 let count = 0;
 
-const subscription = (plan: PaidPlan, status: SubscriptionStatus) => {
+const subscription = (
+  plan: PaidPlan,
+  status: SubscriptionStatus,
+  fields: Partial<Pick<Subscription, "paidInvoiceAt">> = {}
+) => {
   count += 1;
 
   return new Subscription({
+    ...fields,
     cancelAtPeriodEnd: false,
     currentPeriodEnd: Option.some(DateTime.makeUnsafe("2026-12-09T00:00:00Z")),
     currentPeriodStart: Option.none(),
@@ -132,6 +137,49 @@ describe(entitlementsOf, () => {
     expect(
       entitlementsOf([subscription("payAsYouGo", "past_due")]).plan
     ).toStrictEqual(Option.some("payAsYouGo"));
+  });
+
+  it("holds per-account pricing to the unverified ceiling when connecting, until its first invoice is paid", () => {
+    const unpaid = subscription("payAsYouGo", "active");
+
+    const paid = subscription("payAsYouGo", "active", {
+      paidInvoiceAt: Option.some(DateTime.makeUnsafe("2026-12-01T01:00:00Z")),
+    });
+
+    expect(entitlementsOf([unpaid]).connectableAccounts()).toStrictEqual(
+      Option.some(100)
+    );
+    expect(entitlementsOf([paid]).connectableAccounts()).toStrictEqual(
+      Option.none()
+    );
+    // The standing reads the plan's own allowance: what is connected
+    // already is never over the ceiling.
+    expect(entitlementsOf([unpaid]).allowanceOf("channels")).toStrictEqual(
+      Option.none()
+    );
+  });
+
+  it("lifts the ceiling for an account that paid an invoice before, as one that subscribes again", () => {
+    const before = subscription("payAsYouGo", "canceled", {
+      paidInvoiceAt: Option.some(DateTime.makeUnsafe("2026-10-01T01:00:00Z")),
+    });
+
+    expect(
+      entitlementsOf([
+        before,
+        subscription("payAsYouGo", "active"),
+      ]).connectableAccounts()
+    ).toStrictEqual(Option.none());
+  });
+
+  it("connects what any other plan allows", () => {
+    expect(entitlementsOf([]).connectableAccounts()).toStrictEqual(
+      Option.some(2)
+    );
+    expect(
+      entitlementsOf([subscription("agency", "active")]).connectableAccounts()
+    ).toStrictEqual(planAllowances.agency.channels);
+    expect(unmetered.connectableAccounts()).toStrictEqual(Option.none());
   });
 
   it("keeps a new subscription's plan when an old one ended", () => {

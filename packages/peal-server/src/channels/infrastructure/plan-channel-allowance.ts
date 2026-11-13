@@ -1,5 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
@@ -19,7 +20,8 @@ export const PlanChannelAllowanceLive = Layer.effect(
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
+      counted: () => Effect.void,
       sharedWith: () => Effect.succeed([]),
       sharingIn: () => Effect.succeed(new Map()),
     });
@@ -41,7 +43,8 @@ export const SharedChannelAllowanceLive = Layer.effect(
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
+      counted: () => Effect.void,
       sharedWith: (workspaceId) =>
         ownership.poolOf(workspaceId).pipe(
           Effect.map(
@@ -67,19 +70,22 @@ export const SharedChannelAllowanceLive = Layer.effect(
 /**
  * Each workspace's channel allowance, as its plan gives it, shared with
  * the workspaces of its pool (billing's `PlanPools`: a partner's, else its
- * billing account's, under the pool's hold). What the server runs.
+ * billing account's, under the pool's hold), each account added counted
+ * in its billing account's day (`AccountDays`). What the server runs.
  */
 export const AccountChannelAllowanceLive = Layer.effect(
   ChannelAllowance,
   Effect.gen(function* AccountChannelAllowanceLive() {
     const entitlements = yield* WorkspaceEntitlements;
     const pools = yield* PlanPools;
+    const days = yield* AccountDays;
 
     return ChannelAllowance.of({
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
+      counted: days.counted,
       sharedWith: pools.sharedWith,
       sharingIn: pools.sharingIn,
     });

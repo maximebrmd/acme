@@ -81,16 +81,36 @@ export const accountShown = <E, R>(
 
 /** What clients see of a workspace's billing. */
 export const billingView = (
-  { entitlements, plans, trial, usage, withdrawableUntil }: Overview,
+  {
+    accounts,
+    entitlements,
+    estimate,
+    paymentMethod,
+    plans,
+    rateCard,
+    trial,
+    upcomingInvoice,
+    usage,
+    withdrawableUntil,
+  }: Overview,
   account: Option.Option<AccountView>
 ): Billing => ({
   ...Option.match(account, {
     onNone: () => ({}),
     onSome: (view) => ({ account: accountView(view) }),
   }),
+  accounts: {
+    accountDays: Option.getOrNull(accounts.accountDays),
+    connected: accounts.connected,
+    estimate: Option.getOrNull(accounts.estimate),
+    nextAccount: Option.getOrNull(accounts.nextAccount),
+    pooled: accounts.pooled,
+  },
   allowances: allowancesView(entitlements.allowancesFor(usage.channels)),
   currency,
   enabled: Option.isSome(entitlements.plan),
+  estimate: Option.getOrNull(estimate),
+  paymentMethod,
   plan: Option.getOrNull(entitlements.plan),
   plans: plans.map(({ allowances, plan, price }) => ({
     allowances: allowancesView(allowances),
@@ -110,7 +130,9 @@ export const billingView = (
     })),
     Option.getOrNull
   ),
+  rateCard: Option.getOrNull(rateCard),
   trial: Option.getOrNull(trial),
+  upcomingInvoice: Option.getOrNull(upcomingInvoice),
   usage,
   vatRate: displayVatRate,
   withdrawableUntil: Option.getOrNull(withdrawableUntil),

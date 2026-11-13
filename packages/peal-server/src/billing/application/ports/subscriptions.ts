@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
@@ -58,6 +58,22 @@ export class Subscriptions extends Context.Service<
     readonly forgetUser: (
       userId: UserId,
       pseudonym: string
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The per-account subscriptions Stripe may still bill (`billsAt`), by
+     * id after `after`, `limit` at most.
+     */
+    readonly perAccount: (
+      after: Option.Option<string>,
+      limit: number
+    ) => Effect.Effect<readonly Subscription[], DatabaseError>;
+    /**
+     * Keeps when an invoice of the subscription was first found paid; a
+     * later finding changes nothing.
+     */
+    readonly markPaidInvoice: (
+      subscriptionId: string,
+      at: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * Saves what an event says of a subscription, once per event, and only

@@ -65,6 +65,7 @@ public class PartnerTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",
@@ -230,6 +231,7 @@ public class PartnerTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",

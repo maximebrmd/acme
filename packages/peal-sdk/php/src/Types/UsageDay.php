@@ -15,6 +15,12 @@ class UsageDay extends JsonSerializableType
     public ?int $assistantRequests;
 
     /**
+     * @var ?int $billableAccounts
+     */
+    #[JsonProperty('billableAccounts')]
+    public ?int $billableAccounts;
+
+    /**
      * @var array<PlatformPosts> $byPlatform
      */
     #[JsonProperty('byPlatform'), ArrayType([PlatformPosts::class])]
@@ -56,6 +62,7 @@ class UsageDay extends JsonSerializableType
      *   day: string,
      *   publishedPosts: int,
      *   assistantRequests?: ?int,
+     *   billableAccounts?: ?int,
      *   channels?: ?int,
      *   mediaStorage?: ?int,
      *   members?: ?int,
@@ -65,6 +72,7 @@ class UsageDay extends JsonSerializableType
         array $values,
     ) {
         $this->assistantRequests = $values['assistantRequests'] ?? null;
+        $this->billableAccounts = $values['billableAccounts'] ?? null;
         $this->byPlatform = $values['byPlatform'];
         $this->channels = $values['channels'] ?? null;
         $this->day = $values['day'];

@@ -8,6 +8,7 @@ import {
   Schema,
 } from "effect";
 
+import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import { billsAt, entitles } from "#billing/domain/subscription.ts";
@@ -20,12 +21,14 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { AccountDays } from "./account-days.ts";
 import { BillingAccounts } from "./billing-accounts.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
 import { Trials } from "./ports/trials.ts";
+import { UsageBilling } from "./ports/usage-billing.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
 /** What a Stripe webhook event says of a workspace's subscription. */
@@ -74,6 +77,18 @@ export const duplicateSubscriptions = Metric.counter(
     incremental: true,
   }
 );
+
+/**
+ * Per-account subscriptions recorded without the threshold they invoice
+ * at until a first paid invoice, because Stripe refused to set it: the
+ * daily step tries again, and an alert rule reads it
+ * (peal-threshold-unset).
+ */
+export const thresholdsUnset = Metric.counter("peal.billing.threshold_unset", {
+  description:
+    "Per-account subscriptions Stripe refused the unverified billing threshold to, recorded without it",
+  incremental: true,
+});
 
 // Whether Stripe already ends the trial, cancelled, when it ends.
 const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
@@ -129,6 +144,54 @@ export class RecordSubscription extends Context.Service<
       const stripe = yield* StripeContracts;
       const { transaction } = yield* TransactionRunner;
       const accounts = yield* BillingAccounts;
+      const usage = yield* UsageBilling;
+      const days = yield* AccountDays;
+
+      // A per-account subscription paid for the first time invoices at a
+      // threshold until its first invoice is paid, which the reporter's
+      // daily step then lifts.
+      const thresholdOnce = Effect.fn("RecordSubscription.thresholdOnce")(
+        function* thresholdOnce(recorded: Subscription) {
+          const before = (yield* subscriptions.ofWorkspace(
+            recorded.workspaceId
+          )).find(
+            ({ stripeSubscriptionId }) =>
+              stripeSubscriptionId === recorded.stripeSubscriptionId
+          );
+
+          if (
+            before === undefined ||
+            (!paidFor(before.status) && Option.isNone(before.paidInvoiceAt))
+          ) {
+            // Refused for good, the subscription is recorded all the same:
+            // the account ceiling holds without it, and the daily step
+            // tries again. Not answered, the webhook fails and comes back.
+            yield* usage
+              .setThreshold(
+                recorded.workspaceId,
+                recorded.stripeSubscriptionId,
+                Option.some(unverifiedThreshold)
+              )
+              .pipe(
+                Effect.catchIf(
+                  ({ permanent }) => permanent,
+                  () =>
+                    Metric.update(thresholdsUnset, 1).pipe(
+                      Effect.andThen(
+                        Effect.logError(
+                          "Stripe refused the unverified billing threshold: the subscription is recorded without it"
+                        ).pipe(
+                          Effect.annotateLogs({
+                            workspaceId: recorded.workspaceId,
+                          })
+                        )
+                      )
+                    )
+                )
+              );
+          }
+        }
+      );
 
       const record = Effect.fn("RecordSubscription.record")(function* record(
         event: SubscriptionEvent
@@ -194,6 +257,12 @@ export class RecordSubscription extends Context.Service<
                     trialEnd
                   ),
           });
+        }
+
+        // Before it is recorded: Stripe sends the event again until this
+        // is done.
+        if (recorded.plan === "payAsYouGo" && paidFor(recorded.status)) {
+          yield* thresholdOnce(recorded);
         }
 
         // Under the workspace's row: an event that comes while the
@@ -326,6 +395,16 @@ export class RecordSubscription extends Context.Service<
                 ),
             { discard: true }
           );
+        }
+
+        // The holder's day so far, counted while it did not pay, is
+        // reported now; asked again, only what is left goes.
+        if (
+          outcome !== "ignored" &&
+          recorded.plan === "payAsYouGo" &&
+          paidFor(recorded.status)
+        ) {
+          yield* days.subscribed(recorded.workspaceId);
         }
 
         // A plan of the workspace's own keeps it alone on it; once that

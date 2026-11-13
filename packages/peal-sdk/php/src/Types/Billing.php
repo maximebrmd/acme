@@ -15,6 +15,12 @@ class Billing extends JsonSerializableType
     public ?BillingAccount $account;
 
     /**
+     * @var BillingAccountsUsage $accounts
+     */
+    #[JsonProperty('accounts')]
+    public BillingAccountsUsage $accounts;
+
+    /**
      * @var PlanAllowances $allowances
      */
     #[JsonProperty('allowances')]
@@ -33,6 +39,18 @@ class Billing extends JsonSerializableType
     public bool $enabled;
 
     /**
+     * @var ?Money $estimate
+     */
+    #[JsonProperty('estimate')]
+    public ?Money $estimate;
+
+    /**
+     * @var bool $paymentMethod
+     */
+    #[JsonProperty('paymentMethod')]
+    public bool $paymentMethod;
+
+    /**
      * @var ?value-of<Plan> $plan
      */
     #[JsonProperty('plan')]
@@ -45,6 +63,12 @@ class Billing extends JsonSerializableType
     public array $plans;
 
     /**
+     * @var ?RateCard $rateCard
+     */
+    #[JsonProperty('rateCard')]
+    public ?RateCard $rateCard;
+
+    /**
      * @var ?BillingSubscription $subscription
      */
     #[JsonProperty('subscription')]
@@ -55,6 +79,12 @@ class Billing extends JsonSerializableType
      */
     #[JsonProperty('trial')]
     public ?TrialOffer $trial;
+
+    /**
+     * @var ?Money $upcomingInvoice
+     */
+    #[JsonProperty('upcomingInvoice')]
+    public ?Money $upcomingInvoice;
 
     /**
      * @var Usage $usage
@@ -76,16 +106,21 @@ class Billing extends JsonSerializableType
 
     /**
      * @param array{
+     *   accounts: BillingAccountsUsage,
      *   allowances: PlanAllowances,
      *   currency: string,
      *   enabled: bool,
+     *   paymentMethod: bool,
      *   plans: array<PlanOffer>,
      *   usage: Usage,
      *   vatRate: int,
      *   account?: ?BillingAccount,
+     *   estimate?: ?Money,
      *   plan?: ?value-of<Plan>,
+     *   rateCard?: ?RateCard,
      *   subscription?: ?BillingSubscription,
      *   trial?: ?TrialOffer,
+     *   upcomingInvoice?: ?Money,
      *   withdrawableUntil?: ?string,
      * } $values
      */
@@ -93,13 +128,18 @@ class Billing extends JsonSerializableType
         array $values,
     ) {
         $this->account = $values['account'] ?? null;
+        $this->accounts = $values['accounts'];
         $this->allowances = $values['allowances'];
         $this->currency = $values['currency'];
         $this->enabled = $values['enabled'];
+        $this->estimate = $values['estimate'] ?? null;
+        $this->paymentMethod = $values['paymentMethod'];
         $this->plan = $values['plan'] ?? null;
         $this->plans = $values['plans'];
+        $this->rateCard = $values['rateCard'] ?? null;
         $this->subscription = $values['subscription'] ?? null;
         $this->trial = $values['trial'] ?? null;
+        $this->upcomingInvoice = $values['upcomingInvoice'] ?? null;
         $this->usage = $values['usage'];
         $this->vatRate = $values['vatRate'];
         $this->withdrawableUntil = $values['withdrawableUntil'] ?? null;
