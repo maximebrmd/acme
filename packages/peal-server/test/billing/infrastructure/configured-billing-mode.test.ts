@@ -64,54 +64,62 @@ describe("the billing grace", () => {
   );
 });
 
-// A day no other test uses, so its first start is this test's.
+// Days no other test uses; this file alone writes the grace's starts.
 const day = "2098-07-14";
 
-const mode = BillingMode.use(Effect.succeed).pipe(
-  Effect.provide(
-    ConfiguredBillingModeLive.pipe(
-      Layer.provide(
-        ConfigProvider.layer(
-          ConfigProvider.fromEnv({
-            env: {
-              PEAL_BILLING_GRACE_UNTIL: day,
-              STRIPE_SECRET_KEY: "sk_test_synthetic_grace",
-              STRIPE_WEBHOOK_SECRET: "whsec_synthetic_grace",
-            },
-          })
+const later = "2098-09-01";
+
+const modeOn = (graceDay: string) =>
+  BillingMode.use(Effect.succeed).pipe(
+    Effect.provide(
+      ConfiguredBillingModeLive.pipe(
+        Layer.provide(
+          ConfigProvider.layer(
+            ConfigProvider.fromEnv({
+              env: {
+                PEAL_BILLING_GRACE_UNTIL: graceDay,
+                STRIPE_SECRET_KEY: "sk_test_synthetic_grace",
+                STRIPE_WEBHOOK_SECRET: "whsec_synthetic_grace",
+              },
+            })
+          )
         )
       )
     )
-  )
-);
+  );
 
 describe("the billing grace's start", () => {
-  it.live("is the first start with its day, kept by every start after", () =>
-    Effect.gen(function* first() {
-      const sql = yield* SqlClient.SqlClient;
-      const forget = sql`DELETE FROM billing.grace_starts WHERE grace_until = ${day}`;
+  it.live(
+    "is the first start with any grace, kept by every start after, whatever the day",
+    () =>
+      Effect.gen(function* first() {
+        const sql = yield* SqlClient.SqlClient;
+        const forget = sql`DELETE FROM billing.grace_starts`;
 
-      yield* forget;
+        yield* forget;
 
-      const before = Date.now();
-      const once = yield* mode;
+        const before = Date.now();
+        const once = yield* modeOn(day);
 
-      assert.isTrue(
-        Option.exists(
-          once.graceSince,
-          (since) => since.epochMilliseconds >= before - 1000
-        )
-      );
+        assert.isTrue(
+          Option.exists(
+            once.graceSince,
+            (since) => since.epochMilliseconds >= before - 1000
+          )
+        );
 
-      // Another start, or another server, keeps the first.
-      yield* sql`UPDATE billing.grace_starts SET started_at = '2026-11-13T10:00:00Z' WHERE grace_until = ${day}`;
+        // Another start, or another server, keeps the first.
+        yield* sql`UPDATE billing.grace_starts SET started_at = '2026-11-13T10:00:00Z' WHERE grace_until = ${day}`;
 
-      assert.deepStrictEqual(
-        (yield* mode).graceSince,
-        Option.some(DateTime.makeUnsafe("2026-11-13T10:00:00Z"))
-      );
+        const first = Option.some(DateTime.makeUnsafe("2026-11-13T10:00:00Z"));
 
-      yield* forget;
-    }).pipe(Effect.provide(DatabaseTest))
+        assert.deepStrictEqual((yield* modeOn(day)).graceSince, first);
+
+        // A grace moved to a later day still counts from the first: the
+        // accounts connected in between are not graced.
+        assert.deepStrictEqual((yield* modeOn(later)).graceSince, first);
+
+        yield* forget;
+      }).pipe(Effect.provide(DatabaseTest))
   );
 });

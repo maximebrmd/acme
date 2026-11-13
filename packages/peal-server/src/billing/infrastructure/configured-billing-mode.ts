@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { min } from "drizzle-orm";
 import { Config, DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -35,13 +35,16 @@ const graceStartOf = Effect.fn("BillingMode.graceStartOf")(
       .onConflictDoNothing()
       .pipe(Effect.orDie);
 
+    // The first start with any grace: a day moved later never graces the
+    // accounts connected since.
     const [row] = yield* db
-      .select({ startedAt: graceStarts.startedAt })
+      .select({ startedAt: min(graceStarts.startedAt) })
       .from(graceStarts)
-      .where(eq(graceStarts.graceUntil, day))
       .pipe(Effect.orDie);
 
-    return row === undefined ? now : DateTime.makeUnsafe(row.startedAt);
+    const started = row?.startedAt ?? null;
+
+    return started === null ? now : DateTime.makeUnsafe(started);
   }
 );
 
@@ -58,8 +61,8 @@ export const ConfiguredBillingModeLive = Layer.effect(
     const graceUntil = yield* graceUntilConfig;
     const enabled = Option.isSome(stripe);
 
-    // When this server first ran with the grace's day, kept: a restart
-    // or another server keeps the first.
+    // When this server first ran with a grace, whatever its day, kept: a
+    // restart, another server or a later day keeps the first.
     const graceSince =
       enabled && Option.isSome(graceUntil)
         ? Option.some(yield* graceStartOf(graceUntil.value))
