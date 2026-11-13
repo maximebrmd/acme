@@ -213,8 +213,9 @@ describe("a post with media of its own on a channel", () => {
             params: { postId: draft.id, workspaceId },
           });
 
+          // Its only file gone, the channel shows the post's media again.
           assert.deepStrictEqual(kept.content.overrides, [
-            { channelId: bluesky, media: [], text: "Here" },
+            { channelId: bluesky, text: "Here" },
           ]);
         })
       ),

@@ -9,8 +9,10 @@ import { withOptions } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { editDraft } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
-import { changedOverride } from "#publishing/domain/text-override.ts";
-import type { TextOverride } from "#publishing/domain/text-override.ts";
+import {
+  changedOverride,
+  TextOverride,
+} from "#publishing/domain/text-override.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -68,17 +70,27 @@ const remaining = (media: readonly MediaAttachment[], mediaId: MediaAssetId) =>
   media.filter((attachment) => attachment.mediaId !== mediaId);
 
 // The overrides with the media taken off those that give a channel some.
+// One whose only files it took shows the part's media again, as the
+// channel did before it had any of its own: a channel that chose to show
+// none keeps showing none.
 const overridesWithout = (
   overrides: readonly TextOverride[],
   mediaId: MediaAssetId
 ) =>
-  overrides.map((override) =>
-    override.media === undefined
-      ? override
-      : changedOverride(override, {
-          media: remaining(override.media, mediaId),
-        })
-  );
+  overrides.map((override) => {
+    if (
+      override.media === undefined ||
+      !override.media.some((attachment) => attachment.mediaId === mediaId)
+    ) {
+      return override;
+    }
+
+    const left = remaining(override.media, mediaId);
+
+    return left.length === 0
+      ? new TextOverride({ channelId: override.channelId, text: override.text })
+      : changedOverride(override, { media: left });
+  });
 
 // The content with the media taken off every part that shows it, on any
 // channel.
