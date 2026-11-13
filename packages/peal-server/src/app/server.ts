@@ -34,12 +34,11 @@ import { McpLive } from "#app/mcp/server.ts";
 import { MeterErrorsLive } from "#app/meter-errors/route.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
-import {
-  ShortLinkRedirectsLive,
-  ShortLinkRedirectsUntraced,
-} from "#app/short-links/redirects.ts";
+import { ShortLinkRedirectsLive } from "#app/short-links/redirects.ts";
 import { httpShutdownTimeout } from "#app/shutdown.ts";
 import { SystemHandlers } from "#app/system.ts";
+import { UntracedPathsLive } from "#app/untraced-paths.ts";
+import { DigestUnsubscribeLive } from "#app/weekly-digest/unsubscribe.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
@@ -85,6 +84,7 @@ import {
   NotificationPreferencesApiLive,
   NotificationsLive,
   NotificationsWorkersLive,
+  WeeklyDigestsLive,
 } from "#notifications/container.ts";
 import {
   CapabilitiesApiLive,
@@ -219,7 +219,8 @@ export const RoutesLive = Layer.mergeAll(
   McpLive,
   DiscoveryLive,
   ShortLinkRedirectsLive,
-  ShortLinkRedirectsUntraced,
+  UntracedPathsLive,
+  DigestUnsubscribeLive,
   MeterErrorsLive,
   ApiAnswersLive
 );
@@ -489,6 +490,15 @@ const OverviewContextLive = OverviewLive.pipe(
   )
 );
 
+// The weekly digest, which reads the members and their workspaces from the
+// workspace context, the posts publishing counts and lists, analytics'
+// engagement, and sends through the notifications' mailer.
+const WeeklyDigestContextLive = WeeklyDigestsLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(ChannelsWithNoticesLive, PostAttentionLive, AnalyticsLive)
+  )
+);
+
 // The cancel and withdraw functions anyone reaches, which find the account
 // an address signs in to in the workspace context, tell members and write
 // acknowledgements through the notifications, and record what staff do
@@ -639,7 +649,8 @@ const ContextsLive = Layer.mergeAll(
   // On the cluster, every call to an ad account goes through its gate.
   adsContext(GatedAds),
   ShortLinksContextLive,
-  OverviewContextLive
+  OverviewContextLive,
+  WeeklyDigestContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

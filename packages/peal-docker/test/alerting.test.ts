@@ -32,6 +32,7 @@ const watched = [
   "peal_publishing_feeds_overdue",
   "peal_billing_stripe_catalogue_problems",
   "peal_billing_duplicate_subscriptions_total",
+  "peal_notifications_weekly_digest_failures_total",
   "peal_billing_usage_report_oldest_age",
   "peal_billing_usage_report_ran_at",
   "peal_billing_usage_report_refused_kept",

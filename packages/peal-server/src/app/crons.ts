@@ -8,6 +8,7 @@ import { ChannelsCronsLive } from "#channels/container.ts";
 import { EngagementCronsLive } from "#engagement/container.ts";
 import { LegalCronsLive } from "#legal/container.ts";
 import { MediaCronsLive } from "#media/container.ts";
+import { NotificationsCronsLive } from "#notifications/container.ts";
 import { PublishingCronsLive } from "#publishing/container.ts";
 import { ReviewCronsLive } from "#review/container.ts";
 import { ClusterRetentionCron } from "#shared/infrastructure/cluster-retention.ts";
@@ -34,6 +35,7 @@ export const CronsLive = Layer.mergeAll(
   BillingCronsLive,
   LegalCronsLive,
   MediaCronsLive,
+  NotificationsCronsLive,
   ReviewCronsLive,
   ShortLinksCronsLive,
   WebhooksCronsLive,

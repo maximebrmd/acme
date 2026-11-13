@@ -28,6 +28,9 @@ pub struct NotificationPreferencesEmail {
     #[serde(rename = "webhookFailing")]
     #[serde(default)]
     pub webhook_failing: bool,
+    #[serde(rename = "weeklyDigest")]
+    #[serde(default)]
+    pub weekly_digest: bool,
 }
 
 impl NotificationPreferencesEmail {
@@ -48,6 +51,7 @@ pub struct NotificationPreferencesEmailBuilder {
     post_unconfirmed: Option<bool>,
     recycling_ended: Option<bool>,
     webhook_failing: Option<bool>,
+    weekly_digest: Option<bool>,
 }
 
 impl NotificationPreferencesEmailBuilder {
@@ -96,6 +100,11 @@ impl NotificationPreferencesEmailBuilder {
         self
     }
 
+    pub fn weekly_digest(mut self, value: bool) -> Self {
+        self.weekly_digest = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`NotificationPreferencesEmail`].
     /// This method will fail if any of the following fields are not set:
     /// - [`channel_reconnect`](NotificationPreferencesEmailBuilder::channel_reconnect)
@@ -107,6 +116,7 @@ impl NotificationPreferencesEmailBuilder {
     /// - [`post_unconfirmed`](NotificationPreferencesEmailBuilder::post_unconfirmed)
     /// - [`recycling_ended`](NotificationPreferencesEmailBuilder::recycling_ended)
     /// - [`webhook_failing`](NotificationPreferencesEmailBuilder::webhook_failing)
+    /// - [`weekly_digest`](NotificationPreferencesEmailBuilder::weekly_digest)
     pub fn build(self) -> Result<NotificationPreferencesEmail, BuildError> {
         Ok(NotificationPreferencesEmail {
             channel_reconnect: self
@@ -136,6 +146,9 @@ impl NotificationPreferencesEmailBuilder {
             webhook_failing: self
                 .webhook_failing
                 .ok_or_else(|| BuildError::missing_field("webhook_failing"))?,
+            weekly_digest: self
+                .weekly_digest
+                .ok_or_else(|| BuildError::missing_field("weekly_digest"))?,
         })
     }
 }

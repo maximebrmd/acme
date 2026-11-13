@@ -22,7 +22,8 @@ public class GetTest : BaseMockServerTest
                 "postReview": true,
                 "postUnconfirmed": true,
                 "recyclingEnded": true,
-                "webhookFailing": true
+                "webhookFailing": true,
+                "weeklyDigest": true
               },
               "everyPost": true
             }
@@ -60,7 +61,8 @@ public class GetTest : BaseMockServerTest
                 "postReview": true,
                 "postUnconfirmed": true,
                 "recyclingEnded": true,
-                "webhookFailing": true
+                "webhookFailing": true,
+                "weeklyDigest": true
               },
               "everyPost": true
             }

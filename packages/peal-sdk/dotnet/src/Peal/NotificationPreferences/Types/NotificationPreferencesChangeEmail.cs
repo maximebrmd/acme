@@ -38,6 +38,9 @@ public record NotificationPreferencesChangeEmail : IJsonOnDeserialized
     [JsonPropertyName("webhookFailing")]
     public bool? WebhookFailing { get; set; }
 
+    [JsonPropertyName("weeklyDigest")]
+    public bool? WeeklyDigest { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

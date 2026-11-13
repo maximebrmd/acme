@@ -1,5 +1,6 @@
-import { inArray } from "drizzle-orm";
-import { DateTime, Effect, Layer } from "effect";
+import { and, asc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
+import { DateTime, Effect, Layer, Option } from "effect";
 
 import { PreferenceStore } from "#notifications/application/preference-store.ts";
 import {
@@ -30,9 +31,17 @@ const preferencesOf = (row: Row) =>
       postUnconfirmed: row.emailPostUnconfirmed,
       recyclingEnded: row.emailRecyclingEnded,
       webhookFailing: row.emailWebhookFailing,
+      weeklyDigest: row.emailWeeklyDigest,
     },
     everyPost: row.everyPost,
   });
+
+// Not sent the week starting `day` yet.
+const stillToSend = (day: string) =>
+  or(
+    isNull(notificationPreferences.weeklyDigestWeek),
+    lt(notificationPreferences.weeklyDigestWeek, day)
+  );
 
 /** Preferences in the notifications schema, one row per user who chose. */
 export const DrizzlePreferenceStore = Layer.effect(
@@ -49,7 +58,7 @@ export const DrizzlePreferenceStore = Layer.effect(
 
           // Only the columns asked for change, in one statement, so changes
           // made at once never undo each other.
-          const set: Partial<typeof notificationPreferences.$inferInsert> = {
+          const set: PgUpdateSetSource<typeof notificationPreferences> = {
             updatedAt,
           };
 
@@ -89,6 +98,16 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailWebhookFailing = email.webhookFailing;
           }
 
+          if (email.weeklyDigest !== undefined) {
+            set.emailWeeklyDigest = email.weeklyDigest;
+          }
+
+          // Turned from off to on: the unsubscribe links sent before stop
+          // working. Said on while on, they keep working.
+          if (email.weeklyDigest === true) {
+            set.weeklyDigestLinks = sql`CASE WHEN ${notificationPreferences.emailWeeklyDigest} THEN ${notificationPreferences.weeklyDigestLinks} ELSE ${notificationPreferences.weeklyDigestLinks} + 1 END`;
+          }
+
           if (requested.everyPost !== undefined) {
             set.everyPost = requested.everyPost;
           }
@@ -105,6 +124,7 @@ export const DrizzlePreferenceStore = Layer.effect(
               emailPostUnconfirmed: first.email.postUnconfirmed,
               emailRecyclingEnded: first.email.recyclingEnded,
               emailWebhookFailing: first.email.webhookFailing,
+              emailWeeklyDigest: first.email.weeklyDigest,
               everyPost: first.everyPost,
               updatedAt,
               userId,
@@ -119,6 +139,103 @@ export const DrizzlePreferenceStore = Layer.effect(
           return row === undefined
             ? yield* Effect.die("An upsert returned no row")
             : preferencesOf(row);
+        }
+      ),
+      // The digest's week is taken in one statement, which also reads that
+      // the user still wants it and that no send holds it: two runs never
+      // both send it.
+      claimDigest: Effect.fn("PreferenceStore.claimDigest")(
+        function* claimDigest(userId, week, { at, staleBefore }) {
+          const day = DateTime.formatIsoDate(week);
+
+          const rows = yield* db
+            .update(notificationPreferences)
+            .set({ weeklyDigestLease: DateTime.toDateUtc(at) })
+            .where(
+              and(
+                eq(notificationPreferences.userId, userId),
+                eq(notificationPreferences.emailWeeklyDigest, true),
+                stillToSend(day),
+                or(
+                  isNull(notificationPreferences.weeklyDigestLease),
+                  lt(
+                    notificationPreferences.weeklyDigestLease,
+                    DateTime.toDateUtc(staleBefore)
+                  )
+                )
+              )
+            )
+            .returning({ links: notificationPreferences.weeklyDigestLinks })
+            .pipe(Effect.mapError(failed));
+
+          return Option.fromUndefinedOr(rows[0]?.links);
+        }
+      ),
+      digestReaders: Effect.fn("PreferenceStore.digestReaders")(
+        function* digestReaders({ after, limit, week }) {
+          // On the partial index of those who want it
+          // (`notification_preferences_weekly_digest`).
+          const rows = yield* db
+            .select({ userId: notificationPreferences.userId })
+            .from(notificationPreferences)
+            .where(
+              and(
+                eq(notificationPreferences.emailWeeklyDigest, true),
+                stillToSend(DateTime.formatIsoDate(week)),
+                after.pipe(
+                  Option.map((userId) =>
+                    gt(notificationPreferences.userId, userId)
+                  ),
+                  Option.getOrUndefined
+                )
+              )
+            )
+            .orderBy(asc(notificationPreferences.userId))
+            .limit(limit)
+            .pipe(Effect.mapError(failed));
+
+          return rows.map(({ userId }) => UserIdSchema.make(userId));
+        }
+      ),
+      digestSent: Effect.fn("PreferenceStore.digestSent")(
+        function* digestSent(userId, week) {
+          yield* db
+            .update(notificationPreferences)
+            .set({
+              weeklyDigestLease: null,
+              weeklyDigestWeek: DateTime.formatIsoDate(week),
+            })
+            .where(eq(notificationPreferences.userId, userId))
+            .pipe(Effect.mapError(failed));
+        }
+      ),
+      releaseDigest: Effect.fn("PreferenceStore.releaseDigest")(
+        function* releaseDigest(userId) {
+          yield* db
+            .update(notificationPreferences)
+            .set({ weeklyDigestLease: null })
+            .where(eq(notificationPreferences.userId, userId))
+            .pipe(Effect.mapError(failed));
+        }
+      ),
+      unsubscribeDigest: Effect.fn("PreferenceStore.unsubscribeDigest")(
+        function* unsubscribeDigest(userId, links, at) {
+          const rows = yield* db
+            .update(notificationPreferences)
+            .set({
+              emailWeeklyDigest: false,
+              updatedAt: DateTime.toDateUtc(at),
+            })
+            .where(
+              and(
+                eq(notificationPreferences.userId, userId),
+                eq(notificationPreferences.weeklyDigestLinks, links)
+              )
+            )
+            .returning({ userId: notificationPreferences.userId })
+            .pipe(Effect.mapError(failed));
+
+          return rows.length === 1;
         }
       ),
       forUsers: Effect.fn("PreferenceStore.forUsers")(

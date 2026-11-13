@@ -86,6 +86,8 @@ const linkParagraphs = ({ action, linkFallback, url }: EmailLink) => [
 
 const framed = (
   parts: {
+    /** What follows the body, each an HTML block of its own. */
+    readonly blocks?: readonly string[];
     readonly body: string;
     readonly highlight?: string;
     readonly ignore: string;
@@ -101,6 +103,7 @@ const framed = (
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">',
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:8px;"><tr><td style="padding:32px;">',
     `<p style="margin:0 0 24px;">${parts.body}</p>`,
+    ...(parts.blocks ?? []),
     ...(parts.highlight === undefined
       ? []
       : [
@@ -133,6 +136,21 @@ export const layout = (parts: {
   readonly body: string;
   /** What the email sets apart in a box under its body, if anything. */
   readonly highlight?: string;
+  readonly ignore: string;
+  readonly linkFallback: string;
+  readonly locale: Locale;
+  readonly signature: string;
+  readonly url: string;
+}): string => framed(parts, linkParagraphs(parts));
+
+/**
+ * The layout of the weekly digest: its introduction, a block for each
+ * workspace, then the button, why it comes and how to stop it.
+ */
+export const digestLayout = (parts: {
+  readonly action: string;
+  readonly blocks: readonly string[];
+  readonly body: string;
   readonly ignore: string;
   readonly linkFallback: string;
   readonly locale: Locale;
