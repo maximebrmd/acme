@@ -32,6 +32,16 @@ export class ChannelAllowance extends Context.Service<
      * anything: for reports of how workspaces stand, never to count and
      * then add. One that shares its plan with none is left out.
      */
+    /**
+     * Tells billing a channel was just added: `pooled`, the accounts the
+     * workspace's pool holds now, is read only where billing counts them
+     * (a server that bills), inside the transaction that added it, under
+     * the pool's hold.
+     */
+    readonly counted: (
+      workspaceId: WorkspaceId,
+      pooled: Effect.Effect<number, DatabaseError>
+    ) => Effect.Effect<void, DatabaseError>;
     readonly sharingIn: (
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<

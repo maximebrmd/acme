@@ -38,6 +38,19 @@ public class GetTest : BaseMockServerTest
                 },
                 "workspaces": 1
               },
+              "accounts": {
+                "accountDays": 1000000,
+                "connected": 1,
+                "estimate": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "nextAccount": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "pooled": 1
+              },
               "allowances": {
                 "assistantRequests": 1000000,
                 "channels": 1000000,
@@ -47,6 +60,11 @@ public class GetTest : BaseMockServerTest
               },
               "currency": "currency",
               "enabled": true,
+              "estimate": {
+                "amount": 1,
+                "currency": "currency"
+              },
+              "paymentMethod": true,
               "plan": "free",
               "plans": [
                 {
@@ -78,6 +96,100 @@ public class GetTest : BaseMockServerTest
                   }
                 }
               ],
+              "rateCard": {
+                "apiRequestsPerMinute": {
+                  "onRequest": 1,
+                  "withoutPaymentMethod": 1
+                },
+                "assistant": {
+                  "margin": 1
+                },
+                "daysPerMonth": 1,
+                "displayVatRate": 1,
+                "meters": {
+                  "assistantImages": {
+                    "allowance": 1,
+                    "allowanceWithout": 1,
+                    "ceiling": 1
+                  },
+                  "assistantRequests": {
+                    "allowance": 1,
+                    "allowanceWithout": 1,
+                    "ceiling": 1
+                  },
+                  "managedAds": {
+                    "allowance": 1,
+                    "allowanceWithout": 1,
+                    "ceiling": 1
+                  },
+                  "outboundMessages": {
+                    "allowance": 1,
+                    "allowanceWithout": 1,
+                    "ceiling": 1
+                  },
+                  "xApi": {
+                    "allowance": 1,
+                    "allowanceWithout": 1,
+                    "ceiling": 1
+                  }
+                },
+                "prices": {
+                  "usd": {
+                    "accounts": {
+                      "bands": [
+                        {
+                          "monthly": 1,
+                          "upTo": 1
+                        },
+                        {
+                          "monthly": 1,
+                          "upTo": 1
+                        }
+                      ]
+                    },
+                    "meters": {
+                      "assistantImages": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "assistantRequests": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "managedAds": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "outboundMessages": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "xApi": {
+                        "cents": 1,
+                        "per": 1
+                      }
+                    }
+                  }
+                },
+                "storage": {
+                  "minimum": 1000000,
+                  "perAccount": 1000000,
+                  "withoutPaymentMethod": 1000000
+                },
+                "unverifiedCeiling": 1,
+                "x": {
+                  "defaultCeiling": 1,
+                  "rates": {
+                    "dmCreate": 1,
+                    "dmEventRead": 1,
+                    "ownedRead": 1,
+                    "postCreate": 1,
+                    "postCreateWithUrl": 1,
+                    "postRead": 1,
+                    "userRead": 1
+                  }
+                }
+              },
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
@@ -92,6 +204,10 @@ public class GetTest : BaseMockServerTest
                 "available": true,
                 "days": 1,
                 "plan": "starter"
+              },
+              "upcomingInvoice": {
+                "amount": 1,
+                "currency": "currency"
               },
               "usage": {
                 "assistantRequests": {
@@ -156,6 +272,19 @@ public class GetTest : BaseMockServerTest
                 },
                 "workspaces": 1
               },
+              "accounts": {
+                "accountDays": 1000000,
+                "connected": 1,
+                "estimate": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "nextAccount": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "pooled": 1
+              },
               "allowances": {
                 "assistantRequests": 1000000,
                 "channels": 1000000,
@@ -165,6 +294,11 @@ public class GetTest : BaseMockServerTest
               },
               "currency": "currency",
               "enabled": true,
+              "estimate": {
+                "amount": 1,
+                "currency": "currency"
+              },
+              "paymentMethod": true,
               "plan": "free",
               "plans": [
                 {
@@ -176,6 +310,90 @@ public class GetTest : BaseMockServerTest
                   }
                 }
               ],
+              "rateCard": {
+                "apiRequestsPerMinute": {
+                  "onRequest": 1,
+                  "withoutPaymentMethod": 1
+                },
+                "assistant": {
+                  "margin": 1
+                },
+                "daysPerMonth": 1,
+                "displayVatRate": 1,
+                "meters": {
+                  "assistantImages": {
+                    "allowance": 1,
+                    "allowanceWithout": 1
+                  },
+                  "assistantRequests": {
+                    "allowance": 1,
+                    "allowanceWithout": 1
+                  },
+                  "managedAds": {
+                    "allowance": 1,
+                    "allowanceWithout": 1
+                  },
+                  "outboundMessages": {
+                    "allowance": 1,
+                    "allowanceWithout": 1
+                  },
+                  "xApi": {
+                    "allowance": 1,
+                    "allowanceWithout": 1
+                  }
+                },
+                "prices": {
+                  "usd": {
+                    "accounts": {
+                      "bands": [
+                        {
+                          "monthly": 1
+                        }
+                      ]
+                    },
+                    "meters": {
+                      "assistantImages": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "assistantRequests": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "managedAds": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "outboundMessages": {
+                        "cents": 1,
+                        "per": 1
+                      },
+                      "xApi": {
+                        "cents": 1,
+                        "per": 1
+                      }
+                    }
+                  }
+                },
+                "storage": {
+                  "minimum": 1000000,
+                  "perAccount": 1000000,
+                  "withoutPaymentMethod": 1000000
+                },
+                "unverifiedCeiling": 1,
+                "x": {
+                  "defaultCeiling": 1,
+                  "rates": {
+                    "dmCreate": 1,
+                    "dmEventRead": 1,
+                    "ownedRead": 1,
+                    "postCreate": 1,
+                    "postCreateWithUrl": 1,
+                    "postRead": 1,
+                    "userRead": 1
+                  }
+                }
+              },
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
@@ -190,6 +408,10 @@ public class GetTest : BaseMockServerTest
                 "available": true,
                 "days": 1,
                 "plan": "starter"
+              },
+              "upcomingInvoice": {
+                "amount": 1,
+                "currency": "currency"
               },
               "usage": {
                 "assistantRequests": {

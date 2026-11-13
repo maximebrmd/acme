@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class UsageTotals extends JsonSerializableType
 {
     /**
+     * @var ?int $billableAccountDays
+     */
+    #[JsonProperty('billableAccountDays')]
+    public ?int $billableAccountDays;
+
+    /**
      * @var array<PlatformPosts> $byPlatform
      */
     #[JsonProperty('byPlatform'), ArrayType([PlatformPosts::class])]
@@ -45,11 +51,13 @@ class UsageTotals extends JsonSerializableType
      *   daysCounted: int,
      *   meteredPosts: array<MeteredPosts>,
      *   publishedPosts: int,
+     *   billableAccountDays?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->billableAccountDays = $values['billableAccountDays'] ?? null;
         $this->byPlatform = $values['byPlatform'];
         $this->channelDays = $values['channelDays'];
         $this->daysCounted = $values['daysCounted'];

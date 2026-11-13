@@ -11,6 +11,7 @@ import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { AccountChannels } from "#billing/application/ports/account-channels.ts";
 import type { PlatformAccountHeld } from "#billing/application/ports/account-channels.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { AccountsNotMerged } from "#billing/domain/accounts-not-merged.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
@@ -54,9 +55,20 @@ const ChannelsSharedTest = Layer.succeed(
   })
 );
 
+// The accounts whose day was raised after a move.
+const raisedAccounts: string[] = [];
+
+const DaysRaisedTest = Layer.mock(StartAccountDays, {
+  raiseAccount: (accountId) =>
+    Effect.sync(() => {
+      raisedAccounts.push(accountId);
+    }),
+});
+
 const DeskTest = BillingAccountDesk.layer.pipe(
   Layer.provideMerge(
     Layer.mergeAll(
+      DaysRaisedTest,
       DrizzleBillingAccountStoreLive,
       DrizzleSubscriptionsLive,
       ChannelsSharedTest,
@@ -196,6 +208,8 @@ layer(DeskTest)("the billing accounts desk", (it) => {
         });
 
         assert.strictEqual(done.account.id, into.id);
+        // The account merged into holds the moved accounts from today.
+        assert.include(raisedAccounts, into.id);
         assert.deepStrictEqual(
           [...done.workspaceIds].toSorted(),
           [kept, moved].toSorted()
@@ -416,6 +430,7 @@ layer(DeskTest)("the billing accounts desk", (it) => {
 
         assert.deepStrictEqual(back.account.payer, Option.some(merged));
         assert.deepStrictEqual(back.workspaceIds, [from]);
+        assert.include(raisedAccounts, back.account.id);
         assert.deepStrictEqual((yield* accounts.poolOf(into)).others, []);
 
         const [event] = yield* sql<{

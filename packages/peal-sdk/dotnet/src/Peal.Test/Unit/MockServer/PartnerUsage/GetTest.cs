@@ -65,6 +65,7 @@ public class GetTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",
@@ -225,6 +226,7 @@ public class GetTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",

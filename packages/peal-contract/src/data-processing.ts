@@ -492,8 +492,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "For each workspace and each day (UTC): how many posts went out, by platform, and how many requests it made to the writing assistant; and, as the daily count found them shortly after the day ended, how many channels it had connected, how many members it had and how many bytes of media it stored. Counts only, never what a post says or which member did what",
-      fr: "Pour chaque espace de travail et chaque jour (UTC) : combien de publications sont parties, par plateforme, et combien de demandes il a faites à l’assistant de rédaction ; et, tels que le relevé quotidien les trouve peu après la fin du jour, combien de canaux il avait connectés, combien de membres il comptait et combien d’octets de médias il stockait. Des décomptes seulement, jamais le texte d’une publication ni ce qu’a fait chaque membre",
+      en: "For each workspace and each day (UTC): how many posts went out, by platform, and how many requests it made to the writing assistant; and, as the daily count found them shortly after the day ended, how many channels it had connected, how many members it had and how many bytes of media it stored. Where the service bills per connected account: for each billing account and day, the most accounts connected at once across its workspaces, and the counts reported to the payment provider. Counts only, never what a post says or which member did what",
+      fr: "Pour chaque espace de travail et chaque jour (UTC) : combien de publications sont parties, par plateforme, et combien de demandes il a faites à l’assistant de rédaction ; et, tels que le relevé quotidien les trouve peu après la fin du jour, combien de canaux il avait connectés, combien de membres il comptait et combien d’octets de médias il stockait. Là où le service facture par compte connecté : pour chaque compte de facturation et chaque jour, le plus grand nombre de comptes connectés en même temps dans ses espaces de travail, et les décomptes transmis au prestataire de paiement. Des décomptes seulement, jamais le texte d’une publication ni ce qu’a fait chaque membre",
     },
     id: "usage",
     legalBasis: contract,
@@ -503,8 +503,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Show a workspace’s owners and admins, and the keys and applications given access to its billing, what it used of its plan day by day, so that a month can be compared with the same month a year before; nothing is priced, charged or limited by these counts",
-      fr: "Montrer aux propriétaires et administrateurs d’un espace de travail, et aux clés et applications qui ont accès à sa facturation, ce qu’il a utilisé de son offre jour par jour, pour comparer un mois au même mois de l’année précédente ; rien n’est facturé ni limité d’après ces décomptes",
+      en: "Show a workspace’s owners and admins, and the keys and applications given access to its billing, what it used of its plan day by day, so that a month can be compared with the same month a year before; where the service bills per connected account, bill each month the accounts connected each day, which the payment provider is told; nothing else is priced, charged or limited by these counts",
+      fr: "Montrer aux propriétaires et administrateurs d’un espace de travail, et aux clés et applications qui ont accès à sa facturation, ce qu’il a utilisé de son offre jour par jour, pour comparer un mois au même mois de l’année précédente ; là où le service facture par compte connecté, facturer chaque mois les comptes connectés chaque jour, ce qui est transmis au prestataire de paiement ; rien d’autre n’est facturé ni limité d’après ces décomptes",
     },
     retention: {
       en: `${p.usageDays.days} days from each day, then deleted within a day, or earlier with the workspace`,

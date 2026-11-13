@@ -5,8 +5,12 @@ import { randomUUID } from "node:crypto";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountChannels } from "#billing/application/ports/account-channels.ts";
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
+import type { MeterReport } from "#billing/application/ports/account-day-store.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -18,9 +22,11 @@ import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
+import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import type { AccountDay } from "#billing/domain/account-days.ts";
 import {
   BillingAccount,
   BillingAccountIdSchema,
@@ -83,6 +89,130 @@ export const everyWorkspaceOn = (plan: Plan, freeTier = true) =>
       })
     )
   );
+
+/**
+ * Account-days that count nothing, for tests of what adds a channel
+ * without billing's days.
+ */
+export const AccountDaysUncountedTest = Layer.mock(AccountDays, {
+  bindPool: () => Effect.void,
+  counted: () => Effect.void,
+  ofDays: () => Effect.succeed([]),
+  ofMonth: () => Effect.succeed([]),
+  raise: () => Effect.succeed([]),
+  subscribed: () => Effect.void,
+});
+
+/**
+ * Usage at Stripe for tests that send none: the event names of the prefix
+ * `peal`, and any call dies.
+ */
+export const UsageBillingUncalledTest = Layer.mock(UsageBilling, {
+  eventNames: {
+    accounts: "peal_accounts",
+    assistantImages: "peal_assistant_images",
+    assistantRequests: "peal_assistant_requests",
+    managedAds: "peal_managed_ads",
+    outboundMessages: "peal_outbound_messages",
+    xApi: "peal_x_api",
+  },
+});
+
+const sameDay = (left: AccountDay, right: Pick<AccountDay, "day" | "holder">) =>
+  left.holder === right.holder && DateTime.Equivalence(left.day, right.day);
+
+/**
+ * The account-days and the outbox in memory: raised, enqueued, read
+ * back, erased. The reporter's reads are not kept.
+ */
+export const AccountDaysInMemory = Layer.effect(
+  AccountDayStore,
+  Effect.gen(function* inMemory() {
+    const days = yield* Ref.make<readonly AccountDay[]>([]);
+    const reports = yield* Ref.make<readonly MeterReport[]>([]);
+
+    const unkept = Effect.die("not kept in memory");
+
+    return AccountDayStore.of({
+      allOf: (workspaceId) =>
+        Effect.all({
+          days: Ref.get(days).pipe(
+            Effect.map((all) =>
+              all.filter(({ holder }) => holder === workspaceId)
+            )
+          ),
+          reports: Ref.get(reports).pipe(
+            Effect.map((all) =>
+              all
+                .filter(({ holder }) => holder === workspaceId)
+                .map((report) => ({ ...report, sentAt: Option.none() }))
+            )
+          ),
+        }),
+      enqueue: (added, reported) =>
+        Effect.all([
+          Ref.update(reports, (all) => [
+            ...all,
+            ...added.filter(
+              ({ identifier }) =>
+                !all.some((kept) => kept.identifier === identifier)
+            ),
+          ]),
+          Ref.update(days, (all) =>
+            all.map((row) => {
+              const found = reported.find((each) => sameDay(row, each));
+
+              return found === undefined
+                ? row
+                : { ...row, reported: Math.max(row.reported, found.reported) };
+            })
+          ),
+        ]).pipe(Effect.asVoid),
+      eraseWorkspace: (workspaceId) =>
+        Effect.all([
+          Ref.update(days, (all) =>
+            all.filter(({ holder }) => holder !== workspaceId)
+          ),
+          Ref.update(reports, (all) =>
+            all.filter(({ holder }) => holder !== workspaceId)
+          ),
+        ]).pipe(Effect.asVoid),
+      backlog: unkept,
+      markDropped: () => unkept,
+      markRefused: () => unkept,
+      markSent: () => unkept,
+      ofHolders: () => unkept,
+      purgeBefore: () => unkept,
+      stamp: () => unkept,
+      raise: (day, counts) =>
+        Ref.modify(days, (all) => {
+          const raised = counts.map(({ count, holder }): AccountDay => {
+            const found = all.find((row) => sameDay(row, { day, holder }));
+
+            return found === undefined
+              ? { day, holder, peak: count, reported: 0 }
+              : { ...found, peak: Math.max(found.peak, count) };
+          });
+
+          return [
+            raised,
+            [
+              ...all.filter(
+                (row) => !raised.some((each) => sameDay(row, each))
+              ),
+              ...raised,
+            ],
+          ];
+        }),
+      unsent: () => unkept,
+    });
+  })
+);
+
+/** No channel connected by any workspace itself, for the billing page. */
+export const NoOwnChannelsTest = Layer.mock(AccountChannels, {
+  ownIn: () => Effect.succeed(new Map()),
+});
 
 /** A server that does not bill: nothing is limited, nothing pooled. */
 export const UnmeteredTest = Layer.mergeAll(
@@ -293,6 +423,11 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
               return of.length === 0 ? [] : [[workspaceId, of] as const];
             })
           )
+        ),
+      markPaidInvoice: () => Effect.void,
+      perAccount: () =>
+        Effect.succeed(
+          held.filter((subscription) => subscription.plan === "payAsYouGo")
         ),
       record: () => Effect.succeed("recorded" as const),
       remindable: () => Effect.succeed(held),

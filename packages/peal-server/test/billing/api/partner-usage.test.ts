@@ -31,6 +31,7 @@ import {
   everyWorkspaceOn,
   UnmeteredTest,
   UsageLedgerInMemory,
+  AccountDaysUncountedTest,
 } from "#test/billing/support.ts";
 import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -197,7 +198,8 @@ const reportsOn = (entitlements: typeof UnmeteredTest) =>
         MeteredTest,
         TenancyTest,
         Layer.mock(WorkspaceUsage, {}),
-        PlanHolders.layerOwn
+        PlanHolders.layerOwn,
+        AccountDaysUncountedTest
       )
     )
   );
@@ -340,6 +342,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
           ]);
           // The stranger's counts are in none of the sums.
           assert.deepStrictEqual(report.totals, {
+            billableAccountDays: null,
             byPlatform: [
               { platform: "bluesky", posts: 2 },
               { platform: "x", posts: 6 },

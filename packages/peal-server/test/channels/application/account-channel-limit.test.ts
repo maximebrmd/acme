@@ -22,6 +22,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import {
+  AccountDaysUncountedTest,
   accountsTest,
   cleanUpAccounts,
   everyWorkspaceOn,
@@ -71,7 +72,8 @@ const AccountFreePlanTest = Layer.mergeAll(
             )
           )
         ),
-        Layer.provide(everyWorkspaceOn("free"))
+        Layer.provide(everyWorkspaceOn("free")),
+        Layer.provide(AccountDaysUncountedTest)
       ),
       MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
     )
@@ -284,7 +286,8 @@ const UnbilledTest = ChannelUsage.layer.pipe(
             )
           )
         ),
-        Layer.provide(UnmeteredTest)
+        Layer.provide(UnmeteredTest),
+        Layer.provide(AccountDaysUncountedTest)
       )
     )
   ),

@@ -123,7 +123,7 @@ export const PostAnalytics = Tool.make("post_analytics", {
 export const GetBilling = Tool.make("get_billing", {
   dependencies: [CurrentMember],
   description:
-    "Answers with the workspace's plan, the subscription that buys it, what each limit allows (channels, members, posts going out a month, assistant requests a day, bytes of media stored), how much of each the workspace uses, every plan to compare with its prices in cents excluding VAT, and whether the trial is open. On a server that does not bill, nothing is limited. Ordering, cancelling and withdrawing are for owners and admins, in person, in the web app.",
+    "Answers with the workspace's plan, the subscription that buys it, what each limit allows (channels, members, posts going out a month, assistant requests a day, bytes of media stored), how much of each the workspace uses, every plan to compare with its prices in cents excluding VAT, and whether the trial is open. With per-account pricing: the rate card, the billing account's connected accounts, whether it pays with a payment method, and, for the workspace that bills the account only, this month's (UTC) account-days, what they cost so far and the month's estimate excluding tax (US dollar cents), what one more account costs a month, and the next invoice's total, tax included, when the payment provider says. On a server that does not bill, nothing is limited or priced. Ordering, cancelling and withdrawing are for owners and admins, in person, in the web app.",
   failure: ToolRefused,
   success: BillingSchema,
 })
@@ -132,7 +132,7 @@ export const GetBilling = Tool.make("get_billing", {
 
 export const GetUsage = Tool.make("get_usage", {
   dependencies: [CurrentMember],
-  description: `Answers what the workspace uses of its plan now, then for each UTC day from \`from\` to \`to\` (both included, ${String(maxUsageRangeDays)} at most; the last ${String(defaultUsageRangeDays)} by default): posts that went out, one per channel, by platform; assistant requests, channels, members and media bytes as the daily snapshot took them (null for a day without one, today's included). Then totals: channel-days, and posts on platforms that bill per post by month. \`sharedWith\` names the partner workspace whose plan it is on. Kept ${String(usageRetentionDays)} days. Counts only, never priced; \`plan\` is null on a server that does not bill.`,
+  description: `Answers what the workspace uses of its plan now, then for each UTC day from \`from\` to \`to\` (both included, ${String(maxUsageRangeDays)} at most; the last ${String(defaultUsageRangeDays)} by default): posts that went out, one per channel, by platform; assistant requests, channels, members and media bytes as the daily snapshot took them (null for a day without one, today's included). For the workspace that bills its billing account on a server that bills per account, each day's \`billableAccounts\` (the most connected at once across the account, 0 on the 31st). Then totals: channel-days, billable account-days, and posts on platforms that bill per post by month. \`sharedWith\` names the partner workspace whose plan it is on. Kept ${String(usageRetentionDays)} days. Counts only; \`plan\` is null on a server that does not bill.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     from: Schema.optionalKey(CalendarDaySchema),

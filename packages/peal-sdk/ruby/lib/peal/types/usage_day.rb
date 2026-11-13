@@ -7,6 +7,8 @@ module Peal
     class UsageDay < Internal::Types::Model
       field :assistant_requests, -> { Integer }, optional: false, nullable: true, api_name: "assistantRequests"
 
+      field :billable_accounts, -> { Integer }, optional: false, nullable: true, api_name: "billableAccounts"
+
       field :by_platform, -> { Internal::Types::Array[Peal::Types::PlatformPosts] }, optional: false, nullable: false, api_name: "byPlatform"
 
       field :channels, -> { Integer }, optional: false, nullable: true

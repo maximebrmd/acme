@@ -329,8 +329,20 @@ const ExportedAuthoredPostSchema = Schema.Struct({
 // its first instant, UTC) on platforms that bill the server per post (X),
 // and how many of them held a link; and its usage ledger, kept 400 days:
 // each meter's quantity by UTC day (YYYY-MM-DD) and dimension (the platform
-// of `publishedPosts`, empty for the others).
+// of `publishedPosts`, empty for the others); on a server that bills per
+// account, for the workspace that bills its billing account, the most
+// accounts the account had connected at once each UTC day (YYYY-MM-DD)
+// and how many of those account-days were reported, and each report of
+// usage to the payment provider (its meter, units, the instant described
+// and when it was sent, null while it waits or once refused).
 const ExportedBillingSchema = Schema.Struct({
+  accountDays: Schema.Array(
+    Schema.Struct({
+      day: Schema.String,
+      peak: Schema.Int,
+      reported: Schema.Int,
+    })
+  ),
   meteredPosts: Schema.Array(
     Schema.Struct({
       month: instant,
@@ -354,6 +366,14 @@ const ExportedBillingSchema = Schema.Struct({
       dimension: Schema.String,
       meter: Schema.String,
       quantity: Int64Schema,
+    })
+  ),
+  usageReports: Schema.Array(
+    Schema.Struct({
+      eventName: Schema.String,
+      occurredAt: instant,
+      sentAt: nullable(instant),
+      value: Int64Schema,
     })
   ),
 });

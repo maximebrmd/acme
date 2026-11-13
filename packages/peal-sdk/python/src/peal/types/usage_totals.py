@@ -11,6 +11,9 @@ from .platform_posts import PlatformPosts
 
 
 class UsageTotals(UniversalBaseModel):
+    billable_account_days: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="billableAccountDays"), pydantic.Field(alias="billableAccountDays")
+    ] = None
     by_platform: typing_extensions.Annotated[
         typing.List[PlatformPosts], FieldMetadata(alias="byPlatform"), pydantic.Field(alias="byPlatform")
     ]

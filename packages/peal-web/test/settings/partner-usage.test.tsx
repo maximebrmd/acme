@@ -65,6 +65,7 @@ const report: PartnerUsageReport = {
   period: { from: "2026-11-10", to: "2026-11-11" },
   plan: null,
   totals: {
+    billableAccountDays: null,
     byPlatform: [{ platform: "mastodon", posts: 6 }],
     channelDays: 9,
     daysCounted: 1,

@@ -11,6 +11,9 @@ public record UsageTotals : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("billableAccountDays")]
+    public long? BillableAccountDays { get; set; }
+
     [JsonPropertyName("byPlatform")]
     public IEnumerable<PlatformPosts> ByPlatform { get; set; } = new List<PlatformPosts>();
 

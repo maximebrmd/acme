@@ -57,6 +57,8 @@ import {
   AloneInAccountsTest,
   PlainPseudonymsTest,
   subscriptionOf,
+  AccountDaysUncountedTest,
+  NoOwnChannelsTest,
 } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -179,6 +181,8 @@ const PortsInMemory = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Ref.get(held),
           ofWorkspaces: () => Effect.die("not read here"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: () => Effect.succeed("recorded" as const),
           remindable: () => Ref.get(held),
         })
@@ -393,6 +397,7 @@ const ActionsTest = Layer.mergeAll(
     )
   ),
   Layer.provide(AloneInAccountsTest),
+  Layer.provide(Layer.merge(AccountDaysUncountedTest, NoOwnChannelsTest)),
   Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
 );

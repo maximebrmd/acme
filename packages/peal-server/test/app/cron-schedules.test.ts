@@ -109,6 +109,53 @@ describe("the crons' schedules", () => {
     })
   );
 
+  it.effect(
+    "report usage to Stripe every five minutes from minute 3, never with a job that uses the gates",
+    () =>
+      Effect.gen(function* reporter() {
+        const crons = yield* everyCron;
+
+        const report = crons.find(
+          ({ name }) => name === "billing.usage-report"
+        );
+
+        const reported = report === undefined ? [] : minutesOf(report);
+
+        assert.deepStrictEqual(reported.slice(0, 4), [3, 8, 13, 18]);
+        assert.lengthOf(reported, 24 * 12);
+
+        const gates = new Set(
+          crons.filter(({ name }) => gated.includes(name)).flatMap(minutesOf)
+        );
+
+        assert.isFalse(reported.some((minute) => gates.has(minute)));
+      })
+  );
+
+  it.effect(
+    "start the day's account-days again every hour at minute 49, a minute no collection and no reporter run takes",
+    () =>
+      Effect.gen(function* hourlyStart() {
+        const crons = yield* everyCron;
+        const start = crons.find(({ name }) => name === "billing.account-days");
+        const minutes = start === undefined ? [] : minutesOf(start);
+
+        assert.deepStrictEqual(minutes.slice(0, 2), [49, 109]);
+        assert.lengthOf(minutes, 24);
+
+        const taken = new Set(
+          crons
+            .filter(
+              ({ name }) =>
+                gated.includes(name) || name === "billing.usage-report"
+            )
+            .flatMap(minutesOf)
+        );
+
+        assert.isFalse(minutes.some((minute) => taken.has(minute)));
+      })
+  );
+
   it.effect("never start two jobs that use the gates on the same minute", () =>
     Effect.gen(function* takesTurns() {
       const crons = (yield* everyCron).filter(({ name }) =>
