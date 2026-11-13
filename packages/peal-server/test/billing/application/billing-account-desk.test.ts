@@ -16,6 +16,7 @@ import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { BillingAccountAuditLive } from "#staff/container.ts";
 import {
@@ -343,7 +344,17 @@ layer(DeskTest)("the billing accounts desk", (it) => {
 
       assert.isFalse((yield* accounts.of(later)).freeTier);
 
-      yield* cleanUp([into, from, later]);
+      // Nor does the person it was merged into, whatever becomes of the
+      // account: its workspaces erased, a new one made.
+      yield* Effect.forEach([into, from], (id) => accounts.eraseWorkspace(id), {
+        discard: true,
+      });
+
+      const fresh = yield* workspaceOwnedBy([kept]);
+
+      assert.isFalse((yield* accounts.of(fresh)).freeTier);
+
+      yield* cleanUp([into, from, later, fresh]);
     })
   );
 
@@ -370,6 +381,24 @@ layer(DeskTest)("the billing accounts desk", (it) => {
           into: target.id,
           reason: "Synthetic reason",
           staffId: staff,
+        });
+
+        // Staff see what the merge moved, in the account and the audit log.
+        assert.deepStrictEqual(
+          (yield* desk.account({ accountId: target.id })).merged,
+          [from]
+        );
+
+        const [mergeEvent] = yield* sql<{
+          readonly objectIds: Readonly<Record<string, string>>;
+        }>`SELECT object_ids AS "objectIds" FROM staff.audit_events WHERE object_ids->>'accountId' = ${source.id} AND action = 'mergeBillingAccounts'`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(mergeEvent?.objectIds, {
+          accountId: source.id,
+          intoAccountId: target.id,
+          workspace1: from,
         });
 
         // Its payer owns none of it, yet it stays: staff put it there.
@@ -403,5 +432,88 @@ layer(DeskTest)("the billing accounts desk", (it) => {
 
         yield* cleanUp([into, from]);
       })
+  );
+
+  it.effect(
+    "give a detached workspace back to who paid for it before the merge, while they own it",
+    () =>
+      Effect.gen(function* backToPayer() {
+        const desk = yield* BillingAccountDesk;
+        const accounts = yield* BillingAccounts;
+        const { transaction } = yield* TransactionRunner;
+        const staff = yield* person;
+        const handing = yield* person;
+        const merged = yield* person;
+        const kept = yield* person;
+        const into = yield* workspaceOwnedBy([kept]);
+        const handed = yield* workspaceOwnedBy([handing, merged]);
+        const own = yield* workspaceOwnedBy([merged]);
+
+        // Handed to the merged person by transfer, as accepting does.
+        const before = yield* accounts.of(handed);
+
+        yield* transaction(accounts.moveTo(handed, before, merged));
+
+        const source = yield* accounts.of(own);
+
+        assert.strictEqual((yield* accounts.of(handed)).id, source.id);
+
+        yield* desk.merge({
+          from: source.id,
+          into: (yield* accounts.of(into)).id,
+          reason: "Synthetic reason",
+          staffId: staff,
+        });
+
+        const back = yield* desk.detach({
+          reason: "Synthetic undo",
+          staffId: staff,
+          workspaceId: handed,
+        });
+
+        assert.deepStrictEqual(back.account.payer, Option.some(merged));
+
+        yield* cleanUp([into, handed, own]);
+      })
+  );
+
+  it.effect("never bill an account on a workspace staff merged into it", () =>
+    Effect.gen(function* neverHolder() {
+      const desk = yield* BillingAccountDesk;
+      const accounts = yield* BillingAccounts;
+      const staff = yield* person;
+      const kept = yield* person;
+      const merged = yield* person;
+      const into = yield* workspaceOwnedBy([kept]);
+      const from = yield* workspaceOwnedBy([merged]);
+      const target = yield* accounts.of(into);
+
+      yield* desk.merge({
+        from: (yield* accounts.of(from)).id,
+        into: target.id,
+        reason: "Synthetic reason",
+        staffId: staff,
+      });
+
+      // The account's own workspace goes: what is left was merged, and
+      // goes back to its owner rather than bill the account.
+      yield* accounts.eraseWorkspace(into);
+      yield* SqlClient.SqlClient.use(
+        (sql) => sql`DELETE FROM auth.organization WHERE id = ${into}`
+      ).pipe(Effect.orDie);
+
+      const after = yield* accounts.of(from);
+
+      assert.notStrictEqual(after.id, target.id);
+      assert.deepStrictEqual(after.payer, Option.some(merged));
+      assert.strictEqual(after.holder, from);
+
+      // The payer's next workspace bills itself.
+      const next = yield* workspaceOwnedBy([kept]);
+
+      assert.strictEqual((yield* accounts.of(next)).holder, next);
+
+      yield* cleanUp([into, from, next]);
+    })
   );
 });

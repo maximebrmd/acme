@@ -31,6 +31,8 @@ export interface HandledBillingAccount {
   readonly staffId: UserId;
   /** The workspace detached, for a detachment. */
   readonly workspaceId: Option.Option<WorkspaceId>;
+  /** The workspaces a merge moved, kept as `workspace1`, `workspace2`… */
+  readonly moved?: readonly WorkspaceId[];
 }
 
 const decodeReason = Schema.decodeUnknownOption(StaffReasonSchema);
@@ -65,6 +67,12 @@ export class BillingAccountAudit extends Context.Service<
               objectIds: objectIdsOf({
                 accountId: entry.accountId,
                 intoAccountId: Option.getOrUndefined(entry.intoAccountId),
+                ...Object.fromEntries(
+                  (entry.moved ?? []).map((id, index) => [
+                    `workspace${index + 1}`,
+                    id,
+                  ])
+                ),
               }),
               reason: decodeReason(entry.reason.slice(0, maxReasonLength)),
               staffId: Option.some(entry.staffId),

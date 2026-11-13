@@ -323,6 +323,9 @@ export const accountWorkspaces = billing.table(
     // Put there by staff merging accounts: kept whoever owns it, until
     // staff detach it.
     merged: boolean("merged").notNull().default(false),
+    // Who paid for it before the merge, to whom detaching gives it back
+    // while they still own it.
+    mergedFromPayer: text("merged_from_payer"),
     workspaceId: uuid("workspace_id").primaryKey(),
   },
   (table) => [index("account_workspaces_account").on(table.accountId)]

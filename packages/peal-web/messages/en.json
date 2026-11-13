@@ -3086,7 +3086,8 @@
       "detachTitle": "Detach a workspace",
       "detachHint": "The workspace leaves this account for its oldest owner's, which undoes a merge.",
       "detach": "Detach",
-      "detached": "The workspace was detached."
+      "detached": "The workspace was detached.",
+      "mergedMark": "(merged by staff)"
     },
     "legal": {
       "title": "Legal requests",

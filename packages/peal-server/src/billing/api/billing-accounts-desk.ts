@@ -58,9 +58,11 @@ const namedAccount = (
 
 const deskView = ({
   account,
+  merged,
   subscribed,
   workspaceIds,
 }: DeskAccount): StaffBillingAccount => ({
+  mergedWorkspaceIds: merged,
   billingWorkspaceId: account.holder,
   freeTier: account.freeTier,
   id: account.id,

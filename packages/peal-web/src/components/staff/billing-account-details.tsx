@@ -52,6 +52,12 @@ export const BillingAccountDetails = async ({
             {account.workspaceIds.map((id) => (
               <li key={id}>
                 <Link href={`/admin/workspaces/${id}`}>{id}</Link>
+                {account.mergedWorkspaceIds.includes(id) ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    {t("mergedMark")}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>

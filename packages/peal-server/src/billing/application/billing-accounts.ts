@@ -104,16 +104,14 @@ const make = Effect.gen(function* BillingAccountsLive() {
     }
 
     const remaining = yield* store.workspacesOf(account.id);
+    const merged = yield* store.mergedIn(remaining);
 
-    if (remaining.length === 0) {
-      yield* store.delete(account.id);
-
-      return;
-    }
-
-    // The oldest workspace left that still exists bills; one whose
-    // workspaces are all gone goes.
-    const [oldest] = yield* payers.madeIn(remaining);
+    // The oldest workspace left that still exists bills, never one staff
+    // merged in; an account left with none goes, and what staff merged
+    // into it goes back to its owners, read next.
+    const [oldest] = yield* payers.madeIn(
+      remaining.filter((id) => !merged.has(id))
+    );
 
     if (oldest === undefined) {
       yield* store.delete(account.id);

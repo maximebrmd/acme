@@ -12,6 +12,7 @@ CREATE TABLE "billing"."account_workspaces" (
 	"account_id" uuid NOT NULL,
 	"attached_at" timestamp with time zone NOT NULL,
 	"merged" boolean DEFAULT false NOT NULL,
+	"merged_from_payer" text,
 	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint

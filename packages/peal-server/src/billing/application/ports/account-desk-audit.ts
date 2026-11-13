@@ -22,6 +22,8 @@ export interface HandledAccount {
   readonly staffId: UserId;
   /** The workspace detached, for a detachment. */
   readonly workspaceId: Option.Option<WorkspaceId>;
+  /** The workspaces a merge moved. */
+  readonly moved?: readonly WorkspaceId[];
 }
 
 /**

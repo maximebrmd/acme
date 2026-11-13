@@ -27,6 +27,9 @@ export const StaffBillingAccountSchema = Schema.Struct({
   // Whether its billing workspace's subscription gives it a plan now.
   subscribed: Schema.Boolean,
   workspaceIds: Schema.Array(Schema.String),
+  // Those of its workspaces staff merged into it, which detaching gives
+  // back.
+  mergedWorkspaceIds: Schema.Array(Schema.String),
 }).annotate({ identifier: "StaffBillingAccount" });
 
 export type StaffBillingAccount = typeof StaffBillingAccountSchema.Type;
@@ -129,7 +132,7 @@ export class BillingAccountsDeskApi extends HttpApiGroup.make(
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Takes a workspace out of its billing account and puts it on its oldest owner's, as if it had never been merged: the way back from a merge, one workspace at a time. Answers the account it is on now. Refused for a partner's workspace, and for an account's billing workspace while its subscription may still charge. Recorded in the audit log first.",
+          "Takes a workspace out of its billing account, the way back from a merge, one workspace at a time: it goes back to the person who paid for it before the merge while they still own it, otherwise to its oldest owner's account. Answers the account it is on now. Refused for a partner's workspace, and for an account's billing workspace while its subscription may still charge. Recorded in the audit log first.",
         summary: "Detach a workspace from its billing account",
       })
     )

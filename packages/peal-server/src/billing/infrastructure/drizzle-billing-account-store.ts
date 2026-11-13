@@ -11,7 +11,7 @@ import {
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -130,12 +130,23 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
                 ),
                 Effect.map((pairs) => new Map(pairs))
               ),
-      attach: (workspaceId, accountId, at, merged = false) =>
+      attach: (workspaceId, accountId, at, merged) =>
         db
           .insert(accountWorkspaces)
-          .values({ accountId, attachedAt: date(at), merged, workspaceId })
+          .values({
+            accountId,
+            attachedAt: date(at),
+            merged: merged !== undefined,
+            mergedFromPayer: merged?.fromPayer.pipe(Option.getOrNull) ?? null,
+            workspaceId,
+          })
           .onConflictDoUpdate({
-            set: { accountId, attachedAt: date(at), merged },
+            set: {
+              accountId,
+              attachedAt: date(at),
+              merged: merged !== undefined,
+              mergedFromPayer: merged?.fromPayer.pipe(Option.getOrNull) ?? null,
+            },
             target: accountWorkspaces.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
@@ -202,6 +213,25 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
       holdAccount: (accountId) => hold("account", accountId),
       holdPartner: (partnerId) => hold("partner-account", partnerId),
       holdPayer: (userId) => hold("payer", userId),
+      mergedFrom: (workspaceId) =>
+        db
+          .select({ payer: accountWorkspaces.mergedFromPayer })
+          .from(accountWorkspaces)
+          .where(
+            and(
+              eq(accountWorkspaces.workspaceId, workspaceId),
+              eq(accountWorkspaces.merged, true)
+            )
+          )
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) =>
+              Option.fromNullishOr(row?.payer).pipe(
+                Option.map((payer) => UserIdSchema.make(payer))
+              )
+            )
+          ),
       mergedIn: (workspaceIds) =>
         workspaceIds.length === 0
           ? Effect.succeed(new Set())

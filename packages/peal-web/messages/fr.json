@@ -3086,7 +3086,8 @@
       "detachTitle": "Détacher un espace de travail",
       "detachHint": "L’espace de travail quitte ce compte pour celui de son plus ancien propriétaire, ce qui annule une fusion.",
       "detach": "Détacher",
-      "detached": "L’espace de travail a été détaché."
+      "detached": "L’espace de travail a été détaché.",
+      "mergedMark": "(fusionné par l’équipe)"
     },
     "legal": {
       "title": "Réquisitions",

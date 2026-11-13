@@ -23,6 +23,8 @@ import { Subscriptions } from "./ports/subscriptions.ts";
 /** A billing account, as staff see it: ids and counts only. */
 export interface DeskAccount {
   readonly account: BillingAccount;
+  /** Those of its workspaces staff merged into it. */
+  readonly merged: readonly WorkspaceId[];
   /** Whether its billing workspace's subscription gives it a plan now. */
   readonly subscribed: boolean;
   readonly workspaceIds: readonly WorkspaceId[];
@@ -138,8 +140,11 @@ export class BillingAccountDesk extends Context.Service<
             subscriptions.ofWorkspace(account.holder),
           ]);
 
+          const merged = yield* store.mergedIn(workspaceIds);
+
           const desk: DeskAccount = {
             account,
+            merged: workspaceIds.filter((id) => merged.has(id)),
             subscribed: held.some(entitles),
             workspaceIds,
           };
@@ -289,6 +294,7 @@ export class BillingAccountDesk extends Context.Service<
               action: "merge",
               at: now,
               intoAccountId: Option.some(target.id),
+              moved: moving,
               reason,
               staffId,
               workspaceId: Option.none(),
@@ -296,15 +302,24 @@ export class BillingAccountDesk extends Context.Service<
 
             yield* Effect.forEach(
               moving,
-              (workspaceId) => store.attach(workspaceId, target.id, now, true),
+              (workspaceId) =>
+                store.attach(workspaceId, target.id, now, {
+                  fromPayer: source.payer,
+                }),
               { discard: true }
             );
 
             yield* store.delete(source.id);
 
-            // Its workspaces bring no free tier with them.
+            // Its workspaces bring no free tier with them, and the person
+            // it was merged into keeps none either, whatever becomes of
+            // this account.
             if (!source.freeTier) {
               yield* store.setFreeTier(target.id, false);
+
+              if (Option.isSome(target.payer)) {
+                yield* store.requirePayment(target.payer.value, now);
+              }
             }
 
             return yield* found(target.id);
@@ -396,17 +411,35 @@ export class BillingAccountDesk extends Context.Service<
               workspaceId: Option.some(workspaceId),
             });
 
-            yield* Option.match(held.payer, {
-              onNone: () => Effect.void,
-              onSome: (payer) => store.holdPayer(payer),
-            });
+            // Back to who paid for it before the merge while they own it,
+            // else to its oldest owner's account, read next. Payers held in
+            // the order of their ids.
+            const before = yield* store.mergedFrom(workspaceId);
+            const owners = yield* payers.ownersOf(workspaceId);
 
-            return yield* accounts.leave(workspaceId, held);
+            const back = before.pipe(
+              Option.filter((payer) => owners.includes(payer))
+            );
+
+            yield* Effect.forEach(
+              [
+                ...Option.toArray(held.payer),
+                ...Option.toArray(back),
+              ].toSorted(),
+              (payer) => store.holdPayer(payer),
+              { discard: true }
+            );
+
+            return yield* Option.match(back, {
+              onNone: () => accounts.leave(workspaceId, held),
+              onSome: (payer) =>
+                accounts.moveTo(workspaceId, held, payer).pipe(Effect.asVoid),
+            });
           })
         );
 
-        // Given its oldest owner's account, as a workspace read for the
-        // first time is.
+        // The account it is on now: its previous payer's, or its oldest
+        // owner's, given as to a workspace read for the first time.
         return yield* described(yield* accounts.of(workspaceId));
       });
 

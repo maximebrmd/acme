@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "1618f777-c0aa-4998-8f47-4b9edbe2ddb8",
+  "id": "c725e94a-c68f-4284-9a0e-05eef0edfbf5",
   "prevIds": [
     "b91387d5-442d-41e3-b4c4-952faec70846"
   ],
@@ -504,6 +504,22 @@
         "notNull": true,
         "dimensions": 0,
         "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "merged_from_payer",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
         "generated": null,
         "identity": null,
         "entityType": "columns"

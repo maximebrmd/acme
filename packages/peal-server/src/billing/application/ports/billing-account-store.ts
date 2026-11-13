@@ -73,14 +73,19 @@ export class BillingAccountStore extends Context.Service<
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * Puts the workspace in the account, out of any other; `merged` when
-     * staff put it there, which keeps it whoever owns it.
+     * staff put it there, which keeps it whoever owns it, with who paid
+     * for it before.
      */
     readonly attach: (
       workspaceId: WorkspaceId,
       accountId: BillingAccountId,
       at: DateTime.Utc,
-      merged?: boolean
+      merged?: { readonly fromPayer: Option.Option<UserId> }
     ) => Effect.Effect<void, DatabaseError>;
+    /** Who paid for the workspace before staff merged it, if they did. */
+    readonly mergedFrom: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Option.Option<UserId>, DatabaseError>;
     /** Those of these workspaces staff merged into their account. */
     readonly mergedIn: (
       workspaceIds: readonly WorkspaceId[]
