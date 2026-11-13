@@ -309,6 +309,14 @@ The staff context follows these rules too. What the law has a host keep is in
   own: the consent page lets the person leave it out, a token issued before
   it existed publishes nothing, and `scopeFor` names the scope a permission
   takes. Never fold it back into `workspace:write`.
+- `commandLineOnlyPermissions` (`assistant:configure`: where the
+  workspace's prompts and drafts go, with whose key) reach no OAuth client
+  but Peal's command line (`isCommandLine`), whatever its scopes: an MCP
+  client could point them at its own server, which would keep receiving
+  them once its grant is revoked. API keys and partner keys given it keep it.
+  A refusal of it, or of a `personOnlyPermissions` one, to an OAuth client
+  says no connected application does it (`withoutPermission`), never the
+  role.
 - When `PUBLIC_URL` is neither HTTPS nor a loopback host, the server runs the
   plain OAuth provider without the MCP resource: the CLI signs in, the MCP
   endpoint refuses every request, and startup logs a warning.

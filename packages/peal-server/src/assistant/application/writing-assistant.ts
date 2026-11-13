@@ -9,6 +9,8 @@ import type { ImageProviderKeyRequired } from "#assistant/application/image-prov
 import type { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import type { ImagesBusy } from "#assistant/application/images-busy.ts";
 import type { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
+import type { OwnTextBusy } from "#assistant/application/own-text-busy.ts";
+import type { OwnTextExhausted } from "#assistant/application/own-text-exhausted.ts";
 import type { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import type { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import type {
@@ -20,11 +22,18 @@ import type { ImageProviders } from "#assistant/application/ports/image-provider
 import type { ImageSlots } from "#assistant/application/ports/image-slots.ts";
 import type { OwnImageCounts } from "#assistant/application/ports/own-image-counts.ts";
 import type { OwnImageModel } from "#assistant/application/ports/own-image-model.ts";
+import type { OwnTextCounts } from "#assistant/application/ports/own-text-counts.ts";
+import type { OwnWritingModel } from "#assistant/application/ports/own-writing-model.ts";
 import type { PlatformLimits } from "#assistant/application/ports/platform-limits.ts";
 import type { ProviderAddressCheck } from "#assistant/application/ports/provider-address-check.ts";
+import type { TextProviders } from "#assistant/application/ports/text-providers.ts";
+import type { TextSlots } from "#assistant/application/ports/text-slots.ts";
 import type { WritingModel } from "#assistant/application/ports/writing-model.ts";
 import type { ProviderAddressNotPublic } from "#assistant/application/provider-address-not-public.ts";
 import type { ProviderSecretsNotConfigured } from "#assistant/application/provider-secrets-not-configured.ts";
+import type { TextProviderKeyRequired } from "#assistant/application/text-provider-key-required.ts";
+import type { TextProviderNotSet } from "#assistant/application/text-provider-not-set.ts";
+import type { TextProviderRefused } from "#assistant/application/text-provider-refused.ts";
 import { assistantStatus } from "#assistant/application/use-cases/assistant-status.ts";
 import type { AssistantStatus } from "#assistant/application/use-cases/assistant-status.ts";
 import { generateImage } from "#assistant/application/use-cases/generate-image.ts";
@@ -40,6 +49,16 @@ import type {
 } from "#assistant/application/use-cases/image-provider-settings.ts";
 import { suggest } from "#assistant/application/use-cases/suggest.ts";
 import type { SuggestionRequest } from "#assistant/application/use-cases/suggest.ts";
+import {
+  removeTextProvider,
+  saveTextProvider,
+  testTextProvider,
+  viewTextProvider,
+} from "#assistant/application/use-cases/text-provider-settings.ts";
+import type {
+  TextProviderChange,
+  TextProviderView,
+} from "#assistant/application/use-cases/text-provider-settings.ts";
 import type { WritingFailed } from "#assistant/application/writing-failed.ts";
 import type { AnswerRejected } from "#assistant/domain/answer-rejected.ts";
 import type { DraftRejected } from "#assistant/domain/draft-rejected.ts";
@@ -60,12 +79,16 @@ type AssistantPorts =
   | ImageSlots
   | OwnImageCounts
   | OwnImageModel
+  | OwnTextCounts
+  | OwnWritingModel
   | PlatformLimits
   | ProviderAddressCheck
+  | TextProviders
+  | TextSlots
   | WritingModel;
 
 /** What to do with which text, in the actor's workspace. */
-export type AssistantRequest = Omit<SuggestionRequest, "workspaceId">;
+export type AssistantRequest = Omit<SuggestionRequest, "actor">;
 
 /** What image to make, in the actor's workspace. */
 export type ImageAsked = Omit<ImageGenerationRequest, "actor">;
@@ -90,20 +113,40 @@ export type SaveImageProviderFailure =
   | ProviderSecretsNotConfigured
   | ProviderSettingRejected;
 
+export type SaveTextProviderFailure =
+  | MissingPermission
+  | ProviderAddressNotPublic
+  | ProviderAddressRejected
+  | ProviderSecretsNotConfigured
+  | ProviderSettingRejected
+  | TextProviderKeyRequired;
+
 export type SuggestFailure =
   | AnswerRejected
   | AssistantQuotaExceeded
   | AssistantUnavailable
   | DraftRejected
   | MissingPermission
+  | OwnTextBusy
+  | OwnTextExhausted
+  | TextProviderRefused
+  | WritingFailed;
+
+export type TestTextProviderFailure =
+  | AnswerRejected
+  | MissingPermission
+  | OwnTextBusy
+  | OwnTextExhausted
+  | TextProviderNotSet
+  | TextProviderRefused
   | WritingFailed;
 
 /**
  * The writing assistant's use cases, for someone acting in a workspace:
  * each checks that the actor holds `assistant:use` (and `media:upload` to
  * make an image, which lands in the media library), or `assistant:configure`
- * for the image provider the workspace brings, then works for the actor's
- * workspace only. What API handlers call.
+ * for the image and text providers the workspace brings, then works for
+ * the actor's workspace only. What API handlers call.
  */
 export class WritingAssistant extends Context.Service<
   WritingAssistant,
@@ -130,6 +173,21 @@ export class WritingAssistant extends Context.Service<
     readonly removeImageProvider: (
       actor: Actor
     ) => Effect.Effect<void, MissingPermission>;
+    /** The text provider the workspace brought, if any; never its key. */
+    readonly textProvider: (
+      actor: Actor
+    ) => Effect.Effect<Option.Option<TextProviderView>, MissingPermission>;
+    readonly saveTextProvider: (
+      actor: Actor,
+      change: TextProviderChange
+    ) => Effect.Effect<TextProviderView, SaveTextProviderFailure>;
+    readonly removeTextProvider: (
+      actor: Actor
+    ) => Effect.Effect<void, MissingPermission>;
+    /** Sends the workspace's text provider one short request, to tell whether it works. */
+    readonly testTextProvider: (
+      actor: Actor
+    ) => Effect.Effect<void, TestTextProviderFailure>;
   }
 >()("peal-server/assistant/application/WritingAssistant") {
   /** The use cases, running on the ports the layer is given. */
@@ -147,8 +205,9 @@ export class WritingAssistant extends Context.Service<
           Effect.provideContext(ports)
         );
 
-      // The workspace's own image provider: `assistant:configure` (owners,
-      // admins, and the keys given it), not `assistant:use`.
+      // The workspace's own providers: `assistant:configure` (owners,
+      // admins, Peal's command line, and the keys given it), not
+      // `assistant:use`.
       const configuring = <A, E>(
         actor: Actor,
         useCase: Effect.Effect<A, E, AssistantPorts>
@@ -166,14 +225,18 @@ export class WritingAssistant extends Context.Service<
         imageProvider: (actor) => configuring(actor, viewImageProvider(actor)),
         removeImageProvider: (actor) =>
           configuring(actor, removeImageProvider(actor)),
+        removeTextProvider: (actor) =>
+          configuring(actor, removeTextProvider(actor)),
         saveImageProvider: (actor, change) =>
           configuring(actor, saveImageProvider(actor, change)),
+        saveTextProvider: (actor, change) =>
+          configuring(actor, saveTextProvider(actor, change)),
         status: (actor) => allowed(actor, assistantStatus(actor.workspaceId)),
         suggest: (actor, request) =>
-          allowed(
-            actor,
-            suggest({ ...request, workspaceId: actor.workspaceId })
-          ),
+          allowed(actor, suggest({ ...request, actor })),
+        testTextProvider: (actor) =>
+          configuring(actor, testTextProvider(actor)),
+        textProvider: (actor) => configuring(actor, viewTextProvider(actor)),
       });
     })
   );

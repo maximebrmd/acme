@@ -1,6 +1,7 @@
 import { AnthropicClient, AnthropicLanguageModel } from "@effect/ai-anthropic";
 import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai-compat";
 import { Effect, Layer, Match, Option } from "effect";
+import type { LanguageModel } from "effect/ai";
 import { FetchHttpClient, HttpClient } from "effect/http";
 
 import type { WritingModel } from "#assistant/application/ports/writing-model.ts";
@@ -30,47 +31,70 @@ const transformClient = (
     )
   );
 
-const anthropic = ({
-  apiKey,
-  baseUrl,
-  model,
-}: Extract<AssistantProvider, { readonly _tag: "Anthropic" }>) =>
-  languageModelWritingModel({ model, provider: "anthropic" }).pipe(
-    Layer.provide(
-      AnthropicLanguageModel.layer({
-        config: { max_tokens: maxOutputTokens },
-        model,
-      })
-    ),
+type Anthropic = Extract<AssistantProvider, { readonly _tag: "Anthropic" }>;
+
+type OpenAiCompatible = Extract<
+  AssistantProvider,
+  { readonly _tag: "OpenAiCompatible" }
+>;
+
+const anthropicModel = ({ apiKey, baseUrl, model }: Anthropic) =>
+  AnthropicLanguageModel.layer({
+    config: { max_tokens: maxOutputTokens },
+    model,
+  }).pipe(
     Layer.provide(
       AnthropicClient.layer({
         apiKey,
         apiUrl: Option.getOrUndefined(baseUrl),
         transformClient,
       })
-    ),
-    Layer.provide(FetchHttpClient.layer)
+    )
   );
 
-const openAiCompatible = ({
-  apiKey,
-  baseUrl,
-  model,
-}: Extract<AssistantProvider, { readonly _tag: "OpenAiCompatible" }>) =>
-  languageModelWritingModel({ model, provider: "openai-compatible" }).pipe(
-    Layer.provide(
-      OpenAiLanguageModel.layer({
-        config: { max_output_tokens: maxOutputTokens },
-        model,
-      })
-    ),
+const openAiCompatibleModel = ({ apiKey, baseUrl, model }: OpenAiCompatible) =>
+  OpenAiLanguageModel.layer({
+    config: { max_output_tokens: maxOutputTokens },
+    model,
+  }).pipe(
     Layer.provide(
       OpenAiClient.layer({
         apiKey: Option.getOrUndefined(apiKey),
         apiUrl: baseUrl,
         transformClient,
       })
-    ),
+    )
+  );
+
+/**
+ * The LanguageModel of a provider's settings, on the HttpClient it is
+ * given: the fetch client for the server's own provider, the public one
+ * (behind the outbound guard) for a workspace's. Each answer takes at most
+ * `maxOutputTokens`, and no request carries Peal's trace context.
+ */
+export const languageModelOf = (
+  provider: Anthropic | OpenAiCompatible
+): Layer.Layer<LanguageModel.LanguageModel, never, HttpClient.HttpClient> =>
+  Match.valueTags(provider, {
+    Anthropic: anthropicModel,
+    OpenAiCompatible: openAiCompatibleModel,
+  });
+
+const anthropic = (provider: Anthropic) =>
+  languageModelWritingModel({
+    model: provider.model,
+    provider: "anthropic",
+  }).pipe(
+    Layer.provide(languageModelOf(provider)),
+    Layer.provide(FetchHttpClient.layer)
+  );
+
+const openAiCompatible = (provider: OpenAiCompatible) =>
+  languageModelWritingModel({
+    model: provider.model,
+    provider: "openai-compatible",
+  }).pipe(
+    Layer.provide(languageModelOf(provider)),
     Layer.provide(FetchHttpClient.layer)
   );
 

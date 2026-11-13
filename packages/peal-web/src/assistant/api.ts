@@ -4,12 +4,18 @@ import { PealApi } from "#api/client.ts";
 // count of requests left however it ends, so the composer refreshes the
 // status after each one.
 
-/** Whether the server has a language model, and the workspace's requests left today. */
+/**
+ * Whether the assistant writes for the workspace, who writes, and the
+ * workspace's requests left today.
+ */
 export const assistantStatus = (workspaceId: string) =>
   PealApi.query("assistant", "status", {
     params: { workspaceId },
-    // The workspace's own image provider changes who makes images.
-    reactivityKeys: [`image-provider:${workspaceId}`],
+    // The workspace's own providers change who writes and who makes images.
+    reactivityKeys: [
+      `image-provider:${workspaceId}`,
+      `text-provider:${workspaceId}`,
+    ],
   });
 
 export const suggestChange = PealApi.mutation("assistant", "suggest");

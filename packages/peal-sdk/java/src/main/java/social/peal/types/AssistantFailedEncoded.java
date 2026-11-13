@@ -21,8 +21,6 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = AssistantFailedEncoded.Builder.class)
 public final class AssistantFailedEncoded {
-    private final AssistantFailedEncodedTag tag;
-
     private final Optional<String> code;
 
     private final Optional<String> message;
@@ -34,23 +32,16 @@ public final class AssistantFailedEncoded {
     private final Map<String, Object> additionalProperties;
 
     private AssistantFailedEncoded(
-            AssistantFailedEncodedTag tag,
             Optional<String> code,
             Optional<String> message,
             Optional<String> requestId,
             AssistantFailedEncodedReason reason,
             Map<String, Object> additionalProperties) {
-        this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
-    }
-
-    @JsonProperty("_tag")
-    public AssistantFailedEncodedTag getTag() {
-        return tag;
     }
 
     @JsonProperty("code")
@@ -85,8 +76,7 @@ public final class AssistantFailedEncoded {
     }
 
     private boolean equalTo(AssistantFailedEncoded other) {
-        return tag.equals(other.tag)
-                && code.equals(other.code)
+        return code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && reason.equals(other.reason);
@@ -94,7 +84,7 @@ public final class AssistantFailedEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.reason);
+        return Objects.hash(this.code, this.message, this.requestId, this.reason);
     }
 
     @java.lang.Override
@@ -102,18 +92,14 @@ public final class AssistantFailedEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static ReasonStage builder() {
         return new Builder();
-    }
-
-    public interface TagStage {
-        ReasonStage tag(@NotNull AssistantFailedEncodedTag tag);
-
-        Builder from(AssistantFailedEncoded other);
     }
 
     public interface ReasonStage {
         _FinalStage reason(@NotNull AssistantFailedEncodedReason reason);
+
+        Builder from(AssistantFailedEncoded other);
     }
 
     public interface _FinalStage {
@@ -137,9 +123,7 @@ public final class AssistantFailedEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, ReasonStage, _FinalStage {
-        private AssistantFailedEncodedTag tag;
-
+    public static final class Builder implements ReasonStage, _FinalStage {
         private AssistantFailedEncodedReason reason;
 
         private Optional<String> requestId = Optional.empty();
@@ -154,18 +138,10 @@ public final class AssistantFailedEncoded {
 
         @java.lang.Override
         public Builder from(AssistantFailedEncoded other) {
-            tag(other.getTag());
             code(other.getCode());
             message(other.getMessage());
             requestId(other.getRequestId());
             reason(other.getReason());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public ReasonStage tag(@NotNull AssistantFailedEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
@@ -217,13 +193,12 @@ public final class AssistantFailedEncoded {
 
         @java.lang.Override
         public AssistantFailedEncoded build() {
-            return new AssistantFailedEncoded(tag, code, message, requestId, reason, additionalProperties);
+            return new AssistantFailedEncoded(code, message, requestId, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")
-                    || key.equalsIgnoreCase("code")
+            if (key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("reason")) {

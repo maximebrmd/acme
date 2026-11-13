@@ -111,6 +111,10 @@ require_relative "peal/assistant/types/image_request"
 require_relative "peal/assistant/types/image_provider_assistant_request"
 require_relative "peal/assistant/types/image_provider_change"
 require_relative "peal/assistant/types/remove_image_provider_assistant_request"
+require_relative "peal/assistant/types/text_provider_assistant_request"
+require_relative "peal/assistant/types/text_provider_change"
+require_relative "peal/assistant/types/remove_text_provider_assistant_request"
+require_relative "peal/assistant/types/test_text_provider_assistant_request"
 require_relative "peal/members/client"
 require_relative "peal/members/types/list_members_request"
 require_relative "peal/invitations/client"
@@ -331,11 +335,10 @@ module Peal
     autoload :TooManyRequestsEncodedTag, ::File.join(__dir__, "peal/types/too_many_requests_encoded_tag")
     autoload :TooManyRequestsEncoded, ::File.join(__dir__, "peal/types/too_many_requests_encoded")
     autoload :TooManyRequestsErrorBody, ::File.join(__dir__, "peal/types/too_many_requests_error_body")
-    autoload :AssistantFailedEncodedTag, ::File.join(__dir__, "peal/types/assistant_failed_encoded_tag")
     autoload :AssistantFailedEncodedReason, ::File.join(__dir__, "peal/types/assistant_failed_encoded_reason")
     autoload :AssistantFailedEncoded, ::File.join(__dir__, "peal/types/assistant_failed_encoded")
-    autoload :ImageProviderRefusedEncodedReason, ::File.join(__dir__, "peal/types/image_provider_refused_encoded_reason")
-    autoload :ImageProviderRefusedEncoded, ::File.join(__dir__, "peal/types/image_provider_refused_encoded")
+    autoload :TextProviderRefusedEncodedReason, ::File.join(__dir__, "peal/types/text_provider_refused_encoded_reason")
+    autoload :TextProviderRefusedEncoded, ::File.join(__dir__, "peal/types/text_provider_refused_encoded")
     autoload :BadGatewayErrorBody, ::File.join(__dir__, "peal/types/bad_gateway_error_body")
     autoload :BillingUnavailableEncoded, ::File.join(__dir__, "peal/types/billing_unavailable_encoded")
     autoload :MediaStoreUnavailableEncodedTag, ::File.join(__dir__, "peal/types/media_store_unavailable_encoded_tag")
@@ -468,6 +471,7 @@ module Peal
     autoload :AssistantQuotaExceededEncoded, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded")
     autoload :AssistantSecretsNotConfiguredEncodedTag, ::File.join(__dir__, "peal/types/assistant_secrets_not_configured_encoded_tag")
     autoload :AssistantSecretsNotConfiguredEncoded, ::File.join(__dir__, "peal/types/assistant_secrets_not_configured_encoded")
+    autoload :AssistantTextSource, ::File.join(__dir__, "peal/types/assistant_text_source")
     autoload :AssistantStatus, ::File.join(__dir__, "peal/types/assistant_status")
     autoload :AssistantUnavailableEncodedTag, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded_tag")
     autoload :AssistantUnavailableEncoded, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded")
@@ -751,6 +755,8 @@ module Peal
     autoload :ImageProviderAddressRefusal, ::File.join(__dir__, "peal/types/image_provider_address_refusal")
     autoload :ImageProviderAddressRefusedEncoded, ::File.join(__dir__, "peal/types/image_provider_address_refused_encoded")
     autoload :ImageProviderKeyRequiredEncoded, ::File.join(__dir__, "peal/types/image_provider_key_required_encoded")
+    autoload :ImageProviderRefusedEncodedReason, ::File.join(__dir__, "peal/types/image_provider_refused_encoded_reason")
+    autoload :ImageProviderRefusedEncoded, ::File.join(__dir__, "peal/types/image_provider_refused_encoded")
     autoload :ImageProviderSetting, ::File.join(__dir__, "peal/types/image_provider_setting")
     autoload :ImportCellProblemProblem, ::File.join(__dir__, "peal/types/import_cell_problem_problem")
     autoload :ImportColumn, ::File.join(__dir__, "peal/types/import_column")
@@ -884,6 +890,7 @@ module Peal
     autoload :WorkspaceOverview, ::File.join(__dir__, "peal/types/workspace_overview")
     autoload :Overview, ::File.join(__dir__, "peal/types/overview")
     autoload :OwnImageLimitReachedEncoded, ::File.join(__dir__, "peal/types/own_image_limit_reached_encoded")
+    autoload :OwnTextLimitReachedEncoded, ::File.join(__dir__, "peal/types/own_text_limit_reached_encoded")
     autoload :Partner, ::File.join(__dir__, "peal/types/partner")
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
@@ -1006,6 +1013,13 @@ module Peal
     autoload :TargetConfirmationPublished, ::File.join(__dir__, "peal/types/target_confirmation_published")
     autoload :TargetConfirmation, ::File.join(__dir__, "peal/types/target_confirmation")
     autoload :TargetStatusConflictEncoded, ::File.join(__dir__, "peal/types/target_status_conflict_encoded")
+    autoload :TextProviderKind, ::File.join(__dir__, "peal/types/text_provider_kind")
+    autoload :TextProvider, ::File.join(__dir__, "peal/types/text_provider")
+    autoload :TextProviderAddressRefusedEncoded, ::File.join(__dir__, "peal/types/text_provider_address_refused_encoded")
+    autoload :TextProviderBusyEncoded, ::File.join(__dir__, "peal/types/text_provider_busy_encoded")
+    autoload :TextProviderKeyRequiredEncoded, ::File.join(__dir__, "peal/types/text_provider_key_required_encoded")
+    autoload :TextProviderNotFoundEncoded, ::File.join(__dir__, "peal/types/text_provider_not_found_encoded")
+    autoload :TextProviderSetting, ::File.join(__dir__, "peal/types/text_provider_setting")
     autoload :TooManyChannelSetsEncoded, ::File.join(__dir__, "peal/types/too_many_channel_sets_encoded")
     autoload :TooManyConnectLinksEncoded, ::File.join(__dir__, "peal/types/too_many_connect_links_encoded")
     autoload :TooManyFeedsEncodedTag, ::File.join(__dir__, "peal/types/too_many_feeds_encoded_tag")

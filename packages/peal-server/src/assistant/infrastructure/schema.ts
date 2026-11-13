@@ -63,3 +63,47 @@ export const ownImageDays = assistant.table(
     check("own_image_days_images", sql`${table.images} >= 0`),
   ]
 );
+
+/**
+ * The text provider a workspace brought, one at most: the API it speaks
+ * (`anthropic` or `openai-compatible`), its address and model, and its
+ * key, encrypted with the server's keyring as `<keyId>.<iv>.<ciphertext>`
+ * and bound to `assistant:text:<workspace id>:<address>`, so a row whose
+ * address changed in any way, or that was copied to another workspace or
+ * from the image provider's, does not decrypt. `key_id` names the key that
+ * encrypted it, for a rotation. Who saved it is the activity log's to say.
+ */
+export const textProviders = assistant.table(
+  "text_providers",
+  {
+    baseUrl: text("base_url").notNull(),
+    keyId: text("key_id").notNull(),
+    kind: text("kind").notNull(),
+    model: text("model").notNull(),
+    sealedKey: text("sealed_key").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    workspaceId: uuid("workspace_id").primaryKey(),
+  },
+  (table) => [
+    check(
+      "text_providers_kind",
+      sql`${table.kind} IN ('anthropic', 'openai-compatible')`
+    ),
+  ]
+);
+
+// How many requests each workspace sent its own text provider each UTC
+// day, bounded by `ownTextRequestsPerDay`: counts only, apart from Peal's
+// requests, which billing reads.
+export const ownTextDays = assistant.table(
+  "own_text_days",
+  {
+    day: date("day", { mode: "string" }).notNull(),
+    requests: integer("requests").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.day] }),
+    check("own_text_days_requests", sql`${table.requests} >= 0`),
+  ]
+);

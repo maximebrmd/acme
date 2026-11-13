@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::AssistantFailedEncoded }, key: "ASSISTANT_FAILED"
+      member -> { Peal::Types::TextProviderRefusedEncoded }, key: "TEXT_PROVIDER_REFUSED"
 
-      member -> { Peal::Types::ImageProviderRefusedEncoded }, key: "IMAGE_PROVIDER_REFUSED"
+      member -> { Peal::Types::AssistantFailedEncoded }, key: "ASSISTANT_FAILED"
     end
   end
 end

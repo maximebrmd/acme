@@ -545,7 +545,9 @@ export {
   AssistantImageSourceSchema,
   AssistantImagesStatusSchema,
   AssistantStatusSchema,
+  AssistantTextSourceSchema,
   AssistantToneSchema,
+  anthropicApiAddress,
   ImageAspectSchema,
   ImageProviderChangeSchema,
   ImageProviderSchema,
@@ -558,8 +560,13 @@ export {
   maxImageProviderKeyLength,
   maxImageProviderModelLength,
   maxImagePromptLength,
+  ownTextRequestsPerDay,
   SuggestionRequestSchema,
   SuggestionSchema,
+  TextProviderChangeSchema,
+  TextProviderKindSchema,
+  TextProviderSchema,
+  TextProviderSettingSchema,
   TranslationLanguageSchema,
 } from "./assistant.ts";
 
@@ -568,6 +575,7 @@ export type {
   AssistantImageSource,
   AssistantImagesStatus,
   AssistantStatus,
+  AssistantTextSource,
   AssistantTone,
   ImageAspect,
   ImageProvider,
@@ -576,6 +584,10 @@ export type {
   ImageRequest,
   Suggestion,
   SuggestionRequest,
+  TextProvider,
+  TextProviderChange,
+  TextProviderKind,
+  TextProviderSetting,
   TranslationLanguage,
 } from "./assistant.ts";
 
@@ -1212,6 +1224,18 @@ export { ImageProviderKeyRequired } from "./image-provider-key-required.ts";
 export { ImageProviderRefused } from "./image-provider-refused.ts";
 
 export { OwnImageLimitReached } from "./own-image-limit-reached.ts";
+
+export { OwnTextLimitReached } from "./own-text-limit-reached.ts";
+
+export { TextProviderAddressRefused } from "./text-provider-address-refused.ts";
+
+export { TextProviderBusy } from "./text-provider-busy.ts";
+
+export { TextProviderKeyRequired } from "./text-provider-key-required.ts";
+
+export { TextProviderNotFound } from "./text-provider-not-found.ts";
+
+export { TextProviderRefused } from "./text-provider-refused.ts";
 
 export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
 

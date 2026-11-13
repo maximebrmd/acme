@@ -9,7 +9,29 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
-from .image_provider_refused_encoded_reason import ImageProviderRefusedEncodedReason
+from .text_provider_refused_encoded_reason import TextProviderRefusedEncodedReason
+
+
+class BadGatewayErrorBody_TextProviderRefused(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["TextProviderRefused"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TextProviderRefused"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    reason: TextProviderRefusedEncodedReason
+    status: typing.Optional[int] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
 
 
 class BadGatewayErrorBody_AssistantFailed(UniversalBaseModel):
@@ -33,29 +55,7 @@ class BadGatewayErrorBody_AssistantFailed(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class BadGatewayErrorBody_ImageProviderRefused(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["ImageProviderRefused"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "ImageProviderRefused"
-    code: typing.Optional[str] = None
-    message: typing.Optional[str] = None
-    request_id: typing_extensions.Annotated[
-        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
-    ] = None
-    reason: ImageProviderRefusedEncodedReason
-    status: typing.Optional[int] = None
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
 BadGatewayErrorBody = typing_extensions.Annotated[
-    typing.Union[BadGatewayErrorBody_AssistantFailed, BadGatewayErrorBody_ImageProviderRefused],
+    typing.Union[BadGatewayErrorBody_TextProviderRefused, BadGatewayErrorBody_AssistantFailed],
     pydantic.Field(discriminator="type"),
 ]

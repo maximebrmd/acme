@@ -26,36 +26,36 @@ public final class BadGatewayErrorBody {
         return value.visit(visitor);
     }
 
+    public static BadGatewayErrorBody textProviderRefused(TextProviderRefusedEncoded value) {
+        return new BadGatewayErrorBody(new TextProviderRefusedValue(value));
+    }
+
     public static BadGatewayErrorBody assistantFailed(AssistantFailedEncoded value) {
         return new BadGatewayErrorBody(new AssistantFailedValue(value));
     }
 
-    public static BadGatewayErrorBody imageProviderRefused(ImageProviderRefusedEncoded value) {
-        return new BadGatewayErrorBody(new ImageProviderRefusedValue(value));
+    public boolean isTextProviderRefused() {
+        return value instanceof TextProviderRefusedValue;
     }
 
     public boolean isAssistantFailed() {
         return value instanceof AssistantFailedValue;
     }
 
-    public boolean isImageProviderRefused() {
-        return value instanceof ImageProviderRefusedValue;
-    }
-
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
+    }
+
+    public Optional<TextProviderRefusedEncoded> getTextProviderRefused() {
+        if (isTextProviderRefused()) {
+            return Optional.of(((TextProviderRefusedValue) value).value);
+        }
+        return Optional.empty();
     }
 
     public Optional<AssistantFailedEncoded> getAssistantFailed() {
         if (isAssistantFailed()) {
             return Optional.of(((AssistantFailedValue) value).value);
-        }
-        return Optional.empty();
-    }
-
-    public Optional<ImageProviderRefusedEncoded> getImageProviderRefused() {
-        if (isImageProviderRefused()) {
-            return Optional.of(((ImageProviderRefusedValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,18 +89,58 @@ public final class BadGatewayErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitAssistantFailed(AssistantFailedEncoded assistantFailed);
+        T visitTextProviderRefused(TextProviderRefusedEncoded textProviderRefused);
 
-        T visitImageProviderRefused(ImageProviderRefusedEncoded imageProviderRefused);
+        T visitAssistantFailed(AssistantFailedEncoded assistantFailed);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(AssistantFailedValue.class), @JsonSubTypes.Type(ImageProviderRefusedValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(TextProviderRefusedValue.class), @JsonSubTypes.Type(AssistantFailedValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
+    }
+
+    @JsonTypeName("TextProviderRefused")
+    @JsonIgnoreProperties("_tag")
+    private static final class TextProviderRefusedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private TextProviderRefusedEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private TextProviderRefusedValue() {}
+
+        private TextProviderRefusedValue(TextProviderRefusedEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitTextProviderRefused(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof TextProviderRefusedValue && equalTo((TextProviderRefusedValue) other);
+        }
+
+        private boolean equalTo(TextProviderRefusedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "BadGatewayErrorBody{" + "value: " + value + "}";
+        }
     }
 
     @JsonTypeName("AssistantFailed")
@@ -129,46 +169,6 @@ public final class BadGatewayErrorBody {
         }
 
         private boolean equalTo(AssistantFailedValue other) {
-            return value.equals(other.value);
-        }
-
-        @java.lang.Override
-        public int hashCode() {
-            return Objects.hash(this.value);
-        }
-
-        @java.lang.Override
-        public String toString() {
-            return "BadGatewayErrorBody{" + "value: " + value + "}";
-        }
-    }
-
-    @JsonTypeName("ImageProviderRefused")
-    @JsonIgnoreProperties("_tag")
-    private static final class ImageProviderRefusedValue implements Value {
-        @JsonUnwrapped
-        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ImageProviderRefusedEncoded value;
-
-        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ImageProviderRefusedValue() {}
-
-        private ImageProviderRefusedValue(ImageProviderRefusedEncoded value) {
-            this.value = value;
-        }
-
-        @java.lang.Override
-        public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitImageProviderRefused(value);
-        }
-
-        @java.lang.Override
-        public boolean equals(Object other) {
-            if (this == other) return true;
-            return other instanceof ImageProviderRefusedValue && equalTo((ImageProviderRefusedValue) other);
-        }
-
-        private boolean equalTo(ImageProviderRefusedValue other) {
             return value.equals(other.value);
         }
 

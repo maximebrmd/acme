@@ -7,6 +7,8 @@ import {
   AssistantInputRejected,
   AssistantQuotaExceeded,
   AssistantUnavailable,
+  OwnTextLimitReached,
+  TextProviderRefused,
 } from "peal-contract";
 import type { AssistantAction } from "peal-contract";
 import { Dialog } from "peal-ui/components/dialog";
@@ -147,6 +149,30 @@ describe(AssistantPreview, () => {
 
     expect(html).toContain("Réécriture : Spirituel");
     expect(html).toContain("La réponse de l’assistant est inutilisable.");
+  });
+
+  it("says the workspace's own text provider refused, and who fixes it", async () => {
+    const refused = await render("en", rewrite, {
+      _tag: "failed",
+      failure: new TextProviderRefused({
+        reason: "settingsRefused",
+        status: 401,
+      }),
+    });
+
+    expect(refused).toContain("text provider refused its settings");
+    expect(refused).toContain("assistant settings");
+
+    const bounded = await render("fr", rewrite, {
+      _tag: "failed",
+      failure: new OwnTextLimitReached({
+        dailyLimit: 500,
+        resetsAt: DateTime.makeUnsafe("2026-11-14T00:00:00Z"),
+      }),
+    });
+
+    expect(bounded).toContain("500");
+    expect(bounded).toContain("fournisseur de texte");
   });
 
   it("writes numbers and counts as the reader's language does", async () => {

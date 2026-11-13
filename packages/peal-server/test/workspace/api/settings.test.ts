@@ -275,6 +275,14 @@ const PortsLive = Layer.mergeAll(
               updatedAt: at,
             },
             assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
+            assistantOwnText: [{ day: "2026-11-09", requests: 6 }],
+            // Where its drafts went, the API and the model: never the key.
+            assistantTextProvider: {
+              baseUrl: "https://api.anthropic.com",
+              kind: "anthropic",
+              model: "synthetic-text-model",
+              updatedAt: at,
+            },
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
               meteredPosts: [
@@ -972,6 +980,8 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             ({
               assistantImageProvider,
               assistantOwnImages,
+              assistantOwnText,
+              assistantTextProvider,
               assistantUsage,
               billing,
               name,
@@ -980,6 +990,8 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             }) => ({
               assistantImageProvider,
               assistantOwnImages,
+              assistantOwnText,
+              assistantTextProvider,
               assistantUsage,
               name,
               plan: billing.plan,
@@ -1007,6 +1019,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                 updatedAt: at,
               },
               assistantOwnImages: [{ day: "2026-11-09", images: 4 }],
+              assistantOwnText: [{ day: "2026-11-09", requests: 6 }],
+              assistantTextProvider: {
+                baseUrl: "https://api.anthropic.com",
+                kind: "anthropic",
+                model: "synthetic-text-model",
+                updatedAt: at,
+              },
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",

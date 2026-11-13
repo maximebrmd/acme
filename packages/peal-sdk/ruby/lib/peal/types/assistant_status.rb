@@ -16,6 +16,8 @@ module Peal
       field :remaining, -> { Integer }, optional: false, nullable: false
 
       field :resets_at, -> { String }, optional: false, nullable: false, api_name: "resetsAt"
+
+      field :source, -> { Peal::Types::AssistantTextSource }, optional: false, nullable: true
     end
   end
 end

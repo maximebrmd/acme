@@ -15,10 +15,17 @@ import {
   MediaImportBusy,
   MediaStoreUnavailable,
   OwnImageLimitReached,
+  OwnTextLimitReached,
+  TextProviderAddressRefused,
+  TextProviderBusy,
+  TextProviderKeyRequired,
+  TextProviderNotFound,
+  TextProviderRefused,
 } from "peal-contract";
 
 import type { ImageFailed } from "#assistant/application/image-failed.ts";
 import type { ImageProviderView } from "#assistant/application/use-cases/image-provider-settings.ts";
+import type { TextProviderView } from "#assistant/application/use-cases/text-provider-settings.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { imageRequestCost } from "#assistant/domain/image-limits.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -45,6 +52,39 @@ const providerOf = (view: ImageProviderView) => ({
   model: view.model,
   updatedAt: view.updatedAt,
 });
+
+// The text provider as the contract answers it: never its key.
+const textProviderOf = (view: TextProviderView) => ({
+  baseUrl: view.baseUrl,
+  keySet: view.keySet,
+  keyUnreadable: view.keyUnreadable,
+  kind: view.kind,
+  model: view.model,
+  updatedAt: view.updatedAt,
+});
+
+// What the workspace's own text provider's refusals and bound answer: what
+// the adapter logged is all that is said of it.
+const textProviderRefused = ({
+  reason,
+  status,
+}: {
+  readonly reason: TextProviderRefused["reason"];
+  readonly status: number | null;
+}) => Effect.fail(new TextProviderRefused({ reason, status }));
+
+const ownTextExhausted = ({
+  dailyLimit,
+  resetsAt,
+}: {
+  readonly dailyLimit: number;
+  readonly resetsAt: DateTime.Utc;
+}) => Effect.fail(new OwnTextLimitReached({ dailyLimit, resetsAt }));
+
+const secretsNotConfigured = () =>
+  Effect.logWarning(
+    "A workspace's provider was not saved: the server has no keyring (PEAL_TOKEN_KEYS)"
+  ).pipe(Effect.andThen(Effect.fail(new AssistantSecretsNotConfigured())));
 
 // The contract takes the domain's rules for a model and a key (kept equal
 // by test/assistant/api/contract.test.ts): one it let through and the
@@ -159,19 +199,32 @@ export const AssistantHandlers = HttpApiBuilder.group(
                 Effect.fail(new ImageProviderAddressRefused({ reason })),
               ProviderAddressRejected: ({ reason }) =>
                 Effect.fail(new ImageProviderAddressRefused({ reason })),
-              ProviderSecretsNotConfigured: () =>
-                Effect.logWarning(
-                  "A workspace's image provider was not saved: the server has no keyring (PEAL_TOKEN_KEYS)"
-                ).pipe(
-                  Effect.andThen(
-                    Effect.fail(new AssistantSecretsNotConfigured())
-                  )
-                ),
+              ProviderSecretsNotConfigured: secretsNotConfigured,
               ProviderSettingRejected: settingRejected,
             })
           );
 
           return providerOf(saved);
+        }),
+      setTextProvider: ({ payload }) =>
+        Effect.gen(function* setTextProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const saved = yield* assistant.saveTextProvider(actor, payload).pipe(
+            Effect.catchTags({
+              MissingPermission: forbidden,
+              ProviderAddressNotPublic: ({ reason }) =>
+                Effect.fail(new TextProviderAddressRefused({ reason })),
+              ProviderAddressRejected: ({ reason }) =>
+                Effect.fail(new TextProviderAddressRefused({ reason })),
+              ProviderSecretsNotConfigured: secretsNotConfigured,
+              ProviderSettingRejected: settingRejected,
+              TextProviderKeyRequired: () =>
+                Effect.fail(new TextProviderKeyRequired()),
+            })
+          );
+
+          return textProviderOf(saved);
         }),
       status: () =>
         Effect.gen(function* status() {
@@ -200,10 +253,53 @@ export const AssistantHandlers = HttpApiBuilder.group(
               DraftRejected: ({ maxLength, reason }) =>
                 Effect.fail(new AssistantInputRejected({ maxLength, reason })),
               MissingPermission: forbidden,
+              OwnTextBusy: () => Effect.fail(new TextProviderBusy()),
+              OwnTextExhausted: ownTextExhausted,
+              TextProviderRefused: textProviderRefused,
               WritingFailed: ({ reason }) =>
                 Effect.fail(new AssistantFailed({ reason })),
             })
           );
+        }),
+      testTextProvider: () =>
+        Effect.gen(function* testTextProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          yield* assistant.testTextProvider(actor).pipe(
+            Effect.catchTags({
+              AnswerRejected: () =>
+                Effect.fail(new AssistantFailed({ reason: "invalidAnswer" })),
+              MissingPermission: forbidden,
+              OwnTextBusy: () => Effect.fail(new TextProviderBusy()),
+              OwnTextExhausted: ownTextExhausted,
+              TextProviderNotSet: () => Effect.fail(new TextProviderNotFound()),
+              TextProviderRefused: textProviderRefused,
+              WritingFailed: ({ reason }) =>
+                Effect.fail(new AssistantFailed({ reason })),
+            })
+          );
+        }),
+      textProvider: () =>
+        Effect.gen(function* textProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const provider = yield* assistant
+            .textProvider(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+
+          return {
+            provider: Option.getOrNull(
+              provider.pipe(Option.map(textProviderOf))
+            ),
+          };
+        }),
+      removeTextProvider: () =>
+        Effect.gen(function* removeTextProvider() {
+          const actor = actorOf(yield* CurrentMember);
+
+          yield* assistant
+            .removeTextProvider(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
         }),
     });
   })

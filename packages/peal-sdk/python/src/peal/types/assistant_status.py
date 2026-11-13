@@ -7,6 +7,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .assistant_images_status import AssistantImagesStatus
+from .assistant_text_source import AssistantTextSource
 
 
 class AssistantStatus(UniversalBaseModel):
@@ -18,6 +19,7 @@ class AssistantStatus(UniversalBaseModel):
     ]
     remaining: int
     resets_at: typing_extensions.Annotated[str, FieldMetadata(alias="resetsAt"), pydantic.Field(alias="resetsAt")]
+    source: typing.Optional[AssistantTextSource] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

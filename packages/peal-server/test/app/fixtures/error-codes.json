@@ -465,6 +465,11 @@
     "tag": "OwnImageLimitReached"
   },
   {
+    "code": "own_text_limit_reached",
+    "status": 429,
+    "tag": "OwnTextLimitReached"
+  },
+  {
     "code": "partner_accounts_closed",
     "status": 403,
     "tag": "PartnerAccountsClosed"
@@ -683,6 +688,31 @@
     "code": "target_status_conflict",
     "status": 409,
     "tag": "TargetStatusConflict"
+  },
+  {
+    "code": "text_provider_address_refused",
+    "status": 422,
+    "tag": "TextProviderAddressRefused"
+  },
+  {
+    "code": "text_provider_busy",
+    "status": 429,
+    "tag": "TextProviderBusy"
+  },
+  {
+    "code": "text_provider_key_required",
+    "status": 422,
+    "tag": "TextProviderKeyRequired"
+  },
+  {
+    "code": "text_provider_not_found",
+    "status": 404,
+    "tag": "TextProviderNotFound"
+  },
+  {
+    "code": "text_provider_refused",
+    "status": 502,
+    "tag": "TextProviderRefused"
   },
   {
     "code": "too_many_channel_sets",

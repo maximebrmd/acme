@@ -130,6 +130,33 @@ func (r *RemoveImageProviderAssistantRequest) SetWorkspaceID(workspaceID string)
 }
 
 var (
+	removeTextProviderAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type RemoveTextProviderAssistantRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *RemoveTextProviderAssistantRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RemoveTextProviderAssistantRequest) SetWorkspaceID(workspaceID string) {
+	r.WorkspaceID = workspaceID
+	r.require(removeTextProviderAssistantRequestFieldWorkspaceID)
+}
+
+var (
 	imageProviderChangeFieldWorkspaceID = big.NewInt(1 << 0)
 	imageProviderChangeFieldAPIKey      = big.NewInt(1 << 1)
 	imageProviderChangeFieldBaseURL     = big.NewInt(1 << 2)
@@ -201,6 +228,90 @@ func (i *ImageProviderChange) MarshalJSON() ([]byte, error) {
 		embed: embed(*i),
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	textProviderChangeFieldWorkspaceID = big.NewInt(1 << 0)
+	textProviderChangeFieldAPIKey      = big.NewInt(1 << 1)
+	textProviderChangeFieldBaseURL     = big.NewInt(1 << 2)
+	textProviderChangeFieldKind        = big.NewInt(1 << 3)
+	textProviderChangeFieldModel       = big.NewInt(1 << 4)
+)
+
+type TextProviderChange struct {
+	WorkspaceID string           `json:"-" url:"-"`
+	APIKey      *string          `json:"apiKey,omitempty" url:"-"`
+	BaseURL     string           `json:"baseUrl" url:"-"`
+	Kind        TextProviderKind `json:"kind" url:"-"`
+	Model       string           `json:"model" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (t *TextProviderChange) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderChange) SetWorkspaceID(workspaceID string) {
+	t.WorkspaceID = workspaceID
+	t.require(textProviderChangeFieldWorkspaceID)
+}
+
+// SetAPIKey sets the APIKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderChange) SetAPIKey(apiKey *string) {
+	t.APIKey = apiKey
+	t.require(textProviderChangeFieldAPIKey)
+}
+
+// SetBaseURL sets the BaseURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderChange) SetBaseURL(baseURL string) {
+	t.BaseURL = baseURL
+	t.require(textProviderChangeFieldBaseURL)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderChange) SetKind(kind TextProviderKind) {
+	t.Kind = kind
+	t.require(textProviderChangeFieldKind)
+}
+
+// SetModel sets the Model field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderChange) SetModel(model string) {
+	t.Model = model
+	t.require(textProviderChangeFieldModel)
+}
+
+func (t *TextProviderChange) UnmarshalJSON(data []byte) error {
+	type unmarshaler TextProviderChange
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*t = TextProviderChange(body)
+	return nil
+}
+
+func (t *TextProviderChange) MarshalJSON() ([]byte, error) {
+	type embed TextProviderChange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
@@ -295,6 +406,60 @@ func (s *SuggestionRequest) MarshalJSON() ([]byte, error) {
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
 	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	testTextProviderAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type TestTextProviderAssistantRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (t *TestTextProviderAssistantRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TestTextProviderAssistantRequest) SetWorkspaceID(workspaceID string) {
+	t.WorkspaceID = workspaceID
+	t.require(testTextProviderAssistantRequestFieldWorkspaceID)
+}
+
+var (
+	textProviderAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type TextProviderAssistantRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (t *TextProviderAssistantRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderAssistantRequest) SetWorkspaceID(workspaceID string) {
+	t.WorkspaceID = workspaceID
+	t.require(textProviderAssistantRequestFieldWorkspaceID)
 }
 
 type AssistantAction struct {
@@ -1145,7 +1310,13 @@ var (
 	assistantStatusFieldMaxTextLength = big.NewInt(1 << 3)
 	assistantStatusFieldRemaining     = big.NewInt(1 << 4)
 	assistantStatusFieldResetsAt      = big.NewInt(1 << 5)
+	assistantStatusFieldSource        = big.NewInt(1 << 6)
 )
+
+// assistantStatusNullableFields maps the wire names of AssistantStatus's nullable fields (required or optional) to their field bits.
+var assistantStatusNullableFields = map[string]*big.Int{
+	"source": assistantStatusFieldSource,
+}
 
 type AssistantStatus struct {
 	Available     bool                   `json:"available" url:"available"`
@@ -1154,6 +1325,7 @@ type AssistantStatus struct {
 	MaxTextLength int                    `json:"maxTextLength" url:"maxTextLength"`
 	Remaining     int                    `json:"remaining" url:"remaining"`
 	ResetsAt      string                 `json:"resetsAt" url:"resetsAt"`
+	Source        *AssistantTextSource   `json:"source,omitempty" url:"source,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1202,6 +1374,13 @@ func (a *AssistantStatus) GetResetsAt() string {
 		return ""
 	}
 	return a.ResetsAt
+}
+
+func (a *AssistantStatus) GetSource() *AssistantTextSource {
+	if a == nil {
+		return nil
+	}
+	return a.Source
 }
 
 func (a *AssistantStatus) GetExtraProperties() map[string]interface{} {
@@ -1262,6 +1441,13 @@ func (a *AssistantStatus) SetResetsAt(resetsAt string) {
 	a.require(assistantStatusFieldResetsAt)
 }
 
+// SetSource sets the Source field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantStatus) SetSource(source *AssistantTextSource) {
+	a.Source = source
+	a.require(assistantStatusFieldSource)
+}
+
 func (a *AssistantStatus) UnmarshalJSON(data []byte) error {
 	type unmarshaler AssistantStatus
 	var value unmarshaler
@@ -1274,6 +1460,13 @@ func (a *AssistantStatus) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	a.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, assistantStatusNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		a.require(presentFields)
+	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -1302,6 +1495,28 @@ func (a *AssistantStatus) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantTextSource string
+
+const (
+	AssistantTextSourceWorkspace AssistantTextSource = "workspace"
+	AssistantTextSourceServer    AssistantTextSource = "server"
+)
+
+func NewAssistantTextSourceFromString(s string) (AssistantTextSource, error) {
+	switch s {
+	case "workspace":
+		return AssistantTextSourceWorkspace, nil
+	case "server":
+		return AssistantTextSourceServer, nil
+	}
+	var t AssistantTextSource
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantTextSource) Ptr() *AssistantTextSource {
+	return &a
 }
 
 type AssistantTone string
@@ -1904,6 +2119,292 @@ func (s *SuggestionText) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	textProviderFieldBaseURL       = big.NewInt(1 << 0)
+	textProviderFieldKeySet        = big.NewInt(1 << 1)
+	textProviderFieldKeyUnreadable = big.NewInt(1 << 2)
+	textProviderFieldKind          = big.NewInt(1 << 3)
+	textProviderFieldModel         = big.NewInt(1 << 4)
+	textProviderFieldUpdatedAt     = big.NewInt(1 << 5)
+)
+
+type TextProvider struct {
+	BaseURL       string           `json:"baseUrl" url:"baseUrl"`
+	KeySet        bool             `json:"keySet" url:"keySet"`
+	KeyUnreadable bool             `json:"keyUnreadable" url:"keyUnreadable"`
+	Kind          TextProviderKind `json:"kind" url:"kind"`
+	Model         string           `json:"model" url:"model"`
+	UpdatedAt     string           `json:"updatedAt" url:"updatedAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TextProvider) GetBaseURL() string {
+	if t == nil {
+		return ""
+	}
+	return t.BaseURL
+}
+
+func (t *TextProvider) GetKeySet() bool {
+	if t == nil {
+		return false
+	}
+	return t.KeySet
+}
+
+func (t *TextProvider) GetKeyUnreadable() bool {
+	if t == nil {
+		return false
+	}
+	return t.KeyUnreadable
+}
+
+func (t *TextProvider) GetKind() TextProviderKind {
+	if t == nil {
+		return ""
+	}
+	return t.Kind
+}
+
+func (t *TextProvider) GetModel() string {
+	if t == nil {
+		return ""
+	}
+	return t.Model
+}
+
+func (t *TextProvider) GetUpdatedAt() string {
+	if t == nil {
+		return ""
+	}
+	return t.UpdatedAt
+}
+
+func (t *TextProvider) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TextProvider) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetBaseURL sets the BaseURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetBaseURL(baseURL string) {
+	t.BaseURL = baseURL
+	t.require(textProviderFieldBaseURL)
+}
+
+// SetKeySet sets the KeySet field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetKeySet(keySet bool) {
+	t.KeySet = keySet
+	t.require(textProviderFieldKeySet)
+}
+
+// SetKeyUnreadable sets the KeyUnreadable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetKeyUnreadable(keyUnreadable bool) {
+	t.KeyUnreadable = keyUnreadable
+	t.require(textProviderFieldKeyUnreadable)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetKind(kind TextProviderKind) {
+	t.Kind = kind
+	t.require(textProviderFieldKind)
+}
+
+// SetModel sets the Model field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetModel(model string) {
+	t.Model = model
+	t.require(textProviderFieldModel)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProvider) SetUpdatedAt(updatedAt string) {
+	t.UpdatedAt = updatedAt
+	t.require(textProviderFieldUpdatedAt)
+}
+
+func (t *TextProvider) UnmarshalJSON(data []byte) error {
+	type unmarshaler TextProvider
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TextProvider(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TextProvider) MarshalJSON() ([]byte, error) {
+	type embed TextProvider
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TextProvider) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TextProviderKind string
+
+const (
+	TextProviderKindAnthropic        TextProviderKind = "anthropic"
+	TextProviderKindOpenaiCompatible TextProviderKind = "openai-compatible"
+)
+
+func NewTextProviderKindFromString(s string) (TextProviderKind, error) {
+	switch s {
+	case "anthropic":
+		return TextProviderKindAnthropic, nil
+	case "openai-compatible":
+		return TextProviderKindOpenaiCompatible, nil
+	}
+	var t TextProviderKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TextProviderKind) Ptr() *TextProviderKind {
+	return &t
+}
+
+var (
+	textProviderSettingFieldProvider = big.NewInt(1 << 0)
+)
+
+// textProviderSettingNullableFields maps the wire names of TextProviderSetting's nullable fields (required or optional) to their field bits.
+var textProviderSettingNullableFields = map[string]*big.Int{
+	"provider": textProviderSettingFieldProvider,
+}
+
+type TextProviderSetting struct {
+	Provider *TextProvider `json:"provider,omitempty" url:"provider,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TextProviderSetting) GetProvider() *TextProvider {
+	if t == nil {
+		return nil
+	}
+	return t.Provider
+}
+
+func (t *TextProviderSetting) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TextProviderSetting) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderSetting) SetProvider(provider *TextProvider) {
+	t.Provider = provider
+	t.require(textProviderSettingFieldProvider)
+}
+
+func (t *TextProviderSetting) UnmarshalJSON(data []byte) error {
+	type unmarshaler TextProviderSetting
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TextProviderSetting(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, textProviderSettingNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		t.require(presentFields)
+	}
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TextProviderSetting) MarshalJSON() ([]byte, error) {
+	type embed TextProviderSetting
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TextProviderSetting) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
 }
 
 type TranslationLanguage string

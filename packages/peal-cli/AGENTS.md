@@ -69,6 +69,11 @@
   break dropped); `--keep-key` sends none, which the server takes while
   the origin stays. `clear` asks first (`confirmed`, `--yes`). Tests pipe
   standard input with `signedIn(...).piping(text)`.
+- `peal assistant text-provider` (show, set, test, clear) keeps the
+  workspace's own text provider the same way: `set --kind anthropic|
+  openai-compatible --model …`, `--base-url` defaulting to Anthropic's
+  address for `anthropic`; `test` sends it one request. The server leaves
+  `assistant:configure` to no OAuth client but this command line.
 - `peal doctor` checks a configuration and changes nothing (the API URL and
   where it came from, health, readiness, the API's latest release, which
   credential is used and whether it works, the publish scope, the workspace

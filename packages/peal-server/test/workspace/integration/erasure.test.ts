@@ -108,6 +108,12 @@ const workspaceRows = {
   // How many images it asked its own provider for, by day.
   "assistant.own_image_days": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM assistant.own_image_days WHERE workspace_id = ${id}`,
+  // How many requests it sent its own text provider, by day.
+  "assistant.own_text_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.own_text_days WHERE workspace_id = ${id}`,
+  // The text provider it brought, with its sealed key.
+  "assistant.text_providers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.text_providers WHERE workspace_id = ${id}`,
   "auth.apikey": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.apikey WHERE reference_id = ${id}`,
   "auth.invitation": (sql, id) =>
@@ -613,6 +619,11 @@ const fill = Effect.fn("fill")(function* fill(
   // stand-in here: nothing opens it).
   yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, updated_at)
     VALUES (${workspaceId}, 'https://images.example.com/v1', 'synthetic-image-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', now())`;
+  // The text provider it brought, and the requests it sent there.
+  yield* sql`INSERT INTO assistant.text_providers (workspace_id, kind, base_url, model, sealed_key, key_id, updated_at)
+    VALUES (${workspaceId}, 'anthropic', 'https://api.anthropic.com', 'synthetic-text-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', now())`;
+  yield* sql`INSERT INTO assistant.own_text_days (workspace_id, day, requests)
+    VALUES (${workspaceId}, '2026-11-09', 7)`;
   yield* seedSubscription(workspaceId, "canceled");
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)

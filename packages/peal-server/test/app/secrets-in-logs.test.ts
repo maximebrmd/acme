@@ -692,6 +692,87 @@ layer(OwnProviderAppTest, {
   );
 });
 
+// The key a workspace gave for its own text provider: never written, in a
+// log, a span, the activity log or an answer. Saving calls no provider.
+const workspaceTextKey = "synthetic-workspace-text-key";
+
+layer(OwnProviderAppTest, {
+  excludeTestServices: true,
+  timeout: "180 seconds",
+})("what the server writes about a workspace's text provider", (it) => {
+  it.effect(
+    "holds its key nowhere: logs, spans, the activity log, the answers",
+    () =>
+      Effect.gen(function* searched() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("secrets-own-text");
+        const workspaceId = yield* workspaceOf(owner, "Own text");
+        const headers = { cookie: owner.cookies };
+        const path = `/api/workspaces/${workspaceId}/assistant/text-provider`;
+
+        const saved = yield* app.request(path, {
+          body: {
+            apiKey: workspaceTextKey,
+            baseUrl: "https://1.1.1.1/v1",
+            kind: "openai-compatible",
+            model: "synthetic-text-model",
+          },
+          headers,
+          method: "PUT",
+        });
+
+        const inside = yield* app.request(path, {
+          body: {
+            apiKey: workspaceTextKey,
+            baseUrl: "https://10.0.0.9/v1",
+            kind: "anthropic",
+            model: "synthetic-text-model",
+          },
+          headers,
+          method: "PUT",
+        });
+
+        const read = yield* app.request(path, { headers });
+
+        const status = yield* app.request(
+          `/api/workspaces/${workspaceId}/assistant`,
+          { headers }
+        );
+
+        const removed = yield* app.request(path, { headers, method: "DELETE" });
+
+        assert.deepStrictEqual(
+          [
+            saved.status,
+            inside.status,
+            read.status,
+            status.status,
+            removed.status,
+          ],
+          [200, 422, 200, 200, 204]
+        );
+
+        const activity =
+          yield* sql`SELECT row_to_json(e)::text AS row FROM activity.events e WHERE workspace_id = ${workspaceId}`.pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(ActivityRowsSchema))
+          );
+
+        assert.isAtLeast(activity.length, 3);
+
+        const answers = JSON.stringify(
+          [saved, inside, read, status].map(({ body }) => body)
+        );
+
+        for (const text of [written(), answers, JSON.stringify(activity)]) {
+          assert.notInclude(text, workspaceTextKey);
+        }
+
+        assert.notInclude(written(), "10.0.0.9");
+      })
+  );
+});
+
 const OwnImagesTest = Layer.mergeAll(
   S3MediaStorageLive,
   DrizzleMediaAssetsLive,

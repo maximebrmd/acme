@@ -11,13 +11,19 @@ import social.peal.resources.assistant.requests.ImageProviderAssistantRequest;
 import social.peal.resources.assistant.requests.ImageProviderChange;
 import social.peal.resources.assistant.requests.ImageRequest;
 import social.peal.resources.assistant.requests.RemoveImageProviderAssistantRequest;
+import social.peal.resources.assistant.requests.RemoveTextProviderAssistantRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
+import social.peal.resources.assistant.requests.TestTextProviderAssistantRequest;
+import social.peal.resources.assistant.requests.TextProviderAssistantRequest;
+import social.peal.resources.assistant.requests.TextProviderChange;
 import social.peal.types.AssistantStatus;
 import social.peal.types.ImageProvider;
 import social.peal.types.ImageProviderSetting;
 import social.peal.types.Media;
 import social.peal.types.Suggestion;
+import social.peal.types.TextProvider;
+import social.peal.types.TextProviderSetting;
 
 public class AsyncAssistantClient {
     protected final ClientOptions clientOptions;
@@ -37,7 +43,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture = this.rawClient.status(workspaceId);
@@ -51,7 +57,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture =
@@ -66,7 +72,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId, StatusAssistantRequest request) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture =
@@ -81,7 +87,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -97,7 +103,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<Suggestion> suggest(String workspaceId, SuggestionRequest request) {
         CompletableFuture<PealClientHttpResponse<Suggestion>> rawFuture = this.rawClient.suggest(workspaceId, request);
@@ -111,7 +117,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<Suggestion> suggest(
             String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
@@ -157,7 +163,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProviderSetting> imageProvider(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> rawFuture =
@@ -172,7 +178,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProviderSetting> imageProvider(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> rawFuture =
@@ -187,7 +193,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProviderSetting> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request) {
@@ -203,7 +209,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProviderSetting> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request, RequestOptions requestOptions) {
@@ -219,7 +225,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProvider> setImageProvider(String workspaceId, ImageProviderChange request) {
         CompletableFuture<PealClientHttpResponse<ImageProvider>> rawFuture =
@@ -234,7 +240,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<ImageProvider> setImageProvider(
             String workspaceId, ImageProviderChange request, RequestOptions requestOptions) {
@@ -250,7 +256,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<Void> removeImageProvider(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<Void>> rawFuture = this.rawClient.removeImageProvider(workspaceId);
@@ -264,7 +270,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<Void> removeImageProvider(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
@@ -279,7 +285,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<Void> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request) {
@@ -295,12 +301,225 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<Void> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
                 this.rawClient.removeImageProvider(workspaceId, request, requestOptions);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<TextProviderSetting> textProvider(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<TextProviderSetting>> rawFuture =
+                this.rawClient.textProvider(workspaceId);
+        CompletableFuture<TextProviderSetting> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<TextProviderSetting> textProvider(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<TextProviderSetting>> rawFuture =
+                this.rawClient.textProvider(workspaceId, requestOptions);
+        CompletableFuture<TextProviderSetting> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<TextProviderSetting> textProvider(
+            String workspaceId, TextProviderAssistantRequest request) {
+        CompletableFuture<PealClientHttpResponse<TextProviderSetting>> rawFuture =
+                this.rawClient.textProvider(workspaceId, request);
+        CompletableFuture<TextProviderSetting> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<TextProviderSetting> textProvider(
+            String workspaceId, TextProviderAssistantRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<TextProviderSetting>> rawFuture =
+                this.rawClient.textProvider(workspaceId, request, requestOptions);
+        CompletableFuture<TextProviderSetting> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sets the text provider the workspace brings, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to <code>baseUrl</code> with <code>apiKey</code>, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with <code>POST .../text-provider/test</code>. Needs assistant:configure, which no OAuth client holds but Peal's command line.
+     */
+    public CompletableFuture<TextProvider> setTextProvider(String workspaceId, TextProviderChange request) {
+        CompletableFuture<PealClientHttpResponse<TextProvider>> rawFuture =
+                this.rawClient.setTextProvider(workspaceId, request);
+        CompletableFuture<TextProvider> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sets the text provider the workspace brings, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to <code>baseUrl</code> with <code>apiKey</code>, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with <code>POST .../text-provider/test</code>. Needs assistant:configure, which no OAuth client holds but Peal's command line.
+     */
+    public CompletableFuture<TextProvider> setTextProvider(
+            String workspaceId, TextProviderChange request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<TextProvider>> rawFuture =
+                this.rawClient.setTextProvider(workspaceId, request, requestOptions);
+        CompletableFuture<TextProvider> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> removeTextProvider(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture = this.rawClient.removeTextProvider(workspaceId);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> removeTextProvider(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.removeTextProvider(workspaceId, requestOptions);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> removeTextProvider(String workspaceId, RemoveTextProviderAssistantRequest request) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.removeTextProvider(workspaceId, request);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> removeTextProvider(
+            String workspaceId, RemoveTextProviderAssistantRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.removeTextProvider(workspaceId, request, requestOptions);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> testTextProvider(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture = this.rawClient.testTextProvider(workspaceId);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> testTextProvider(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.testTextProvider(workspaceId, requestOptions);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> testTextProvider(String workspaceId, TestTextProviderAssistantRequest request) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.testTextProvider(workspaceId, request);
+        CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<Void> testTextProvider(
+            String workspaceId, TestTextProviderAssistantRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
+                this.rawClient.testTextProvider(workspaceId, request, requestOptions);
         CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {

@@ -6,10 +6,14 @@ import type {
   AssistantTone,
   AssistantInputRejected,
   AssistantQuotaExceeded,
+  AssistantStatus,
   AssistantUnavailable,
   Forbidden,
+  OwnTextLimitReached,
   Platform,
   Suggestion,
+  TextProviderBusy,
+  TextProviderRefused,
   TooManyRequests,
   Unauthenticated,
   WorkspaceNotFound,
@@ -23,6 +27,10 @@ export type AssistantFailure =
   | AssistantQuotaExceeded
   | AssistantUnavailable
   | Forbidden
+  // The workspace's own text provider: its day's bound, and its refusals.
+  | OwnTextLimitReached
+  | TextProviderBusy
+  | TextProviderRefused
   // Answered to keys and applications only: the web app signs in with a
   // session, whose requests are not counted.
   | TooManyRequests
@@ -31,6 +39,26 @@ export type AssistantFailure =
   // The request failed in a way the API does not declare: the network, or
   // an answer that could not be read.
   | { readonly _tag: "Unexpected" };
+
+/**
+ * Why the person cannot ask now, if they cannot: no request of Peal's left
+ * today (which the menu says; never while the workspace's own provider
+ * writes, as it spends none), no text, or too much of it.
+ */
+export const assistantBlockedBy = (
+  status: Pick<AssistantStatus, "maxTextLength" | "remaining" | "source">,
+  text: string
+): "needsText" | "noRequestsLeft" | "textTooLong" | null => {
+  if (status.source !== "workspace" && status.remaining <= 0) {
+    return "noRequestsLeft";
+  }
+
+  if (text.trim() === "") {
+    return "needsText";
+  }
+
+  return text.length > status.maxTextLength ? "textTooLong" : null;
+};
 
 // The platforms whose text limits are known: the only ones a post can be
 // shortened to fit.

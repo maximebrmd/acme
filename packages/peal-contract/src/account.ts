@@ -468,6 +468,15 @@ const ExportedImageProviderSchema = Schema.Struct({
   updatedAt: instant,
 });
 
+// The text provider the workspace brought to the assistant: the API it
+// speaks, where its drafts went and with which model, never its key.
+const ExportedTextProviderSchema = Schema.Struct({
+  baseUrl: Schema.String,
+  kind: Schema.String,
+  model: Schema.String,
+  updatedAt: instant,
+});
+
 // A post analytics followed on a channel, and each reading of its counts.
 // Quotes, impressions, clicks, reach and saves are null where the platform
 // gives none.
@@ -785,6 +794,22 @@ const ExportedWorkspaceSchema = Schema.Struct({
         images: Schema.Int,
       })
     )
+  ),
+  // How many requests it sent that text provider each UTC day; absent from
+  // exports made before workspaces could bring one.
+  assistantOwnText: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        // A UTC day, as YYYY-MM-DD.
+        day: Schema.String,
+        requests: Schema.Int,
+      })
+    )
+  ),
+  // The text provider the workspace brought, or null; absent from exports
+  // made before workspaces could bring one.
+  assistantTextProvider: Schema.optionalKey(
+    Schema.NullOr(ExportedTextProviderSchema)
   ),
   assistantUsage: Schema.Array(ExportedUsageSchema),
   billing: ExportedBillingSchema,

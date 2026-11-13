@@ -38,14 +38,20 @@ import social.peal.resources.assistant.requests.ImageProviderAssistantRequest;
 import social.peal.resources.assistant.requests.ImageProviderChange;
 import social.peal.resources.assistant.requests.ImageRequest;
 import social.peal.resources.assistant.requests.RemoveImageProviderAssistantRequest;
+import social.peal.resources.assistant.requests.RemoveTextProviderAssistantRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
+import social.peal.resources.assistant.requests.TestTextProviderAssistantRequest;
+import social.peal.resources.assistant.requests.TextProviderAssistantRequest;
+import social.peal.resources.assistant.requests.TextProviderChange;
 import social.peal.types.AssistantStatus;
 import social.peal.types.ImageProvider;
 import social.peal.types.ImageProviderSetting;
 import social.peal.types.Media;
 import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Suggestion;
+import social.peal.types.TextProvider;
+import social.peal.types.TextProviderSetting;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class AsyncRawAssistantClient {
@@ -56,14 +62,14 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(String workspaceId) {
         return status(workspaceId, StatusAssistantRequest.builder().build());
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, RequestOptions requestOptions) {
@@ -71,7 +77,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request) {
@@ -79,7 +85,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -178,7 +184,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request) {
@@ -186,7 +192,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
@@ -437,7 +443,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(String workspaceId) {
         return imageProvider(
@@ -445,7 +451,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, RequestOptions requestOptions) {
@@ -454,7 +460,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request) {
@@ -462,7 +468,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request, RequestOptions requestOptions) {
@@ -562,7 +568,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
             String workspaceId, ImageProviderChange request) {
@@ -570,7 +576,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
             String workspaceId, ImageProviderChange request, RequestOptions requestOptions) {
@@ -690,7 +696,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(String workspaceId) {
         return removeImageProvider(
@@ -698,7 +704,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RequestOptions requestOptions) {
@@ -707,7 +713,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request) {
@@ -715,7 +721,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request, RequestOptions requestOptions) {
@@ -783,6 +789,509 @@ public class AsyncRawAssistantClient {
                                 return;
                             case 429:
                                 future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProviderSetting>> textProvider(String workspaceId) {
+        return textProvider(workspaceId, TextProviderAssistantRequest.builder().build());
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProviderSetting>> textProvider(
+            String workspaceId, RequestOptions requestOptions) {
+        return textProvider(workspaceId, TextProviderAssistantRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProviderSetting>> textProvider(
+            String workspaceId, TextProviderAssistantRequest request) {
+        return textProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProviderSetting>> textProvider(
+            String workspaceId, TextProviderAssistantRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("text-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<TextProviderSetting>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, TextProviderSetting.class),
+                                response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sets the text provider the workspace brings, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to <code>baseUrl</code> with <code>apiKey</code>, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with <code>POST .../text-provider/test</code>. Needs assistant:configure, which no OAuth client holds but Peal's command line.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProvider>> setTextProvider(
+            String workspaceId, TextProviderChange request) {
+        return setTextProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Sets the text provider the workspace brings, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to <code>baseUrl</code> with <code>apiKey</code>, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with <code>POST .../text-provider/test</code>. Needs assistant:configure, which no OAuth client holds but Peal's command line.
+     */
+    public CompletableFuture<PealClientHttpResponse<TextProvider>> setTextProvider(
+            String workspaceId, TextProviderChange request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("text-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
+                .url(httpUrl.build())
+                .method("PUT", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<TextProvider>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, TextProvider.class), response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 422:
+                                future.completeExceptionally(new UnprocessableEntityError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 503:
+                                future.completeExceptionally(new ServiceUnavailableError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeTextProvider(String workspaceId) {
+        return removeTextProvider(
+                workspaceId, RemoveTextProviderAssistantRequest.builder().build());
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeTextProvider(
+            String workspaceId, RequestOptions requestOptions) {
+        return removeTextProvider(
+                workspaceId, RemoveTextProviderAssistantRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeTextProvider(
+            String workspaceId, RemoveTextProviderAssistantRequest request) {
+        return removeTextProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> removeTextProvider(
+            String workspaceId, RemoveTextProviderAssistantRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("text-provider");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "DELETE",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null, null))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<Void>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(null, response));
+                        return;
+                    }
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> testTextProvider(String workspaceId) {
+        return testTextProvider(
+                workspaceId, TestTextProviderAssistantRequest.builder().build());
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> testTextProvider(
+            String workspaceId, RequestOptions requestOptions) {
+        return testTextProvider(
+                workspaceId, TestTextProviderAssistantRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> testTextProvider(
+            String workspaceId, TestTextProviderAssistantRequest request) {
+        return testTextProvider(workspaceId, request, null);
+    }
+
+    /**
+     * Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+     */
+    public CompletableFuture<PealClientHttpResponse<Void>> testTextProvider(
+            String workspaceId, TestTextProviderAssistantRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant/text-provider")
+                .addPathSegments("test");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "POST",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null,
+                                RequestBody.create("", null)))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        CompletableFuture<PealClientHttpResponse<Void>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(null, response));
+                        return;
+                    }
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 502:
+                                future.completeExceptionally(new BadGatewayError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;

@@ -29,6 +29,9 @@ public record AssistantStatus : IJsonOnDeserialized
     [JsonPropertyName("resetsAt")]
     public required string ResetsAt { get; set; }
 
+    [JsonPropertyName("source")]
+    public AssistantTextSource? Source { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

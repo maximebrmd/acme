@@ -113,7 +113,6 @@ if typing.TYPE_CHECKING:
     from .assistant_action_write import AssistantActionWrite
     from .assistant_failed_encoded import AssistantFailedEncoded
     from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
-    from .assistant_failed_encoded_tag import AssistantFailedEncodedTag
     from .assistant_image_source import AssistantImageSource
     from .assistant_images_status import AssistantImagesStatus
     from .assistant_input_rejected_encoded import AssistantInputRejectedEncoded
@@ -123,6 +122,7 @@ if typing.TYPE_CHECKING:
     from .assistant_secrets_not_configured_encoded import AssistantSecretsNotConfiguredEncoded
     from .assistant_secrets_not_configured_encoded_tag import AssistantSecretsNotConfiguredEncodedTag
     from .assistant_status import AssistantStatus
+    from .assistant_text_source import AssistantTextSource
     from .assistant_tone import AssistantTone
     from .assistant_unavailable_encoded import AssistantUnavailableEncoded
     from .assistant_unavailable_encoded_tag import AssistantUnavailableEncodedTag
@@ -131,7 +131,7 @@ if typing.TYPE_CHECKING:
     from .bad_gateway_error_body import (
         BadGatewayErrorBody,
         BadGatewayErrorBody_AssistantFailed,
-        BadGatewayErrorBody_ImageProviderRefused,
+        BadGatewayErrorBody_TextProviderRefused,
     )
     from .bad_request_error_body import (
         BadRequestErrorBody,
@@ -593,6 +593,7 @@ if typing.TYPE_CHECKING:
     from .overview_posts import OverviewPosts
     from .overview_refusal import OverviewRefusal
     from .own_image_limit_reached_encoded import OwnImageLimitReachedEncoded
+    from .own_text_limit_reached_encoded import OwnTextLimitReachedEncoded
     from .paid_plan import PaidPlan
     from .paid_totals import PaidTotals
     from .part_preview import PartPreview
@@ -825,6 +826,15 @@ if typing.TYPE_CHECKING:
     from .text_count import TextCount
     from .text_limit import TextLimit
     from .text_override import TextOverride
+    from .text_provider import TextProvider
+    from .text_provider_address_refused_encoded import TextProviderAddressRefusedEncoded
+    from .text_provider_busy_encoded import TextProviderBusyEncoded
+    from .text_provider_key_required_encoded import TextProviderKeyRequiredEncoded
+    from .text_provider_kind import TextProviderKind
+    from .text_provider_not_found_encoded import TextProviderNotFoundEncoded
+    from .text_provider_refused_encoded import TextProviderRefusedEncoded
+    from .text_provider_refused_encoded_reason import TextProviderRefusedEncodedReason
+    from .text_provider_setting import TextProviderSetting
     from .text_unit import TextUnit
     from .threads_options import ThreadsOptions
     from .threads_reply_control import ThreadsReplyControl
@@ -1041,7 +1051,6 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantAction_Write": ".assistant_action",
     "AssistantFailedEncoded": ".assistant_failed_encoded",
     "AssistantFailedEncodedReason": ".assistant_failed_encoded_reason",
-    "AssistantFailedEncodedTag": ".assistant_failed_encoded_tag",
     "AssistantImageSource": ".assistant_image_source",
     "AssistantImagesStatus": ".assistant_images_status",
     "AssistantInputRejectedEncoded": ".assistant_input_rejected_encoded",
@@ -1051,6 +1060,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantSecretsNotConfiguredEncoded": ".assistant_secrets_not_configured_encoded",
     "AssistantSecretsNotConfiguredEncodedTag": ".assistant_secrets_not_configured_encoded_tag",
     "AssistantStatus": ".assistant_status",
+    "AssistantTextSource": ".assistant_text_source",
     "AssistantTone": ".assistant_tone",
     "AssistantUnavailableEncoded": ".assistant_unavailable_encoded",
     "AssistantUnavailableEncodedTag": ".assistant_unavailable_encoded_tag",
@@ -1058,7 +1068,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Authorization": ".authorization",
     "BadGatewayErrorBody": ".bad_gateway_error_body",
     "BadGatewayErrorBody_AssistantFailed": ".bad_gateway_error_body",
-    "BadGatewayErrorBody_ImageProviderRefused": ".bad_gateway_error_body",
+    "BadGatewayErrorBody_TextProviderRefused": ".bad_gateway_error_body",
     "BadRequestErrorBody": ".bad_request_error_body",
     "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
     "BadRequestErrorBody_InvalidDateRange": ".bad_request_error_body",
@@ -1507,6 +1517,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "OverviewPosts": ".overview_posts",
     "OverviewRefusal": ".overview_refusal",
     "OwnImageLimitReachedEncoded": ".own_image_limit_reached_encoded",
+    "OwnTextLimitReachedEncoded": ".own_text_limit_reached_encoded",
     "PaidPlan": ".paid_plan",
     "PaidTotals": ".paid_totals",
     "PartPreview": ".part_preview",
@@ -1740,6 +1751,15 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TextCount": ".text_count",
     "TextLimit": ".text_limit",
     "TextOverride": ".text_override",
+    "TextProvider": ".text_provider",
+    "TextProviderAddressRefusedEncoded": ".text_provider_address_refused_encoded",
+    "TextProviderBusyEncoded": ".text_provider_busy_encoded",
+    "TextProviderKeyRequiredEncoded": ".text_provider_key_required_encoded",
+    "TextProviderKind": ".text_provider_kind",
+    "TextProviderNotFoundEncoded": ".text_provider_not_found_encoded",
+    "TextProviderRefusedEncoded": ".text_provider_refused_encoded",
+    "TextProviderRefusedEncodedReason": ".text_provider_refused_encoded_reason",
+    "TextProviderSetting": ".text_provider_setting",
     "TextUnit": ".text_unit",
     "ThreadsOptions": ".threads_options",
     "ThreadsReplyControl": ".threads_reply_control",
@@ -1980,7 +2000,6 @@ __all__ = [
     "AssistantAction_Write",
     "AssistantFailedEncoded",
     "AssistantFailedEncodedReason",
-    "AssistantFailedEncodedTag",
     "AssistantImageSource",
     "AssistantImagesStatus",
     "AssistantInputRejectedEncoded",
@@ -1990,6 +2009,7 @@ __all__ = [
     "AssistantSecretsNotConfiguredEncoded",
     "AssistantSecretsNotConfiguredEncodedTag",
     "AssistantStatus",
+    "AssistantTextSource",
     "AssistantTone",
     "AssistantUnavailableEncoded",
     "AssistantUnavailableEncodedTag",
@@ -1997,7 +2017,7 @@ __all__ = [
     "Authorization",
     "BadGatewayErrorBody",
     "BadGatewayErrorBody_AssistantFailed",
-    "BadGatewayErrorBody_ImageProviderRefused",
+    "BadGatewayErrorBody_TextProviderRefused",
     "BadRequestErrorBody",
     "BadRequestErrorBody_BadRequest",
     "BadRequestErrorBody_InvalidDateRange",
@@ -2446,6 +2466,7 @@ __all__ = [
     "OverviewPosts",
     "OverviewRefusal",
     "OwnImageLimitReachedEncoded",
+    "OwnTextLimitReachedEncoded",
     "PaidPlan",
     "PaidTotals",
     "PartPreview",
@@ -2679,6 +2700,15 @@ __all__ = [
     "TextCount",
     "TextLimit",
     "TextOverride",
+    "TextProvider",
+    "TextProviderAddressRefusedEncoded",
+    "TextProviderBusyEncoded",
+    "TextProviderKeyRequiredEncoded",
+    "TextProviderKind",
+    "TextProviderNotFoundEncoded",
+    "TextProviderRefusedEncoded",
+    "TextProviderRefusedEncodedReason",
+    "TextProviderSetting",
     "TextUnit",
     "ThreadsOptions",
     "ThreadsReplyControl",

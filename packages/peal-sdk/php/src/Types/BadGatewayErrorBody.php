@@ -9,8 +9,8 @@ class BadGatewayErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'AssistantFailed'
-     *   |'ImageProviderRefused'
+     *    'TextProviderRefused'
+     *   |'AssistantFailed'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class BadGatewayErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    AssistantFailedEncoded
-     *   |ImageProviderRefusedEncoded
+     *    TextProviderRefusedEncoded
+     *   |AssistantFailedEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class BadGatewayErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'AssistantFailed'
-     *   |'ImageProviderRefused'
+     *    'TextProviderRefused'
+     *   |'AssistantFailed'
      *   |'_unknown'
      * ),
      *   value: (
-     *    AssistantFailedEncoded
-     *   |ImageProviderRefusedEncoded
+     *    TextProviderRefusedEncoded
+     *   |AssistantFailedEncoded
      *   |mixed
      * ),
      * } $values
@@ -44,6 +44,18 @@ class BadGatewayErrorBody extends JsonSerializableType
     ) {
         $this->type = $values['type'];
         $this->value = $values['value'];
+    }
+
+    /**
+     * @param TextProviderRefusedEncoded $textProviderRefused
+     * @return BadGatewayErrorBody
+     */
+    public static function textProviderRefused(TextProviderRefusedEncoded $textProviderRefused): BadGatewayErrorBody
+    {
+        return new BadGatewayErrorBody([
+            'type' => 'TextProviderRefused',
+            'value' => $textProviderRefused,
+        ]);
     }
 
     /**
@@ -59,15 +71,25 @@ class BadGatewayErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ImageProviderRefusedEncoded $imageProviderRefused
-     * @return BadGatewayErrorBody
+     * @return bool
      */
-    public static function imageProviderRefused(ImageProviderRefusedEncoded $imageProviderRefused): BadGatewayErrorBody
+    public function isTextProviderRefused(): bool
     {
-        return new BadGatewayErrorBody([
-            'type' => 'ImageProviderRefused',
-            'value' => $imageProviderRefused,
-        ]);
+        return $this->value instanceof TextProviderRefusedEncoded && $this->type === 'TextProviderRefused';
+    }
+
+    /**
+     * @return TextProviderRefusedEncoded
+     */
+    public function asTextProviderRefused(): TextProviderRefusedEncoded
+    {
+        if (!($this->value instanceof TextProviderRefusedEncoded && $this->type === 'TextProviderRefused')) {
+            throw new Exception(
+                "Expected TextProviderRefused; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
     }
 
     /**
@@ -86,28 +108,6 @@ class BadGatewayErrorBody extends JsonSerializableType
         if (!($this->value instanceof AssistantFailedEncoded && $this->type === 'AssistantFailed')) {
             throw new Exception(
                 "Expected AssistantFailed; got " . $this->type . " with value of type " . get_debug_type($this->value),
-            );
-        }
-
-        return $this->value;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isImageProviderRefused(): bool
-    {
-        return $this->value instanceof ImageProviderRefusedEncoded && $this->type === 'ImageProviderRefused';
-    }
-
-    /**
-     * @return ImageProviderRefusedEncoded
-     */
-    public function asImageProviderRefused(): ImageProviderRefusedEncoded
-    {
-        if (!($this->value instanceof ImageProviderRefusedEncoded && $this->type === 'ImageProviderRefused')) {
-            throw new Exception(
-                "Expected ImageProviderRefused; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class BadGatewayErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'AssistantFailed':
-                $value = $this->asAssistantFailed()->jsonSerialize();
+            case 'TextProviderRefused':
+                $value = $this->asTextProviderRefused()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'ImageProviderRefused':
-                $value = $this->asImageProviderRefused()->jsonSerialize();
+            case 'AssistantFailed':
+                $value = $this->asAssistantFailed()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class BadGatewayErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
+            case 'TextProviderRefused':
+                $args['value'] = TextProviderRefusedEncoded::jsonDeserialize($data);
+                break;
             case 'AssistantFailed':
                 $args['value'] = AssistantFailedEncoded::jsonDeserialize($data);
-                break;
-            case 'ImageProviderRefused':
-                $args['value'] = ImageProviderRefusedEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

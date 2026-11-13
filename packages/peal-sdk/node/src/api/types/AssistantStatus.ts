@@ -9,4 +9,5 @@ export interface AssistantStatus {
     maxTextLength: number;
     remaining: number;
     resetsAt: string;
+    source: Peal.AssistantTextSource | null;
 }

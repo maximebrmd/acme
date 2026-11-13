@@ -106,6 +106,18 @@ export const personOnlyPermissions: ReadonlySet<Permission> = new Set([
 ]);
 
 /**
+ * What an OAuth client does only when it is Peal's own command line
+ * (`isCommandLine`), which the user signed in at their terminal: choosing
+ * where the workspace's drafts and prompts go, and with whose key. Another
+ * application holding `workspace:write`, an MCP client included, would
+ * point them at a server of its own, and they would keep going there once
+ * its grant is revoked. API keys and partner keys given it keep it.
+ */
+export const commandLineOnlyPermissions: ReadonlySet<Permission> = new Set([
+  "assistant:configure",
+]);
+
+/**
  * Every scope an OAuth client needs for a permission its user holds: one
  * for most, and `workspace:ads` too for what reaches an ad network, so
  * that spending takes `workspace:publish` and `workspace:ads` together.
@@ -144,8 +156,10 @@ export const scopeFor = (permission: Permission): WorkspaceScope => {
  * none outside the workspace it is bound to, and none without a scope that
  * lets it in (reading, writing or publishing); reading with any of them,
  * what puts posts out with `workspace:publish` only, what reaches an ad
- * network with `workspace:ads` too, the rest with `workspace:write`, and
- * never what is the person's alone (`personOnlyPermissions`).
+ * network with `workspace:ads` too, the rest with `workspace:write`,
+ * never what is the person's alone (`personOnlyPermissions`), and what
+ * only Peal's command line does (`commandLineOnlyPermissions`) to no other
+ * client.
  */
 export const grantedPermissions = (
   grant: OAuthGrant,
@@ -160,10 +174,13 @@ export const grantedPermissions = (
     return [];
   }
 
+  const commandLine = isCommandLine(grant);
+
   return permissions.filter(
     (permission) =>
       reads(permission) ||
       (!personOnlyPermissions.has(permission) &&
+        (commandLine || !commandLineOnlyPermissions.has(permission)) &&
         scopesFor(permission).every((scope) => grant.scopes.includes(scope)))
   );
 };

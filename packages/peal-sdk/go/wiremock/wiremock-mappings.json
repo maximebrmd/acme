@@ -2343,7 +2343,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1,\n    \"source\": \"workspace\"\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
+        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1,\n    \"source\": \"workspace\"\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\",\n  \"source\": \"workspace\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2529,6 +2529,150 @@
         }
       },
       "uuid": "c916cec5-7b48-436e-8490-68e997ffb9b7",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "91184324-8acb-4875-9474-1d1c997ed7a0",
+      "name": "Get the workspace's text provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/text-provider",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"provider\": {\n    \"baseUrl\": \"baseUrl\",\n    \"keySet\": true,\n    \"keyUnreadable\": true,\n    \"kind\": \"anthropic\",\n    \"model\": \"model\",\n    \"updatedAt\": \"updatedAt\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "91184324-8acb-4875-9474-1d1c997ed7a0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "465b0311-e6bc-4fe2-836c-25d98e85738c",
+      "name": "Set the workspace's text provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/text-provider",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"baseUrl\": \"baseUrl\",\n  \"keySet\": true,\n  \"keyUnreadable\": true,\n  \"kind\": \"anthropic\",\n  \"model\": \"model\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "465b0311-e6bc-4fe2-836c-25d98e85738c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "42d4b259-8953-4b4a-a976-55877103a76a",
+      "name": "Remove the workspace's text provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/text-provider",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "42d4b259-8953-4b4a-a976-55877103a76a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "141965dd-bb0c-49ee-9da0-2d2090dc0bba",
+      "name": "Test the workspace's text provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/text-provider/test",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "141965dd-bb0c-49ee-9da0-2d2090dc0bba",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -7568,6 +7712,6 @@
     }
   ],
   "meta": {
-    "total": 202
+    "total": 206
   }
 }

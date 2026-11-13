@@ -1,6 +1,12 @@
 import { Effect, Result } from "effect";
 import type { Duration, Stream } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientError,
+  HttpClientRequest,
+} from "effect/http";
+import type { HttpClientResponse } from "effect/http";
 
 import { OutboundGuard } from "./outbound-guard.ts";
 
@@ -146,20 +152,16 @@ export const streamedBody =
       )
     );
 
-/**
- * The public HTTP client (see `publicHttpClient`), with requests timing out
- * after `timeout`: for uploads of images and videos, which take longer than
- * the default allows. With `maxResponseBytes`, answers are cut off past
- * that many bytes rather than past a megabyte: for a file a member asked
- * Peal to fetch, whose caller counts the bytes it takes. With `overflow`
- * `truncate`, a longer answer ends there instead of failing.
- */
-export const publicHttpClientWith = (options: {
+/** What the public HTTP client is built with. */
+export interface PublicHttpOptions {
   readonly maxResponseBytes?: number;
   readonly overflow?: Overflow;
   readonly timeout: Duration.Input;
-}) =>
-  Effect.gen(function* publicHttpClient() {
+}
+
+// The client and the guard, and the fetch that bounds answers as asked.
+const publicParts = (options: PublicHttpOptions) =>
+  Effect.gen(function* makePublicParts() {
     const client = yield* HttpClient.HttpClient;
     const guard = yield* OutboundGuard;
 
@@ -168,19 +170,77 @@ export const publicHttpClientWith = (options: {
         ? boundedFetch
         : fetchBoundedTo(options.maxResponseBytes, options.overflow);
 
+    // What every request goes out with: no redirect followed, the answer
+    // bounded, no trace context.
+    const sent = <E, R>(
+      response: Effect.Effect<HttpClientResponse.HttpClientResponse, E, R>
+    ) =>
+      response.pipe(
+        Effect.provideService(FetchHttpClient.RequestInit, noRedirects),
+        Effect.provideService(FetchHttpClient.Fetch, fetch),
+        Effect.provideService(HttpClient.TracerPropagationEnabled, false)
+      );
+
+    return { client, guard, sent };
+  });
+
+/**
+ * The public HTTP client (see `publicHttpClient`), with requests timing out
+ * after `timeout`: for uploads of images and videos, which take longer than
+ * the default allows. With `maxResponseBytes`, answers are cut off past
+ * that many bytes rather than past a megabyte: for a file a member asked
+ * Peal to fetch, whose caller counts the bytes it takes. With `overflow`
+ * `truncate`, a longer answer ends there instead of failing.
+ */
+export const publicHttpClientWith = (options: PublicHttpOptions) =>
+  Effect.gen(function* publicHttpClient() {
+    const { client, guard, sent } = yield* publicParts(options);
+
+    // The guard checks the request as it is sent, once every mapping is
+    // done: a library that prepends its base address over this client has
+    // its address checked too.
     return client.pipe(
-      HttpClient.mapRequestEffect((request) =>
-        guard.check(new URL(request.url)).pipe(Effect.as(request))
+      HttpClient.transform((response, request) =>
+        sent(guard.check(new URL(request.url)).pipe(Effect.andThen(response)))
       ),
-      HttpClient.transform((response) =>
-        response.pipe(
-          Effect.provideService(FetchHttpClient.RequestInit, noRedirects),
-          Effect.provideService(FetchHttpClient.Fetch, fetch),
-          Effect.provideService(HttpClient.TracerPropagationEnabled, false)
+      HttpClient.timeout(options.timeout)
+    );
+  });
+
+/**
+ * The public HTTP client with the same rules, for a client library that
+ * takes an `HttpClient` failing with HttpClientError alone, and prepends
+ * its own base address over it (as the AI provider packages do): a
+ * request the guard refuses fails as a transport error, whose cause is the
+ * OutboundRequestRefused. Check the address with the guard first to tell
+ * the refusal apart.
+ */
+export const publicLibraryHttpClientWith = (options: PublicHttpOptions) =>
+  Effect.gen(function* publicLibraryHttpClient() {
+    const { client, guard, sent } = yield* publicParts(options);
+
+    const checked: HttpClient.HttpClient = client.pipe(
+      HttpClient.transform((response, request) =>
+        sent(
+          guard.check(new URL(request.url)).pipe(
+            Effect.mapError(
+              (cause) =>
+                new HttpClientError.HttpClientError({
+                  reason: new HttpClientError.TransportError({
+                    cause,
+                    description: "The outbound guard refused the request",
+                    request,
+                  }),
+                })
+            ),
+            Effect.andThen(response)
+          )
         )
       ),
       HttpClient.timeout(options.timeout)
     );
+
+    return checked;
   });
 
 /**

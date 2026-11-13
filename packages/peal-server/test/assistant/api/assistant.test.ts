@@ -81,6 +81,7 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
           maxTextLength: 5000,
           remaining: 2,
           resetsAt: "1970-01-02T00:00:00.000Z",
+          source: "server",
         }
       );
 

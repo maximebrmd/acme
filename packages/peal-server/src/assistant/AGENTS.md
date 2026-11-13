@@ -93,7 +93,9 @@
   (`ImageProviderKeyRequired` otherwise); without a keyring nothing is stored
   (`ProviderSecretsNotConfigured`, 503). `assistant:configure` (owners,
   admins, keys and partner keys given it; withheld from staff
-  impersonating) reads, sets and removes it; no MCP tool does. Staff
+  impersonating, and from every OAuth client but Peal's command line:
+  `commandLineOnlyPermissions`) reads, sets and removes it; no MCP tool
+  does. Staff
   impersonating a member make no image with it either: the workspace's
   account pays.
 - With a provider, `generateImage` asks `OwnImageModel` only
@@ -116,3 +118,35 @@
   model and the date (`UsageRecords.exportImageProvider`), never the key;
   erasing a workspace deletes the row. The row names no member: the
   activity log keeps who saved it.
+- A workspace may bring its own text provider too (`TextProviders`,
+  `assistant.text_providers`, one row a workspace, `kind` `anthropic` or
+  `openai-compatible`): the image provider's address, model and key rules,
+  its key sealed through `ProviderSecrets` for `text`
+  (`assistant:text:<workspace>:<address>`, so neither provider's key opens
+  as the other's). Same permission (`assistant:configure`), same keeping of
+  the key on save (`TextProviderKeyRequired`), no MCP tool.
+- With one, `suggest` asks `OwnWritingModel` only (`own-writing-model.ts`):
+  the server's own provider packages (`languageModelOf`) on
+  `publicLibraryHttpClientWith`, the address checked by the guard before
+  the call (a refusal is `TextProviderRefused` `addressRefused`) and on
+  every request as it is sent; 401 to 404 `settingsRefused`, 3xx
+  `redirected`, the rest `WritingFailed` as for the server's model. Never
+  the server's `WritingModel`, not even when it fails, nor with a key that
+  no longer opens (`keyUnreadable`); staff impersonating are refused.
+  Each takes one of the `ownTextAtOnce` slots first (four a workspace,
+  32 a server, `TextSlots`, apart from the server's model; past them
+  `OwnTextBusy`, 429 `TextProviderBusy`, counted nothing), and answers are
+  read up to 256 KiB (`maxAnswerBytes`).
+  Every request counts in `ownTextRequestsPerDay` (500) a workspace and
+  UTC day, whatever it ends with (`OwnTextCounts`,
+  `assistant.own_text_days`; `OwnTextExhausted`, 429), and nothing of
+  `AssistantAllowance` or `AssistantUsage` is read or counted, on any plan:
+  that is how a workspace without Peal-paid AI uses the assistant. Its logs
+  and span say `workspace` and the API kind, never the host, the model,
+  the draft or the key. The status answers `source` (`workspace`, `server`
+  or null), and `available` is true whenever someone writes.
+- `testTextProvider` sends the saved provider one fixed rewrite, read as a
+  member's would be, and counts as one of its day's requests;
+  `TextProviderNotSet` (404) without one. Exports give the kind, address,
+  model and date (`exportTextProvider`) and the day's counts
+  (`exportOwnText`), never the key; erasing a workspace deletes both.

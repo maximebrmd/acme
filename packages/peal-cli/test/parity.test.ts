@@ -84,13 +84,17 @@ const coverage = {
   "assistant.generateImage": by("media generate"),
   "assistant.imageProvider": by("assistant image-provider show"),
   "assistant.removeImageProvider": by("assistant image-provider clear"),
+  "assistant.removeTextProvider": by("assistant text-provider clear"),
   "assistant.setImageProvider": by("assistant image-provider set"),
+  "assistant.setTextProvider": by("assistant text-provider set"),
   "assistant.status": exempt(
     "The writing assistant serves the web app's composer; an agent writes its own text."
   ),
   "assistant.suggest": exempt(
     "The writing assistant serves the web app's composer; an agent writes its own text."
   ),
+  "assistant.testTextProvider": by("assistant text-provider test"),
+  "assistant.textProvider": by("assistant text-provider show"),
   "billing.get": by("billing"),
   "billing.standing": by("billing"),
   "capabilities.channel": by("channels capabilities"),

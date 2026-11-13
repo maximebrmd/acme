@@ -13,9 +13,12 @@ import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { ProviderAddressSchema } from "#assistant/domain/image-provider.ts";
 import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider-secrets.ts";
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
+import { CountedTextSlots } from "#assistant/infrastructure/counted-text-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
 import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-image-providers.ts";
 import { DrizzleOwnImageCountsLive } from "#assistant/infrastructure/drizzle-own-image-counts.ts";
+import { DrizzleOwnTextCountsLive } from "#assistant/infrastructure/drizzle-own-text-counts.ts";
+import { DrizzleTextProvidersLive } from "#assistant/infrastructure/drizzle-text-providers.ts";
 import { GuardedProviderAddressCheck } from "#assistant/infrastructure/guarded-provider-address-check.ts";
 import { languageModelWritingModel } from "#assistant/infrastructure/language-model-writing-model.ts";
 import { LibraryGeneratedImagesLive } from "#assistant/infrastructure/library-generated-images.ts";
@@ -35,6 +38,7 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { FakeImageModelLive } from "#test/assistant/fake-image-model.ts";
 import { FakeOwnImageModelLive } from "#test/assistant/fake-own-image-model.ts";
+import { FakeOwnWritingModelLive } from "#test/assistant/fake-own-writing-model.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import { OpenOutboundGuard, TokenCipherTest } from "#test/channels/support.ts";
 import { mediaTestWith } from "#test/media/support.ts";
@@ -193,14 +197,25 @@ export const providerHosts = {
  * checked by the real outbound guard on `providerHosts`; and a fake
  * provider behind them (FakeOwnImageModel), which no request leaves.
  */
-const SealedImageProviders = DrizzleImageProvidersLive.pipe(
+const SealedImageProviders = Layer.mergeAll(
+  DrizzleImageProvidersLive,
+  DrizzleTextProvidersLive
+).pipe(
   Layer.provide(CipherProviderSecrets.pipe(Layer.provide(TokenCipherTest))),
   Layer.orDie
 );
 
+/**
+ * The image and text providers workspaces brought, as the server keeps
+ * them, with a fake behind each (FakeOwnImageModel, FakeOwnWritingModel),
+ * which no request leaves.
+ */
 export const ImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
   DrizzleOwnImageCountsLive,
+  DrizzleOwnTextCountsLive,
+  CountedTextSlots,
+  FakeOwnWritingModelLive,
   GuardedProviderAddressCheck.pipe(
     Layer.provide(
       OutboundGuard.layer.pipe(
@@ -232,6 +247,9 @@ const AnyProviderAddress = Layer.succeed(
 export const LoopbackImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
   DrizzleOwnImageCountsLive,
+  DrizzleOwnTextCountsLive,
+  CountedTextSlots,
+  FakeOwnWritingModelLive,
   AnyProviderAddress,
   openAiCompatibleOwnImageModel({ timeout: "10 seconds" }).pipe(
     Layer.provide(OpenOutboundGuard),
@@ -310,6 +328,12 @@ export const freshWorkspace = Effect.gen(function* freshWorkspace() {
       Effect.andThen(
         sql`DELETE FROM assistant.own_image_days WHERE workspace_id = ${workspaceId}`
       ),
+      Effect.andThen(
+        sql`DELETE FROM assistant.text_providers WHERE workspace_id = ${workspaceId}`
+      ),
+      Effect.andThen(
+        sql`DELETE FROM assistant.own_text_days WHERE workspace_id = ${workspaceId}`
+      ),
       Effect.ignore
     )
   );
@@ -339,6 +363,10 @@ export const messagesOf = (prompt: Prompt.Prompt | undefined) =>
 export { FakeImageModel } from "#test/assistant/fake-image-model.ts";
 
 export { FakeOwnImageModel } from "#test/assistant/fake-own-image-model.ts";
+
+export { FakeOwnWritingModel } from "#test/assistant/fake-own-writing-model.ts";
+
+export type { OwnTextReply } from "#test/assistant/fake-own-writing-model.ts";
 
 export type { OwnImageReply } from "#test/assistant/fake-own-image-model.ts";
 

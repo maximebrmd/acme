@@ -27,6 +27,15 @@ type Translate = ReturnType<typeof useTranslations<"Assistant">>;
 
 type Format = ReturnType<typeof useFormatter>;
 
+// The workspace's own text provider's refusals: its settings are to fix,
+// by those who may change them.
+const ownRefusals = {
+  addressRefused: "providerAddress",
+  keyUnreadable: "providerKey",
+  redirected: "providerRedirected",
+  settingsRefused: "providerRefused",
+} as const;
+
 /** What to tell the person about a failed request, in their language. */
 export const failureMessage = (
   t: Translate,
@@ -49,6 +58,10 @@ export const failureMessage = (
       }),
     AssistantUnavailable: () => t("errors.unavailable"),
     Forbidden: () => t("errors.forbidden"),
+    OwnTextLimitReached: ({ dailyLimit }) =>
+      t("errors.ownLimit", { dailyLimit }),
+    TextProviderBusy: () => t("errors.ownBusy"),
+    TextProviderRefused: ({ reason }) => t(`errors.${ownRefusals[reason]}`),
     TooManyRequests: () => t("errors.generic"),
     Unauthenticated: () => t("errors.generic"),
     Unexpected: () => t("errors.generic"),

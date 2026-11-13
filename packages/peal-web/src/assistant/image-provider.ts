@@ -38,7 +38,7 @@ const addressOf = (text: string): string | null =>
  */
 export const keyNeeded = (
   draft: ImageProviderDraft,
-  saved: ImageProvider | null
+  saved: Pick<ImageProvider, "baseUrl" | "keyUnreadable"> | null
 ): "keyAgain" | "keyUnreadable" | "noKey" | null => {
   if (saved === null) {
     return "noKey";

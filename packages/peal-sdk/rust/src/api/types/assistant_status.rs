@@ -17,6 +17,8 @@ pub struct AssistantStatus {
     #[serde(rename = "resetsAt")]
     #[serde(default)]
     pub resets_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<AssistantTextSource>,
 }
 
 impl AssistantStatus {
@@ -34,6 +36,7 @@ pub struct AssistantStatusBuilder {
     max_text_length: Option<i64>,
     remaining: Option<i64>,
     resets_at: Option<String>,
+    source: Option<AssistantTextSource>,
 }
 
 impl AssistantStatusBuilder {
@@ -67,6 +70,11 @@ impl AssistantStatusBuilder {
         self
     }
 
+    pub fn source(mut self, value: AssistantTextSource) -> Self {
+        self.source = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`AssistantStatus`].
     /// This method will fail if any of the following fields are not set:
     /// - [`available`](AssistantStatusBuilder::available)
@@ -95,6 +103,7 @@ impl AssistantStatusBuilder {
             resets_at: self
                 .resets_at
                 .ok_or_else(|| BuildError::missing_field("resets_at"))?,
+            source: self.source,
         })
     }
 }

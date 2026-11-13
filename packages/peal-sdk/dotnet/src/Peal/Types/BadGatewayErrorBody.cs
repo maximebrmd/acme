@@ -19,20 +19,20 @@ public record BadGatewayErrorBody
     }
 
     /// <summary>
+    /// Create an instance of BadGatewayErrorBody with <see cref="BadGatewayErrorBody.TextProviderRefused"/>.
+    /// </summary>
+    public BadGatewayErrorBody(BadGatewayErrorBody.TextProviderRefused value)
+    {
+        Type = "TextProviderRefused";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of BadGatewayErrorBody with <see cref="BadGatewayErrorBody.AssistantFailed"/>.
     /// </summary>
     public BadGatewayErrorBody(BadGatewayErrorBody.AssistantFailed value)
     {
         Type = "AssistantFailed";
-        Value = value.Value;
-    }
-
-    /// <summary>
-    /// Create an instance of BadGatewayErrorBody with <see cref="BadGatewayErrorBody.ImageProviderRefused"/>.
-    /// </summary>
-    public BadGatewayErrorBody(BadGatewayErrorBody.ImageProviderRefused value)
-    {
-        Type = "ImageProviderRefused";
         Value = value.Value;
     }
 
@@ -48,14 +48,25 @@ public record BadGatewayErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "TextProviderRefused"
+    /// </summary>
+    public bool IsTextProviderRefused => Type == "TextProviderRefused";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "AssistantFailed"
     /// </summary>
     public bool IsAssistantFailed => Type == "AssistantFailed";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ImageProviderRefused"
+    /// Returns the value as a <see cref="Peal.TextProviderRefusedEncoded"/> if <see cref="Type"/> is 'TextProviderRefused', otherwise throws an exception.
     /// </summary>
-    public bool IsImageProviderRefused => Type == "ImageProviderRefused";
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TextProviderRefused'.</exception>
+    public Peal.TextProviderRefusedEncoded AsTextProviderRefused() =>
+        IsTextProviderRefused
+            ? (Peal.TextProviderRefusedEncoded)Value!
+            : throw new global::System.Exception(
+                "BadGatewayErrorBody.Type is not 'TextProviderRefused'"
+            );
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.AssistantFailedEncoded"/> if <see cref="Type"/> is 'AssistantFailed', otherwise throws an exception.
@@ -68,49 +79,52 @@ public record BadGatewayErrorBody
                 "BadGatewayErrorBody.Type is not 'AssistantFailed'"
             );
 
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.ImageProviderRefusedEncoded"/> if <see cref="Type"/> is 'ImageProviderRefused', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ImageProviderRefused'.</exception>
-    public Peal.ImageProviderRefusedEncoded AsImageProviderRefused() =>
-        IsImageProviderRefused
-            ? (Peal.ImageProviderRefusedEncoded)Value!
-            : throw new global::System.Exception(
-                "BadGatewayErrorBody.Type is not 'ImageProviderRefused'"
-            );
-
     public T Match<T>(
+        Func<Peal.TextProviderRefusedEncoded, T> onTextProviderRefused,
         Func<Peal.AssistantFailedEncoded, T> onAssistantFailed,
-        Func<Peal.ImageProviderRefusedEncoded, T> onImageProviderRefused,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
+            "TextProviderRefused" => onTextProviderRefused(AsTextProviderRefused()),
             "AssistantFailed" => onAssistantFailed(AsAssistantFailed()),
-            "ImageProviderRefused" => onImageProviderRefused(AsImageProviderRefused()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
+        Action<Peal.TextProviderRefusedEncoded> onTextProviderRefused,
         Action<Peal.AssistantFailedEncoded> onAssistantFailed,
-        Action<Peal.ImageProviderRefusedEncoded> onImageProviderRefused,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
+            case "TextProviderRefused":
+                onTextProviderRefused(AsTextProviderRefused());
+                break;
             case "AssistantFailed":
                 onAssistantFailed(AsAssistantFailed());
-                break;
-            case "ImageProviderRefused":
-                onImageProviderRefused(AsImageProviderRefused());
                 break;
             default:
                 onUnknown_(Type, Value);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.TextProviderRefusedEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsTextProviderRefused(out Peal.TextProviderRefusedEncoded? value)
+    {
+        if (Type == "TextProviderRefused")
+        {
+            value = (Peal.TextProviderRefusedEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
     }
 
     /// <summary>
@@ -127,28 +141,14 @@ public record BadGatewayErrorBody
         return false;
     }
 
-    /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ImageProviderRefusedEncoded"/> and returns true if successful.
-    /// </summary>
-    public bool TryAsImageProviderRefused(out Peal.ImageProviderRefusedEncoded? value)
-    {
-        if (Type == "ImageProviderRefused")
-        {
-            value = (Peal.ImageProviderRefusedEncoded)Value!;
-            return true;
-        }
-        value = null;
-        return false;
-    }
-
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator BadGatewayErrorBody(
-        BadGatewayErrorBody.AssistantFailed value
+        BadGatewayErrorBody.TextProviderRefused value
     ) => new(value);
 
     public static implicit operator BadGatewayErrorBody(
-        BadGatewayErrorBody.ImageProviderRefused value
+        BadGatewayErrorBody.AssistantFailed value
     ) => new(value);
 
     [Serializable]
@@ -192,12 +192,15 @@ public record BadGatewayErrorBody
 
             var value = discriminator switch
             {
-                "AssistantFailed" => json.Deserialize<Peal.AssistantFailedEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.AssistantFailedEncoded"),
-                "ImageProviderRefused" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ImageProviderRefusedEncoded?>(options)
+                "TextProviderRefused" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TextProviderRefusedEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.ImageProviderRefusedEncoded"
+                            "Failed to deserialize Peal.TextProviderRefusedEncoded"
+                        ),
+                "AssistantFailed" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.AssistantFailedEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.AssistantFailedEncoded"
                         ),
                 _ => json.Deserialize<object?>(options),
             };
@@ -213,8 +216,8 @@ public record BadGatewayErrorBody
             JsonNode json =
                 value.Type switch
                 {
+                    "TextProviderRefused" => JsonSerializer.SerializeToNode(value.Value, options),
                     "AssistantFailed" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "ImageProviderRefused" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -244,6 +247,26 @@ public record BadGatewayErrorBody
     }
 
     /// <summary>
+    /// Discriminated union type for TextProviderRefused
+    /// </summary>
+    [Serializable]
+    public struct TextProviderRefused
+    {
+        public TextProviderRefused(Peal.TextProviderRefusedEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.TextProviderRefusedEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator BadGatewayErrorBody.TextProviderRefused(
+            Peal.TextProviderRefusedEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
     /// Discriminated union type for AssistantFailed
     /// </summary>
     [Serializable]
@@ -260,26 +283,6 @@ public record BadGatewayErrorBody
 
         public static implicit operator BadGatewayErrorBody.AssistantFailed(
             Peal.AssistantFailedEncoded value
-        ) => new(value);
-    }
-
-    /// <summary>
-    /// Discriminated union type for ImageProviderRefused
-    /// </summary>
-    [Serializable]
-    public struct ImageProviderRefused
-    {
-        public ImageProviderRefused(Peal.ImageProviderRefusedEncoded value)
-        {
-            Value = value;
-        }
-
-        internal Peal.ImageProviderRefusedEncoded Value { get; set; }
-
-        public override string ToString() => Value.ToString() ?? "null";
-
-        public static implicit operator BadGatewayErrorBody.ImageProviderRefused(
-            Peal.ImageProviderRefusedEncoded value
         ) => new(value);
     }
 }

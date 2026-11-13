@@ -1,12 +1,13 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Result } from "effect";
-import { FetchHttpClient } from "effect/http";
+import { Effect, Layer, Option, Predicate, Result } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { Dns } from "effect/net";
 
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import {
   publicFetch,
   publicHttpClient,
+  publicLibraryHttpClientWith,
 } from "#shared/infrastructure/platforms/public-http.ts";
 import { fakeHttpServer, json } from "#test/channels/fakes/fake-http-server.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -106,6 +107,49 @@ layer(ClientTest)("the public HTTP client", (it) => {
       assert.strictEqual(failure._tag, "OutboundRequestRefused");
       assert.lengthOf(local.requests(), 0);
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "checks the address a library prepends on top of it, as it is sent",
+    () =>
+      Effect.gen(function* prepended() {
+        const local = yield* fakeHttpServer(() => ({ status: 200 }));
+
+        // A provider package's client: relative paths, its base prepended
+        // by a mapping of its own over the client it is given.
+        const client = (yield* publicHttpClient).pipe(
+          HttpClient.mapRequest(HttpClientRequest.prependUrl(local.url))
+        );
+
+        const failure = yield* client.get("/v1/messages").pipe(Effect.flip);
+
+        assert.strictEqual(failure._tag, "OutboundRequestRefused");
+        assert.lengthOf(local.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "gives libraries a client whose refusal is a transport error, caused by the guard",
+    () =>
+      Effect.gen(function* library() {
+        const local = yield* fakeHttpServer(() => ({ status: 200 }));
+
+        const client = (yield* publicLibraryHttpClientWith({
+          timeout: "5 seconds",
+        })).pipe(
+          HttpClient.mapRequest(HttpClientRequest.prependUrl(local.url))
+        );
+
+        const failure = yield* client.get("/v1/messages").pipe(Effect.flip);
+
+        assert.strictEqual(failure.reason._tag, "TransportError");
+        assert.strictEqual(
+          failure.reason._tag === "TransportError" &&
+            Predicate.isTagged(failure.reason.cause, "OutboundRequestRefused"),
+          true
+        );
+        assert.lengthOf(local.requests(), 0);
+      }).pipe(Effect.scoped)
   );
 
   it.effect("rejects the fetch it gives libraries, the way fetch fails", () =>

@@ -4,6 +4,7 @@ import { AssistantAllowance } from "#assistant/application/ports/assistant-allow
 import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import { ImageModel } from "#assistant/application/ports/image-model.ts";
 import { ImageProviders } from "#assistant/application/ports/image-providers.ts";
+import { TextProviders } from "#assistant/application/ports/text-providers.ts";
 import { WritingModel } from "#assistant/application/ports/writing-model.ts";
 import { maxDraftLength } from "#assistant/domain/draft.ts";
 import { ImageAspectSchema } from "#assistant/domain/image-aspect.ts";
@@ -14,10 +15,13 @@ import { remainingOf, usageWindowAt } from "#assistant/domain/usage-window.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
- * Who makes the workspace's images: the provider it brought, or the
- * server's model.
+ * Who makes the workspace's images, or writes its text: the provider it
+ * brought, or the server's model.
  */
 export type ImageSource = "server" | "workspace";
+
+/** Who writes the workspace's text: the provider it brought, or the server's model. */
+export type TextSource = ImageSource;
 
 /** Whether the assistant makes images, and on what terms. */
 export interface ImagesStatus {
@@ -45,14 +49,24 @@ export interface ImagesStatus {
 
 /** Whether the assistant is on, and what is left of the workspace's day. */
 export interface AssistantStatus {
-  /** Whether the server has a language model; clients hide the assistant otherwise. */
+  /**
+   * Whether the assistant writes for the workspace: it brought a text
+   * provider, or the server has a language model. Clients hide it
+   * otherwise.
+   */
   readonly available: boolean;
+  /**
+   * The day's requests of Peal's model, and what is left of them: they
+   * bound nothing while the workspace's own provider writes.
+   */
   readonly dailyLimit: number;
   readonly images: ImagesStatus;
   /** The longest text the assistant takes. */
   readonly maxTextLength: number;
   readonly remaining: number;
   readonly resetsAt: DateTime.Utc;
+  /** Who writes, or null when nobody does. */
+  readonly source: TextSource | null;
 }
 
 // The server's model makes the images when the workspace has no provider.
@@ -62,8 +76,18 @@ const serverOrNone = (available: boolean): ImageSource | null =>
 /** Whether the workspace can ask the assistant, and how often today. */
 export const assistantStatus = Effect.fn("WritingAssistant.status")(
   function* assistantStatus(workspaceId: WorkspaceId) {
-    const { available } = yield* WritingModel;
+    const writingModel = yield* WritingModel;
     const imageModel = yield* ImageModel;
+
+    const ownText = yield* TextProviders.use((providers) =>
+      providers.find(workspaceId)
+    );
+
+    // While the workspace has its own text provider, the server's model
+    // writes nothing for it.
+    const textSource: TextSource | null = Option.isSome(ownText)
+      ? "workspace"
+      : serverOrNone(writingModel.available);
 
     const own = yield* ImageProviders.use((providers) =>
       providers.find(workspaceId)
@@ -88,7 +112,7 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
     );
 
     const status: AssistantStatus = {
-      available,
+      available: textSource !== null,
       dailyLimit,
       images: {
         aspects: ImageAspectSchema.literals,
@@ -103,6 +127,7 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
       maxTextLength: maxDraftLength,
       remaining: remainingOf(dailyLimit, used),
       resetsAt: window.resetsAt,
+      source: textSource,
     };
 
     return status;
