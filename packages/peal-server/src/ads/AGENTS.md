@@ -136,11 +136,15 @@ weaken a rule below to make something pass.
   ad it reads `active` or `inReview` once a calendar month (UTC), by the
   workspace that connected it (`ActiveAdMonths`, `ads.active_ad_months`,
   insert-or-nothing with its claim in one transaction, purged with the
-  days of numbers and erased with the workspace). Once the meter refuses
-  (no payment method, the month's allowance used) the ads it could not
-  count are not recorded and their days are not saved; nothing the
-  network runs is touched. `Boosts.request` refuses a new boost then,
-  before anything is reserved (`pausedOf`).
+  days of numbers and erased with the workspace), in one claim a sync, the
+  ads of the account's own running boosts first and always tracked. Once
+  the meter refuses (no payment method, a legacy plan or a payment failing
+  at the month's allowance) the other new ads are not tracked: their days
+  are not saved, while ads already counted keep updating; nothing the
+  network runs is touched. `AdConnections.untrackedUntil` says so on the
+  accounts listed (`newAdsUntrackedUntil`). `Boosts.request` refuses a new
+  boost then, before anything is reserved (`pausedOf`). Where no billing
+  counts (`MeteredUsage.state` answers none), nothing is recorded.
 - `PostBoosts` (`application/post-boosts.ts`) answers how many boosts of a
   published target are not over (requested, active, paused, unconfirmed):
   publishing refuses to delete such a post from its platform

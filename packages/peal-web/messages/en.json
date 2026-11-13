@@ -427,7 +427,8 @@
         "providerKey": "The key of your workspace's image provider can no longer be read. Nothing was spent. An owner or an admin types it again in the assistant settings.",
         "generic": "Something went wrong. Try again.",
         "paymentMethod": "Peal's images need a payment method on the billing account. An image provider of your own makes them without one.",
-        "allowance": "Your billing account used the images it may make this month. Raise its ceiling on the billing page, or ask again next month."
+        "allowance": "Your billing account used the images it may make this month. You can ask again next month.",
+        "paymentFailed": "The billing account's last payment failed: no more images than what is included until it goes through. Update the payment method from the billing page."
       },
       "costMonth": "{remaining, plural, =0 {No images left this month.} one {# image left this month.} other {# images left this month.}}"
     },
@@ -551,7 +552,8 @@
       "providerKey": "The key of your workspace's text provider can no longer be read. Nothing was spent. An owner or an admin types it again in the assistant settings.",
       "generic": "Something went wrong. Try again.",
       "paymentMethod": "Peal's writing assistant needs a payment method on the billing account. A text provider of your own works without one.",
-      "monthUsed": "Your billing account used the {allowed, number} assistant requests it may send this month. Raise its ceiling on the billing page, or ask again from {resetsAt}."
+      "monthUsed": "Your billing account used the {allowed, number} assistant requests it may send this month. You can ask again from {resetsAt}.",
+      "paymentFailed": "The billing account's last payment failed: Peal's assistant takes no more than what is included until it goes through. Update the payment method from the billing page."
     },
     "remainingMonth": "{remaining, plural, =0 {No requests left this month} one {# request left this month} other {# requests left this month}}"
   },
@@ -4017,7 +4019,7 @@
       "actionFailed": "The platform did not do it, and nothing changed: {reason, select, rateLimited {it asked to slow down. Try again in a moment.} platformUnavailable {it could not be reached. Try again later.} reconnectNeeded {it refuses the account’s authorization. Disconnect the channel and connect the account again.} channelUnavailable {the channel was disconnected or turned off.} commentGone {the comment is no longer there.} refused {it refused.} other {{reason}}}",
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
       "unknown": "Something went wrong. Try again.",
-      "messagesUsed": "Your billing account sent the inbox messages it may send this month without a payment method. Add one on the billing page to go on, or wait for the first of next month."
+      "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month."
     }
   },
   "TwoStep": {

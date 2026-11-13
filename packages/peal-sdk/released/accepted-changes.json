@@ -69,5 +69,20 @@
     "change": "A post.cancelled webhook may name one channel taken off a post that still goes out on its others (scope: \"target\"), as well as a cancelled post (scope: \"post\")",
     "kind": "behaviour",
     "reason": "Removing one channel from a scheduled post (DELETE …/posts/{postId}/targets/{targetId}) is told as a post.cancelled naming that channel alone, as a channel cancelled while its post was going out already was. A receiver that marked the whole post cancelled on every post.cancelled reads the new scope field: \"target\" means the post still goes out on its other channels. Events made before the field was sent have none, and are about the post."
+  },
+  {
+    "change": "The SDKs' 402 error (PaymentRequiredError) no longer carries a typed PlanLimitReachedEncoded body on any endpoint: its body is untyped, and PaymentRequiredErrorBody (PlanLimitReachedEncoded or UsageAllowanceReachedEncoded) is the type to read it as; Rust's ApiError::PaymentRequiredError lost its fields (tag, code, request_id, allowed, billing_url, limit, plan, plan_with_room, used)",
+    "kind": "sdk",
+    "reason": "Four endpoints (suggestions, images, an inbox reply, a boost) now answer 402 with two errors, PlanLimitReached and UsageAllowanceReached, and the generator names a single body type for each status, as for 502 before. Nothing changes on the wire: every 402 body still carries its _tag and the same fields, billingUrl included. Code that read PaymentRequiredError.body's fields through its type reads the body's _tag, then the fields, as PaymentRequiredErrorBody. The SDKs are 0.x: this ships in their next minor release, whose notes say so."
+  },
+  {
+    "change": "On a server that bills, POST …/assistant/suggestions and POST …/assistant/images answer 402 UsageAllowanceReached to a billing account without a payment method (paymentMethodRequired), where a daily quota answered before, and past the month's allowance or ceiling to one that pays",
+    "kind": "behaviour",
+    "reason": "The writing assistant on the server's models is a meter of the billing account (wave T, part T7): it needs a payment method, includes a monthly allowance, and bills past it up to a ceiling. A workspace's own text or image provider is not metered; a legacy plan keeps its daily quota; a server that does not bill is unchanged."
+  },
+  {
+    "change": "On a server that bills, POST …/inbox/comments/{commentId}/replies and POST …/ads/boosts may answer 402 UsageAllowanceReached once the billing account used the inbox messages or managed ads its month allows without a payment method, or on a legacy plan, or while its payment fails",
+    "kind": "behaviour",
+    "reason": "Outbound messages and managed ads are meters of the billing account (T7). Reading, publishing and running boosts are never metered; a reply sent again under its Idempotency-Key answers the reply it made."
   }
 ]

@@ -52,7 +52,7 @@ export const fakeMeters = ({
 
       const meters = MeteredUsage.of({
         claim: Effect.fn("FakeMeters.claim")(
-          function* claim(workspaceId, meter, units) {
+          function* claim(workspaceId, meter, units, given) {
             const used = yield* usedOf(meter);
 
             if (Option.isSome(allowed) && used + units > allowed.value) {
@@ -67,7 +67,7 @@ export const fakeMeters = ({
               });
             }
 
-            const at = yield* DateTime.now;
+            const at = given ?? (yield* DateTime.now);
             const made: MeterClaim = { at, meter, units, workspaceId };
 
             yield* Ref.update(ledger, (now) => ({

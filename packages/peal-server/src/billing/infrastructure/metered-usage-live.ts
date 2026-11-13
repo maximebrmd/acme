@@ -200,9 +200,10 @@ const BilledMeteredUsageLive = Layer.effect(
     const claim = Effect.fn("MeteredUsage.claim")(function* claim(
       workspaceId: WorkspaceId,
       meter: Meter,
-      units: number
+      units: number,
+      given?: DateTime.Utc
     ) {
-      const at = yield* DateTime.now;
+      const at = given ?? (yield* DateTime.now);
       const month = meterMonthOf(at);
 
       return yield* transaction(

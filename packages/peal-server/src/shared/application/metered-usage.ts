@@ -79,10 +79,17 @@ export const pausedOf = (state: MeterState): Option.Option<AllowanceReached> =>
 export class MeteredUsage extends Context.Service<
   MeteredUsage,
   {
+    /**
+     * Claims `units` of the meter, in the month and on the day of `at`
+     * (now when not given): a context that gives the units back later
+     * from what it kept passes the instant it keeps, so both count in the
+     * same month.
+     */
     readonly claim: (
       workspaceId: WorkspaceId,
       meter: Meter,
-      units: number
+      units: number,
+      at?: DateTime.Utc
     ) => Effect.Effect<MeterClaim, AllowanceReached | DatabaseError>;
     /**
      * Takes back units that bought nothing (a generation that failed, a
@@ -116,9 +123,14 @@ export class MeteredUsage extends Context.Service<
   static readonly layerUnmetered = Layer.succeed(
     MeteredUsage,
     MeteredUsage.of({
-      claim: (workspaceId, meter, units) =>
-        DateTime.now.pipe(
-          Effect.map((at): MeterClaim => ({ at, meter, units, workspaceId }))
+      claim: (workspaceId, meter, units, at) =>
+        (at === undefined ? DateTime.now : Effect.succeed(at)).pipe(
+          Effect.map((claimed): MeterClaim => ({
+            at: claimed,
+            meter,
+            units,
+            workspaceId,
+          }))
         ),
       forgive: () => Effect.void,
       giveBack: () => Effect.void,

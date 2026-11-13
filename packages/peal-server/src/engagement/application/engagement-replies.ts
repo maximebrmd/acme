@@ -335,7 +335,12 @@ export class EngagementReplies extends Context.Service<
               Effect.tap((made) =>
                 made._tag === "journalled"
                   ? meters
-                      .claim(actor.workspaceId, "outboundMessages", 1)
+                      .claim(
+                        actor.workspaceId,
+                        "outboundMessages",
+                        1,
+                        written.createdAt
+                      )
                       .pipe(Effect.andThen(jobs.start(written.id)))
                   : Effect.void
               )

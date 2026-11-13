@@ -66,8 +66,12 @@ export const failureMessage = (
     Unauthenticated: () => t("errors.generic"),
     Unexpected: () => t("errors.generic"),
     UsageAllowanceReached: ({ allowed, reason, resetsAt }) =>
-      reason === "paymentMethodRequired"
-        ? t("errors.paymentMethod")
+      reason === "paymentMethodRequired" || reason === "paymentFailed"
+        ? t(
+            reason === "paymentFailed"
+              ? "errors.paymentFailed"
+              : "errors.paymentMethod"
+          )
         : t("errors.monthUsed", {
             allowed,
             resetsAt: format.dateTime(DateTime.toDate(resetsAt), {

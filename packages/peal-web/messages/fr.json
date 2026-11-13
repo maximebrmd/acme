@@ -427,7 +427,8 @@
         "providerKey": "La clé du fournisseur d’images de votre espace de travail ne peut plus être lue. Rien n’a été décompté. Un propriétaire ou un administrateur la saisit à nouveau dans les réglages de l’assistant.",
         "generic": "Une erreur est survenue. Réessayez.",
         "paymentMethod": "Les images de Peal demandent un moyen de paiement sur le compte de facturation. Un fournisseur d’images à vous les crée sans.",
-        "allowance": "Votre compte de facturation a utilisé les images qu’il peut créer ce mois-ci. Relevez son plafond sur la page de facturation, ou demandez à nouveau le mois prochain."
+        "allowance": "Votre compte de facturation a utilisé les images qu’il peut créer ce mois-ci. Vous pourrez demander à nouveau le mois prochain.",
+        "paymentFailed": "Le dernier paiement du compte de facturation a échoué : pas plus d’images que l’inclus tant qu’il n’est pas passé. Mettez à jour le moyen de paiement depuis la page de facturation."
       },
       "costMonth": "{remaining, plural, =0 {Plus aucune image ce mois-ci.} one {# image restante ce mois-ci.} other {# images restantes ce mois-ci.}}"
     },
@@ -551,7 +552,8 @@
       "providerKey": "La clé du fournisseur de texte de votre espace de travail ne peut plus être lue. Rien n’a été dépensé. Un propriétaire ou un administrateur la saisit de nouveau dans les réglages de l’assistant.",
       "generic": "Une erreur est survenue. Réessayez.",
       "paymentMethod": "L’assistant de rédaction de Peal demande un moyen de paiement sur le compte de facturation. Un fournisseur de texte à vous fonctionne sans.",
-      "monthUsed": "Votre compte de facturation a utilisé les {allowed, number} demandes à l’assistant qu’il peut envoyer ce mois-ci. Relevez son plafond sur la page de facturation, ou demandez à nouveau à partir du {resetsAt}."
+      "monthUsed": "Votre compte de facturation a utilisé les {allowed, number} demandes à l’assistant qu’il peut envoyer ce mois-ci. Vous pourrez demander à nouveau à partir du {resetsAt}.",
+      "paymentFailed": "Le dernier paiement du compte de facturation a échoué : l’assistant de Peal ne dépasse pas l’inclus tant qu’il n’est pas passé. Mettez à jour le moyen de paiement depuis la page de facturation."
     },
     "remainingMonth": "{remaining, plural, =0 {Plus aucune demande ce mois-ci} one {# demande restante ce mois-ci} other {# demandes restantes ce mois-ci}}"
   },
@@ -4017,7 +4019,7 @@
       "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci sans moyen de paiement. Ajoutez-en un sur la page de facturation pour continuer, ou attendez le premier du mois prochain."
+      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain."
     }
   },
   "TwoStep": {

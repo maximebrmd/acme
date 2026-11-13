@@ -55,6 +55,7 @@ export type ImageFailureKey =
   | "generic"
   | "invalidAnswer"
   | "ownLimit"
+  | "paymentFailed"
   | "paymentMethod"
   | "providerAddress"
   | "providerKey"
@@ -87,8 +88,13 @@ export const imageFailureKey = (failure: ImageFailure): ImageFailureKey =>
     TooManyRequests: (): ImageFailureKey => "generic",
     Unauthenticated: (): ImageFailureKey => "generic",
     Unexpected: (): ImageFailureKey => "generic",
-    UsageAllowanceReached: ({ reason }): ImageFailureKey =>
-      reason === "paymentMethodRequired" ? "paymentMethod" : "allowance",
+    UsageAllowanceReached: ({ reason }): ImageFailureKey => {
+      if (reason === "paymentMethodRequired") {
+        return "paymentMethod";
+      }
+
+      return reason === "paymentFailed" ? "paymentFailed" : "allowance";
+    },
     WorkspaceNotFound: (): ImageFailureKey => "generic",
   });
 

@@ -690,6 +690,11 @@
     "tag": "SpendCeilingExceeded"
   },
   {
+    "code": "spend_ceiling_not_offered",
+    "status": 409,
+    "tag": "SpendCeilingNotOffered"
+  },
+  {
     "code": "staff_action_refused",
     "status": 409,
     "tag": "StaffActionRefused"

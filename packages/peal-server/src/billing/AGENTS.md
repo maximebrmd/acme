@@ -203,10 +203,38 @@
   while it bills nothing. A release before T7 does not decode the new
   ledger counters or the negative report values: do not roll back past it
   once a server that bills has written them.
+- What bounds a meter past its allowance (`mostUnits`), for `payAsYouGo`
+  only: the group's ceiling, its own group's meters counted; until a
+  first invoice is paid, `spendCapOf` (`unverifiedThreshold`, $100) across
+  every meter, whatever the ceilings (the claim then holds every meter's
+  rows); and a meter in `unconfirmedMeters` bills nothing past its
+  allowance at all. A past due subscription (`pastDue`) gets the
+  allowances and nothing past them (`paymentFailed`); a legacy plan the
+  same (`planAllowance`), and keeps its plan's daily assistant
+  (`AssistantAllowance.metered`). `pausedOf` refuses what spends a meter
+  later at any standing past `allowed`, with the state's `pastAllowed`.
+- Failures: `forgive` takes back units of a generation that failed once
+  the provider had it, free up to the meter's allowance a month
+  (`meter_usage.forgiven`), then they count; `giveBack` (what never
+  happened: a reply never sent, a request never run) is always free. A
+  give-back resolves the holder and the standing again: after a transfer
+  or a merge it lowers the new holder's month (a new holder starts its
+  own month's count), after the subscription ended it reports nothing
+  back, and in the month after its claim Stripe bills the negative period
+  as none: cents at most, accepted.
+- The migration that made `meter_reports_value` `<> 0` takes an access
+  exclusive lock and reads every row to validate it; a later change of a
+  check on a large table uses `NOT VALID`, then `VALIDATE CONSTRAINT`.
+- Reports are one outbox row per change, so a busy month makes many
+  meter events; ads are claimed in one claim a sync. Adding up a
+  customer's unsent rows into one event is not done: its identifier would
+  have to stay the same across retries while rows arrive.
 - `SpendCeilings.set` (`PUT …/billing/ceilings/:group`, in
   `billingActions`): billing:manage in person, on the billing workspace
   (`BilledElsewhere`), never on a server that does not bill; it may
-  always be lowered, below what the month spent too. The row names
+  always be lowered, below what the month spent too; a group whose meters
+  are all unconfirmed takes none (`CeilingNotOffered`, answered
+  `SpendCeilingNotOffered` 409). The row names
   nobody; the activity log keeps who. `GET …/billing` answers `meters`
   (`meterMonthsOf`, `shownMeters`: X joins with its pass-through), their
   money (`estimate`, in the total `estimate` too) to the billing
