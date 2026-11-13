@@ -10,6 +10,7 @@ const isTransferRefused = Schema.is(TransferRefused);
 
 const reasons: ReadonlyMap<string, BillingError> = new Map([
   ["AlreadySubscribed", "alreadySubscribed"],
+  ["BilledElsewhere", "billedElsewhere"],
   ["ConsentChanged", "consentChanged"],
   ["Forbidden", "forbidden"],
   ["NothingToCancel", "nothingToCancel"],

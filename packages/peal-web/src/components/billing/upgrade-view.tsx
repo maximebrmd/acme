@@ -1,47 +1,53 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { billingCurrency, displayVatRate, planCatalogue } from "peal-contract";
-import type { BillingInterval, Excess, PaidPlan } from "peal-contract";
+import { displayVatRate, freeAccountsOf, rateCard } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
-import { Button } from "peal-ui/components/button";
+import type { ReactElement } from "react";
 
+import { nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
-import { offerOf } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
-import { Consent, IntervalSwitch } from "#components/billing/billing-view.tsx";
+import {
+  Consent,
+  CurrencyNote,
+  OrderButton,
+} from "#components/billing/billing-view.tsx";
 import type { BillingError } from "#components/billing/billing-view.tsx";
-import { ExcessList } from "#components/billing/excess-list.tsx";
-import { PerAccountPrice } from "#components/billing/per-account-price.tsx";
+
+/** The workspace that bills the account, when it is another. */
+export interface BilledElsewhere {
+  /** A link to its billing page, for a member of it; null otherwise. */
+  readonly link: ReactElement | null;
+}
 
 export interface UpgradeViewProps {
-  /** Whether the member may order a plan (billing:manage). */
+  /** Whether the member may add a payment method (billing:manage). */
   readonly canManage: boolean;
   /** Whether the box asking to start at once is ticked. */
   readonly consented: boolean;
-  /** Where to write for more than the largest plan, if the operator says. */
+  /** Where to write for more than any plan holds, if the operator says. */
   readonly contactUrl: string | null;
+  /** The workspace that bills the account, when it is another. */
+  readonly elsewhere: BilledElsewhere | null;
   readonly error: BillingError | null;
-  readonly interval: BillingInterval;
   /** The names of those who can order, for a member who cannot. */
   readonly managers: readonly string[];
   readonly onConsent: (consented: boolean) => void;
-  readonly onInterval: (interval: BillingInterval) => void;
-  readonly onOrder: (plan: PaidPlan) => void;
+  readonly onOrder: () => void;
   /** Whether the order is on its way to checkout. */
   readonly ordering: boolean;
   readonly reason: UpgradeReason;
   /** The terms of service, where the operator publishes them. */
   readonly termsUrl: string | null;
-  /** What the workspace holds beyond the plan just ordered, if refused. */
-  readonly tooSmall: readonly Excess[] | null;
-  /** Whether the workspace is in its trial. */
+  /** Whether the workspace is in a trial of a legacy plan. */
   readonly trialing: boolean;
-  /** The workspace the plan is ordered for. */
+  /** The workspace the payment method is added for. */
   readonly workspaceName: string;
 }
 
-// What was refused, with what the workspace holds against its plan.
+// What was refused, with what the billing account holds against what its
+// plan allows.
 const Reached = ({
   reason,
   workspaceName,
@@ -49,154 +55,123 @@ const Reached = ({
   const t = useTranslations("Upgrade");
   const billing = useTranslations("Billing");
   const size = useSize();
-  const plan = billing("plan", { plan: reason.plan });
+  const { allowed, limit, plan, used } = reason;
+  const storage = limit === "mediaStorage";
+  const workspace = workspaceName;
+
+  if (plan === "free" && (limit === "channels" || storage)) {
+    return (
+      <p>
+        {storage
+          ? t("reachedFreeStorage", {
+              allowed: size(allowed),
+              used: size(used),
+              workspace,
+            })
+          : t("reachedFree", { allowed, used, workspace })}
+      </p>
+    );
+  }
+
+  if (plan === "payAsYouGo" && limit === "channels") {
+    return <p>{t("reachedCeiling", { allowed, used, workspace })}</p>;
+  }
+
+  const planName = billing("plan", { plan });
 
   return (
     <p>
-      {reason.limit === "mediaStorage"
+      {storage
         ? t("reachedStorage", {
-            allowed: size(reason.allowed),
-            plan,
-            used: size(reason.used),
-            workspace: workspaceName,
+            allowed: size(allowed),
+            plan: planName,
+            used: size(used),
+            workspace,
           })
-        : t("reached", {
-            allowed: reason.allowed,
-            limit: reason.limit,
-            plan,
-            used: reason.used,
-            workspace: workspaceName,
-          })}
+        : t("reached", { allowed, limit, plan: planName, used, workspace })}
     </p>
   );
 };
 
-// What the plan with room allows of the limit reached.
-const useRoom = () => {
-  const billing = useTranslations("Billing.plans");
+// What a payment method changes for the limit reached, from the rate card.
+const Gives = ({ reason }: Pick<UpgradeViewProps, "reason">) => {
+  const t = useTranslations("Upgrade");
+  const dollars = useMoney("usd");
   const size = useSize();
 
-  return (plan: PaidPlan, reason: UpgradeReason): string => {
-    const { limit } = reason;
-
-    // Per-account pricing limits none of the legacy plans' limits.
-    const count =
-      plan === "payAsYouGo" ? null : planCatalogue[plan].limits[limit];
-
-    if (count === null) {
-      return billing("unlimited", { limit });
-    }
-
-    return limit === "mediaStorage"
-      ? billing("storage", { size: size(count) })
-      : billing("allowance", { count, limit });
-  };
-};
-
-const Offer = ({
-  consented,
-  interval,
-  onConsent,
-  onInterval,
-  onOrder,
-  ordering,
-  plan,
-  reason,
-  termsUrl,
-}: Pick<
-  UpgradeViewProps,
-  | "consented"
-  | "interval"
-  | "onConsent"
-  | "onInterval"
-  | "onOrder"
-  | "ordering"
-  | "reason"
-  | "termsUrl"
-> & { readonly plan: PaidPlan }) => {
-  const t = useTranslations("Upgrade");
-  const billing = useTranslations("Billing");
-  const money = useMoney(billingCurrency);
-  const room = useRoom();
-
-  // Per-account pricing, the only plan sold, is monthly: no period to
-  // choose. A legacy plan's price is no longer offered, but read as it was.
-  const priceLines =
-    plan === "payAsYouGo" ? (
-      <PerAccountPrice />
-    ) : (
-      <>
-        <p className="text-2xl font-semibold tabular-nums">
-          {billing("prices.included", {
-            interval,
-            price: money(offerOf(plan)[interval].included),
-          })}
-        </p>
-        <p className="text-muted-foreground text-sm tabular-nums">
-          {billing("prices.excluded", {
-            price: money(offerOf(plan)[interval].excluded),
-          })}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {billing("prices.vat", { rate: displayVatRate })}
-        </p>
-      </>
+  if (reason.limit === "mediaStorage") {
+    return (
+      <p>
+        {t("givesStorage", {
+          minimum: size(rateCard.storage.minimum),
+          perAccount: size(rateCard.storage.perAccount),
+        })}
+      </p>
     );
+  }
+
+  if (reason.limit !== "channels") {
+    return <p>{t("gives")}</p>;
+  }
+
+  const { position, price } = nextAccountOf(reason.used);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <p className="font-medium">
-          {t("offer", { plan: billing("plan", { plan }) })} {room(plan, reason)}
-        </p>
-        {priceLines}
-      </div>
-      {plan === "payAsYouGo" ? null : (
-        <IntervalSwitch interval={interval} onInterval={onInterval} />
-      )}
-      <Consent
-        consented={consented}
-        onConsent={onConsent}
-        termsUrl={termsUrl}
-      />
-      <div className="flex flex-col items-start gap-2">
-        <Button
-          disabled={!consented || ordering}
-          focusableWhenDisabled
-          onClick={() => {
-            onOrder(plan);
-          }}
-        >
-          {ordering ? billing("plans.ordering") : billing("plans.order")}
-        </Button>
-        <p className="text-muted-foreground text-xs">
-          {billing("plans.renewal", {
-            interval: plan === "payAsYouGo" ? "month" : interval,
-          })}
-        </p>
-        <p className="text-muted-foreground text-xs">{t("comeBack")}</p>
-      </div>
+    <div className="flex flex-col gap-1">
+      <p>{t("givesAccounts")}</p>
+      <p className="font-medium tabular-nums">
+        {t("nextAccount", {
+          free: freeAccountsOf(),
+          included: dollars(price.included),
+          position,
+          price: dollars(price.excluded),
+          rate: displayVatRate,
+        })}
+      </p>
     </div>
   );
 };
 
+const Offer = ({
+  consented,
+  onConsent,
+  onOrder,
+  ordering,
+  reason,
+  termsUrl,
+}: Pick<
+  UpgradeViewProps,
+  "consented" | "onConsent" | "onOrder" | "ordering" | "reason" | "termsUrl"
+>) => (
+  <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
+      <Gives reason={reason} />
+      <CurrencyNote />
+    </div>
+    <Consent consented={consented} onConsent={onConsent} termsUrl={termsUrl} />
+    <OrderButton consented={consented} ordering={ordering} onOrder={onOrder} />
+  </div>
+);
+
 /**
- * What a member reads when the workspace's plan refuses something: which
- * limit was reached, with what the workspace holds and its plan; then the
- * smallest plan with room, its price with VAT first and without, monthly
- * or yearly, to order with the request to start at once and the button
- * worded as an obligation to pay, before Stripe's checkout. On the largest
- * plan, how to ask for more; to a member who cannot order, who can. One
- * view for every place a limit refuses something.
+ * What a member reads when the billing account's plan refuses something:
+ * which limit was reached, with what the account holds and its plan; then
+ * what a payment method changes (the next account's monthly price with the
+ * VAT shown beside, from the rate card), to order with the request to start
+ * at once and the button worded as an obligation to pay, before Stripe's
+ * checkout asks for a card. Where another workspace bills the account, it
+ * is named instead; past what any plan holds, how to ask for more; to a
+ * member who cannot order, who can. One view for every place a limit
+ * refuses something.
  */
 export const UpgradeView = (props: UpgradeViewProps) => {
   const {
     canManage,
     contactUrl,
+    elsewhere,
     error,
     managers,
     reason,
-    tooSmall,
     trialing,
     workspaceName,
   } = props;
@@ -204,17 +179,31 @@ export const UpgradeView = (props: UpgradeViewProps) => {
   const t = useTranslations("Upgrade");
   const billing = useTranslations("Billing");
   const { planWithRoom } = reason;
+  const legacy = reason.plan !== "free" && reason.plan !== "payAsYouGo";
 
   const wayOut = () => {
     if (planWithRoom === null) {
       return contactUrl === null ? (
-        <p>{t("largestOperator", { workspace: workspaceName })}</p>
+        <p>{t("noRoomOperator")}</p>
       ) : (
         <p>
-          {t("largest", { workspace: workspaceName })}{" "}
+          {t("noRoom")}{" "}
           <a className="underline underline-offset-4" href={contactUrl}>
             {t("contact")}
           </a>
+        </p>
+      );
+    }
+
+    if (elsewhere !== null) {
+      return (
+        <p>
+          {elsewhere.link === null
+            ? t("billedElsewhereUnnamed", { workspace: workspaceName })
+            : t.rich("billedElsewhere", {
+                billing: () => elsewhere.link,
+                workspace: workspaceName,
+              })}
         </p>
       );
     }
@@ -232,7 +221,7 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       );
     }
 
-    return <Offer {...props} plan={planWithRoom} />;
+    return <Offer {...props} />;
   };
 
   return (
@@ -246,11 +235,7 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       {trialing && canManage && planWithRoom !== null ? (
         <p>{t("trial", { workspace: workspaceName })}</p>
       ) : null}
-      {canManage &&
-      planWithRoom === "payAsYouGo" &&
-      !trialing &&
-      reason.plan !== "free" &&
-      reason.plan !== "payAsYouGo" ? (
+      {canManage && planWithRoom !== null && !trialing && legacy ? (
         <p>
           {t("legacyMove", {
             plan: billing("plan", { plan: reason.plan }),
@@ -261,14 +246,6 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       {error === null ? null : (
         <Alert variant="destructive" aria-live="assertive">
           <AlertDescription>{billing(`errors.${error}`)}</AlertDescription>
-        </Alert>
-      )}
-      {tooSmall === null ? null : (
-        <Alert variant="destructive" aria-live="assertive">
-          <AlertDescription>
-            <p>{t("tooSmall")}</p>
-            <ExcessList excesses={tooSmall} namespace="Upgrade" />
-          </AlertDescription>
         </Alert>
       )}
       {wayOut()}

@@ -4,7 +4,6 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useLocale, useTranslations } from "next-intl";
-import type { BillingInterval, Excess, PaidPlan } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
@@ -123,11 +122,6 @@ const LoadedBilling = ({
   const [pending, setPending] = useState<BillingAction | null>(null);
   const [error, setError] = useState<BillingError | null>(null);
   const [step, setStep] = useState<BillingStep>(idle);
-  const [tooSmall, setTooSmall] = useState<readonly Excess[] | null>(null);
-
-  const [billingInterval, setBillingInterval] =
-    useState<BillingInterval>("month");
-
   const [consented, setConsented] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -151,26 +145,13 @@ const LoadedBilling = ({
   };
 
   // The order first, which records the consent; then Stripe's checkout,
-  // which needs it.
-  const orderPlan = (plan: PaidPlan, trial: boolean) => {
-    setTooSmall(null);
-
-    run({ _tag: "order", plan, trial }, async () => {
+  // which needs it. Per-account pricing is the one plan sold, monthly.
+  const order = () => {
+    run({ _tag: "order" }, async () => {
       const failed = await checkout({
-        // Per-account pricing is monthly only.
-        interval: plan === "payAsYouGo" ? "month" : billingInterval,
-        plan,
         returnDone: `${page}?checkout=done`,
         returnTo: page,
-        trial,
       });
-
-      setTooSmall(
-        failed.pipe(
-          Option.map(({ tooSmall: over }) => over),
-          Option.getOrNull
-        )
-      );
 
       return failed.pipe(Option.map(({ error: reason }) => reason));
     });
@@ -291,11 +272,9 @@ const LoadedBilling = ({
           checkedOut={checkedOut}
           consented={consented}
           error={error}
-          interval={billingInterval}
           pending={pending}
           step={step}
           termsUrl={termsUrl}
-          tooSmall={tooSmall}
           onBack={() => {
             setStep(idle);
           }}
@@ -306,9 +285,8 @@ const LoadedBilling = ({
           onConfirmCancel={confirmCancel}
           onConfirmWithdrawal={confirmWithdrawalNow}
           onConsent={setConsented}
-          onInterval={setBillingInterval}
           onManage={manage}
-          onOrder={orderPlan}
+          onOrder={order}
           onRefresh={refresh}
           onWithdraw={openWithdrawal}
         />
@@ -326,8 +304,8 @@ const LoadedBilling = ({
 
 /**
  * A workspace's billing page, loaded by the browser with the member's
- * session, its dates in the reader's time zone. Ordering a plan records the
- * order, then opens Stripe's checkout; managing the subscription opens its
+ * session, its dates in the reader's time zone. Adding a payment method
+ * records the order for per-account pricing, then opens Stripe's checkout; managing the subscription opens its
  * customer portal; cancelling and withdrawing ask for a confirmation here.
  * Below, the workspace's usage by day, on a server that bills or not.
  */

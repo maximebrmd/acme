@@ -7,7 +7,7 @@ import {
 } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
-import { limitIn, limitOfAuthError, offerOf } from "#billing/upgrade.ts";
+import { limitIn, limitOfAuthError } from "#billing/upgrade.ts";
 
 const billingUrl = "https://peal.example/app/w/billing";
 
@@ -116,15 +116,5 @@ describe(limitOfAuthError, () => {
     expect(
       limitOfAuthError(answered({ code: "INVALID_EMAIL", status: 400 }))
     ).toStrictEqual(Option.none());
-  });
-});
-
-describe(offerOf, () => {
-  it("prices the plan with room, VAT included first", () => {
-    expect(offerOf("starter")).toStrictEqual({
-      month: { excluded: 750, included: 900 },
-      plan: "starter",
-      year: { excluded: 7500, included: 9000 },
-    });
   });
 });

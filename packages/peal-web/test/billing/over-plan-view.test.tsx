@@ -31,8 +31,8 @@ const standing: Standing = {
     { allowed: 2, limit: "members", used: 3 },
     { allowed: 500_000_000, limit: "mediaStorage", used: 900_000_000 },
   ],
-  plan: "free",
-  planWithRoom: "starter",
+  plan: "starter",
+  planWithRoom: "payAsYouGo",
   scheduledPosts: 7,
 };
 
@@ -106,10 +106,33 @@ describe(OverPlanView, () => {
     const html = await render("en");
 
     expect(html).toContain("Studio Nord holds more than its plan allows");
-    expect(html).toContain("Its plan is now Free. Nothing was deleted");
+    expect(html).toContain("Its plan is now Starter. Nothing was deleted");
     expect(html).toContain("4 channels connected, 3 allowed");
     expect(html).toContain("3 members, 2 allowed");
     expect(html).toContain("900 MB of media stored, 500 MB allowed");
+  });
+
+  it("says a free billing account holds more than its free accounts without a payment method", async () => {
+    const free: Standing = {
+      ...standing,
+      over: [{ allowed: 2, limit: "channels", used: 3 }],
+      plan: "free",
+    };
+
+    const english = await render("en", { standing: free });
+
+    expect(english).toContain(
+      "Studio Nord holds more than the free tier allows"
+    );
+    expect(english).toContain(
+      "Its billing account holds more than 2 connected accounts without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or 2 accounts are kept."
+    );
+    expect(english).toContain("3 channels connected, 2 allowed");
+    expect(english).toContain("Add a payment method");
+
+    await expect(render("fr", { standing: free })).resolves.toContain(
+      "Son compte de facturation a plus de 2 comptes connectés sans moyen de paiement."
+    );
   });
 
   it("says what happens to the posts already scheduled", async () => {
@@ -159,7 +182,7 @@ describe(OverPlanView, () => {
     const html = await render("fr", { canManage: false });
 
     expect(html).toContain(
-      "Les propriétaires et les administrateurs de Studio Nord peuvent commander un abonnement supérieur ou choisir ce qui reste : Ana Example, Sam Example."
+      "Les propriétaires et les administrateurs de Studio Nord peuvent ajouter un moyen de paiement ou choisir ce qui reste : Ana Example, Sam Example."
     );
     expect(html).not.toContain("Garder ceux-ci");
     expect(html).not.toContain("The upgrade offer");

@@ -1,16 +1,12 @@
 import { Cause, Exit, Option, Schema } from "effect";
 import {
   AssistantQuotaExceeded,
-  freeAccountsOf,
   PaidPlanSchema,
-  planCatalogue,
   PlanLimitReached,
   PlanLimitSchema,
   PlanSchema,
-  rateCard,
   withDisplayVat,
 } from "peal-contract";
-import type { PaidPlan } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -119,46 +115,8 @@ export interface OfferPrice {
   readonly included: number;
 }
 
-/** A plan to order, with what it costs each month or each year. */
-export interface PlanOffer {
-  readonly month: OfferPrice;
-  readonly plan: PaidPlan;
-  readonly year: OfferPrice;
-}
-
 /** `cents` excluding VAT, with the VAT pages show beside (France's). */
 export const priced = (cents: number): OfferPrice => ({
   excluded: cents,
   included: withDisplayVat(cents),
 });
-
-/** What a legacy plan cost, as Peal published it. */
-export const offerOf = (plan: Exclude<PaidPlan, "payAsYouGo">): PlanOffer => {
-  // Every legacy paid plan had a price; only the free plan had none.
-  const price = planCatalogue[plan].price ?? { month: 0, year: 0 };
-
-  return { month: priced(price.month), plan, year: priced(price.year) };
-};
-
-/**
- * What per-account pricing costs, from the rate card, never typed: the
- * accounts free, what each account past them costs a month (with the VAT
- * shown first and without), and the account from which they cost less.
- */
-export interface PerAccountOffer {
-  readonly free: number;
-  readonly lessFrom: number;
-  readonly next: OfferPrice;
-}
-
-export const perAccountOffer = (): PerAccountOffer => {
-  const { bands } = rateCard.prices.usd.accounts;
-  const free = freeAccountsOf(rateCard);
-  const paid = bands.find(({ monthly }) => monthly > 0);
-
-  return {
-    free,
-    lessFrom: (paid?.upTo ?? free) + 1,
-    next: priced(paid?.monthly ?? 0),
-  };
-};

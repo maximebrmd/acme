@@ -14,7 +14,7 @@ export const ExcessList = ({
   namespace,
 }: {
   readonly excesses: readonly Excess[];
-  readonly namespace: "OverPlan" | "Upgrade";
+  readonly namespace: "OverPlan";
 }) => {
   const t = useTranslations(namespace);
   const size = useSize();

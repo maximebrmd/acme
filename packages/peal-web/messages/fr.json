@@ -2064,17 +2064,16 @@
     "open": "Facturation",
     "openLabel": "Facturation de {workspace}",
     "title": "Facturation",
-    "description": "L’abonnement de {workspace}, et ce que l’espace de travail en utilise.",
+    "description": "Comment {workspace} est facturé, et ce qu’il utilise.",
     "loadFailed": "La facturation n’a pas pu être chargée.",
     "retry": "Réessayer",
-    "plan": "{plan, select, free {Gratuit} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
+    "plan": "{plan, select, free {Offre gratuite} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
     "off": {
       "title": "Rien n’est limité",
       "description": "Ce serveur ne facture pas les espaces de travail : il n’y a pas d’abonnement, et tout est disponible sans limite."
     },
     "current": {
-      "title": "Abonnement actuel",
-      "free": "L’espace de travail n’a pas d’abonnement payant.",
+      "title": "Votre offre",
       "status": "{status, select, active {Actif} trialing {Essai} past_due {Paiement en retard} canceled {Résilié} unpaid {Impayé} paused {Suspendu} incomplete {Incomplet} incomplete_expired {Expiré} other {{status}}}",
       "renews": "Renouvelé le {date}, {interval, select, month {chaque mois} other {chaque année}} jusqu’à résiliation",
       "ends": "Prend fin le {date}",
@@ -2086,7 +2085,12 @@
       "manageHint": "Changez de moyen de paiement, d’adresse de facturation ou de numéro de TVA, ou téléchargez les factures et les reçus, dans l’espace de facturation de Stripe.",
       "trialEnds": "L’essai prend fin le {date}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement.",
       "withdrawable": "Jusqu’au {date}, en tant que consommateur, vous pouvez vous rétracter du contrat, ici ou avec « Renoncer au contrat ici » au pied de chaque page : il prend fin immédiatement et la part non utilisée vous est remboursée.",
-      "trialHint": "Un abonnement commandé pendant l’essai y met fin une fois payé ; rien n’est facturé pour l’essai."
+      "trialHint": "Un abonnement commandé pendant l’essai y met fin une fois payé ; rien n’est facturé pour l’essai.",
+      "freeTier": "Jusqu’à {free, number} comptes connectés sur l’ensemble du compte de facturation, sans moyen de paiement.",
+      "perAccount": "Chaque compte connecté au-delà des {free, number} premiers, compté au jour, est facturé chaque mois pour le mois écoulé, aux tarifs ci-dessous.",
+      "legacy": "{plan}, tarifé par paliers de canaux, n’est plus vendu : l’espace de travail le garde, avec ses limites, jusqu’à sa fin.",
+      "nextInvoice": "Prochaine facture le {date}, pour l’usage du mois, jusqu’à résiliation",
+      "unpaid": "Stripe n’a pas pu encaisser les derniers paiements : le compte de facturation est revenu à l’offre gratuite. Mettez à jour le moyen de paiement dans l’espace de facturation."
     },
     "usage": {
       "title": "Utilisation",
@@ -2124,58 +2128,31 @@
         "note": "Des décomptes seulement, conservés {days, number} jours : rien n’est facturé d’après eux. Un tiret marque un jour sans relevé."
       }
     },
-    "plans": {
-      "title": "Abonnements",
-      "allowance": "{limit, select, channels {{count, plural, one {# canal} other {# canaux}}} members {{count, plural, one {# membre} other {# membres}}} scheduledPosts {{count, plural, one {# publication par mois} other {# publications par mois}}} assistantRequests {{count, plural, one {# demande à l’assistant par jour} other {# demandes à l’assistant par jour}}} other {{count}}}",
-      "unlimited": "{limit, select, channels {Canaux illimités} members {Membres illimités} scheduledPosts {Publications illimitées} assistantRequests {Demandes à l’assistant illimitées} mediaStorage {Médias illimités} other {Illimité}}",
-      "yours": "Votre abonnement",
-      "inPortal": "Passer à un abonnement inférieur demande que l’espace de travail y tienne d’abord : ses canaux, ses membres et ses médias.",
-      "askAdmin": "Les propriétaires et les administrateurs de l’espace de travail commandent et résilient son abonnement.",
-      "storage": "{size} de médias",
-      "order": "Commander avec obligation de paiement",
-      "ordering": "Ouverture du paiement…",
-      "renewal": "{interval, select, month {Se renouvelle chaque mois jusqu’à résiliation.} other {Se renouvelle chaque année jusqu’à résiliation ; un rappel vous est envoyé 45 jours avant.}}"
-    },
     "checkout": {
-      "done": "Merci. L’abonnement change dès que Stripe confirme le paiement, en général en quelques secondes.",
+      "done": "Merci : le tarif par compte commence dès que Stripe confirme le moyen de paiement, en général en quelques secondes.",
       "refresh": "Actualiser"
     },
     "errors": {
       "forbidden": "Seuls les propriétaires et les administrateurs de l’espace de travail, dans leur propre session, peuvent changer sa facturation.",
       "generic": "Stripe n’a pas pu être joint. Réessayez dans un instant.",
-      "noInvoices": "Cet espace de travail n’a aucune facture : il n’a jamais eu d’abonnement payant.",
+      "noInvoices": "Cet espace de travail n’a aucune facture : il n’a jamais eu de contrat payant.",
       "nothingToCancel": "L’abonnement est déjà résilié.",
       "trialUsed": "Cet espace de travail ou votre compte a déjà eu son essai : commandez plutôt un abonnement.",
       "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier le contrat.",
       "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier le contrat.",
       "planTooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède.",
       "alreadySubscribed": "Ce compte de facturation a déjà le tarif par compte. Si un paiement a échoué, mettez plutôt à jour le moyen de paiement depuis la page de facturation.",
-      "consentChanged": "Les termes de la case de commande ont changé depuis le chargement de cette page. Rechargez la page, relisez la case, et commandez à nouveau."
+      "consentChanged": "Les termes de la case de commande ont changé depuis le chargement de cette page. Rechargez la page, relisez la case, et commandez à nouveau.",
+      "billedElsewhere": "Un autre espace de travail facture ce compte de facturation : son moyen de paiement s’ajoute là-bas."
     },
-    "limitReached": "{limit, select, channels {L’abonnement de l’espace de travail ne permet pas d’autre canal. Passez à un abonnement supérieur, ou déconnectez d’abord un canal.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, annulez une publication, ou passez à un abonnement supérieur.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {L’abonnement de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou passez à un abonnement supérieur.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
+    "limitReached": "{limit, select, channels {Le compte de facturation de l’espace de travail ne connecte plus de comptes pour l’instant : consultez sa page de facturation, ou déconnectez d’abord un compte.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut consulter sa page de facturation.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, ou annulez une publication.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {Le compte de facturation de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou consultez sa page de facturation.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
     "prices": {
-      "vat": "Prix TTC, TVA française de {rate} % comprise. Dans un autre pays de l’UE, sa propre TVA s’applique au paiement ; une entreprise avec un numéro de TVA valide paie le prix HT.",
-      "included": "{price} TTC {interval, select, month {par mois} other {par an}}",
-      "excluded": "{price} HT",
-      "yearlyMonth": "Soit {price} par mois",
-      "perChannel": "{price} par canal et par mois",
-      "perAccount": "{price} HT par mois pour chaque compte au-delà des {free} premiers ({included} avec la TVA de {rate} %), compté au jour ; moins à partir du compte {from}",
-      "perAccountNote": "Les prix sont en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Au paiement, vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains.",
-      "free": "Gratuit",
-      "interval": "{interval, select, month {Mensuel} other {Annuel}}",
-      "intervalLabel": "Période de facturation"
+      "perAccountNote": "Les prix sont en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Au paiement, vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains."
     },
     "consent": {
       "startNow": "Je demande que le tarif par compte commence dès maintenant : chaque compte connecté au-delà des comptes gratuits, compté au jour, et chaque usage au-delà de son allocation mensuelle sont facturés aux prix de la grille tarifaire, hors taxes, chaque mois pour le mois écoulé. Je sais qu’en tant que consommateur, je peux me rétracter dans les 14 jours, avec « Renoncer au contrat ici », au pied de chaque page et sur celle-ci, et ne payer alors que ce qui a été utilisé.",
       "terms": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter, et contiennent le modèle de formulaire de rétractation.",
-      "termsLink": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter, et contiennent le modèle de formulaire de rétractation.",
-      "needed": "Cochez la case ci-dessus pour ajouter un moyen de paiement."
-    },
-    "trial": {
-      "title": "Essayez {plan} gratuitement pendant {days} jours",
-      "description": "Aucun moyen de paiement n’est demandé, et rien n’est facturé. À la fin de l’essai, l’espace de travail repasse à l’offre gratuite, sauf si vous commandez {plan}. Un essai par compte et par espace de travail.",
-      "start": "Commencer l’essai gratuit",
-      "starting": "Ouverture du paiement…"
+      "termsLink": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter, et contiennent le modèle de formulaire de rétractation."
     },
     "cancel": {
       "open": "Résilier votre contrat",
@@ -2185,7 +2162,8 @@
       "confirm": "Notification de la résiliation",
       "confirming": "Résiliation…",
       "doneTitle": "Abonnement résilié",
-      "done": "Il prend fin le {date}. Une confirmation a été envoyée par e-mail aux membres qui gèrent la facturation."
+      "done": "Il prend fin le {date}. Une confirmation a été envoyée par e-mail aux membres qui gèrent la facturation.",
+      "summaryPerAccount": "Le tarif par compte prend fin le {date}, à la fin du mois : l’usage de ce mois est alors facturé, et plus rien ensuite. L’espace de travail passe ensuite à l’offre gratuite, avec son contenu. Pour y mettre fin à une date ultérieure, utilisez « Résilier votre contrat » au pied de la page."
     },
     "withdraw": {
       "open": "Renoncer au contrat ici",
@@ -2195,9 +2173,44 @@
       "confirm": "Confirmer la rétractation",
       "confirming": "Rétractation…",
       "doneTitle": "Rétractation reçue",
-      "done": "L’abonnement a pris fin, et {refund} vous est remboursé sous 14 jours. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail."
+      "done": "L’abonnement a pris fin, et {refund} vous est remboursé sous 14 jours. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail.",
+      "summaryPerAccount": "Vous avez commandé le tarif par compte le {started}. Vous rétracter y met fin maintenant : ce qui a été utilisé depuis est facturé aussitôt, et rien n’est remboursé, puisque rien n’est payé d’avance.",
+      "doneNothing": "L’abonnement a pris fin : ce qui a été utilisé est facturé, et rien n’avait été payé d’avance à rembourser. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail."
     },
-    "keep": "Garder l’abonnement"
+    "keep": "Garder l’abonnement",
+    "month": {
+      "title": "Ce mois-ci",
+      "accounts": "Comptes connectés",
+      "pooledHere": "{pooled, plural, one {# compte connecté} other {# comptes connectés}}.",
+      "pooledAcross": "{pooled, plural, one {# compte} other {# comptes}} sur les {workspaces, number} espaces de travail du compte, dont {connected, number} sur celui-ci.",
+      "accountDays": "{days, plural, one {# compte-jour à ce jour} other {# comptes-jours à ce jour}}",
+      "estimateFree": "Avec un moyen de paiement, le mois jusqu’ici coûterait {estimate} HT.",
+      "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT.",
+      "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte {price} HT par mois.",
+      "upcoming": "Prochaine facture de Stripe : {amount} TTC. C’est la facture qui fait foi.",
+      "own": "{connected, plural, one {# compte connecté sur cet espace de travail.} other {# comptes connectés sur cet espace de travail.}}",
+      "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût."
+    },
+    "ladder": {
+      "title": "Tarifs",
+      "description": "Chaque compte connecté du compte de facturation compte, sur l’ensemble de ses espaces de travail. Les membres, les espaces de travail et les publications ne sont pas comptés.",
+      "caption": "Ce que coûte chaque compte connecté par mois, selon sa place dans le compte de facturation",
+      "accounts": "Comptes",
+      "price": "Chacun, par mois, HT",
+      "band": "Comptes {from, number} à {to, number}",
+      "from": "À partir du compte {from, number}",
+      "free": "Gratuit",
+      "dayRule": "Chaque jour UTC compte le plus grand nombre de comptes connectés en même temps sur l’ensemble du compte de facturation, du 1er au {days, number} du mois : le {after, number} est gratuit. Chacun de ces jours coûte un {days, selectordinal, one {#er} other {#e}} du tarif mensuel d’un compte : un compte connecté une partie du mois coûte une partie de son tarif."
+    },
+    "payment": {
+      "title": "Ajouter un moyen de paiement",
+      "description": "Avec un moyen de paiement, le compte de facturation connecte plus de {free, number} comptes, jusqu’à {ceiling, number} tant que sa première facture n’est pas payée. Rien n’est facturé maintenant : chaque facture mensuelle porte sur le mois écoulé.",
+      "askAdmin": "Les propriétaires et les administrateurs de l’espace de travail ajoutent son moyen de paiement.",
+      "order": "Commander avec obligation de paiement",
+      "ordering": "Ouverture du paiement…",
+      "needed": "Cochez la case ci-dessus pour ajouter un moyen de paiement.",
+      "card": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page."
+    }
   },
   "BillingAccount": {
     "title": "Compte de facturation",
@@ -2314,21 +2327,26 @@
     "title": "{limit, select, channels {Cet abonnement n’a plus de place pour un canal} members {Cet abonnement n’a plus de place pour un membre} scheduledPosts {Cet abonnement n’a plus de place pour une publication ce mois-là} assistantRequests {Les demandes à l’assistant d’écriture sont épuisées pour aujourd’hui} mediaStorage {Cet abonnement n’a plus de place pour ce fichier} other {La limite de l’abonnement est atteinte}}",
     "reached": "{limit, select, channels {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# canal} other {# canaux}}, et il en a {used, number}.} members {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# membre} other {# membres}}, invitations en attente comprises, et il en a {used, number}.} scheduledPosts {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# publication} other {# publications}} par mois, et ce mois-là en a {used, number}.} assistantRequests {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# demande} other {# demandes}} à l’assistant d’écriture par jour, et celles d’aujourd’hui sont épuisées. Elles reprennent à minuit UTC.} other {L’abonnement {plan} de {workspace} ne permet pas d’en ajouter.}}",
     "reachedStorage": "L’abonnement {plan} de {workspace} permet {allowed} de médias, et il en stocke {used}, envois en cours compris.",
-    "offer": "L’abonnement {plan} a de la place :",
-    "trial": "{workspace} est en période d’essai : commander fait commencer l’abonnement payant, et met fin à l’essai une fois le paiement reçu. Rien n’est facturé pour l’essai.",
+    "trial": "{workspace} est en période d’essai : commander démarre le tarif par compte, et met fin à l’essai dès que Stripe le confirme. Rien n’est facturé pour l’essai.",
     "legacyMove": "{workspace} est sur {plan}, tarifé par paliers de canaux. Passer au tarif par compte ne donne pas encore d’avoir pour sa part non utilisée : il reste payé jusqu’à la fin de sa période, pendant que les comptes sont facturés au compte dès le passage.",
-    "comeBack": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page ; l’abonnement change dès que Stripe confirme le paiement, en général en quelques secondes.",
-    "largest": "{workspace} a le plus grand abonnement. Pour davantage, écrivez-nous : nous faisons une offre pour les besoins plus importants.",
-    "largestOperator": "{workspace} a le plus grand abonnement. Pour davantage, écrivez aux personnes qui gèrent ce serveur.",
     "contact": "Nous écrire",
     "orRemove": "{limit, select, channels {Ou déconnectez un canal pour faire de la place.} members {Ou retirez un membre, ou révoquez une invitation en attente, pour faire de la place.} scheduledPosts {Ou choisissez un autre mois, ou annulez une publication de ce mois-là.} assistantRequests {Ou redemandez demain.} mediaStorage {Ou supprimez des médias pour faire de la place.} other {}}",
-    "askManagers": "Les propriétaires et les administrateurs de {workspace} commandent son abonnement : {names}.",
-    "askSomeone": "Un propriétaire ou un administrateur de l’espace de travail commande son abonnement : demandez à l’un d’eux.",
+    "askManagers": "Les propriétaires et les administrateurs de {workspace} ajoutent son moyen de paiement : {names}.",
+    "askSomeone": "Un propriétaire ou un administrateur de l’espace de travail ajoute son moyen de paiement : demandez à l’un d’eux.",
     "close": "Pas maintenant",
-    "tooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède. Retirez d’abord ceci, ou commandez un abonnement supérieur :",
-    "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
-    "excessStorage": "{used} de médias, {allowed} permis",
-    "closeLabel": "Fermer"
+    "closeLabel": "Fermer",
+    "titlePerAccount": "{limit, select, channels {Ajoutez un moyen de paiement pour connecter un autre compte} mediaStorage {Ajoutez un moyen de paiement pour plus de stockage} other {Ajoutez un moyen de paiement pour aller plus loin}}",
+    "reachedFree": "Le compte de facturation de {workspace} est sur l’offre gratuite, qui connecte {allowed, plural, one {# compte} other {# comptes}} sur l’ensemble de ses espaces de travail, et il en a {used, number}.",
+    "reachedFreeStorage": "Le compte de facturation de {workspace} stocke {used} de médias, envois en cours compris, et l’offre gratuite en contient {allowed}.",
+    "reachedCeiling": "Tant que sa première facture n’est pas payée, le compte de facturation de {workspace} connecte jusqu’à {allowed, plural, one {# compte} other {# comptes}}, et il en a {used, number}. Une fois une facture payée, il n’y a plus de limite.",
+    "givesAccounts": "Avec un moyen de paiement, le compte de facturation connecte plus de comptes.",
+    "nextAccount": "Le {position, selectordinal, one {#er} other {#e}} coûte {price} HT par mois ({included} avec la TVA de {rate} %), compté au jour ; les {free, number} premiers restent gratuits.",
+    "givesStorage": "Avec un moyen de paiement, le stockage des médias est de {perAccount} par compte connecté, {minimum} au moins.",
+    "gives": "Avec un moyen de paiement, le compte de facturation passe au tarif par compte.",
+    "noRoom": "Pour davantage d’ici là, écrivez-nous.",
+    "noRoomOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur.",
+    "billedElsewhere": "Le compte de facturation de {workspace} est facturé sur <billing></billing> : ses propriétaires et ses administrateurs y ajoutent le moyen de paiement.",
+    "billedElsewhereUnnamed": "Le compte de facturation de {workspace} est facturé sur un autre de ses espaces de travail : ses propriétaires et ses administrateurs y ajoutent le moyen de paiement."
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
@@ -2338,7 +2356,7 @@
     "excess": "{limit, select, channels {{used, number} canaux connectés, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
     "excessStorage": "{used} de médias stockés, {allowed} permis : les envois sont refusés tant que des médias ne sont pas supprimés ou que l’abonnement n’est pas supérieur",
     "posts": "{count, plural, =0 {D’ici là, rien n’est programmé ni publié.} one {D’ici là, rien n’est programmé ni publié. La publication programmée ce mois-ci échoue à son heure, avec « limite de l’abonnement » pour motif ; elle garde son texte et ses canaux, et peut être republiée depuis sa page une fois l’espace de travail revenu dans son abonnement.} other {D’ici là, rien n’est programmé ni publié. Les # publications programmées ce mois-ci échouent chacune à leur heure, avec « limite de l’abonnement » pour motif ; elles gardent leur texte et leurs canaux, et peuvent être republiées depuis leur page une fois l’espace de travail revenu dans son abonnement.}}",
-    "upgradeTitle": "Passer à un abonnement qui contient tout",
+    "upgradeTitle": "Ajouter un moyen de paiement",
     "noPlan": "Aucun abonnement ne contient autant. Choisissez ci-dessous ce qui reste, ou écrivez-nous pour une offre.",
     "chooseTitle": "Ou choisir ce qui reste",
     "chooseDescription": "Tout le reste est déconnecté ou retiré aussitôt, en une seule étape, sans retour possible.",
@@ -2353,8 +2371,8 @@
     "applying": "Retrait en cours…",
     "tooMany": "Gardez au plus ce que permet l’abonnement.",
     "done": "L’espace de travail est revenu dans son abonnement.",
-    "others": "Les propriétaires et les administrateurs de {workspace} peuvent commander un abonnement supérieur ou choisir ce qui reste : {names}.",
-    "othersUnknown": "Un propriétaire ou un administrateur de l’espace de travail peut commander un abonnement supérieur ou choisir ce qui reste.",
+    "others": "Les propriétaires et les administrateurs de {workspace} peuvent ajouter un moyen de paiement ou choisir ce qui reste : {names}.",
+    "othersUnknown": "Un propriétaire ou un administrateur de l’espace de travail peut ajouter un moyen de paiement ou choisir ce qui reste.",
     "billing": "Ouvrir la facturation",
     "loadFailed": "Les canaux et les membres n’ont pas pu être chargés.",
     "errors": {
@@ -2367,7 +2385,9 @@
       "ownerRequired": "Seul un propriétaire retire un propriétaire.",
       "payerRequired": "Le propriétaire qui paie l’espace de travail reste parmi ses membres : il le confie d’abord à un autre propriétaire depuis sa page Facturation.",
       "generic": "Cela n’a pas fonctionné. Réessayez dans un instant."
-    }
+    },
+    "titleFree": "{workspace} dépasse ce que permet l’offre gratuite",
+    "descriptionFree": "Son compte de facturation a plus de {free, number} comptes connectés sans moyen de paiement. Rien n’a été supprimé, mais rien n’est programmé ni publié tant qu’un moyen de paiement n’est pas ajouté ou que {free, number} comptes ne sont pas gardés."
   },
   "Captcha": {
     "label": "Vérifiez que vous n’êtes pas un robot"
