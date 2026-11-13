@@ -38,7 +38,7 @@ Un brouillon est sans risque ; publier est public et ne se reprend pas. Ne repub
 | Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`                                                |
 | Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                                                               |
 | Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                                                                |
-| Déplacer une publication programmée, la repasser en brouillon ou l’annuler                                            | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
+| Déplacer une publication programmée, en retirer un canal, la repasser en brouillon ou l’annuler                       | `reschedule_post`, `remove_post_target`, `unschedule_post`, `cancel_post`                     |
 | Lire ce qu’une publication est devenue sur chaque canal, et chaque tentative de Peal                                  | `get_post`, `list_post_attempts`                                                              |
 | Attendre qu’une publication qui part maintenant ait son résultat sur chaque canal                                     | `await_post`                                                                                  |
 | Republier là où une publication a échoué, ou enregistrer ce que vous avez trouvé sur la plateforme                    | `repost_target`, `confirm_target`                                                             |
@@ -281,6 +281,7 @@ Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serve
 | `get_channel_defaults`, `set_channel_defaults` | `peal channels defaults show <channel-id>`, `peal channels defaults set <channel-id> --options <json>`                 |
 | `list_activity`                                | `peal activity list`                                                                                                   |
 | `repost_target`, `confirm_target`              | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
+| `remove_post_target`                           | `peal posts remove-target <post-id> <target-id>`                                                                       |
 
 ```sh
 peal post "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps" \
@@ -328,6 +329,7 @@ Votre propre agent ou script peut appeler les points d’accès sur lesquels rep
 | `get_channel_defaults`, `set_channel_defaults` | `GET …/channels/{channelId}/default-options`, `PUT …/channels/{channelId}/default-options` |
 | `await_post`                                   | `GET …/posts/{postId}/outcome`                                                             |
 | `repost_target`, `confirm_target`              | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                             |
+| `remove_post_target`                           | `DELETE …/posts/{postId}/targets/{targetId}`                                               |
 
 `POST …/posts/send` crée une publication et l’envoie en une seule requête. Envoyez un en-tête `Idempotency-Key`, un texte de votre choix de 255 caractères au plus, comme un UUID, pour que la requête puisse être renvoyée sans risque :
 

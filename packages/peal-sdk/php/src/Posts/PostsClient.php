@@ -1454,6 +1454,65 @@ class PostsClient
     }
 
     /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     *
+     * Example:
+     * ```php
+     * $client->posts->removeTarget(
+     *     'workspaceId',
+     *     'postId',
+     *     'targetId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $postId
+     * @param string $targetId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Post
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function removeTarget(string $workspaceId, string $postId, string $targetId, ?array $options = null): ?Post
+    {
+        $options = array_merge($this->options, $options ?? []);
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/{$postId}/targets/{$targetId}",
+                    method: HttpMethod::DELETE,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Post::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
      * Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
      *
      * Example:

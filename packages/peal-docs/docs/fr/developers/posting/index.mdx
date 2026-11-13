@@ -135,7 +135,7 @@ Chaque entrée de `channels` contient :
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `text`                                     | Le texte que reçoit le canal, c’est-à-dire celui qui lui est propre, ou celui de la publication                                                                                                                                                                                                                                                                                                        |
 | `textCounts`                               | La longueur de ce texte, comptée comme la compte la plateforme du canal, face à chacune de ses limites. Bluesky en a deux, en graphèmes et en octets.                                                                                                                                                                                                                                                  |
-| `hashtags`, `mentions`, `links` et `media` | Combien la publication en contient (`count`) et le maximum que prend la plateforme (`maximum`, null quand Peal ne lui connaît pas de limite). `links` compte les liens différents.                                                                                                                                                                                                                     |
+| `hashtags`, `mentions`, `links` et `media` | Combien la publication en contient (`count`) et le maximum que prend la plateforme (`maximum`, null quand Peal ne lui connaît pas de limite). `links` compte les liens différents. `media` compte ce que reçoit le canal : ses médias propres, quand son entrée lui en donne ([Des médias propres sur un canal](#channel-media)), ou ceux de la publication.                                           |
 | `parts`                                    | Les parties qui suivent la première d’un [fil](/guides/posts#threads), dans l’ordre, chacune avec son rang (`part`, à partir de 1), son texte (`text`) sur le canal et les mêmes décomptes ; aucune pour une publication seule. Une plateforme qui ne prend qu’une publication seule les liste quand même, et les refuse avec `tooManyParts`.                                                          |
 | `violations`                               | Chaque règle de la plateforme que la publication enfreint, dans n’importe laquelle de ses parties (texte, formats, tailles, nombre et durées des médias, options), et celles du compte lui-même quand sa plateforme les donne. Celle qui porte sur une partie suivante la désigne par `part`. Elles se lisent comme dans `PostContentInvalid` ([Comment lire les refus](/developers/agents#refusals)). |
 
@@ -345,21 +345,85 @@ Une publication créée en un seul appel est refusée quand une autre publicatio
 
 `validate` le dit à l’avance, dans `duplicates`.
 
+## Des médias propres sur un canal [#channel-media]
+
+Le texte d’une publication sur un canal, une entrée de `content.overrides` ou des `overrides` d’une partie, peut aussi donner à ce canal des images et vidéos propres, dans `media`. Le canal les montre alors à la place de celles de la publication.
+
+| `media` sur une entrée | Ce que montre le canal                                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Absent                 | Les images et vidéos de la publication. Peal ne répond `media` que sur une entrée qui en donne.                   |
+| Une liste vide         | Aucune.                                                                                                           |
+| Une liste              | Celles-là, dans l’ordre, chacune avec son texte alternatif : 20 au plus, des médias prêts de l’espace de travail. |
+
+Une entrée a toujours son `text`, qui ne peut pas être vide. Pour ne donner au canal que des médias, envoyez-y le texte de la publication. Ce texte est désormais celui du canal : quand vous changez le texte de la publication, changez-le là aussi (l’application web le fait).
+
+```json
+{
+  "text": "Cinq images du catalogue de printemps",
+  "media": [
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f001",
+      "altText": "La couverture"
+    },
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+      "altText": "La page deux"
+    }
+  ],
+  "overrides": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "text": "Cinq images du catalogue de printemps",
+      "media": [
+        {
+          "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+          "altText": "La page deux"
+        }
+      ]
+    }
+  ]
+}
+```
+
+- Chaque canal est vérifié sur les médias qu’il reçoit, par `validate` (son nombre de `media` et ses `violations`) comme quand la publication est programmée.
+- La [vérification des doublons](#duplicates) compare ce que reçoit chaque canal.
+- Une approbation couvre les médias de chaque canal : changer les médias propres d’un canal après l’approbation de la publication en redemande une.
+- Tant qu’une publication programmée montre un fichier sur un canal, il ne peut pas être supprimé de la médiathèque. Un brouillon le lâche, sur chaque canal.
+
+## Retirer un canal d’une publication programmée [#remove-target]
+
+`DELETE …/posts/{postId}/targets/{targetId}` retire un canal d’une publication qui attend son heure, programmée ou en attente d’approbation. La publication part à son heure sur ses autres canaux, et jamais sur celui-ci, dont la cible est `cancelled` avec `"dropped": true`. Elle garde son heure et son créneau de file d’attente, et son `outcome`, une fois partie, laisse ce canal de côté. La requête répond la publication.
+
+| Statut | Code                     | Quand                                                                                                                           |
+| ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| 409    | `last_target_left`       | Le canal est le dernier sur lequel la publication part encore : annulez plutôt la publication (`POST …/posts/{postId}/cancel`). |
+| 409    | `post_status_conflict`   | La publication est en cours d’envoi ou terminée, ou c’est un brouillon, dont les canaux changent par une mise à jour.           |
+| 409    | `target_status_conflict` | Le canal a été annulé avec sa publication.                                                                                      |
+
+Un canal déjà retiré répond la publication telle qu’elle est : une requête renvoyée après une réponse perdue est sans risque.
+
+- C’est une modification de la publication. Là où vos publications demandent une [approbation](/guides/posts/review), l’approbation donnée ne la couvre plus, et la réponse porte `awaitingApproval`, en attente d’une nouvelle. Une publication déjà en attente d’approbation garde sa demande, qui couvre ce qu’elle est maintenant.
+- Les webhooks reçoivent un [`post.cancelled`](/developers/webhooks/events/posts#post-cancelled) qui nomme ce seul canal, avec `scope` `target`.
+- Une publication repassée en brouillon (`unschedule`, des changements demandés, ou une approbation après son heure) garde les canaux qu’elle avait encore. Le canal retiré part avec sa cible et ses entrées d’`overrides` dans chaque partie. Nommé de nouveau dans `channelIds`, il reçoit une nouvelle cible, en attente.
+
+Il faut post:schedule, ou, sur une publication en attente d’approbation, le droit de demander que des publications partent. Un client OAuth a besoin du scope `workspace:publish`.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
-| Requête                             | Outil MCP                         | Commande                             |
-| ----------------------------------- | --------------------------------- | ------------------------------------ |
-| `POST …/posts/validate`             | `validate_post`                   | `peal post … --dry-run`              |
-| `POST …/posts/send?wait=…`          | `create_post`, avec `waitSeconds` | `peal post … --now --wait <seconds>` |
-| `GET …/posts/{postId}/outcome`      | `await_post`                      | `peal posts wait <post-id>`          |
-| `POST …/posts/bulk`                 | `create_posts`                    |                                      |
-| `POST …/posts/import`               |                                   | `peal posts import <file.csv>`       |
-| `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
-| `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
-| `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
-| `POST …/targets/{targetId}/edit`    | `edit_published_post`             | `peal posts edit <post-id>`          |
-| `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
-| `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
-| `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |
+| Requête                                      | Outil MCP                         | Commande                                         |
+| -------------------------------------------- | --------------------------------- | ------------------------------------------------ |
+| `POST …/posts/validate`                      | `validate_post`                   | `peal post … --dry-run`                          |
+| `POST …/posts/send?wait=…`                   | `create_post`, avec `waitSeconds` | `peal post … --now --wait <seconds>`             |
+| `GET …/posts/{postId}/outcome`               | `await_post`                      | `peal posts wait <post-id>`                      |
+| `POST …/posts/bulk`                          | `create_posts`                    |                                                  |
+| `POST …/posts/import`                        |                                   | `peal posts import <file.csv>`                   |
+| `GET …/posts/search`                         | `list_posts`                      | `peal posts list`                                |
+| `POST …/posts/{postId}/queue`                | `queue_post`                      | `peal posts queue <post-id>`                     |
+| `POST …/posts/{postId}/unpublish`            | `unpublish_post`                  | `peal posts unpublish <post-id>`                 |
+| `POST …/targets/{targetId}/edit`             | `edit_published_post`             | `peal posts edit <post-id>`                      |
+| `GET …/posts/{postId}/changes`               | `list_post_changes`               | `peal posts changes <post-id>`                   |
+| `DELETE …/posts/{postId}/targets/{targetId}` | `remove_post_target`              | `peal posts remove-target <post-id> <target-id>` |
+| `GET …/queues/{queueId}/slots`               | `preview_queue`                   | `peal queues preview <queue>`                    |
+| `POST …/queues/{queueId}/reshuffle`          | `reshuffle_queue`                 | `peal queues reshuffle <queue>`                  |
 
 [Connecter un client MCP](/developers/mcp/tools#tools) décrit les outils, et [Ligne de commande](/developers/cli/posts#post) les commandes.

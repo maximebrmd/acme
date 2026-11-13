@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Schema } from "effect";
+import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PostRepository } from "#publishing/application/post-repository.ts";
@@ -39,6 +39,14 @@ const fixture = path.join(
   "follow-ups.json"
 );
 
+const overridesFixture = path.join(
+  import.meta.dirname,
+  "fixtures",
+  "persisted",
+  "posts",
+  "text-overrides.json"
+);
+
 const deletePost = (postId: PostId) =>
   SqlClient.SqlClient.use(
     (sql) => sql`DELETE FROM publishing.posts WHERE id = ${postId}`
@@ -59,6 +67,50 @@ layer(StorageTest)("a post's stored parts", (it) => {
         decoded.map((parts) => parts.map(({ delaySeconds }) => delaySeconds)),
         [[], [0], [300, 86_400]]
       );
+    })
+  );
+
+  it.effect("keep the texts and media they have on channels", () =>
+    Effect.gen(function* decodesOverrides() {
+      const stored = yield* Effect.promise(
+        async () => await readFile(overridesFixture, "utf-8")
+      );
+
+      const decoded = yield* Schema.decodeUnknownEffect(
+        Schema.fromJsonString(Schema.Array(Schema.Array(TextOverride)))
+      )(stored);
+
+      assert.deepStrictEqual(
+        decoded.map((overrides) =>
+          overrides.map(({ media }) => media?.length ?? null)
+        ),
+        [[], [null], [1, 0]]
+      );
+    })
+  );
+
+  it.effect("read a target taken off its post as it was written", () =>
+    Effect.gen(function* droppedRow() {
+      const sql = yield* SqlClient.SqlClient;
+      const workspaceId = yield* freshWorkspace;
+      const postId = yield* newId(PostIdSchema);
+      const targetId = yield* newId(PostIdSchema);
+      const channelId = yield* newId(ChannelIdSchema);
+
+      // The columns this release writes for a dropped target.
+      yield* sql`INSERT INTO publishing.posts (id, workspace_id, status, text) VALUES (${postId}, ${workspaceId}, 'draft', 'A synthetic post')`;
+      yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, finished_at, dropped) VALUES (${targetId}, ${postId}, ${channelId}, 'cancelled', '2026-06-15T07:00:00Z', true)`;
+
+      yield* Effect.gen(function* checks() {
+        const posts = yield* PostRepository;
+        const [target] = yield* posts.targets(postId);
+
+        assert.deepStrictEqual(target?.status, {
+          _tag: "cancelled",
+          cancelledAt: DateTime.makeUnsafe("2026-06-15T07:00:00Z"),
+          dropped: true,
+        });
+      }).pipe(Effect.ensuring(deletePost(postId)));
     })
   );
 

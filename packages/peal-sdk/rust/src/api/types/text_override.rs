@@ -5,6 +5,8 @@ pub struct TextOverride {
     #[serde(rename = "channelId")]
     #[serde(default)]
     pub channel_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<Vec<MediaAttachment>>,
     #[serde(default)]
     pub text: String,
 }
@@ -19,12 +21,18 @@ impl TextOverride {
 #[non_exhaustive]
 pub struct TextOverrideBuilder {
     channel_id: Option<String>,
+    media: Option<Vec<MediaAttachment>>,
     text: Option<String>,
 }
 
 impl TextOverrideBuilder {
     pub fn channel_id(mut self, value: impl Into<String>) -> Self {
         self.channel_id = Some(value.into());
+        self
+    }
+
+    pub fn media(mut self, value: Vec<MediaAttachment>) -> Self {
+        self.media = Some(value);
         self
     }
 
@@ -42,6 +50,7 @@ impl TextOverrideBuilder {
             channel_id: self
                 .channel_id
                 .ok_or_else(|| BuildError::missing_field("channel_id"))?,
+            media: self.media,
             text: self.text.ok_or_else(|| BuildError::missing_field("text"))?,
         })
     }

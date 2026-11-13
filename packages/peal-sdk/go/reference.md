@@ -3160,6 +3160,84 @@ _, err := client.Posts.Repost(
 </dl>
 </details>
 
+<details><summary><code>client.Posts.RemoveTarget(WorkspaceID, PostID, TargetID) -> *peal.Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.RemoveTargetPostsRequest{
+    WorkspaceID: "workspaceId",
+    PostID: "postId",
+    TargetID: "targetId",
+}
+_, err := client.Posts.RemoveTarget(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Posts.Confirm(WorkspaceID, PostID, TargetID, request) -> *peal.Post</code></summary>
 <dl>
 <dd>

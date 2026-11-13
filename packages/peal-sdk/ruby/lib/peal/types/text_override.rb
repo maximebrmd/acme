@@ -7,6 +7,8 @@ module Peal
     class TextOverride < Internal::Types::Model
       field :channel_id, -> { String }, optional: false, nullable: false, api_name: "channelId"
 
+      field :media, -> { Internal::Types::Array[Peal::Types::MediaAttachment] }, optional: true, nullable: false
+
       field :text, -> { String }, optional: false, nullable: false
     end
   end

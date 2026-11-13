@@ -10,13 +10,14 @@ import {
   PostPart,
 } from "./post-part.ts";
 import { PostTextSchema } from "./post-text.ts";
-import { TextOverride } from "./text-override.ts";
+import { changedOverride, TextOverride } from "./text-override.ts";
 
 export { maxMediaPerPost } from "./post-part.ts";
 
 /**
- * What a post says: its text, the media it shows, in order, and the text it
- * has instead on some of its channels. That is its first part, and all of
+ * What a post says: its text, the media it shows, in order, and what it
+ * has instead on some of its channels (a text, and media of its own when
+ * the override gives some: `partsOn`, `sentTo`). That is its first part, and all of
  * most posts; `followUps` are the parts after it, in order
  * (`./post-part.ts`). Content stored before posts had parts has none.
  */
@@ -41,16 +42,34 @@ export const emptyContent = new PostContent({
   text: "",
 });
 
+const overrideOn = (
+  overrides: readonly TextOverride[],
+  channelId: ChannelId
+): Option.Option<TextOverride> =>
+  Option.fromUndefinedOr(
+    overrides.find((override) => override.channelId === channelId)
+  );
+
 const textAmong = (
   overrides: readonly TextOverride[],
   channelId: ChannelId,
   text: string
 ): string =>
-  Option.fromUndefinedOr(
-    overrides.find((override) => override.channelId === channelId)
-  ).pipe(
+  overrideOn(overrides, channelId).pipe(
     Option.map((override) => override.text),
     Option.getOrElse(() => text)
+  );
+
+// The media a part shows on a channel: its override's there, when the
+// override gives some, or its own.
+const mediaAmong = (
+  overrides: readonly TextOverride[],
+  channelId: ChannelId,
+  media: readonly MediaAttachment[]
+): readonly MediaAttachment[] =>
+  overrideOn(overrides, channelId).pipe(
+    Option.flatMap((override) => Option.fromUndefinedOr(override.media)),
+    Option.getOrElse(() => media)
   );
 
 /**
@@ -70,6 +89,7 @@ export interface PartOnChannel {
   readonly delay: Duration.Duration;
   /** Its place in the post, from 0, the post itself. */
   readonly index: number;
+  /** Its media on the channel: its override's there, or its own. */
   readonly media: readonly MediaAttachment[];
   /** Its text on the channel: its override there, or its own. */
   readonly text: string;
@@ -83,13 +103,13 @@ export const partsOn = (
   {
     delay: Duration.zero,
     index: 0,
-    media: content.media,
+    media: mediaAmong(content.overrides, channelId, content.media),
     text: textOn(content, channelId),
   },
   ...content.followUps.map((part, position) => ({
     delay: Duration.seconds(part.delaySeconds),
     index: position + 1,
-    media: part.media,
+    media: mediaAmong(part.overrides, channelId, part.media),
     text: textAmong(part.overrides, channelId, part.text),
   })),
 ];
@@ -115,18 +135,17 @@ export const partAlone = (content: PostContent, index: number): PostContent => {
 };
 
 // The overrides with `text` as the channel's own, in the place its
-// override had, or after the others.
+// override had, with the media it gave, or after the others.
 const overriddenWith = (
   overrides: readonly TextOverride[],
   channelId: ChannelId,
   text: string
-): readonly TextOverride[] => {
-  const override = new TextOverride({ channelId, text });
-
-  return overrides.some((kept) => kept.channelId === channelId)
-    ? overrides.map((kept) => (kept.channelId === channelId ? override : kept))
-    : [...overrides, override];
-};
+): readonly TextOverride[] =>
+  overrides.some((kept) => kept.channelId === channelId)
+    ? overrides.map((kept) =>
+        kept.channelId === channelId ? changedOverride(kept, { text }) : kept
+      )
+    : [...overrides, new TextOverride({ channelId, text })];
 
 /**
  * The post's content with `text` as the part at `index`'s own text on
@@ -163,14 +182,20 @@ export const withTextOn = (
         text: content.text,
       });
 
-/** Every image and video the post shows, in any part, each once. */
+/**
+ * Every image and video the post shows, in any part, on any channel (a
+ * part's own, then those its overrides give some channels), each once.
+ */
 export const shownMedia = (
   content: PostContent
 ): readonly MediaAttachment[] => {
   const seen = new Set<string>();
 
   return [content, ...content.followUps]
-    .flatMap(({ media }) => media)
+    .flatMap(({ media, overrides }) => [
+      ...media,
+      ...overrides.flatMap((override) => override.media ?? []),
+    ])
     .filter(({ mediaId }) => {
       if (seen.has(mediaId)) {
         return false;
@@ -192,3 +217,61 @@ export const overriddenChannels = (
     )
   ),
 ];
+
+// A part's overrides with their text alone: what a channel's copy keeps.
+const textsOnly = (
+  overrides: readonly TextOverride[]
+): readonly TextOverride[] =>
+  overrides.map(({ channelId, text }) => new TextOverride({ channelId, text }));
+
+/**
+ * The post as it goes out on a channel: each part with the media it shows
+ * there (`partsOn`), and the texts it has on its channels. What the
+ * platforms' rules read when they check the post on that channel, so each
+ * channel is checked on the media it receives.
+ */
+export const sentTo = (
+  content: PostContent,
+  channelId: ChannelId
+): PostContent =>
+  new PostContent({
+    followUps: content.followUps.map(
+      (part) =>
+        new PostPart({
+          delaySeconds: part.delaySeconds,
+          media: mediaAmong(part.overrides, channelId, part.media),
+          overrides: textsOnly(part.overrides),
+          text: part.text,
+        })
+    ),
+    media: mediaAmong(content.overrides, channelId, content.media),
+    overrides: textsOnly(content.overrides),
+    text: content.text,
+  });
+
+/**
+ * The post's content without what any part has on these channels: their
+ * texts and media of their own go with the channels.
+ */
+export const withoutChannels = (
+  content: PostContent,
+  channelIds: readonly ChannelId[]
+): PostContent => {
+  const kept = (overrides: readonly TextOverride[]) =>
+    overrides.filter(({ channelId }) => !channelIds.includes(channelId));
+
+  return new PostContent({
+    followUps: content.followUps.map(
+      (part) =>
+        new PostPart({
+          delaySeconds: part.delaySeconds,
+          media: part.media,
+          overrides: kept(part.overrides),
+          text: part.text,
+        })
+    ),
+    media: content.media,
+    overrides: kept(content.overrides),
+    text: content.text,
+  });
+};

@@ -46,6 +46,15 @@ Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez *
     Sous **Images et vidéos**, ajoutez des images ou des vidéos de la
     médiathèque, ou importez-les là : voyez [Images et vidéos](/guides/media).
   </Step>
+  <Step title="Montrez d’autres images et vidéos sur un canal, si vous le souhaitez">
+    Dans l’onglet du canal, cochez **Images et vidéos propres**. Le canal part
+    des images et vidéos de la publication : ajoutez-les, retirez-les,
+    réordonnez-les et décrivez-les là. Le canal est vérifié, compté et envoyé
+    avec elles, et les autres canaux gardent celles de la publication.
+    Décochez-la pour reprendre celles de la publication. Un canal a besoin d’un
+    texte pour partir avec des images et vidéos propres : le sien, ou le texte
+    de tous les canaux.
+  </Step>
   <Step title="Remplissez les options des plateformes">
     Quand la plateforme d’un canal en demande plus, comme le titre d’une vidéo
     YouTube, remplissez ses champs sous **Options des plateformes** : voyez
@@ -226,7 +235,7 @@ Une publication peut montrer des images et des vidéos de la médiathèque de l�
 
 ## Depuis un agent, la ligne de commande ou l’API [#api]
 
-Un [client MCP](/developers/mcp/tools#tools), la [ligne de commande](/developers/cli/posts#posts) et l’[API HTTP](/developers) font ce que fait l’éditeur, avec les mêmes vérifications : rédiger un brouillon, le programmer, le publier maintenant, le déplacer, le repasser en brouillon et l’annuler.
+Un [client MCP](/developers/mcp/tools#tools), la [ligne de commande](/developers/cli/posts#posts) et l’[API HTTP](/developers) font ce que fait l’éditeur, avec les mêmes vérifications : rédiger un brouillon, le programmer, le publier maintenant, le déplacer, en retirer un canal, le repasser en brouillon et l’annuler.
 
 `POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant. Quand la publication enfreint une règle de la plateforme de l’un de ses canaux, il la refuse en entier et liste toutes les violations d’un coup. [Publier par l’API](/developers/posting) montre comment vérifier d’abord une publication, en envoyer plusieurs d’un coup, les importer depuis un fichier CSV et les lister.
 

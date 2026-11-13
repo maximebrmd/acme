@@ -359,8 +359,18 @@ public class ValidateTest : BaseMockServerTest
                     },
                     Overrides = new List<TextOverride>()
                     {
-                        new TextOverride { ChannelId = "channelId", Text = "x" },
-                        new TextOverride { ChannelId = "channelId", Text = "x" },
+                        new TextOverride
+                        {
+                            ChannelId = "channelId",
+                            Media = null,
+                            Text = "x",
+                        },
+                        new TextOverride
+                        {
+                            ChannelId = "channelId",
+                            Media = null,
+                            Text = "x",
+                        },
                     },
                     Text = "text",
                 },

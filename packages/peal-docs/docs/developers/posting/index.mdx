@@ -135,7 +135,7 @@ Each entry of `channels` holds:
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `text`                                      | The text the channel receives, which is its override there, or the post's own                                                                                                                                                                                                                                         |
 | `textCounts`                                | That text's length, counted as the channel's platform counts it, against each of its limits. Bluesky has two, in graphemes and in bytes.                                                                                                                                                                              |
-| `hashtags`, `mentions`, `links` and `media` | How many the post holds (`count`) and the most the platform takes (`maximum`, null when Peal knows no limit for it). `links` counts different links.                                                                                                                                                                  |
+| `hashtags`, `mentions`, `links` and `media` | How many the post holds (`count`) and the most the platform takes (`maximum`, null when Peal knows no limit for it). `links` counts different links. `media` counts what the channel receives: its own, when its override gives some ([Media of its own on a channel](#channel-media)), or the post's.                |
 | `parts`                                     | The parts after the first of a [thread](/guides/posts#threads), in order, each with its `part` (its place, from 1), its `text` on the channel and the same counts; none for a post alone. A platform that takes a post alone still lists them, and refuses them with `tooManyParts`.                                  |
 | `violations`                                | Every rule of the platform the post breaks, in any of its parts (text, media formats, sizes, counts and durations, options), and the account's own where its platform tells them. One about a later part names it by `part`. They read as in `PostContentInvalid` ([How refusals read](/developers/agents#refusals)). |
 
@@ -344,21 +344,82 @@ A post made in one call is refused when another post of the workspace already se
 
 `validate` tells the same beforehand, in `duplicates`.
 
+## Media of its own on a channel [#channel-media]
+
+A post's text on one channel, an entry of `content.overrides` or of a part's `overrides`, may also give that channel images and videos of its own, in `media`. The channel then shows those instead of the post's.
+
+| `media` on an override | What the channel shows                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| Left out               | The post's images and videos. Peal answers `media` only on an override that gives some. |
+| An empty list          | None.                                                                                   |
+| A list                 | Those, in order, each with its alt text: 20 at most, ready media of the workspace.      |
+
+An override always has its `text`, which may not be empty. To give a channel media alone, send the post's own text there. That text is the channel's from then on: when you change the post's text, change it there too (the web app does).
+
+```json
+{
+  "text": "Five pictures of the spring catalogue",
+  "media": [
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f001",
+      "altText": "The cover"
+    },
+    { "mediaId": "0190f3a0-0000-7000-8000-00000000f002", "altText": "Page two" }
+  ],
+  "overrides": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "text": "Five pictures of the spring catalogue",
+      "media": [
+        {
+          "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+          "altText": "Page two"
+        }
+      ]
+    }
+  ]
+}
+```
+
+- Each channel is checked on the media it receives, by `validate` (its `media` count and its `violations`) as when the post is scheduled.
+- The [duplicate check](#duplicates) compares what each channel receives.
+- An approval covers the media of every channel: changing a channel's own media after the post was approved asks for an approval again.
+- While a scheduled post shows a file on any channel, the file cannot be deleted from the library. A draft lets go of it, on every channel.
+
+## Remove a channel from a scheduled post [#remove-target]
+
+`DELETE …/posts/{postId}/targets/{targetId}` takes one channel off a post that waits for its time, scheduled or awaiting approval. The post goes out at its time on its other channels, and never on this one, whose target is `cancelled` with `"dropped": true`. It keeps its time and its queue slot, and its `outcome`, once it went out, leaves that channel out. The request answers the post.
+
+| Status | Code                     | When                                                                                                              |
+| ------ | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 409    | `last_target_left`       | The channel is the last one the post still goes out on: cancel the post instead (`POST …/posts/{postId}/cancel`). |
+| 409    | `post_status_conflict`   | The post is publishing or done, or is a draft, whose channels change with an update.                              |
+| 409    | `target_status_conflict` | The channel was cancelled with its post.                                                                          |
+
+A channel already taken off answers the post as it is, so a request sent again after a lost answer is safe.
+
+- It is an edit of the post. Where your posts need an [approval](/guides/posts/review), the approval given no longer covers it, and it is answered `awaitingApproval`, waiting for one again. A post already awaiting approval keeps its request, which covers what the post now is.
+- Webhooks hear a [`post.cancelled`](/developers/webhooks/events/posts#post-cancelled) naming that channel alone, with `scope` `target`.
+- A post taken back to draft (`unschedule`, changes requested, or an approval after its time) keeps the channels it still had. The channel taken off it goes with its target and its overrides in every part. Named again in `channelIds`, it gets a new, pending target.
+
+It needs post:schedule, or, on a post awaiting approval, leave to ask for posts to go out. An OAuth client needs the scope `workspace:publish`.
+
 ## From MCP and the command line [#tools]
 
-| Request                             | MCP tool                          | Command                              |
-| ----------------------------------- | --------------------------------- | ------------------------------------ |
-| `POST …/posts/validate`             | `validate_post`                   | `peal post … --dry-run`              |
-| `POST …/posts/send?wait=…`          | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
-| `GET …/posts/{postId}/outcome`      | `await_post`                      | `peal posts wait <post-id>`          |
-| `POST …/posts/bulk`                 | `create_posts`                    |                                      |
-| `POST …/posts/import`               |                                   | `peal posts import <file.csv>`       |
-| `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
-| `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
-| `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
-| `POST …/targets/{targetId}/edit`    | `edit_published_post`             | `peal posts edit <post-id>`          |
-| `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
-| `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
-| `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |
+| Request                                      | MCP tool                          | Command                                          |
+| -------------------------------------------- | --------------------------------- | ------------------------------------------------ |
+| `POST …/posts/validate`                      | `validate_post`                   | `peal post … --dry-run`                          |
+| `POST …/posts/send?wait=…`                   | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>`             |
+| `GET …/posts/{postId}/outcome`               | `await_post`                      | `peal posts wait <post-id>`                      |
+| `POST …/posts/bulk`                          | `create_posts`                    |                                                  |
+| `POST …/posts/import`                        |                                   | `peal posts import <file.csv>`                   |
+| `GET …/posts/search`                         | `list_posts`                      | `peal posts list`                                |
+| `POST …/posts/{postId}/queue`                | `queue_post`                      | `peal posts queue <post-id>`                     |
+| `POST …/posts/{postId}/unpublish`            | `unpublish_post`                  | `peal posts unpublish <post-id>`                 |
+| `POST …/targets/{targetId}/edit`             | `edit_published_post`             | `peal posts edit <post-id>`                      |
+| `GET …/posts/{postId}/changes`               | `list_post_changes`               | `peal posts changes <post-id>`                   |
+| `DELETE …/posts/{postId}/targets/{targetId}` | `remove_post_target`              | `peal posts remove-target <post-id> <target-id>` |
+| `GET …/queues/{queueId}/slots`               | `preview_queue`                   | `peal queues preview <queue>`                    |
+| `POST …/queues/{queueId}/reshuffle`          | `reshuffle_queue`                 | `peal queues reshuffle <queue>`                  |
 
 [Connect an MCP client](/developers/mcp/tools#tools) describes the tools, and [Command line](/developers/cli/posts#post) the commands.

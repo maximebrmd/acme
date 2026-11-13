@@ -1,0 +1,21 @@
+[
+  [],
+  [{ "channelId": "0190f3a0-0000-7000-8000-0000000000d1", "text": "Shorter here" }],
+  [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-0000000000d1",
+      "media": [
+        {
+          "altText": "A synthetic square picture",
+          "mediaId": "0190f3a0-0000-7000-8000-0000000000c3"
+        }
+      ],
+      "text": "Its own picture here"
+    },
+    {
+      "channelId": "0190f3a0-0000-7000-8000-0000000000d2",
+      "media": [],
+      "text": "No picture here"
+    }
+  ]
+]

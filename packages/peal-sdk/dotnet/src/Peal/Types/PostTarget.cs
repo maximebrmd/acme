@@ -14,6 +14,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("channelId")]
     public required string ChannelId { get; set; }
 
+    [JsonPropertyName("dropped")]
+    public bool? Dropped { get; set; }
+
     [JsonPropertyName("editedAt")]
     public string? EditedAt { get; set; }
 

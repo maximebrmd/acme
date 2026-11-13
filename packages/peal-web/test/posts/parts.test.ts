@@ -55,6 +55,18 @@ describe("a part's text on a channel", () => {
     );
   });
 
+  it("keeps the media a part's override gives its channel when its text changes", () => {
+    const media = [{ altText: "", mediaId: "m1" }];
+
+    expect(
+      withPartOverride(
+        [{ channelId: bluesky, media, text: "Before" }],
+        bluesky,
+        "After"
+      )
+    ).toStrictEqual([{ channelId: bluesky, media, text: "After" }]);
+  });
+
   it("gives a channel no text of its own it did not have", () => {
     expect(withPartOverride(own.overrides, mastodon, "New")).toStrictEqual(
       own.overrides

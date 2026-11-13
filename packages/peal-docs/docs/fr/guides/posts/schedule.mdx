@@ -61,6 +61,7 @@ Une fois une publication programmée, son texte est verrouillé ; son heure ne l
     - Sur le calendrier, faites glisser la publication par sa poignée vers une autre heure ou un autre jour. Elle garde le fuseau horaire où elle a été programmée.
     - Pour changer ce qu’elle dit, choisissez **Repasser en brouillon**. Elle quitte le calendrier et ne part plus à aucune heure : modifiez-la, puis **Programmez**-la à nouveau, ce qui la revérifie auprès de ses canaux.
     - Pour l’arrêter, choisissez **Annuler la publication** dans l’éditeur et confirmez. Elle ne part sur aucun canal, et ne peut plus être programmée.
+    - Pour qu’elle ne parte pas sur un seul canal, choisissez **Retirer** à côté de ce canal sous **Canaux où elle part**. Elle part sur les autres à son heure, et le canal indique **Retiré de la publication**. Le dernier canal reste : annulez plutôt la publication.
   </Tab>
   <Tab title="CLI">
 
@@ -68,12 +69,18 @@ Une fois une publication programmée, son texte est verrouillé ; son heure ne l
 peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
 peal posts unschedule <post-id>
 peal posts cancel <post-id>
+peal posts remove-target <post-id> <target-id>
 ```
 
   </Tab>
 </Tabs>
 
 Déplacer une publication ne revérifie ni son texte ni ses médias auprès de ses canaux.
+
+Retirer un canal d’une publication est une modification de celle-ci :
+
+- Dans un espace de travail qui demande des [approbations](/guides/posts/review#policy), quand vos publications en demandent une, l’approbation donnée ne couvre plus la publication, et elle attend de nouveau une approbation.
+- Repassée en brouillon (par vous, par une relecture ou par une approbation venue trop tard), la publication garde les canaux qu’elle avait encore. Le canal retiré perd son propre texte et ses images. Coché de nouveau, il repart de zéro.
 
 ## Le calendrier [#calendar]
 

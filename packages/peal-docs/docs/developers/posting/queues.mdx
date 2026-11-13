@@ -168,13 +168,13 @@ Who may do what:
 - Changing, pausing, resuming or stopping a rule needs post:schedule, or to be its starter acting as they started it: in the web app, through the same application or with the same key.
 - Each post acts as the rule's starter as they are then: a key's rule stops once the key is revoked.
 
-| Status | Code                         | When                                                                                                                                                              |
-| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 409    | `post_not_recyclable`        | The post cannot repeat. `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`. |
-| 422    | `recycling_variants_invalid` | Variants break the source's channels' rules, each by its place from 1 with its violations.                                                                        |
-| 422    | `recycling_ends_too_soon`    | An ending that leaves no post to make.                                                                                                                            |
-| 409    | `too_many_recycling_rules`   | 100 rules are going on.                                                                                                                                           |
-| 409    | `recycling_rule_ended`       | A change to an ended rule.                                                                                                                                        |
+| Status | Code                         | When                                                                                                                                                                                                                                |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 409    | `post_not_recyclable`        | The post cannot repeat. `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`.                                                                   |
+| 422    | `recycling_variants_invalid` | Variants break the source's channels' rules, each by its place from 1 with its violations. An empty variant text that leaves a channel showing [media of its own](/developers/posting#channel-media) with no text is `empty` there. |
+| 422    | `recycling_ends_too_soon`    | An ending that leaves no post to make.                                                                                                                                                                                              |
+| 409    | `too_many_recycling_rules`   | 100 rules are going on.                                                                                                                                                                                                             |
+| 409    | `recycling_rule_ended`       | A change to an ended rule.                                                                                                                                                                                                          |
 
 ## Post from a feed [#feeds]
 

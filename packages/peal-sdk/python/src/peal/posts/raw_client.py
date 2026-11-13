@@ -2503,6 +2503,112 @@ class RawPostsClient:
             )
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
+    def remove_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> HttpResponse[Post]:
+        """
+        Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[Post]
+            Post
+        """
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/targets/{encode_path_param(target_id)}",
+            method="DELETE",
+            request_options=request_options,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 409:
+                raise ConflictError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
     def confirm(
         self,
         workspace_id: str,
@@ -5539,6 +5645,112 @@ class AsyncRawPostsClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/targets/{encode_path_param(target_id)}/repost",
             method="POST",
             request_options=_request_options_with_retries_disabled,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 409:
+                raise ConflictError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    async def remove_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AsyncHttpResponse[Post]:
+        """
+        Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[Post]
+            Post
+        """
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/targets/{encode_path_param(target_id)}",
+            method="DELETE",
+            request_options=request_options,
         )
         try:
             if 200 <= _response.status_code < 300:

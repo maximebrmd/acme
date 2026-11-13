@@ -15,9 +15,10 @@ export const noMedia: ShownMedia = new Map();
 const filesOf = (post: ReviewedPost): readonly MediaAssetId[] => [
   ...new Set([
     ...post.media.map(({ mediaId }) => mediaId),
-    ...post.channels.flatMap(({ followUps }) =>
-      followUps.flatMap(({ media }) => media.map(({ mediaId }) => mediaId))
-    ),
+    ...post.channels.flatMap(({ followUps, media }) => [
+      ...Option.getOrElse(media, () => []).map(({ mediaId }) => mediaId),
+      ...followUps.flatMap((part) => part.media.map(({ mediaId }) => mediaId)),
+    ]),
   ]),
 ];
 

@@ -11,6 +11,7 @@ import { useCallback } from "react";
 
 import { Composer } from "#components/posts/composer.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
+import { PostChannels } from "#components/posts/post-channels.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
 import { PostLinks } from "#components/posts/post-links.tsx";
 import { PostRepeat } from "#components/recycling/post-repeat.tsx";
@@ -116,7 +117,17 @@ const ExistingPost = ({
       post.status === "scheduled" ? (
       <div className="flex flex-col gap-6">
         <Composer
-          key={post.id}
+          key={`${post.id}/${String(
+            post.targets.filter(({ dropped }) => dropped === true).length
+          )}`}
+          approvalPolicy={approvalPolicy}
+          channels={channels}
+          permissions={permissions}
+          post={post}
+          userId={userId}
+          workspaceId={workspaceId}
+        />
+        <PostChannels
           approvalPolicy={approvalPolicy}
           channels={channels}
           permissions={permissions}

@@ -201,6 +201,40 @@ const previews = (
   />
 );
 
+// A channel with a file of its own, and one that shows none.
+const ownMediaPreview = (
+  <ChannelPreviewsView
+    channels={[
+      {
+        channelId,
+        followUps: [],
+        handle: "@studio@social.example.test",
+        media: [
+          {
+            altText: "Only here",
+            kind: "image",
+            mediaId: "m9",
+            url: "https://media.example.test/m9",
+          },
+        ],
+        options: null,
+        platform: "mastodon",
+        text: "Launch day.",
+      },
+      {
+        channelId: "0190f3a0-0000-7000-8000-00000000c002",
+        followUps: [],
+        handle: "@shop@social.example.test",
+        media: [],
+        options: null,
+        platform: "mastodon",
+        text: "Launch day.",
+      },
+    ]}
+    media={[]}
+  />
+);
+
 describe(ChannelPreviewsView, () => {
   it("shows each channel's own text as text, under its name and platform", async () => {
     const html = await render("en", previews);
@@ -227,6 +261,19 @@ describe(ChannelPreviewsView, () => {
     expect(html).toContain("A synthetic chart");
     expect(html).toContain("5 minutes after the part before it");
     expect(html.indexOf("Part 2")).toBeLessThan(html.indexOf("Part 3"));
+  });
+
+  it("shows the files a channel shows instead of the post's", async () => {
+    const english = await render("en", ownMediaPreview);
+
+    expect(english).toContain(
+      'aria-label="Images, videos and documents on @studio@social.example.test"'
+    );
+    expect(english).toContain("Only here");
+    expect(english).toContain("No image, video or document on this channel.");
+    await expect(render("fr", ownMediaPreview)).resolves.toContain(
+      "Aucune image, vidéo ni aucun document sur ce canal."
+    );
   });
 
   it("names the parts in the reader's language", async () => {

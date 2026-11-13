@@ -5,7 +5,7 @@ import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
 import { partCount } from "#publishing/domain/post-content.ts";
-import { livePartsOf } from "#publishing/domain/post-target.ts";
+import { isDropped, livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -86,6 +86,7 @@ const makeTelling = Effect.gen(function* makeTelling() {
           data: {
             cancelledAt,
             postId: post.id,
+            scope: "post",
             targets: [
               {
                 channelId: on.channelId,
@@ -123,7 +124,8 @@ const makeTelling = Effect.gen(function* makeTelling() {
 /**
  * PostEvents through the webhooks context: `post.scheduled` for each
  * schedule or move (keyed by the post's schedule revision),
- * `post.unscheduled`, `post.cancelled` with the targets cancelled then,
+ * `post.unscheduled`, `post.cancelled` with the targets cancelled then
+ * (or the one channel taken off a post that still goes out),
  * what a member found for an unconfirmed target, as the `post.published`
  * or `post.failed` it turned out to be, and `post.finished` with every
  * target's result, once per round and outcome.
@@ -164,7 +166,10 @@ export const WebhookPostEvents = Layer.effect(
         data: {
           postId: post.id,
           scheduledAt: post.status.schedule.at,
-          targets: yield* refsOf(targets),
+          // A channel taken off the post is no longer one it goes to.
+          targets: yield* refsOf(
+            targets.filter((target) => !isDropped(target))
+          ),
           timeZone: post.status.schedule.timeZone,
           workspaceId: post.workspaceId,
         },
@@ -184,12 +189,35 @@ export const WebhookPostEvents = Layer.effect(
           data: {
             cancelledAt,
             postId: post.id,
+            scope: "post",
             targets: yield* refsOf(targets),
             workspaceId: post.workspaceId,
           },
           type: "post.cancelled",
         }
       );
+    });
+
+    // A channel taken off the post is told as the post cancelled there
+    // alone, once for the target: the post goes out on its others.
+    const dropped = Effect.fn("PostEvents.dropped")(function* dropped(
+      post: Post,
+      target: PostTarget
+    ) {
+      if (target.status._tag !== "cancelled") {
+        return;
+      }
+
+      yield* publish(`post-target:${target.id}:dropped`, {
+        data: {
+          cancelledAt: target.status.cancelledAt,
+          postId: post.id,
+          scope: "target",
+          targets: yield* refsOf([target]),
+          workspaceId: post.workspaceId,
+        },
+        type: "post.cancelled",
+      });
     });
 
     // Each target's result, once every one has its own: none while one
@@ -258,6 +286,7 @@ export const WebhookPostEvents = Layer.effect(
       cancelled: (post, targets) => neverStopping(cancelled(post, targets)),
       confirmed: (post, target) =>
         neverStopping(settled(post, target, "confirmed")),
+      dropped: (post, target) => neverStopping(dropped(post, target)),
       finished: (post, targets) => neverStopping(finished(post, targets)),
       scheduled: (post, targets) => neverStopping(scheduled(post, targets)),
       unscheduled: (post) => neverStopping(unscheduled(post)),

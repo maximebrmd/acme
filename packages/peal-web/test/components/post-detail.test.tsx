@@ -308,6 +308,27 @@ describe(PostDetailView, () => {
     expect(plain).not.toContain("The thumbnail was not set");
   });
 
+  it("says a channel was taken off the post before it went out", async () => {
+    const removed: Post = {
+      ...post,
+      targets: [
+        target("t4", "c4", { dropped: true, status: "cancelled" }),
+        target("t5", "c4", { status: "cancelled" }),
+      ],
+    };
+
+    const english = await renderPost("en", removed);
+    const french = await renderPost("fr", removed);
+
+    expect(english).toContain(
+      "This channel was taken off the post before it went out: the post went out on its other channels."
+    );
+    expect(english).toContain("It was cancelled before it went out.");
+    expect(french).toContain(
+      "Ce canal a été retiré de la publication avant son départ"
+    );
+  });
+
   it("says how the post went on each channel, and why", async () => {
     const html = await render("en", true);
 

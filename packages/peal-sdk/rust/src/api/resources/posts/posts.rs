@@ -1221,6 +1221,60 @@ impl PostsClient {
             .await
     }
 
+    /// Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .remove_target(
+    ///             &"workspaceId".to_string(),
+    ///             &"postId".to_string(),
+    ///             &"targetId".to_string(),
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn remove_target(
+        &self,
+        workspace_id: &str,
+        post_id: &str,
+        target_id: &str,
+        options: Option<RequestOptions>,
+    ) -> Result<Post, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::DELETE,
+                &format!(
+                    "api/workspaces/{}/posts/{}/targets/{}",
+                    workspace_id, post_id, target_id
+                ),
+                None,
+                None,
+                options,
+            )
+            .await
+    }
+
     /// Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
     ///
     /// # Arguments

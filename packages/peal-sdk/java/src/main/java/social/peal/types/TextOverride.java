@@ -9,10 +9,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,12 +24,19 @@ import social.peal.core.ObjectMappers;
 public final class TextOverride {
     private final String channelId;
 
+    private final Optional<List<MediaAttachment>> media;
+
     private final String text;
 
     private final Map<String, Object> additionalProperties;
 
-    private TextOverride(String channelId, String text, Map<String, Object> additionalProperties) {
+    private TextOverride(
+            String channelId,
+            Optional<List<MediaAttachment>> media,
+            String text,
+            Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.media = media;
         this.text = text;
         this.additionalProperties = additionalProperties;
     }
@@ -34,6 +44,11 @@ public final class TextOverride {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("media")
+    public Optional<List<MediaAttachment>> getMedia() {
+        return media;
     }
 
     @JsonProperty("text")
@@ -53,12 +68,12 @@ public final class TextOverride {
     }
 
     private boolean equalTo(TextOverride other) {
-        return channelId.equals(other.channelId) && text.equals(other.text);
+        return channelId.equals(other.channelId) && media.equals(other.media) && text.equals(other.text);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.text);
+        return Objects.hash(this.channelId, this.media, this.text);
     }
 
     @java.lang.Override
@@ -86,6 +101,10 @@ public final class TextOverride {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage media(Optional<List<MediaAttachment>> media);
+
+        _FinalStage media(List<MediaAttachment> media);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,6 +113,8 @@ public final class TextOverride {
 
         private String text;
 
+        private Optional<List<MediaAttachment>> media = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -101,6 +122,7 @@ public final class TextOverride {
         @java.lang.Override
         public Builder from(TextOverride other) {
             channelId(other.getChannelId());
+            media(other.getMedia());
             text(other.getText());
             return this;
         }
@@ -120,13 +142,26 @@ public final class TextOverride {
         }
 
         @java.lang.Override
+        public _FinalStage media(List<MediaAttachment> media) {
+            this.media = Optional.ofNullable(media);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "media", nulls = Nulls.SKIP)
+        public _FinalStage media(Optional<List<MediaAttachment>> media) {
+            this.media = media;
+            return this;
+        }
+
+        @java.lang.Override
         public TextOverride build() {
-            return new TextOverride(channelId, text, additionalProperties);
+            return new TextOverride(channelId, media, text, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelId") || key.equalsIgnoreCase("text")) {
+            if (key.equalsIgnoreCase("channelId") || key.equalsIgnoreCase("media") || key.equalsIgnoreCase("text")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -32,7 +32,9 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * revision (`execution_id`) only publishes while the post still has it.
  *
  * Its content: `text`, the `media` it shows in order (media ids with their
- * alt text) and `text_overrides`, the text it has instead on some channels.
+ * alt text) and `text_overrides`, the text it has instead on some channels,
+ * each with the media it shows there instead when it gives some (`media`,
+ * left out otherwise).
  * That is its first part; `follow_ups` holds the parts after it, in order,
  * as the domain's `PostPart` encodes them (text, media, text overrides and
  * the seconds each waits), empty on a post of one part, as every post from
@@ -162,6 +164,10 @@ export const postTargets = publishing.table(
     cancelRequested: boolean("cancel_requested").notNull().default(false),
     channelId: uuid("channel_id").notNull(),
     contentDigest: text("content_digest"),
+    // True on a target someone took off its post while the post waited
+    // for its time: it is cancelled, and the post goes out on its other
+    // channels.
+    dropped: boolean("dropped").notNull().default(false),
     // When Peal last replaced the text of a part of it on the platform at
     // a member's request (`live_post_changes`). Null until then.
     editedAt: instant("edited_at"),

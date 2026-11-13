@@ -203,6 +203,7 @@ const coverage = {
     "The command peal posts list reads posts.search, which lists the same posts over a range of time with --from and --to, and every other post too."
   ),
   "posts.outcome": by("posts wait"),
+  "posts.removeTarget": by("posts remove-target"),
   "posts.repost": by("posts repost"),
   "posts.reschedule": by("posts reschedule"),
   "posts.schedule": by("posts schedule"),

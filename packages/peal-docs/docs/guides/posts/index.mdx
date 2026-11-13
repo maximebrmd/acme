@@ -46,6 +46,14 @@ From a workspace's card on **Workspaces**, choose **New post**.
     Under **Images and videos**, attach images or videos from the media library,
     or upload them there: see [Images and videos](/guides/media).
   </Step>
+  <Step title="Show other images and videos on one channel, if you like">
+    In the channel's tab, tick **Images and videos of its own**. The channel
+    starts from the post's images and videos: add, remove, reorder and describe
+    them there. The channel is checked, counted and sent with those, and the
+    other channels keep the post's. Untick it to show the post's again. A
+    channel needs a text to go out with images and videos of its own: its own,
+    or the text for all channels.
+  </Step>
   <Step title="Fill in the platform options">
     When a channel's platform asks for more, such as a YouTube video's title,
     fill in its fields under **Platform options**: see [Platform
@@ -220,7 +228,7 @@ A post can show images and videos from the workspace's media library. [Images an
 
 ## From an agent, the command line or the API [#api]
 
-An [MCP client](/developers/mcp/tools#tools), the [command line](/developers/cli/posts#posts) and the [HTTP API](/developers) do what the composer does, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it.
+An [MCP client](/developers/mcp/tools#tools), the [command line](/developers/cli/posts#posts) and the [HTTP API](/developers) do what the composer does, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking a channel off it, taking it back to draft and cancelling it.
 
 `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant. When the post breaks a rule of one of its channels' platforms, it refuses the post whole and lists every violation at once. [Posting through the API](/developers/posting) shows how to check a post first, send several at once, import them from a CSV file and list them.
 

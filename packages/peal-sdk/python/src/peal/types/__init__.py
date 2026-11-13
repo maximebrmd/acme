@@ -436,6 +436,7 @@ if typing.TYPE_CHECKING:
     from .invalid_time_zone_encoded_tag import InvalidTimeZoneEncodedTag
     from .invitation import Invitation
     from .invitation_not_found_encoded import InvitationNotFoundEncoded
+    from .last_target_left_encoded import LastTargetLeftEncoded
     from .limited_count import LimitedCount
     from .linked_in_connection import LinkedInConnection
     from .linked_in_mention import LinkedInMention
@@ -1372,6 +1373,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InvalidTimeZoneEncodedTag": ".invalid_time_zone_encoded_tag",
     "Invitation": ".invitation",
     "InvitationNotFoundEncoded": ".invitation_not_found_encoded",
+    "LastTargetLeftEncoded": ".last_target_left_encoded",
     "LimitedCount": ".limited_count",
     "LinkedInConnection": ".linked_in_connection",
     "LinkedInMention": ".linked_in_mention",
@@ -2323,6 +2325,7 @@ __all__ = [
     "InvalidTimeZoneEncodedTag",
     "Invitation",
     "InvitationNotFoundEncoded",
+    "LastTargetLeftEncoded",
     "LimitedCount",
     "LinkedInConnection",
     "LinkedInMention",

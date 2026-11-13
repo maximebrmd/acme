@@ -168,13 +168,13 @@ Qui peut faire quoi :
 - Changer, mettre en pause, reprendre ou arrêter une règle demande post:schedule, ou d’être la personne qui l’a lancée, agissant comme elle l’a lancée : dans l’application web, par la même application ou avec la même clé.
 - Chaque publication agit au nom de qui a lancé la règle, tel qu’il est alors : la règle d’une clé s’arrête une fois la clé révoquée.
 
-| Statut | Code                         | Quand                                                                                                                                                                                    |
-| ------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 409    | `post_not_recyclable`        | La publication ne peut pas se répéter. `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`. |
-| 422    | `recycling_variants_invalid` | Des variantes enfreignent les règles des canaux de la source, chacune par sa place à partir de 1 avec ses violations.                                                                    |
-| 422    | `recycling_ends_too_soon`    | Une fin qui ne laisse aucune publication à créer.                                                                                                                                        |
-| 409    | `too_many_recycling_rules`   | 100 règles sont en cours.                                                                                                                                                                |
-| 409    | `recycling_rule_ended`       | Une modification d’une règle terminée.                                                                                                                                                   |
+| Statut | Code                         | Quand                                                                                                                                                                                                                                                          |
+| ------ | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 409    | `post_not_recyclable`        | La publication ne peut pas se répéter. `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`.                                                                       |
+| 422    | `recycling_variants_invalid` | Des variantes enfreignent les règles des canaux de la source, chacune par sa place à partir de 1 avec ses violations. Un texte de variante vide qui laisse sans texte un canal montrant des [médias propres](/developers/posting#channel-media) y est `empty`. |
+| 422    | `recycling_ends_too_soon`    | Une fin qui ne laisse aucune publication à créer.                                                                                                                                                                                                              |
+| 409    | `too_many_recycling_rules`   | 100 règles sont en cours.                                                                                                                                                                                                                                      |
+| 409    | `recycling_rule_ended`       | Une modification d’une règle terminée.                                                                                                                                                                                                                         |
 
 ## Publier depuis un flux [#feeds]
 

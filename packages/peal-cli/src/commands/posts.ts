@@ -4,6 +4,7 @@ import {
   DateTime,
   Effect,
   Option,
+  Result,
   Schema,
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
@@ -20,6 +21,7 @@ import type {
   PostTarget,
 } from "peal-contract";
 
+import { apiErrorJson } from "#api-error.ts";
 import { edit } from "#commands/posts-edit.ts";
 import { importPosts } from "#commands/posts-import.ts";
 import { list } from "#commands/posts-list.ts";
@@ -100,6 +102,10 @@ const publishedNotes = (target: PostTarget): string =>
 export const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
     return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
+  }
+
+  if (target.status === "cancelled" && target.dropped === true) {
+    return "removed from the post: it does not go out here";
   }
 
   if (target.status === "unconfirmed" && target.unconfirmedReason !== null) {
@@ -721,6 +727,95 @@ const cancel = Command.make(
   )
 );
 
+// A refusal the removal of a channel has words of its own for, as the
+// server's error (`--json` prints it) and what the user reads.
+const removalRefused = (
+  failure: {
+    readonly _tag: string;
+    readonly code?: string | undefined;
+    readonly requestId?: string | undefined;
+  },
+  reason: string
+) =>
+  new Refused({
+    code: failure.code,
+    error: apiErrorJson(failure),
+    reason,
+    requestId: failure.requestId,
+  });
+
+const removeTarget = Command.make(
+  "remove-target",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    targetId: targetArgument,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.removeTarget")(function* removeTarget({
+    json,
+    postId,
+    targetId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const answer = yield* client.posts
+      .removeTarget({
+        params: { postId, targetId, workspaceId: workspace.id },
+      })
+      .pipe(
+        Effect.map((post) => Result.succeed(post)),
+        Effect.catchTags({
+          LastTargetLeft: (last) =>
+            Effect.succeed(
+              Result.fail(
+                removalRefused(
+                  last,
+                  `This is the last channel post ${postId} goes out on: peal posts cancel ${postId} cancels the post instead.`
+                )
+              )
+            ),
+          TargetStatusConflict: (conflict) =>
+            Effect.succeed(
+              Result.fail(
+                removalRefused(
+                  conflict,
+                  `The post is ${conflict.status} on that channel: only a channel it has not been sent to yet is removed.`
+                )
+              )
+            ),
+        }),
+        explainingPublishing(url)
+      );
+
+    const post = yield* Effect.fromResult(answer);
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    const channel = targetOf(post, targetId).pipe(
+      Option.map((target) => named(names, target.channelId)),
+      Option.getOrElse(() => "that channel")
+    );
+
+    yield* Console.log(
+      post.status === "awaitingApproval"
+        ? `Removed ${channel} from post ${postId}: it now waits for an approval, and goes out on its other channels once approved.`
+        : `Removed ${channel} from post ${postId}: it goes out on its other channels at its time.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Take one channel off a post that waits for its time, scheduled or awaiting an approval: it goes out on its other channels and never on this one. The last channel is refused: cancel the post instead. Where posts need an approval, the approval given no longer covers it, and it waits for one again."
+  )
+);
+
 // How many of a post's parts its copy was made without, in words.
 const leftOut = (
   missing: number,
@@ -846,7 +941,7 @@ const tag = Command.make(
 
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, deleting it from the platforms once live, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
+    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling, taking a channel off it or taking it back to draft, how it went, following up where it failed, deleting it from the platforms once live, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
     list,
@@ -859,6 +954,7 @@ export const posts = Command.make("posts").pipe(
     queue,
     unschedule,
     cancel,
+    removeTarget,
     repost,
     confirm,
     unpublish,

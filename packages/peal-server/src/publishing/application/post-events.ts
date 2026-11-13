@@ -27,6 +27,14 @@ export class PostEvents extends Context.Service<
       targets: readonly PostTarget[]
     ) => Effect.Effect<void, DatabaseError>;
     /**
+     * The target was taken off its post before it went out (it is
+     * cancelled and `dropped`); the post goes out on its other channels.
+     */
+    readonly dropped: (
+      post: Post,
+      target: PostTarget
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * A member said what became of an unconfirmed target: `target` as they
      * left it, published or failed.
      */
@@ -52,6 +60,7 @@ export class PostEvents extends Context.Service<
     PostEvents.of({
       cancelled: () => Effect.void,
       confirmed: () => Effect.void,
+      dropped: () => Effect.void,
       finished: () => Effect.void,
       scheduled: () => Effect.void,
       unscheduled: () => Effect.void,

@@ -14,10 +14,17 @@ import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
+import type { LastTargetLeft } from "#publishing/domain/last-target-left.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { PostOccurrence } from "#publishing/domain/post-occurrence.ts";
-import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
+import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
+import {
+  cancelTarget,
+  isDropped,
+  isSettled,
+} from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
@@ -47,6 +54,10 @@ import type { Queue } from "#publishing/domain/queue.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
+import {
+  dropTarget as dropTargetOf,
+  withoutChannelOf,
+} from "#publishing/domain/target-removal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -64,6 +75,7 @@ import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 import type { AccountRules } from "./account-rules.ts";
 import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
+import { saveBackToDraft } from "./back-to-draft.ts";
 import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import type { ContentFingerprints } from "./content-fingerprints.ts";
 import { admit, remember } from "./duplicate-guard.ts";
@@ -74,7 +86,7 @@ import { freeSlotOf, queueNamed } from "./placement.ts";
 import type { Placement } from "./placement.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
-import type { PostNotFound } from "./post-not-found.ts";
+import { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
 import type { PresetAsk, DroppedChannels } from "./post-presets.ts";
@@ -539,6 +551,35 @@ export class PostScheduling extends Context.Service<
       DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
     /**
+     * Takes one channel off a post that waits for its time (scheduled, or
+     * awaiting an approval), which still goes out on its others: the
+     * target is cancelled, marked `dropped`, and never sent
+     * (`dropTarget`). A target taken off already answers the post as it
+     * is, so a request sent again is safe. Refused for a post that is
+     * publishing or done
+     * (`InvalidPostTransition`), a target that is not pending
+     * (`InvalidTargetTransition`), and the last target still pending
+     * (`LastTargetLeft`: cancel the post instead). It is an edit of the
+     * post: it goes through the approval gate as moving it does, so a
+     * post whose approval no longer covers it waits for one again, its
+     * job stopped; a post already waiting keeps its request, which
+     * follows what it now is. Webhooks hear `post.cancelled` naming the
+     * channel alone.
+     */
+    readonly dropTarget: (
+      actor: Actor,
+      postId: PostId,
+      targetId: PostTargetId
+    ) => Effect.Effect<
+      PostWithTargets,
+      | DatabaseError
+      | InvalidPostTransition
+      | InvalidTargetTransition
+      | LastTargetLeft
+      | MissingPermission
+      | PostNotFound
+    >;
+    /**
      * Cancels a post. Once it is publishing, the post itself finishes with
      * whatever its channels did: a channel not yet sent is cancelled, one
      * waiting to try again makes no further attempt, and a call in flight
@@ -608,22 +649,32 @@ export class PostScheduling extends Context.Service<
       // A held post moved by someone who does not ask for it again (a
       // reshuffle of its queue): it keeps waiting, and its request follows
       // its new time. It is never admitted this way, whoever moves it.
+      // The request of a held post follows it as it now is, still the
+      // requester's.
+      const followed = Effect.fn("PostScheduling.followed")(function* followed(
+        actor: Actor,
+        post: Post,
+        targets: readonly PostTarget[]
+      ) {
+        const { at, timeZone } = yield* scheduleOf(post);
+
+        yield* gate.follow(actor, {
+          authorId: post.authorId,
+          postId: post.id,
+          scheduledAt: at,
+          subject: approvalSubject(post.content, targets),
+          timeZone,
+          workspaceId: post.workspaceId,
+        });
+      });
+
       const keptWaiting = Effect.fn("PostScheduling.keptWaiting")(
         function* keptWaiting(
           actor: Actor,
           post: Post,
           targets: readonly PostTarget[]
         ) {
-          const { at, timeZone } = yield* scheduleOf(post);
-
-          yield* gate.follow(actor, {
-            authorId: post.authorId,
-            postId: post.id,
-            scheduledAt: at,
-            subject: approvalSubject(post.content, targets),
-            timeZone,
-            workspaceId: post.workspaceId,
-          });
+          yield* followed(actor, post, targets);
 
           return yield* Effect.fromResult(awaitApproval(post)).pipe(
             Effect.orDie
@@ -1792,16 +1843,20 @@ export class PostScheduling extends Context.Service<
 
               const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
-              yield* applied(yield* posts.update(draft, current.post));
+              // A draft is for the channels it still goes to.
+              const saved = yield* saveBackToDraft(draft, current.post).pipe(
+                Effect.provideService(PostRepository, posts)
+              );
+
               yield* stopJob(current);
               yield* noLongerWaits(current.post);
 
               // A post that waited was never told as scheduled, yet those
               // who heard it waited (`post.approval_requested`) hear it no
               // longer does, as those who heard it scheduled do.
-              yield* events.unscheduled(draft);
+              yield* events.unscheduled(saved.post);
 
-              return { post: draft, targets: yield* posts.targets(postId) };
+              return saved;
             })
           );
         }
@@ -1876,8 +1931,76 @@ export class PostScheduling extends Context.Service<
         );
       });
 
+      const dropTarget = Effect.fn("PostScheduling.dropTarget")(
+        function* dropTarget(
+          actor: Actor,
+          postId: PostId,
+          targetId: PostTargetId
+        ) {
+          yield* mayAsk(actor);
+
+          return yield* transaction(
+            Effect.gen(function* dropAndAsk() {
+              const current = yield* lockPost(actor, postId);
+              const now = yield* DateTime.now;
+
+              yield* mayChange(actor, current.post);
+
+              const targets = yield* posts.lockTargets(postId);
+              const target = targets.find(({ id }) => id === targetId);
+
+              if (target === undefined) {
+                return yield* new PostNotFound({ postId });
+              }
+
+              // Taken off already, as by a request sent again after its
+              // answer was lost: nothing more to do.
+              if (isDropped(target)) {
+                const unchanged: PostWithTargets = {
+                  post: current.post,
+                  targets,
+                };
+
+                return unchanged;
+              }
+
+              const dropped = yield* Effect.fromResult(
+                dropTargetOf(current.post, targets, target, now)
+              );
+
+              yield* applied(yield* posts.updateTarget(dropped, target));
+
+              const left = targets.map((kept) =>
+                kept.id === dropped.id ? dropped : kept
+              );
+
+              // Its texts and media go with the channel.
+              const edited = withoutChannelOf(current.post, dropped.channelId);
+
+              // An edit of the post: the gate decides again, as a move
+              // does. One that waits keeps its request, which follows it.
+              const asked =
+                edited.status._tag === "awaitingApproval"
+                  ? yield* followed(actor, edited, left).pipe(Effect.as(edited))
+                  : yield* throughGate(actor, edited, left);
+
+              yield* applied(yield* posts.update(asked, current.post));
+
+              if (asked.status._tag !== current.post.status._tag) {
+                yield* stopJob(current);
+              }
+
+              yield* events.dropped(asked, dropped);
+
+              return { post: asked, targets: left };
+            })
+          );
+        }
+      );
+
       return PostScheduling.of({
         cancel,
+        dropTarget,
         enqueue,
         forgetExpiredKeys,
         mayAsk,

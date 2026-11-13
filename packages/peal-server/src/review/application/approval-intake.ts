@@ -86,9 +86,9 @@ export class ApprovalIntake extends Context.Service<
     ) => Effect.Effect<"admitted" | "held", DatabaseError>;
     /**
      * A held post was moved by someone who did not ask for it again (a
-     * reshuffle of its queue): the request that waits follows its time,
-     * for whoever asked, and nobody is asked again to decide. It never
-     * admits the post.
+     * reshuffle of its queue), or lost a channel: the request that waits
+     * follows its time and what it now says, for whoever asked, and nobody
+     * is asked again to decide. It never admits the post.
      */
     readonly followed: (
       actor: Actor,
@@ -230,8 +230,11 @@ export class ApprovalIntake extends Context.Service<
               return;
             }
 
+            // It follows what the post now says too: a channel taken off
+            // it changes that, and a page read before is looked at again.
             const moved = changed(pending.value, {
               scheduledAt: submission.scheduledAt,
+              subjectHash: submission.subjectHash,
               timeZone: submission.timeZone,
             });
 

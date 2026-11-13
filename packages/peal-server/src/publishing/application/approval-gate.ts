@@ -69,8 +69,9 @@ export class ApprovalGate extends Context.Service<
     ) => Effect.Effect<Admission, DatabaseError>;
     /**
      * A held post moved to another time by someone who did not ask for it
-     * again, as a reshuffle of its queue moves it: it keeps waiting, under
-     * the request it had, which follows its new time. Nobody is asked
+     * again, as a reshuffle of its queue moves it, or that lost a channel:
+     * it keeps waiting, under the request it had, which follows its new
+     * time and what it now says (`subject`). Nobody is asked
      * again to decide, and the post is never admitted this way, whoever
      * moves it.
      */
