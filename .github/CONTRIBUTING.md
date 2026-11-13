@@ -165,7 +165,10 @@ bun nx run peal-server:media-cors   # let browsers upload to the stack's bucket
 
 `bun install` also patches the workspace's TypeScript with Effect's language
 service (`effect-tsgo patch`), which reports mistakes in Effect code, such as
-an Effect that is never run, as type errors. To see them in your editor, use
+an Effect that is never run, as type errors. `@effect/tsgo` ships a build for
+each TypeScript version it supports: on a TypeScript it does not support,
+`bun install` warns and `bun run typecheck` fails until the two are moved to
+a supported pair. To see them in your editor, use
 the workspace's TypeScript 7 rather than the editor's own. In VS Code or
 Cursor, install the TypeScript 7 extension and pick **Use Workspace Version**
 from the TypeScript version in the status bar, or put in your

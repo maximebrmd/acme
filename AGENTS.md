@@ -112,11 +112,15 @@ several:
   `oxlint.config.ts`. Parse values with Effect Schema rather than asserting
   types or checking `typeof`.
 - Effect's language service (`@effect/tsgo`) checks Effect code in `tsc`:
-  the root `prepare` and `bun run typecheck` patch the workspace's
-  TypeScript, and its errors and warnings fail typecheck. Its plugin and
+  `scripts/patch-typescript.ts` patches the workspace's TypeScript, from
+  the root `prepare` (a TypeScript it has no build for is a warning there)
+  and from `bun run typecheck` (an error), and its errors and warnings fail
+  typecheck. `typescript` and `@effect/tsgo` move together. Typecheck's
+  cache reads `tsc --version`, which names the patch. The plugin and its
   options are in `tsconfig.base.json` (a package that sets `plugins` lists
-  it again); an unstable or experimental Effect module the code starts to
-  use joins `allowedUnstableApis` or `allowedExperimentalApis` there. A
+  it again, and inherits the options); an unstable or experimental Effect
+  module the code starts to use joins `allowedUnstableApis` or
+  `allowedExperimentalApis` there, by module. A
   guard that fails is `return yield*` when every path returns a value, and
   otherwise `yield* ok ? Effect.void : Effect.fail(error)`, so
   `consistent-return` holds too.
