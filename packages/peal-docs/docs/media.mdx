@@ -23,7 +23,7 @@ On an instance that bills, each plan holds a number of bytes of media ([Plans an
 
 ## Find a file [#find]
 
-Each file keeps the name it had: the name of the file you uploaded, or the last part of the address it was imported from (after its redirects, never its query). Peal keeps it on one line, without the folders before it or control characters, and cuts it at 255 characters. An image the assistant made has no name, and neither does a file added before Peal kept names: the library calls each by its kind (**Image**, **Video**, **PDF document**).
+Each file keeps the name it had: the name of the file you uploaded, or the last part of the address it was imported from (after its redirects, never its query). Peal keeps it composed, as a keyboard types accents, on one line, without the folders before it, control characters or characters that show nothing, and cuts it at 255 characters. An import whose address ends without an extension, or with a part that looks like a share link's secret, gets no name, so that secret is never kept. Any other address gives its last part as the name, which every member sees: import from one that holds no secret in its path. An image the assistant made has no name, and neither does a file added before Peal kept names: the library calls each by its kind (**Image**, **Video**, **PDF document**).
 
 The library's toolbar finds files by text in their name or their description, whatever its case, and filters them by kind; both narrow the list together, newest first, and **Show more** goes on with the same search. A file without a name is found by its description only. Choose a thumbnail to see the file at full size: an image whole, a video to play, and, for a document, a link that opens it in a tab of its own.
 
