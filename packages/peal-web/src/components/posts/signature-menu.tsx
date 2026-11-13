@@ -51,7 +51,7 @@ export const SignatureMenuView = ({
     signatures.map((signature) => (
       <DropdownMenuItem
         key={signature.id}
-        onClick={() => {
+        onSelect={() => {
           onInsert(channelId, signature.text);
         }}
       >

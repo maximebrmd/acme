@@ -45,7 +45,7 @@ import {
 } from "peal-ui/components/dropdown-menu";
 import { cn } from "peal-ui/lib/utils";
 import { useState } from "react";
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 
 import { useCloseMenu } from "#components/shell/frame-view.tsx";
 import { PealMark } from "#components/shell/peal-mark.tsx";
@@ -216,6 +216,19 @@ const NavLink = ({
   );
 };
 
+// The workspace switcher's button, which the menu's trigger renders with its
+// own props and ref.
+const SwitcherButton = ({ className, ...props }: ComponentProps<"button">) => (
+  <button
+    type="button"
+    className={cn(
+      "hover:bg-sidebar-accent flex h-15 shrink-0 items-center gap-2.5 border-t px-3.5 text-left",
+      className
+    )}
+    {...props}
+  />
+);
+
 /**
  * The workspace's sidebar (DESIGN.md, "The frame"): the mode switch with
  * Peal's mark, the mode's pages in groups, or the open section's pages
@@ -351,13 +364,7 @@ export const SidebarView = ({
 
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={
-            <button
-              type="button"
-              aria-label={t("workspaces.label")}
-              className="hover:bg-sidebar-accent flex h-15 shrink-0 items-center gap-2.5 border-t px-3.5 text-left"
-            />
-          }
+          render={<SwitcherButton aria-label={t("workspaces.label")} />}
         >
           <span className="bg-brand-tint text-brand-text flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
             {(current?.name ?? "?").slice(0, 2).toUpperCase()}

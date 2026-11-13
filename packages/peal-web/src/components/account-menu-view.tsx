@@ -79,11 +79,11 @@ export const AccountMenuView = ({ email, name }: AccountMenuViewProps) => {
           <DropdownMenuLabel>{t("signedInAs", { email })}</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleOpenApp}>{t("app")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleOpenAccount}>
+        <DropdownMenuItem onSelect={handleOpenApp}>{t("app")}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleOpenAccount}>
           {account("menu")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem onSelect={handleSignOut}>
           {t("signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
