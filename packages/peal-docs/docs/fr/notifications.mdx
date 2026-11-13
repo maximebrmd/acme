@@ -74,10 +74,17 @@ Depuis **Notifications**, choisissez **Préférences d’e-mail** pour choisir q
 | Des livraisons vers un point de terminaison de webhook échouent pour de bon, au plus une fois par jour pour chacun | Activé                        |
 | Une publication est partie                                                                                         | Désactivé                     |
 | Une publication mise en ligne a reçu de nouveaux commentaires                                                      | Désactivé                     |
+| Une semaine commence : ce qui est parti la semaine passée et ce qui est prévu, chaque lundi                        | Désactivé                     |
 
 La désactivation d’un point de terminaison de webhook est toujours envoyée par e-mail aux membres qui gèrent les webhooks : les systèmes qui l’écoutaient ne reçoivent plus rien tant que personne n’intervient. Ce qui arrive à une mise en avant, et une connexion à un réseau publicitaire à renouveler, sont toujours envoyés par e-mail aussi : un propriétaire répond de ce qui est dépensé.
 
 Les e-mails sont écrits dans votre langue. Quand le serveur de messagerie refuse un e-mail pour le moment, Peal réessaie pendant environ cinq heures. Un e-mail en attente d’envoi est abandonné si vous quittez l’espace de travail, ou désactivez cet e-mail, entre-temps.
+
+## Le récapitulatif hebdomadaire [#digest]
+
+Activez **Une semaine commence** dans vos préférences d’e-mail, et chaque lundi matin Peal vous envoie la semaine qui s’est terminée à minuit UTC et celle qui commence, pour chaque espace de travail dont vous pouvez lire les publications : combien de publications sont parties, ont échoué ou sont à vérifier, combien sont programmées ou attendent une approbation, les premières de chaque semaine par le début de leur texte et, là où vous pouvez lire les statistiques, les interactions avec les publications de la semaine. Les jours et les heures sont en UTC. Un espace de travail sans rien sur ces deux semaines est laissé de côté, et sans rien nulle part, aucun e-mail ne part. Il ne contient que les publications de l’espace de travail, jamais un commentaire ni son auteur.
+
+Chaque récapitulatif se termine par un lien vers vos préférences de notification, où vous le désactivez. Il part une fois par semaine quoi qu’il arrive : un e-mail que le serveur de messagerie refuse pour de bon n’est pas renvoyé avant le lundi suivant.
 
 ## Depuis l’API [#api]
 
@@ -85,6 +92,6 @@ Vos notifications et vos préférences vous appartiennent, et non à un espace d
 
 - `GET /api/me/notices` les liste, les plus récentes d’abord, 20 par page, et `GET /api/me/notices/unread` compte celles qui ne sont pas lues ;
 - `POST /api/me/notices/read` en marque jusqu’à 100 comme lues, et `POST /api/me/notices/read-all` les marque toutes ;
-- `GET` et `PATCH /api/me/notification-preferences` lisent et changent celles qui partent par e-mail, et `everyPost`, si vous êtes prévenu pour toutes les publications.
+- `GET` et `PATCH /api/me/notification-preferences` lisent et changent celles qui partent par e-mail, `email.weeklyDigest`, le [récapitulatif hebdomadaire](#digest), et `everyPost`, si vous êtes prévenu pour toutes les publications.
 
 Chaque notification est une donnée, comme l’identifiant d’une publication, un canal et une raison, que le client écrit dans la langue de son lecteur. Ces points d’accès acceptent une session ou un jeton OAuth qui n’est pas lié à un seul espace de travail, comme celui de la ligne de commande. Les clés d’API, qui appartiennent à un espace de travail, et les clients MCP, qui agissent dans un seul espace de travail, reçoivent 403. La [référence de l’API](/reference) liste leurs paramètres.

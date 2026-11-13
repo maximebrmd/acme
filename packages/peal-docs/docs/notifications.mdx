@@ -74,10 +74,17 @@ From **Notifications**, choose **Email preferences** to pick which notifications
 | Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint    | On                  |
 | A post went out                                                                         | Off                 |
 | A published post received new comments                                                  | Off                 |
+| A week starts: what went out last week and what is planned, each Monday                 | Off                 |
 
 A webhook endpoint turned off is always emailed to the members who manage webhooks: the systems that listened on it hear nothing more until someone acts. What happens to a boost, and an ad network sign-in to renew, are always emailed too: an owner answers for what is spent.
 
 Emails are written in your language. When the mail server turns an email away for now, Peal tries again for about five hours. An email waiting to go out is dropped if you leave the workspace, or turn that email off, in the meantime.
+
+## The weekly digest [#digest]
+
+Turn on **A week starts** in your email preferences, and each Monday morning Peal emails you the week that ended at midnight UTC and the one it begins, for every workspace whose posts you may read: how many posts went out, failed or need checking, how many are scheduled or wait for an approval, the first few of each by the start of their text, and, where you may read analytics, the engagement of the week's posts. Days and times are in UTC. A workspace with nothing in those two weeks is left out, and with nothing anywhere no email is sent. It holds the workspace's own posts only, never a comment or who wrote one.
+
+Each digest ends with a link to your notification preferences, where you turn it off. It goes once a week whatever happens: an email the mail server turns away for good is not sent again until the next Monday.
 
 ## From the API [#api]
 
@@ -85,6 +92,6 @@ Your notifications and preferences belong to you, not to a workspace, so they li
 
 - `GET /api/me/notices` lists them, newest first, 20 a page, and `GET /api/me/notices/unread` counts the unread ones;
 - `POST /api/me/notices/read` marks up to 100 of them read, and `POST /api/me/notices/read-all` marks them all;
-- `GET` and `PATCH /api/me/notification-preferences` read and change which ones are emailed, and `everyPost`, whether you hear about every post.
+- `GET` and `PATCH /api/me/notification-preferences` read and change which ones are emailed, `email.weeklyDigest`, the [weekly digest](#digest), and `everyPost`, whether you hear about every post.
 
 Each notification is data, such as a post's id, a channel and a reason, for the client to write in its reader's language. These endpoints take a session or an OAuth token that is not bound to one workspace, such as the command line's. API keys, which belong to a workspace, and MCP clients, which act in one workspace, get 403. The [API reference](/reference) lists their parameters.

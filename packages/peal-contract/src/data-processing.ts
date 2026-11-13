@@ -241,8 +241,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The notices about your posts and channels, and your notification preferences",
-      fr: "Les avis concernant vos publications et vos canaux, et vos préférences de notification",
+      en: "The notices about your posts and channels, and your notification preferences, with the week of the last weekly digest sent to you",
+      fr: "Les avis concernant vos publications et vos canaux, et vos préférences de notification, avec la semaine du dernier récapitulatif hebdomadaire qui vous a été envoyé",
     },
     id: "notifications",
     legalBasis: contract,
@@ -252,8 +252,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Tell you how your posts went and when a channel needs you, in the app and by the emails you turn on",
-      fr: "Vous dire ce que sont devenues vos publications et quand un canal a besoin de vous, dans l’application et par les e-mails que vous activez",
+      en: "Tell you how your posts went and when a channel needs you, in the app and by the emails you turn on, and, with the weekly digest on, email you each week how many posts went out and are planned, with the start of the text of the first ones, in the workspaces whose posts you may read",
+      fr: "Vous dire ce que sont devenues vos publications et quand un canal a besoin de vous, dans l’application et par les e-mails que vous activez, et, avec le récapitulatif hebdomadaire activé, vous envoyer chaque semaine par e-mail le nombre de publications parties et prévues, avec le début du texte des premières, dans les espaces de travail dont vous pouvez lire les publications",
     },
     retention: {
       en: "Until you close your account, or the workspace they concern is deleted",
