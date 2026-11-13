@@ -3336,9 +3336,9 @@ export const studioGroupsLive = (studio: Studio) =>
               params.postId
             );
 
-            if (post.status !== "draft") {
-              yield* new PostStatusConflict({ status: post.status });
-            }
+            yield* post.status === "draft"
+              ? Effect.void
+              : Effect.fail(new PostStatusConflict({ status: post.status }));
 
             yield* Ref.update(studio.state, (current) => ({
               ...current,
@@ -4773,9 +4773,9 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const { invitations } = yield* Ref.get(studio.state);
 
-            if (!invitations.some(({ id }) => id === params.invitationId)) {
-              yield* new InvitationNotFound();
-            }
+            yield* invitations.some(({ id }) => id === params.invitationId)
+              ? Effect.void
+              : Effect.fail(new InvitationNotFound());
 
             yield* Ref.update(studio.state, (current) => ({
               ...current,

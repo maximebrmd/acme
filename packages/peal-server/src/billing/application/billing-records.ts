@@ -372,7 +372,7 @@ export class BillingRecords extends Context.Service<
             enabled &&
             (yield* checkouts.atStripe(workspaceId)).some(mayBill)
           ) {
-            yield* new WorkspaceStillBilled({
+            return yield* new WorkspaceStillBilled({
               subscriptions: [undescribed],
               workspaceId,
             });
@@ -385,9 +385,10 @@ export class BillingRecords extends Context.Service<
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);
           yield* references.eraseWorkspace(workspaceId);
+
           // Its billing account: another of its workspaces bills from now,
           // or the account goes with its last workspace.
-          yield* accounts.eraseWorkspace(workspaceId);
+          return yield* accounts.eraseWorkspace(workspaceId);
         }
       );
 

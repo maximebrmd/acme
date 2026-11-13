@@ -173,9 +173,9 @@ export class PartnerKeys extends Context.Service<
           ? yield* partners.removeKey(partner.id, id.value)
           : false;
 
-        if (!removed) {
-          yield* new PartnerKeyNotFound({ partnerKeyId });
-        }
+        yield* removed
+          ? Effect.void
+          : Effect.fail(new PartnerKeyNotFound({ partnerKeyId }));
       });
 
       const verify = Effect.fn("PartnerKeys.verify")(function* verify(

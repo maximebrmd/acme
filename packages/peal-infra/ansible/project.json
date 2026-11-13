@@ -27,6 +27,7 @@
     "pytest": {
       "command": "uv run --locked pytest < /dev/null",
       "options": { "cwd": "{projectRoot}" },
+      "dependsOn": ["collections"],
       "cache": false
     },
     "test": {

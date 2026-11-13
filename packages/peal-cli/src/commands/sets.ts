@@ -179,16 +179,16 @@ const update = Command.make(
     const givenChannels = channelIdsOf(input.channels);
     const givenOptions = yield* Effect.all(input.options.map(optionsOf));
 
-    if (
-      Option.isNone(input.name) &&
-      givenChannels.length === 0 &&
-      givenOptions.length === 0
-    ) {
-      yield* new Refused({
-        reason:
-          "Give --name, --channel, --options or several: nothing else of a channel set changes.",
-      });
-    }
+    yield* Option.isNone(input.name) &&
+    givenChannels.length === 0 &&
+    givenOptions.length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --name, --channel, --options or several: nothing else of a channel set changes.",
+          })
+        )
+      : Effect.void;
 
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;
@@ -203,11 +203,13 @@ const update = Command.make(
             (channelId) => !set.unavailableChannelIds.includes(channelId)
           );
 
-    if (channelIds.length === 0) {
-      yield* new Refused({
-        reason: `None of the channels of ${set.name} is connected any more: give its channels with --channel, or delete it with peal sets delete.`,
-      });
-    }
+    yield* channelIds.length === 0
+      ? Effect.fail(
+          new Refused({
+            reason: `None of the channels of ${set.name} is connected any more: give its channels with --channel, or delete it with peal sets delete.`,
+          })
+        )
+      : Effect.void;
 
     const payload = yield* checkSet({
       channelIds,

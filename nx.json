@@ -22,7 +22,7 @@
   "targetDefaults": {
     "typecheck": {
       "cache": true,
-      "inputs": ["default", "^default"]
+      "inputs": ["default", "^default", { "runtime": "node_modules/.bin/tsc --version" }]
     },
     "build": {
       "dependsOn": ["^build", "typecheck"],

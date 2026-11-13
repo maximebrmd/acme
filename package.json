@@ -14,10 +14,11 @@
   ],
   "type": "module",
   "scripts": {
+    "prepare": "bun scripts/patch-typescript.ts",
     "references": "bun scripts/references.ts",
     "check": "nx run-many -t typegen && ultracite check",
     "fix": "ultracite fix",
-    "typecheck": "tsc --noEmit -p . && nx run-many -t typecheck",
+    "typecheck": "bun scripts/patch-typescript.ts --strict && tsc --noEmit -p . && nx run-many -t typecheck",
     "test": "nx run-many -t test",
     "build": "nx run-many -t build",
     "sdk:generate": "nx run-many -t sdk:generate",
@@ -27,16 +28,17 @@
     "nx": "nx"
   },
   "devDependencies": {
+    "@effect/tsgo": "0.68.1",
     "@types/bun": "1.4.4",
     "@types/node": "26.6.6",
-    "effect": "4.1.2",
-    "fern-api": "5.201.0",
-    "nx": "24.0.5",
-    "oxfmt": "0.77.0",
-    "oxlint": "1.92.0",
-    "oxlint-tsgolint": "7.0.2006",
+    "effect": "4.1.4",
+    "fern-api": "5.210.3",
+    "nx": "24.0.6",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2007",
     "typescript": "7.0.2",
-    "ultracite": "8.1.1"
+    "ultracite": "8.2.0"
   },
   "engines": {
     "bun": "1.4.4",

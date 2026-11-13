@@ -93,9 +93,11 @@ export class OffboardWorkspace extends Context.Service<
 
       const offboard = Effect.fn("OffboardWorkspace.offboard")(
         function* offboard(key: PartnerKeyPrincipal, requested: string) {
-          if (!key.scopes.includes("workspaces:delete")) {
-            yield* new MissingPartnerScope({ scope: "workspaces:delete" });
-          }
+          yield* key.scopes.includes("workspaces:delete")
+            ? Effect.void
+            : Effect.fail(
+                new MissingPartnerScope({ scope: "workspaces:delete" })
+              );
 
           const owned = yield* ownedBy(key, requested);
 

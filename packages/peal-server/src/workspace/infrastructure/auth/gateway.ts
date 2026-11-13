@@ -170,7 +170,7 @@ export const AuthGatewayLive = Layer.effect(
       // routes do: their count alone is answered.
       recoveryCodesLeft: (userId) =>
         Effect.tryPromise({
-          catch: (cause) => cause,
+          catch: (cause) => new AuthUnavailable({ cause }),
           try: async () => await auth.api.viewBackupCodes({ body: { userId } }),
         }).pipe(
           Effect.map((answer) =>
@@ -178,8 +178,10 @@ export const AuthGatewayLive = Layer.effect(
               Option.map(({ backupCodes }) => backupCodes.length)
             )
           ),
-          Effect.catchIf(isNotEnabled, () => Effect.succeedNone),
-          Effect.mapError((cause) => new AuthUnavailable({ cause })),
+          Effect.catchIf(
+            (error) => isNotEnabled(error.cause),
+            () => Effect.succeedNone
+          ),
           Effect.withSpan("AuthGateway.recoveryCodesLeft")
         ),
       session: (cookies, { fresh }) =>

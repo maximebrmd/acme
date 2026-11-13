@@ -169,11 +169,12 @@ const LoadedImport = ({ workspaceId }: { readonly workspaceId: string }) => {
   };
 
   const handleCopy = (channel: Channel) => {
-    void navigator.clipboard.writeText(channel.id).then(
-      () =>
-        toast.success(t("channels.copied", { channel: channelName(channel) })),
-      () => toast.error(t("channels.copyFailed"))
-    );
+    void navigator.clipboard
+      .writeText(channel.id)
+      .then(() =>
+        toast.success(t("channels.copied", { channel: channelName(channel) }))
+      )
+      .catch(() => toast.error(t("channels.copyFailed")));
   };
 
   const handleSample = () => {

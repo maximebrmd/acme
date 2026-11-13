@@ -339,12 +339,12 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
         .replace(key, expected, json)
         .pipe(Effect.orElseSucceed(() => false));
 
-      if (!written) {
-        yield* unavailable(
-          post,
-          "Could not journal a Facebook reel's or story's first step: nothing was sent"
-        );
-      }
+      yield* written
+        ? Effect.void
+        : unavailable(
+            post,
+            "Could not journal a Facebook reel's or story's first step: nothing was sent"
+          );
 
       ownFirstSteps.set(key, json);
     }
@@ -375,13 +375,16 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
           )
         );
 
-      if (!written) {
-        yield* Effect.logWarning(
-          "Another run took a Facebook reel's or story's call over: this one sent no finish"
-        ).pipe(Effect.annotateLogs({ channelId: post.channelId }));
-
-        yield* new OutcomeUnknown({ reason: "interrupted" });
-      }
+      yield* written
+        ? Effect.void
+        : Effect.logWarning(
+            "Another run took a Facebook reel's or story's call over: this one sent no finish"
+          ).pipe(
+            Effect.annotateLogs({ channelId: post.channelId }),
+            Effect.andThen(
+              Effect.fail(new OutcomeUnknown({ reason: "interrupted" }))
+            )
+          );
     }
   );
 

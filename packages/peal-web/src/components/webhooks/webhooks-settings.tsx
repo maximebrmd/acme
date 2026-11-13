@@ -1012,10 +1012,10 @@ export const WebhooksSettings = ({
   const [shown, setShown] = useState<ShownSecret | null>(null);
 
   const handleCopy = (secret: string) => () => {
-    void navigator.clipboard.writeText(secret).then(
-      () => toast.success(t("copied")),
-      () => toast.error(t("copyFailed"))
-    );
+    void navigator.clipboard
+      .writeText(secret)
+      .then(() => toast.success(t("copied")))
+      .catch(() => toast.error(t("copyFailed")));
   };
 
   return (

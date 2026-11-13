@@ -391,12 +391,14 @@ const update = Command.make(
       payload.variants = variantsOf(input.variants);
     }
 
-    if (Object.keys(payload).length === 0) {
-      yield* new Refused({
-        reason:
-          "Give --count, --no-count, --until, --no-until, --variant, --no-variants or several: nothing else of a rule changes.",
-      });
-    }
+    yield* Object.keys(payload).length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --count, --no-count, --until, --no-until, --variant, --no-variants or several: nothing else of a rule changes.",
+          })
+        )
+      : Effect.void;
 
     yield* checkedEnding(input);
 

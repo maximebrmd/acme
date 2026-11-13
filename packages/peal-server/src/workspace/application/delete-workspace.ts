@@ -113,9 +113,9 @@ export class DeleteWorkspace extends Context.Service<
         // cancelling cannot be undone.
         const { name: workspaceName } = yield* found(workspaceId);
 
-        if (confirmation.trim() !== workspaceName.trim()) {
-          yield* new WorkspaceNameMismatch({ workspaceId });
-        }
+        yield* confirmation.trim() === workspaceName.trim()
+          ? Effect.void
+          : Effect.fail(new WorkspaceNameMismatch({ workspaceId }));
 
         // A partner's home workspace goes only once the partner owns no
         // workspace: checked before Stripe is asked anything, and again

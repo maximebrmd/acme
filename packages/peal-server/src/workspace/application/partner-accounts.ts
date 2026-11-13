@@ -302,23 +302,27 @@ export class PartnerAccounts extends Context.Service<
         const partner = yield* found(actor.workspaceId);
         const owned = yield* workspaces.idsOf(partner.id);
 
-        if (owned.length > 0) {
-          yield* new PartnerOwnsWorkspaces({
-            owned: owned.length,
-            workspaceId: actor.workspaceId,
-          });
-        }
+        yield* owned.length > 0
+          ? Effect.fail(
+              new PartnerOwnsWorkspaces({
+                owned: owned.length,
+                workspaceId: actor.workspaceId,
+              })
+            )
+          : Effect.void;
 
         // Counted again as it is deleted, under the partner's hold: a
         // workspace made for it meanwhile keeps the account.
         const made = yield* partners.closeOf(actor.workspaceId);
 
-        if (made > 0) {
-          yield* new PartnerOwnsWorkspaces({
-            owned: made,
-            workspaceId: actor.workspaceId,
-          });
-        }
+        yield* made > 0
+          ? Effect.fail(
+              new PartnerOwnsWorkspaces({
+                owned: made,
+                workspaceId: actor.workspaceId,
+              })
+            )
+          : Effect.void;
       });
 
       return PartnerAccounts.of({ change, close, grant, open, standing });

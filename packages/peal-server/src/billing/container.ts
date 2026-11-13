@@ -118,10 +118,6 @@ const HoldersLive = AccountPlanHoldersLive.pipe(Layer.provide(AccountsLive));
  * brings both.
  */
 export const BillingLive = Layer.mergeAll(
-  AccountsLive,
-  // Whether the server bills, which the channels context's allowance asks
-  // before counting across a billing account.
-  ConfiguredBillingModeLive,
   WorkspaceEntitlements.layerShared,
   RecordSubscription.layer,
   CheckoutOrders.layer,
@@ -141,10 +137,13 @@ export const BillingLive = Layer.mergeAll(
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
       HoldersLive,
-      AccountsLive,
       DrizzleBillingAccountStoreLive
     )
-  )
+  ),
+  // The billing accounts, which the other contexts read too, and whether
+  // the server bills, which the channels context's allowance asks before
+  // counting across a billing account.
+  Layer.provideMerge(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
 );
 
 // Hands the checkout the counts of what each workspace holds, once the

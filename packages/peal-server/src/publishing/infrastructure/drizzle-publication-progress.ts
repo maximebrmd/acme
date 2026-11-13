@@ -33,9 +33,9 @@ export const DrizzlePublicationProgress = Layer.effect(
         .returning({ idempotencyKey: publicationCalls.idempotencyKey })
         .pipe(Effect.mapError(failed));
 
-      if (updated.length === 0) {
-        yield* Effect.die("A call's progress has no journal row");
-      }
+      yield* updated.length === 0
+        ? Effect.die("A call's progress has no journal row")
+        : Effect.void;
     });
 
     const read = Effect.fn("PublicationProgress.read")(function* read(
