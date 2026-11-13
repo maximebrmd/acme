@@ -75,9 +75,11 @@ sandbox). Times are UTC.
    database does not know the files uploaded after its restore point, and
    the hourly sweeps would delete them for good: the orphan sweep takes
    them for files nothing holds, and the pending sweep deletes the files
-   of uploads that were completed after it. Add to the host's
+   of uploads that were completed after it. The sweeps also stop by
+   themselves on a restored database (the media folder's marker names the
+   old timeline: `restored`), but keep this step. Add to the host's
    `peal_settings` in the inventory, then apply `site.yml` (`--check
-   --diff` first), which writes it to `host.env`:
+   --diff` first), which writes it to `host.env` for step 8 to start with:
 
    ```yaml
    peal_settings:
@@ -88,16 +90,28 @@ sandbox). Times are UTC.
    back to `/srv/peal/before-restore` or to a later restore point, and the
    files uploaded since the restore point have been dealt with (their
    media is gone with the rows; download what someone wants back from the
-   bucket first). Then remove the line, apply `site.yml` again, and watch
-   the `peal-media-sweep-refused` alert for a run: the orphan sweep stops
-   by itself on a page mostly made of files the database does not know,
-   and says so. If the restored database should own a media folder whose
-   marker names another database (a new server's database, or one
-   restored from another), hand it over once:
+   bucket first). Then, to turn them back on:
 
-   ```sh
-   sudo peal-compose run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
-   ```
+   1. Hand the media folder to the restored database. The command prints
+      the database, the bucket and prefix, the marker there now and what
+      it would write; check them, then run it again with `--yes`:
+
+      ```sh
+      sudo peal-compose run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+      sudo peal-compose run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts --yes
+      ```
+
+   2. Remove the line from `peal_settings`, apply `site.yml` again, and
+      restart the server, which reads `host.env` only when it is created:
+
+      ```sh
+      sudo peal-compose up --detach --wait server
+      ```
+
+   3. Watch the first runs, at minute 19 (uploads never completed) and
+      minute 49 (orphans): `peal-media-sweep-refused` must stay quiet, and
+      the server's log says what each run deleted (`Swept the media
+      store`).
 
 8. **Start the stack**, and check it answers:
 

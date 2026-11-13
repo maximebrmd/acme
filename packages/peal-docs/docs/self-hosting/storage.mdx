@@ -57,17 +57,24 @@ The sweeps run in production only, unless `PEAL_MEDIA_SWEEPS` says otherwise. `o
 
 #### Which database the folder belongs to [#media-owner]
 
-The pending and orphan sweeps delete what the database does not know of, so they need the database to be the bucket's newest truth:
+The pending and orphan sweeps delete what the database does not know of, so they need the database to be the bucket's newest truth. The folder's owner marker, `media/.owner`, says which database that is: the database's random id, the Postgres cluster's system identifier and timeline, and an epoch that only these sweeps advance, one more at each run, in the database and the marker together. The first run writes it. From then on the two sweeps delete nothing, and raise the `peal-media-sweep-refused` alert, when the marker:
 
-- The first run writes `media/.owner`, naming the database by a random id it keeps. From then on, those two sweeps run only while the marker names this database. They stop, deleting nothing, when it names another, or when it is gone. A second server pointed at the same bucket and prefix with a database of its own is stopped this way.
-- A restore keeps the database's id, so the marker cannot tell a restored database from the one it was. Turn the sweeps off (`PEAL_MEDIA_SWEEPS=off`) before starting a server on a restored database, and keep them off until the restore is final. As a last guard, the orphan sweep stops without deleting when a page of the listing holds more files the database does not know of than `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), or than a fifth of 50 old files or more.
-- Each stop raises the `peal-media-sweep-refused` alert. When the database is meant to own the folder (a new server's database restored from backups, once the restore is final), hand the folder over once:
+- names another database (`foreign`), or is gone once this database had written it (`unmarked`);
+- names another Postgres cluster or timeline (`restored`): every restore from pgBackRest ends on a new timeline, and a database loaded from a dump runs on a new cluster. A failover to a replica and `pg_upgrade` change them too, so the sweeps stop after either, until the folder is handed over;
+- counts more runs than the database (`rewound`): the database went back in time, as a disk snapshot rolled back does.
+
+Turn the sweeps off as well (`PEAL_MEDIA_SWEEPS=off`) before starting a server on a restored database. As a last guard, the orphan sweep deletes nothing on a page of the listing with more files the database does not know of than `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), or than a fifth of 50 old files or more, and the pending sweep nothing when it finds more uploads never completed than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` (100). These only catch a large gap.
+
+Once the database is meant to own the folder (a restore confirmed final, a failover or an upgrade done, a database loaded from a dump, a marker lost), hand the folder over. The command prints the database, the bucket and prefix, the marker there now and what it would write, and writes only with `--yes`:
 
 ```sh
 docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts --yes
 ```
 
-It writes the marker naming this database, whatever it named, and changes nothing else.
+It changes the marker and nothing else.
+
+#### A lifecycle rule [#lifecycle]
 
 As a second guard, add a lifecycle rule that aborts incomplete multipart uploads, on the media folder alone. Put the rule's prefix before `media/` when you set `PEAL_S3_KEY_PREFIX`, such as `staging/media/`. With Cloudflare R2, whose buckets also abort them after seven days by default (add `--jurisdiction eu` for a bucket in the EU jurisdiction):
 
