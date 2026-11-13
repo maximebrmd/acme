@@ -27,6 +27,8 @@
     "@tiptap/extensions": "3.33.0",
     "@tiptap/pm": "3.33.0",
     "@tiptap/react": "3.33.0",
+    "@ui-sdk/core": "0.1.0-beta.1",
+    "@ui-sdk/react": "0.1.0-beta.1",
     "better-auth": "1.7.18",
     "effect": "4.1.2",
     "emojibase-data": "18.0.0",

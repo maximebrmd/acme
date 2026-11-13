@@ -58,6 +58,14 @@ const references: readonly Reference[] = [
     tag: (version) => `v${version}`,
   },
   {
+    // One monorepo for the core and each framework's package, tagged per
+    // package: the React tag carries the core it was released with.
+    name: "ui-sdk",
+    packageName: "@ui-sdk/react",
+    repository: "vercel-labs/ui",
+    tag: (version) => `@ui-sdk/react@${version}`,
+  },
+  {
     name: "blume",
     packageName: "blume",
     repository: "haydenbleasel/blume",

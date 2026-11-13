@@ -145,10 +145,16 @@ How the code is organised, and the rules it follows, are in
 The repository is set up for coding agents: `AGENTS.md` files hold the rules,
 with a `CLAUDE.md` beside each that includes it. `bun run references` clones
 the sources of the fast-moving frameworks Peal uses (Effect, Drizzle, Better
-Auth and others) into `.local/references/` at the installed versions: read
-them, not memory, before using an API. You are responsible for every line you
-send, whoever wrote it: review it, run the checks, and say in the pull request
-when an agent wrote a large part of it.
+Auth, ui-sdk and others) into `.local/references/` at the installed versions:
+read them, not memory, before using an API.
+
+`.mcp.json` gives agents two design references for the web app, the site and
+the docs: shadcn/ui's registry (`shadcn mcp`) and 21st.dev's component library.
+The second needs your own key from 21st.dev, exported as `TWENTYFIRST_API_KEY`
+in your shell; never commit it.
+
+You are responsible for every line you send, whoever wrote it: review it, run
+the checks, and say in the pull request when an agent wrote a large part of it.
 
 ## Set up
 
