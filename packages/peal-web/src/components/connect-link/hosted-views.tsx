@@ -27,7 +27,7 @@ export const HostedCard = ({
   readonly host: HostedLink["host"] | null;
   readonly title: string;
 }) => (
-  <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-xl border p-6">
+  <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-lg border p-6">
     {host === null ? null : (
       <div className="flex items-center gap-3">
         <Avatar>
