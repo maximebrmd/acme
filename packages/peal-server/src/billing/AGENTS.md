@@ -23,8 +23,8 @@
   `payAsYouGo` is per-account pricing; nothing records or offers it yet
   (`allowancesOf` holds it to the free plan, and `largerPlan` ranks it
   below every legacy plan so it never takes a legacy plan's place; Better
-  Auth's plans, the price check and the contract's `OrderablePlan` leave
-  it out). The change that wires it computes its allowances from the rate
+  Auth's plans and the contract's `OrderablePlan` leave it out; Stripe
+  holds its catalogue, which the start check reads, below). The change that wires it computes its allowances from the rate
   card and ranks it again, before any Stripe price maps to it, with a test
   of a workspace holding a legacy plan and `payAsYouGo` together; and
   `planToPay` must not offer it a price of 0. The pricing functions refuse
@@ -51,11 +51,42 @@
   100 and 1,000 accounts (`accountsMonthly`) with those of the
   per-account schedulers Peal is measured against. The comparison lives
   outside the repository: never name another product here.
-- Stripe prices are tax-exclusive EUR prices found by lookup key,
-  `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
-  `peal`), never by id: Better Auth's plans carry `lookupKey` and
-  `annualDiscountLookupKey`, and `planOf` reads the plan and interval from
-  the event's `price.lookup_key`. Their amounts must equal `prices.ts`.
+- Stripe prices are found by lookup key under `STRIPE_LOOKUP_KEY_PREFIX`
+  (`peal`), never by id. The legacy plans' are tax-exclusive EUR prices,
+  `<prefix>_<plan>_monthly` and `_yearly`: Better Auth's plans carry
+  `lookupKey` and `annualDiscountLookupKey`, and `planOf` reads the plan
+  and interval from the event's `price.lookup_key`. Their amounts must
+  equal `prices.ts`, and operators make them by hand.
+- Per-account pricing's catalogue (`domain/catalogue.ts`, `catalogueOf`)
+  is derived from the rate card, never written: one line per invoice line
+  (`CatalogueLine`: `accounts`, then each meter), each a Stripe meter, a
+  product (`metadata.peal` its lookup key, tax code `catalogueTaxCode`) and
+  a metered, monthly, tax-exclusive price in `usd` only (no
+  `currency_options`: Stripe converts at checkout), under
+  `StripeSettings.catalogue` (`catalogueKeysOf`: `<prefix>_accounts`,
+  `<prefix>_outbound_messages`…), which is also its meter's event name.
+  The ladder is `stripeTiersOf` (graduated, account-days), a meter's price
+  `stripeUnitAmountOf` (cents a unit, a decimal of 12 places at most).
+  Meters sum the events' `value` for the customer in `stripe_customer_id`
+  (`meterEvents`): every meter event the server sends must carry those
+  keys. A new line is a new
+  `CatalogueLine` and a new key, in the e2e stand-in too.
+- Only the operator makes it: `nx run peal-server:stripe-catalogue`
+  (`scripts/stripe-catalogue.ts`, shipped in the server image so it runs
+  where the key is; logic in `infrastructure/stripe-catalogue.ts`,
+  `runCatalogue`, over a Stripe client). It reads meters, products and
+  prices (tiers only with `expand: ["data.tiers"]`, every page), plans
+  (`planCatalogue`, pure), then creates meters and products before the
+  prices that read them. A price that bills otherwise is replaced by a
+  new one with `transfer_lookup_key`, the old left active for the
+  subscriptions on it; a meter that counts otherwise blocks the run before
+  any change, as Stripe cannot change a meter's aggregation or mappings.
+  `--check` changes nothing and fails on a difference. It prints names and
+  ids, and of a refusal Stripe's error type and code only, never its
+  message, which may quote the key. The server never creates Stripe
+  objects. Tests drive it against `#test/billing/fakes/stripe-account.ts`,
+  a stateful stand-in that answers as Stripe does, and against
+  stripe-mock, which checks each request against Stripe's API.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
@@ -143,13 +174,38 @@
   The trial is one per email address too: `trialOffered` (the billing page
   and `PlaceOrder`) checks the pseudonym of the member's address
   (`MemberAddresses`), as checkout does with the session's.
-- A server that bills checks Stripe's prices when it starts
+- A server that bills checks Stripe when it starts
   (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
-  against stripe-mock, whose one price is none of Peal's): each lookup key
-  must name an active price at the amount, currency and interval of
-  `prices.ts`, tax-exclusive, or the server stops listing what differs
-  (`StripePricesMismatch`). Stripe not answering is a warning, and the
-  server starts.
+  against stripe-mock, whose one price is none of Peal's): the catalogue
+  (`catalogueProblems`: each line's active meter, and under its key an
+  active price in its currency, monthly, metered on that meter,
+  tax-exclusive, not transformed, at the rate card's tiers or unit amount,
+  decimals compared by value), and each legacy lookup key an active price
+  at the amount, currency and interval of `prices.ts`, tax-exclusive, or
+  the server stops listing what differs (`StripePricesMismatch`). Stripe
+  not answering is a warning, and the server starts. The legacy prices are
+  checked whatever the subscriptions while the legacy plans are the ones
+  sold: the change that stops selling them checks them only while a legacy
+  subscription entitles (read from `billing.subscriptions`), so a fresh
+  Stripe account needs none.
+- Before per-account pricing is sold, the owner runs this in the
+  sandbox's Stripe account (test mode, its key in the sandbox vault,
+  never copied), never in tests: `stripe-catalogue`, again (no change),
+  `--check`; with a test clock, a `payAsYouGo` checkout paid with a test
+  card (a card asked although nothing is due, the period ending on the
+  first of next month at 00:00 UTC, six items); 300 account-days and
+  12,000 billable messages reported, the clock past the first and the
+  finalisation hour (invoice: $40.00 and $1.20, plus tax for a French
+  address); an event stamped 23:59 on the last day sent at 00:11 on the
+  first (which invoice takes it); cancel, withdraw and delete on three
+  subscriptions (their final invoices); half-unit rounding (50 billable
+  messages, 5 X units, a tier's thirds: is half a cent rounded up, as
+  `meterCharge` and `accountsCharge` assume?); dollars a settlement
+  currency of the account, then Adaptive Pricing on, a metered-only
+  checkout for `test+location_FR@example.com` (euros offered, the
+  presentment currency on the subscription event, the first invoice issued
+  in dollars and paid in euros) and `test+location_US@example.com`
+  (dollars).
 - Every workspace belongs to one billing account (`BillingAccounts`,
   `billing.accounts`, `account_workspaces`, `account_transfers`), on a
   server that bills or not: its creator's, made with their first
