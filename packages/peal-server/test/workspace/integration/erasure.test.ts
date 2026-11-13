@@ -133,6 +133,10 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  // Its billing account's days and their reports to Stripe, kept on it
+  // as the account's billing workspace.
+  "billing.account_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.account_days WHERE holder_workspace_id = ${id}`,
   // Its billing account, with the workspace it bills, and an offer to
   // hand it to another payer.
   "billing.account_transfers": (sql, id) =>
@@ -148,6 +152,8 @@ const workspaceRows = {
   // orders do.
   "billing.contract_requests": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE workspace_id = ${id}`,
+  "billing.meter_reports": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.meter_reports WHERE holder_workspace_id = ${id}`,
   "billing.metered_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
   "billing.orders": (sql, id) =>
@@ -632,6 +638,10 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${workspaceId}, 'x', date_trunc('month', now())::date, 2, 1)`;
   yield* sql`INSERT INTO billing.usage_days (workspace_id, day, meter, dimension, quantity)
     VALUES (${workspaceId}, current_date, 'publishedPosts', 'x', 2), (${workspaceId}, current_date, 'channels', '', 1)`;
+  yield* sql`INSERT INTO billing.account_days (holder_workspace_id, day, peak, reported)
+    VALUES (${workspaceId}, current_date, 3, 3)`;
+  yield* sql`INSERT INTO billing.meter_reports (identifier, holder_workspace_id, stripe_customer_id, event_name, value, occurred_at, created_at, sent_at)
+    VALUES (${`acc:${workspaceId}:synthetic:3`}, ${workspaceId}, 'cus_synthetic', 'peal_accounts', 3, now(), now(), now())`;
   // An order with its consent, a trial (one per account: the user's
   // first workspace has it) and a withdrawal.
   yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
