@@ -26,8 +26,8 @@ export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
     limit: PlanLimitSchema,
     // The plan the workspace is on.
     plan: PlanSchema,
-    // The smallest larger plan with room for what was refused; null on the
-    // largest plan, or when no plan holds that much.
+    // The plan with room for what was refused: `payAsYouGo` when a payment
+    // method gives room; null when no plan holds that much.
     planWithRoom: Schema.NullOr(PaidPlanSchema),
     // How many the workspace holds now, counted as the limit counts them:
     // more than `allowed` after a move to a smaller plan.
@@ -35,7 +35,7 @@ export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
   },
   {
     description:
-      "The workspace's plan (`plan`) allows `allowed` of `limit`, and the workspace holds `used`: nothing was changed. `planWithRoom` is the smallest plan with room for what was refused, which an owner or an admin orders on the billing page (`billingUrl`); it is null on the largest plan, where more is asked for by writing to Peal. Removing some makes room too. A workspace holding more than its plan allows, as after a trial, adds nothing until it is back within it.",
+      "The workspace's plan (`plan`) allows `allowed` of `limit`, across every workspace of its billing account, and holds `used`: nothing was changed. `planWithRoom` is `payAsYouGo` when a payment method gives room (as for a third connected account on the free tier), which an owner or an admin adds by ordering on the billing page (`billingUrl`); it is null when no plan holds that much. Removing some makes room too. A workspace holding more than its plan allows, as after a subscription ended, adds nothing until it is back within it.",
     httpApiStatus: 402,
   }
 ) {}

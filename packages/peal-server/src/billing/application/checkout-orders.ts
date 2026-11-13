@@ -8,22 +8,21 @@ import {
   Schema,
 } from "effect";
 
+import { AlreadySubscribed } from "#billing/domain/already-subscribed.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
+import { livePerAccount } from "#billing/domain/live-per-account.ts";
 import { OrderRequired } from "#billing/domain/order-required.ts";
 import { orderLifetimeMinutes, OrderIdSchema } from "#billing/domain/order.ts";
-import { planAllowances, trialDays } from "#billing/domain/plans.ts";
-import { excessesOf } from "#billing/domain/standing.ts";
+import { allowancesOf } from "#billing/domain/plans.ts";
+import { excessesOf, mustReduce } from "#billing/domain/standing.ts";
 import { TrialUnavailable } from "#billing/domain/trial-unavailable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
-import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
+import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import { holdsSince, trialOpen } from "./place-order.ts";
 import { Orders } from "./ports/orders.ts";
 import { PlanHolders } from "./ports/plan-holders.ts";
-import type { Subscriptions } from "./ports/subscriptions.ts";
-import { Trials } from "./ports/trials.ts";
+import { Subscriptions } from "./ports/subscriptions.ts";
 import { UsageAtCheckout } from "./ports/usage-at-checkout.ts";
 
 const decodeOrderId = Schema.decodeUnknownOption(OrderIdSchema);
@@ -35,12 +34,15 @@ export interface CheckoutRequest {
   readonly interval: BillingInterval;
   /** As the checkout's metadata names it: no order has another shape. */
   readonly orderId: string;
-  readonly plan: LegacyPaidPlan;
+  readonly plan: PaidPlan;
   readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
 }
 
-/** How the checkout starts: with the trial's days, or paid at once. */
+/**
+ * How the checkout starts: with a trial's days, or paid at once. No trial
+ * is offered any more: always paid at once.
+ */
 export interface CheckoutTerms {
   readonly trialDays: Option.Option<number>;
 }
@@ -50,11 +52,8 @@ export interface CheckoutTerms {
  * billing page for the same workspace, plan and interval, within 30
  * minutes, once: the order records their consent and what they were shown.
  * A workspace that has outgrown the plan since the order starts none.
- * An order for the trial starts the checkout with its days, if the
- * workspace and the account still have it, and holds the trial for them
- * until the checkout expires (`Trials.reserve`); an account closed with the
- * same email address that had a trial counts as the same account
- * (`trialMemory`).
+ * Only per-account pricing is sold: an order for a legacy plan, or for a
+ * trial, placed before it was, starts no checkout.
  */
 export class CheckoutOrders extends Context.Service<
   CheckoutOrders,
@@ -63,7 +62,7 @@ export class CheckoutOrders extends Context.Service<
       request: CheckoutRequest
     ) => Effect.Effect<
       CheckoutTerms,
-      DatabaseError | OrderRequired | TrialUnavailable
+      AlreadySubscribed | DatabaseError | OrderRequired | TrialUnavailable
     >;
   }
 >()("peal-server/billing/application/CheckoutOrders") {
@@ -72,9 +71,8 @@ export class CheckoutOrders extends Context.Service<
     Effect.gen(function* CheckoutOrdersLive() {
       const orders = yield* Orders;
       const usage = yield* UsageAtCheckout;
-      const pseudonyms = yield* Pseudonyms;
       const holders = yield* PlanHolders;
-      const context = yield* Effect.context<Subscriptions | Trials>();
+      const subscriptions = yield* Subscriptions;
 
       const take = Effect.fn("CheckoutOrders.take")(function* take(
         request: CheckoutRequest
@@ -116,55 +114,49 @@ export class CheckoutOrders extends Context.Service<
           return yield* new OrderRequired();
         }
 
+        // No trial and no legacy plan is sold.
+        if (order.value.trial) {
+          return yield* new TrialUnavailable({ reason: "notOffered" });
+        }
+
+        if (request.plan !== "payAsYouGo") {
+          return yield* new OrderRequired();
+        }
+
+        // Placed before another checkout of the account went through: one
+        // contract per account.
+        const live = livePerAccount(
+          yield* subscriptions.ofWorkspace(request.workspaceId)
+        );
+
+        if (Option.isSome(live)) {
+          return yield* new AlreadySubscribed({ status: live.value.status });
+        }
+
         // Never above the plan ordered: what the workspace holds is
-        // counted again, as it may have grown since the order, in a trial
-        // of a larger plan. The order no longer stands; placed again, it
-        // says what to remove first.
+        // counted again, as it may have grown since the order. The order
+        // no longer stands; placed again, it says what to remove first.
         const counted = yield* usage.of(request.workspaceId);
 
         if (
           Option.isNone(counted) ||
-          excessesOf(planAllowances[request.plan], counted.value).length > 0
+          mustReduce(
+            excessesOf(
+              allowancesOf(request.plan, {
+                accounts: counted.value.channels,
+                freeTier: true,
+              }),
+              counted.value
+            )
+          )
         ) {
           return yield* new OrderRequired();
         }
 
-        if (!order.value.trial) {
-          const paid: CheckoutTerms = { trialDays: Option.none() };
+        const paid: CheckoutTerms = { trialDays: Option.none() };
 
-          return paid;
-        }
-
-        if (!(yield* trialOpen(request.userId, request.workspaceId))) {
-          return yield* new TrialUnavailable({ reason: "used" });
-        }
-
-        // An account closed with the same address had it.
-        const pseudonym = yield* pseudonyms.ofEmail(request.email);
-
-        if (yield* Trials.use((trials) => trials.usedByPseudonym(pseudonym))) {
-          return yield* new TrialUnavailable({ reason: "used" });
-        }
-
-        // Held at once: a checkout of another workspace or account started
-        // meanwhile finds it taken.
-        const held = yield* Trials.use((trials) =>
-          trials.reserve(
-            request.userId,
-            request.workspaceId,
-            now,
-            holdsSince(now)
-          )
-        );
-
-        if (!held) {
-          return yield* new TrialUnavailable({ reason: "used" });
-        }
-
-        const trial: CheckoutTerms = { trialDays: Option.some(trialDays) };
-
-        return trial;
-      }, Effect.provide(context));
+        return paid;
+      });
 
       return CheckoutOrders.of({ take });
     })

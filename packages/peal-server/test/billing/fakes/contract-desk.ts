@@ -358,6 +358,8 @@ const PortsInMemory = Layer.mergeAll(
               `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
             ),
           endAtTrialEnd: () => Effect.void,
+          endAndInvoice: (workspace, id, reason) =>
+            asked(workspace, `endAndInvoice ${id} ${reason}`),
           endNow: (workspace, id, reason) =>
             asked(workspace, `endNow ${id} ${reason}`),
           isBusiness: () => Ref.get(business),
@@ -387,5 +389,14 @@ export const deskPorts = (enabled = true) =>
   PortsInMemory.pipe(
     Layer.provideMerge(DeskLive),
     Layer.provideMerge(Ids.layerTest),
-    Layer.provideMerge(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provideMerge(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
+    )
   );

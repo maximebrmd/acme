@@ -316,6 +316,11 @@ export const BetterAuthLive = Layer.effect(
               trialDays: Option.getOrNull(trialDays),
             })),
             Effect.catchTags({
+              AlreadySubscribed: () =>
+                Effect.succeed<CheckoutAnswer>({
+                  _tag: "refused",
+                  code: "ALREADY_SUBSCRIBED",
+                }),
               OrderRequired: () => Effect.succeed(orderRequired),
               TrialUnavailable: () =>
                 Effect.succeed<CheckoutAnswer>({
@@ -345,7 +350,7 @@ export const BetterAuthLive = Layer.effect(
         await runPromise(
           entitlements
             .of(workspaceId)
-            .pipe(Effect.map(({ allowances }) => allowances.members))
+            .pipe(Effect.map((plan) => plan.allowanceOf("members")))
         ),
       memberUpgrade: async (workspaceId, needed) =>
         await runPromise(

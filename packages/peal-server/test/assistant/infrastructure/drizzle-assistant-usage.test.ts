@@ -1,12 +1,33 @@
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/assistant/support.ts";
 
 const ninth = { day: 9, month: 11, year: 2026 };
 const tenth = { day: 10, month: 11, year: 2026 };
+
+// Workspaces that exist nowhere: a pool's count reads them as none sent.
+const strangers = (count: number): readonly WorkspaceId[] =>
+  Array.from({ length: count }, () => WorkspaceIdSchema.make(randomUUID()));
+
+// The others of a pool, its hold taken as billing's PlanPools takes it: in
+// the claim's transaction, until it ends.
+const heldPool = (
+  client: SqlClient.SqlClient,
+  pool: string,
+  others: readonly WorkspaceId[]
+) =>
+  client`SELECT pg_advisory_xact_lock(hashtext('peal-server/test/pool'), hashtext(${pool}))`.pipe(
+    Effect.as(others),
+    Effect.orDie
+  );
 
 const UsageTest = DrizzleAssistantUsageLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -59,6 +80,108 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       assert.isTrue(Option.isSome(yield* usage.claim(other, ninth, 1, 1)));
       assert.strictEqual(yield* usage.used(other, tenth), 0);
     })
+  );
+
+  it.effect(
+    "counts the day across the workspaces of a pool, each keeping its own count",
+    () =>
+      Effect.gen(function* pooled() {
+        const usage = yield* AssistantUsage;
+        const workspaceId = yield* freshWorkspace;
+        const other = yield* freshWorkspace;
+
+        const withOther = Effect.succeed([other]);
+        const withFirst = Effect.succeed([workspaceId]);
+
+        yield* usage.claim(workspaceId, ninth, 3, 2, withOther);
+
+        // Two of three used by the first: the other's first request of
+        // the day, costing two, would pass the pool's limit.
+        assert.isTrue(
+          Option.isNone(yield* usage.claim(other, ninth, 3, 2, withFirst))
+        );
+        assert.deepStrictEqual(
+          (yield* usage.claim(other, ninth, 3, 1, withFirst)).pipe(
+            Option.getOrNull
+          ),
+          1
+        );
+        assert.isTrue(
+          Option.isNone(yield* usage.claim(workspaceId, ninth, 3, 1, withOther))
+        );
+        assert.deepStrictEqual(
+          yield* usage.usedIn([workspaceId, other], ninth),
+          new Map([
+            [workspaceId, 2],
+            [other, 1],
+          ])
+        );
+      })
+  );
+
+  it.effect(
+    "lets no pooled request past the limit when the pool's workspaces ask together",
+    () =>
+      Effect.gen(function* pooledTogether() {
+        const usage = yield* AssistantUsage;
+        const client = yield* SqlClient.SqlClient;
+        const first = yield* freshWorkspace;
+        const second = yield* freshWorkspace;
+
+        const claims = yield* Effect.all(
+          Array.from({ length: 12 }, (_, index) =>
+            index % 2 === 0
+              ? usage.claim(
+                  first,
+                  ninth,
+                  5,
+                  1,
+                  heldPool(client, first, [second])
+                )
+              : usage.claim(
+                  second,
+                  ninth,
+                  5,
+                  1,
+                  heldPool(client, first, [first])
+                )
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        const used = yield* usage.usedIn([first, second], ninth);
+
+        assert.strictEqual(claims.filter(Option.isSome).length, 5);
+        assert.strictEqual(
+          [...used.values()].reduce((sum, requests) => sum + requests, 0),
+          5
+        );
+      })
+  );
+
+  it.effect(
+    "claims for a pool of 20,000 workspaces, locking nothing a workspace",
+    () =>
+      Effect.gen(function* largePool() {
+        const usage = yield* AssistantUsage;
+        const client = yield* SqlClient.SqlClient;
+        const workspaceId = yield* freshWorkspace;
+        const others = strangers(20_000);
+
+        const claimed = yield* usage.claim(
+          workspaceId,
+          ninth,
+          5,
+          1,
+          heldPool(client, workspaceId, others)
+        );
+
+        assert.deepStrictEqual(Option.getOrNull(claimed), 1);
+        assert.deepStrictEqual(
+          yield* usage.usedIn([workspaceId, ...strangers(70_000)], ninth),
+          new Map([[workspaceId, 1]])
+        );
+      })
   );
 
   it.effect("reads many workspaces' day in one call", () =>

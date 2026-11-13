@@ -1,6 +1,9 @@
 import { assert, layer } from "@effect/vitest";
 import { Config, Effect, Layer, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 import { InvitationSchema, WorkspaceMemberSchema } from "peal-contract";
+
+import { SqlLive } from "#shared/infrastructure/database.ts";
 
 import {
   apiKeyOf,
@@ -332,8 +335,8 @@ const stripeMockUrl = Config.String("STRIPE_MOCK_URL").pipe(
 );
 
 // A server that bills, against stripe-mock: every workspace starts on the
-// free plan, with two members.
-const BillingLive = Layer.unwrap(
+// free tier, whose members are unlimited.
+const BillingApp = Layer.unwrap(
   Effect.gen(function* billingApp() {
     const apiUrl = yield* stripeMockUrl;
 
@@ -345,24 +348,57 @@ const BillingLive = Layer.unwrap(
   })
 );
 
+const BillingLive = Layer.mergeAll(BillingApp, SqlLive);
+
+// The workspace on the legacy starter plan, 3 members, as a subscription
+// bought before per-account pricing holds it: recorded as Stripe's events
+// leave it.
+const onStarter = (workspaceId: string) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql`INSERT INTO billing.subscriptions (cancel_at_period_end, interval, last_event_at, last_event_id, plan, status, stripe_customer_id, stripe_subscription_id, updated_at, workspace_id)
+        VALUES (false, 'month', now(), ${`evt_synthetic_${workspaceId}`}, 'starter', 'active', ${`cus_synthetic_${workspaceId}`}, ${`sub_synthetic_${workspaceId}`}, now(), ${workspaceId})`
+  ).pipe(Effect.orDie);
+
 layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
   "invitations on a server that bills",
   (it) => {
-    it.effect("refuse an invitation the plan has no room for", () =>
+    it.effect("take any number of members on the free tier", () =>
+      Effect.gen(function* free() {
+        const owner = yield* signedUp("roomy-host");
+        const workspaceId = yield* workspaceOf(owner, "Roomy");
+
+        for (const index of [1, 2, 3]) {
+          assert.strictEqual(
+            (yield* invite(owner, workspaceId, {
+              email: newEmail(`roomy-${String(index)}`),
+              role: "editor",
+            })).status,
+            201
+          );
+        }
+      })
+    );
+
+    it.effect("refuse an invitation a legacy plan has no room for", () =>
       Effect.gen(function* plan() {
         const owner = yield* signedUp("crowded-host");
         const workspaceId = yield* workspaceOf(owner, "Crowded");
         const first = newEmail("first");
 
-        // The free plan has two members: the owner, and one invited.
-        assert.strictEqual(
-          (yield* invite(owner, workspaceId, { email: first, role: "editor" }))
-            .status,
-          201
-        );
+        yield* onStarter(workspaceId);
+
+        // The starter plan has three members: the owner, and two invited.
+        for (const email of [first, newEmail("second")]) {
+          assert.strictEqual(
+            (yield* invite(owner, workspaceId, { email, role: "editor" }))
+              .status,
+            201
+          );
+        }
 
         const second = yield* invite(owner, workspaceId, {
-          email: newEmail("second"),
+          email: newEmail("third"),
           role: "editor",
         });
 
@@ -382,12 +418,12 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
           ),
           {
             _tag: "PlanLimitReached",
-            allowed: 2,
+            allowed: 3,
             billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
             limit: "members",
-            plan: "free",
-            planWithRoom: "starter",
-            used: 2,
+            plan: "starter",
+            planWithRoom: "payAsYouGo",
+            used: 3,
           }
         );
 

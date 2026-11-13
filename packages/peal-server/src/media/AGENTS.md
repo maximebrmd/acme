@@ -28,7 +28,10 @@
 - On a server that bills, `createUpload` checks the declared size against
   the plan's media storage (`StorageAllowance`) before the store opens an
   upload, and again as the asset is recorded (`MediaAssets.insertWithin`,
-  under the workspace's advisory lock): `PlanLimitReached`
+  under the workspace's advisory lock, then the pool's, `sharedWith`, run
+  in the transaction): the billing account's allowance, against what its
+  pool stores (`pooledRoom`), per-account pricing's growing with the
+  accounts connected (`ChannelUsage`): `PlanLimitReached`
   `mediaStorage`. Rejected files count for nothing, pending ones until
   their URLs expire.
 - Storage keys are `media/<workspace id>/<asset id>.<ext>` under

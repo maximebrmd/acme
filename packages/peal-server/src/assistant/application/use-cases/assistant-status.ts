@@ -1,7 +1,7 @@
 import { DateTime, Effect, Option } from "effect";
 
+import { pooledUsed } from "#assistant/application/pooled-requests.ts";
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
-import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import { ImageModel } from "#assistant/application/ports/image-model.ts";
 import { ImageProviders } from "#assistant/application/ports/image-providers.ts";
 import { TextProviders } from "#assistant/application/ports/text-providers.ts";
@@ -107,9 +107,7 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
       allowance.dailyRequests(workspaceId)
     );
 
-    const used = yield* AssistantUsage.use((usage) =>
-      usage.used(workspaceId, window.day)
-    );
+    const used = yield* pooledUsed(workspaceId, window.day);
 
     const status: AssistantStatus = {
       available: textSource !== null,

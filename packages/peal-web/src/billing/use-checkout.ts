@@ -3,7 +3,11 @@
 import { useAtomSet } from "@effect/atom-react";
 import { Cause, Exit, Option, Schema } from "effect";
 import { useLocale } from "next-intl";
-import { OrderablePlanSchema, PlanTooSmall } from "peal-contract";
+import {
+  OrderablePlanSchema,
+  orderConsentVersion,
+  PlanTooSmall,
+} from "peal-contract";
 import type { BillingInterval, Excess, PaidPlan } from "peal-contract";
 
 import { billingClient } from "#auth/billing-client.ts";
@@ -104,6 +108,8 @@ export const useCheckout = (workspaceId: string) => {
     const placed = await order({
       params: { workspaceId },
       payload: {
+        // The words of the box this page shows.
+        consentVersion: orderConsentVersion,
         interval: yearly ? "year" : "month",
         plan,
         startNow: true,

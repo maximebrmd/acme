@@ -863,6 +863,7 @@ module Peal
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
     autoload :NoticeEventCommentsReceived, ::File.join(__dir__, "peal/types/notice_event_comments_received")
     autoload :NoticeEventFeedStopped, ::File.join(__dir__, "peal/types/notice_event_feed_stopped")
+    autoload :NoticeEventPaymentMethodNeeded, ::File.join(__dir__, "peal/types/notice_event_payment_method_needed")
     autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")
     autoload :ReviewParty, ::File.join(__dir__, "peal/types/review_party")
     autoload :NoticeEventPostApproved, ::File.join(__dir__, "peal/types/notice_event_post_approved")

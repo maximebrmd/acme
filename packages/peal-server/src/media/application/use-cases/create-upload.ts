@@ -5,8 +5,8 @@ import {
   MediaStorage,
   SignedRequestSchema,
 } from "#media/application/ports/media-storage.ts";
-import { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
+import { pooledRoom } from "#media/application/use-cases/pooled-storage.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import {
@@ -96,10 +96,6 @@ export const createUpload = Effect.fn("Media.createUpload")(
     const { workspaceId } = request;
     const plan = planUpload(accepted.byteSize, policy);
 
-    const allowance = yield* StorageAllowance.use((allowed) =>
-      allowed.bytes(workspaceId)
-    );
-
     // An upload not finished within its URLs' life never will be.
     const pendingSince = DateTime.subtractDuration(
       now,
@@ -107,14 +103,15 @@ export const createUpload = Effect.fn("Media.createUpload")(
     );
 
     // Checked once before the store opens a multipart upload, and again,
-    // under the workspace's lock, when the asset is recorded.
+    // under the workspace's lock and its pool's, when the asset is
+    // recorded.
+    const { allowance, sharedWith, stored } = yield* pooledRoom(
+      workspaceId,
+      pendingSince
+    );
+
     yield* Effect.fromResult(
-      roomFor(
-        "mediaStorage",
-        allowance,
-        yield* assets.storedBytes(workspaceId, pendingSince),
-        accepted.byteSize
-      )
+      roomFor("mediaStorage", allowance, stored, accepted.byteSize)
     );
 
     if (plan._tag === "single") {
@@ -123,7 +120,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
         now
       );
 
-      yield* assets.insertWithin(asset, allowance, pendingSince);
+      yield* assets.insertWithin(asset, allowance, pendingSince, sharedWith);
 
       const signed = yield* storage.signUpload({
         byteSize: asset.byteSize,
@@ -161,7 +158,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
       now
     );
 
-    yield* assets.insertWithin(asset, allowance, pendingSince);
+    yield* assets.insertWithin(asset, allowance, pendingSince, sharedWith);
 
     const upload = { key: asset.storageKey, uploadId };
 

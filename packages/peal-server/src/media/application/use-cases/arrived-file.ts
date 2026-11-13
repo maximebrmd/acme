@@ -3,9 +3,9 @@ import type { DateTime as DateTimeType } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
-import { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { finishUpload } from "#media/application/use-cases/finish-upload.ts";
+import { pooledRoom } from "#media/application/use-cases/pooled-storage.ts";
 import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { acceptUpload, startUpload } from "#media/domain/media-asset.ts";
@@ -42,6 +42,8 @@ export interface ArrivingFile<E> {
 /** The room a workspace has, as it stood when a file started to arrive. */
 export interface ArrivalRoom {
   readonly allowance: Allowance;
+  /** The other workspaces of the pool, held when run in a transaction. */
+  readonly sharedWith: Effect.Effect<readonly WorkspaceId[]>;
   readonly now: DateTimeType.Utc;
   /** Uploads started before this will never arrive, and take no room. */
   readonly pendingSince: DateTimeType.Utc;
@@ -66,20 +68,20 @@ export const roomIn = Effect.fn("Media.roomIn")(function* roomIn(
   const policy = yield* CurrentUploadPolicy;
   const now = yield* DateTime.now;
 
-  const allowance = yield* StorageAllowance.use((allowed) =>
-    allowed.bytes(workspaceId)
-  );
-
   // An upload not finished within its URLs' life never will be.
   const pendingSince = DateTime.subtractDuration(now, policy.partUploadExpiry);
+
+  const { allowance, sharedWith, stored } = yield* pooledRoom(
+    workspaceId,
+    pendingSince
+  );
 
   const room: ArrivalRoom = {
     allowance,
     now,
     pendingSince,
-    stored: yield* MediaAssets.use((assets) =>
-      assets.storedBytes(workspaceId, pendingSince)
-    ),
+    sharedWith,
+    stored,
   };
 
   yield* Effect.fromResult(
@@ -233,7 +235,12 @@ export const recordArrived = Effect.fn("Media.recordArrived")(
     const storage = yield* MediaStorage;
 
     yield* MediaAssets.use((assets) =>
-      assets.insertWithin(asset, room.allowance, room.pendingSince)
+      assets.insertWithin(
+        asset,
+        room.allowance,
+        room.pendingSince,
+        room.sharedWith
+      )
     ).pipe(
       Effect.onError(() => storage.remove(stored.key).pipe(Effect.ignore))
     );

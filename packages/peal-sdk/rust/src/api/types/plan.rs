@@ -1,6 +1,6 @@
 pub use crate::prelude::*;
 
-/// The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no workspace holds yet.
+/// The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, the only plan sold.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Plan {

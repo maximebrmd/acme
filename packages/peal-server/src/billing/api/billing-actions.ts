@@ -1,14 +1,17 @@
 import { DateTime, Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
+  AlreadySubscribed,
   Api,
   BilledElsewhere,
   BillingNotEnabled,
   BillingUnavailable,
+  ConsentChanged,
   CurrentMember,
   DesiredDayTooFar,
   desiredDayHorizonDays,
   NothingToCancel,
+  PlanNotSold,
   PlanTooSmall,
   ReductionRefused,
   TransferNotFound,
@@ -93,15 +96,24 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
 
           const placed = yield* orders
             .place(actor, {
+              consentVersion: payload.consentVersion,
               interval: payload.interval,
               plan: payload.plan,
               trial: payload.trial,
             })
             .pipe(
               Effect.catchTags({
+                AlreadySubscribed: ({ status }) =>
+                  Effect.fail(new AlreadySubscribed({ status })),
                 BilledElsewhere: ({ billingWorkspaceId }) =>
                   Effect.fail(new BilledElsewhere({ billingWorkspaceId })),
                 BillingOff: notEnabled,
+                ConsentChanged: ({ current, shown }) =>
+                  Effect.fail(
+                    shown === undefined
+                      ? new ConsentChanged({ current })
+                      : new ConsentChanged({ current, shown })
+                  ),
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
                 PersonRequired: forbidden,
@@ -113,6 +125,8 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
                       planWithRoom: Option.getOrNull(planWithRoom),
                     })
                   ),
+                PlanNotSold: ({ interval, plan }) =>
+                  Effect.fail(new PlanNotSold({ interval, plan })),
                 StripeUnreachable: unreachable,
                 TrialUnavailable: ({ reason }) =>
                   Effect.fail(new TrialUnavailable({ reason })),

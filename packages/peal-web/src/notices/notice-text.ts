@@ -222,6 +222,22 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
+      PaymentMethodNeeded: ({ accounts, allowed, graceUntil }) =>
+        billing(
+          t("event.PaymentMethodNeeded", {
+            accounts,
+            allowed,
+            // The exact instant, in UTC: a day alone reads as included,
+            // and shifts west of UTC.
+            graceUntil: DateTime.format(graceUntil, {
+              dateStyle: "long",
+              locale,
+              timeStyle: "short",
+              timeZone: "UTC",
+            }),
+            workspace,
+          })
+        ),
       TrialEnding: ({ endsAt, over, plan: name }) =>
         billing(
           over.length === 0

@@ -18,7 +18,7 @@ const alone = WorkspaceIdSchema.make("0d3f6b1a-2c4e-4f5a-8b6c-7d8e9f0a1b2c");
 // The partner's home workspace holds the plan of the workspace it owns.
 const HoldersTest = Layer.succeed(
   PlanHolders,
-  PlanHolders.of({
+  PlanHolders.ofHolders({
     holderOf: (workspaceId) =>
       Effect.succeed(workspaceId === owned ? home : workspaceId),
     holdersOf: (workspaceIds) =>
@@ -40,7 +40,16 @@ const SharedTest = WorkspaceEntitlements.layerShared.pipe(
       subscriptionOf({ plan: "business", status: "active", workspaceId: home }),
     ])
   ),
-  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true })))
+  Layer.provide(
+    Layer.succeed(
+      BillingMode,
+      BillingMode.of({
+        enabled: true,
+        graceSince: Option.none(),
+        graceUntil: Option.none(),
+      })
+    )
+  )
 );
 
 layer(SharedTest)("entitlements on a server with partners", (it) => {

@@ -670,18 +670,17 @@ layer(BillingTest, { excludeTestServices: true, timeout: "180 seconds" })(
             .request(`${base}/validate`, { body: post, headers })
             .pipe(Effect.flatMap((reply) => bodyOf(ShortfallSchema, reply)));
 
-          // Three channels on the free plan, the home workspace's and the
+          // Two accounts on the free tier, the home workspace's and the
           // customer's together: within it.
           yield* seedChannel(home, "home-one@social.test");
-          yield* seedChannel(home, "home-two@social.test");
 
           assert.deepStrictEqual(yield* validate, {
             planLimit: null,
             valid: true,
           });
 
-          // A fourth, as a plan that shrank leaves them: no workspace of
-          // the partner holds more than three itself, and all of them
+          // A third, as a plan that shrank leaves them: no workspace of
+          // the partner holds more than two itself, and all of them
           // together do.
           yield* seedChannel(customer.id, "two@social.test");
 

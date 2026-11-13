@@ -15,6 +15,7 @@ import type { MediaStatusName } from "#media/domain/media-status.ts";
 import { roomFor } from "#shared/domain/allowance.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { mediaAssets } from "./schema.ts";
@@ -184,7 +185,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .from(mediaAssets)
           .where(
             and(
-              inArray(mediaAssets.workspaceId, [...workspaceIds]),
+              anyUuid(mediaAssets.workspaceId, workspaceIds),
               takingRoom(pendingSince)
             )
           )
@@ -206,17 +207,68 @@ export const DrizzleMediaAssetsLive = Layer.effect(
       }
     );
 
+    const storedAcross = Effect.fn("MediaAssets.storedAcross")(
+      function* storedAcross(
+        workspaceIds: readonly WorkspaceId[],
+        pendingSince: DateTime.Utc
+      ) {
+        if (workspaceIds.length === 0) {
+          return 0;
+        }
+
+        const [row] = yield* db
+          .select({
+            bytes: sql<string>`coalesce(sum(${mediaAssets.byteSize}), 0)::text`,
+          })
+          .from(mediaAssets)
+          .where(
+            and(
+              anyUuid(mediaAssets.workspaceId, workspaceIds),
+              takingRoom(pendingSince)
+            )
+          )
+          .pipe(Effect.orDie);
+
+        return Number(row?.bytes ?? "0");
+      }
+    );
+
+    // What the workspace and the others of its pool store, in one count,
+    // the pool held from here to the end of the transaction, after the
+    // workspace's lock. Without a limit, no pool is read nor held.
+    const pooledBytes = (
+      workspaceId: WorkspaceId,
+      allowance: Allowance,
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
+    ) =>
+      Effect.gen(function* pooled() {
+        yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${workspaceId}))`;
+
+        if (Option.isNone(allowance)) {
+          return 0;
+        }
+
+        const others = yield* sharedWith;
+
+        return yield* storedAcross([workspaceId, ...others], pendingSince);
+      });
+
     const insertWithin = (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) =>
       client
         .withTransaction(
           Effect.gen(function* insertHeld() {
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
-
-            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+            const used = yield* pooledBytes(
+              asset.workspaceId,
+              allowance,
+              pendingSince,
+              sharedWith
+            );
 
             yield* Effect.fromResult(
               roomFor("mediaStorage", allowance, used, asset.byteSize)
@@ -282,14 +334,18 @@ export const DrizzleMediaAssetsLive = Layer.effect(
     const updateWithin = (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) =>
       client
         .withTransaction(
           Effect.gen(function* updateHeld() {
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
-
-            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+            const used = yield* pooledBytes(
+              asset.workspaceId,
+              allowance,
+              pendingSince,
+              sharedWith
+            );
 
             yield* Effect.fromResult(
               roomFor("mediaStorage", allowance, used, asset.byteSize)
@@ -379,6 +435,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .pipe(Effect.orDie);
       }),
       storedBytes,
+      storedAcross,
       storedBytesIn,
       update,
       updateWithin,

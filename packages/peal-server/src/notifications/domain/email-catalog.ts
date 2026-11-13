@@ -155,6 +155,26 @@ export interface EmailCatalog {
   readonly subscriptionStarted: EmailMessages;
   /** The same, for a trial ending at `{endsAt}`. */
   readonly trialStarted: EmailMessages;
+  /**
+   * Per-account pricing started at `{startedAt}`, at `{rates}`: the
+   * confirmation of the contract, which charges nothing at the start.
+   */
+  readonly perAccountStarted: EmailMessages;
+  /** Per-account pricing's ladder, a part each, as `{rates}` lists it. */
+  readonly rates: {
+    /** The first `{count}` accounts, free. */
+    readonly free: string;
+    /** `{price}` a month for each account from `{from}` to `{to}`. */
+    readonly band: string;
+    /** `{price}` a month for each account from `{from}`. */
+    readonly lastBand: string;
+  };
+  /**
+   * `{workspaceName}`, on the free tier, holds `{accounts}` connected
+   * accounts, more than its `{allowed}`: until `{graceUntil}` it still
+   * schedules and publishes.
+   */
+  readonly paymentMethodNeeded: EmailMessages;
   /** "month" or "year", as `{interval}`. */
   readonly intervals: { readonly month: string; readonly year: string };
   /**

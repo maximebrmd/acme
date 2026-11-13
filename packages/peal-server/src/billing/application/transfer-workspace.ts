@@ -161,11 +161,17 @@ export class TransferWorkspace extends Context.Service<
       });
 
       // The plan the receiving account bills on: its billing workspace's
-      // own subscriptions, or the workspace's when it makes the account.
-      const allowanceOf = (holder: WorkspaceId) =>
+      // own subscriptions, or the workspace's when it makes the account,
+      // with the account's free tier (or the person's, for an account
+      // made then).
+      const allowanceOf = (holder: WorkspaceId, freeTier: boolean) =>
         subscriptions
           .ofWorkspace(holder)
-          .pipe(Effect.map((held) => entitlementsOf(held).allowances.channels));
+          .pipe(
+            Effect.map((held) =>
+              entitlementsOf(held, freeTier).allowanceOf("channels")
+            )
+          );
 
       const accept = Effect.fn("TransferWorkspace.accept")(function* accept(
         actor: Actor
@@ -232,12 +238,18 @@ export class TransferWorkspace extends Context.Service<
             yield* Effect.fromResult(
               roomFor(
                 "channels",
-                yield* allowanceOf(
-                  Option.match(to, {
-                    onNone: () => workspaceId,
-                    onSome: ({ holder }) => holder,
-                  })
-                ),
+                yield* Option.match(to, {
+                  onNone: () =>
+                    store
+                      .requiresPayment(userId, Option.none())
+                      .pipe(
+                        Effect.flatMap((required) =>
+                          allowanceOf(workspaceId, !required)
+                        )
+                      ),
+                  onSome: ({ freeTier, holder }) =>
+                    allowanceOf(holder, freeTier),
+                }),
                 sum(held),
                 sum(moving)
               )

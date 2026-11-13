@@ -176,7 +176,7 @@ layer(generating(everyWorkspaceOn("free")), { timeout: "60 seconds" })(
           const video = startUpload(
             {
               accepted: {
-                byteSize: 490_000_000,
+                byteSize: 990_000_000,
                 contentType: "video/mp4",
                 kind: "video",
               },

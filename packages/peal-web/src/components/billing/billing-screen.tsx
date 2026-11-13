@@ -157,7 +157,8 @@ const LoadedBilling = ({
 
     run({ _tag: "order", plan, trial }, async () => {
       const failed = await checkout({
-        interval: billingInterval,
+        // Per-account pricing is monthly only.
+        interval: plan === "payAsYouGo" ? "month" : billingInterval,
         plan,
         returnDone: `${page}?checkout=done`,
         returnTo: page,

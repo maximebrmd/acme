@@ -14,6 +14,21 @@ export const MoneySchema = Schema.Struct({
 export type Money = typeof MoneySchema.Type;
 
 /**
+ * Per-account pricing's rates, as a confirmation states them: the accounts
+ * free, then each band's monthly price per account (`upTo` none: no end),
+ * in `currency`'s cents, excluding tax.
+ */
+export const NoticeRatesSchema = Schema.Struct({
+  bands: Schema.Array(
+    Schema.Struct({ monthly: Schema.Int, upTo: Schema.NullOr(Schema.Int) })
+  ),
+  currency: Schema.NonEmptyString,
+  freeAccounts: Schema.Int,
+});
+
+export type NoticeRates = typeof NoticeRatesSchema.Type;
+
+/**
  * What billing tells the members who manage a workspace's billing, in the
  * app and by email, whatever their email choices: these are reminders and
  * confirmations consumer law asks for.
@@ -26,6 +41,9 @@ export const BillingNoticeSchema = Schema.Union([
   Schema.TaggedStruct("SubscriptionStarted", {
     interval: BillingIntervalSchema,
     plan: PaidPlanSchema,
+    // Per-account pricing charges nothing at the start: its rates instead,
+    // with `price` 0. Older notices lack them.
+    rates: Schema.optionalKey(NoticeRatesSchema),
     price: MoneySchema,
     // The contract's number, since contracts have one.
     reference: Schema.optionalKey(Schema.String),
@@ -48,6 +66,15 @@ export const BillingNoticeSchema = Schema.Union([
     // The contract's number, since contracts have one.
     reference: Schema.optionalKey(Schema.String),
     renewsAt: Schema.DateTimeUtc,
+  }),
+  // The workspace, on the free tier, holds `accounts` connected accounts,
+  // more than the `allowed` it includes: until `graceUntil` it still
+  // schedules and publishes; after, nothing is published until a payment
+  // method is added or `allowed` accounts are kept.
+  Schema.TaggedStruct("PaymentMethodNeeded", {
+    accounts: Schema.Int,
+    allowed: Schema.Int,
+    graceUntil: Schema.DateTimeUtc,
   }),
   // The subscription was cancelled, and ends at `endsAt`.
   Schema.TaggedStruct("SubscriptionCancelled", {

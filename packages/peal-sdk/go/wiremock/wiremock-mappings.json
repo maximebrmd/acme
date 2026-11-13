@@ -2886,7 +2886,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"account\": {\n    \"billingWorkspaceId\": \"billingWorkspaceId\",\n    \"billingWorkspaceName\": \"billingWorkspaceName\",\n    \"id\": \"id\",\n    \"otherWorkspaces\": [\n      {\n        \"name\": \"name\",\n        \"workspaceId\": \"workspaceId\"\n      }\n    ],\n    \"partner\": true,\n    \"payer\": true,\n    \"transfer\": {\n      \"expiresAt\": \"expiresAt\",\n      \"offeredAt\": \"offeredAt\",\n      \"offeredBy\": \"offeredBy\",\n      \"toUserId\": \"toUserId\"\n    },\n    \"workspaces\": 1\n  },\n  \"mustReduce\": true,\n  \"over\": [\n    {\n      \"allowed\": 1000000,\n      \"limit\": \"channels\",\n      \"used\": 1000000\n    }\n  ],\n  \"plan\": \"free\",\n  \"planWithRoom\": \"starter\",\n  \"scheduledPosts\": 1\n}",
+        "body": "{\n  \"account\": {\n    \"billingWorkspaceId\": \"billingWorkspaceId\",\n    \"billingWorkspaceName\": \"billingWorkspaceName\",\n    \"id\": \"id\",\n    \"otherWorkspaces\": [\n      {\n        \"name\": \"name\",\n        \"workspaceId\": \"workspaceId\"\n      }\n    ],\n    \"partner\": true,\n    \"payer\": true,\n    \"transfer\": {\n      \"expiresAt\": \"expiresAt\",\n      \"offeredAt\": \"offeredAt\",\n      \"offeredBy\": \"offeredBy\",\n      \"toUserId\": \"toUserId\"\n    },\n    \"workspaces\": 1\n  },\n  \"graceUntil\": \"graceUntil\",\n  \"mustReduce\": true,\n  \"over\": [\n    {\n      \"allowed\": 1000000,\n      \"limit\": \"channels\",\n      \"used\": 1000000\n    }\n  ],\n  \"plan\": \"free\",\n  \"planWithRoom\": \"starter\",\n  \"scheduledPosts\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }

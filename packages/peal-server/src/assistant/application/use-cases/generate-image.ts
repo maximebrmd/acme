@@ -165,15 +165,16 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
     const window = usageWindowAt(yield* DateTime.now);
 
     // Images may take less of the day than suggestions: none on a trial.
-    const dailyLimit = yield* AssistantAllowance.use((allowance) =>
-      allowance.imageRequests(workspaceId)
-    );
+    const allowance = yield* AssistantAllowance;
+    const dailyLimit = yield* allowance.imageRequests(workspaceId);
 
     const claimed = yield* usage.claim(
       workspaceId,
       window.day,
       dailyLimit,
-      imageRequestCost
+      imageRequestCost,
+      // Alone, where no day is shared: one statement.
+      allowance.pooled ? allowance.sharedWith(workspaceId) : undefined
     );
 
     if (Option.isNone(claimed)) {

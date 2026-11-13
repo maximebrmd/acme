@@ -35,14 +35,17 @@ import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { AlreadySubscribed } from "#billing/domain/already-subscribed.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
+import { ConsentChanged } from "#billing/domain/consent-changed.ts";
 import { ContractRequestIdSchema } from "#billing/domain/contract-request.ts";
 import type {
   ContractRequest,
   RequestIntent,
 } from "#billing/domain/contract-request.ts";
-import type { Order } from "#billing/domain/order.ts";
-import { PlanTooSmall } from "#billing/domain/plan-too-small.ts";
+import { consentVersion, Order, OrderIdSchema } from "#billing/domain/order.ts";
+import { PlanNotSold } from "#billing/domain/plan-not-sold.ts";
+import { rateCard } from "#billing/domain/rate-card.ts";
 import type { Holdings } from "#billing/domain/standing.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -281,6 +284,8 @@ const PortsInMemory = Layer.mergeAll(
               `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
             ),
           endAtTrialEnd: (_workspace, id) => asked(`endAtTrialEnd ${id}`),
+          endAndInvoice: (_workspace, id, reason) =>
+            asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
           isBusiness: () => Ref.get(business),
           paidInvoices: () => Ref.get(invoices),
@@ -344,7 +349,7 @@ const billedBy = Ref.makeUnsafe<Option.Option<WorkspaceId>>(Option.none());
 
 const BilledByTest = Layer.succeed(
   PlanHolders,
-  PlanHolders.of({
+  PlanHolders.ofHolders({
     holderOf: (id) =>
       Ref.get(billedBy).pipe(Effect.map(Option.getOrElse(() => id))),
     holdersOf: (ids) => Effect.succeed(new Map(ids.map((id) => [id, id]))),
@@ -357,7 +362,7 @@ const ActionsTest = Layer.mergeAll(
   CheckoutOrders.layer,
   CancelSubscription.layer,
   Withdraw.layer,
-  SendBillingReminders.layer
+  SendBillingReminders.layer.pipe(Layer.provide(WorkspaceEntitlements.layer))
 ).pipe(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),
@@ -377,7 +382,16 @@ const ActionsTest = Layer.mergeAll(
   ),
   Layer.provide(UsageTest),
   Layer.provide(AddressesTest),
-  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
+  Layer.provide(
+    Layer.succeed(
+      BillingMode,
+      BillingMode.of({
+        enabled: true,
+        graceSince: Option.none(),
+        graceUntil: Option.none(),
+      })
+    )
+  ),
   Layer.provide(AloneInAccountsTest),
   Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
@@ -439,45 +453,182 @@ const asRequest = {
   ),
 };
 
+// An order placed before legacy plans and trials stopped being sold.
+const placedBefore = (id: string, plan: "pro" | "starter", trial: boolean) =>
+  new Order({
+    consentVersion: "2026-11-10",
+    createdAt: at("2026-11-09T09:55:00Z"),
+    id: OrderIdSchema.make(id),
+    interval: "month",
+    plan,
+    trial,
+    userId,
+    workspaceId,
+  });
+
 layer(ActionsTest)("billing's actions", (it) => {
-  it.effect("orders the trial once per account and per workspace", () =>
-    Effect.gen(function* trial() {
-      yield* setNow("2026-11-09T10:00:00Z");
+  it.effect(
+    "orders per-account pricing, monthly, and neither a trial nor a legacy plan",
+    () =>
+      Effect.gen(function* ordering() {
+        yield* setNow("2026-11-09T10:00:00Z");
 
-      const orders = yield* PlaceOrder;
-      const request = { interval: "month", plan: "pro", trial: true } as const;
-      const order = yield* orders.place(actorAs(), request);
+        const orders = yield* PlaceOrder;
 
-      assert.isTrue(order.trial);
-      assert.strictEqual(order.consentVersion, "2026-11-10");
+        const order = yield* orders.place(actorAs(), {
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
 
-      yield* BillingLog.use(({ trials }) =>
-        Ref.set(trials, [
-          {
-            plan: "pro",
-            startedAt: at("2026-11-09T10:00:00Z"),
-            stripeSubscriptionId: "sub_synthetic_trial",
-            userId,
-            workspaceId: WorkspaceIdSchema.make(
-              "8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d1e"
-            ),
-          },
-        ])
-      );
+        assert.strictEqual(order.plan, "payAsYouGo");
+        assert.strictEqual(order.interval, "month");
+        assert.isFalse(order.trial);
+        assert.strictEqual(order.consentVersion, consentVersion);
 
-      const used = yield* orders.place(actorAs(), request).pipe(Effect.flip);
+        const trial = yield* orders
+          .place(actorAs(), { interval: "month", plan: "pro", trial: true })
+          .pipe(Effect.flip);
 
-      assert.deepInclude(used, { _tag: "TrialUnavailable", reason: "used" });
+        assert.deepInclude(trial, {
+          _tag: "TrialUnavailable",
+          reason: "notOffered",
+        });
 
-      const other = yield* orders
-        .place(actorAs(), { ...request, plan: "agency" })
-        .pipe(Effect.flip);
+        const legacy = yield* orders
+          .place(actorAs(), { interval: "month", plan: "agency", trial: false })
+          .pipe(Effect.flip);
 
-      assert.deepInclude(other, {
-        _tag: "TrialUnavailable",
-        reason: "notOffered",
-      });
-    })
+        assert.deepStrictEqual(
+          legacy,
+          new PlanNotSold({ interval: "month", plan: "agency" })
+        );
+
+        const yearly = yield* orders
+          .place(actorAs(), {
+            consentVersion,
+            interval: "year",
+            plan: "payAsYouGo",
+            trial: false,
+          })
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          yearly,
+          new PlanNotSold({ interval: "year", plan: "payAsYouGo" })
+        );
+        assert.lengthOf(
+          yield* BillingLog.use(({ orders: placed }) => Ref.get(placed)),
+          1
+        );
+      })
+  );
+
+  it.effect(
+    "orders nothing more for an account already on per-account pricing, even past due or unpaid",
+    () =>
+      Effect.gen(function* twice() {
+        const orders = yield* PlaceOrder;
+
+        const request = {
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        } as const;
+
+        for (const status of ["active", "past_due", "unpaid"] as const) {
+          yield* setNow("2026-11-09T10:00:00Z");
+          yield* holding(paid({ plan: "payAsYouGo", status }));
+
+          assert.deepStrictEqual(
+            yield* orders.place(actorAs(), request).pipe(Effect.flip),
+            new AlreadySubscribed({ status })
+          );
+        }
+
+        // One that ended orders again.
+        yield* setNow("2026-11-09T10:00:00Z");
+        yield* holding(paid({ plan: "payAsYouGo", status: "canceled" }));
+
+        assert.strictEqual(
+          (yield* orders.place(actorAs(), request)).plan,
+          "payAsYouGo"
+        );
+      })
+  );
+
+  it.effect(
+    "starts no checkout once the account is on per-account pricing, though the order was placed before",
+    () =>
+      Effect.gen(function* raced() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
+
+        // Another manager's checkout went through meanwhile.
+        yield* holding(paid({ plan: "payAsYouGo" }));
+
+        assert.deepStrictEqual(
+          yield* (yield* CheckoutOrders)
+            .take({
+              email: "member@example.com",
+              interval: "month",
+              orderId: order.id,
+              plan: "payAsYouGo",
+              userId,
+              workspaceId,
+            })
+            .pipe(Effect.flip),
+          new AlreadySubscribed({ status: "active" })
+        );
+      })
+  );
+
+  it.effect(
+    "refuses an order whose box was shown in other words than the server records",
+    () =>
+      Effect.gen(function* words() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const orders = yield* PlaceOrder;
+
+        const request = {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        } as const;
+
+        assert.deepStrictEqual(
+          yield* orders
+            .place(actorAs(), { ...request, consentVersion: "2026-11-10" })
+            .pipe(Effect.flip),
+          new ConsentChanged({ current: consentVersion, shown: "2026-11-10" })
+        );
+        // A page older than the version itself names none.
+        assert.deepStrictEqual(
+          yield* orders.place(actorAs(), request).pipe(Effect.flip),
+          new ConsentChanged({ current: consentVersion })
+        );
+        // The legacy plans answer as they did.
+        assert.strictEqual(
+          (yield* orders
+            .place(actorAs(), { ...request, plan: "starter" })
+            .pipe(Effect.flip))._tag,
+          "PlanNotSold"
+        );
+        assert.strictEqual(
+          (yield* orders.place(actorAs(), { ...request, consentVersion }))
+            .consentVersion,
+          consentVersion
+        );
+      })
   );
 
   it.effect(
@@ -528,7 +679,7 @@ layer(ActionsTest)("billing's actions", (it) => {
   );
 
   it.effect(
-    "keeps the trial running when a paid plan is ordered, until it is paid",
+    "keeps the trial running when per-account pricing is ordered, until it is paid",
     () =>
       Effect.gen(function* duringTrial() {
         yield* setNow("2026-11-09T10:00:00Z");
@@ -541,8 +692,9 @@ layer(ActionsTest)("billing's actions", (it) => {
         );
 
         yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
           interval: "month",
-          plan: "pro",
+          plan: "payAsYouGo",
           trial: false,
         });
 
@@ -551,34 +703,49 @@ layer(ActionsTest)("billing's actions", (it) => {
   );
 
   it.effect(
-    "starts no checkout for an order the workspace has outgrown since it was placed",
+    "starts no checkout for a legacy plan or a trial ordered before they stopped being sold",
     () =>
-      Effect.gen(function* outgrown() {
+      Effect.gen(function* notSold() {
         yield* setNow("2026-11-09T10:00:00Z");
 
-        const order = yield* (yield* PlaceOrder).place(actorAs(), {
-          interval: "month",
-          plan: "starter",
-          trial: false,
+        const legacy = placedBefore(
+          "0190f3a0-0000-7000-8000-0000000000c1",
+          "starter",
+          false
+        );
+
+        const trial = placedBefore(
+          "0190f3a0-0000-7000-8000-0000000000c2",
+          "pro",
+          true
+        );
+
+        yield* BillingLog.use(({ orders }) =>
+          Ref.set(orders, [
+            { order: legacy, used: false },
+            { order: trial, used: false },
+          ])
+        );
+
+        const checkouts = yield* CheckoutOrders;
+
+        const take = (order: Order) =>
+          checkouts
+            .take({
+              email: "member@example.com",
+              interval: "month",
+              orderId: order.id,
+              plan: order.plan,
+              userId,
+              workspaceId,
+            })
+            .pipe(Effect.flip);
+
+        assert.strictEqual((yield* take(legacy))._tag, "OrderRequired");
+        assert.deepInclude(yield* take(trial), {
+          _tag: "TrialUnavailable",
+          reason: "notOffered",
         });
-
-        // Channels connected between the order and the checkout, as during
-        // a trial of a larger plan: the starter plan no longer holds them.
-        yield* holds({ channels: 9, mediaStorage: 0, members: 1 });
-
-        const refused = yield* (yield* CheckoutOrders)
-          .take({
-            email: "member@example.com",
-            interval: "month",
-            orderId: order.id,
-            plan: "starter",
-            userId,
-            workspaceId,
-          })
-          .pipe(Effect.flip);
-
-        // Ordered again, the billing page says what to remove first.
-        assert.strictEqual(refused._tag, "OrderRequired");
       })
   );
 
@@ -592,16 +759,17 @@ layer(ActionsTest)("billing's actions", (it) => {
         const checkouts = yield* CheckoutOrders;
 
         const order = yield* orders.place(actorAs(), {
-          interval: "year",
-          plan: "business",
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
           trial: false,
         });
 
         const claim = {
           email: "member@example.com",
-          interval: "year",
+          interval: "month",
           orderId: order.id,
-          plan: "business",
+          plan: "payAsYouGo",
           userId,
           workspaceId,
         } as const;
@@ -623,8 +791,9 @@ layer(ActionsTest)("billing's actions", (it) => {
         // Ordered while the workspace billed its account, taken once it no
         // longer does: refused.
         const moved = yield* orders.place(actorAs(), {
-          interval: "year",
-          plan: "business",
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
           trial: false,
         });
 
@@ -642,60 +811,19 @@ layer(ActionsTest)("billing's actions", (it) => {
         assert.strictEqual(elsewhere._tag, "OrderRequired");
 
         const late = yield* orders.place(actorAs(), {
+          consentVersion,
           interval: "month",
-          plan: "starter",
+          plan: "payAsYouGo",
           trial: false,
         });
 
         yield* TestClock.adjust(Duration.minutes(31));
 
         const expired = yield* checkouts
-          .take({
-            ...claim,
-            interval: "month",
-            orderId: late.id,
-            plan: "starter",
-          })
+          .take({ ...claim, orderId: late.id })
           .pipe(Effect.flip);
 
         assert.strictEqual(expired._tag, "OrderRequired");
-
-        const trial = yield* orders.place(actorAs(), {
-          interval: "month",
-          plan: "pro",
-          trial: true,
-        });
-
-        const trialTerms = yield* checkouts.take({
-          ...claim,
-          interval: "month",
-          orderId: trial.id,
-          plan: "pro",
-        });
-
-        assert.deepStrictEqual(trialTerms.trialDays, Option.some(14));
-
-        // An account closed with the same address had its trial.
-        const again = yield* orders.place(actorAs(), {
-          interval: "month",
-          plan: "pro",
-          trial: true,
-        });
-
-        const closed = yield* checkouts
-          .take({
-            ...claim,
-            email: "Closed@Example.com",
-            interval: "month",
-            orderId: again.id,
-            plan: "pro",
-          })
-          .pipe(Effect.flip);
-
-        assert.deepInclude(closed, {
-          _tag: "TrialUnavailable",
-          reason: "used",
-        });
       })
   );
 
@@ -942,75 +1070,80 @@ layer(ActionsTest)("billing's actions", (it) => {
   );
 
   it.effect(
-    "offers no trial to an address that had one with an account since closed",
+    "credits nothing on a withdrawal from per-account pricing, whose paid invoices were for usage supplied",
     () =>
-      Effect.gen(function* closedAddress() {
-        yield* setNow("2026-11-09T10:00:00Z");
+      Effect.gen(function* perAccountWithdrawal() {
+        // The month past's arrears, paid on the 1st, its lines without a
+        // period: the running month's would otherwise refund part of it.
+        yield* setNow("2026-11-04T00:00:00Z");
+        yield* holding(paid({ plan: "payAsYouGo" }));
+        yield* paying({
+          invoiceId: "in_synthetic_arrears",
+          lines: [],
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
 
-        const trialOf = BillingOverview.use((billing) =>
-          billing.of(actorAs())
-        ).pipe(Effect.map(({ trial }) => Option.getOrThrow(trial).available));
+        const preview = yield* (yield* Withdraw).preview(actorAs());
 
-        const orderTrial = PlaceOrder.use((orders) =>
+        assert.deepStrictEqual(preview.refund, { amount: 0, currency: "eur" });
+
+        const done = yield* (yield* Withdraw).confirm(actorAs());
+
+        assert.deepStrictEqual(done.refunded, { amount: 0, currency: "eur" });
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endAndInvoice sub_synthetic_paid withdrawn",
+        ]);
+      })
+  );
+
+  it.effect("offers no trial: the free accounts replace it", () =>
+    Effect.gen(function* noTrial() {
+      yield* setNow("2026-11-09T10:00:00Z");
+
+      const trial = yield* BillingOverview.use((billing) =>
+        billing.of(actorAs())
+      ).pipe(Effect.map(({ trial: offer }) => Option.getOrThrow(offer)));
+
+      assert.isFalse(trial.available);
+      assert.deepInclude(
+        yield* PlaceOrder.use((orders) =>
           orders.place(actorAs(), {
             interval: "month",
             plan: "pro",
             trial: true,
           })
-        );
-
-        assert.isTrue(yield* trialOf);
-
-        // The same address, in any case, as an account closed after its
-        // trial: the billing page shows none, and no order is taken.
-        yield* BillingLog.use(({ address }) =>
-          Ref.set(address, "Closed@Example.com")
-        );
-
-        assert.isFalse(yield* trialOf);
-        assert.deepInclude(yield* orderTrial.pipe(Effect.flip), {
-          _tag: "TrialUnavailable",
-          reason: "used",
-        });
-        assert.deepStrictEqual(
-          yield* BillingLog.use(({ orders }) => Ref.get(orders)),
-          []
-        );
-      })
+        ).pipe(Effect.flip),
+        { _tag: "TrialUnavailable", reason: "notOffered" }
+      );
+      assert.deepStrictEqual(
+        yield* BillingLog.use(({ orders }) => Ref.get(orders)),
+        []
+      );
+    })
   );
 
   it.effect(
-    "refuses an order for a plan too small for what the workspace holds, listing it",
+    "orders per-account pricing whatever a legacy plan's workspace holds",
     () =>
-      Effect.gen(function* tooSmall() {
+      Effect.gen(function* holdsAll() {
         yield* setNow("2026-11-09T10:00:00Z");
-        yield* holds({ channels: 8, mediaStorage: 0, members: 4 });
-        yield* holding(paid({ plan: "business" }));
+        yield* holds({
+          channels: 80,
+          mediaStorage: 200_000_000_000,
+          members: 40,
+        });
+        yield* holding(paid({ plan: "agency" }));
 
-        const orders = yield* PlaceOrder;
+        const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
 
-        const order = (plan: "pro" | "starter") =>
-          orders.place(actorAs(), { interval: "month", plan, trial: false });
-
-        // Moving down to Starter: five channels and three members.
-        assert.deepStrictEqual(
-          yield* order("starter").pipe(Effect.flip),
-          new PlanTooSmall({
-            over: [
-              { allowed: 5, limit: "channels", used: 8 },
-              { allowed: 3, limit: "members", used: 4 },
-            ],
-            plan: "starter",
-            planWithRoom: Option.some("pro"),
-          })
-        );
-        assert.deepStrictEqual(
-          yield* BillingLog.use(({ orders: placed }) => Ref.get(placed)),
-          []
-        );
-
-        // Pro holds it all.
-        assert.strictEqual((yield* order("pro")).plan, "pro");
+        assert.strictEqual(order.plan, "payAsYouGo");
       })
   );
 
@@ -1081,14 +1214,7 @@ layer(ActionsTest)("billing's actions", (it) => {
           notice: {
             _tag: "TrialEnding",
             endsAt: at("2026-12-22T10:00:00Z"),
-            over: [
-              { allowed: 3, limit: "channels", used: 8 },
-              {
-                allowed: 500_000_000,
-                limit: "mediaStorage",
-                used: 900_000_000,
-              },
-            ],
+            over: [{ allowed: 2, limit: "channels", used: 8 }],
             plan: "pro",
           },
         },
@@ -1149,6 +1275,44 @@ layer(ActionsTest)("billing's actions", (it) => {
             },
           },
         ]);
+      })
+  );
+
+  it.effect(
+    "confirms per-account pricing with its rates, before any invoice",
+    () =>
+      Effect.gen(function* confirmsRates() {
+        yield* setNow("2026-11-09T11:00:00Z");
+        yield* holding(
+          paid({
+            plan: "payAsYouGo",
+            startedAt: Option.some(at("2026-11-09T10:30:00Z")),
+            stripeSubscriptionId: "sub_accounts",
+          })
+        );
+
+        assert.strictEqual(yield* (yield* SendBillingReminders).run, 1);
+        assert.deepStrictEqual(yield* told, [
+          {
+            key: "subscription:sub_accounts:started",
+            notice: {
+              _tag: "SubscriptionStarted",
+              interval: "month",
+              plan: "payAsYouGo",
+              price: { amount: 0, currency: "usd" },
+              rates: {
+                bands: rateCard.prices.usd.accounts.bands,
+                currency: "usd",
+                freeAccounts: 2,
+              },
+              reference: "number-of-sub_accounts",
+              startedAt: at("2026-11-09T10:30:00Z"),
+              trialEnd: Option.none(),
+            },
+          },
+        ]);
+        // Nothing was asked of Stripe: no invoice says a price.
+        assert.deepStrictEqual(yield* askedOfStripe, []);
       })
   );
 

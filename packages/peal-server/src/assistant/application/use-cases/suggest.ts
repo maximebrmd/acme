@@ -107,13 +107,19 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
   const usage = yield* AssistantUsage;
   const window = usageWindowAt(yield* DateTime.now);
 
-  const dailyLimit = yield* AssistantAllowance.use((allowance) =>
-    allowance.dailyRequests(workspaceId)
-  );
+  const allowance = yield* AssistantAllowance;
+  const dailyLimit = yield* allowance.dailyRequests(workspaceId);
 
   const claimed =
     dailyLimit > 0
-      ? yield* usage.claim(workspaceId, window.day, dailyLimit, 1)
+      ? yield* usage.claim(
+          workspaceId,
+          window.day,
+          dailyLimit,
+          1,
+          // Alone, where no day is shared: one statement.
+          allowance.pooled ? allowance.sharedWith(workspaceId) : undefined
+        )
       : Option.none();
 
   if (Option.isNone(claimed)) {

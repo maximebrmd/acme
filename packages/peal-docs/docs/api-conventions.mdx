@@ -169,6 +169,7 @@ Every code the API answers, with the status it comes with. The reference lists, 
 | `ad_spending_unavailable`          | 409    | This server offers ads for reading only: its operator has not turned spending on. Nothing was spent or changed.                                                                                                                   |
 | `ads_unavailable`                  | 404    | Ads are off on this server, or the ad network asked for is not set up on it: its operator turns them on.                                                                                                                          |
 | `already_member`                   | 409    | The address invited already belongs to a member of the workspace.                                                                                                                                                                 |
+| `already_subscribed`               | 409    | The billing account already holds per-account pricing, in `status`; one past due or unpaid is settled by updating the payment method.                                                                                             |
 | `alt_text_too_long`                | 422    | The media's description is longer than Peal keeps.                                                                                                                                                                                |
 | `api_key_not_found`                | 404    | The workspace has no API key with this id.                                                                                                                                                                                        |
 | `approval_changed`                 | 409    | The post waits for an approval, but not the one this decision names: read it again, then decide.                                                                                                                                  |
@@ -199,6 +200,7 @@ Every code the API answers, with the status it comes with. The reference lists, 
 | `connect_failed`                   | 422    | The account was not connected; `reason` says why.                                                                                                                                                                                 |
 | `connect_link_not_found`           | 404    | The workspace has no connect link with this id, or no link answers at this address.                                                                                                                                               |
 | `connected_app_not_found`          | 404    | No application with this client id has access to the account.                                                                                                                                                                     |
+| `consent_changed`                  | 409    | The order box the client showed (`shown`, absent when the order names none) is not the one the server records consent to (`current`): load the page again.                                                                        |
 | `contract_request_not_found`       | 404    | No request to cancel or withdraw waits behind this link or id.                                                                                                                                                                    |
 | `contract_request_settled`         | 409    | The request to cancel or withdraw was already applied, refused or closed.                                                                                                                                                         |
 | `data_deletion_not_found`          | 404    | No data deletion request has this confirmation code.                                                                                                                                                                              |
@@ -258,6 +260,7 @@ Every code the API answers, with the status it comes with. The reference lists, 
 | `partner_owns_workspaces`          | 409    | The workspace's partner account still owns `owned` workspaces: delete each through the partner API first.                                                                                                                         |
 | `payload_too_large`                | 413    | The request's body is larger than the endpoint takes.                                                                                                                                                                             |
 | `plan_limit_reached`               | 402    | The workspace's plan has no room for this; `limit`, `allowed` and `used` say which limit.                                                                                                                                         |
+| `plan_not_sold`                    | 409    | The plan or interval ordered is no longer sold: order `payAsYouGo`, monthly.                                                                                                                                                      |
 | `plan_too_small`                   | 409    | The plan ordered is too small for what the workspace holds; `over` lists what exceeds it.                                                                                                                                         |
 | `platform_rate_limited`            | 429    | The platform asked to slow down, or an allowance of the day is spent; `retryAfterSeconds` says how long to wait, when it said.                                                                                                    |
 | `platform_unreachable`             | 502    | The platform did not answer, or failed, while an account was being connected.                                                                                                                                                     |
@@ -501,13 +504,13 @@ Wait `retryAfterSeconds`, then send the request again. A client that reads `Rate
 
 Some features have a limit of their own, which this one does not replace:
 
-| Limit                                                  | Error                      | See                                                |
-| ------------------------------------------------------ | -------------------------- | -------------------------------------------------- |
-| The writing assistant's requests per workspace and day | `assistant_quota_exceeded` | [Ask the writing assistant](/scheduling#assistant) |
-| Imports running at once                                | `media_import_busy`        | [Media](/media)                                    |
-| Test events and resends of webhooks per hour           | `too_many_webhook_sends`   | [The delivery log](/webhooks#log)                  |
-| Pending invitations of a workspace                     | `too_many_invitations`     | [Invitations](/settings#invitations)               |
-| What a plan allows, on a server that bills             | `plan_limit_reached`       | [Plans and billing](/billing#limits)               |
+| Limit                                                                                       | Error                      | See                                                |
+| ------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------- |
+| The writing assistant's requests per day, across the billing account on a server that bills | `assistant_quota_exceeded` | [Ask the writing assistant](/scheduling#assistant) |
+| Imports running at once                                                                     | `media_import_busy`        | [Media](/media)                                    |
+| Test events and resends of webhooks per hour                                                | `too_many_webhook_sends`   | [The delivery log](/webhooks#log)                  |
+| Pending invitations of a workspace                                                          | `too_many_invitations`     | [Invitations](/settings#invitations)               |
+| What a plan allows, on a server that bills                                                  | `plan_limit_reached`       | [Plans and billing](/billing#limits)               |
 
 ## Versioning [#versioning]
 

@@ -15,6 +15,7 @@ import {
   PlanLimitSchema as ContractPlanLimitSchema,
   PlanSchema as ContractPlanSchema,
   SubscriptionStatusSchema as ContractStatusSchema,
+  orderConsentVersion,
 } from "peal-contract";
 import {
   accountsCharge as contractAccountsCharge,
@@ -30,18 +31,15 @@ import {
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
 import { desiredDayHorizon } from "#billing/domain/desired-day.ts";
+import { planAllowances, planPrices } from "#billing/domain/legacy-plans.ts";
+import { consentVersion } from "#billing/domain/order.ts";
 import {
-  planAllowances,
   legacyPlans,
   plans,
   trialDays,
   trialPlan,
 } from "#billing/domain/plans.ts";
-import {
-  currency,
-  displayVatRate,
-  planPrices,
-} from "#billing/domain/prices.ts";
+import { currency, displayVatRate } from "#billing/domain/prices.ts";
 import {
   accountsCharge,
   accountsMonthly,
@@ -58,11 +56,7 @@ import {
   usageRetentionDays,
 } from "#billing/domain/usage-meter.ts";
 import { PlanLimitSchema } from "#shared/domain/plan-limit.ts";
-import {
-  LegacyPaidPlanSchema,
-  PaidPlanSchema,
-  PlanSchema,
-} from "#shared/domain/plan.ts";
+import { PaidPlanSchema, PlanSchema } from "#shared/domain/plan.ts";
 import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 
 const decodeObjectSchema = Schema.decodeUnknownSync(
@@ -104,10 +98,16 @@ describe("the contract", () => {
     );
   });
 
-  it("takes orders for the legacy plans only, as the server does", () => {
+  // The legacy plans stay so an older client's order still decodes, and
+  // is refused as not sold.
+  it("takes orders for every paid plan, as the server decodes them", () => {
     expect(ContractOrderablePlanSchema.literals).toStrictEqual(
-      LegacyPaidPlanSchema.literals
+      PaidPlanSchema.literals
     );
+  });
+
+  it("names the order box's words as the server records them", () => {
+    expect(orderConsentVersion).toBe(consentVersion);
   });
 
   it("lists the intervals the server bills", () => {

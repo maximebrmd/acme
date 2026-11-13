@@ -11,6 +11,7 @@ import { SqlClient } from "effect/sql";
 
 import { AssistantRequests } from "#assistant/application/assistant-requests.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
@@ -50,7 +51,11 @@ const heavy = new Set<string>();
 // home workspace, the channels counted across its pool, the members as
 // the roster has them. The counts that never decide the standing (posts
 // this month, the assistant's requests) are given.
-const standingOn = (billing: boolean) =>
+const standingOn = (
+  billing: boolean,
+  graceUntil: Option.Option<DateTime.Utc> = Option.none(),
+  graceSince: Option.Option<DateTime.Utc> = graceUntil
+) =>
   WorkspaceStanding.layer.pipe(
     Layer.provide(ContextWorkspaceUsageLive),
     Layer.provide(
@@ -66,7 +71,18 @@ const standingOn = (billing: boolean) =>
         Layer.mock(MediaStorageUsage, {
           stored: (workspaceId) =>
             Effect.succeed(heavy.has(workspaceId) ? 2_000_000_000 : 0),
-        })
+          storedIn: (workspaceIds) =>
+            Effect.succeed(
+              new Map(
+                workspaceIds
+                  .filter((id) => heavy.has(id))
+                  .map((id) => [id, 2_000_000_000] as const)
+              )
+            ),
+        }),
+        // Media's pool is the workspace alone here; channels' is counted
+        // by the partner rule above.
+        PlanPools.layerAlone
       )
     ),
     Layer.provideMerge(WorkspaceEntitlements.layerShared),
@@ -76,7 +92,10 @@ const standingOn = (billing: boolean) =>
     Layer.provideMerge(DrizzleChannelRepository),
     Layer.provideMerge(PartnerOwnershipLive),
     Layer.provide(
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: billing }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: billing, graceSince, graceUntil })
+      )
     ),
     Layer.provideMerge(TokenCipherTest),
     Layer.provideMerge(DatabaseTest)
@@ -199,7 +218,15 @@ const mustReduceOneByOne = (ids: readonly WorkspaceId[]) =>
 const everyStanding = Effect.gen(function* everyStanding() {
   const within = yield* workspaceWith({ channels: 2, members: 1 });
   const overChannels = yield* workspaceWith({ channels: 4, members: 1 });
-  const overMembers = yield* workspaceWith({ channels: 1, members: 3 });
+  // Members never make the free tier over: only a legacy plan limits them.
+  const manyMembers = yield* workspaceWith({ channels: 1, members: 3 });
+
+  const overMembers = yield* workspaceWith({
+    channels: 1,
+    members: 4,
+    subscription: { plan: "starter", status: "active" },
+  });
+
   const overMediaOnly = yield* workspaceWith({ channels: 1, members: 1 });
 
   const trial = yield* workspaceWith({
@@ -222,9 +249,9 @@ const everyStanding = Effect.gen(function* everyStanding() {
 
   const unlisted = yield* workspaceWith({ channels: 5, members: 5 });
 
-  // A pool on the free plan: 3 channels across it, one each, so no
-  // workspace is over on its own channels, and the pool is over with
-  // the one customer left out of the list.
+  // A pool on the free tier: 4 accounts across it, so no workspace is
+  // over on its own channels, and the pool is over with the one customer
+  // left out of the list.
   const home = yield* workspaceWith({ channels: 1, members: 1 });
   const customer = yield* workspaceWith({ channels: 1 });
   const quiet = yield* workspaceWith({});
@@ -285,9 +312,14 @@ const everyStanding = Effect.gen(function* everyStanding() {
     ],
   });
 
-  // A home over on its own members while its pool's channels fit, and its
-  // customer, which has no member, within.
-  const crowdedHome = yield* workspaceWith({ channels: 1, members: 3 });
+  // A home on a legacy plan over on its own members while its pool's
+  // channels fit, and its customer, which has no member, within.
+  const crowdedHome = yield* workspaceWith({
+    channels: 1,
+    members: 4,
+    subscription: { plan: "starter", status: "active" },
+  });
+
   const crowdedCustomer = yield* workspaceWith({ channels: 1 });
 
   yield* partnerOf(crowdedHome, [crowdedCustomer]);
@@ -298,6 +330,7 @@ const everyStanding = Effect.gen(function* everyStanding() {
     within,
     overChannels,
     overMembers,
+    manyMembers,
     overMediaOnly,
     trial,
     paid,
@@ -433,6 +466,68 @@ layer(standingOn(false))(
           assert.strictEqual((yield* mustReduceOneByOne([over])).size, 0);
         }).pipe(Effect.ensuring(cleanUp([over])));
       })
+    );
+  }
+);
+
+// The tests' clock starts in 1970: the grace runs.
+layer(
+  standingOn(true, Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z")))
+)("the standing of several workspaces during the billing grace", (it) => {
+  it.effect("names a legacy plan's over, never the free tier's", () =>
+    Effect.gen(function* graced() {
+      const overFree = yield* workspaceWith({ channels: 3, members: 1 });
+
+      const overLegacy = yield* workspaceWith({
+        channels: 6,
+        members: 1,
+        subscription: { plan: "starter", status: "active" },
+      });
+
+      yield* Effect.gen(function* compared() {
+        const listed = [overFree, overLegacy];
+
+        assert.deepStrictEqual(
+          [...(yield* (yield* WorkspaceStanding).overPlanIn(listed))],
+          [overLegacy]
+        );
+        assert.deepStrictEqual(
+          [...(yield* mustReduceOneByOne(listed))],
+          [overLegacy]
+        );
+      }).pipe(Effect.ensuring(cleanUp([overFree, overLegacy])));
+    })
+  );
+});
+
+// The grace started before this test's channels were connected: none of
+// them is graced.
+layer(
+  standingOn(
+    true,
+    Option.some(DateTime.makeUnsafe("2099-01-01T00:00:00Z")),
+    Option.some(DateTime.makeUnsafe("1969-12-31T00:00:00Z"))
+  )
+)(
+  "the standing of workspaces whose channels came after the grace started",
+  (it) => {
+    it.effect(
+      "names a free workspace over its accounts, at once and one by one",
+      () =>
+        Effect.gen(function* after() {
+          const overFree = yield* workspaceWith({ channels: 3, members: 1 });
+
+          yield* Effect.gen(function* compared() {
+            assert.deepStrictEqual(
+              [...(yield* (yield* WorkspaceStanding).overPlanIn([overFree]))],
+              [overFree]
+            );
+            assert.deepStrictEqual(
+              [...(yield* mustReduceOneByOne([overFree]))],
+              [overFree]
+            );
+          }).pipe(Effect.ensuring(cleanUp([overFree])));
+        })
     );
   }
 );
