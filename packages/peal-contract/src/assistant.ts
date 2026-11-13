@@ -20,9 +20,14 @@ import { MediaImportBusy } from "./media-import-busy.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { MediaSchema } from "./media.ts";
 import { OwnImageLimitReached } from "./own-image-limit-reached.ts";
+import { OwnTextLimitReached } from "./own-text-limit-reached.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
 import { maxPostTextLength } from "./post-text.ts";
+import { TextProviderAddressRefused } from "./text-provider-address-refused.ts";
+import { TextProviderKeyRequired } from "./text-provider-key-required.ts";
+import { TextProviderNotFound } from "./text-provider-not-found.ts";
+import { TextProviderRefused } from "./text-provider-refused.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /**
@@ -174,12 +179,26 @@ export const AssistantImagesStatusSchema = Schema.Struct({
 
 export type AssistantImagesStatus = typeof AssistantImagesStatusSchema.Type;
 
+/**
+ * Who writes the workspace's text: `workspace`, the text provider the
+ * workspace brought (its own key, outside Peal's allowance), or `server`,
+ * the language model the server's operator set up.
+ */
+export const AssistantTextSourceSchema = Schema.Literals([
+  "workspace",
+  "server",
+]).annotate({ identifier: "AssistantTextSource" });
+
+export type AssistantTextSource = typeof AssistantTextSourceSchema.Type;
+
 export const AssistantStatusSchema = Schema.Struct({
-  // Whether the server has a language model. Clients hide the assistant
-  // when it does not.
+  // Whether the assistant writes for the workspace: it brought its own
+  // text provider, or the server has a language model. Clients hide the
+  // assistant otherwise.
   available: Schema.Boolean,
-  // How many requests the workspace may send each UTC day, and how many
-  // are left today.
+  // How many requests of the server's model the workspace may send each
+  // UTC day, and how many are left today. They bound nothing while
+  // `source` is `workspace`.
   dailyLimit: Schema.Int,
   // Whether the assistant makes images, and on what terms.
   images: AssistantImagesStatusSchema,
@@ -188,6 +207,9 @@ export const AssistantStatusSchema = Schema.Struct({
   remaining: Schema.Int,
   // Midnight UTC, when the day's count starts again.
   resetsAt: Schema.DateTimeUtc,
+  // Who writes the workspace's text, or null when nobody does
+  // (`available` false).
+  source: Schema.NullOr(AssistantTextSourceSchema),
 }).annotate({ identifier: "AssistantStatus" });
 
 export type AssistantStatus = typeof AssistantStatusSchema.Type;
@@ -259,14 +281,93 @@ export const ImageProviderChangeSchema = Schema.Struct({
 
 export type ImageProviderChange = typeof ImageProviderChangeSchema.Type;
 
+/**
+ * The API a workspace's text provider speaks: `anthropic`, Anthropic's
+ * Messages API (`POST {baseUrl}/v1/messages`, its key as `x-api-key`), or
+ * `openai-compatible`, any endpoint that serves the chat completions API
+ * (`POST {baseUrl}/chat/completions`, its key as a bearer token).
+ */
+export const TextProviderKindSchema = Schema.Literals([
+  "anthropic",
+  "openai-compatible",
+]).annotate({ identifier: "TextProviderKind" });
+
+export type TextProviderKind = typeof TextProviderKindSchema.Type;
+
+/** Where Anthropic's API is reached: the `baseUrl` of an `anthropic` provider. */
+export const anthropicApiAddress = "https://api.anthropic.com";
+
+/**
+ * How many requests a workspace may send its own text provider each UTC
+ * day. The server's value (src/assistant/domain/text-provider.ts) is the
+ * source; a test keeps the two equal.
+ */
+export const ownTextRequestsPerDay = 500;
+
+/**
+ * The text provider a workspace brought: the API it speaks, where its
+ * drafts go and which model is asked. Its key is never shown again:
+ * `keySet` says one is stored, `keyUnreadable` that it can no longer be
+ * read (the server's keys changed), and must be typed again.
+ */
+export const TextProviderSchema = Schema.Struct({
+  baseUrl: Schema.String,
+  keySet: Schema.Literal(true),
+  keyUnreadable: Schema.Boolean,
+  kind: TextProviderKindSchema,
+  model: Schema.String,
+  updatedAt: Schema.DateTimeUtc,
+}).annotate({ identifier: "TextProvider" });
+
+export type TextProvider = typeof TextProviderSchema.Type;
+
+/** The workspace's text provider, or null when it brought none. */
+export const TextProviderSettingSchema = Schema.Struct({
+  provider: Schema.NullOr(TextProviderSchema),
+}).annotate({ identifier: "TextProviderSetting" });
+
+export type TextProviderSetting = typeof TextProviderSettingSchema.Type;
+
+export const TextProviderChangeSchema = Schema.Struct({
+  // The provider's key, visible ASCII without spaces: required unless the
+  // workspace has one stored and `baseUrl` stays exactly the same, when it
+  // is kept.
+  apiKey: Schema.optionalKey(
+    Schema.String.check(
+      Schema.isMinLength(1),
+      Schema.isMaxLength(maxImageProviderKeyLength),
+      Schema.isPattern(imageProviderKeyPattern)
+    )
+  ),
+  // The API's base address: `https://api.anthropic.com` for Anthropic,
+  // which `/v1/messages` follows; for an OpenAI-compatible endpoint, the
+  // address `/chat/completions` follows, such as
+  // `https://text.example.com/v1`. This bounds what the request can carry;
+  // the address itself is at most 2048 characters.
+  baseUrl: Schema.String.check(Schema.isMaxLength(8192)),
+  kind: TextProviderKindSchema,
+  // The model the provider is asked for, one line.
+  model: Schema.String.check(
+    Schema.isMinLength(1),
+    Schema.isMaxLength(maxImageProviderModelLength),
+    Schema.isPattern(imageProviderModelPattern)
+  ),
+}).annotate({ identifier: "TextProviderChange" });
+
+export type TextProviderChange = typeof TextProviderChangeSchema.Type;
+
 const workspace = { workspaceId: Schema.String };
+
+const textProviderDescription =
+  "Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests";
 
 const imageProviderDescription =
   "an endpoint that speaks the OpenAI images API (`POST {baseUrl}/images/generations`), whose images then spend none of the workspace's daily assistant requests";
 
 /**
- * The writing assistant: suggestions on a post's text from the language
- * model the server is configured with, and images, kept in the media
+ * The writing assistant: suggestions on a post's text from the text
+ * provider the workspace brought or else the language model the server is
+ * configured with, and images, kept in the media
  * library, from the image provider the workspace brought or else the
  * server's image model. Nothing of a suggestion is saved; the person
  * accepts it or discards it. Each workspace sends a limited number of
@@ -281,7 +382,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.",
+          "Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (`source`: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.",
         summary: "Get the assistant's status",
       })
     ),
@@ -292,6 +393,8 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         AssistantInputRejected,
         AssistantQuotaExceeded,
         AssistantFailed,
+        TextProviderRefused,
+        OwnTextLimitReached,
       ],
       params: workspace,
       payload: SuggestionRequestSchema,
@@ -299,7 +402,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
+          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
         summary: "Suggest a change to a post's text",
       })
     ),
@@ -361,6 +464,60 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         description:
           "Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.",
         summary: "Remove the workspace's image provider",
+      })
+    ),
+    HttpApiEndpoint.get("textProvider", "/text-provider", {
+      error: Forbidden,
+      params: workspace,
+      success: TextProviderSettingSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Reads the text provider the workspace brought, ${textProviderDescription}: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.`,
+        summary: "Get the workspace's text provider",
+      })
+    ),
+    HttpApiEndpoint.put("setTextProvider", "/text-provider", {
+      error: [
+        Forbidden,
+        TextProviderAddressRefused,
+        TextProviderKeyRequired,
+        AssistantSecretsNotConfigured,
+      ],
+      params: workspace,
+      payload: TextProviderChangeSchema,
+      success: TextProviderSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Sets the text provider the workspace brings, ${textProviderDescription}. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to \`baseUrl\` with \`apiKey\`, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: \`apiKey\` may be left out to keep the stored one only while \`baseUrl\` stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with \`POST .../text-provider/test\`. Needs assistant:configure, which no OAuth client holds but Peal's command line.`,
+        summary: "Set the workspace's text provider",
+      })
+    ),
+    HttpApiEndpoint.delete("removeTextProvider", "/text-provider", {
+      error: Forbidden,
+      params: workspace,
+      success: HttpApiSchema.NoContent,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.",
+        summary: "Remove the workspace's text provider",
+      })
+    ),
+    HttpApiEndpoint.post("testTextProvider", "/text-provider/test", {
+      error: [
+        Forbidden,
+        TextProviderNotFound,
+        TextProviderRefused,
+        OwnTextLimitReached,
+        AssistantFailed,
+      ],
+      params: workspace,
+      success: HttpApiSchema.NoContent,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.",
+        summary: "Test the workspace's text provider",
       })
     )
   )

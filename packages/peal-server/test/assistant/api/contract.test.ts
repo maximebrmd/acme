@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import {
+  anthropicApiAddress,
   AssistantActionSchema as ContractActionSchema,
   AssistantToneSchema,
   ImageAspectSchema as ContractAspectSchema,
@@ -10,6 +11,8 @@ import {
   maxImageProviderKeyLength,
   maxImageProviderModelLength,
   maxImagePromptLength as contractPromptLength,
+  ownTextRequestsPerDay as contractOwnTextRequests,
+  TextProviderKindSchema as ContractTextKindSchema,
   TranslationLanguageSchema,
 } from "peal-contract";
 
@@ -24,6 +27,11 @@ import {
   providerKeyPattern,
   providerModelPattern,
 } from "#assistant/domain/image-provider.ts";
+import {
+  anthropicAddress,
+  ownTextRequestsPerDay,
+  TextProviderKindSchema,
+} from "#assistant/domain/text-provider.ts";
 import { ToneSchema } from "#assistant/domain/tone.ts";
 import { TranslationLanguageSchema as DomainLanguageSchema } from "#assistant/domain/translation-language.ts";
 
@@ -74,5 +82,15 @@ describe("the contract", () => {
       imageProviderModelPattern.source,
       imageProviderKeyPattern.source,
     ]).toStrictEqual([providerModelPattern.source, providerKeyPattern.source]);
+  });
+
+  it("takes a workspace's text provider by the domain's rules", () => {
+    expect(ContractTextKindSchema.literals).toStrictEqual(
+      TextProviderKindSchema.literals
+    );
+    expect([anthropicApiAddress, contractOwnTextRequests]).toStrictEqual([
+      anthropicAddress,
+      ownTextRequestsPerDay,
+    ]);
   });
 });

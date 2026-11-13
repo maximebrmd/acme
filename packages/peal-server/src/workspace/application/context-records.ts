@@ -14,6 +14,8 @@ import type {
   IdentificationRecord,
   ImageProviderRecord,
   OwnImagesRecord,
+  OwnTextRecord,
+  TextProviderRecord,
   LegalHoldRecord,
   LegalRemainsRecord,
   MediaRecord,
@@ -62,6 +64,10 @@ export interface WorkspaceContent {
   readonly assistantImageProvider: ImageProviderRecord | null;
   /** How many images it asked that provider for, by day. */
   readonly assistantOwnImages: readonly OwnImagesRecord[];
+  /** How many requests it sent its own text provider, by day. */
+  readonly assistantOwnText: readonly OwnTextRecord[];
+  /** The text provider it brought, without its key; null when none. */
+  readonly assistantTextProvider: TextProviderRecord | null;
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];

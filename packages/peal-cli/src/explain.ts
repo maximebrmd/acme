@@ -20,6 +20,8 @@ import type {
   MediaSourceFailure,
   NotRecyclableReason,
   PostNotPromotable,
+  TextProviderAddressRefused,
+  TextProviderRefused,
   WebhookUrlRefused,
 } from "peal-contract";
 import type { TextUnit } from "peal-contract/post-text";
@@ -81,6 +83,34 @@ const providerAddressRefusals: Readonly<
   tooLong: "The address is longer than 2048 characters.",
   unknownHost:
     "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why Peal sends a workspace's drafts and key nowhere at an address: as
+// for images, but the paths the address leads to are the text APIs'.
+const textAddressRefusals: Readonly<
+  Record<TextProviderAddressRefused["reason"], string>
+> = {
+  ...providerAddressRefusals,
+  malformed:
+    "The address is not a URL: give the API's base address whole, such as https://api.anthropic.com or https://text.example.com/v1.",
+  notPublic:
+    "The address's host is not a public address (loopback, private or link-local): Peal sends drafts only to hosts anyone on the internet can reach.",
+  queryOrFragment:
+    "The address has a query or a fragment: give the API's base address alone, which /v1/messages or /chat/completions follows.",
+};
+
+// Why the workspace's own text provider wrote nothing.
+const textProviderRefusals: Readonly<
+  Record<TextProviderRefused["reason"], string>
+> = {
+  addressRefused:
+    "The workspace's text provider is at an address Peal sends nothing to: nothing was written or spent. Set another with peal assistant text-provider set.",
+  keyUnreadable:
+    "The key of the workspace's text provider can no longer be read on this server: nothing was written or spent. Give it again with peal assistant text-provider set.",
+  redirected:
+    "The workspace's text provider answered with a redirect, which Peal never follows: its address is not the API's own (check its host and version). Nothing was spent. Fix it with peal assistant text-provider set.",
+  settingsRefused:
+    "The workspace's text provider refused its key, its account, its model or its address: nothing was written, and none of the workspace's requests were spent. Check them with peal assistant text-provider show, and fix them with set.",
 };
 
 // Why the workspace's own image provider made no image.
@@ -414,7 +444,7 @@ const reasonOf =
       },
       AssistantSecretsNotConfigured: () =>
         refused(
-          "This server cannot keep a workspace's image provider key: its operator must set PEAL_TOKEN_KEYS, the keys that encrypt them. Nothing was saved."
+          "This server cannot keep a workspace's provider key: its operator must set PEAL_TOKEN_KEYS, the keys that encrypt them. Nothing was saved."
         ),
       AssistantUnavailable: () =>
         refused(
@@ -639,6 +669,10 @@ const reasonOf =
         refused(
           `The workspace asked its own image provider for ${String(dailyLimit)} images today, the most a day allows: nothing was made, and none of Peal's requests were spent. Ask again after midnight UTC.`
         ),
+      OwnTextLimitReached: ({ dailyLimit }) =>
+        refused(
+          `The workspace sent its own text provider ${String(dailyLimit)} requests today, the most a day allows: none of Peal's requests were spent. Ask again after midnight UTC.`
+        ),
       PartnerNotFound: () =>
         refused(
           "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
@@ -766,6 +800,18 @@ const reasonOf =
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
         ),
+      TextProviderAddressRefused: ({ reason }) =>
+        refused(textAddressRefusals[reason]),
+      TextProviderKeyRequired: () =>
+        refused(
+          "The workspace has no key stored for its text provider that can be read, or --base-url is not the address the key was given for (another host or path): Peal never sends a key to another address. Give the key again, on standard input."
+        ),
+      TextProviderNotFound: () =>
+        refused(
+          "The workspace has no text provider of its own to test: set one with peal assistant text-provider set."
+        ),
+      TextProviderRefused: ({ reason }) =>
+        refused(textProviderRefusals[reason]),
       TooManyChannelSets: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} channel sets, the most it may: delete one first, with peal sets delete.`

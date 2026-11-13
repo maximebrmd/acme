@@ -466,6 +466,25 @@ export interface OwnImagesRecord {
   readonly images: number;
 }
 
+/**
+ * The text provider a workspace brought to the assistant: the API it
+ * speaks, where its drafts go and with which model, never its key, sealed
+ * or not.
+ */
+export interface TextProviderRecord {
+  readonly baseUrl: string;
+  readonly kind: string;
+  readonly model: string;
+  readonly updatedAt: DateTime.Utc;
+}
+
+/** How many requests a workspace sent its own text provider one UTC day. */
+export interface OwnTextRecord {
+  /** YYYY-MM-DD. */
+  readonly day: string;
+  readonly requests: number;
+}
+
 /** How many requests a workspace sent the writing assistant one UTC day. */
 export interface UsageRecord {
   /** YYYY-MM-DD. */

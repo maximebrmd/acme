@@ -10,6 +10,10 @@ import {
   AssistantUnavailable,
   ImageProviderAddressRefused,
   ImageProviderKeyRequired,
+  TextProviderAddressRefused,
+  TextProviderKeyRequired,
+  TextProviderNotFound,
+  TextProviderRefused,
   ChannelNotFound,
   ChannelSetNameTaken,
   ChannelSetNotFound,
@@ -75,6 +79,7 @@ import type {
   Credential,
   CustomerHealth,
   ImageProvider,
+  TextProvider,
   Feed,
   LivePostChange,
   LivePostRefusal,
@@ -1275,6 +1280,11 @@ export interface StudioState {
     readonly apiKey: string;
     readonly provider: ImageProvider;
   } | null;
+  /** The text provider the studio brought, and the key it was given. */
+  readonly textProvider: {
+    readonly apiKey: string;
+    readonly provider: TextProvider;
+  } | null;
 }
 
 /** A synthetic API key of a workspace, with what it may do there. */
@@ -1351,6 +1361,7 @@ export const makeStudio = (
       deliveries,
       feeds: [],
       imageProvider: null,
+      textProvider: null,
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
@@ -4160,6 +4171,114 @@ export const studioGroupsLive = (studio: Studio) =>
           }),
         status: () => Effect.fail(new Forbidden()),
         suggest: () => Effect.fail(new Forbidden()),
+        // The studio's own text provider, kept as the image provider is. A
+        // key with "refused" in it stands for one the provider refuses.
+        removeTextProvider: ({ params }) =>
+          Effect.gen(function* removeTextProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              textProvider: null,
+            }));
+
+            return yield* record(studio, "text-provider:remove");
+          }),
+        setTextProvider: ({ params, payload }) =>
+          Effect.gen(function* setTextProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const url = URL.parse(payload.baseUrl);
+
+            if (url === null || url.protocol !== "https:") {
+              return yield* new TextProviderAddressRefused({
+                reason: url === null ? "malformed" : "notHttps",
+              });
+            }
+
+            if (url.hostname.includes("internal")) {
+              return yield* new TextProviderAddressRefused({
+                reason: "notPublic",
+              });
+            }
+
+            const { textProvider: brought } = yield* Ref.get(studio.state);
+            const address = url.href.replace(/\/+$/u, "");
+
+            const kept =
+              brought !== null && brought.provider.baseUrl === address
+                ? brought.apiKey
+                : null;
+
+            const apiKey = payload.apiKey ?? kept;
+
+            if (apiKey === null) {
+              return yield* new TextProviderKeyRequired();
+            }
+
+            const provider: TextProvider = {
+              baseUrl: address,
+              keySet: true,
+              keyUnreadable: false,
+              kind: payload.kind,
+              model: payload.model,
+              updatedAt: studioNow,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              textProvider: { apiKey, provider },
+            }));
+            yield* record(
+              studio,
+              `text-provider:set:${payload.kind}:${address}`
+            );
+
+            return provider;
+          }),
+        testTextProvider: ({ params }) =>
+          Effect.gen(function* testTextProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { textProvider: brought } = yield* Ref.get(studio.state);
+
+            if (brought === null) {
+              return yield* new TextProviderNotFound();
+            }
+
+            if (brought.apiKey.includes("refused")) {
+              return yield* new TextProviderRefused({
+                reason: "settingsRefused",
+                status: 401,
+              });
+            }
+
+            return yield* record(studio, "text-provider:test");
+          }),
+        textProvider: ({ params }) =>
+          Effect.gen(function* textProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { textProvider: brought } = yield* Ref.get(studio.state);
+
+            return { provider: brought?.provider ?? null };
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "media", (handlers) =>
