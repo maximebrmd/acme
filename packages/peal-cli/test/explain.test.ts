@@ -200,7 +200,7 @@ describe("a meter's refusal, explained", () => {
     );
   });
 
-  it("never quotes the assistant's price before it is confirmed, and sends a ceiling to the billing page", () => {
+  it("never quotes the assistant's price before it is confirmed, nor offers a ceiling for it", () => {
     const assistant = {
       allowed: 0,
       billingUrl,
@@ -220,6 +220,21 @@ describe("a meter's refusal, explained", () => {
     expect(
       refusalOf(
         new UsageAllowanceReached({ ...assistant, reason: "ceilingReached" })
+      )
+    ).toContain("Nothing past the allowance is used until its price is set");
+  });
+
+  it("sends X's ceiling to the billing page", () => {
+    expect(
+      refusalOf(
+        new UsageAllowanceReached({
+          allowed: 0,
+          billingUrl,
+          meter: "xApi",
+          reason: "ceilingReached",
+          resetsAt,
+          used: 0,
+        })
       )
     ).toContain(`raises the account's monthly ceiling at ${billingUrl}`);
   });
