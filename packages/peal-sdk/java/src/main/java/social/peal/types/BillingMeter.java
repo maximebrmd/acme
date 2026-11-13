@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 public final class BillingMeter {
     private final int allowance;
 
-    private final int billable;
+    private final Optional<Integer> billable;
 
     private final Optional<Money> ceiling;
 
@@ -50,7 +50,7 @@ public final class BillingMeter {
 
     private BillingMeter(
             int allowance,
-            int billable,
+            Optional<Integer> billable,
             Optional<Money> ceiling,
             Optional<Money> estimate,
             Optional<SpendGroup> group,
@@ -80,8 +80,11 @@ public final class BillingMeter {
         return allowance;
     }
 
-    @JsonProperty("billable")
-    public int getBillable() {
+    @JsonIgnore
+    public Optional<Integer> getBillable() {
+        if (billable == null) {
+            return Optional.empty();
+        }
         return billable;
     }
 
@@ -143,6 +146,12 @@ public final class BillingMeter {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("billable")
+    private Optional<Integer> _getBillable() {
+        return billable;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ceiling")
     private Optional<Money> _getCeiling() {
         return ceiling;
@@ -179,7 +188,7 @@ public final class BillingMeter {
 
     private boolean equalTo(BillingMeter other) {
         return allowance == other.allowance
-                && billable == other.billable
+                && billable.equals(other.billable)
                 && ceiling.equals(other.ceiling)
                 && estimate.equals(other.estimate)
                 && group.equals(other.group)
@@ -217,13 +226,9 @@ public final class BillingMeter {
     }
 
     public interface AllowanceStage {
-        BillableStage allowance(int allowance);
+        MeterStage allowance(int allowance);
 
         Builder from(BillingMeter other);
-    }
-
-    public interface BillableStage {
-        MeterStage billable(int billable);
     }
 
     public interface MeterStage {
@@ -253,6 +258,12 @@ public final class BillingMeter {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage billable(Optional<Integer> billable);
+
+        _FinalStage billable(Integer billable);
+
+        _FinalStage billable(Nullable<Integer> billable);
+
         _FinalStage ceiling(Optional<Money> ceiling);
 
         _FinalStage ceiling(Money ceiling);
@@ -281,7 +292,6 @@ public final class BillingMeter {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
             implements AllowanceStage,
-                    BillableStage,
                     MeterStage,
                     PriceStage,
                     PriceConfirmedStage,
@@ -289,8 +299,6 @@ public final class BillingMeter {
                     UsedStage,
                     _FinalStage {
         private int allowance;
-
-        private int billable;
 
         private Meter meter;
 
@@ -309,6 +317,8 @@ public final class BillingMeter {
         private Optional<Money> estimate = Optional.empty();
 
         private Optional<Money> ceiling = Optional.empty();
+
+        private Optional<Integer> billable = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -332,15 +342,8 @@ public final class BillingMeter {
 
         @java.lang.Override
         @JsonSetter("allowance")
-        public BillableStage allowance(int allowance) {
+        public MeterStage allowance(int allowance) {
             this.allowance = allowance;
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("billable")
-        public MeterStage billable(int billable) {
-            this.billable = billable;
             return this;
         }
 
@@ -476,6 +479,31 @@ public final class BillingMeter {
         @JsonSetter(value = "ceiling", nulls = Nulls.SKIP)
         public _FinalStage ceiling(Optional<Money> ceiling) {
             this.ceiling = ceiling;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billable(Nullable<Integer> billable) {
+            if (billable.isNull()) {
+                this.billable = null;
+            } else if (billable.isEmpty()) {
+                this.billable = Optional.empty();
+            } else {
+                this.billable = Optional.of(billable.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billable(Integer billable) {
+            this.billable = Optional.ofNullable(billable);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "billable", nulls = Nulls.SKIP)
+        public _FinalStage billable(Optional<Integer> billable) {
+            this.billable = billable;
             return this;
         }
 

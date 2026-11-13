@@ -67759,6 +67759,20 @@ func TestEnumAllowanceReason(t *testing.T) {
 		assert.Equal(t, AllowanceReason("notEnabled"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_planAllowance", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("planAllowance")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("planAllowance"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_paymentFailed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("paymentFailed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("paymentFailed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewAllowanceReasonFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

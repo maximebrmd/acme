@@ -16,6 +16,10 @@ public readonly record struct AllowanceReason : IStringEnum
 
     public static readonly AllowanceReason NotEnabled = new(Values.NotEnabled);
 
+    public static readonly AllowanceReason PlanAllowance = new(Values.PlanAllowance);
+
+    public static readonly AllowanceReason PaymentFailed = new(Values.PaymentFailed);
+
     public AllowanceReason(string value)
     {
         Value = value;
@@ -117,5 +121,9 @@ public readonly record struct AllowanceReason : IStringEnum
         public const string CeilingReached = "ceilingReached";
 
         public const string NotEnabled = "notEnabled";
+
+        public const string PlanAllowance = "planAllowance";
+
+        public const string PaymentFailed = "paymentFailed";
     }
 }

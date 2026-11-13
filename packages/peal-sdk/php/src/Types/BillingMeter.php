@@ -14,10 +14,10 @@ class BillingMeter extends JsonSerializableType
     public int $allowance;
 
     /**
-     * @var int $billable
+     * @var ?int $billable
      */
     #[JsonProperty('billable')]
-    public int $billable;
+    public ?int $billable;
 
     /**
      * @var ?Money $ceiling
@@ -76,12 +76,12 @@ class BillingMeter extends JsonSerializableType
     /**
      * @param array{
      *   allowance: int,
-     *   billable: int,
      *   meter: value-of<Meter>,
      *   price: UnitPrice,
      *   priceConfirmed: bool,
      *   resetsAt: string,
      *   used: int,
+     *   billable?: ?int,
      *   ceiling?: ?Money,
      *   estimate?: ?Money,
      *   group?: ?value-of<SpendGroup>,
@@ -92,7 +92,7 @@ class BillingMeter extends JsonSerializableType
         array $values,
     ) {
         $this->allowance = $values['allowance'];
-        $this->billable = $values['billable'];
+        $this->billable = $values['billable'] ?? null;
         $this->ceiling = $values['ceiling'] ?? null;
         $this->estimate = $values['estimate'] ?? null;
         $this->group = $values['group'] ?? null;

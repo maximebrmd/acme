@@ -1047,6 +1047,7 @@ var (
 
 // billingMeterNullableFields maps the wire names of BillingMeter's nullable fields (required or optional) to their field bits.
 var billingMeterNullableFields = map[string]*big.Int{
+	"billable": billingMeterFieldBillable,
 	"ceiling":  billingMeterFieldCeiling,
 	"estimate": billingMeterFieldEstimate,
 	"group":    billingMeterFieldGroup,
@@ -1055,7 +1056,7 @@ var billingMeterNullableFields = map[string]*big.Int{
 
 type BillingMeter struct {
 	Allowance      int         `json:"allowance" url:"allowance"`
-	Billable       int         `json:"billable" url:"billable"`
+	Billable       *int        `json:"billable,omitempty" url:"billable,omitempty"`
 	Ceiling        *Money      `json:"ceiling,omitempty" url:"ceiling,omitempty"`
 	Estimate       *Money      `json:"estimate,omitempty" url:"estimate,omitempty"`
 	Group          *SpendGroup `json:"group,omitempty" url:"group,omitempty"`
@@ -1080,9 +1081,9 @@ func (b *BillingMeter) GetAllowance() int {
 	return b.Allowance
 }
 
-func (b *BillingMeter) GetBillable() int {
+func (b *BillingMeter) GetBillable() *int {
 	if b == nil {
-		return 0
+		return nil
 	}
 	return b.Billable
 }
@@ -1175,7 +1176,7 @@ func (b *BillingMeter) SetAllowance(allowance int) {
 
 // SetBillable sets the Billable field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BillingMeter) SetBillable(billable int) {
+func (b *BillingMeter) SetBillable(billable *int) {
 	b.Billable = billable
 	b.require(billingMeterFieldBillable)
 }

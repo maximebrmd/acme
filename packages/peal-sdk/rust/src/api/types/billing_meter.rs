@@ -4,8 +4,8 @@ pub use crate::prelude::*;
 pub struct BillingMeter {
     #[serde(default)]
     pub allowance: i64,
-    #[serde(default)]
-    pub billable: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub billable: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ceiling: Option<Money>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -108,7 +108,6 @@ impl BillingMeterBuilder {
     /// Consumes the builder and constructs a [`BillingMeter`].
     /// This method will fail if any of the following fields are not set:
     /// - [`allowance`](BillingMeterBuilder::allowance)
-    /// - [`billable`](BillingMeterBuilder::billable)
     /// - [`meter`](BillingMeterBuilder::meter)
     /// - [`price`](BillingMeterBuilder::price)
     /// - [`price_confirmed`](BillingMeterBuilder::price_confirmed)
@@ -119,9 +118,7 @@ impl BillingMeterBuilder {
             allowance: self
                 .allowance
                 .ok_or_else(|| BuildError::missing_field("allowance"))?,
-            billable: self
-                .billable
-                .ok_or_else(|| BuildError::missing_field("billable"))?,
+            billable: self.billable,
             ceiling: self.ceiling,
             estimate: self.estimate,
             group: self.group,

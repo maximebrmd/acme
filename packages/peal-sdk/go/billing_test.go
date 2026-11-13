@@ -2535,7 +2535,7 @@ func TestSettersBillingMeter(t *testing.T) {
 
 	t.Run("SetBillable", func(t *testing.T) {
 		obj := &BillingMeter{}
-		var fernTestValueBillable int
+		var fernTestValueBillable *int
 		obj.SetBillable(fernTestValueBillable)
 		assert.Equal(t, fernTestValueBillable, obj.Billable)
 		assert.NotNil(t, obj.explicitFields)
@@ -2643,11 +2643,21 @@ func TestGettersBillingMeter(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BillingMeter{}
-		var expected int
+		var expected *int
 		obj.Billable = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetBillable(), "getter should return the property value")
+	})
+
+	t.Run("GetBillable_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &BillingMeter{}
+		obj.Billable = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBillable(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetBillable_NilReceiver", func(t *testing.T) {
@@ -2957,7 +2967,7 @@ func TestSettersMarkExplicitBillingMeter(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BillingMeter{}
-		var fernTestValueBillable int
+		var fernTestValueBillable *int
 
 		// Act
 		obj.SetBillable(fernTestValueBillable)
@@ -8949,6 +8959,7 @@ func TestRequiredNullableRoundTripBillingAccountsUsage(t *testing.T) {
 
 func TestRequiredNullableRoundTripBillingMeter(t *testing.T) {
 	requiredNullableKeys := []string{
+		"billable",
 		"ceiling",
 		"estimate",
 		"group",
@@ -8965,7 +8976,7 @@ func TestRequiredNullableRoundTripBillingMeter(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj BillingMeter
-		require.NoError(t, json.Unmarshal([]byte(`{"ceiling":null,"estimate":null,"group":null,"most":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"billable":null,"ceiling":null,"estimate":null,"group":null,"most":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

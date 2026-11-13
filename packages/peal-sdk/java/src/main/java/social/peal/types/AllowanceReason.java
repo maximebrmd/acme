@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class AllowanceReason {
     public static final AllowanceReason NOT_ENABLED = new AllowanceReason(Value.NOT_ENABLED, "notEnabled");
 
+    public static final AllowanceReason PLAN_ALLOWANCE = new AllowanceReason(Value.PLAN_ALLOWANCE, "planAllowance");
+
+    public static final AllowanceReason PAYMENT_FAILED = new AllowanceReason(Value.PAYMENT_FAILED, "paymentFailed");
+
     public static final AllowanceReason CEILING_REACHED = new AllowanceReason(Value.CEILING_REACHED, "ceilingReached");
 
     public static final AllowanceReason PAYMENT_METHOD_REQUIRED =
@@ -48,6 +52,10 @@ public final class AllowanceReason {
         switch (value) {
             case NOT_ENABLED:
                 return visitor.visitNotEnabled();
+            case PLAN_ALLOWANCE:
+                return visitor.visitPlanAllowance();
+            case PAYMENT_FAILED:
+                return visitor.visitPaymentFailed();
             case CEILING_REACHED:
                 return visitor.visitCeilingReached();
             case PAYMENT_METHOD_REQUIRED:
@@ -63,6 +71,10 @@ public final class AllowanceReason {
         switch (value) {
             case "notEnabled":
                 return NOT_ENABLED;
+            case "planAllowance":
+                return PLAN_ALLOWANCE;
+            case "paymentFailed":
+                return PAYMENT_FAILED;
             case "ceilingReached":
                 return CEILING_REACHED;
             case "paymentMethodRequired":
@@ -79,6 +91,10 @@ public final class AllowanceReason {
 
         NOT_ENABLED,
 
+        PLAN_ALLOWANCE,
+
+        PAYMENT_FAILED,
+
         UNKNOWN
     }
 
@@ -88,6 +104,10 @@ public final class AllowanceReason {
         T visitCeilingReached();
 
         T visitNotEnabled();
+
+        T visitPlanAllowance();
+
+        T visitPaymentFailed();
 
         T visitUnknown(String unknownType);
     }

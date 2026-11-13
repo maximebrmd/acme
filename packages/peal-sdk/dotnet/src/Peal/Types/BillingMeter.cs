@@ -15,7 +15,7 @@ public record BillingMeter : IJsonOnDeserialized
     public required int Allowance { get; set; }
 
     [JsonPropertyName("billable")]
-    public required int Billable { get; set; }
+    public int? Billable { get; set; }
 
     [JsonPropertyName("ceiling")]
     public Money? Ceiling { get; set; }

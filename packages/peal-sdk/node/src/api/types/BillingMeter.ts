@@ -4,7 +4,7 @@ import * as Peal from "../index.js";
 
 export interface BillingMeter {
     allowance: number;
-    billable: number;
+    billable: number | null;
     ceiling: Peal.Money | null;
     estimate: Peal.Money | null;
     group: Peal.SpendGroup | null;

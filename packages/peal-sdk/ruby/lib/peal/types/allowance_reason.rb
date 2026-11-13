@@ -10,6 +10,8 @@ module Peal
       PAYMENT_METHOD_REQUIRED = "paymentMethodRequired"
       CEILING_REACHED = "ceilingReached"
       NOT_ENABLED = "notEnabled"
+      PLAN_ALLOWANCE = "planAllowance"
+      PAYMENT_FAILED = "paymentFailed"
     end
   end
 end

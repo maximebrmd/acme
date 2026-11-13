@@ -1477,6 +1477,8 @@ const (
 	AllowanceReasonPaymentMethodRequired AllowanceReason = "paymentMethodRequired"
 	AllowanceReasonCeilingReached        AllowanceReason = "ceilingReached"
 	AllowanceReasonNotEnabled            AllowanceReason = "notEnabled"
+	AllowanceReasonPlanAllowance         AllowanceReason = "planAllowance"
+	AllowanceReasonPaymentFailed         AllowanceReason = "paymentFailed"
 )
 
 func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
@@ -1487,6 +1489,10 @@ func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
 		return AllowanceReasonCeilingReached, nil
 	case "notEnabled":
 		return AllowanceReasonNotEnabled, nil
+	case "planAllowance":
+		return AllowanceReasonPlanAllowance, nil
+	case "paymentFailed":
+		return AllowanceReasonPaymentFailed, nil
 	}
 	var t AllowanceReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

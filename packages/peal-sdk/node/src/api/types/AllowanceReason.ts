@@ -3,6 +3,8 @@
 export const AllowanceReason = {
         PaymentMethodRequired: "paymentMethodRequired",
         CeilingReached: "ceilingReached",
-        NotEnabled: "notEnabled"
+        NotEnabled: "notEnabled",
+        PlanAllowance: "planAllowance",
+        PaymentFailed: "paymentFailed"
     } as const;
 export type AllowanceReason = typeof AllowanceReason[keyof typeof AllowanceReason];

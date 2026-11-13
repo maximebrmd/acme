@@ -14,7 +14,7 @@ from .unit_price import UnitPrice
 
 class BillingMeter(UniversalBaseModel):
     allowance: int
-    billable: int
+    billable: typing.Optional[int] = None
     ceiling: typing.Optional[Money] = None
     estimate: typing.Optional[Money] = None
     group: typing.Optional[SpendGroup] = None

@@ -6,6 +6,8 @@ pub enum AllowanceReason {
     PaymentMethodRequired,
     CeilingReached,
     NotEnabled,
+    PlanAllowance,
+    PaymentFailed,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -17,6 +19,8 @@ impl Serialize for AllowanceReason {
             Self::PaymentMethodRequired => serializer.serialize_str("paymentMethodRequired"),
             Self::CeilingReached => serializer.serialize_str("ceilingReached"),
             Self::NotEnabled => serializer.serialize_str("notEnabled"),
+            Self::PlanAllowance => serializer.serialize_str("planAllowance"),
+            Self::PaymentFailed => serializer.serialize_str("paymentFailed"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -29,6 +33,8 @@ impl<'de> Deserialize<'de> for AllowanceReason {
             "paymentMethodRequired" => Ok(Self::PaymentMethodRequired),
             "ceilingReached" => Ok(Self::CeilingReached),
             "notEnabled" => Ok(Self::NotEnabled),
+            "planAllowance" => Ok(Self::PlanAllowance),
+            "paymentFailed" => Ok(Self::PaymentFailed),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -40,6 +46,8 @@ impl fmt::Display for AllowanceReason {
             Self::PaymentMethodRequired => write!(f, "paymentMethodRequired"),
             Self::CeilingReached => write!(f, "ceilingReached"),
             Self::NotEnabled => write!(f, "notEnabled"),
+            Self::PlanAllowance => write!(f, "planAllowance"),
+            Self::PaymentFailed => write!(f, "paymentFailed"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

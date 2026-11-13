@@ -7,7 +7,7 @@ module Peal
     class BillingMeter < Internal::Types::Model
       field :allowance, -> { Integer }, optional: false, nullable: false
 
-      field :billable, -> { Integer }, optional: false, nullable: false
+      field :billable, -> { Integer }, optional: false, nullable: true
 
       field :ceiling, -> { Peal::Types::Money }, optional: false, nullable: true
 
