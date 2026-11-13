@@ -81,9 +81,9 @@ describe(UpgradeView, () => {
     expect(
       missing(english, [
         "With a payment method, the billing account connects more accounts.",
-        "The 3rd costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT, counted by the day; the first 2 stay free.",
-        "Prices with VAT use France’s 20% rate. The VAT you pay depends on your country, and a business with a valid VAT number pays the price excluding VAT.",
-        "VAT is added at checkout for customers in the EU",
+        "The 3rd costs a month, counted by the day: $5.00 excl. VAT · $6.00 with France’s 20% VAT; the first 2 stay free.",
+        "A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies.",
+        "it is added at checkout for customers in the EU",
         "At checkout you can pay in your own currency",
       ])
     ).toStrictEqual([]);
@@ -95,13 +95,13 @@ describe(UpgradeView, () => {
       reason: { ...third, allowed: 10, used: 10 },
     });
 
-    expect(eleventh).toContain("The 11th adds $3.00 a month");
+    expect(eleventh).toContain("The 11th adds a month: $3.00");
 
     const french = await render("fr");
 
     expect(
       missing(french, [
-        "Le 3e coûte 5,00 $US HT par mois, 6,00 $US avec la TVA française de 20 %",
+        "Le 3e coûte par mois, compté au jour : 5,00 $US HT · 6,00 $US avec la TVA française de 20 %",
         "Au paiement, vous pouvez payer dans votre devise",
       ])
     ).toStrictEqual([]);
@@ -114,8 +114,8 @@ describe(UpgradeView, () => {
 
     expect(
       missing(html, [
-        "The 8 accounts connected cost $30.00 a month excluding tax, $36.00 with France’s 20% VAT, counted by the day.",
-        "The 9th adds $5.00 a month excluding tax, $6.00 with France’s 20% VAT.",
+        "The 8 accounts connected cost a month, counted by the day: $30.00 excl. VAT · $36.00 with France’s 20% VAT.",
+        "The 9th adds a month: $5.00 excl. VAT · $6.00 with France’s 20% VAT.",
       ])
     ).toStrictEqual([]);
     expect(html).not.toContain("The 9th costs");
@@ -145,7 +145,7 @@ describe(UpgradeView, () => {
     };
 
     await expect(render("en", { card })).resolves.toContain(
-      "The 3rd costs $7.00 a month"
+      "The 3rd costs a month, counted by the day: $7.00"
     );
   });
 

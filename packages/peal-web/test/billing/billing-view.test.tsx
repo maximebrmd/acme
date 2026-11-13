@@ -244,8 +244,8 @@ describe(BillingView, () => {
         "This month",
         "2 of 2",
         "26 account-days so far",
-        "With a payment method, the month so far would cost $0.00 excluding tax, $0.00 with France’s 20% VAT.",
-        "One more account, the 3rd, costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT.",
+        "With a payment method, the month so far would cost $0.00 excl. VAT · $0.00 with France’s 20% VAT.",
+        "One more account, the 3rd, costs a month: $5.00 excl. VAT · $6.00 with France’s 20% VAT.",
       ])
     ).toStrictEqual([]);
     expect(html).not.toContain("Stripe’s next invoice");
@@ -274,7 +274,7 @@ describe(BillingView, () => {
         "Accounts 3 to 10",
         "Accounts 11 to 100",
         "From account 101",
-        "Each, a month, excluding tax",
+        "Each, a month, excl. VAT",
         "With France’s 20% VAT",
         "$5.00",
         "$6.00",
@@ -282,10 +282,10 @@ describe(BillingView, () => {
         "$3.60",
         "$1.00",
         "$1.20",
-        "Prices with VAT use France’s 20% rate. The VAT you pay depends on your country, and a business with a valid VAT number pays the price excluding VAT.",
+        "The VAT you pay depends on your country: it is added at checkout for customers in the EU, at their country’s rate. A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies.",
         "Each UTC day counts the most accounts connected at once",
         "for days 1 to 30 of the month: the 31st is free",
-        "VAT is added at checkout for customers in the EU, at their country’s rate.",
+        "it is added at checkout for customers in the EU, at their country’s rate.",
         "At checkout you can pay in your own currency, converted by our payment provider at the day’s rate; otherwise your card is charged in US dollars.",
       ])
     ).toStrictEqual([]);
@@ -340,7 +340,7 @@ describe(BillingView, () => {
         "Active",
         "7 accounts across the account’s 3 workspaces, 4 of them on this one.",
         "91 account-days so far",
-        "So far this month: $5.17 excluding tax, $6.20 with France’s 20% VAT.",
+        "So far this month: $5.17 excl. VAT · $6.20 with France’s 20% VAT.",
         "Stripe’s next invoice: $25.20, tax included. The invoice is the one that counts.",
         "Manage billing",
         "Cancel your contract",
@@ -518,8 +518,8 @@ describe(BillingView, () => {
         "Renoncer au contrat ici",
         "Jusqu’au 23 novembre 2026",
         "Prochaine facture le 1 décembre 2026",
-        "5,17 $US HT, 6,20 $US avec la TVA française de 20 %",
-        "Les prix TTC appliquent le taux français de 20 %.",
+        "5,17 $US HT · 6,20 $US avec la TVA française de 20 %",
+        "La TVA que vous payez dépend de votre pays",
       ])
     ).toStrictEqual([]);
   });

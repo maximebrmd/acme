@@ -150,7 +150,7 @@ describe("per-account pricing", { serial: true }, () => {
     await expect(main.getByText("2 accounts connected.")).toBeVisible();
     await expect(
       main.getByText(
-        "One more account, the 3rd, costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT."
+        "One more account, the 3rd, costs a month: $5.00 excl. VAT · $6.00 with France’s 20% VAT."
       )
     ).toBeVisible();
     await expect(main.getByRole("rowheader", "Accounts 3 to 10")).toBeVisible();
@@ -185,7 +185,7 @@ describe("per-account pricing", { serial: true }, () => {
     ).toBeVisible();
     await expect(
       dialog.getByText(
-        "The 3rd costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT, counted by the day; the first 2 stay free."
+        "The 3rd costs a month, counted by the day: $5.00 excl. VAT · $6.00 with France’s 20% VAT; the first 2 stay free."
       )
     ).toBeVisible();
 

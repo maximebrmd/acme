@@ -2175,7 +2175,7 @@
     },
     "limitReached": "{limit, select, channels {Le compte de facturation de l’espace de travail ne connecte plus de comptes pour l’instant : consultez sa page de facturation, ou déconnectez d’abord un compte.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut consulter sa page de facturation.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, ou annulez une publication.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {Le compte de facturation de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou consultez sa page de facturation.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
     "prices": {
-      "perAccountNote": "Les prix sont en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Au paiement, vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains."
+      "perAccountNote": "Les prix sont en dollars américains. Au paiement, vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains."
     },
     "consent": {
       "startNow": "Je demande que le tarif par compte commence dès maintenant : chaque compte connecté au-delà des comptes gratuits, compté au jour, et chaque usage au-delà de son allocation mensuelle sont facturés aux prix de la grille tarifaire, hors taxes, chaque mois pour le mois écoulé. Je sais qu’en tant que consommateur, je peux me rétracter dans les 14 jours, avec « Renoncer au contrat ici », au pied de chaque page et sur celle-ci, et ne payer alors que ce qui a été utilisé.",
@@ -2212,9 +2212,9 @@
       "pooledHere": "{pooled, plural, one {# compte connecté} other {# comptes connectés}}.",
       "pooledAcross": "{pooled, plural, one {# compte} other {# comptes}} sur les {workspaces, number} espaces de travail du compte, dont {connected, number} sur celui-ci.",
       "accountDays": "{days, plural, one {# compte-jour à ce jour} other {# comptes-jours à ce jour}}",
-      "estimateFree": "Avec un moyen de paiement, le mois jusqu’ici coûterait {estimate} HT, {included} avec la TVA française de {rate} %.",
-      "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT, {included} avec la TVA française de {rate} %.",
-      "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte {price} HT par mois, {included} avec la TVA française de {rate} %.",
+      "estimateFree": "Avec un moyen de paiement, le mois jusqu’ici coûterait {estimate} HT · {included} avec la TVA française de {rate} %.",
+      "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT · {included} avec la TVA française de {rate} %.",
+      "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte par mois : {price} HT · {included} avec la TVA française de {rate} %.",
       "upcoming": "Prochaine facture de Stripe : {amount} TTC. C’est la facture qui fait foi.",
       "own": "{connected, plural, one {# compte connecté sur cet espace de travail.} other {# comptes connectés sur cet espace de travail.}}",
       "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût.",
@@ -2230,8 +2230,8 @@
       "from": "À partir du compte {from, number}",
       "free": "Gratuit",
       "dayRule": "Chaque jour UTC compte le plus grand nombre de comptes connectés en même temps sur l’ensemble du compte de facturation, du 1er au {days, number} du mois : le {after, number} est gratuit. Chacun de ces jours coûte un {days, selectordinal, one {#er} other {#e}} du tarif mensuel d’un compte : un compte connecté une partie du mois coûte une partie de son tarif.",
-      "priceIncluded": "Avec la TVA française de {rate} %",
-      "vatNote": "Les prix TTC appliquent le taux français de {rate} %. La TVA que vous payez dépend de votre pays, et une entreprise avec un numéro de TVA valide paie le prix HT."
+      "priceIncluded": "Avec la TVA française de {rate} %",
+      "vatNote": "La TVA que vous payez dépend de votre pays : elle est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Une entreprise avec un numéro de TVA valide paie le prix HT, la TVA étant autoliquidée ; en France, la TVA française s’applique."
     },
     "payment": {
       "title": "Ajouter un moyen de paiement",
@@ -2371,7 +2371,7 @@
     "reachedFreeStorage": "Le compte de facturation de {workspace} stocke {used} de médias, envois en cours compris, et l’offre gratuite en contient {allowed}.",
     "reachedCeiling": "Tant que sa première facture n’est pas payée, le compte de facturation de {workspace} connecte jusqu’à {allowed, plural, one {# compte} other {# comptes}}, et il en a {used, number}. Une fois une facture payée, il n’y a plus de limite.",
     "givesAccounts": "Avec un moyen de paiement, le compte de facturation connecte plus de comptes.",
-    "nextAccount": "Le {position, selectordinal, one {#er} other {#e}} coûte {price} HT par mois, {included} avec la TVA française de {rate} %, compté au jour ; les {free, number} premiers restent gratuits.",
+    "nextAccount": "Le {position, selectordinal, one {#er} other {#e}} coûte par mois, compté au jour : {price} HT · {included} avec la TVA française de {rate} % ; les {free, number} premiers restent gratuits.",
     "givesStorage": "Avec un moyen de paiement, le stockage des médias est de {perAccount} par compte connecté, {minimum} au moins.",
     "gives": "Avec un moyen de paiement, le compte de facturation passe au tarif par compte.",
     "noRoom": "Pour davantage, écrivez-nous.",
@@ -2379,8 +2379,8 @@
     "billedElsewhere": "Le compte de facturation de {workspace} est facturé sur <billing></billing> : ses propriétaires et ses administrateurs y ajoutent le moyen de paiement.",
     "billedElsewhereUnnamed": "Le compte de facturation de {workspace} est facturé sur un autre de ses espaces de travail : ses propriétaires et ses administrateurs y ajoutent le moyen de paiement.",
     "reachedFreeRevoked": "Le compte de facturation de {workspace} ne connecte aucun compte sans moyen de paiement.",
-    "held": "{used, plural, one {Le compte connecté coûte} other {Les # comptes connectés coûtent}} {price} HT par mois, {included} avec la TVA française de {rate} %, comptés au jour.",
-    "nextAccountAdds": "Le {position, selectordinal, one {#er} other {#e}} ajoute {price} HT par mois, {included} avec la TVA française de {rate} %.",
+    "held": "{used, plural, one {Le compte connecté coûte} other {Les # comptes connectés coûtent}} par mois, comptés au jour : {price} HT · {included} avec la TVA française de {rate} %.",
+    "nextAccountAdds": "Le {position, selectordinal, one {#er} other {#e}} ajoute par mois : {price} HT · {included} avec la TVA française de {rate} %.",
     "nextAccountFree": "Le {position, selectordinal, one {#er} other {#e}} est gratuit : les {free, number} premiers le sont.",
     "noRoomCeiling": "Pour davantage d’ici là, écrivez-nous.",
     "noRoomCeilingOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur."
