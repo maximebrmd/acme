@@ -48,7 +48,7 @@ the stack. The server issues links on it (`PEAL_SHORT_LINK_BASE`, which
 `peal_runtime` derives from the host name).
 
 The docs have their assistant where `peal_static_build_args` names a model
-(`DOCS_ASSISTANT_MODEL`, production and the sandbox): `peal_docs_server`
+(`DOCS_ASSISTANT_MODEL`, production only; the sandbox's docs stay static): `peal_docs_server`
 then has `release.yml` build the `peal-docs` image, Compose run its `docs`
 profile, and the tunnel send the docs' host name to it. Its Anthropic key,
 `DOCS_ANTHROPIC_API_KEY`, is a credential `site.yml` requires there. Its rate

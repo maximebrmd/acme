@@ -15,6 +15,9 @@ from conftest import ansible_render, render_inventory, role_file, settings, task
 
 ENVIRONMENTS = ["production", "sandbox"]
 
+# The environments whose docs have the assistant: the sandbox keeps static docs.
+ASSISTANT = ["production"]
+
 
 def _resolved(environment: str) -> dict[str, Any]:
     """The group's settings, with peal_docs_server as Ansible reads it."""
@@ -28,7 +31,7 @@ def _docs_rule(rendered: Path, environment: str) -> dict[str, Any]:
     return next(rule for rule in rules if rule.get("hostname") == docs)
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_peals_docs_have_their_assistant(environment: str) -> None:
     found = _resolved(environment)
 
@@ -50,7 +53,7 @@ def test_without_a_model_the_docs_stay_static() -> None:
     assert ansible_render(found["peal_docs_server"], peal_static_build_args=args) is False
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_the_tunnel_sends_the_docs_to_the_docs_server(rendered: Path, environment: str) -> None:
     rule = _docs_rule(rendered, environment)
 
@@ -65,7 +68,7 @@ def test_without_the_docs_server_the_tunnel_sends_the_docs_to_the_static_image(t
     assert "--profile docs" not in (rendered / "peal-production" / "peal-compose").read_text()
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_compose_runs_the_docs_profile(rendered: Path, environment: str) -> None:
     compose = (rendered / f"peal-{environment}" / "peal-compose").read_text()
 
@@ -73,14 +76,14 @@ def test_compose_runs_the_docs_profile(rendered: Path, environment: str) -> None
     assert "--profile docs" in compose
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_compose_publishes_the_docs_server_where_the_tunnel_reaches_it(rendered: Path, environment: str) -> None:
     lines = (rendered / f"peal-{environment}" / "host.env").read_text().splitlines()
 
     assert f"PEAL_DOCS_SERVER_PORT='{settings(environment)['peal_ports']['docs_server']}'" in lines
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_the_docs_server_requires_its_anthropic_key(environment: str) -> None:
     expression = role_file("peal_runtime", "vars")["peal_runtime_required_credentials"]
 
@@ -94,7 +97,7 @@ def test_without_the_docs_server_its_key_is_not_required() -> None:
     assert "DOCS_ANTHROPIC_API_KEY" not in ansible_render(expression, **found)
 
 
-@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("environment", ASSISTANT)
 def test_each_image_gets_the_build_arguments_its_dockerfile_reads(environment: str) -> None:
     """The static image builds the docs as files: a model would make it
     build a server nginx cannot serve. The docs image takes the docs'
@@ -110,3 +113,12 @@ def test_each_image_gets_the_build_arguments_its_dockerfile_reads(environment: s
     assert "DOCS_SITE_URL" in static_args
     assert "DOCS_ASSISTANT_MODEL" in docs_args
     assert all(name.startswith("DOCS_") for name in docs_args), docs_args
+
+
+def test_the_sandbox_keeps_static_docs(rendered: Path) -> None:
+    found = _resolved("sandbox")
+    rule = _docs_rule(rendered, "sandbox")
+
+    assert found["peal_docs_server"] is False
+    assert rule["service"] == f"http://127.0.0.1:{settings('sandbox')['peal_ports']['docs']}", rule
+    assert "--profile docs" not in (rendered / "peal-sandbox" / "peal-compose").read_text()

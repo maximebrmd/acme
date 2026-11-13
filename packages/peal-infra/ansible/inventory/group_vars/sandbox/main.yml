@@ -52,4 +52,3 @@ peal_static_build_args:
   SITE_DOCS_URL: https://sandbox-docs.peal.social
   DOCS_SITE_URL: https://sandbox-docs.peal.social
   DOCS_APP_URL: https://sandbox.peal.social
-  DOCS_ASSISTANT_MODEL: claude-haiku-5-5
