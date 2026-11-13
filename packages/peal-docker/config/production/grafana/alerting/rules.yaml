@@ -675,3 +675,36 @@ groups:
                 - evaluator:
                     type: gt
                     params: [0]
+
+      - uid: peal-stripe-catalogue
+        title: Stripe's catalogue differs from the rate card
+        condition: B
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The server started on a Stripe account whose per-account pricing catalogue is not the rate card's (peal.billing.stripe_catalogue.problems above 0); it starts all the same while nothing sells per-account pricing. The server's start log lists what differs. Give Stripe the catalogue with the release's image (sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts, peal-infra's README, "Stripe catalogue"), then restart the server.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Set once when the server starts, and exported from then on;
+              # a server that does not bill never sets it.
+              expr: max(peal_billing_stripe_catalogue_problems) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]

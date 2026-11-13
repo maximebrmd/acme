@@ -2,12 +2,24 @@
 // prices when it starts, against a stand-in for a Stripe account, and
 // against stripe-mock, whose one price is none of Peal's.
 import { assert, layer } from "@effect/vitest";
-import { Config, ConfigProvider, Effect, Layer, Option } from "effect";
+import {
+  Config,
+  ConfigProvider,
+  Effect,
+  Layer,
+  Logger,
+  Metric,
+  Option,
+} from "effect";
 
 import { catalogueOf } from "#billing/domain/catalogue.ts";
 import { priceOf } from "#billing/domain/prices.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
-import { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-checked.ts";
+import {
+  catalogueProblemsAtStart,
+  stripePricesChecked,
+  StripePricesCheckedLive,
+} from "#billing/infrastructure/stripe-prices-checked.ts";
 import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
 import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 import { holding, stripeAccount } from "#test/billing/fakes/stripe-account.ts";
@@ -30,6 +42,7 @@ const legacyPrices: readonly FakePrice[] =
       currency: "eur",
       id: `price_${plan}_${interval}`,
       interval,
+      intervalCount: 1,
       lookupKey: `peal_${plan}_${interval}ly`,
       meter: null,
       product: `prod_${plan}`,
@@ -57,20 +70,62 @@ const changing = (
   ),
 });
 
+// The check once per-account pricing is sold: a catalogue that differs
+// stops the server too.
+const stopping = stripePricesChecked("stop");
+
 // The server starting, as far as the check goes.
-const startingOn = (settings: Readonly<Record<string, string>>) =>
+const startingOn = (
+  settings: Readonly<Record<string, string>>,
+  check: typeof StripePricesCheckedLive = StripePricesCheckedLive
+) =>
   Layer.build(
-    StripePricesCheckedLive.pipe(
+    check.pipe(
       Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(settings)))
     )
   ).pipe(Effect.scoped, Effect.asVoid);
 
-const billingOn = (apiUrl: string) =>
-  startingOn({
-    STRIPE_API_URL: apiUrl,
-    STRIPE_SECRET_KEY: "sk_test_0123456789syntheticprices",
-    STRIPE_WEBHOOK_SECRET: "whsec_synthetic_prices",
+const billingOn = (
+  apiUrl: string,
+  check: typeof StripePricesCheckedLive = StripePricesCheckedLive
+) =>
+  startingOn(
+    {
+      STRIPE_API_URL: apiUrl,
+      STRIPE_SECRET_KEY: "sk_test_0123456789syntheticprices",
+      STRIPE_WEBHOOK_SECRET: "whsec_synthetic_prices",
+    },
+    check
+  );
+
+// The start, with the warnings it logged.
+const warnedOn = (apiUrl: string) =>
+  Effect.gen(function* warned() {
+    const lines: string[] = [];
+
+    const logs = Logger.layer([
+      Logger.make(({ logLevel, message }) => {
+        if (logLevel === "Warn") {
+          lines.push(String(message));
+        }
+      }),
+    ]);
+
+    yield* billingOn(apiUrl).pipe(Effect.provide(logs));
+
+    return lines;
   });
+
+const problemsCounted = Metric.value(catalogueProblemsAtStart).pipe(
+  Effect.map(({ value }) => value)
+);
+
+// Legacy prices only: an account as it was before the catalogue.
+const legacyOnly: StripeAccountState = {
+  meters: [],
+  prices: legacyPrices,
+  products: [],
+};
 
 const lookupKeysAsked = (requests: readonly PlatformRequest[]) =>
   requests.flatMap(({ path, query }) =>
@@ -85,7 +140,7 @@ const mismatchHeader =
   "Stripe's prices are not the ones this server publishes (billing/domain/rate-card.ts and billing/domain/prices.ts), so it does not start:";
 
 const mismatchFooter =
-  "Give Stripe the rate card's catalogue with nx run peal-server:stripe-catalogue, create or correct the plans' prices at Stripe (docs: self-hosting, Billing), or set STRIPE_LOOKUP_KEY_PREFIX to the prefix of the right ones.";
+  "Give Stripe the rate card's catalogue with the server's image (docker compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts; from the repository, bun nx run peal-server:stripe-catalogue), create or correct the plans' prices at Stripe (docs: self-hosting, Billing), or set STRIPE_LOOKUP_KEY_PREFIX to the prefix of the right ones.";
 
 layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
   it.effect(
@@ -149,7 +204,9 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
           }),
         });
 
-        const stopped = yield* billingOn(stripe.url).pipe(Effect.flip);
+        const stopped = yield* billingOn(stripe.url, stopping).pipe(
+          Effect.flip
+        );
 
         assert.strictEqual(stopped._tag, "StripePricesMismatch");
         assert.strictEqual(
@@ -178,7 +235,9 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
           }))
         );
 
-        const stopped = yield* billingOn(stripe.url).pipe(Effect.flip);
+        const stopped = yield* billingOn(stripe.url, stopping).pipe(
+          Effect.flip
+        );
 
         assert.strictEqual(stopped._tag, "StripePricesMismatch");
         assert.include(
@@ -194,7 +253,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
         Config.withDefault("http://127.0.0.1:12111")
       );
 
-      const stopped = yield* billingOn(apiUrl).pipe(Effect.flip);
+      const stopped = yield* billingOn(apiUrl, stopping).pipe(Effect.flip);
 
       assert.strictEqual(stopped._tag, "StripePricesMismatch");
       assert.include(
@@ -265,7 +324,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
         const failures = yield* Effect.forEach(
           [revoked, unreadablePrices, unreadableMeters],
           (stripe) =>
-            billingOn(stripe.url).pipe(
+            billingOn(stripe.url, stopping).pipe(
               Effect.flip,
               Effect.map(({ _tag, message }) => [_tag, message] as const)
             )
@@ -282,6 +341,76 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
         assert.include(failures[0]?.[1], "Stripe refused the request");
         assert.include(failures[1]?.[1], "its answer is not a list of prices");
         assert.include(failures[2]?.[1], "its answer is not a list of meters");
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "starts, until per-account pricing is sold, on an account without the catalogue, warning with the command that gives it",
+    () =>
+      Effect.gen(function* warning() {
+        const stripe = yield* stripeAccount(legacyOnly);
+
+        const warnings = yield* warnedOn(stripe.url);
+
+        assert.lengthOf(warnings, 1);
+        assert.include(
+          warnings[0],
+          "- peal_accounts: Stripe has no active meter with this event name"
+        );
+        assert.include(
+          warnings[0],
+          "docker compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts"
+        );
+        assert.strictEqual(yield* problemsCounted, 12);
+
+        // Once Stripe holds it, nothing is said, and nothing counted.
+        const complete_ = yield* stripeAccount(complete);
+
+        assert.deepStrictEqual(yield* warnedOn(complete_.url), []);
+        assert.strictEqual(yield* problemsCounted, 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "still stops, until per-account pricing is sold, on plan prices that differ, naming only them",
+    () =>
+      Effect.gen(function* legacy() {
+        const stripe = yield* stripeAccount({
+          ...legacyOnly,
+          prices: legacyPrices.filter(
+            ({ lookupKey }) => lookupKey !== "peal_starter_monthly"
+          ),
+        });
+
+        const stopped = yield* billingOn(stripe.url).pipe(Effect.flip);
+
+        assert.strictEqual(stopped._tag, "StripePricesMismatch");
+        assert.strictEqual(
+          stopped.message,
+          [
+            mismatchHeader,
+            "- peal_starter_monthly: Stripe has no active price with this lookup key",
+            mismatchFooter,
+          ].join("\n")
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "starts, until per-account pricing is sold, when Stripe refuses or garbles only the meters, warning",
+    () =>
+      Effect.gen(function* meters() {
+        const stripe = yield* stripeAccount(complete, ({ path }) =>
+          path === "/v1/billing/meters"
+            ? Option.some(json({ data: [{ id: "mtr_synthetic" }] }))
+            : Option.none()
+        );
+
+        const warnings = yield* warnedOn(stripe.url);
+
+        assert.lengthOf(warnings, 1);
+        assert.include(warnings[0], "its answer is not a list of meters");
+        assert.strictEqual(yield* problemsCounted, 1);
       }).pipe(Effect.scoped)
   );
 
