@@ -121,3 +121,8 @@
   language's folder: Go would otherwise take the repository's FSL), and every
   manifest says so. What they call is public API: renaming or removing an
   operation, a field or a schema in the contract breaks their users.
+- The generator names one error body type per status (`BadGatewayErrorBody`
+  and the like), after one of the endpoints with several errors there: a
+  new union at a status can rename its members. Check the SDKs' diff for
+  it after a contract change, and record what it breaks in
+  `released/accepted-changes.json` with `kind` `sdk`.

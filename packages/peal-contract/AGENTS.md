@@ -7,7 +7,10 @@
   fails on anything a client could break on; a break that is decided on goes
   into `released/accepted-changes.json` with its reason (the 64-bit
   byte counts are there: the same number on the wire, a wider type in the
-  typed SDKs). It also refuses a tighter limit on what is sent, a way of
+  typed SDKs). A break the document cannot show goes there too, with a `kind`:
+  `behaviour` (what an endpoint refuses now) or `sdk` (a type the
+  generator renamed or narrowed, such as a status-named error body); the
+  check keeps it until the release writes it to the changelog. It also refuses a tighter limit on what is sent, a way of
   signing in that goes, a value or a union member no longer answered,
   null where there was always a value, and a baseline that lists nothing
   or is not the one the last release recorded (`released/openapi.sha256`).

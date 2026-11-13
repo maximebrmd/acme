@@ -16,11 +16,18 @@
 // released/accepted-changes.json lists the breaking changes that were
 // decided on, each with its reason: a change of the API that is not an
 // addition goes there on purpose, never by accident. An entry that no
-// longer matches a change fails the check too, so the list stays true.
+// longer matches a change fails the check too, so the list stays true;
+// but for one of a `kind` (a behaviour, or an SDK type the generator
+// renamed), which the document cannot show.
 import path from "node:path";
 
 import { Schema } from "effect";
 
+import {
+  AcceptedChangeSchema,
+  breakingOf,
+  checkAccepted,
+} from "./accepted-changes.ts";
 import { apiChanges, lineOf, operationCount } from "./api-changes.ts";
 
 const root = path.join(import.meta.dirname, "..");
@@ -45,14 +52,7 @@ const decodeDocument = Schema.decodeUnknownSync(
 );
 
 const AcceptedSchema = Schema.fromJsonString(
-  Schema.Array(
-    Schema.Struct({
-      // The change, as the check prints it.
-      change: Schema.String,
-      // Why it was made, and what clients do about it.
-      reason: Schema.NonEmptyString,
-    })
-  )
+  Schema.Array(AcceptedChangeSchema)
 );
 
 // The changelog's entries, kept as they are: this script only adds one.
@@ -98,11 +98,7 @@ const exceptions = Schema.decodeUnknownSync(AcceptedSchema)(
 
 const breaking = changes.filter(({ kind }) => kind === "breaking").map(lineOf);
 
-const unaccepted = breaking.filter(
-  (line) => !exceptions.some(({ change }) => change === line)
-);
-
-const stale = exceptions.filter(({ change }) => !breaking.includes(change));
+const { stale, unaccepted } = checkAccepted(breaking, exceptions);
 
 const count = (kind: (typeof changes)[number]["kind"]) =>
   changes.filter((change) => change.kind === kind).length;
@@ -176,7 +172,7 @@ if (process.argv.includes("--release")) {
         ...entries,
         {
           additions: count("addition"),
-          breaking: exceptions,
+          breaking: breakingOf(exceptions),
           date,
           deprecations: operationsOf("deprecation", "is deprecated"),
           operations: operationsOf("addition", "is a new operation"),

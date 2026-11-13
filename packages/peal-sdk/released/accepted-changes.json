@@ -54,5 +54,15 @@
   {
     "change": "UploadPart.byteSize was integer, and is integer (int64)",
     "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "GET, PUT and DELETE /api/workspaces/{workspaceId}/assistant/image-provider refuse an OAuth client other than Peal's command line (403 Forbidden, missingPermission assistant:configure), whatever its scopes",
+    "kind": "behaviour",
+    "reason": "Since the image provider endpoints shipped (2026-11-12), an application connected with workspace:write could point a workspace's image prompts, and now its drafts, at a server of its own, which kept receiving them after its grant was revoked. assistant:configure now reaches no OAuth client but Peal's command line; owners and admins in their own session, the command line, and API keys or partner keys given the permission keep it. An application that set a provider asks the person to set it in the web app, or uses an API key given assistant:configure."
+  },
+  {
+    "change": "The SDKs' BadGatewayErrorBody (one type for every 502 body with several errors) names TextProviderRefused and AssistantFailed, no longer AssistantFailed and ImageProviderRefused; AssistantFailedEncoded lost its _tag field, and its tag type (AssistantFailedEncodedTag, AssistantFailedEncoded.Tag) is gone",
+    "kind": "sdk",
+    "reason": "The suggestions endpoint and the text provider's test now answer 502 with two errors each, and the generator names a single body type for each status, after one of the endpoints that has a union there. Nothing changes on the wire: every 502 body still carries its _tag. Code that matched BadGatewayErrorBody.ImageProviderRefused, or read AssistantFailedEncoded's _tag through its type, reads the body's _tag as a string instead. The SDKs are 0.x: this ships in their next minor release, 0.4.0, whose notes say so."
   }
 ]
