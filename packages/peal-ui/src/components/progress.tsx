@@ -1,14 +1,25 @@
 "use client";
 
-import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
+import {
+  Progress as ProgressPrimitive,
+  ProgressIndicator as ProgressIndicatorPrimitive,
+  ProgressLabel as ProgressLabelPrimitive,
+  ProgressTrack as ProgressTrackPrimitive,
+  ProgressValue as ProgressValuePrimitive,
+} from "@ui-sdk/react/progress";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
+
+type WithClassName<Props> = Omit<Props, "className"> & {
+  readonly className?: string | undefined;
+};
 
 const ProgressTrack = ({
   className,
   ...props
-}: ProgressPrimitive.Track.Props) => (
-  <ProgressPrimitive.Track
+}: WithClassName<React.ComponentProps<typeof ProgressTrackPrimitive>>) => (
+  <ProgressTrackPrimitive
     className={cn(
       "bg-muted relative flex h-1 w-full items-center overflow-x-hidden rounded-full",
       className
@@ -21,8 +32,8 @@ const ProgressTrack = ({
 const ProgressIndicator = ({
   className,
   ...props
-}: ProgressPrimitive.Indicator.Props) => (
-  <ProgressPrimitive.Indicator
+}: WithClassName<React.ComponentProps<typeof ProgressIndicatorPrimitive>>) => (
+  <ProgressIndicatorPrimitive
     data-slot="progress-indicator"
     className={cn("bg-primary h-full transition-all", className)}
     {...props}
@@ -32,11 +43,14 @@ const ProgressIndicator = ({
 const Progress = ({
   className,
   children,
-  value,
   ...props
-}: ProgressPrimitive.Root.Props) => (
-  <ProgressPrimitive.Root
-    value={value}
+}: Omit<
+  WithClassName<React.ComponentProps<typeof ProgressPrimitive>>,
+  "children"
+> & {
+  readonly children?: React.ReactNode;
+}) => (
+  <ProgressPrimitive
     data-slot="progress"
     className={cn("flex flex-wrap gap-3", className)}
     {...props}
@@ -45,14 +59,14 @@ const Progress = ({
     <ProgressTrack>
       <ProgressIndicator />
     </ProgressTrack>
-  </ProgressPrimitive.Root>
+  </ProgressPrimitive>
 );
 
 const ProgressLabel = ({
   className,
   ...props
-}: ProgressPrimitive.Label.Props) => (
-  <ProgressPrimitive.Label
+}: WithClassName<React.ComponentProps<typeof ProgressLabelPrimitive>>) => (
+  <ProgressLabelPrimitive
     className={cn("text-sm font-medium", className)}
     data-slot="progress-label"
     {...props}
@@ -62,8 +76,8 @@ const ProgressLabel = ({
 const ProgressValue = ({
   className,
   ...props
-}: ProgressPrimitive.Value.Props) => (
-  <ProgressPrimitive.Value
+}: WithClassName<React.ComponentProps<typeof ProgressValuePrimitive>>) => (
+  <ProgressValuePrimitive
     className={cn(
       "text-muted-foreground ml-auto text-sm tabular-nums",
       className

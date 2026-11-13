@@ -1,7 +1,11 @@
 "use client";
 
-import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
-import * as React from "react";
+import {
+  Avatar as AvatarPrimitive,
+  AvatarFallback as AvatarFallbackPrimitive,
+  AvatarImage as AvatarImagePrimitive,
+} from "@ui-sdk/react/avatar";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
 
@@ -9,10 +13,11 @@ const Avatar = ({
   className,
   size = "default",
   ...props
-}: AvatarPrimitive.Root.Props & {
-  size?: "default" | "sm" | "lg";
+}: Omit<React.ComponentProps<typeof AvatarPrimitive>, "className"> & {
+  readonly className?: string | undefined;
+  readonly size?: "default" | "sm" | "lg";
 }) => (
-  <AvatarPrimitive.Root
+  <AvatarPrimitive
     data-slot="avatar"
     data-size={size}
     className={cn(
@@ -23,8 +28,13 @@ const Avatar = ({
   />
 );
 
-const AvatarImage = ({ className, ...props }: AvatarPrimitive.Image.Props) => (
-  <AvatarPrimitive.Image
+const AvatarImage = ({
+  className,
+  ...props
+}: Omit<React.ComponentProps<typeof AvatarImagePrimitive>, "className"> & {
+  readonly className?: string | undefined;
+}) => (
+  <AvatarImagePrimitive
     data-slot="avatar-image"
     className={cn(
       "aspect-square size-full rounded-full object-cover",
@@ -37,8 +47,10 @@ const AvatarImage = ({ className, ...props }: AvatarPrimitive.Image.Props) => (
 const AvatarFallback = ({
   className,
   ...props
-}: AvatarPrimitive.Fallback.Props) => (
-  <AvatarPrimitive.Fallback
+}: Omit<React.ComponentProps<typeof AvatarFallbackPrimitive>, "className"> & {
+  readonly className?: string | undefined;
+}) => (
+  <AvatarFallbackPrimitive
     data-slot="avatar-fallback"
     className={cn(
       "bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm group-data-[size=sm]/avatar:text-xs",
