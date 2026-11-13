@@ -817,6 +817,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postUnconfirmed: true,
       recyclingEnded: true,
       webhookFailing: true,
+      weeklyDigest: false,
     },
     everyPost: false,
   },

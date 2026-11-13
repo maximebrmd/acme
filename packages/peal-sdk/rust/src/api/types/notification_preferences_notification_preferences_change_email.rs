@@ -28,6 +28,9 @@ pub struct NotificationPreferencesChangeEmail {
     #[serde(rename = "webhookFailing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub webhook_failing: Option<bool>,
+    #[serde(rename = "weeklyDigest")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weekly_digest: Option<bool>,
 }
 
 impl NotificationPreferencesChangeEmail {
@@ -48,6 +51,7 @@ pub struct NotificationPreferencesChangeEmailBuilder {
     post_unconfirmed: Option<bool>,
     recycling_ended: Option<bool>,
     webhook_failing: Option<bool>,
+    weekly_digest: Option<bool>,
 }
 
 impl NotificationPreferencesChangeEmailBuilder {
@@ -96,6 +100,11 @@ impl NotificationPreferencesChangeEmailBuilder {
         self
     }
 
+    pub fn weekly_digest(mut self, value: bool) -> Self {
+        self.weekly_digest = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`NotificationPreferencesChangeEmail`].
     pub fn build(self) -> Result<NotificationPreferencesChangeEmail, BuildError> {
         Ok(NotificationPreferencesChangeEmail {
@@ -108,6 +117,7 @@ impl NotificationPreferencesChangeEmailBuilder {
             post_unconfirmed: self.post_unconfirmed,
             recycling_ended: self.recycling_ended,
             webhook_failing: self.webhook_failing,
+            weekly_digest: self.weekly_digest,
         })
     }
 }

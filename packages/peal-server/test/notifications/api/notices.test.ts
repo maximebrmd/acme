@@ -326,6 +326,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
           postUnconfirmed: true,
           recyclingEnded: true,
           webhookFailing: true,
+          weeklyDigest: false,
         },
         everyPost: false,
       });
@@ -349,6 +350,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
             postUnconfirmed: true,
             recyclingEnded: true,
             webhookFailing: true,
+            weeklyDigest: false,
           },
           everyPost: false,
         }
@@ -366,6 +368,20 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
       assert.isTrue(following.everyPost);
       assert.isFalse(following.email.postFailed);
       assert.isTrue(following.email.postPublished);
+
+      // The weekly digest is asked for, and stopped, as any other email.
+      const digest = yield* client.notificationPreferences.update({
+        payload: { email: { weeklyDigest: true } },
+      });
+
+      assert.isTrue(digest.email.weeklyDigest);
+      assert.isTrue(digest.email.postPublished);
+
+      assert.isFalse(
+        (yield* client.notificationPreferences.update({
+          payload: { email: { weeklyDigest: false } },
+        })).email.weeklyDigest
+      );
     })
   );
 });

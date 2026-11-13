@@ -2059,7 +2059,9 @@
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again",
       "recyclingEnded": "A post stops repeating",
-      "feedStopped": "A feed stops making posts"
+      "feedStopped": "A feed stops making posts",
+      "weeklyDigest": "A week starts: what went out last week and what is planned, each Monday",
+      "weeklyDigestHint": "Counts and the start of each post’s text, for the workspaces whose posts you may read, with days in UTC."
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",

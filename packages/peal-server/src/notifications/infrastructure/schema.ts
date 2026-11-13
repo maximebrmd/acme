@@ -87,8 +87,17 @@ export const notificationPreferences = notificationsSchema.table(
     emailWebhookFailing: boolean("email_webhook_failing")
       .notNull()
       .default(true),
+    // The weekly digest: off unless chosen.
+    emailWeeklyDigest: boolean("email_weekly_digest").notNull().default(false),
     everyPost: boolean("every_post").notNull().default(false),
     updatedAt: instant("updated_at").notNull(),
     userId: uuid("user_id").primaryKey(),
-  }
+  },
+  (table) => [
+    // Those who asked for the weekly digest, by id, which its run pages
+    // through: few of all users, so the index stays small.
+    index("notification_preferences_weekly_digest")
+      .on(table.userId)
+      .where(sql`${table.emailWeeklyDigest}`),
+  ]
 );

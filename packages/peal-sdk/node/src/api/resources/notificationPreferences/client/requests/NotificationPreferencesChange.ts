@@ -20,5 +20,6 @@ export namespace NotificationPreferencesChange {
         postUnconfirmed?: boolean | undefined;
         recyclingEnded?: boolean | undefined;
         webhookFailing?: boolean | undefined;
+        weeklyDigest?: boolean | undefined;
     }
 }

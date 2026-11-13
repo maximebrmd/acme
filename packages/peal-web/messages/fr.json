@@ -2059,7 +2059,9 @@
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
       "reload": "Réessayer",
       "recyclingEnded": "Une publication cesse de se répéter",
-      "feedStopped": "Un flux cesse de créer des publications"
+      "feedStopped": "Un flux cesse de créer des publications",
+      "weeklyDigest": "Une semaine commence : ce qui est parti la semaine passée et ce qui est prévu, chaque lundi",
+      "weeklyDigestHint": "Des nombres et le début du texte de chaque publication, pour les espaces de travail dont vous pouvez lire les publications, avec les jours en UTC."
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",

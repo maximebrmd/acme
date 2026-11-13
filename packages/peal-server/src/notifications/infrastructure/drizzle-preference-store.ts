@@ -30,6 +30,7 @@ const preferencesOf = (row: Row) =>
       postUnconfirmed: row.emailPostUnconfirmed,
       recyclingEnded: row.emailRecyclingEnded,
       webhookFailing: row.emailWebhookFailing,
+      weeklyDigest: row.emailWeeklyDigest,
     },
     everyPost: row.everyPost,
   });
@@ -89,6 +90,10 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailWebhookFailing = email.webhookFailing;
           }
 
+          if (email.weeklyDigest !== undefined) {
+            set.emailWeeklyDigest = email.weeklyDigest;
+          }
+
           if (requested.everyPost !== undefined) {
             set.everyPost = requested.everyPost;
           }
@@ -105,6 +110,7 @@ export const DrizzlePreferenceStore = Layer.effect(
               emailPostUnconfirmed: first.email.postUnconfirmed,
               emailRecyclingEnded: first.email.recyclingEnded,
               emailWebhookFailing: first.email.webhookFailing,
+              emailWeeklyDigest: first.email.weeklyDigest,
               everyPost: first.everyPost,
               updatedAt,
               userId,

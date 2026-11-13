@@ -1,0 +1,2 @@
+ALTER TABLE "notifications"."notification_preferences" ADD COLUMN "email_weekly_digest" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE INDEX "notification_preferences_weekly_digest" ON "notifications"."notification_preferences" ("user_id") WHERE "email_weekly_digest";

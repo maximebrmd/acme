@@ -1,0 +1,91 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a8f0f175-f043-484e-8afe-57d1e88d3952",
+  "prevIds": [
+    "1bbf8248-b8c6-4fbd-9b23-4acbf4a5d306"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "email_weekly_digest"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.email_weekly_digest",
+        "n|col|notifications.notification_preferences.email_weekly_digest",
+        "e|col|notifications.notification_preferences.email_weekly_digest"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "notifications",
+        "notification_preferences",
+        "notification_preferences_weekly_digest"
+      ],
+      "writes": [
+        "s|idx|notifications.notification_preferences_weekly_digest",
+        "n|idx|notifications.notification_preferences_weekly_digest",
+        "e|idx|notifications.notification_preferences_weekly_digest",
+        "n|rel|notifications.notification_preferences_weekly_digest"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications",
+        "n|col|notifications.notification_preferences.user_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "email_weekly_digest",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "notification_preferences_weekly_digest",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"email_weekly_digest\"",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

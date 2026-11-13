@@ -34,6 +34,9 @@ class NotificationPreferencesEmail(UniversalBaseModel):
     webhook_failing: typing_extensions.Annotated[
         bool, FieldMetadata(alias="webhookFailing"), pydantic.Field(alias="webhookFailing")
     ]
+    weekly_digest: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="weeklyDigest"), pydantic.Field(alias="weeklyDigest")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

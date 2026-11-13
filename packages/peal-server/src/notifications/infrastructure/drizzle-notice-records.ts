@@ -230,6 +230,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   postUnconfirmed: chosen.emailPostUnconfirmed,
                   recyclingEnded: chosen.emailRecyclingEnded,
                   webhookFailing: chosen.emailWebhookFailing,
+                  weeklyDigest: chosen.emailWeeklyDigest,
                 },
                 everyPost: chosen.everyPost,
               };

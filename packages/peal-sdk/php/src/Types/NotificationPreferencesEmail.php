@@ -62,6 +62,12 @@ class NotificationPreferencesEmail extends JsonSerializableType
     public bool $webhookFailing;
 
     /**
+     * @var bool $weeklyDigest
+     */
+    #[JsonProperty('weeklyDigest')]
+    public bool $weeklyDigest;
+
+    /**
      * @param array{
      *   channelReconnect: bool,
      *   comments: bool,
@@ -72,6 +78,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
      *   postUnconfirmed: bool,
      *   recyclingEnded: bool,
      *   webhookFailing: bool,
+     *   weeklyDigest: bool,
      * } $values
      */
     public function __construct(
@@ -86,6 +93,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
         $this->postUnconfirmed = $values['postUnconfirmed'];
         $this->recyclingEnded = $values['recyclingEnded'];
         $this->webhookFailing = $values['webhookFailing'];
+        $this->weeklyDigest = $values['weeklyDigest'];
     }
 
     /**
