@@ -696,10 +696,14 @@ describe("a poll on Mastodon", () => {
 
       const [call] = statusCalls(instance);
 
-      assert.deepStrictEqual(JSON.parse(textOf(call ?? never)).poll, {
-        expires_in: 300,
-        options: ["Yes", "No"],
-      });
+      assert.deepStrictEqual(
+        Schema.decodeUnknownSync(
+          Schema.fromJsonString(
+            Schema.Struct({ poll: Schema.Record(Schema.String, Schema.Json) })
+          )
+        )(textOf(call ?? never)).poll,
+        { expires_in: 300, options: ["Yes", "No"] }
+      );
     }).pipe(Effect.scoped)
   );
 });
