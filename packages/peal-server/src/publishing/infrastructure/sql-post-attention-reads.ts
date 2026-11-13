@@ -2,7 +2,10 @@ import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PostAttentionReads } from "#publishing/application/post-attention-reads.ts";
-import type { AttentionCounts } from "#publishing/application/post-attention-reads.ts";
+import type {
+  AttentionCounts,
+  WeekWindow,
+} from "#publishing/application/post-attention-reads.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import {
   ChannelIdSchema,
@@ -61,6 +64,80 @@ const decodeAgendaRows = Schema.decodeUnknownEffect(
 const decodeChannelIds = Schema.decodeUnknownEffect(
   Schema.Array(ChannelIdSchema)
 );
+
+const decodeWeekCounts = Schema.decodeUnknownEffect(
+  Schema.Tuple([
+    Schema.Struct({
+      awaitingApproval: Schema.Int,
+      failed: Schema.Int,
+      scheduled: Schema.Int,
+      unconfirmed: Schema.Int,
+      wentOut: Schema.Int,
+    }),
+  ])
+);
+
+const decodeWeekPosts = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      postId: PostIdSchema,
+      scheduledAt: Schema.DateTimeUtcFromDate,
+      textStart: Schema.String,
+    })
+  )
+);
+
+/**
+ * The statements of a workspace's week, each a range of the index of its
+ * posts by time (`posts_workspace_scheduled_at`) over the fortnight at
+ * most, whatever else it keeps: the counts, then the first posts that
+ * went out in the week, then the first going out in the week after.
+ */
+export const weekStatements = (
+  client: SqlClient.SqlClient,
+  workspaceId: WorkspaceId,
+  { from, listed, to, until }: WeekWindow
+) => {
+  const start = DateTime.toDateUtc(from);
+  const middle = DateTime.toDateUtc(to);
+  const end = DateTime.toDateUtc(until);
+
+  return {
+    counts: client`
+      SELECT
+        (count(*) FILTER (WHERE scheduled_at < ${middle} AND status = 'finished' AND outcome IN ('published', 'partiallyPublished')))::int AS "wentOut",
+        (count(*) FILTER (WHERE scheduled_at < ${middle} AND status = 'finished' AND outcome = 'failed'))::int AS "failed",
+        (count(*) FILTER (WHERE scheduled_at < ${middle} AND status = 'finished' AND outcome = 'unconfirmed'))::int AS "unconfirmed",
+        (count(*) FILTER (WHERE scheduled_at >= ${middle} AND status = 'scheduled'))::int AS "scheduled",
+        (count(*) FILTER (WHERE scheduled_at >= ${middle} AND status = 'awaitingApproval'))::int AS "awaitingApproval"
+      FROM publishing.posts
+      WHERE workspace_id = ${workspaceId}
+        AND scheduled_at >= ${start}
+        AND scheduled_at < ${end}
+    `,
+    planned: client`
+      SELECT id AS "postId", scheduled_at AS "scheduledAt", left(text, ${textRead}) AS "textStart"
+      FROM publishing.posts
+      WHERE workspace_id = ${workspaceId}
+        AND status IN ('scheduled', 'awaitingApproval')
+        AND scheduled_at >= ${middle}
+        AND scheduled_at < ${end}
+      ORDER BY scheduled_at, id
+      LIMIT ${listed}
+    `,
+    wentOut: client`
+      SELECT id AS "postId", scheduled_at AS "scheduledAt", left(text, ${textRead}) AS "textStart"
+      FROM publishing.posts
+      WHERE workspace_id = ${workspaceId}
+        AND status = 'finished'
+        AND outcome IN ('published', 'partiallyPublished')
+        AND scheduled_at >= ${start}
+        AND scheduled_at < ${middle}
+      ORDER BY scheduled_at, id
+      LIMIT ${listed}
+    `,
+  };
+};
 
 /**
  * The counts and the agenda across workspaces, in Postgres, one statement
@@ -190,6 +267,25 @@ export const SqlPostAttentionReads = Layer.effect(
               )
           ),
           Effect.withSpan("PostAttentionReads.countsIn")
+        );
+      },
+      week: (workspaceId, window) => {
+        const statements = weekStatements(client, workspaceId, window);
+
+        return Effect.all({
+          counts: statements.counts.pipe(
+            Effect.flatMap((rows) => decodeWeekCounts(rows).pipe(Effect.orDie)),
+            Effect.map(([counts]) => counts)
+          ),
+          planned: statements.planned.pipe(
+            Effect.flatMap((rows) => decodeWeekPosts(rows).pipe(Effect.orDie))
+          ),
+          wentOut: statements.wentOut.pipe(
+            Effect.flatMap((rows) => decodeWeekPosts(rows).pipe(Effect.orDie))
+          ),
+        }).pipe(
+          Effect.mapError(failed),
+          Effect.withSpan("PostAttentionReads.week")
         );
       },
     });
