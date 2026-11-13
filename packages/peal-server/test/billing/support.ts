@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
@@ -18,6 +19,7 @@ import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
+import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
@@ -83,6 +85,33 @@ export const everyWorkspaceOn = (plan: Plan, freeTier = true) =>
       })
     )
   );
+
+/**
+ * Account-days that count nothing, for tests of what adds a channel
+ * without billing's days.
+ */
+export const AccountDaysUncountedTest = Layer.mock(AccountDays, {
+  counted: () => Effect.void,
+  ofDays: () => Effect.succeed([]),
+  ofMonth: () => Effect.succeed([]),
+  raise: () => Effect.succeed([]),
+  subscribed: () => Effect.void,
+});
+
+/**
+ * Usage at Stripe for tests that send none: the event names of the prefix
+ * `peal`, and any call dies.
+ */
+export const UsageBillingUncalledTest = Layer.mock(UsageBilling, {
+  eventNames: {
+    accounts: "peal_accounts",
+    assistantImages: "peal_assistant_images",
+    assistantRequests: "peal_assistant_requests",
+    managedAds: "peal_managed_ads",
+    outboundMessages: "peal_outbound_messages",
+    xApi: "peal_x_api",
+  },
+});
 
 /** A server that does not bill: nothing is limited, nothing pooled. */
 export const UnmeteredTest = Layer.mergeAll(

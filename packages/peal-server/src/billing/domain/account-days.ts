@@ -52,6 +52,14 @@ export const nextAccountMonthly = (pooled: number): number =>
   accountsMonthly(pooled + 1) - accountsMonthly(pooled);
 
 /**
+ * What a per-account subscription invoices as soon as its usage reaches,
+ * in cents, until its first invoice is paid: with the rate card's
+ * account ceiling (`unverifiedCeiling`), what a customer nobody knows yet
+ * can owe.
+ */
+export const unverifiedThreshold = 10_000;
+
+/**
  * How old an event may be and still be stamped with the instant it
  * describes: an older one is stamped with the time it is sent, so it is
  * billed in the period it reaches Stripe in, at the same price, rather than

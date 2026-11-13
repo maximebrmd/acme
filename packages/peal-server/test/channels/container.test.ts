@@ -20,7 +20,11 @@ import type { PlatformRegistration } from "#channels/infrastructure/platforms/pl
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
-import { AloneInAccountsTest, UnmeteredTest } from "#test/billing/support.ts";
+import {
+  AccountDaysUncountedTest,
+  AloneInAccountsTest,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import {
   actorIn,
   DatabaseTest,
@@ -35,6 +39,7 @@ import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 // What the context needs from the rest of the server: names to resolve,
 // notices to send, which nothing here sends, and plans, which limit nothing.
 const Neighbours = Layer.mergeAll(
+  AccountDaysUncountedTest,
   Dns.layerStatic({}),
   Layer.succeed(
     Notify,

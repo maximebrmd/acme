@@ -25,12 +25,14 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  AccountDaysUncountedTest,
   AloneInAccountsTest,
   NoAddressesTest,
   NoContractsTest,
   NoTrialsTest,
   PlainPseudonymsTest,
   StripeUncalledTest,
+  UsageBillingUncalledTest,
 } from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -116,7 +118,9 @@ const billingWith = (enabled: boolean) =>
         StripeUncalledTest,
         NoAddressesTest,
         PlainPseudonymsTest,
-        AloneInAccountsTest
+        AloneInAccountsTest,
+        AccountDaysUncountedTest,
+        UsageBillingUncalledTest
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
@@ -387,7 +391,9 @@ const recordsWith = (enabled: boolean) =>
         StripeUncalledTest,
         NoContractsTest,
         AloneInAccountsTest,
-        PlainPseudonymsTest
+        PlainPseudonymsTest,
+        AccountDaysUncountedTest,
+        UsageBillingUncalledTest
       )
     ),
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),

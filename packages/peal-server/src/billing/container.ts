@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
@@ -40,6 +41,7 @@ import { ContextWorkspaceHoldingsLive } from "#billing/infrastructure/context-wo
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
 import { contractRequests } from "#billing/infrastructure/contract-requests-cron.ts";
 import { contractRetention } from "#billing/infrastructure/contract-retention-cron.ts";
+import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-account-day-store.ts";
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
@@ -55,6 +57,7 @@ import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-bil
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
+import { StripeUsageBillingLive } from "#billing/infrastructure/stripe-usage-billing.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
 import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
@@ -102,6 +105,20 @@ const HoldersLive = AccountPlanHoldersLive.pipe(
   Layer.provide(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
 );
 
+// Each billing account's accounts by day, and the outbox to Stripe they
+// are reported through, which the channels context counts in.
+const AccountDaysLive = AccountDays.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleAccountDayStoreLive,
+      HoldersLive,
+      DrizzleSubscriptionsLive,
+      StripeUsageBillingLive,
+      ConfiguredBillingModeLive
+    )
+  )
+);
+
 /**
  * The billing context's use cases for the other contexts: what each
  * workspace's plan allows (WorkspaceEntitlements), the subscriptions
@@ -139,6 +156,7 @@ export const BillingLive = Layer.mergeAll(
     Layer.mergeAll(
       RecordsLive,
       StripeContractsLive,
+      StripeUsageBillingLive,
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
       HoldersLive,
@@ -146,10 +164,12 @@ export const BillingLive = Layer.mergeAll(
       WorkspaceAccountPayersLive
     )
   ),
-  // The billing accounts, which the other contexts read too, and whether
-  // the server bills, which the channels context's allowance asks before
-  // counting across a billing account.
-  Layer.provideMerge(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
+  // The billing accounts, which the other contexts read too, whether the
+  // server bills, which the channels context's allowance asks before
+  // counting across a billing account, and the account-days it counts in.
+  Layer.provideMerge(
+    Layer.mergeAll(AccountsLive, ConfiguredBillingModeLive, AccountDaysLive)
+  )
 );
 
 // Hands the checkout the counts of what each workspace holds, once the

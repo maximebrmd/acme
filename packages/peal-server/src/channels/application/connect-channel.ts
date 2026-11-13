@@ -308,6 +308,18 @@ export class ConnectChannel extends Context.Service<
         }
       );
 
+      // The channels the workspace's pool holds: its own and those that
+      // count with them.
+      const pooledCount = Effect.fn("ConnectChannel.pooledCount")(
+        function* pooledCount(workspaceId: WorkspaceId) {
+          const own = yield* channels.countIn([workspaceId]);
+
+          return (
+            (own.get(workspaceId) ?? 0) + (yield* heldElsewhere(workspaceId))
+          );
+        }
+      );
+
       // Room for one more channel in the workspace's plan.
       const roomForChannel = Effect.fn("ConnectChannel.roomForChannel")(
         function* roomForChannel(workspaceId: WorkspaceId) {
@@ -573,11 +585,18 @@ export class ConnectChannel extends Context.Service<
           );
 
           // Counted and added in turn with the workspace's other additions,
-          // so two at once never pass the plan's limit together.
+          // so two at once never pass the plan's limit together; then
+          // counted for billing, still under the pool's hold.
           yield* channels.addingTo(
             actor.workspaceId,
             roomForChannel(actor.workspaceId).pipe(
               Effect.andThen(channels.insert(channel, credentials)),
+              Effect.andThen(
+                allowance.counted(
+                  actor.workspaceId,
+                  pooledCount(actor.workspaceId)
+                )
+              ),
               Effect.andThen(events.connected(channel, false))
             )
           );
