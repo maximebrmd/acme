@@ -113,6 +113,18 @@ export const toAccountView = ({
   timeZone: account.timeZone,
 });
 
+/**
+ * The same, where the workspace's accounts are listed: with until when its
+ * new ads are not tracked.
+ */
+export const toListedAccountView = (
+  authorized: AuthorizedAccount,
+  untrackedUntil: Option.Option<DateTime.Utc>
+): AdAccountView => ({
+  ...toAccountView(authorized),
+  newAdsUntrackedUntil: Option.getOrNull(untrackedUntil),
+});
+
 export const toSpendingView = ({
   account,
   committedThisMonth,

@@ -111,6 +111,9 @@ export const fakeMeters = ({
               ceiling: Option.some(0),
               meter,
               paymentMethod,
+              pastAllowed: paymentMethod
+                ? ("ceilingReached" as const)
+                : ("paymentMethodRequired" as const),
               price: { cents: 1, per: 1 },
               priceConfirmed: false,
               resetsAt: yield* resetsAt,

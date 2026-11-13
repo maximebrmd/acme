@@ -25,7 +25,7 @@ import { ActiveAdMonths } from "./ports/active-ad-months.ts";
 import { AdNetworks } from "./ports/ad-network.ts";
 import type { ReadFailure } from "./ports/ad-network.ts";
 import { AdNotices } from "./ports/ad-notices.ts";
-import type { BoostStore } from "./ports/boost-store.ts";
+import { BoostStore } from "./ports/boost-store.ts";
 import { GrantSecrets } from "./ports/grant-secrets.ts";
 import { GrantStore } from "./ports/grant-store.ts";
 import { PromotablePosts } from "./ports/promotable-posts.ts";
@@ -72,6 +72,7 @@ export class SyncAccount extends Context.Service<
       const followUp = yield* BoostFollowUp;
       const ports = yield* Effect.context<BoostStore | Ids>();
       const activeMonths = yield* ActiveAdMonths;
+      const boostStore = yield* BoostStore;
       const meters = yield* MeteredUsage;
       const { transaction } = yield* TransactionRunner;
 
@@ -80,66 +81,106 @@ export class SyncAccount extends Context.Service<
       // keep: once the meter pauses (no payment method, the month's
       // allowance used), the ads it could not count are not recorded and
       // their numbers stop updating. Nothing a network runs is touched.
+      // Counts `ids` as managed ads of the month, as many as the meter
+      // grants, in one claim: answers how many, from the first.
+      const counted = Effect.fn("SyncAccount.counted")(function* counted(
+        workspaceId: AdAccount["workspaceId"],
+        month: DateTime.Utc,
+        ids: readonly string[]
+      ) {
+        const recordFirst = (units: number) =>
+          units === 0
+            ? Effect.succeed(0)
+            : transaction(
+                meters
+                  .claim(workspaceId, "managedAds", units)
+                  .pipe(
+                    Effect.andThen(
+                      Effect.forEach(
+                        ids.slice(0, units),
+                        (id) => activeMonths.record(workspaceId, month, id),
+                        { discard: true }
+                      )
+                    ),
+                    Effect.as(units)
+                  )
+              );
+
+        return yield* recordFirst(ids.length).pipe(
+          Effect.catchTag("AllowanceReached", ({ allowed, used }) =>
+            recordFirst(Math.max(0, Math.min(ids.length, allowed - used))).pipe(
+              Effect.catchTag("AllowanceReached", () => Effect.succeed(0))
+            )
+          )
+        );
+      });
+
+      // Counts each ad seen delivering or in review once a month, as one
+      // of the billing account's managed ads, and answers the snapshot to
+      // keep. The ads of the account's own boosts come first, and are
+      // tracked even past the allowance; once the meter refuses (no
+      // payment method, or a legacy plan, at the month's allowance) the
+      // other ads not counted yet are not tracked: their days are not
+      // saved, while those already counted keep updating. Nothing a
+      // network runs is touched. Where no billing counts (a server that
+      // does not bill), nothing is recorded.
       const metered = Effect.fn("SyncAccount.metered")(function* metered<
         S extends AccountSnapshot,
       >(account: AdAccount, taken: S, now: DateTime.Utc) {
+        const { workspaceId } = account;
+
+        if (Option.isNone(yield* meters.state(workspaceId, "managedAds"))) {
+          return taken;
+        }
+
         const month = DateTime.startOf(now, "month");
 
         const running = taken.ads
           .filter(({ status }) => status === "active" || status === "inReview")
           .map(({ externalId }) => externalId);
 
-        const unseen = yield* activeMonths.unseen(
-          account.workspaceId,
-          month,
-          running
+        const owned = new Set<string>(
+          (yield* boostStore.runningOn(account.id)).flatMap(({ objects }) =>
+            Option.toArray(objects.adId)
+          )
         );
 
-        const unrecorded = new Set<string>();
+        const unseen = yield* activeMonths.unseen(workspaceId, month, running);
 
-        for (const adExternalId of unseen) {
-          const counted =
-            unrecorded.size > 0
-              ? false
-              : yield* transaction(
-                  activeMonths
-                    .record(account.workspaceId, month, adExternalId)
-                    .pipe(
-                      Effect.tap((recorded) =>
-                        recorded
-                          ? meters.claim(account.workspaceId, "managedAds", 1)
-                          : Effect.void
-                      )
-                    )
-                ).pipe(
-                  Effect.as(true),
-                  Effect.catchTag("AllowanceReached", () =>
-                    Effect.succeed(false)
-                  )
-                );
+        const ordered = [
+          ...unseen.filter((id) => owned.has(id)),
+          ...unseen.filter((id) => !owned.has(id)),
+        ];
 
-          if (!counted) {
-            unrecorded.add(adExternalId);
-          }
-        }
+        const granted = yield* counted(workspaceId, month, ordered);
+        const left = ordered.slice(granted);
 
-        if (unrecorded.size === 0) {
+        // The ads of Peal's own boosts are always tracked.
+        yield* Effect.forEach(
+          left.filter((id) => owned.has(id)),
+          (id) => activeMonths.record(workspaceId, month, id),
+          { discard: true }
+        );
+
+        const untracked = new Set(left.filter((id) => !owned.has(id)));
+
+        if (untracked.size === 0) {
           return taken;
         }
 
         yield* Effect.logInfo(
-          "A billing account's managed ads are paused: ads past the month's allowance are not recorded"
+          "A billing account's managed ads are paused: new ads past the month's allowance are not tracked"
         ).pipe(
           Effect.annotateLogs({
             accountId: account.id,
-            unrecorded: unrecorded.size,
+            untracked: untracked.size,
           })
         );
 
         const kept: S = {
           ...taken,
           insights: taken.insights.filter(
-            ({ adExternalId }) => !unrecorded.has(adExternalId)
+            ({ adExternalId }) => !untracked.has(adExternalId)
           ),
         };
 

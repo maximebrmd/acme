@@ -160,7 +160,8 @@
       "disconnecting": "Disconnecting…",
       "disconnectTitle": "Disconnect {name}?",
       "disconnectDescription": "What Peal read of this ad account is deleted. The records of its boosts stay, and what they committed this month still counts if the same account is connected again. Campaigns that run at the ad network are left as they are.",
-      "disconnected": "{name} is disconnected."
+      "disconnected": "{name} is disconnected.",
+      "untracked": "This month's managed ads are used: new ads of this account are not tracked until {date, date, long}. Ads already counted, and boosts made through Peal, keep updating. A payment method on the billing page lifts it."
     },
     "spending": {
       "title": "Spending through Peal",

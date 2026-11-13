@@ -239,8 +239,8 @@ export const mostUnits = (
   );
 };
 
-// Why a meter refuses, by standing.
-const reasons = {
+/** Why a meter refuses, by standing. */
+export const reasons = {
   free: "paymentMethodRequired",
   legacy: "planAllowance",
   pastDue: "paymentFailed",

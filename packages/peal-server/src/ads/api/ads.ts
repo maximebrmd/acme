@@ -37,6 +37,7 @@ import {
   reportView,
   spendDecisionOf,
   toAccountView,
+  toListedAccountView,
   toAdRowView,
   toAuditView,
   toBoostDetailView,
@@ -268,7 +269,9 @@ export const AdsHandlers = HttpApiBuilder.group(
               payload.externalIds
             )
           ),
-          Effect.map((accounts) => accounts.map(toAccountView)),
+          Effect.map((accounts) =>
+            accounts.map((account) => toAccountView(account))
+          ),
           Effect.catchTags({
             AdAccountNotFound: accountNotFound,
             AdConnectionNotFound: connectionNotFound,
@@ -333,8 +336,15 @@ export const AdsHandlers = HttpApiBuilder.group(
         ),
       listAccounts: () =>
         CurrentMember.pipe(
-          Effect.flatMap((member) => connections.accounts(actorOf(member))),
-          Effect.map((accounts) => accounts.map(toAccountView)),
+          Effect.flatMap((member) =>
+            Effect.all([
+              connections.accounts(actorOf(member)),
+              connections.untrackedUntil(actorOf(member)),
+            ])
+          ),
+          Effect.map(([accounts, until]) =>
+            accounts.map((account) => toListedAccountView(account, until))
+          ),
           Effect.catchTags({
             DatabaseError: Effect.die,
             MissingPermission: forbidden,

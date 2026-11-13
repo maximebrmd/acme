@@ -195,6 +195,13 @@ export const AdAccountSchema = Schema.Struct({
   monthlyCeiling: Schema.NullOr(AmountSchema),
   name: Schema.String,
   network: AdNetworkSchema,
+  // On a server that bills, where the billing account used the managed
+  // ads its month allows: until when new ads of the account are not
+  // tracked (their numbers are not read; ads already counted, and those
+  // of boosts made through Peal, keep updating), the first of next month
+  // UTC; null while they are. Given where the workspace's accounts are
+  // listed or connected; older servers leave it out.
+  newAdsUntrackedUntil: Schema.optionalKey(Schema.NullOr(Schema.DateTimeUtc)),
   // The account's own cap at its network; null without one.
   spendCap: Schema.NullOr(AmountSchema),
   // Whether an owner allowed it to spend through Peal.

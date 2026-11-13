@@ -6,7 +6,7 @@ import {
   askedRange,
   askOf,
   reportView,
-  toAccountView,
+  toListedAccountView,
   toBoostDetailView,
   toBoostView,
   toCampaignView,
@@ -247,7 +247,14 @@ export const AdsToolsLive = AdsTools.toLayer(
           const offered = yield* connections.status(who);
           const accounts = yield* connections.accounts(who);
 
-          return { ...offered, accounts: accounts.map(toAccountView) };
+          const until = yield* connections.untrackedUntil(who);
+
+          return {
+            ...offered,
+            accounts: accounts.map((account) =>
+              toListedAccountView(account, until)
+            ),
+          };
         }).pipe(
           Effect.catchTags({
             DatabaseError: Effect.die,

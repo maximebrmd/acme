@@ -160,7 +160,8 @@
       "disconnecting": "Déconnexion…",
       "disconnectTitle": "Déconnecter {name} ?",
       "disconnectDescription": "Ce que Peal a lu de ce compte publicitaire est supprimé. L’historique de ses mises en avant reste, et ce qu’elles ont engagé ce mois-ci compte encore si le même compte est reconnecté. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
-      "disconnected": "{name} est déconnecté."
+      "disconnected": "{name} est déconnecté.",
+      "untracked": "Les publicités gérées du mois sont épuisées : les nouvelles publicités de ce compte ne sont pas suivies avant le {date, date, long}. Celles déjà comptées, et les boosts faits avec Peal, continuent d’être mis à jour. Un moyen de paiement sur la page de facturation lève cette limite."
     },
     "spending": {
       "title": "Dépenses via Peal",

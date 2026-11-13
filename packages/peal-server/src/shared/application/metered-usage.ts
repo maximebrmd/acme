@@ -1,6 +1,7 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
+import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { Meter } from "#shared/domain/meter.ts";
 
@@ -36,6 +37,8 @@ export interface MeterState {
   readonly paymentMethod: boolean;
   /** `cents` for every `per` units past the allowance. */
   readonly price: { readonly cents: number; readonly per: number };
+  /** Why a claim past `allowed` is refused. */
+  readonly pastAllowed: AllowanceReason;
   /** Whether the owner confirmed the allowance and the price. */
   readonly priceConfirmed: boolean;
   readonly resetsAt: DateTime.Utc;
@@ -44,19 +47,18 @@ export interface MeterState {
 
 /**
  * The refusal a meter answers now, when it is paused: the billing account
- * has no payment method and used what its month allows; none otherwise.
- * For what spends a meter later (a boost, whose ad a sync counts), so it
- * is refused before anything is reserved.
+ * used what its month allows it (without a payment method, on a legacy
+ * plan, while a payment fails, or at a ceiling); none otherwise. For what
+ * spends a meter later (a boost, whose ad a sync counts), so it is
+ * refused before anything is reserved.
  */
 export const pausedOf = (state: MeterState): Option.Option<AllowanceReached> =>
-  !state.paymentMethod &&
-  Option.isSome(state.allowed) &&
-  state.used >= state.allowed.value
+  Option.isSome(state.allowed) && state.used >= state.allowed.value
     ? Option.some(
         new AllowanceReached({
           allowed: state.allowed.value,
           meter: state.meter,
-          reason: "paymentMethodRequired",
+          reason: state.pastAllowed,
           resetsAt: state.resetsAt,
           used: state.used,
         })
