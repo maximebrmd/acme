@@ -286,7 +286,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   the contract's rate card and never type a figure (`test/pricing.test.ts`):
   US dollars excluding tax, French pages also with France's VAT, still in
   dollars, and no exchange rate. A figure the rate card marks as awaiting a
-  decision shows as coming (`comingMeters`). The legal pages' plans
+  decision shows as coming (`comingMeters`). Both work out the rate
+  card's `pricingExamples`, a part month with `accountsCharge`, as the
+  invoice bills it. The legal pages' plans
   section follows it, pointing to the pricing page for figures.
 - Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal

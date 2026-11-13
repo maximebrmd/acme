@@ -9,7 +9,7 @@ Sur Peal Cloud, chaque espace de travail suit l’abonnement de son [compte de f
 
 ## Le tarif par compte [#pricing]
 
-Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif : chaque compte est facturé au prix de la tranche où il se trouve, par mois. Les montants sont en dollars américains, TTC avec la TVA française de {{vat-rate}} %, puis HT entre parenthèses.
+Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif, par mois : les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche. Les montants sont en dollars américains, TTC avec la TVA française de {{vat-rate}} %, puis HT entre parenthèses.
 
 | Comptes                                           | Par mois et par compte |
 | ------------------------------------------------- | ---------------------- |
@@ -18,17 +18,19 @@ Un compte de facturation paie les comptes de réseaux sociaux connectés dans to
 | {{accounts-band-3-from}} à {{accounts-band-3-to}} | {{accounts-band-3-fr}} |
 | {{accounts-band-4-from}} et au-delà               | {{accounts-band-4-fr}} |
 
-Un compte est compté au jour : chaque jour où il est connecté coûte 1/{{days-per-month}} de son prix mensuel, pour {{days-per-month}} jours par mois au plus, et un jour compte le plus grand nombre de comptes connectés en même temps ce jour-là (UTC), sur tout le compte de facturation. Un canal désactivé ou à reconnecter compte toujours ; un compte publicitaire ne compte pas. Le premier de chaque mois, la facture porte sur le mois écoulé. Avec chaque compte connecté tout le mois :
+Les comptes sont comptés au jour. Chaque jour UTC du mois compte le plus grand nombre de comptes connectés en même temps ce jour-là, sur tout le compte de facturation, pour les jours 1 à {{days-per-month}} seulement (le jour {{day-not-counted}} n’est jamais compté). À la fin du mois, les jours-comptes sont additionnés et divisés par {{days-per-month}}, et ce nombre de comptes, qui peut comporter une fraction, passe au barème : les {{free-account-days}} premiers jours-comptes sont gratuits. Un compte que vous déconnectez cesse de compter dès le lendemain, et rien d’autre n’est facturé pour les comptes : aucuns frais. Un canal désactivé ou à reconnecter compte toujours ; un compte publicitaire ne compte pas. Le premier de chaque mois, la facture porte sur le mois écoulé. Avec chaque compte connecté tout le mois :
 
-| Comptes | Par mois             |
-| ------- | -------------------- |
-| 2       | {{accounts-2-fr}}    |
-| 5       | {{accounts-5-fr}}    |
-| 10      | {{accounts-10-fr}}   |
-| 20      | {{accounts-20-fr}}   |
-| 50      | {{accounts-50-fr}}   |
-| 100     | {{accounts-100-fr}}  |
-| 1 000   | {{accounts-1000-fr}} |
+| Comptes                    | Par mois             |
+| -------------------------- | -------------------- |
+| {{accounts-2-count-fr}}    | {{accounts-2-fr}}    |
+| {{accounts-5-count-fr}}    | {{accounts-5-fr}}    |
+| {{accounts-10-count-fr}}   | {{accounts-10-fr}}   |
+| {{accounts-20-count-fr}}   | {{accounts-20-fr}}   |
+| {{accounts-50-count-fr}}   | {{accounts-50-fr}}   |
+| {{accounts-100-count-fr}}  | {{accounts-100-fr}}  |
+| {{accounts-1000-count-fr}} | {{accounts-1000-fr}} |
+
+Un mois incomplet : {{part-month-all-fr}} comptes connectés tout le mois, plus {{part-month-extras-fr}}, font {{part-month-days-fr}} jours-comptes. Divisés par {{days-per-month}}, cela fait {{part-month-units-fr}} comptes passés au barème : {{part-month-fr}} pour le mois.
 
 Les prix sont fixés en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays ; une entreprise d’un autre pays de l’UE avec un numéro de TVA valide n’en paie pas, car elle est autoliquidée. Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains. Les factures sont en dollars américains.
 
@@ -38,14 +40,14 @@ La page **Facturation** de l’espace de travail indique son abonnement et ce qu
 
 Ce qui coûte à Peal à l’usage a un compteur, avec une franchise mensuelle par compte de facturation pour tous ses espaces de travail, à partir du premier de chaque mois civil (UTC).
 
-| Compteur                                                                                     | Inclus chaque mois        | Au-delà de la franchise                                  |
-| -------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------------- |
-| Messages envoyés depuis la [boîte de réception](/inbox), réponses aux commentaires comprises | {{messages-allowance-fr}} | {{messages-price-fr}} par tranche de {{messages-per-fr}} |
-| [Publicités gérées](/ads), chaque publicité active dans le mois                              | {{ads-allowance-fr}}      | {{ads-price-fr}} par publicité                           |
-| Les demandes et les images de l’assistant d’écriture, sur les modèles de l’instance          | bientôt                   | bientôt                                                  |
-| L’API de X, aux tarifs publiés par X sans rien ajouter                                       | bientôt                   | bientôt                                                  |
+| Compteur                                                                                     | Inclus chaque mois        | Au-delà de la franchise                                            |
+| -------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------ |
+| Messages envoyés depuis la [boîte de réception](/inbox), réponses aux commentaires comprises | {{messages-allowance-fr}} | {{messages-price-fr}} pour {{messages-per-fr}}, facturé au message |
+| [Publicités gérées](/ads), chaque publicité active dans le mois                              | {{ads-allowance-fr}}      | {{ads-price-fr}} par publicité                                     |
+| Les demandes et les images de l’assistant de rédaction, sur les modèles de l’instance        | bientôt                   | bientôt                                                            |
+| L’API de X, aux tarifs publiés par X sans rien ajouter                                       | bientôt                   | bientôt                                                            |
 
-Sans moyen de paiement, un compteur s’arrête à sa franchise jusqu’au premier du mois suivant, tandis que la lecture, les statistiques et la publication continuent. Avec un moyen de paiement, chaque unité au-delà de la franchise est facturée sur la facture du mois. L’assistant d’écriture sur les modèles de l’instance demande un moyen de paiement ; tant que sa franchise mensuelle et ses prix ne sont pas fixés, il garde la franchise quotidienne décrite sous [Ce qu’un abonnement limite](#limits). Les fournisseurs d’[images](/settings#image-provider) et de [texte](/settings#text-provider) propres à un espace de travail ne coûtent rien, quel que soit l’abonnement.
+Sans moyen de paiement, un compteur s’arrête à sa franchise jusqu’au premier du mois suivant, tandis que la lecture, les statistiques et la publication continuent. Avec un moyen de paiement, chaque unité au-delà de la franchise est facturée sur la facture du mois. L’assistant de rédaction sur les modèles de l’instance demande un moyen de paiement ; tant que sa franchise mensuelle et ses prix ne sont pas fixés, il garde la franchise quotidienne décrite sous [Ce qu’un abonnement limite](#limits). Les fournisseurs d’[images](/settings#image-provider) et de [texte](/settings#text-provider) propres à un espace de travail ne coûtent rien, quel que soit l’abonnement.
 
 ## Un moyen de paiement [#payment-method]
 
@@ -75,7 +77,7 @@ Un espace de travail ne dépasse jamais son abonnement : chaque limite est véri
 - **Canaux** : sur l’offre gratuite, connecter un compte au-delà des {{free-accounts}} premiers du compte de facturation est refusé, et avec un moyen de paiement rien ne l’est. Un compte Instagram est un seul canal, quelle que soit la façon dont il est connecté : le passer d’une Page Facebook à Instagram, ou l’inverse, n’en ajoute aucun, même quand l’abonnement est plein.
 - **Membres**, invitations en attente comprises, à l’invitation puis à nouveau quand une invitation est acceptée, sur les seuls abonnements par paliers de canaux qui les limitent.
 - **Publications** qui partent dans un mois civil (UTC), sur les seuls abonnements par paliers de canaux qui les limitent. Vérifiées à nouveau à l’heure de chaque publication.
-- **Demandes à l’assistant de rédaction** par jour UTC, pour chaque espace de travail : aucune sur les modèles de Peal sans moyen de paiement, et un quota quotidien avec. Une image que crée le modèle de l’instance en coûte 5 ([Générer une image](/media#generate)). Une image du [fournisseur d’images](/settings#image-provider) propre à l’espace de travail, et une suggestion de son propre [fournisseur de texte](/settings#text-provider), n’en coûtent aucune, quel que soit l’abonnement : elles sont hors de cette limite, et ne sont pas comptées dans l’usage que montre la page de facturation.
+- **Demandes à l’assistant de rédaction** par jour UTC, sur tout le compte de facturation : aucune sur les modèles de Peal sans moyen de paiement, et un quota quotidien avec. Une image que crée le modèle de l’instance en coûte 5 ([Générer une image](/media#generate)). Une image du [fournisseur d’images](/settings#image-provider) propre à l’espace de travail, et une suggestion de son propre [fournisseur de texte](/settings#text-provider), n’en coûtent aucune, quel que soit l’abonnement : elles sont hors de cette limite, et ne sont pas comptées dans l’usage que montre la page de facturation.
 - **Médias** : les octets d’images et de vidéos stockés, envois en cours compris. Un envoi pour lequel l’abonnement n’a pas de place est refusé avant que rien ne parte ; supprimez des médias pour en faire. La place donnée à un envoi lui est gardée six heures : terminé plus tard, il lui en faut à nouveau.
 
 Dans l’application web, un refus ouvre une fenêtre qui dit quelle limite est atteinte, avec ce que l’espace de travail possède et son abonnement, et propose le tarif par compte, avec ce que coûte le compte suivant. Les propriétaires et les administrateurs ajoutent là un moyen de paiement, par carte, comme depuis la page Facturation ([Commander](#ordering)), et reviennent à ce qu’ils faisaient ; les autres membres lisent qui peut le faire.

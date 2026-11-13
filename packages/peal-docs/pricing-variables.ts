@@ -5,8 +5,11 @@ import {
 } from "peal-contract/billing-plans";
 import type { LegacyPlan, PlanLimit } from "peal-contract/billing-plans";
 import {
+  accountsCharge,
   accountsMonthly,
   freeAccountsOf,
+  partMonthAccountDays,
+  pricingExamples,
   rateCard,
 } from "peal-contract/rate-card";
 
@@ -115,17 +118,57 @@ const amount = (locale: Locale, cents: number): string => {
 };
 
 const free: Readonly<Record<Locale, string>> = {
-  en: "free",
-  fr: "gratuit",
+  en: "Free",
+  fr: "Gratuit",
 };
 
-/** The accounts the billing page prices a month for. */
-const exampleAccounts: readonly number[] = [2, 5, 10, 20, 50, 100, 1000];
+const extra: Readonly<Record<Locale, (days: string) => string>> = {
+  en: (days) => `one for ${days}`,
+  fr: (days) => `un pendant ${days}`,
+};
+
+// The part month the billing page works out, as `accountsCharge` bills
+// it: its account-days, the accounts they make through the ladder, and
+// what the month costs.
+const partMonthVariables = (locale: Locale): [string, string][] => {
+  const accountDays = partMonthAccountDays(rateCard);
+
+  const days = (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit: "day",
+      unitDisplay: "long",
+    }).format(value);
+
+  return [
+    [
+      `part-month-all-${locale}`,
+      count(locale, pricingExamples.partMonth.allMonth),
+    ],
+    [
+      `part-month-extras-${locale}`,
+      new Intl.ListFormat(locale, { type: "conjunction" }).format(
+        pricingExamples.partMonth.forDays.map((each) =>
+          extra[locale](days(each))
+        )
+      ),
+    ],
+    [`part-month-days-${locale}`, count(locale, accountDays)],
+    [
+      `part-month-units-${locale}`,
+      new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(
+        accountDays / rateCard.daysPerMonth
+      ),
+    ],
+    [`part-month-${locale}`, amount(locale, accountsCharge(accountDays))],
+  ];
+};
 
 // Per-account pricing's figures, from the rate card: each band of the
 // ladder (`accounts-band-2-en`, from `accounts-band-2-from` to
 // `accounts-band-2-to`), what a month costs with some accounts connected
-// all month (`accounts-10-en`), the meters' allowances and prices, and the
+// all month (`accounts-10-en`, labelled `accounts-10-count-en`), a part
+// month (`part-month-en`), the meters' allowances and prices, and the
 // media each billing account stores.
 const rateCardVariables = (locale: Locale): [string, string][] => {
   const { bands } = rateCard.prices.usd.accounts;
@@ -137,10 +180,18 @@ const rateCardVariables = (locale: Locale): [string, string][] => {
       `accounts-band-${index + 1}-${locale}`,
       monthly === 0 ? free[locale] : amount(locale, monthly),
     ]),
-    ...exampleAccounts.map((accounts): [string, string] => [
-      `accounts-${accounts}-${locale}`,
-      amount(locale, accountsMonthly(accounts)),
-    ]),
+    ...pricingExamples.fullMonths.flatMap((accounts): [string, string][] => {
+      const cents = accountsMonthly(accounts);
+
+      return [
+        [`accounts-${accounts}-count-${locale}`, count(locale, accounts)],
+        [
+          `accounts-${accounts}-${locale}`,
+          cents === 0 ? free[locale] : amount(locale, cents),
+        ],
+      ];
+    }),
+    ...partMonthVariables(locale),
     [
       `messages-allowance-${locale}`,
       count(locale, meters.outboundMessages.allowanceWithout),
@@ -186,6 +237,11 @@ export const pricingVariables: Readonly<Record<string, string>> =
     ...locales.flatMap(rateCardVariables),
     ...bandVariables(),
     ["days-per-month", String(rateCard.daysPerMonth)],
+    ["day-not-counted", String(rateCard.daysPerMonth + 1)],
+    [
+      "free-account-days",
+      String(freeAccountsOf(rateCard) * rateCard.daysPerMonth),
+    ],
     ["free-accounts", String(freeAccountsOf(rateCard))],
     ["vat-rate", String(displayVatRate)],
   ]);
