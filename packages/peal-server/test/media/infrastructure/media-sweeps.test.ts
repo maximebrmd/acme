@@ -69,12 +69,16 @@ const run = randomUUID();
 
 // The store as the sweeps see it, under this run's prefix, and a sibling
 // prefix, as another instance sharing the bucket would have.
+// Read with the suite's store settings wherever it runs, in a layer or in
+// a test, so the sweeps and the test's own reads name one prefix whatever
+// the environment sets.
 const settingsOf = (folder: string) =>
   S3StorageConfig.pipe(
     Effect.map((base) => ({
       ...base,
       keyPrefix: `${base.keyPrefix}sweeps/${folder}/`,
     })),
+    Effect.provide(storageSettings),
     Effect.orDie
   );
 
