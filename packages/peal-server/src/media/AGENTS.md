@@ -130,13 +130,21 @@
   after an erasure commits never keeps its files. Ages must be finite and
   at least the part URLs' six hours and an hour (`minimumSweepAge`).
 - The pending and orphan sweeps delete what this database does not know
-  of, so they run only while `<prefix>media/.owner` names this database's
-  id (`media.store_identity`, made once, kept through restores): the first
-  run writes it create-only; another id (`foreign`) or none once claimed
-  (`unmarked`) stops them. Never replace the marker but through
-  `claimMediaFolder` (`bun src/claim-media-folder.ts`, `nx run
-  peal-server:media:claim`), an operator's act. A restore keeps the id:
-  the restore runbook turns the sweeps off until the restore is final.
+  of, so they run only while `<prefix>media/.owner` (JSON: `id`, `epoch`,
+  `system`, `timeline`) agrees with this database: its id
+  (`media.store_identity`, made once, kept through restores), its Postgres
+  cluster (`pg_control_system()`'s system identifier,
+  `pg_control_checkpoint()`'s timeline: `restored` otherwise, as after any
+  pgBackRest restore, a failover, `pg_upgrade` or a dump loaded), and an
+  epoch no greater than the database's (`rewound` otherwise). Each owned
+  run commits `epoch + 1`, then writes the marker with `If-Match` on the
+  version it read, and reads it back (`contended` if it changed). The
+  first run writes it create-only; another id (`foreign`) or none once
+  claimed (`unmarked`) stops them too. The pending sweep also stops on
+  more than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` expired uploads at once.
+  Never replace the marker but through `claimMediaFolder`
+  (`bun src/claim-media-folder.ts`, which prints what it would write and
+  writes only with `--yes`), an operator's act.
 - Listing sweeps keep where they stopped (`media.sweep_cursors`, keys
   relative to the prefix). `MediaBucket` lists `<prefix>media/` only and
   hands out only what `mediaKeyOf` reads as a key Peal writes: never widen

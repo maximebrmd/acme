@@ -27,6 +27,14 @@ export interface StoreIdentity {
   readonly id: string;
   /** Whether this database has ever claimed the folder. */
   readonly claimed: boolean;
+  /** The deleting sweeps' runs this database owned the folder for. */
+  readonly epoch: number;
+}
+
+/** The Postgres cluster the database runs on, as `pg_control_*` say. */
+export interface DatabaseCluster {
+  readonly system: string;
+  readonly timeline: number;
 }
 
 /** The sweeps that list the bucket over several runs. */
@@ -103,6 +111,10 @@ export class MediaSweepStore extends Context.Service<
     ) => Effect.Effect<StoreIdentity, DatabaseError>;
     /** Notes that this database claimed the media folder. */
     readonly markClaimed: Effect.Effect<void, DatabaseError>;
+    /** Counts one more owned run, committed, and answers the new epoch. */
+    readonly advanceEpoch: Effect.Effect<number, DatabaseError>;
+    /** The Postgres cluster this database runs on now. */
+    readonly cluster: Effect.Effect<DatabaseCluster, DatabaseError>;
     /** Forgets the folder once the store holds nothing of it. */
     readonly forgetFolder: (
       workspaceId: WorkspaceId

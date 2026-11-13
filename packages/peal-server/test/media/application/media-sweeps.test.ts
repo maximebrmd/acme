@@ -15,16 +15,27 @@ import {
 } from "effect";
 import { TestClock } from "effect/testing";
 
+import { claimMediaFolder } from "#media/application/claim-media-folder.ts";
 import { MediaInUse } from "#media/application/media-in-use.ts";
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MediaSweeps } from "#media/application/media-sweeps.ts";
-import type { SweepReport } from "#media/application/media-sweeps.ts";
+import type {
+  SweepRefusal,
+  SweepReport,
+} from "#media/application/media-sweeps.ts";
 import { MediaBucket } from "#media/application/ports/media-bucket.ts";
-import type { BucketFile } from "#media/application/ports/media-bucket.ts";
+import type {
+  BucketFile,
+  MarkerRead,
+  OwnerMarker,
+} from "#media/application/ports/media-bucket.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaSweepStore } from "#media/application/ports/media-sweep-store.ts";
-import type { SweepCursor } from "#media/application/ports/media-sweep-store.ts";
+import type {
+  DatabaseCluster,
+  SweepCursor,
+} from "#media/application/ports/media-sweep-store.ts";
 import { MediaUsage } from "#media/application/ports/media-usage.ts";
 import {
   CurrentSweepPolicy,
@@ -78,8 +89,11 @@ interface Setup {
   /** Keys the store refuses to delete. */
   readonly refused: ReadonlySet<string>;
   /** The owner marker, and whether this database claimed the folder. */
-  readonly marker: Option.Option<string>;
+  readonly marker: Option.Option<OwnerMarker>;
   readonly claimed: boolean;
+  /** This database's epoch, and the cluster it runs on. */
+  readonly epoch: number;
+  readonly cluster: DatabaseCluster;
   /** Uploads never completed, and which of them a scheduled post shows. */
   readonly expired: readonly BucketFile[];
   readonly scheduled: ReadonlySet<string>;
@@ -91,14 +105,24 @@ interface Setup {
   readonly stuck: ReadonlySet<string>;
 }
 
+const cluster: DatabaseCluster = { system: "7300000000000000001", timeline: 1 };
+
+const ownMarker = (epoch: number): OwnerMarker => ({
+  ...cluster,
+  epoch,
+  id: selfId,
+});
+
 const blank: Setup = {
   claimed: true,
+  cluster,
+  epoch: 3,
   erased: [],
   expired: [],
   files: [],
   held: new Set(),
   heldLate: Option.none(),
-  marker: Option.some(selfId),
+  marker: Option.some(ownMarker(3)),
   pageSize: 1,
   refused: new Set(),
   scheduled: new Set(),
@@ -112,7 +136,8 @@ class World extends Context.Service<
   {
     readonly cursor: Ref.Ref<Option.Option<SweepCursor>>;
     readonly events: Ref.Ref<readonly string[]>;
-    readonly marker: Ref.Ref<Option.Option<string>>;
+    readonly epoch: Ref.Ref<number>;
+    readonly marker: Ref.Ref<Option.Option<OwnerMarker>>;
   }
 >()("test/media/sweeps/World") {}
 
@@ -131,19 +156,23 @@ const fakesWith = (setup: Setup) =>
       const events = yield* Ref.make<readonly string[]>([]);
       const marker = yield* Ref.make(setup.marker);
       const claimed = yield* Ref.make(setup.claimed);
+      const epoch = yield* Ref.make(setup.epoch);
+      // The marker's version, which each write moves on.
+      const version = yield* Ref.make(0);
       const checked = new Map<string, number>();
 
       const log = (event: string) =>
         Ref.update(events, (all) => [...all, event]);
 
       const bucket = MediaBucket.of({
-        claim: (id, { replace }) =>
+        claim: (body) =>
           Ref.get(marker).pipe(
             Effect.flatMap((found) =>
-              Option.isSome(found) && !replace
+              Option.isSome(found)
                 ? Effect.succeed(false)
-                : Ref.set(marker, Option.some(id)).pipe(
-                    Effect.andThen(log(`claim:${id}`)),
+                : Ref.set(marker, Option.some(body)).pipe(
+                    Effect.andThen(Ref.update(version, (at) => at + 1)),
+                    Effect.andThen(log(`claim:${body.epoch}`)),
                     Effect.as(true)
                   )
             )
@@ -169,7 +198,28 @@ const fakesWith = (setup: Setup) =>
             };
           }),
         listUploads: unused,
-        owner: Ref.get(marker),
+        owner: Effect.all([Ref.get(marker), Ref.get(version)]).pipe(
+          Effect.map(([found, at]) =>
+            found.pipe(
+              Option.map((body): MarkerRead => ({
+                marker: Option.some(body),
+                version: Option.some(String(at)),
+              }))
+            )
+          )
+        ),
+        replace: (body, expected) =>
+          Ref.get(version).pipe(
+            Effect.flatMap((at) =>
+              Option.isSome(expected) && expected.value !== String(at)
+                ? Effect.succeed(false)
+                : Ref.set(marker, Option.some(body)).pipe(
+                    Effect.andThen(Ref.set(version, at + 1)),
+                    Effect.andThen(log(`marker:${body.epoch}`)),
+                    Effect.as(true)
+                  )
+            )
+          ),
       });
 
       const store = MediaSweepStore.of({
@@ -196,9 +246,11 @@ const fakesWith = (setup: Setup) =>
           log(`forget:${assetId}`).pipe(Effect.as(true)),
         forgetFolder: (id) => log(`forget-folder:${id}`),
         holdsAssets: (id) => Effect.succeed(setup.withAssets.has(id)),
+        advanceEpoch: Ref.updateAndGet(epoch, (at) => at + 1),
+        cluster: Effect.succeed(setup.cluster),
         identity: () =>
-          Ref.get(claimed).pipe(
-            Effect.map((was) => ({ claimed: was, id: selfId }))
+          Effect.all([Ref.get(claimed), Ref.get(epoch)]).pipe(
+            Effect.map(([was, at]) => ({ claimed: was, epoch: at, id: selfId }))
           ),
         keptKeys: (keys) =>
           Effect.sync(() => {
@@ -275,7 +327,7 @@ const fakesWith = (setup: Setup) =>
         Context.add(MediaFolders, folders),
         Context.add(MediaUsage, usage),
         Context.add(Ids, ids),
-        Context.add(World, World.of({ cursor, events, marker }))
+        Context.add(World, World.of({ cursor, epoch, events, marker }))
       );
     })
   );
@@ -304,7 +356,12 @@ const report = (done: Partial<SweepReport>): SweepReport => ({
   ...done,
 });
 
-const eventsOf = World.use(({ events }) => Ref.get(events));
+// What the sweep deleted and changed, the marker's moves aside.
+const eventsOf = World.use(({ events }) => Ref.get(events)).pipe(
+  Effect.map((all) => all.filter((event) => !event.startsWith("marker:")))
+);
+
+const markerOf = World.use(({ marker }) => Ref.get(marker));
 
 const filesUpTo = (count: number) =>
   Array.from({ length: count }, (_, index) => fileAt(index));
@@ -428,8 +485,8 @@ layer(
         (yield* MediaSweeps.use((sweeps) => sweeps.orphans)).swept,
         2
       );
-      assert.deepStrictEqual(yield* Ref.get(marker), Option.some(selfId));
-      assert.deepStrictEqual((yield* eventsOf)[0], `claim:${selfId}`);
+      assert.deepStrictEqual(yield* Ref.get(marker), Option.some(ownMarker(4)));
+      assert.deepStrictEqual((yield* eventsOf)[0], "claim:4");
     })
   );
 });
@@ -438,7 +495,7 @@ layer(
   sweepsWith({
     expired: filesUpTo(1),
     files: filesUpTo(2),
-    marker: Option.some(otherId),
+    marker: Option.some({ ...ownMarker(3), id: otherId }),
   })
 )("the sweeps, on a media folder another database owns", (it) => {
   it.effect("refuse to delete, and never write the marker", () =>
@@ -456,7 +513,10 @@ layer(
         report({ refused: Option.some("foreign") })
       );
       assert.deepStrictEqual(yield* eventsOf, []);
-      assert.deepStrictEqual(yield* Ref.get(marker), Option.some(otherId));
+      assert.deepStrictEqual(
+        yield* Ref.get(marker),
+        Option.some({ ...ownMarker(3), id: otherId })
+      );
     })
   );
 });
@@ -492,11 +552,14 @@ const OffTest = MediaSweeps.layer.pipe(
           listFiles: unused,
           listUploads: unused,
           owner: Effect.die("not used when off"),
+          replace: unused,
         })
       ),
       Layer.succeed(
         MediaSweepStore,
         MediaSweepStore.of({
+          advanceEpoch: Effect.die("not used when off"),
+          cluster: Effect.die("not used when off"),
           cursor: unused,
           erasedFolders: unused,
           expiredUploads: unused,
@@ -615,3 +678,123 @@ layer(
       })
   );
 });
+
+// The marker's three checks, for the two sweeps that trust the database.
+const refusals: readonly (readonly [string, Partial<Setup>, SweepRefusal])[] = [
+  [
+    "a database rewound past runs it once owned",
+    { epoch: 3, marker: Option.some(ownMarker(5)) },
+    "rewound",
+  ],
+  [
+    "a database restored onto a new timeline",
+    { cluster: { ...cluster, timeline: 2 } },
+    "restored",
+  ],
+  [
+    "a clone of the database, on another Postgres cluster",
+    { cluster: { ...cluster, system: "7300000000000000002" } },
+    "restored",
+  ],
+];
+
+for (const [name, setup, reason] of refusals) {
+  layer(sweepsWith({ ...setup, expired: filesUpTo(1), files: filesUpTo(2) }))(
+    `the sweeps, on ${name}`,
+    (it) => {
+      it.effect("delete nothing, and leave the marker as it is", () =>
+        Effect.gen(function* refuses() {
+          const before = yield* markerOf;
+
+          yield* twoDaysOn;
+
+          for (const sweep of ["orphans", "pending"] as const) {
+            assert.deepStrictEqual(
+              yield* MediaSweeps.use((sweeps) => sweeps[sweep]),
+              report({ refused: Option.some(reason) })
+            );
+          }
+
+          assert.deepStrictEqual(yield* eventsOf, []);
+          assert.deepStrictEqual(yield* markerOf, before);
+        })
+      );
+    }
+  );
+}
+
+layer(sweepsWith({ epoch: 4, files: filesUpTo(1) }))(
+  "the sweeps, on a database one run ahead of its marker",
+  (it) => {
+    it.effect("delete, and move the marker on with the database", () =>
+      Effect.gen(function* ahead() {
+        const { epoch } = yield* World;
+
+        yield* twoDaysOn;
+
+        assert.strictEqual(
+          (yield* MediaSweeps.use((sweeps) => sweeps.orphans)).swept,
+          1
+        );
+        assert.strictEqual(yield* Ref.get(epoch), 5);
+        assert.deepStrictEqual(yield* markerOf, Option.some(ownMarker(5)));
+
+        // Each owned run moves both on.
+        yield* MediaSweeps.use((sweeps) => sweeps.pending);
+
+        assert.deepStrictEqual(yield* markerOf, Option.some(ownMarker(6)));
+      })
+    );
+  }
+);
+
+layer(
+  sweepsWith(
+    { cluster: { ...cluster, timeline: 2 }, expired: filesUpTo(1) },
+    {}
+  )
+)("the claim of a media folder", (it) => {
+  it.effect(
+    "writes this database's id, cluster, timeline and next epoch, and the sweeps run again",
+    () =>
+      Effect.gen(function* claims() {
+        yield* twoDaysOn;
+
+        assert.deepStrictEqual(
+          (yield* MediaSweeps.use((sweeps) => sweeps.pending)).refused,
+          Option.some("restored")
+        );
+
+        const written = yield* claimMediaFolder;
+
+        assert.deepStrictEqual(written, {
+          epoch: 4,
+          id: selfId,
+          system: cluster.system,
+          timeline: 2,
+        });
+        assert.deepStrictEqual(yield* markerOf, Option.some(written));
+        assert.deepStrictEqual(
+          yield* MediaSweeps.use((sweeps) => sweeps.pending),
+          report({ bytes: 10, swept: 1 })
+        );
+      })
+  );
+});
+
+layer(sweepsWith({ expired: filesUpTo(4) }, { pendingLimit: 3 }))(
+  "the sweep of uploads never completed, past its count",
+  (it) => {
+    it.effect("deletes none when a run finds more than its limit", () =>
+      Effect.gen(function* tripped() {
+        yield* twoDaysOn;
+
+        assert.deepStrictEqual(
+          yield* MediaSweeps.use((sweeps) => sweeps.pending),
+          report({ left: true, refused: Option.some("breaker") })
+        );
+        assert.deepStrictEqual(yield* eventsOf, []);
+      })
+    );
+  }
+);

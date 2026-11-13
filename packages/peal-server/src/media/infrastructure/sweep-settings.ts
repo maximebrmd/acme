@@ -16,6 +16,7 @@ import { isProduction } from "#shared/infrastructure/environment.ts";
 // | ------------------------------ | --------------------------------------------- |
 // | PEAL_MEDIA_SWEEPS              | on or off: on in production, off elsewhere    |
 // | PEAL_MEDIA_SWEEP_ORPHANS_LIMIT | orphans a page may hold before the sweep stops |
+// | PEAL_MEDIA_SWEEP_PENDING_LIMIT | uploads never completed a run may find, at most |
 // | PEAL_MEDIA_SWEEP_PENDING_AFTER | an upload never completed goes after this     |
 // | PEAL_MEDIA_SWEEP_UPLOADS_AFTER | a multipart upload left open goes after this  |
 // | PEAL_MEDIA_SWEEP_ORPHANS_AFTER | a file no asset holds goes once this old      |
@@ -45,6 +46,10 @@ export const sweepPolicyConfig: Config.Config<SweepPolicy> = Config.all({
     ),
     Config.map((switched) => switched === "on")
   ),
+  pendingLimit: Config.schema(
+    Schema.Int.check(Schema.isBetween({ maximum: maxSweepBatch, minimum: 1 })),
+    "PEAL_MEDIA_SWEEP_PENDING_LIMIT"
+  ).pipe(Config.withDefault(defaultSweepPolicy.pendingLimit)),
   orphansLimit: Config.schema(
     Schema.Int.check(Schema.isBetween({ maximum: maxSweepBatch, minimum: 1 })),
     "PEAL_MEDIA_SWEEP_ORPHANS_LIMIT"

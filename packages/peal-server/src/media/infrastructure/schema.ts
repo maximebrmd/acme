@@ -131,15 +131,19 @@ export const erasedFolders = media.table(
   (table) => [index("erased_folders_erased_at_index").on(table.erasedAt)]
 );
 
-// This database's own id, written once and kept through restores: the
-// media folder's owner marker (`<prefix>media/.owner`) names it, and the
-// sweeps that delete what this database does not know of run only while
-// it does. `claimed_at` is when this database first wrote or found it.
+// This database's own id, written once and kept through restores, and its
+// sweep epoch: the media folder's owner marker (`<prefix>media/.owner`)
+// names both, with the Postgres cluster and timeline, and the sweeps that
+// delete what this database does not know of run only while they agree.
+// `claimed_at` is when this database first wrote or found it.
 export const storeIdentity = media.table(
   "store_identity",
   {
     claimedAt: instant("claimed_at"),
     createdAt: instant("created_at").notNull(),
+    // The deleting sweeps' runs this database owned the folder for, which
+    // the marker repeats: a marker ahead of it is a database rewound.
+    epoch: bigint("epoch", { mode: "number" }).notNull().default(0),
     id: uuid("id").notNull(),
     // One row: the column's only value.
     singleton: boolean("singleton").primaryKey().default(true),

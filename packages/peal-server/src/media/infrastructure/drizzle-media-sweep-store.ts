@@ -1,8 +1,10 @@
 import { and, asc, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { MediaSweepStore } from "#media/application/ports/media-sweep-store.ts";
 import type {
+  DatabaseCluster,
   ExpiredPosition,
   ExpiredUpload,
   ListingSweep,
@@ -44,6 +46,12 @@ const decodeWorkspaceIds = Schema.decodeUnknownEffect(
   Schema.Array(WorkspaceIdSchema)
 );
 
+const decodeCluster = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({ system: Schema.NonEmptyString, timeline: Schema.Int })
+  )
+);
+
 const decodeKeys = Schema.decodeUnknownEffect(Schema.Array(StorageKeySchema));
 
 // Kept as a part size and an upload id are, checked as they decode.
@@ -63,6 +71,7 @@ export const DrizzleMediaSweepStore = Layer.effect(
   MediaSweepStore,
   Effect.gen(function* DrizzleMediaSweepStore() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     const expiredUploads = Effect.fn("MediaSweepStore.expiredUploads")(
       function* expiredUploads(
@@ -262,6 +271,7 @@ export const DrizzleMediaSweepStore = Layer.effect(
 
       const found: StoreIdentity = {
         claimed: row.claimedAt !== null,
+        epoch: row.epoch,
         id: row.id,
       };
 
@@ -276,6 +286,38 @@ export const DrizzleMediaSweepStore = Layer.effect(
         .pipe(Effect.mapError(failed));
     }).pipe(Effect.withSpan("MediaSweepStore.markClaimed"));
 
+    const advanceEpoch = Effect.gen(function* advanceEpoch() {
+      const [row] = yield* db
+        .update(storeIdentity)
+        .set({ epoch: sql`${storeIdentity.epoch} + 1` })
+        .returning({ epoch: storeIdentity.epoch })
+        .pipe(Effect.mapError(failed));
+
+      if (row === undefined) {
+        return yield* new DatabaseError({ cause: "No store identity" });
+      }
+
+      return row.epoch;
+    }).pipe(Effect.withSpan("MediaSweepStore.advanceEpoch"));
+
+    // Any role may read them: no privilege needed.
+    const cluster = Effect.gen(function* cluster() {
+      const rows =
+        yield* client`SELECT (SELECT system_identifier::text FROM pg_control_system()) AS system, (SELECT timeline_id FROM pg_control_checkpoint()) AS timeline`.pipe(
+          Effect.mapError(failed)
+        );
+
+      const [found] = yield* decodeCluster(rows).pipe(Effect.mapError(failed));
+
+      if (found === undefined) {
+        return yield* new DatabaseError({ cause: "No control data" });
+      }
+
+      const read: DatabaseCluster = found;
+
+      return read;
+    }).pipe(Effect.withSpan("MediaSweepStore.cluster"));
+
     const forgetFolder = Effect.fn("MediaSweepStore.forgetFolder")(
       function* forgetFolder(workspaceId: WorkspaceId) {
         yield* db
@@ -286,6 +328,8 @@ export const DrizzleMediaSweepStore = Layer.effect(
     );
 
     return MediaSweepStore.of({
+      advanceEpoch,
+      cluster,
       cursor,
       erasedFolders: erased,
       expiredUploads,

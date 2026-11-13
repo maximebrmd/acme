@@ -14,14 +14,20 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { MediaStorageFailed } from "./media-storage-failed.ts";
 import { MediaBucket } from "./ports/media-bucket.ts";
-import type { BucketFile, BucketPage } from "./ports/media-bucket.ts";
+import type {
+  BucketFile,
+  BucketPage,
+  MarkerRead,
+} from "./ports/media-bucket.ts";
 import { MediaFolders } from "./ports/media-folders.ts";
 import { MediaStorage } from "./ports/media-storage.ts";
 import { MediaSweepStore } from "./ports/media-sweep-store.ts";
 import type {
+  DatabaseCluster,
   ExpiredPosition,
   ExpiredUpload,
   ListingSweep,
+  StoreIdentity,
   SweepCursor,
 } from "./ports/media-sweep-store.ts";
 import { MediaUsage } from "./ports/media-usage.ts";
@@ -40,7 +46,15 @@ export type SweepRefusal =
   | "foreign"
   // This database claimed the folder, and its marker is gone.
   | "unmarked"
-  // A page held more orphans than a sound database leaves.
+  // The marker names this database on another Postgres cluster or
+  // timeline: restored from a backup, cloned, promoted or upgraded.
+  | "restored"
+  // The marker counts more owned runs than this database: rewound.
+  | "rewound"
+  // The marker changed while this run moved it on: left to the next.
+  | "contended"
+  // A page held more orphans, or a run more uploads never completed,
+  // than a sound database leaves.
   | "breaker";
 
 /** What one run of a sweep did. */
@@ -206,6 +220,7 @@ export class MediaSweeps extends Context.Service<
         orphansAfter,
         orphansLimit,
         pendingAfter,
+        pendingLimit,
         uploadsAfter,
       } = yield* CurrentSweepPolicy;
 
@@ -236,23 +251,61 @@ export class MediaSweeps extends Context.Service<
         );
       });
 
-      // Whether the media folder is this database's: its owner marker
-      // names this database's id, or there was none and this database
-      // wrote it now.
+      // What the marker says of this database, read as `read`: refused,
+      // or this database's, the marker then moved on to the next epoch.
+      const judged = Effect.fn("MediaSweeps.judged")(function* judged(
+        read: MarkerRead,
+        self: StoreIdentity,
+        cluster: DatabaseCluster
+      ) {
+        if (Option.isNone(read.marker) || read.marker.value.id !== self.id) {
+          return Option.some<SweepRefusal>("foreign");
+        }
+
+        const marker = read.marker.value;
+
+        if (
+          marker.system !== cluster.system ||
+          marker.timeline !== cluster.timeline
+        ) {
+          return Option.some<SweepRefusal>("restored");
+        }
+
+        if (marker.epoch > self.epoch) {
+          return Option.some<SweepRefusal>("rewound");
+        }
+
+        // Committed before the marker moves: a crash between the two
+        // leaves the database one ahead, which the next run passes.
+        const epoch = yield* store.advanceEpoch;
+
+        const moved = yield* bucket.replace(
+          { ...cluster, epoch, id: self.id },
+          read.version
+        );
+
+        return moved
+          ? Option.none<SweepRefusal>()
+          : Option.some<SweepRefusal>("contended");
+      });
+
+      // Whether the media folder is this database's now: its owner marker
+      // names this database, on the cluster it runs on, at an epoch the
+      // database has reached, or there was none and this database wrote
+      // it now. Each owned run moves the epoch on in both.
       const ownership = Effect.gen(function* ownership() {
         const self = yield* store.identity(yield* ids.next);
-        const marker = yield* bucket.owner;
+        const cluster = yield* store.cluster;
+        const read = yield* bucket.owner;
 
-        if (Option.isSome(marker)) {
-          if (marker.value !== self.id) {
-            return Option.some<SweepRefusal>("foreign");
-          }
+        if (Option.isSome(read)) {
+          const verdict = yield* judged(read.value, self, cluster);
 
-          if (!self.claimed) {
+          if (Option.isNone(verdict) && !self.claimed) {
             yield* store.markClaimed;
           }
 
-          return Option.none<SweepRefusal>();
+          return verdict;
         }
 
         if (self.claimed) {
@@ -260,15 +313,17 @@ export class MediaSweeps extends Context.Service<
         }
 
         // Written only if none is there: one another server wrote
-        // meanwhile is read again, never replaced.
-        const wrote = yield* bucket.claim(self.id, { replace: false });
+        // meanwhile is judged as found, never replaced.
+        const epoch = yield* store.advanceEpoch;
+        const wrote = yield* bucket.claim({ ...cluster, epoch, id: self.id });
 
         if (!wrote) {
           const written = yield* bucket.owner;
 
-          if (Option.getOrUndefined(written) !== self.id) {
-            return Option.some<SweepRefusal>("foreign");
-          }
+          return yield* Option.match(written, {
+            onNone: () => Effect.succeed(Option.some<SweepRefusal>("unmarked")),
+            onSome: (found) => judged(found, { ...self, epoch }, cluster),
+          });
         }
 
         yield* store.markClaimed;
@@ -353,6 +408,29 @@ export class MediaSweeps extends Context.Service<
 
       const pending = Effect.gen(function* pendingSweep() {
         const before = yield* since(pendingAfter);
+
+        // More than a sound database leaves at once: it likely lost the
+        // completions it once had (restored, or another's).
+        const found = yield* store.expiredUploads(
+          before,
+          pendingLimit + 1,
+          Option.none()
+        );
+
+        if (found.length > pendingLimit) {
+          yield* Effect.logError(
+            "A sweep of the media store stopped: more uploads never completed than a sound database leaves"
+          ).pipe(Effect.annotateLogs({ found: found.length }));
+
+          const refused: SweepReport = {
+            ...nothing,
+            left: true,
+            refused: Option.some("breaker"),
+          };
+
+          return refused;
+        }
+
         let after = Option.none<ExpiredPosition>();
         let swept = 0;
         let bytes = 0;

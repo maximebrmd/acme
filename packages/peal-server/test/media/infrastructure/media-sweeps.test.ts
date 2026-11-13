@@ -20,7 +20,10 @@ import { DateTime, Duration, Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
-import { claimMediaFolder } from "#media/application/claim-media-folder.ts";
+import {
+  claimMediaFolder,
+  mediaFolderClaim,
+} from "#media/application/claim-media-folder.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MediaSweeps } from "#media/application/media-sweeps.ts";
@@ -28,6 +31,7 @@ import type { SweepReport } from "#media/application/media-sweeps.ts";
 import { MediaBucket } from "#media/application/ports/media-bucket.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
+import { MediaSweepStore } from "#media/application/ports/media-sweep-store.ts";
 import {
   CurrentSweepPolicy,
   defaultSweepPolicy,
@@ -697,6 +701,7 @@ layer(sweepsWith(past), realClock)(
           const orphan = yield* freshKey;
           const other = "019a7b2c-3d4e-7f00-8a1b-0000000d0d0d";
 
+          // Not even a marker that reads: as another's.
           yield* put(
             `${settings.keyPrefix}media/.owner`,
             new TextEncoder().encode(other)
@@ -713,14 +718,62 @@ layer(sweepsWith(past), realClock)(
           );
           assert.isTrue(yield* stored(orphan.key));
 
-          const claimed = yield* claimMediaFolder;
+          const plan = yield* mediaFolderClaim;
 
-          assert.deepStrictEqual(claimed.previous, Option.some(other));
+          assert.isTrue(
+            Option.isSome(plan.current) &&
+              Option.isNone(plan.current.value.marker)
+          );
+
+          const claimed = yield* claimMediaFolder;
+          const bucket = yield* MediaBucket;
+
+          assert.strictEqual(claimed.id, plan.self.id);
+          assert.deepStrictEqual(claimed.system, plan.cluster.system);
+          assert.deepStrictEqual(
+            (yield* bucket.owner).pipe(Option.flatMap(({ marker }) => marker)),
+            Option.some(claimed)
+          );
           assert.deepStrictEqual(
             yield* MediaSweeps.use((sweeps) => sweeps.orphans),
             counts({ bytes: 100, left: false, swept: 1 })
           );
           assert.isFalse(yield* stored(orphan.key));
+
+          // The run moved the epoch on, in the database and the marker.
+          const after = yield* bucket.owner;
+
+          assert.deepStrictEqual(
+            after.pipe(
+              Option.flatMap(({ marker }) => marker),
+              Option.map(({ epoch }) => epoch)
+            ),
+            Option.some(claimed.epoch + 1)
+          );
+          assert.strictEqual(
+            (yield* MediaSweepStore.use((store) =>
+              store.identity(plan.self.id)
+            )).epoch,
+            claimed.epoch + 1
+          );
+
+          // A create-only write never replaces the marker there.
+          assert.isFalse(
+            yield* bucket.claim({ ...claimed, epoch: 0, id: other })
+          );
+          assert.deepStrictEqual(
+            (yield* bucket.owner).pipe(Option.flatMap(({ marker }) => marker)),
+            after.pipe(Option.flatMap(({ marker }) => marker))
+          );
+
+          // A replace against a version the marker moved past is refused.
+          const stale = after.pipe(Option.flatMap(({ version }) => version));
+
+          yield* MediaSweeps.use((sweeps) => sweeps.orphans);
+
+          assert.isFalse(
+            yield* bucket.replace({ ...claimed, id: other }, stale)
+          );
         })
     );
   }

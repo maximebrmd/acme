@@ -1,26 +1,44 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 
 import { Ids } from "#shared/application/ids.ts";
 
 import { MediaBucket } from "./ports/media-bucket.ts";
+import type { OwnerMarker } from "./ports/media-bucket.ts";
 import { MediaSweepStore } from "./ports/media-sweep-store.ts";
 
 /**
+ * What handing the media folder to this database would do: the marker
+ * there now, if any, and this database's id and cluster, which the new
+ * marker names.
+ */
+export const mediaFolderClaim = Effect.gen(function* mediaFolderClaim() {
+  const store = yield* MediaSweepStore;
+  const bucket = yield* MediaBucket;
+  const self = yield* store.identity(yield* Ids.use((ids) => ids.next));
+  const cluster = yield* store.cluster;
+  const current = yield* bucket.owner;
+
+  return { cluster, current, self };
+}).pipe(Effect.withSpan("Media.mediaFolderClaim"));
+
+/**
  * Hands the media folder to this database, on an operator's word: its
- * owner marker is written naming this database, whatever it named, and
- * the sweeps that delete what this database does not know of run again.
- * For a database that is meant to be the folder's newest truth, as after
- * a restore confirmed final, or a new database on an emptied folder.
- * Answers this database's id, and the id the marker named before.
+ * owner marker is written naming this database, its cluster and timeline
+ * and its next epoch, whatever it said, and the sweeps that delete what
+ * this database does not know of run again. For a database that is meant
+ * to be the folder's newest truth: a restore confirmed final, a failover
+ * or an upgrade of Postgres, a database loaded from a dump, a marker
+ * lost. Answers the marker written.
  */
 export const claimMediaFolder = Effect.gen(function* claimMediaFolder() {
   const store = yield* MediaSweepStore;
   const bucket = yield* MediaBucket;
-  const self = yield* store.identity(yield* Ids.use((ids) => ids.next));
-  const previous = yield* bucket.owner;
+  const { cluster, self } = yield* mediaFolderClaim;
+  const epoch = yield* store.advanceEpoch;
+  const marker: OwnerMarker = { ...cluster, epoch, id: self.id };
 
-  yield* bucket.claim(self.id, { replace: true });
+  yield* bucket.replace(marker, Option.none());
   yield* store.markClaimed;
 
-  return { id: self.id, previous };
+  return marker;
 }).pipe(Effect.withSpan("Media.claimMediaFolder"));

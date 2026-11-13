@@ -32,6 +32,8 @@ import type {
   BucketFile,
   BucketPage,
   BucketUpload,
+  MarkerRead,
+  OwnerMarker,
   UploadMarker,
 } from "#media/application/ports/media-bucket.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
@@ -825,6 +827,19 @@ const ListedUploadSchema = Schema.Struct({
 const listingFailed = (operation: string) => (cause: unknown) =>
   new MediaStorageFailed({ cause, operation });
 
+const OwnerMarkerSchema = Schema.Struct({
+  epoch: Schema.Int,
+  id: Schema.NonEmptyString,
+  system: Schema.NonEmptyString,
+  timeline: Schema.Int,
+});
+
+const MarkerJson = Schema.fromJsonString(OwnerMarkerSchema);
+
+const decodeMarker = Schema.decodeUnknownEffect(MarkerJson);
+
+const encodeMarker = Schema.encodeEffect(MarkerJson);
+
 const decodeFiles = Schema.decodeUnknownEffect(Schema.Array(ListedFileSchema));
 
 const decodeUploads = Schema.decodeUnknownEffect(
@@ -969,40 +984,99 @@ export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
         { abortSignal: signal }
       );
 
-      return (await answer.Body?.transformToString()) ?? "";
+      return {
+        text: (await answer.Body?.transformToString()) ?? "",
+        version: answer.ETag,
+      };
     }).pipe(
-      Effect.map((text) => Option.some(text.trim())),
+      Effect.flatMap(({ text, version }) =>
+        decodeMarker(text).pipe(
+          Effect.map(Option.some),
+          Effect.catch(() => Effect.succeed(Option.none<OwnerMarker>())),
+          Effect.map((read): Option.Option<MarkerRead> =>
+            Option.some({
+              marker: read,
+              version: Option.fromUndefinedOr(version),
+            })
+          )
+        )
+      ),
       Effect.catchIf(
         (failure) => isS3Error(failure.cause, notFound),
-        () => Effect.succeed(Option.none<string>())
+        () => Effect.succeed(Option.none<MarkerRead>())
       ),
       Effect.withSpan("S3MediaBucket.owner")
     );
 
-    const claim = (id: string, { replace }: { readonly replace: boolean }) =>
-      request(
-        "write the media folder's owner",
-        async (signal) =>
-          await client.send(
-            new PutObjectCommand({
-              Body: id,
-              Bucket: bucket,
-              ContentType: "text/plain",
-              IfNoneMatch: replace ? undefined : "*",
-              Key: marker,
-            }),
-            { abortSignal: signal }
+    // Writes the marker, under the condition given: false when the store
+    // refused it for that condition.
+    const write = (
+      body: OwnerMarker,
+      condition: { readonly IfMatch?: string; readonly IfNoneMatch?: string }
+    ) =>
+      encodeMarker(body).pipe(
+        Effect.mapError(listingFailed("write the media folder's owner")),
+        Effect.flatMap((text) =>
+          request(
+            "write the media folder's owner",
+            async (signal) =>
+              await client.send(
+                new PutObjectCommand({
+                  Body: text,
+                  Bucket: bucket,
+                  ContentType: "application/json",
+                  Key: marker,
+                  ...condition,
+                }),
+                { abortSignal: signal }
+              )
           )
-      ).pipe(
+        ),
         Effect.as(true),
         Effect.catchIf(
           (failure) => isPreconditionFailed(failure.cause),
           () => Effect.succeed(false)
-        ),
+        )
+      );
+
+    const claim = (body: OwnerMarker) =>
+      write(body, { IfNoneMatch: "*" }).pipe(
         Effect.withSpan("S3MediaBucket.claim")
       );
 
-    return MediaBucket.of({ claim, listFiles, listUploads, owner });
+    // A store that ignores If-Match is read back: the marker must be the
+    // one written.
+    const replace = (body: OwnerMarker, version: Option.Option<string>) =>
+      write(
+        body,
+        Option.match(version, {
+          onNone: () => ({}),
+          onSome: (tag) => ({ IfMatch: tag }),
+        })
+      ).pipe(
+        Effect.flatMap((wrote) =>
+          wrote
+            ? owner.pipe(
+                Effect.map((read) =>
+                  read.pipe(
+                    Option.flatMap((found) => found.marker),
+                    Option.match({
+                      onNone: () => false,
+                      onSome: (found) =>
+                        found.id === body.id &&
+                        found.epoch === body.epoch &&
+                        found.system === body.system &&
+                        found.timeline === body.timeline,
+                    })
+                  )
+                )
+              )
+            : Effect.succeed(false)
+        ),
+        Effect.withSpan("S3MediaBucket.replace")
+      );
+
+    return MediaBucket.of({ claim, listFiles, listUploads, owner, replace });
   }
 );
 

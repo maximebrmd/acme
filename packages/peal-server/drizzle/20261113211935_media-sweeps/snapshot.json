@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "95bde687-1449-4115-9cea-9c5228681561",
+  "id": "0af103f0-89b6-4230-9ba8-cef6b94c61d4",
   "prevIds": [
     "1fe047f3-a815-4169-8951-4bdf74787699"
   ],
@@ -192,6 +192,22 @@
         "notNull": true,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "epoch",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
         "generated": null,
         "identity": null,
         "entityType": "columns"

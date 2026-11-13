@@ -29,6 +29,12 @@ export interface SweepPolicy {
    * an earlier time, or another's, sees most of the bucket as orphans.
    */
   readonly orphansLimit: number;
+  /**
+   * The most uploads never completed one run may find before the sweep of
+   * them stops, deleting none: as many at once mean a database that lost
+   * the completions it once had.
+   */
+  readonly pendingLimit: number;
 }
 
 /**
@@ -49,11 +55,15 @@ export const minimumSweepAge = Duration.sum(
   Duration.hours(1)
 );
 
-/** On, a day for each, 500 a run, and 100 orphans a page at most. */
+/**
+ * On, a day for each, 500 a run, and 100 orphans a page or uploads never
+ * completed a run at most.
+ */
 export const defaultSweepPolicy: SweepPolicy = {
   batch: 500,
   enabled: true,
   orphansLimit: 100,
+  pendingLimit: 100,
   orphansAfter: Duration.days(1),
   pendingAfter: Duration.days(1),
   uploadsAfter: Duration.days(1),

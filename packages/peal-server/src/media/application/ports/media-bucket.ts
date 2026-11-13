@@ -27,6 +27,26 @@ export interface UploadMarker {
 }
 
 /**
+ * Which database the media folder belongs to, as its owner marker says:
+ * the database's own id, the count of the deleting sweeps' runs it owned
+ * (`epoch`, which only they advance), and the Postgres cluster it ran on
+ * (`system`, its system identifier, and `timeline`, which every restore
+ * changes).
+ */
+export interface OwnerMarker {
+  readonly epoch: number;
+  readonly id: string;
+  readonly system: string;
+  readonly timeline: number;
+}
+
+/** The marker as read: none when it does not read as one. */
+export interface MarkerRead {
+  readonly marker: Option.Option<OwnerMarker>;
+  readonly version: Option.Option<string>;
+}
+
+/**
  * One page of a listing, in the store's order, and where the next starts,
  * if there is one. It holds only what reads as a key Peal writes
  * (`mediaKeyOf`); what else the page held is passed over, never handed out.
@@ -60,20 +80,31 @@ export class MediaBucket extends Context.Service<
       MediaStorageFailed
     >;
     /**
-     * The id of the database the media folder belongs to, as its owner
-     * marker (`<prefix>media/.owner`, which no listing hands out) names
-     * it, if it has one.
+     * The media folder's owner marker (`<prefix>media/.owner`, which no
+     * listing hands out), if there is one, with the version the store
+     * gave it.
      */
-    readonly owner: Effect.Effect<Option.Option<string>, MediaStorageFailed>;
+    readonly owner: Effect.Effect<
+      Option.Option<MarkerRead>,
+      MediaStorageFailed
+    >;
     /**
-     * Writes the owner marker naming `id`, only if there is none, and
-     * says whether it did: one written meanwhile is never replaced. With
-     * `replace`, for an operator handing the folder to this database on
-     * purpose, it writes it whatever is there.
+     * Writes the marker only if there is none, and says whether it did:
+     * one written meanwhile is never replaced.
      */
     readonly claim: (
-      id: string,
-      options: { readonly replace: boolean }
+      marker: OwnerMarker
+    ) => Effect.Effect<boolean, MediaStorageFailed>;
+    /**
+     * Replaces the marker read as `version`, and says whether the store
+     * holds `marker` now: it refuses where the marker changed meanwhile,
+     * and a store that ignores the condition is read back. Without a
+     * version, for an operator handing the folder over on purpose, it
+     * replaces whatever is there.
+     */
+    readonly replace: (
+      marker: OwnerMarker,
+      version: Option.Option<string>
     ) => Effect.Effect<boolean, MediaStorageFailed>;
   }
 >()("peal-server/media/application/MediaBucket") {}

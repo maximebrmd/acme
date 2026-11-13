@@ -6,6 +6,7 @@ CREATE TABLE "media"."erased_folders" (
 CREATE TABLE "media"."store_identity" (
 	"claimed_at" timestamp with time zone,
 	"created_at" timestamp with time zone NOT NULL,
+	"epoch" bigint DEFAULT 0 NOT NULL,
 	"id" uuid NOT NULL,
 	"singleton" boolean PRIMARY KEY DEFAULT true,
 	CONSTRAINT "store_identity_singleton" CHECK ("singleton")
