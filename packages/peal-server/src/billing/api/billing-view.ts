@@ -1,4 +1,4 @@
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import type {
   Billing,
   BillingAccount,
@@ -66,12 +66,27 @@ export const standingView = (
   scheduledPosts: standing.scheduledPosts,
 });
 
+/**
+ * The billing account a workspace's billing page tells of, on a server
+ * that bills: one that does not reads none.
+ */
+export const accountShown = <E, R>(
+  overview: Overview,
+  read: Effect.Effect<AccountView, E, R>
+): Effect.Effect<Option.Option<AccountView>, E, R> =>
+  Option.isSome(overview.entitlements.plan)
+    ? read.pipe(Effect.map(Option.some))
+    : Effect.succeedNone;
+
 /** What clients see of a workspace's billing. */
 export const billingView = (
   { entitlements, plans, trial, usage, withdrawableUntil }: Overview,
-  account: AccountView
+  account: Option.Option<AccountView>
 ): Billing => ({
-  account: accountView(account),
+  ...Option.match(account, {
+    onNone: () => ({}),
+    onSome: (view) => ({ account: accountView(view) }),
+  }),
   allowances: allowancesView(entitlements.allowances),
   currency,
   enabled: Option.isSome(entitlements.plan),

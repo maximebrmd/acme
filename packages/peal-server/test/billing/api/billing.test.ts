@@ -224,10 +224,17 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
 layer(overviewOn(false))(
   "the billing endpoint on a server that does not bill",
   (it) => {
-    it.effect("show no plan, and limit nothing", () =>
+    it.effect("show no plan, limit nothing, and read no billing account", () =>
       Effect.gen(function* unmetered() {
-        const client = yield* as(permissionsFor("owner"));
+        // Any read of the account dies.
+        const client = yield* clientWith(
+          securityTest(memberWith(permissionsFor("owner"))),
+          Layer.mock(AccountViews, {})
+        );
+
         const billing = yield* client.billing.get({ params });
+
+        assert.isUndefined(billing.account);
 
         assert.isFalse(billing.enabled);
         assert.isNull(billing.plan);

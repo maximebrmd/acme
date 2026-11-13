@@ -21,7 +21,7 @@ import type { RangeAsked } from "#analytics/application/analytics-queries.ts";
 import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
-import { billingView } from "#billing/api/billing-view.ts";
+import { accountShown, billingView } from "#billing/api/billing-view.ts";
 import { usageView } from "#billing/api/usage-view.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
@@ -249,7 +249,10 @@ export const ReportToolsLive = ReportTools.toLayer(
             })
           );
 
-          const account = yield* accounts.of(yield* actor).pipe(Effect.orDie);
+          const account = yield* accountShown(
+            found,
+            accounts.of(yield* actor).pipe(Effect.orDie)
+          );
 
           return billingView(found, account);
         }),

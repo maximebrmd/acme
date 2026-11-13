@@ -96,7 +96,9 @@ const AccountActionsLive = Layer.mergeAll(
 );
 
 // Whose plan each workspace is on: its billing account's billing workspace.
-const HoldersLive = AccountPlanHoldersLive.pipe(Layer.provide(AccountsLive));
+const HoldersLive = AccountPlanHoldersLive.pipe(
+  Layer.provide(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
+);
 
 /**
  * The billing context's use cases for the other contexts: what each

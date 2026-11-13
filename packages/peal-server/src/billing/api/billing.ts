@@ -8,7 +8,7 @@ import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 
-import { billingView, standingView } from "./billing-view.ts";
+import { accountShown, billingView, standingView } from "./billing-view.ts";
 
 export const BillingHandlers = HttpApiBuilder.group(
   Api,
@@ -32,7 +32,7 @@ export const BillingHandlers = HttpApiBuilder.group(
 
           return billingView(
             found,
-            yield* accounts.of(actor).pipe(Effect.orDie)
+            yield* accountShown(found, accounts.of(actor).pipe(Effect.orDie))
           );
         })
       )
