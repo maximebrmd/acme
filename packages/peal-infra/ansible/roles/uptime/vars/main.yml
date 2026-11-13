@@ -1,8 +1,12 @@
 ---
-# The credentials Gatus needs, by name: its Telegram bot, and the Cloudflare
-# Access service token of each environment behind Access.
+# The credentials Gatus needs, by name: its Telegram bot, the bot and chat
+# of each environment with a chat of its own, and the Cloudflare Access
+# service token of each environment behind Access.
 uptime_required_credentials: >-
   {{ ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID']
+     + (uptime_environments | selectattr('telegram', 'defined') | selectattr('telegram')
+        | map(attribute='name') | map('upper')
+        | product(['_TELEGRAM_BOT_TOKEN', '_TELEGRAM_CHAT_ID']) | map('join') | list)
      + (uptime_environments | selectattr('access', 'defined') | selectattr('access')
         | map(attribute='name') | map('upper')
         | product(['_ACCESS_CLIENT_ID', '_ACCESS_CLIENT_SECRET']) | map('join') | list) }}
@@ -12,6 +16,21 @@ uptime_required_credentials: >-
 uptime_heartbeat_tokens: >-
   {{ uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat')
      | map(attribute='name') | map('upper') | map('regex_replace', '$', '_HEARTBEAT_TOKEN') | list }}
+
+# The files of the status page's brand folder (uptime_brand_root), from the
+# repository's packages: the web app's mark and icon, and peal-ui's Geist
+# with its licence, which goes with the fonts.
+uptime_packages: "{{ role_path }}/../../../.."
+uptime_geist: "{{ uptime_packages }}/peal-ui/node_modules/geist"
+uptime_brand_files:
+  - { src: "{{ uptime_packages }}/peal-web/src/app/icon.svg", dest: mark.svg }
+  - { src: "{{ uptime_packages }}/peal-web/src/app/apple-icon.png", dest: apple-touch-icon.png }
+  - { src: "{{ uptime_geist }}/dist/fonts/geist-sans/Geist-Variable.woff2", dest: geist.woff2 }
+  - {
+      src: "{{ uptime_geist }}/dist/fonts/geist-mono/GeistMono-Variable.woff2",
+      dest: geist-mono.woff2,
+    }
+  - { src: "{{ uptime_geist }}/LICENSE.txt", dest: geist-license.txt }
 
 # Where Caddy reaches each Gatus: on the stack's network on a server of its
 # own, on the host's loopback on a shared host.

@@ -65,7 +65,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   the sandbox, which the `uptime` role refuses to run without and
   `tests/test_hosting.py` checks: Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
-  Telegram bot of its own; Caddy is its only public entry, for the heartbeat
+  Telegram bot of its own, the sandbox's checks in the sandbox's chat
+  (`telegram: true`), and only on an incident, never a blip (the role's
+  thresholds); Caddy is its only public entry, for the heartbeat
   production's Grafana posts every few minutes, on `uptime_hostname`, and
   for the public status page, on `uptime_status_hostname`
   (status.peal.social, `uptime_public_status: true`). It shares no secret,
@@ -76,7 +78,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   its own (`status`, `status-config.yaml.j2`) that checks the
   customer-facing endpoints of the environments marked `public`
   (production; never one behind Access), with no alert or secret, and
-  hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
+  hides URLs, conditions and errors, in Peal's design (`DESIGN.md`: the web
+  app's mark and peal-ui's Geist, copied to `uptime_brand_root`, and
+  `status.css`), light only; Caddy serves it by GET and HEAD alone
   (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
   records Cloudflare does not proxy (the infra README's "The status page"),
   which the account's Pulumi stack makes; the sandbox's Pulumi stack makes
