@@ -10,6 +10,7 @@ import { maxMediaPerPost } from "peal-contract/post-text";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { ChannelMediaField } from "#components/posts/channel-media-field.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
@@ -364,5 +365,64 @@ describe("the media violations the API reports", () => {
     expect(french.replaceAll(/\s/gu, " ")).toContain(
       "@peal_linkedin sur LinkedIn : la vidéo 2 pèse 40 ko, 73,2 ko au moins."
     );
+  });
+});
+
+const ownMedia = ({
+  own,
+  waitingForText = false,
+}: {
+  readonly own: readonly AttachedMedia[] | undefined;
+  readonly waitingForText?: boolean;
+}) => (
+  <ChannelMediaField
+    canBrowse
+    canGenerate={false}
+    canUpload={false}
+    channel={channel("bluesky")}
+    disabled={false}
+    editable
+    own={own}
+    platforms={["bluesky"]}
+    postMedia={[]}
+    waitingForText={waitingForText}
+    workspaceId={workspaceId}
+    onChange={() => {
+      // Rendered once: nothing changes.
+    }}
+  />
+);
+
+describe(ChannelMediaField, () => {
+  it("offers a channel media of its own, off while it shows the post's", async () => {
+    const html = await render("en", ownMedia({ own: undefined }));
+
+    expect(html).toContain("Images and videos of its own on @peal_bluesky");
+    expect(html).toContain("Off, it shows the post&#x27;s images and videos.");
+    expect(html).not.toContain("Alt text for image 1");
+  });
+
+  it("lists the channel's own media under a name of its own", async () => {
+    const html = await render("en", ownMedia({ own: attached }));
+
+    expect(html).toContain('aria-label="Images and videos on @peal_bluesky"');
+    expect(html).toContain("Alt text for image 1");
+    expect(html).toContain("It shows these instead of the post");
+  });
+
+  it("says its media wait for a text, in French too", async () => {
+    const english = await render(
+      "en",
+      ownMedia({ own: attached, waitingForText: true })
+    );
+
+    const french = await render(
+      "fr",
+      ownMedia({ own: attached, waitingForText: true })
+    );
+
+    expect(english).toContain("Write a text for this channel");
+    expect(french).toContain("Écrivez un texte pour ce canal");
+    expect(french).toContain("Images et vidéos propres sur @peal_bluesky");
   });
 });

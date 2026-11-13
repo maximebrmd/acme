@@ -927,6 +927,20 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
+    "Channels": {
+      "title": "Canaux où elle part",
+      "hint": "Retirez un canal de la publication pour qu’elle n’y parte pas : elle part sur les autres à son heure.",
+      "remove": "Retirer",
+      "removeLabel": "Retirer {handle} de la publication",
+      "removing": "Retrait…",
+      "removed": "Retiré de la publication",
+      "notGoing": "Ne part pas",
+      "gone": "Un canal qui n’est plus connecté",
+      "lastOne": "Le dernier canal où elle part reste : pour qu’elle ne parte nulle part, annulez la publication.",
+      "removedDone": "Canal retiré : la publication part sur les autres à son heure.",
+      "removedWaits": "Canal retiré : la publication attend de nouveau une approbation.",
+      "failed": "Le canal n’a pas pu être retiré : relisez la publication, elle est peut-être partie ou a changé."
+    },
     "Live": {
       "unpublish": "Dépublier",
       "confirmTitle": "Supprimer ce post de {platform} ?",
@@ -1004,6 +1018,11 @@
       "overridePlaceholder": "Laissez vide pour reprendre le texte de tous les canaux.",
       "usesCommonText": "Reprend le texte de tous les canaux.",
       "resetOverride": "Reprendre le texte de tous les canaux",
+      "ownMedia": "Images et vidéos propres sur {handle}",
+      "ownMediaOff": "Désactivé, il montre les images et vidéos de la publication.",
+      "ownMediaOn": "Il montre celles-ci à la place de celles de la publication, et est vérifié avec elles. Désactivez-le pour reprendre celles de la publication.",
+      "ownMediaList": "Images et vidéos sur {handle}",
+      "ownMediaNeedsText": "Écrivez un texte pour ce canal, ou pour tous les canaux : ses images et vidéos propres partent avec un texte, et ne sont pas enregistrées sans lui.",
       "countersLegend": "Longueur sur chaque canal",
       "countersEmpty": "Choisissez des canaux pour voir si le texte leur convient.",
       "count": "{length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}",
@@ -1681,6 +1700,7 @@
     "unconfirmed": "Peal ne sait pas si elle est partie : {reason}. Vérifiez sur {platform} avant de la republier, puis indiquez ce que vous avez trouvé.",
     "unconfirmedReason": "{reason, select, noResponse {la plateforme n’a pas répondu} unreadableResponse {sa réponse n’a pas pu être lue} interrupted {le serveur s’est arrêté pendant l’envoi} adapterFailure {Peal a échoué pendant l’envoi} stillProcessing {la plateforme la traitait encore quand Peal a cessé de vérifier} other {{reason}}}",
     "cancelled": "Elle a été annulée avant de partir.",
+    "dropped": "Ce canal a été retiré de la publication avant son départ : elle est partie sur ses autres canaux.",
     "pending": "Elle attend son tour.",
     "sending": "Elle est en train de partir.",
     "rounds": "Envoyée {count, plural, one {une fois} other {# fois}}",
