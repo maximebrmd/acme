@@ -12,6 +12,7 @@ import {
   rateCard,
   storageAllowance,
   stripeTiersOf,
+  stripeUnitAmountOf,
 } from "#billing/domain/rate-card.ts";
 
 const day = (written: string) => DateTime.makeUnsafe(`${written}T00:00:00Z`);
@@ -244,5 +245,32 @@ describe(stripeTiersOf, () => {
     expect(stripeCharge(300)).toBe(4000);
     expect(stripeCharge(600)).toBe(7000);
     expect(stripeCharge(3000)).toBe(31_000);
+  });
+});
+
+describe(stripeUnitAmountOf, () => {
+  it("gives each meter's price at Stripe in cents a unit, as a decimal", () => {
+    expect(
+      Object.fromEntries(
+        MeterSchema.literals.map((meter) => [
+          meter,
+          stripeUnitAmountOf(meter, rateCard),
+        ])
+      )
+    ).toStrictEqual({
+      assistantImages: "5",
+      assistantRequests: "1",
+      managedAds: "1",
+      outboundMessages: "0.01",
+      xApi: "0.1",
+    });
+  });
+
+  it("charges what meterCharge says for a whole number of cents", () => {
+    for (const meter of MeterSchema.literals) {
+      expect(
+        Math.round(1000 * Number(stripeUnitAmountOf(meter, rateCard)))
+      ).toBe(meterCharge(meter, 1000));
+    }
   });
 });

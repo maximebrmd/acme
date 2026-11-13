@@ -1,8 +1,9 @@
 // A stand-in for Stripe's API, for the server the end-to-end tests run:
 // billing is on there, so plans limit workspaces as on Peal Cloud, and the
-// server checks Stripe's prices when it starts. It lists the prices Peal
-// publishes, as the contract holds them, and answers anything else as an
-// empty list or an object with a synthetic id: no test pays for anything.
+// server checks Stripe's catalogue and prices when it starts. It lists the
+// meters and prices Peal publishes, as the contract holds them (the rate
+// card's, and the legacy plans'), and answers anything else as an empty
+// list or an object with a synthetic id: no test pays for anything.
 // Nothing leaves the machine.
 import { once } from "node:events";
 import { createServer } from "node:http";
@@ -11,6 +12,13 @@ import type { Server } from "node:http";
 import { Schema } from "effect";
 import { billingCurrency, PaidPlanSchema, planCatalogue } from "peal-contract";
 import type { LegacyPaidPlan } from "peal-contract";
+import {
+  catalogueLookupKeysOf,
+  MeterSchema,
+  rateCard,
+  stripeTiersOf,
+  stripeUnitAmountOf,
+} from "peal-contract/rate-card";
 
 const intervals = [
   { key: "monthly", name: "month" },
@@ -35,6 +43,60 @@ const prices = legacyPlans.flatMap((plan) =>
   }))
 );
 
+// Per-account pricing's lines, under the lookup keys the server reads,
+// each also its meter's event name: the contract's, which its tests keep
+// equal to the server's.
+const keys = catalogueLookupKeysOf("peal");
+
+const lines = [
+  { key: keys.accounts, meter: null },
+  ...MeterSchema.literals.map((meter) => ({ key: keys[meter], meter })),
+];
+
+const meters = lines.map(({ key }) => ({
+  customer_mapping: { event_payload_key: "stripe_customer_id", type: "by_id" },
+  default_aggregation: { formula: "sum" },
+  display_name: key,
+  event_name: key,
+  id: `mtr_e2e_${key}`,
+  object: "billing.meter",
+  status: "active",
+  value_settings: { event_payload_key: "value" },
+}));
+
+const catalogue = lines.map(({ key, meter }) => ({
+  active: true,
+  billing_scheme: meter === null ? "tiered" : "per_unit",
+  currency: "usd",
+  id: `price_e2e_${key}`,
+  lookup_key: key,
+  object: "price",
+  recurring: {
+    interval: "month",
+    meter: `mtr_e2e_${key}`,
+    usage_type: "metered",
+  },
+  tax_behavior: "exclusive",
+  tiers:
+    meter === null
+      ? stripeTiersOf(rateCard).map(({ unitAmountDecimal, upTo }) => ({
+          unit_amount_decimal: unitAmountDecimal,
+          up_to: upTo,
+        }))
+      : null,
+  tiers_mode: meter === null ? "graduated" : null,
+  unit_amount_decimal:
+    meter === null ? null : stripeUnitAmountOf(meter, rateCard),
+}));
+
+const listed = (pathname: string): readonly unknown[] => {
+  if (pathname === "/v1/prices") {
+    return [...catalogue, ...prices];
+  }
+
+  return pathname === "/v1/billing/meters" ? meters : [];
+};
+
 const list = (data: readonly unknown[], url: string) => ({
   data,
   has_more: false,
@@ -54,7 +116,7 @@ export const startStripe = async (): Promise<{
 
     const answer =
       request.method === "GET"
-        ? list(pathname === "/v1/prices" ? prices : [], pathname)
+        ? list(listed(pathname), pathname)
         : { id: "e2e_synthetic", object: "synthetic" };
 
     request.resume();

@@ -48,6 +48,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "stripe-catalogue": {
+      "command": "bun scripts/stripe-catalogue.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "erasures:replay": {
       "command": "bun src/replay-erasures.ts",
       "options": { "cwd": "{projectRoot}" },
