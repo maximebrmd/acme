@@ -6,6 +6,7 @@ import {
   OpenApi,
 } from "effect/http-api";
 
+import { AlreadySubscribed } from "./already-subscribed.ts";
 import { Authentication } from "./authentication.ts";
 import { BilledElsewhere } from "./billed-elsewhere.ts";
 import { BillingNotEnabled } from "./billing-not-enabled.ts";
@@ -23,6 +24,7 @@ import {
   WithdrawalPreviewSchema,
   WithdrawalSchema,
 } from "./billing.ts";
+import { ConsentChanged } from "./consent-changed.ts";
 import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 import { Forbidden } from "./forbidden.ts";
 import { NothingToCancel } from "./nothing-to-cancel.ts";
@@ -49,7 +51,9 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
   .add(
     HttpApiEndpoint.post("order", "/orders", {
       error: [
+        AlreadySubscribed,
         BilledElsewhere,
+        ConsentChanged,
         BillingNotEnabled,
         BillingUnavailable,
         Forbidden,
@@ -63,7 +67,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records the order a checkout then needs: `payAsYouGo`, monthly, the only plan sold (each connected account past the free ones and each use past its allowance, billed each month for the month past), and the member's request to start now, knowing their right to withdraw. Another plan or a yearly interval is refused (PlanNotSold), and no trial is offered (TrialUnavailable, `notOffered`). Ordering during a trial or on an older plan ends that one once the new subscription is recorded. A workspace whose billing account another of its workspaces bills orders nothing: the plan is ordered there (BilledElsewhere).",
+          "Records the order a checkout then needs: `payAsYouGo`, monthly, the only plan sold (each connected account past the free ones and each use past its allowance, billed each month for the month past), and the member's request to start now, knowing their right to withdraw. Another plan or a yearly interval is refused (PlanNotSold), and no trial is offered (TrialUnavailable, `notOffered`). A billing account that already holds `payAsYouGo`, even past due or unpaid, orders nothing more (AlreadySubscribed). An order whose `consentVersion` is not the server's is refused (ConsentChanged). Ordering during a trial or on an older plan ends that one once the new subscription is recorded. A workspace whose billing account another of its workspaces bills orders nothing: the plan is ordered there (BilledElsewhere).",
         summary: "Order a plan",
       })
     )

@@ -35,7 +35,9 @@ import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { AlreadySubscribed } from "#billing/domain/already-subscribed.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
+import { ConsentChanged } from "#billing/domain/consent-changed.ts";
 import { ContractRequestIdSchema } from "#billing/domain/contract-request.ts";
 import type {
   ContractRequest,
@@ -513,6 +515,98 @@ layer(ActionsTest)("billing's actions", (it) => {
         assert.lengthOf(
           yield* BillingLog.use(({ orders: placed }) => Ref.get(placed)),
           1
+        );
+      })
+  );
+
+  it.effect(
+    "orders nothing more for an account already on per-account pricing, even past due or unpaid",
+    () =>
+      Effect.gen(function* twice() {
+        const orders = yield* PlaceOrder;
+
+        const request = {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        } as const;
+
+        for (const status of ["active", "past_due", "unpaid"] as const) {
+          yield* setNow("2026-11-09T10:00:00Z");
+          yield* holding(paid({ plan: "payAsYouGo", status }));
+
+          assert.deepStrictEqual(
+            yield* orders.place(actorAs(), request).pipe(Effect.flip),
+            new AlreadySubscribed({ status })
+          );
+        }
+
+        // One that ended orders again.
+        yield* setNow("2026-11-09T10:00:00Z");
+        yield* holding(paid({ plan: "payAsYouGo", status: "canceled" }));
+
+        assert.strictEqual(
+          (yield* orders.place(actorAs(), request)).plan,
+          "payAsYouGo"
+        );
+      })
+  );
+
+  it.effect(
+    "starts no checkout once the account is on per-account pricing, though the order was placed before",
+    () =>
+      Effect.gen(function* raced() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
+
+        // Another manager's checkout went through meanwhile.
+        yield* holding(paid({ plan: "payAsYouGo" }));
+
+        assert.deepStrictEqual(
+          yield* (yield* CheckoutOrders)
+            .take({
+              email: "member@example.com",
+              interval: "month",
+              orderId: order.id,
+              plan: "payAsYouGo",
+              userId,
+              workspaceId,
+            })
+            .pipe(Effect.flip),
+          new AlreadySubscribed({ status: "active" })
+        );
+      })
+  );
+
+  it.effect(
+    "refuses an order whose box was shown in other words than the server records",
+    () =>
+      Effect.gen(function* words() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const orders = yield* PlaceOrder;
+
+        const request = {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        } as const;
+
+        assert.deepStrictEqual(
+          yield* orders
+            .place(actorAs(), { ...request, consentVersion: "2026-11-10" })
+            .pipe(Effect.flip),
+          new ConsentChanged({ current: consentVersion, shown: "2026-11-10" })
+        );
+        assert.strictEqual(
+          (yield* orders.place(actorAs(), { ...request, consentVersion }))
+            .consentVersion,
+          consentVersion
         );
       })
   );

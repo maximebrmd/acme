@@ -316,6 +316,11 @@ export const BetterAuthLive = Layer.effect(
               trialDays: Option.getOrNull(trialDays),
             })),
             Effect.catchTags({
+              AlreadySubscribed: () =>
+                Effect.succeed<CheckoutAnswer>({
+                  _tag: "refused",
+                  code: "ALREADY_SUBSCRIBED",
+                }),
               OrderRequired: () => Effect.succeed(orderRequired),
               TrialUnavailable: () =>
                 Effect.succeed<CheckoutAnswer>({

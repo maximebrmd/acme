@@ -39,6 +39,8 @@ export type EndReason =
   // A cancellation applied after the period it was received in had ended.
   | "cancelledLate"
   | "duplicateTrial"
+  // A second per-account subscription of one billing account.
+  | "duplicateSubscription"
   | "orderedDuringTrial"
   | "trialCancelled"
   | "withdrawn";

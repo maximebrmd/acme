@@ -2127,7 +2127,9 @@
       "trialUsed": "Cet espace de travail ou votre compte a déjà eu son essai : commandez plutôt un abonnement.",
       "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier le contrat.",
       "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier le contrat.",
-      "planTooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède."
+      "planTooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède.",
+      "alreadySubscribed": "Ce compte de facturation a déjà le tarif par compte. Si un paiement a échoué, mettez plutôt à jour le moyen de paiement depuis la page de facturation.",
+      "consentChanged": "Les termes de la case de commande ont changé depuis le chargement de cette page. Rechargez la page, relisez la case, et commandez à nouveau."
     },
     "limitReached": "{limit, select, channels {L’abonnement de l’espace de travail ne permet pas d’autre canal. Passez à un abonnement supérieur, ou déconnectez d’abord un canal.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, annulez une publication, ou passez à un abonnement supérieur.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {L’abonnement de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou passez à un abonnement supérieur.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
     "prices": {

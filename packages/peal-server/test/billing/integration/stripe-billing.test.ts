@@ -1237,6 +1237,81 @@ layer(BillingIntegration, {
   );
 
   it.effect(
+    "orders per-account pricing once: a second order, and a checkout from an order placed before, are refused",
+    () =>
+      Effect.gen(function* once() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "per-account-once",
+          delivery.customerId
+        );
+
+        const ordersRoute = `/api/workspaces/${workspaceId}/billing/orders`;
+
+        const legacy = yield* post(owner, ordersRoute, {
+          interval: "month",
+          plan: "pro",
+          startNow: true,
+          trial: false,
+        });
+
+        assert.strictEqual(legacy.status, 409);
+        assert.deepInclude(legacy.body, {
+          _tag: "PlanNotSold",
+          code: "plan_not_sold",
+        });
+
+        const before = yield* ordered(owner, workspaceId, {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
+
+        assert.strictEqual(
+          yield* deliver(
+            payloadOf("customer.subscription.created.pay-as-you-go", delivery)
+          ),
+          200
+        );
+
+        const again = yield* post(owner, ordersRoute, {
+          interval: "month",
+          plan: "payAsYouGo",
+          startNow: true,
+          trial: false,
+        });
+
+        assert.strictEqual(again.status, 409);
+        assert.deepInclude(again.body, {
+          _tag: "AlreadySubscribed",
+          code: "already_subscribed",
+          status: "active",
+        });
+
+        const checkout = yield* app.request("/api/auth/subscription/upgrade", {
+          body: {
+            cancelUrl: `/app/${workspaceId}/billing`,
+            customerType: "organization",
+            disableRedirect: true,
+            metadata: { orderId: before.id },
+            plan: "payAsYouGo",
+            referenceId: workspaceId,
+            successUrl: `/app/${workspaceId}/billing?checkout=done`,
+          },
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(checkout.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, checkout)).code,
+          "ALREADY_SUBSCRIBED"
+        );
+      })
+  );
+
+  it.effect(
     "puts a workspace on per-account pricing from a signed event, and back on the free tier when it ends or is unpaid",
     () =>
       Effect.gen(function* perAccount() {

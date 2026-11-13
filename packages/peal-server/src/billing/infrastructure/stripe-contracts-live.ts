@@ -21,6 +21,8 @@ const requestTimeout = 10_000;
 const comments: Readonly<Record<EndReason, string>> = {
   cancelledLate:
     "Cancelled on Peal: the request came before the period renewed",
+  duplicateSubscription:
+    "Second per-account subscription of the same billing account",
   duplicateTrial: "Second trial of the same account or workspace",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",

@@ -44,6 +44,14 @@ export type LegacyPlan = Exclude<Plan, "payAsYouGo">;
 export type LegacyPaidPlan = Exclude<PaidPlan, "payAsYouGo">;
 
 /**
+ * The version of the words of the order box (the request to start at once
+ * and the withdrawal information) a client shows, which an order names:
+ * the server records consent to its own, and refuses another. The
+ * server's `consentVersion` (`billing/domain/order.ts`) is kept equal.
+ */
+export const orderConsentVersion = "2026-11-13";
+
+/**
  * The plans an order may name. Only `payAsYouGo` is sold: the others are
  * refused (`PlanNotSold`), kept so an older client's request still decodes.
  */

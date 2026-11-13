@@ -53,6 +53,8 @@ export type BillingAction =
 
 /** Why the last request failed. */
 export type BillingError =
+  | "alreadySubscribed"
+  | "consentChanged"
   | "forbidden"
   | "generic"
   | "noInvoices"

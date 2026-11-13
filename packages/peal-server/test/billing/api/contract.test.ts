@@ -15,6 +15,7 @@ import {
   PlanLimitSchema as ContractPlanLimitSchema,
   PlanSchema as ContractPlanSchema,
   SubscriptionStatusSchema as ContractStatusSchema,
+  orderConsentVersion,
 } from "peal-contract";
 import {
   accountsCharge as contractAccountsCharge,
@@ -31,6 +32,7 @@ import {
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
 import { desiredDayHorizon } from "#billing/domain/desired-day.ts";
 import { planAllowances, planPrices } from "#billing/domain/legacy-plans.ts";
+import { consentVersion } from "#billing/domain/order.ts";
 import {
   legacyPlans,
   plans,
@@ -102,6 +104,10 @@ describe("the contract", () => {
     expect(ContractOrderablePlanSchema.literals).toStrictEqual(
       PaidPlanSchema.literals
     );
+  });
+
+  it("names the order box's words as the server records them", () => {
+    expect(orderConsentVersion).toBe(consentVersion);
   });
 
   it("lists the intervals the server bills", () => {

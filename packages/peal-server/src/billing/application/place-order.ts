@@ -1,9 +1,12 @@
-import { Context, DateTime, Effect, Layer } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
+import { AlreadySubscribed } from "#billing/domain/already-subscribed.ts";
 import { BilledElsewhere } from "#billing/domain/billed-elsewhere.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
+import { ConsentChanged } from "#billing/domain/consent-changed.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
+import { livePerAccount } from "#billing/domain/live-per-account.ts";
 import { consentVersion, Order, OrderIdSchema } from "#billing/domain/order.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
 import { PlanNotSold } from "#billing/domain/plan-not-sold.ts";
@@ -26,6 +29,7 @@ import type { PaidPlan } from "#shared/domain/plan.ts";
 import { BillingAccounts } from "./billing-accounts.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Orders } from "./ports/orders.ts";
+import { Subscriptions } from "./ports/subscriptions.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
@@ -35,6 +39,11 @@ export interface OrderRequest {
   readonly plan: PaidPlan;
   /** A trial rather than a paid order: none is offered any more. */
   readonly trial: boolean;
+  /**
+   * The version of the box's words the member was shown; none from an
+   * older client, which is taken as shown the server's.
+   */
+  readonly consentVersion?: string | undefined;
 }
 
 /**
@@ -60,7 +69,9 @@ export class PlaceOrder extends Context.Service<
       request: OrderRequest
     ) => Effect.Effect<
       Order,
+      | AlreadySubscribed
       | BilledElsewhere
+      | ConsentChanged
       | BillingOff
       | DatabaseError
       | MissingPermission
@@ -79,6 +90,7 @@ export class PlaceOrder extends Context.Service<
       const orders = yield* Orders;
       const usage = yield* WorkspaceUsage;
       const accounts = yield* BillingAccounts;
+      const subscriptions = yield* Subscriptions;
 
       const context = yield* Effect.context<Ids>();
 
@@ -103,6 +115,17 @@ export class PlaceOrder extends Context.Service<
           return yield* new BilledElsewhere({ billingWorkspaceId: holder });
         }
 
+        // The words the member ticked are the ones recorded.
+        if (
+          request.consentVersion !== undefined &&
+          request.consentVersion !== consentVersion
+        ) {
+          return yield* new ConsentChanged({
+            current: consentVersion,
+            shown: request.consentVersion,
+          });
+        }
+
         // The rate card's free accounts replace the trial.
         if (request.trial) {
           return yield* new TrialUnavailable({ reason: "notOffered" });
@@ -113,6 +136,14 @@ export class PlaceOrder extends Context.Service<
             interval: request.interval,
             plan: request.plan,
           });
+        }
+
+        // One contract per account: one past due or unpaid is paid in the
+        // portal, never doubled.
+        const live = livePerAccount(yield* subscriptions.ofWorkspace(holder));
+
+        if (Option.isSome(live)) {
+          return yield* new AlreadySubscribed({ status: live.value.status });
         }
 
         // Never above the plan ordered, for what decides whether a

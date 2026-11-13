@@ -2127,7 +2127,9 @@
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
       "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
       "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
-      "planTooSmall": "This plan does not hold what the workspace has."
+      "planTooSmall": "This plan does not hold what the workspace has.",
+      "alreadySubscribed": "This billing account already has per-account pricing. If a payment failed, update the payment method from the billing page instead.",
+      "consentChanged": "The words of the order box changed since this page was loaded. Load the page again, read the box, and order again."
     },
     "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
     "prices": {

@@ -8,7 +8,9 @@ import {
   Schema,
 } from "effect";
 
+import { AlreadySubscribed } from "#billing/domain/already-subscribed.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
+import { livePerAccount } from "#billing/domain/live-per-account.ts";
 import { OrderRequired } from "#billing/domain/order-required.ts";
 import { orderLifetimeMinutes, OrderIdSchema } from "#billing/domain/order.ts";
 import { allowancesOf } from "#billing/domain/plans.ts";
@@ -20,6 +22,7 @@ import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import { Orders } from "./ports/orders.ts";
 import { PlanHolders } from "./ports/plan-holders.ts";
+import { Subscriptions } from "./ports/subscriptions.ts";
 import { UsageAtCheckout } from "./ports/usage-at-checkout.ts";
 
 const decodeOrderId = Schema.decodeUnknownOption(OrderIdSchema);
@@ -59,7 +62,7 @@ export class CheckoutOrders extends Context.Service<
       request: CheckoutRequest
     ) => Effect.Effect<
       CheckoutTerms,
-      DatabaseError | OrderRequired | TrialUnavailable
+      AlreadySubscribed | DatabaseError | OrderRequired | TrialUnavailable
     >;
   }
 >()("peal-server/billing/application/CheckoutOrders") {
@@ -69,6 +72,7 @@ export class CheckoutOrders extends Context.Service<
       const orders = yield* Orders;
       const usage = yield* UsageAtCheckout;
       const holders = yield* PlanHolders;
+      const subscriptions = yield* Subscriptions;
 
       const take = Effect.fn("CheckoutOrders.take")(function* take(
         request: CheckoutRequest
@@ -117,6 +121,16 @@ export class CheckoutOrders extends Context.Service<
 
         if (request.plan !== "payAsYouGo") {
           return yield* new OrderRequired();
+        }
+
+        // Placed before another checkout of the account went through: one
+        // contract per account.
+        const live = livePerAccount(
+          yield* subscriptions.ofWorkspace(request.workspaceId)
+        );
+
+        if (Option.isSome(live)) {
+          return yield* new AlreadySubscribed({ status: live.value.status });
         }
 
         // Never above the plan ordered: what the workspace holds is

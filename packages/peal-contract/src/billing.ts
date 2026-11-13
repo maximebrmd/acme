@@ -294,6 +294,10 @@ export type Reduction = typeof ReductionSchema.Type;
  * the days used (the box on the billing page, which must be ticked).
  */
 export const OrderPayloadSchema = Schema.Struct({
+  // The version of the box's words the client showed (`orderConsentVersion`
+  // in `peal-contract/billing-plans`); refused when it is not the
+  // server's (ConsentChanged). Older clients leave it out.
+  consentVersion: Schema.optionalKey(Schema.String),
   interval: BillingIntervalSchema,
   plan: OrderablePlanSchema,
   startNow: Schema.Literal(true),

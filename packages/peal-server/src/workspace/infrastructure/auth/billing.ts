@@ -45,7 +45,10 @@ export interface CheckoutStart {
 export type CheckoutAnswer =
   | {
       readonly _tag: "refused";
-      readonly code: "ORDER_REQUIRED" | "TRIAL_UNAVAILABLE";
+      readonly code:
+        | "ALREADY_SUBSCRIBED"
+        | "ORDER_REQUIRED"
+        | "TRIAL_UNAVAILABLE";
     }
   | { readonly _tag: "start"; readonly trialDays: number | null };
 
@@ -540,6 +543,11 @@ const UpgradeBodySchema = Schema.Struct({
 const decodeUpgradeBody = Schema.decodeUnknownOption(UpgradeBodySchema);
 
 const OrderErrors = {
+  ALREADY_SUBSCRIBED: {
+    code: "ALREADY_SUBSCRIBED",
+    message:
+      "The billing account already has per-account pricing: update its payment method in the customer portal instead",
+  },
   ORDER_REQUIRED: {
     code: "CHECKOUT_ORDER_REQUIRED",
     message:

@@ -171,6 +171,17 @@ const record = (fields: Partial<SubscriptionEvent>) =>
     subscriptions.record(event(fields))
   );
 
+// A per-account subscription, active since `startedAt`.
+const perAccount = (id: string, startedAt: string) =>
+  record({
+    plan: "payAsYouGo",
+    startedAt: Option.some(at(startedAt)),
+    startedBy: Option.none(),
+    status: "active",
+    stripeSubscriptionId: id,
+    trialEnd: Option.none(),
+  });
+
 layer(RecordTest)("recording a subscription", (it) => {
   it.effect(
     "sets a trial to end, cancelled, with its trial, so a card added in the portal is never charged",
@@ -274,6 +285,29 @@ layer(RecordTest)("recording a subscription", (it) => {
         assert.deepInclude(entitlements, [
           "sub_synthetic_accounts",
           "payAsYouGo",
+        ]);
+      })
+  );
+
+  it.effect(
+    "ends at once, without a charge, a second per-account subscription of the account, keeping the older",
+    () =>
+      Effect.gen(function* duplicate() {
+        yield* reset;
+        yield* perAccount("sub_synthetic_first", "2026-11-09T10:00:00Z");
+        yield* perAccount("sub_synthetic_second", "2026-11-09T10:05:00Z");
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_second duplicateSubscription",
+        ]);
+
+        // The older one's event arriving last ends the newer one too.
+        yield* reset;
+        yield* perAccount("sub_synthetic_late", "2026-11-09T10:05:00Z");
+        yield* perAccount("sub_synthetic_early", "2026-11-09T10:00:00Z");
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_late duplicateSubscription",
         ]);
       })
   );
