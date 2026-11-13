@@ -50,7 +50,7 @@ the stack. The server issues links on it (`PEAL_SHORT_LINK_BASE`, which
 The docs have their assistant where `peal_static_build_args` names a model
 (`DOCS_ASSISTANT_MODEL`, production only; the sandbox's docs stay static): `peal_docs_server`
 then has `release.yml` build the `peal-docs` image, Compose run its `docs`
-profile, and the tunnel send the docs' host name to it. Its Anthropic key,
+profile, and the tunnel send the docs' host name to it once it answers on the server (the static image serves the docs until then, and the release switches the route after its checks: `roles/cloudflared/tasks/routes.yml`). Its Anthropic key,
 `DOCS_ANTHROPIC_API_KEY`, is a credential `site.yml` requires there. Its rate
 limit counts each reader by `cf-connecting-ip` (`AUTH_IP_HEADERS`), which
 the docs server copies into X-Forwarded-For; Cloudflare only appends to the

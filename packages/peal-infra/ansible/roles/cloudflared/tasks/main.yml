@@ -77,18 +77,8 @@
       {{ cloudflared_config_dir }}/token on the server (README.md, "Credentials").
     quiet: true
 
-# Validated before it replaces the live file, so a broken rule never reaches
-# a restart.
 - name: Write the tunnel's routes
-  ansible.builtin.template:
-    src: config.yml.j2
-    dest: "{{ cloudflared_config_dir }}/config.yml"
-    owner: root
-    group: cloudflared
-    mode: "0640"
-    validate: /usr/bin/cloudflared tunnel --config %s ingress validate
-  when: not (ansible_check_mode and cloudflared_folder is changed)
-  notify: Restart cloudflared
+  ansible.builtin.import_tasks: routes.yml
 
 - name: Look for the cloudflared service
   ansible.builtin.stat:

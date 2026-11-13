@@ -1,0 +1,35 @@
+---
+# The tunnel's routes. The docs' host name goes to the docs server only once
+# it answers on the server, and to the static image, which always serves the
+# docs, until then: site.yml can run before the release that starts the docs
+# server, and the host name never points at a server that is not there yet.
+# peal_release runs these tasks again once its checks pass, so the switch
+# needs no second run of site.yml.
+
+# Read-only, so it runs in check mode too and the diff shows the real route.
+- name: Check whether the docs server answers
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ peal_ports.docs_server }}/
+    status_code: 200
+    timeout: 5
+  register: cloudflared_docs_probe
+  failed_when: false
+  check_mode: false
+  when: peal_docs_server | bool
+
+- name: Choose where the docs go
+  ansible.builtin.set_fact:
+    cloudflared_docs_to_server: "{{ peal_docs_server | bool and (cloudflared_docs_probe.status | default(0)) == 200 }}"
+
+# Validated before it replaces the live file, so a broken rule never reaches
+# a restart.
+- name: Write the tunnel's routes
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ cloudflared_config_dir }}/config.yml"
+    owner: root
+    group: cloudflared
+    mode: "0640"
+    validate: /usr/bin/cloudflared tunnel --config %s ingress validate
+  when: not (ansible_check_mode and cloudflared_folder | default({}) is changed)
+  notify: Restart cloudflared
