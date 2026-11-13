@@ -513,6 +513,32 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
         }).pipe(Effect.provide(assistantTest()))
     );
 
+    it.effect(
+      "keeps the day's counts once the provider is removed, until the workspace goes",
+      () =>
+        Effect.gen(function* kept() {
+          const workspaceId = yield* freshWorkspace;
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* bringProvider(workspaceId);
+          yield* askOwn(workspaceId, ownAnswer("Hi."));
+          yield* WritingAssistant.use((assistant) =>
+            assistant.removeTextProvider(admin(workspaceId))
+          );
+
+          const [provider] = yield* sql<{
+            readonly count: number;
+          }>`SELECT count(*)::int AS count FROM assistant.text_providers WHERE workspace_id = ${workspaceId}`;
+          const [counted] = yield* sql<{
+            readonly requests: number;
+          }>`SELECT requests FROM assistant.own_text_days WHERE workspace_id = ${workspaceId}`;
+
+          // Removing and saving again starts no new day.
+          assert.strictEqual(provider?.count, 0);
+          assert.strictEqual(counted?.requests, 1);
+        }).pipe(Effect.provide(assistantTest()))
+    );
+
     it.effect("removes it, and the server's model writes again", () =>
       Effect.gen(function* removed() {
         const workspaceId = yield* freshWorkspace;
