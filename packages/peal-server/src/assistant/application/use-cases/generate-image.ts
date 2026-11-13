@@ -1,8 +1,9 @@
-import { Cause, DateTime, Effect, Option, Schema } from "effect";
+import { Cause, DateTime, Effect, Option } from "effect";
 
 import { AssistantQuotaExceeded } from "#assistant/application/assistant-quota-exceeded.ts";
 import { AssistantUnavailable } from "#assistant/application/assistant-unavailable.ts";
-import { ImageFailed } from "#assistant/application/image-failed.ts";
+import type { ImageFailed } from "#assistant/application/image-failed.ts";
+import type { ImageNotStored } from "#assistant/application/image-not-stored.ts";
 import { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import { ImagesBusy } from "#assistant/application/images-busy.ts";
 import { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
@@ -25,17 +26,23 @@ import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
-import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
-const isUnavailable = Schema.is(AssistantUnavailable);
-const isImageFailed = Schema.is(ImageFailed);
-const isLimitReached = Schema.is(PlanLimitReached);
-
-// The provider made nothing, or the library kept nothing.
-const madeNone = (failure: unknown): boolean =>
-  isUnavailable(failure) ||
-  isLimitReached(failure) ||
-  (isImageFailed(failure) &&
+// The provider made nothing, or the library kept nothing (a file it
+// could not keep is the provider's making, and is forgiven).
+const madeNone = (
+  failure:
+    | AssistantUnavailable
+    | ImageFailed
+    | ImageNotStored
+    | MissingPermission
+    | PlanLimitReached
+): boolean =>
+  failure._tag === "AssistantUnavailable" ||
+  failure._tag === "PlanLimitReached" ||
+  failure._tag === "ImageNotStored" ||
+  failure._tag === "MissingPermission" ||
+  (failure._tag === "ImageFailed" &&
     (failure.reason === "unreachable" || failure.reason === "refused"));
 
 /** What image to make, for the actor's workspace. */
@@ -192,7 +199,7 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
         .claim(workspaceId, "assistantImages", 1)
         .pipe(Effect.catchTag("DatabaseError", Effect.die));
 
-      const takenBack = (cause: Cause.Cause<unknown>) =>
+      const takenBack = (cause: Cause.Cause<Parameters<typeof madeNone>[0]>) =>
         Option.exists(Cause.findErrorOption(cause), madeNone)
           ? meters.giveBack(claim)
           : meters.forgive(claim);
