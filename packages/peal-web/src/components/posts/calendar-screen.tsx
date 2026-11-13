@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { CalendarDayView } from "#components/posts/calendar-day-view.tsx";
 import { CalendarFilters } from "#components/posts/calendar-filters.tsx";
-import { ChipTags } from "#components/posts/chip-tags.tsx";
+import { ChipEdge, ChipTags } from "#components/posts/chip-tags.tsx";
 import { useQueueName } from "#components/posts/queue-choice.tsx";
 import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { Link } from "#i18n/navigation.ts";
@@ -168,9 +168,10 @@ interface PostChipProps {
   readonly workspaceId: string;
 }
 
-// A post on the calendar: a link to it in the composer, a handle to drag it
-// to another time when it is still scheduled, the colours of its tags, and
-// a mark when it shows images or videos.
+// A post on the calendar: its first tag's colour along its edge, a link to
+// it in the composer, a handle to drag it to another time when it is still
+// scheduled, the colours of its tags, and a mark when it shows images or
+// videos.
 const PostChip = ({
   movable,
   placed,
@@ -226,6 +227,7 @@ const PostChip = ({
         isDragging ? "opacity-50" : null
       )}
     >
+      <ChipEdge tags={filed} />
       {movable ? (
         <button
           ref={setHandle}

@@ -50,6 +50,44 @@ const TagDot = ({
   />
 );
 
+const tagStripeVariants = cva(
+  "inline-block w-1 shrink-0 self-stretch rounded-full",
+  {
+    defaultVariants: { colour: "gray" },
+    variants: {
+      colour: {
+        amber: "bg-tag-amber",
+        blue: "bg-tag-blue",
+        gray: "bg-tag-gray",
+        green: "bg-tag-green",
+        orange: "bg-tag-orange",
+        pink: "bg-tag-pink",
+        purple: "bg-tag-purple",
+        red: "bg-tag-red",
+        teal: "bg-tag-teal",
+      },
+    },
+  }
+);
+
+/**
+ * A tag's colour along the edge of what it is filed on, such as a post on
+ * a calendar: a bar as tall as its container, which a flex row stretches,
+ * hidden from assistive technology like the dot.
+ */
+const TagStripe = ({
+  className,
+  colour,
+  ...props
+}: ComponentProps<"span"> & VariantProps<typeof tagStripeVariants>) => (
+  <span
+    aria-hidden="true"
+    data-slot="tag-stripe"
+    className={cn(tagStripeVariants({ colour }), className)}
+    {...props}
+  />
+);
+
 /**
  * A label filed on something: its colour as a dot, and its name, which
  * says what the colour cannot.
@@ -73,6 +111,6 @@ const Tag = ({
   </span>
 );
 
-export { Tag, tagColours, TagDot };
+export { Tag, tagColours, TagDot, TagStripe };
 
 export type { TagColour };
