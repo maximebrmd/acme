@@ -32,8 +32,8 @@
     "effect": "4.1.2",
     "fern-api": "5.201.0",
     "nx": "24.0.5",
-    "oxfmt": "0.77.0",
-    "oxlint": "1.92.0",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
     "oxlint-tsgolint": "7.0.2006",
     "typescript": "7.0.2",
     "ultracite": "8.1.1"
