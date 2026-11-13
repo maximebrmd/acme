@@ -852,6 +852,15 @@ describe("a channel taken off a post that waits for an approval", () => {
           assert.notStrictEqual(after.subjectHash, before.subjectHash);
           assert.lengthOf(yield* requests.ofPost(workspaceId, post.id), 1);
 
+          // Its reviewers are shown the channels it goes to, as the
+          // approval covers them.
+          assert.deepStrictEqual(
+            (yield* review.thread(editor, post.id)).post.channels.map(
+              (shownOn) => shownOn.channelId
+            ),
+            [channelId]
+          );
+
           const stale = yield* Effect.flip(
             review.approve(editor, post.id, before)
           );
