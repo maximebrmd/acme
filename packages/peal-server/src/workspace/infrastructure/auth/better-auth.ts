@@ -27,7 +27,7 @@ import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
-import { AuthStartFailed } from "./auth-start-failed.ts";
+import { authStarted } from "./auth-start.ts";
 import type { CheckoutAnswer, Upgrade } from "./billing.ts";
 import { makeAuthDatabase } from "./database.ts";
 import type { ImpersonatedAuthRequest } from "./impersonation.ts";
@@ -410,12 +410,9 @@ export const BetterAuthLive = Layer.effect(
 
     yield* Deferred.succeed(made, auth);
 
-    // Checks the secret and options, and fails the server's start if they
-    // are wrong, rather than its first request.
-    yield* Effect.tryPromise({
-      catch: (cause) => new AuthStartFailed({ cause }),
-      try: async () => await auth.$context,
-    });
+    // Checks the secret, the options and the schema, and fails the server's
+    // start if they are wrong, rather than its first request.
+    yield* authStarted(auth);
 
     if (!servesMcp(settings.publicUrl)) {
       yield* Effect.logWarning(

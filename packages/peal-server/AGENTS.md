@@ -269,7 +269,10 @@ and no socket, for tests.
   (`shared/application`) saves rows and starts a workflow in one transaction.
   The runner's name comes from `HOSTNAME`, never `HOST` or `PORT`; shards are
   held with session advisory locks, storage is polled every 2 seconds, and
-  shutdown waits up to 60 seconds for platform calls in flight.
+  shutdown waits up to 60 seconds for platform calls in flight, as the HTTP
+  server does for requests (Bun then closes them; Effect's default is 20):
+  both in `src/app/shutdown.ts`, which `test/app/shutdown.test.ts` keeps
+  10 seconds inside the server's `stop_grace_period` (75 s).
 - The crons that call platforms through the gates (post counts at minute
   7, accounts at 37, comments every ten minutes from 2, the token sweep
   every ten from 0) never start on the same minute, and a collection

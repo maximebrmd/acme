@@ -242,8 +242,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # The server waits up to 60 seconds for calls to the platforms in flight
-    # before it stops; Docker's default 10 seconds would cut them short.
+    # The server waits up to 60 seconds for requests and calls to the
+    # platforms in flight before it stops (packages/peal-server/src/app/
+    # shutdown.ts); Docker's default 10 seconds would cut them short.
     stop_grace_period: 75s
     healthcheck:
       <<: *healthcheck
