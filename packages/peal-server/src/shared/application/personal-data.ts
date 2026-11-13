@@ -549,6 +549,7 @@ export interface ContractsRecord {
     readonly accounts: readonly {
       readonly billingWorkspaceId: string;
       readonly createdAt: DateTime.Utc;
+      readonly freeTier: boolean;
       readonly id: string;
       readonly standalone: boolean;
       readonly workspaceIds: readonly string[];

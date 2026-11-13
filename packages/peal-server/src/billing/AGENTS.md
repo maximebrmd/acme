@@ -171,10 +171,12 @@
   after those routes, and `of`, `accountsIn` and the sweep for rows
   already wrong), unless staff merged it there (`account_workspaces.merged`,
   which only `BillingAccountDesk.detach` clears).
-- A server that does not bill reads no account to schedule, publish or
-  tell the standing: `AccountChannelAllowanceLive` counts across an
-  account only when `BillingMode` bills, and `…/billing/standing` leaves
-  `account` out (it is optional for older servers). Where it bills, the
+- A server that does not bill reads no account to schedule, publish, tell
+  the standing, show the billing page or `get_billing`, or report usage:
+  `AccountChannelAllowanceLive` and `AccountPlanHoldersLive` (the partner
+  rule alone there) read one only when `BillingMode` bills, and
+  `…/billing` and `…/billing/standing` leave `account` out
+  (`accountShown`; optional for older servers too). Where it bills, the
   account's workspaces share its billing workspace's plan (`PlanHolders`,
   `AccountPlanHoldersLive`) and count their channels together, under
   `holdAccount` where the partner's hold is taken. Views read `poolsIn`,
@@ -196,14 +198,20 @@
   connected under two free accounts or more (the channels context's
   `SharedPlatformAccounts`, through `AccountChannels`, kept nowhere),
   merges one account into another (`mergeBillingAccounts`), detaches a
-  workspace back to its oldest owner's account (`detachBillingWorkspace`,
-  the way back from a merge) and requires a payment method
+  workspace back to who paid for it before the merge while they own it
+  (`merged_from_payer`), else to its oldest owner's account
+  (`detachBillingWorkspace`, the way back from a merge; the staff view
+  lists `mergedWorkspaceIds`, the merge's event the workspaces moved). A
+  merged workspace never bills an account: one left with only those
+  goes) and requires a payment method
   (`requirePaymentMethod`, `restoreFreeTier`), each audited first
   (`BillingAccountAudit`), ids only. A requirement is the account's
   `free_tier` and the person's (`billing.payment_requirements`, read
   whenever an account is made for them, carried by a merge, kept by the
   closed address's pseudonym for `requirementMemory`, 2 years, then
-  purged by `PurgeContractRecords`). The data is the registry's
+  purged by `PurgeContractRecords`; the same `Pseudonyms.ofEmail` value
+  a trial and a ban keep, on purpose: one anti-abuse purpose, and the
+  export reads the requirement by it too). The data is the registry's
   `billingAccounts` category, and the export's `contracts.billingAccounts`.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:

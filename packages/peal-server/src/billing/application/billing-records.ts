@@ -12,9 +12,11 @@ import type {
   BillingRecord,
   ContractsRecord,
 } from "#shared/application/personal-data.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
+import { AccountPayers } from "./ports/account-payers.ts";
 import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
@@ -181,6 +183,8 @@ export class BillingRecords extends Context.Service<
       const references = yield* ContractReferences;
       const accounts = yield* BillingAccounts;
       const accountStore = yield* BillingAccountStore;
+      const payers = yield* AccountPayers;
+      const pseudonyms = yield* Pseudonyms;
 
       const exportUser = Effect.fn("BillingRecords.exportUser")(
         function* exportUser(userId: UserId) {
@@ -194,9 +198,17 @@ export class BillingRecords extends Context.Service<
 
           const offers = yield* accountStore.transfersFor(userId);
 
+          // By their id, or by their address's pseudonym when they signed
+          // up again with an address one was required of.
+          const email = yield* payers.emailOf(userId);
+
+          const pseudonym = Option.isSome(email)
+            ? Option.some(yield* pseudonyms.ofEmail(email.value))
+            : Option.none<string>();
+
           const required = yield* accountStore.requiresPayment(
             userId,
-            Option.none()
+            pseudonym
           );
 
           const record: ContractsRecord = {
@@ -204,6 +216,7 @@ export class BillingRecords extends Context.Service<
               accounts: paid.map((account) => ({
                 billingWorkspaceId: account.holder,
                 createdAt: account.createdAt,
+                freeTier: account.freeTier,
                 id: account.id,
                 standalone: account.standalone,
                 workspaceIds: held.get(account.id) ?? [],

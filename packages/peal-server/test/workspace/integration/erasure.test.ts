@@ -798,9 +798,9 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
   yield* sql`INSERT INTO billing.accounts (id, holder_workspace_id, payer_user_id, standalone, created_at)
     VALUES (${uuid7()}, ${randomUUID()}, ${person.id}, true, now())`;
 
-  // A payment method staff required of them.
+  // A payment method staff required of them, by an id the test knows.
   yield* sql`INSERT INTO billing.payment_requirements (id, user_id, required_at)
-    VALUES (${uuid7()}, ${person.id}, now())`;
+    VALUES (${person.id}, ${person.id}, now())`;
 
   yield* sql`INSERT INTO auth.device_code (device_code, user_code, user_id, expires_at, status)
     VALUES (${randomUUID()}, ${randomUUID().slice(0, 8)}, ${person.id}, now() + interval '10 minutes', 'approved')`;
@@ -1028,6 +1028,14 @@ layer(RetainingLive, {
         );
 
         assert.isAbove(trials, 0);
+
+        // The payment method required of her stays too, by the same
+        // pseudonym, without her.
+        const required = yield* count(
+          sql`SELECT count(*)::int AS count FROM billing.payment_requirements WHERE id = ${ana.id} AND user_id IS NULL AND user_pseudonym IS NOT NULL AND forgotten_at IS NOT NULL`
+        );
+
+        assert.strictEqual(required, 1);
 
         // So did the workspace and the ids of what staff changed as her,
         // which would tie the events back to her.

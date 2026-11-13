@@ -139,7 +139,8 @@ export const BillingLive = Layer.mergeAll(
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
       HoldersLive,
-      DrizzleBillingAccountStoreLive
+      DrizzleBillingAccountStoreLive,
+      WorkspaceAccountPayersLive
     )
   ),
   // The billing accounts, which the other contexts read too, and whether

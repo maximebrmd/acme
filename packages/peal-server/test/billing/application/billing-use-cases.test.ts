@@ -1,9 +1,12 @@
 import { assert, layer } from "@effect/vitest";
 import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
+import { AccountPayers } from "#billing/application/ports/account-payers.ts";
+import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
@@ -372,7 +375,8 @@ const recordsWith = (enabled: boolean) =>
         NoTrialsTest,
         StripeUncalledTest,
         NoContractsTest,
-        AloneInAccountsTest
+        AloneInAccountsTest,
+        PlainPseudonymsTest
       )
     ),
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
@@ -736,6 +740,7 @@ const UnreadTest = Layer.mergeAll(
       UsageInMemory,
       NoContractsTest,
       AloneInAccountsTest,
+      PlainPseudonymsTest,
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(
         Checkouts,
@@ -777,5 +782,53 @@ layer(UnreadTest)("billing off", (it) => {
 
       assert.deepStrictEqual(erased, { subscriptionsCancelled: 0 });
     })
+  );
+});
+
+// A person who signed up again with an address a required payment method
+// is remembered by: their copy of their data says it is required.
+const RememberedTest = BillingRecords.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      SubscriptionsInMemory,
+      NoTrialsTest,
+      StripeUncalledTest,
+      NoContractsTest,
+      MeteredPostsInMemory,
+      UsageInMemory,
+      CheckoutsInMemory,
+      PlainPseudonymsTest,
+      Layer.mock(BillingAccounts, {}),
+      Layer.mock(AccountPayers, {
+        emailOf: () => Effect.succeed(Option.some("Remembered@example.com")),
+      }),
+      Layer.mock(BillingAccountStore, {
+        paidBy: () => Effect.succeed([]),
+        requiresPayment: (_userId, pseudonym) =>
+          Effect.succeed(
+            Option.contains(pseudonym, "pseudonym:remembered@example.com")
+          ),
+        transfersFor: () => Effect.succeed([]),
+        workspacesOfEach: () => Effect.succeed(new Map()),
+      }),
+      Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+    )
+  ),
+  Layer.provide(TransactionsTest)
+);
+
+layer(RememberedTest)("a person's copy of their billing data", (it) => {
+  it.effect(
+    "says a payment method remembered by their address is required",
+    () =>
+      Effect.gen(function* remembered() {
+        const exported = yield* BillingRecords.use((records) =>
+          records.exportUser(
+            UserIdSchema.make("6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9d")
+          )
+        );
+
+        assert.isTrue(exported.billingAccounts.paymentMethodRequired);
+      })
   );
 });

@@ -128,9 +128,11 @@ const EmptyAccountStoreTest = Layer.mock(BillingAccountStore, {
  * which nothing changes, its store holding nothing of anyone: for tests
  * where no account pools anything.
  */
-export const AloneInAccountsTest = Layer.merge(
+export const AloneInAccountsTest = Layer.mergeAll(
   AloneAccountsOnly,
-  EmptyAccountStoreTest
+  EmptyAccountStoreTest,
+  // Nobody's address is known, so no pseudonym is asked for.
+  Layer.mock(AccountPayers, { emailOf: () => Effect.succeedNone })
 );
 
 /**

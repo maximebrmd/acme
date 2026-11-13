@@ -383,6 +383,8 @@ const ExportedContractsSchema = Schema.Struct({
         Schema.Struct({
           billingWorkspaceId: Schema.String,
           createdAt: instant,
+          // False once staff required a payment method: no free tier.
+          freeTier: Schema.Boolean,
           id: Schema.String,
           // A workspace a plan subscription of its own keeps alone.
           standalone: Schema.Boolean,

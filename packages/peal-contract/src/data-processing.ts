@@ -38,7 +38,10 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   (`legal/domain/legal-retention.ts`);
  * - `requirementMemory`, `transferOffers`: a payment method staff
  *   required of a person, and an offer to hand a workspace over
- *   (`billing/domain/requirement-memory.ts`, `account-transfer.ts`);
+ *   (`billing/domain/requirement-memory.ts`, `account-transfer.ts`). The
+ *   requirement is kept by the same keyed pseudonym of the address as a
+ *   trial and a ban are (`Pseudonyms.ofEmail`): one purpose, keeping one
+ *   person from coming back as another to abuse the service;
  * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
  *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
  *   `trial-memory.ts`);
