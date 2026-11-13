@@ -34,7 +34,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Tells whether the server has a language model, so clients show the assistant or hide it, who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+// Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (`source`: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
 //
 // Example:
 //
@@ -61,7 +61,7 @@ func (c *Client) Status(
 	return response.Body, nil
 }
 
-// Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+// Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
 //
 // Example:
 //
@@ -196,6 +196,117 @@ func (c *Client) RemoveImageProvider(
 	opts ...option.RequestOption,
 ) error {
 	_, err := c.WithRawResponse.RemoveImageProvider(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Reads the text provider the workspace brought, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests: the API it speaks, its address and model, never its key, or null. Needs assistant:configure.
+//
+// Example:
+//
+//	request := &peal.TextProviderAssistantRequest{
+//	    WorkspaceID: "workspaceId",
+//	}
+//	_, err := client.Assistant.TextProvider(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) TextProvider(
+	ctx context.Context,
+	request *peal.TextProviderAssistantRequest,
+	opts ...option.RequestOption,
+) (*peal.TextProviderSetting, error) {
+	response, err := c.WithRawResponse.TextProvider(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Sets the text provider the workspace brings, Anthropic's Messages API or an endpoint that speaks the OpenAI chat completions API, whose suggestions then spend none of the workspace's daily assistant requests. The workspace's drafts, and the subjects of the posts it asks the assistant to write, then go to `baseUrl` with `apiKey`, under that provider's terms. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: `apiKey` may be left out to keep the stored one only while `baseUrl` stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: test it with `POST .../text-provider/test`. Needs assistant:configure, which no OAuth client holds but Peal's command line.
+//
+// Example:
+//
+//	request := &peal.TextProviderChange{
+//	    WorkspaceID: "workspaceId",
+//	    BaseURL: "baseUrl",
+//	    Kind: peal.TextProviderKindAnthropic,
+//	    Model: "model",
+//	}
+//	_, err := client.Assistant.SetTextProvider(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) SetTextProvider(
+	ctx context.Context,
+	request *peal.TextProviderChange,
+	opts ...option.RequestOption,
+) (*peal.TextProvider, error) {
+	response, err := c.WithRawResponse.SetTextProvider(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Removes the workspace's text provider and its key: the server's language model writes again, if it has one, within the workspace's daily requests. Needs assistant:configure.
+//
+// Example:
+//
+//	request := &peal.RemoveTextProviderAssistantRequest{
+//	    WorkspaceID: "workspaceId",
+//	}
+//	err := client.Assistant.RemoveTextProvider(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) RemoveTextProvider(
+	ctx context.Context,
+	request *peal.RemoveTextProviderAssistantRequest,
+	opts ...option.RequestOption,
+) error {
+	_, err := c.WithRawResponse.RemoveTextProvider(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Sends the workspace's text provider one short request, a rewrite of a fixed sentence, as a member's request would go, and answers 204 once the provider gave a suggestion the assistant can use. Otherwise the answer says why, as a suggestion's would: TextProviderRefused (its settings, a redirect, its address or its key) or AssistantFailed (unreachable, timed out, declined, or an answer the assistant cannot use: often a model without structured output). It counts as one of the day's requests to that provider, and nothing of Peal's. Needs assistant:configure.
+//
+// Example:
+//
+//	request := &peal.TestTextProviderAssistantRequest{
+//	    WorkspaceID: "workspaceId",
+//	}
+//	err := client.Assistant.TestTextProvider(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) TestTextProvider(
+	ctx context.Context,
+	request *peal.TestTextProviderAssistantRequest,
+	opts ...option.RequestOption,
+) error {
+	_, err := c.WithRawResponse.TestTextProvider(
 		ctx,
 		request,
 		opts...,

@@ -2,5 +2,9 @@ export type { ImageProviderAssistantRequest } from "./ImageProviderAssistantRequ
 export type { ImageProviderChange } from "./ImageProviderChange.js";
 export type { ImageRequest } from "./ImageRequest.js";
 export type { RemoveImageProviderAssistantRequest } from "./RemoveImageProviderAssistantRequest.js";
+export type { RemoveTextProviderAssistantRequest } from "./RemoveTextProviderAssistantRequest.js";
 export type { StatusAssistantRequest } from "./StatusAssistantRequest.js";
 export type { SuggestionRequest } from "./SuggestionRequest.js";
+export type { TestTextProviderAssistantRequest } from "./TestTextProviderAssistantRequest.js";
+export type { TextProviderAssistantRequest } from "./TextProviderAssistantRequest.js";
+export type { TextProviderChange } from "./TextProviderChange.js";

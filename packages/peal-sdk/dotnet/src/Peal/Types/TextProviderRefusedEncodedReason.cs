@@ -4,13 +4,25 @@ using Peal.Core;
 
 namespace Peal;
 
-[JsonConverter(typeof(AssistantFailedEncodedTag.AssistantFailedEncodedTagSerializer))]
+[JsonConverter(typeof(TextProviderRefusedEncodedReason.TextProviderRefusedEncodedReasonSerializer))]
 [Serializable]
-public readonly record struct AssistantFailedEncodedTag : IStringEnum
+public readonly record struct TextProviderRefusedEncodedReason : IStringEnum
 {
-    public static readonly AssistantFailedEncodedTag AssistantFailed = new(Values.AssistantFailed);
+    public static readonly TextProviderRefusedEncodedReason SettingsRefused = new(
+        Values.SettingsRefused
+    );
 
-    public AssistantFailedEncodedTag(string value)
+    public static readonly TextProviderRefusedEncodedReason Redirected = new(Values.Redirected);
+
+    public static readonly TextProviderRefusedEncodedReason AddressRefused = new(
+        Values.AddressRefused
+    );
+
+    public static readonly TextProviderRefusedEncodedReason KeyUnreadable = new(
+        Values.KeyUnreadable
+    );
+
+    public TextProviderRefusedEncodedReason(string value)
     {
         Value = value;
     }
@@ -23,9 +35,9 @@ public readonly record struct AssistantFailedEncodedTag : IStringEnum
     /// <summary>
     /// Create a string enum with the given value.
     /// </summary>
-    public static AssistantFailedEncodedTag FromCustom(string value)
+    public static TextProviderRefusedEncodedReason FromCustom(string value)
     {
-        return new AssistantFailedEncodedTag(value);
+        return new TextProviderRefusedEncodedReason(value);
     }
 
     public bool Equals(string? other)
@@ -41,19 +53,20 @@ public readonly record struct AssistantFailedEncodedTag : IStringEnum
         return Value;
     }
 
-    public static bool operator ==(AssistantFailedEncodedTag value1, string value2) =>
+    public static bool operator ==(TextProviderRefusedEncodedReason value1, string value2) =>
         value1.Value.Equals(value2);
 
-    public static bool operator !=(AssistantFailedEncodedTag value1, string value2) =>
+    public static bool operator !=(TextProviderRefusedEncodedReason value1, string value2) =>
         !value1.Value.Equals(value2);
 
-    public static explicit operator string(AssistantFailedEncodedTag value) => value.Value;
+    public static explicit operator string(TextProviderRefusedEncodedReason value) => value.Value;
 
-    public static explicit operator AssistantFailedEncodedTag(string value) => new(value);
+    public static explicit operator TextProviderRefusedEncodedReason(string value) => new(value);
 
-    internal class AssistantFailedEncodedTagSerializer : JsonConverter<AssistantFailedEncodedTag>
+    internal class TextProviderRefusedEncodedReasonSerializer
+        : JsonConverter<TextProviderRefusedEncodedReason>
     {
-        public override AssistantFailedEncodedTag Read(
+        public override TextProviderRefusedEncodedReason Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -64,19 +77,19 @@ public readonly record struct AssistantFailedEncodedTag : IStringEnum
                 ?? throw new global::System.Exception(
                     "The JSON value could not be read as a string."
                 );
-            return new AssistantFailedEncodedTag(stringValue);
+            return new TextProviderRefusedEncodedReason(stringValue);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            AssistantFailedEncodedTag value,
+            TextProviderRefusedEncodedReason value,
             JsonSerializerOptions options
         )
         {
             writer.WriteStringValue(value.Value);
         }
 
-        public override AssistantFailedEncodedTag ReadAsPropertyName(
+        public override TextProviderRefusedEncodedReason ReadAsPropertyName(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -87,12 +100,12 @@ public readonly record struct AssistantFailedEncodedTag : IStringEnum
                 ?? throw new global::System.Exception(
                     "The JSON property name could not be read as a string."
                 );
-            return new AssistantFailedEncodedTag(stringValue);
+            return new TextProviderRefusedEncodedReason(stringValue);
         }
 
         public override void WriteAsPropertyName(
             Utf8JsonWriter writer,
-            AssistantFailedEncodedTag value,
+            TextProviderRefusedEncodedReason value,
             JsonSerializerOptions options
         )
         {
@@ -106,6 +119,12 @@ public readonly record struct AssistantFailedEncodedTag : IStringEnum
     [Serializable]
     public static class Values
     {
-        public const string AssistantFailed = "AssistantFailed";
+        public const string SettingsRefused = "settingsRefused";
+
+        public const string Redirected = "redirected";
+
+        public const string AddressRefused = "addressRefused";
+
+        public const string KeyUnreadable = "keyUnreadable";
     }
 }

@@ -44,6 +44,12 @@ class AssistantStatus extends JsonSerializableType
     public string $resetsAt;
 
     /**
+     * @var ?value-of<AssistantTextSource> $source
+     */
+    #[JsonProperty('source')]
+    public ?string $source;
+
+    /**
      * @param array{
      *   available: bool,
      *   dailyLimit: int,
@@ -51,6 +57,7 @@ class AssistantStatus extends JsonSerializableType
      *   maxTextLength: int,
      *   remaining: int,
      *   resetsAt: string,
+     *   source?: ?value-of<AssistantTextSource>,
      * } $values
      */
     public function __construct(
@@ -62,6 +69,7 @@ class AssistantStatus extends JsonSerializableType
         $this->maxTextLength = $values['maxTextLength'];
         $this->remaining = $values['remaining'];
         $this->resetsAt = $values['resetsAt'];
+        $this->source = $values['source'] ?? null;
     }
 
     /**

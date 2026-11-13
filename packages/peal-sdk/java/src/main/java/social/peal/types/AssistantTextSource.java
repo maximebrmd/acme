@@ -6,15 +6,16 @@ package social.peal.types;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public final class AssistantFailedEncodedTag {
-    public static final AssistantFailedEncodedTag ASSISTANT_FAILED =
-            new AssistantFailedEncodedTag(Value.ASSISTANT_FAILED, "AssistantFailed");
+public final class AssistantTextSource {
+    public static final AssistantTextSource WORKSPACE = new AssistantTextSource(Value.WORKSPACE, "workspace");
+
+    public static final AssistantTextSource SERVER = new AssistantTextSource(Value.SERVER, "server");
 
     private final Value value;
 
     private final String string;
 
-    AssistantFailedEncodedTag(Value value, String string) {
+    AssistantTextSource(Value value, String string) {
         this.value = value;
         this.string = string;
     }
@@ -32,8 +33,7 @@ public final class AssistantFailedEncodedTag {
     @java.lang.Override
     public boolean equals(Object other) {
         return (this == other)
-                || (other instanceof AssistantFailedEncodedTag
-                        && this.string.equals(((AssistantFailedEncodedTag) other).string));
+                || (other instanceof AssistantTextSource && this.string.equals(((AssistantTextSource) other).string));
     }
 
     @java.lang.Override
@@ -43,8 +43,10 @@ public final class AssistantFailedEncodedTag {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case ASSISTANT_FAILED:
-                return visitor.visitAssistantFailed();
+            case WORKSPACE:
+                return visitor.visitWorkspace();
+            case SERVER:
+                return visitor.visitServer();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -52,23 +54,29 @@ public final class AssistantFailedEncodedTag {
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-    public static AssistantFailedEncodedTag valueOf(String value) {
+    public static AssistantTextSource valueOf(String value) {
         switch (value) {
-            case "AssistantFailed":
-                return ASSISTANT_FAILED;
+            case "workspace":
+                return WORKSPACE;
+            case "server":
+                return SERVER;
             default:
-                return new AssistantFailedEncodedTag(Value.UNKNOWN, value);
+                return new AssistantTextSource(Value.UNKNOWN, value);
         }
     }
 
     public enum Value {
-        ASSISTANT_FAILED,
+        WORKSPACE,
+
+        SERVER,
 
         UNKNOWN
     }
 
     public interface Visitor<T> {
-        T visitAssistantFailed();
+        T visitWorkspace();
+
+        T visitServer();
 
         T visitUnknown(String unknownType);
     }

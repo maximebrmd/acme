@@ -5,15 +5,20 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -31,6 +36,8 @@ public final class AssistantStatus {
 
     private final String resetsAt;
 
+    private final Optional<AssistantTextSource> source;
+
     private final Map<String, Object> additionalProperties;
 
     private AssistantStatus(
@@ -40,6 +47,7 @@ public final class AssistantStatus {
             int maxTextLength,
             int remaining,
             String resetsAt,
+            Optional<AssistantTextSource> source,
             Map<String, Object> additionalProperties) {
         this.available = available;
         this.dailyLimit = dailyLimit;
@@ -47,6 +55,7 @@ public final class AssistantStatus {
         this.maxTextLength = maxTextLength;
         this.remaining = remaining;
         this.resetsAt = resetsAt;
+        this.source = source;
         this.additionalProperties = additionalProperties;
     }
 
@@ -80,6 +89,20 @@ public final class AssistantStatus {
         return resetsAt;
     }
 
+    @JsonIgnore
+    public Optional<AssistantTextSource> getSource() {
+        if (source == null) {
+            return Optional.empty();
+        }
+        return source;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("source")
+    private Optional<AssistantTextSource> _getSource() {
+        return source;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -97,13 +120,20 @@ public final class AssistantStatus {
                 && images.equals(other.images)
                 && maxTextLength == other.maxTextLength
                 && remaining == other.remaining
-                && resetsAt.equals(other.resetsAt);
+                && resetsAt.equals(other.resetsAt)
+                && source.equals(other.source);
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.available, this.dailyLimit, this.images, this.maxTextLength, this.remaining, this.resetsAt);
+                this.available,
+                this.dailyLimit,
+                this.images,
+                this.maxTextLength,
+                this.remaining,
+                this.resetsAt,
+                this.source);
     }
 
     @java.lang.Override
@@ -147,6 +177,12 @@ public final class AssistantStatus {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage source(Optional<AssistantTextSource> source);
+
+        _FinalStage source(AssistantTextSource source);
+
+        _FinalStage source(Nullable<AssistantTextSource> source);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -170,6 +206,8 @@ public final class AssistantStatus {
 
         private String resetsAt;
 
+        private Optional<AssistantTextSource> source = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -182,6 +220,7 @@ public final class AssistantStatus {
             maxTextLength(other.getMaxTextLength());
             remaining(other.getRemaining());
             resetsAt(other.getResetsAt());
+            source(other.getSource());
             return this;
         }
 
@@ -228,9 +267,34 @@ public final class AssistantStatus {
         }
 
         @java.lang.Override
+        public _FinalStage source(Nullable<AssistantTextSource> source) {
+            if (source.isNull()) {
+                this.source = null;
+            } else if (source.isEmpty()) {
+                this.source = Optional.empty();
+            } else {
+                this.source = Optional.of(source.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage source(AssistantTextSource source) {
+            this.source = Optional.ofNullable(source);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "source", nulls = Nulls.SKIP)
+        public _FinalStage source(Optional<AssistantTextSource> source) {
+            this.source = source;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantStatus build() {
             return new AssistantStatus(
-                    available, dailyLimit, images, maxTextLength, remaining, resetsAt, additionalProperties);
+                    available, dailyLimit, images, maxTextLength, remaining, resetsAt, source, additionalProperties);
         }
 
         @JsonAnySetter
@@ -240,7 +304,8 @@ public final class AssistantStatus {
                     || key.equalsIgnoreCase("images")
                     || key.equalsIgnoreCase("maxTextLength")
                     || key.equalsIgnoreCase("remaining")
-                    || key.equalsIgnoreCase("resetsAt")) {
+                    || key.equalsIgnoreCase("resetsAt")
+                    || key.equalsIgnoreCase("source")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -4,10 +4,11 @@ require_relative "../../peal"
 
 module Peal
   module Types
-    module AssistantFailedEncodedTag
+    module TextProviderKind
       extend Peal::Internal::Types::Enum
 
-      ASSISTANT_FAILED = "AssistantFailed"
+      ANTHROPIC = "anthropic"
+      OPENAI_COMPATIBLE = "openai-compatible"
     end
   end
 end

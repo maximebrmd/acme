@@ -7,13 +7,9 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
-from .assistant_failed_encoded_tag import AssistantFailedEncodedTag
 
 
 class AssistantFailedEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        AssistantFailedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[

@@ -29,7 +29,8 @@ public class StatusTest : BaseMockServerTest
               },
               "maxTextLength": 1,
               "remaining": 1,
-              "resetsAt": "resetsAt"
+              "resetsAt": "resetsAt",
+              "source": "workspace"
             }
             """;
 
@@ -72,7 +73,8 @@ public class StatusTest : BaseMockServerTest
               },
               "maxTextLength": 1,
               "remaining": 1,
-              "resetsAt": "resetsAt"
+              "resetsAt": "resetsAt",
+              "source": "workspace"
             }
             """;
 

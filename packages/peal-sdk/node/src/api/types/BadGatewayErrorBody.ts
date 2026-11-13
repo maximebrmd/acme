@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type BadGatewayErrorBody = 
-    | Peal.BadGatewayErrorBody.AssistantFailed
-    | Peal.BadGatewayErrorBody.ImageProviderRefused;
+    | Peal.BadGatewayErrorBody.TextProviderRefused
+    | Peal.BadGatewayErrorBody.AssistantFailed;
 
 export namespace BadGatewayErrorBody {
-    export interface AssistantFailed extends Peal.AssistantFailedEncoded {
-        _tag: "AssistantFailed";
+    export interface TextProviderRefused extends Peal.TextProviderRefusedEncoded {
+        _tag: "TextProviderRefused";
     }
 
-    export interface ImageProviderRefused extends Peal.ImageProviderRefusedEncoded {
-        _tag: "ImageProviderRefused";
+    export interface AssistantFailed extends Peal.AssistantFailedEncoded {
+        _tag: "AssistantFailed";
     }
 }

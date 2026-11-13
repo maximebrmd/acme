@@ -8,12 +8,6 @@ use Peal\Core\Json\JsonProperty;
 class AssistantFailedEncoded extends JsonSerializableType
 {
     /**
-     * @var value-of<AssistantFailedEncodedTag> $tag
-     */
-    #[JsonProperty('_tag')]
-    public string $tag;
-
-    /**
      * @var ?string $code
      */
     #[JsonProperty('code')]
@@ -39,7 +33,6 @@ class AssistantFailedEncoded extends JsonSerializableType
 
     /**
      * @param array{
-     *   tag: value-of<AssistantFailedEncodedTag>,
      *   reason: value-of<AssistantFailedEncodedReason>,
      *   code?: ?string,
      *   message?: ?string,
@@ -49,7 +42,6 @@ class AssistantFailedEncoded extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
-        $this->tag = $values['tag'];
         $this->code = $values['code'] ?? null;
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;
