@@ -2,12 +2,15 @@
 // creates in an empty account, that a second run changes nothing, how a
 // price with other amounts is replaced, what --check says, and that it
 // never prints the key.
-import { assert, layer } from "@effect/vitest";
+import { assert, describe, expect, it, layer } from "@effect/vitest";
 import { Config, Effect, Layer, Option, Redacted, Ref } from "effect";
 
 import { catalogueOf } from "#billing/domain/catalogue.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
 import type { RateCard } from "#billing/domain/rate-card.ts";
+import { catalogueExitCode } from "#billing/infrastructure/stripe-catalogue-command.ts";
+import { StripeCatalogueDiffers } from "#billing/infrastructure/stripe-catalogue-differs.ts";
+import { StripeCatalogueUnread } from "#billing/infrastructure/stripe-catalogue-unread.ts";
 import { runCatalogue } from "#billing/infrastructure/stripe-catalogue.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
@@ -450,4 +453,29 @@ layer(Layer.empty)("the Stripe catalogue command", (it) => {
       }
     }).pipe(Effect.scoped)
   );
+});
+
+describe("the command's exit codes", () => {
+  it("tells a difference, a refusal or an unreadable answer, and no answer apart", () => {
+    expect(
+      catalogueExitCode(new StripeCatalogueDiffers({ problems: ["synthetic"] }))
+    ).toBe(3);
+
+    for (const reason of ["refused", "unreadable"] as const) {
+      expect(
+        catalogueExitCode(
+          new StripeCatalogueUnread({ during: "listing the meters", reason })
+        )
+      ).toBe(4);
+    }
+
+    expect(
+      catalogueExitCode(
+        new StripeCatalogueUnread({
+          during: "listing the meters",
+          reason: "unanswered",
+        })
+      )
+    ).toBe(5);
+  });
 });

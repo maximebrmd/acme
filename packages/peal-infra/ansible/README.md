@@ -703,11 +703,12 @@ released. Then, on the server:
 
 1. on a server that bills (`STRIPE_SECRET_KEY` in `credentials.env`), the
    new image compares Stripe's catalogue with the one it gives
-   (`stripe-catalogue --check`, read-only at Stripe): one that differs
-   stops the release there, the old server still running, as the new one
-   would refuse to start ([Stripe catalogue](#stripe-catalogue)); one that
-   could not be compared (Stripe not answering, Compose failing) is
-   reported, and the release goes on;
+   (`stripe-catalogue --check`, read-only at Stripe, read by its exit
+   code): one that differs (3), or a key Stripe refuses or an answer that
+   cannot be read (4), stops the release there, the old server still
+   running, as the new one would refuse to start
+   ([Stripe catalogue](#stripe-catalogue)); Stripe not answering (5), or
+   Compose failing, is reported, and the release goes on;
 2. when Postgres is to restart, because its image or its settings changed,
    the old server stops first, with 75 seconds to finish its calls to the
    platforms;
@@ -720,7 +721,12 @@ released. Then, on the server:
 Release the sandbox first. To roll back, release the previous commit; on
 a server that bills, after a release whose catalogue moved a lookup key,
 then give Stripe the previous release's catalogue too
-([Stripe catalogue](#stripe-catalogue)). Images
+([Stripe catalogue](#stripe-catalogue)). Never roll back past
+per-account standing once a server bills on it: the release before gives
+a `payAsYouGo` subscription the old free plan's allowances (3 channels, 2
+members, 30 posts), so every paying workspace above them stops publishing,
+and it cannot read a stored `PaymentMethodNeeded` notice, so the notices
+list and the data export fail for whoever has one. Images
 no container uses are removed once they are a week old, counted from when
 they were built: an older release's are built and uploaded again. Migrations
 do not run backwards, so write each one so that the release before it still
@@ -746,17 +752,22 @@ It prints what it makes, and nothing on a second run; `--check` only
 compares. The key needs write access to meters, products and prices.
 Per-account pricing is sold: a server whose catalogue differs (a meter or
 price missing or billing otherwise, or a price on an archived product)
-refuses to start, saying what differs and the command, and a release
-stops before it replaces the server. The server reads the catalogue only
-as it starts: after running the command for a server that runs already,
-restart it, by a release or with `sudo peal-compose up -d server`, which
-is also how the `peal-stripe-catalogue` alert of an older release that
-only warned clears. The legacy plans' prices are checked only while a
-subscription to one still entitles a workspace.
+refuses to start, saying what differs and the command, and so does one
+whose key Stripe refuses; a release stops on either before it replaces
+the server. The server reads the catalogue only as it starts: after
+running the command, release again, which is also how the
+`peal-stripe-catalogue` alert of an older release that only warned
+clears (servers change through the playbooks only). The legacy plans'
+prices are checked only while a subscription to one still entitles a
+workspace.
 
-- Turning billing on: put `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
-  in the vault, run `site.yml` so `credentials.env` holds them, run the
-  command above, then release, or restart the server as above.
+- Turning billing on, or upgrading a server that billed on the plans
+  priced by channels to this model: put `STRIPE_SECRET_KEY` and
+  `STRIPE_WEBHOOK_SECRET` in the vault, and `PEAL_BILLING_GRACE_UNTIL` in
+  `peal_settings` (a day a month or so ahead: without it, every workspace
+  on the free tier with more than 2 accounts, those within the old free
+  plan's 3 included, stops publishing at once), run `site.yml` so
+  `credentials.env` holds them, run the command above, then release.
 - A release whose rate card changes a price: it stops at the comparison,
   with the release's image already the one `peal-compose run` runs; run
   the command above, which makes a new price that takes the lookup key and

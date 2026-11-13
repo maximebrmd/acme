@@ -15,12 +15,15 @@ import yaml
 from conftest import INFRA, play_tasks, recap_of
 
 COMPARE = "Compare Stripe's catalogue with the release's"
-STOP = "Stop the release on a Stripe catalogue that differs"
+STOP = "Stop the release on a Stripe catalogue its server would not start on"
 REPORT = "Report a Stripe catalogue that could not be compared"
 
 # What stripe-catalogue --check prints when Stripe lacks the catalogue.
 DIFFERS = "StripeCatalogueDiffers: Stripe's catalogue is not the one the rate card gives"
 
+
+# What a refused key prints (exit 4).
+REFUSED = "StripeCatalogueUnread: Stripe refused it (StripeAuthenticationError)"
 
 # What a comparison that could not be made prints: Stripe not answering.
 UNREACHABLE = "StripeCatalogueUnread: Stripe did not answer while listing the meters"
@@ -52,7 +55,7 @@ def _run(folder: Path, credentials: str, rc: int, said: str = DIFFERS):
 
 
 def test_a_server_that_bills_compares_with_the_new_image_and_stops_on_a_difference(tmp_path: Path) -> None:
-    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=1)
+    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=3)
 
     assert ran.returncode != 0, ran.stdout + ran.stderr
     assert (tmp_path / "compose-args").read_text().split() == [
@@ -71,8 +74,23 @@ def test_a_server_that_bills_compares_with_the_new_image_and_stops_on_a_differen
     assert recap_of(ran)["failed"] == 1
 
 
+def test_a_refused_key_stops_the_release_too(tmp_path: Path) -> None:
+    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=4, said=REFUSED)
+
+    assert ran.returncode != 0, ran.stdout + ran.stderr
+    assert REFUSED in ran.stdout
+    assert recap_of(ran)["failed"] == 1
+
+
+def test_a_failure_not_the_command_s_is_reported_and_the_release_goes_on(tmp_path: Path) -> None:
+    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=1, said="compose: no such service")
+
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    assert "could not be compared" in ran.stdout
+
+
 def test_a_comparison_that_could_not_be_made_is_reported_and_the_release_goes_on(tmp_path: Path) -> None:
-    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=1, said=UNREACHABLE)
+    ran = _run(tmp_path, "STRIPE_SECRET_KEY='sk_test_synthetic_release'\n", rc=5, said=UNREACHABLE)
 
     assert ran.returncode == 0, ran.stdout + ran.stderr
     assert UNREACHABLE in ran.stdout
@@ -88,7 +106,7 @@ def test_a_catalogue_that_matches_is_not_reported(tmp_path: Path) -> None:
 
 
 def test_a_server_that_does_not_bill_asks_stripe_nothing(tmp_path: Path) -> None:
-    ran = _run(tmp_path, "STRIPE_SECRET_KEY=''\nRESEND_API_KEY='re_synthetic'\n", rc=1)
+    ran = _run(tmp_path, "STRIPE_SECRET_KEY=''\nRESEND_API_KEY='re_synthetic'\n", rc=3)
 
     assert ran.returncode == 0, ran.stdout + ran.stderr
     assert not (tmp_path / "compose-args").exists()

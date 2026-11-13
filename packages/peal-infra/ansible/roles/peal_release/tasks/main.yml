@@ -233,13 +233,14 @@
 # On a server that bills, Stripe's catalogue for per-account pricing is
 # compared with the one the new release's image gives, before that image
 # replaces the server: read-only at Stripe, with the key that stays in
-# credentials.env. Per-account pricing is sold, so a server whose catalogue
-# differs refuses to start: the release stops here, the old server still
-# running, until the operator gives Stripe the catalogue (README.md,
-# "Stripe catalogue") and releases again. A comparison that could not be
-# made (Stripe not answering, Compose failing) is reported, not a failure:
-# the new server starts then, as it does when Stripe does not answer.
-# Names only: the key is never read.
+# credentials.env. The command's exit code says how it ended
+# (catalogueExitCode): 3, the catalogue differs, and 4, Stripe refused the
+# key or answered what cannot be read, are what the new server's start
+# check stops on, so the release stops here, the old server still running,
+# until the operator gives Stripe the catalogue or fixes the key (README.md,
+# "Stripe catalogue") and releases again. 5, Stripe not answering, and any
+# other failure (Compose) are reported: the new server starts then, as it
+# does when Stripe does not answer. Names only: the key is never read.
 - name: Compare Stripe's catalogue with the release's
   ansible.builtin.shell: |
     set -u
@@ -252,17 +253,14 @@
   changed_when: false
   failed_when: false
 
-# The command names the difference by its tag; any other failure is not one.
-- name: Stop the release on a Stripe catalogue that differs
+- name: Stop the release on a Stripe catalogue its server would not start on
   ansible.builtin.fail:
     msg:
-      - "Stripe's catalogue is not the one this release gives, and its server would not start. The old server still runs."
-      - "Give Stripe the catalogue with this release's image, then release again:"
+      - "Stripe's catalogue differs from this release's, or Stripe refused the key: its server would not start. The old server still runs."
+      - "Give Stripe the catalogue with this release's image, or fix the key, then release again:"
       - sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
       - "{{ peal_release_catalogue.stdout_lines + peal_release_catalogue.stderr_lines }}"
-  when:
-    - (peal_release_catalogue.rc | default(0)) != 0
-    - "'StripeCatalogueDiffers' in (peal_release_catalogue.stdout | default('')) + (peal_release_catalogue.stderr | default(''))"
+  when: (peal_release_catalogue.rc | default(0)) in [3, 4]
 
 - name: Report a Stripe catalogue that could not be compared
   ansible.builtin.debug:
@@ -270,9 +268,7 @@
       - "Stripe's catalogue could not be compared with this release's (Stripe not answering, or Compose failing)."
       - "The release goes on: the new server checks it again as it starts."
       - "{{ peal_release_catalogue.stdout_lines + peal_release_catalogue.stderr_lines }}"
-  when:
-    - (peal_release_catalogue.rc | default(0)) != 0
-    - "'StripeCatalogueDiffers' not in (peal_release_catalogue.stdout | default('')) + (peal_release_catalogue.stderr | default(''))"
+  when: (peal_release_catalogue.rc | default(0)) not in [0, 3, 4]
 
 # Compose recreates Postgres when its image or its settings changed: the old
 # server then stops first, with 75 seconds to finish its platform calls, so
