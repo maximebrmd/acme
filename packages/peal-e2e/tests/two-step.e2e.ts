@@ -103,7 +103,7 @@ describe("two-step verification", { serial: true }, () => {
       .getByRole("link", `Settings of ${workspace}`)
       .tap();
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Security")
       .tap();
 

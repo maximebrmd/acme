@@ -267,11 +267,11 @@ describe("a new member's first post", { serial: true }, () => {
       .tap();
 
     await expect(
-      screen.getByRole("heading", "Workspace settings", { level: 1 })
+      screen.getByRole("heading", "General", { level: 1 })
     ).toBeVisible();
 
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Invitations")
       .tap();
     await screen.getByLabel("Email").fill(guestAddress());
@@ -295,8 +295,13 @@ describe("a new member's first post", { serial: true }, () => {
     screen,
   }) => {
     await app.open(`/app/${workspaceId}/settings`);
+    // Webhooks are the Console's: the mode switch opens it at API keys.
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Mode")
+      .getByRole("link", "Console")
+      .tap();
+    await screen
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Webhooks")
       .tap();
 

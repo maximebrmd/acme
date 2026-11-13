@@ -2293,27 +2293,7 @@
   "WorkspaceSettings": {
     "open": "Paramètres",
     "openLabel": "Paramètres de {workspace}",
-    "back": "Retour aux espaces de travail",
-    "title": "Paramètres de l’espace de travail",
-    "description": "{workspace} : son nom, ses membres, les personnes invitées et ses clés d’API.",
     "role": "{role, select, owner {Propriétaire} admin {Administrateur} editor {Éditeur} contributor {Contributeur} viewer {Lecteur} other {{role}}}",
-    "nav": {
-      "label": "Paramètres de l’espace de travail",
-      "general": "Général",
-      "members": "Membres",
-      "invitations": "Invitations",
-      "apiKeys": "Clés d’API",
-      "webhooks": "Webhooks",
-      "partner": "Partenaire",
-      "tags": "Étiquettes",
-      "signatures": "Signatures",
-      "channelSets": "Groupes de canaux",
-      "queues": "Files d’attente",
-      "security": "Sécurité",
-      "recycling": "Répétitions",
-      "feeds": "Flux",
-      "assistant": "Assistant"
-    },
     "general": {
       "title": "Nom",
       "description": "Le nom que voient tous les membres, et que citent les invitations.",
@@ -2472,6 +2452,66 @@
         "loadMore": "Afficher plus",
         "deleted": "Les clients supprimés depuis ne sont pas listés."
       }
+    }
+  },
+  "WorkspaceShell": {
+    "productName": "Peal",
+    "label": "Espace de travail",
+    "breadcrumb": "Où vous êtes",
+    "openMenu": "Ouvrir le menu",
+    "docs": "Documentation",
+    "support": "Assistance",
+    "back": "Quitter {section}",
+    "modes": {
+      "label": "Mode",
+      "studio": "Studio",
+      "console": "Console",
+      "unavailable": "Votre rôle dans cet espace n’a aucune page de la Console"
+    },
+    "groups": {
+      "engage": "Échanger",
+      "build": "Développer",
+      "partners": "Partenaires"
+    },
+    "sections": {
+      "posts": "Publications",
+      "settings": "Paramètres"
+    },
+    "workspaces": {
+      "label": "Changer d’espace de travail",
+      "switch": "Vos autres espaces",
+      "all": "Tous les espaces de travail"
+    },
+    "pages": {
+      "calendar": "Calendrier",
+      "posts": "Publications",
+      "allPosts": "Toutes les publications",
+      "drafts": "Brouillons",
+      "approvals": "Validations",
+      "import": "Importer des publications",
+      "channels": "Canaux",
+      "media": "Médias",
+      "inbox": "Boîte de réception",
+      "analytics": "Statistiques",
+      "ads": "Publicité",
+      "apiKeys": "Clés d’API",
+      "webhooks": "Webhooks",
+      "partner": "Partenaire",
+      "general": "Général",
+      "members": "Membres",
+      "invitations": "Invitations",
+      "security": "Sécurité",
+      "billing": "Abonnement et facturation",
+      "tags": "Étiquettes",
+      "signatures": "Signatures",
+      "channelSets": "Groupes de canaux",
+      "queues": "Files d’attente",
+      "recycling": "Répétitions",
+      "feeds": "Flux",
+      "assistant": "Assistant",
+      "newPost": "Nouvelle publication",
+      "post": "Publication",
+      "thread": "Conversation"
     }
   },
   "Webhooks": {

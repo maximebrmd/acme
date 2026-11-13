@@ -12,6 +12,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Build screens from `peal-ui` components and Tailwind classes; add no other
   stylesheet.
+- ui-sdk (`@ui-sdk/react`, on `@ui-sdk/core`) gives unstyled behaviour
+  (keyboard, focus, selection, popups, ARIA) for what peal-ui's components
+  do not cover. Its clone in `.local/references/ui-sdk` is the source of
+  truth: before using it, read the skill in `packages/core/skills/ui-sdk`,
+  then the React pages in `apps/docs/content/docs/react` (`components/`
+  holds one per component). To build a new component, also read
+  `apps/docs/content/docs/core` and `react/rendering.mdx`. Style its parts
+  as shadcn/ui's are, with peal-ui's theme tokens and Tailwind classes on
+  their `data-*` state attributes; never import `@ui-sdk/core/web.css`, its
+  default look.
 - Add a shadcn component by running `bunx shadcn add <name>` in
   `packages/peal-ui`, which reads its `components.json`. Point the component's
   `cn` import (the CLI writes `"cn"`) at `../lib/utils` and its sibling imports
@@ -20,8 +30,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   run `bun run fix`.
 - Use theme tokens (`text-muted-foreground`, not `text-gray-500`) and
   component variants and sizes rather than restyling a component; the
-  `@shadcn/lint` rules check pages against peal-ui. Dark mode follows the
-  operating system (`prefers-color-scheme`).
+  `@shadcn/lint` rules check pages against peal-ui. Peal is light only
+  ([DESIGN.md](../../DESIGN.md)): write no `dark:` class.
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
   the contract functions anyone reaches (`cancel`, `withdraw`, and
@@ -61,6 +71,22 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   says before anything is entered that each answer is recorded, as staff
   must be told (Code du travail, art. L1222-4): keep that notice.
   `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
+- A workspace's pages have their own frame (DESIGN.md, "The frame"):
+  `ShellFrame` leaves them to `app/[workspaceId]/layout.tsx` (`frameOf`
+  answers `workspace` for `/app/<id>/…`; `account`, `agenda`, `notices`
+  and `report` are the person's), which wraps them in `WorkspaceShell`
+  (`components/shell/`): `SidebarView` (the Studio and Console switch
+  with Peal's mark, the mode's pages, a section's pages under a way back,
+  Settings, the workspace switcher; in a `Sheet` on a phone), `TopBarView`
+  (the breadcrumb, **Docs** at `PEAL_DOCS_URL` and **Support** at
+  `PEAL_CONTACT_URL` when set, the language switcher and the account
+  menu) and the contract functions at the foot. Someone who is not a
+  member, or must first turn on two-step verification, gets the app's
+  `PlainFrame`. Which pages exist, their mode, their section and the
+  permission each asks is one table, `#shell/navigation.ts`
+  (`navigationOf`, tested): add a workspace page there, with its name in
+  `WorkspaceShell.pages`. Settings pages without a heading of their own get
+  the page's name from `PageHeading`.
 - The web app reports its errors to `POST /api/client-errors`:
   `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
   `app/[locale]/error.tsx` and `app/global-error.tsx` (the error pages, in

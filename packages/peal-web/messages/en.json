@@ -2293,27 +2293,7 @@
   "WorkspaceSettings": {
     "open": "Settings",
     "openLabel": "Settings of {workspace}",
-    "back": "Back to the workspaces",
-    "title": "Workspace settings",
-    "description": "{workspace}: its name, its members, who is invited, and its API keys.",
     "role": "{role, select, owner {Owner} admin {Admin} editor {Editor} contributor {Contributor} viewer {Viewer} other {{role}}}",
-    "nav": {
-      "label": "Workspace settings",
-      "general": "General",
-      "members": "Members",
-      "invitations": "Invitations",
-      "apiKeys": "API keys",
-      "webhooks": "Webhooks",
-      "partner": "Partner",
-      "tags": "Tags",
-      "signatures": "Signatures",
-      "channelSets": "Channel sets",
-      "queues": "Queues",
-      "security": "Security",
-      "recycling": "Repeating posts",
-      "feeds": "Feeds",
-      "assistant": "Assistant"
-    },
     "general": {
       "title": "Name",
       "description": "The name every member sees, and invitations name.",
@@ -2472,6 +2452,66 @@
         "loadMore": "Load more",
         "deleted": "Customers deleted since are not listed."
       }
+    }
+  },
+  "WorkspaceShell": {
+    "productName": "Peal",
+    "label": "Workspace",
+    "breadcrumb": "Where you are",
+    "openMenu": "Open the menu",
+    "docs": "Docs",
+    "support": "Support",
+    "back": "Back from {section}",
+    "modes": {
+      "label": "Mode",
+      "studio": "Studio",
+      "console": "Console",
+      "unavailable": "Your role in this workspace has no Console pages"
+    },
+    "groups": {
+      "engage": "Engage",
+      "build": "Build",
+      "partners": "Partners"
+    },
+    "sections": {
+      "posts": "Posts",
+      "settings": "Settings"
+    },
+    "workspaces": {
+      "label": "Switch workspace",
+      "switch": "Your other workspaces",
+      "all": "All workspaces"
+    },
+    "pages": {
+      "calendar": "Calendar",
+      "posts": "Posts",
+      "allPosts": "All posts",
+      "drafts": "Drafts",
+      "approvals": "Approvals",
+      "import": "Import posts",
+      "channels": "Channels",
+      "media": "Media",
+      "inbox": "Inbox",
+      "analytics": "Analytics",
+      "ads": "Ads",
+      "apiKeys": "API keys",
+      "webhooks": "Webhooks",
+      "partner": "Partner",
+      "general": "General",
+      "members": "Members",
+      "invitations": "Invitations",
+      "security": "Security",
+      "billing": "Plan and billing",
+      "tags": "Tags",
+      "signatures": "Signatures",
+      "channelSets": "Channel sets",
+      "queues": "Queues",
+      "recycling": "Repeating posts",
+      "feeds": "Feeds",
+      "assistant": "Assistant",
+      "newPost": "New post",
+      "post": "Post",
+      "thread": "Conversation"
     }
   },
   "Webhooks": {
