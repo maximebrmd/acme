@@ -23,6 +23,9 @@ public record PostReview : IJsonOnDeserialized
     [JsonPropertyName("media")]
     public IEnumerable<ReviewedMedia> Media { get; set; } = new List<ReviewedMedia>();
 
+    [JsonPropertyName("poll")]
+    public Poll? Poll { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

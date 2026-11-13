@@ -12,6 +12,8 @@ module Peal
       field :comments, -> { Internal::Types::Array[Peal::Types::ReviewComment] }, optional: false, nullable: false
 
       field :media, -> { Internal::Types::Array[Peal::Types::ReviewedMedia] }, optional: false, nullable: false
+
+      field :poll, -> { Peal::Types::Poll }, optional: true, nullable: false
     end
   end
 end

@@ -74,6 +74,34 @@ public final class ContentViolation {
         return new ContentViolation(new TooManyPartsValue(value));
     }
 
+    public static ContentViolation partsNeedReconnect(ContentViolationPartsNeedReconnect value) {
+        return new ContentViolation(new PartsNeedReconnectValue(value));
+    }
+
+    public static ContentViolation pollNotSupported(ContentViolationPollNotSupported value) {
+        return new ContentViolation(new PollNotSupportedValue(value));
+    }
+
+    public static ContentViolation pollChoiceCount(ContentViolationPollChoiceCount value) {
+        return new ContentViolation(new PollChoiceCountValue(value));
+    }
+
+    public static ContentViolation pollChoiceLength(ContentViolationPollChoiceLength value) {
+        return new ContentViolation(new PollChoiceLengthValue(value));
+    }
+
+    public static ContentViolation pollDurationOutOfRange(ContentViolationPollDurationOutOfRange value) {
+        return new ContentViolation(new PollDurationOutOfRangeValue(value));
+    }
+
+    public static ContentViolation pollMultipleChoice(ContentViolationPollMultipleChoice value) {
+        return new ContentViolation(new PollMultipleChoiceValue(value));
+    }
+
+    public static ContentViolation pollWithMedia(ContentViolationPollWithMedia value) {
+        return new ContentViolation(new PollWithMediaValue(value));
+    }
+
     public static ContentViolation mediaRequired(ContentViolationMediaRequired value) {
         return new ContentViolation(new MediaRequiredValue(value));
     }
@@ -180,6 +208,34 @@ public final class ContentViolation {
 
     public boolean isTooManyParts() {
         return value instanceof TooManyPartsValue;
+    }
+
+    public boolean isPartsNeedReconnect() {
+        return value instanceof PartsNeedReconnectValue;
+    }
+
+    public boolean isPollNotSupported() {
+        return value instanceof PollNotSupportedValue;
+    }
+
+    public boolean isPollChoiceCount() {
+        return value instanceof PollChoiceCountValue;
+    }
+
+    public boolean isPollChoiceLength() {
+        return value instanceof PollChoiceLengthValue;
+    }
+
+    public boolean isPollDurationOutOfRange() {
+        return value instanceof PollDurationOutOfRangeValue;
+    }
+
+    public boolean isPollMultipleChoice() {
+        return value instanceof PollMultipleChoiceValue;
+    }
+
+    public boolean isPollWithMedia() {
+        return value instanceof PollWithMediaValue;
     }
 
     public boolean isMediaRequired() {
@@ -326,6 +382,55 @@ public final class ContentViolation {
     public Optional<ContentViolationTooManyParts> getTooManyParts() {
         if (isTooManyParts()) {
             return Optional.of(((TooManyPartsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPartsNeedReconnect> getPartsNeedReconnect() {
+        if (isPartsNeedReconnect()) {
+            return Optional.of(((PartsNeedReconnectValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollNotSupported> getPollNotSupported() {
+        if (isPollNotSupported()) {
+            return Optional.of(((PollNotSupportedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollChoiceCount> getPollChoiceCount() {
+        if (isPollChoiceCount()) {
+            return Optional.of(((PollChoiceCountValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollChoiceLength> getPollChoiceLength() {
+        if (isPollChoiceLength()) {
+            return Optional.of(((PollChoiceLengthValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollDurationOutOfRange> getPollDurationOutOfRange() {
+        if (isPollDurationOutOfRange()) {
+            return Optional.of(((PollDurationOutOfRangeValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollMultipleChoice> getPollMultipleChoice() {
+        if (isPollMultipleChoice()) {
+            return Optional.of(((PollMultipleChoiceValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollWithMedia> getPollWithMedia() {
+        if (isPollWithMedia()) {
+            return Optional.of(((PollWithMediaValue) value).value);
         }
         return Optional.empty();
     }
@@ -488,6 +593,20 @@ public final class ContentViolation {
 
         T visitTooManyParts(ContentViolationTooManyParts tooManyParts);
 
+        T visitPartsNeedReconnect(ContentViolationPartsNeedReconnect partsNeedReconnect);
+
+        T visitPollNotSupported(ContentViolationPollNotSupported pollNotSupported);
+
+        T visitPollChoiceCount(ContentViolationPollChoiceCount pollChoiceCount);
+
+        T visitPollChoiceLength(ContentViolationPollChoiceLength pollChoiceLength);
+
+        T visitPollDurationOutOfRange(ContentViolationPollDurationOutOfRange pollDurationOutOfRange);
+
+        T visitPollMultipleChoice(ContentViolationPollMultipleChoice pollMultipleChoice);
+
+        T visitPollWithMedia(ContentViolationPollWithMedia pollWithMedia);
+
         T visitMediaRequired(ContentViolationMediaRequired mediaRequired);
 
         T visitTooManyHashtags(ContentViolationTooManyHashtags tooManyHashtags);
@@ -535,6 +654,13 @@ public final class ContentViolation {
         @JsonSubTypes.Type(ForbiddenCharactersValue.class),
         @JsonSubTypes.Type(TooManyMediaValue.class),
         @JsonSubTypes.Type(TooManyPartsValue.class),
+        @JsonSubTypes.Type(PartsNeedReconnectValue.class),
+        @JsonSubTypes.Type(PollNotSupportedValue.class),
+        @JsonSubTypes.Type(PollChoiceCountValue.class),
+        @JsonSubTypes.Type(PollChoiceLengthValue.class),
+        @JsonSubTypes.Type(PollDurationOutOfRangeValue.class),
+        @JsonSubTypes.Type(PollMultipleChoiceValue.class),
+        @JsonSubTypes.Type(PollWithMediaValue.class),
         @JsonSubTypes.Type(MediaRequiredValue.class),
         @JsonSubTypes.Type(TooManyHashtagsValue.class),
         @JsonSubTypes.Type(TooManyMentionsValue.class),
@@ -1022,6 +1148,286 @@ public final class ContentViolation {
         }
 
         private boolean equalTo(TooManyPartsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("partsNeedReconnect")
+    @JsonIgnoreProperties("_tag")
+    private static final class PartsNeedReconnectValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPartsNeedReconnect value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PartsNeedReconnectValue() {}
+
+        private PartsNeedReconnectValue(ContentViolationPartsNeedReconnect value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPartsNeedReconnect(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PartsNeedReconnectValue && equalTo((PartsNeedReconnectValue) other);
+        }
+
+        private boolean equalTo(PartsNeedReconnectValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollNotSupported")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollNotSupportedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollNotSupported value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollNotSupportedValue() {}
+
+        private PollNotSupportedValue(ContentViolationPollNotSupported value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollNotSupported(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollNotSupportedValue && equalTo((PollNotSupportedValue) other);
+        }
+
+        private boolean equalTo(PollNotSupportedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollChoiceCount")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollChoiceCountValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollChoiceCount value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollChoiceCountValue() {}
+
+        private PollChoiceCountValue(ContentViolationPollChoiceCount value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollChoiceCount(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollChoiceCountValue && equalTo((PollChoiceCountValue) other);
+        }
+
+        private boolean equalTo(PollChoiceCountValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollChoiceLength")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollChoiceLengthValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollChoiceLength value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollChoiceLengthValue() {}
+
+        private PollChoiceLengthValue(ContentViolationPollChoiceLength value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollChoiceLength(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollChoiceLengthValue && equalTo((PollChoiceLengthValue) other);
+        }
+
+        private boolean equalTo(PollChoiceLengthValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollDurationOutOfRange")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollDurationOutOfRangeValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollDurationOutOfRange value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollDurationOutOfRangeValue() {}
+
+        private PollDurationOutOfRangeValue(ContentViolationPollDurationOutOfRange value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollDurationOutOfRange(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollDurationOutOfRangeValue && equalTo((PollDurationOutOfRangeValue) other);
+        }
+
+        private boolean equalTo(PollDurationOutOfRangeValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollMultipleChoice")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollMultipleChoiceValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollMultipleChoice value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollMultipleChoiceValue() {}
+
+        private PollMultipleChoiceValue(ContentViolationPollMultipleChoice value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollMultipleChoice(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollMultipleChoiceValue && equalTo((PollMultipleChoiceValue) other);
+        }
+
+        private boolean equalTo(PollMultipleChoiceValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollWithMedia")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollWithMediaValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollWithMedia value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollWithMediaValue() {}
+
+        private PollWithMediaValue(ContentViolationPollWithMedia value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollWithMedia(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollWithMediaValue && equalTo((PollWithMediaValue) other);
+        }
+
+        private boolean equalTo(PollWithMediaValue other) {
             return value.equals(other.value);
         }
 

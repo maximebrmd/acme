@@ -2529,6 +2529,13 @@ type ContentViolation struct {
 	ForbiddenCharacters     *ContentViolationForbiddenCharacters
 	TooManyMedia            *ContentViolationTooManyMedia
 	TooManyParts            *ContentViolationTooManyParts
+	PartsNeedReconnect      *ContentViolationPartsNeedReconnect
+	PollNotSupported        *ContentViolationPollNotSupported
+	PollChoiceCount         *ContentViolationPollChoiceCount
+	PollChoiceLength        *ContentViolationPollChoiceLength
+	PollDurationOutOfRange  *ContentViolationPollDurationOutOfRange
+	PollMultipleChoice      *ContentViolationPollMultipleChoice
+	PollWithMedia           *ContentViolationPollWithMedia
 	MediaRequired           *ContentViolationMediaRequired
 	TooManyHashtags         *ContentViolationTooManyHashtags
 	TooManyMentions         *ContentViolationTooManyMentions
@@ -2637,6 +2644,55 @@ func (c *ContentViolation) GetTooManyParts() *ContentViolationTooManyParts {
 		return nil
 	}
 	return c.TooManyParts
+}
+
+func (c *ContentViolation) GetPartsNeedReconnect() *ContentViolationPartsNeedReconnect {
+	if c == nil {
+		return nil
+	}
+	return c.PartsNeedReconnect
+}
+
+func (c *ContentViolation) GetPollNotSupported() *ContentViolationPollNotSupported {
+	if c == nil {
+		return nil
+	}
+	return c.PollNotSupported
+}
+
+func (c *ContentViolation) GetPollChoiceCount() *ContentViolationPollChoiceCount {
+	if c == nil {
+		return nil
+	}
+	return c.PollChoiceCount
+}
+
+func (c *ContentViolation) GetPollChoiceLength() *ContentViolationPollChoiceLength {
+	if c == nil {
+		return nil
+	}
+	return c.PollChoiceLength
+}
+
+func (c *ContentViolation) GetPollDurationOutOfRange() *ContentViolationPollDurationOutOfRange {
+	if c == nil {
+		return nil
+	}
+	return c.PollDurationOutOfRange
+}
+
+func (c *ContentViolation) GetPollMultipleChoice() *ContentViolationPollMultipleChoice {
+	if c == nil {
+		return nil
+	}
+	return c.PollMultipleChoice
+}
+
+func (c *ContentViolation) GetPollWithMedia() *ContentViolationPollWithMedia {
+	if c == nil {
+		return nil
+	}
+	return c.PollWithMedia
 }
 
 func (c *ContentViolation) GetMediaRequired() *ContentViolationMediaRequired {
@@ -2828,6 +2884,48 @@ func (c *ContentViolation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.TooManyParts = value
+	case "partsNeedReconnect":
+		value := new(ContentViolationPartsNeedReconnect)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PartsNeedReconnect = value
+	case "pollNotSupported":
+		value := new(ContentViolationPollNotSupported)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollNotSupported = value
+	case "pollChoiceCount":
+		value := new(ContentViolationPollChoiceCount)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollChoiceCount = value
+	case "pollChoiceLength":
+		value := new(ContentViolationPollChoiceLength)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollChoiceLength = value
+	case "pollDurationOutOfRange":
+		value := new(ContentViolationPollDurationOutOfRange)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollDurationOutOfRange = value
+	case "pollMultipleChoice":
+		value := new(ContentViolationPollMultipleChoice)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollMultipleChoice = value
+	case "pollWithMedia":
+		value := new(ContentViolationPollWithMedia)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollWithMedia = value
 	case "mediaRequired":
 		value := new(ContentViolationMediaRequired)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -2963,6 +3061,27 @@ func (c ContentViolation) MarshalJSON() ([]byte, error) {
 	if c.TooManyParts != nil {
 		return internal.MarshalJSONWithExtraProperty(c.TooManyParts, "_tag", "tooManyParts")
 	}
+	if c.PartsNeedReconnect != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PartsNeedReconnect, "_tag", "partsNeedReconnect")
+	}
+	if c.PollNotSupported != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollNotSupported, "_tag", "pollNotSupported")
+	}
+	if c.PollChoiceCount != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollChoiceCount, "_tag", "pollChoiceCount")
+	}
+	if c.PollChoiceLength != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollChoiceLength, "_tag", "pollChoiceLength")
+	}
+	if c.PollDurationOutOfRange != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollDurationOutOfRange, "_tag", "pollDurationOutOfRange")
+	}
+	if c.PollMultipleChoice != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollMultipleChoice, "_tag", "pollMultipleChoice")
+	}
+	if c.PollWithMedia != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollWithMedia, "_tag", "pollWithMedia")
+	}
 	if c.MediaRequired != nil {
 		return internal.MarshalJSONWithExtraProperty(c.MediaRequired, "_tag", "mediaRequired")
 	}
@@ -3027,6 +3146,13 @@ type ContentViolationVisitor interface {
 	VisitForbiddenCharacters(*ContentViolationForbiddenCharacters) error
 	VisitTooManyMedia(*ContentViolationTooManyMedia) error
 	VisitTooManyParts(*ContentViolationTooManyParts) error
+	VisitPartsNeedReconnect(*ContentViolationPartsNeedReconnect) error
+	VisitPollNotSupported(*ContentViolationPollNotSupported) error
+	VisitPollChoiceCount(*ContentViolationPollChoiceCount) error
+	VisitPollChoiceLength(*ContentViolationPollChoiceLength) error
+	VisitPollDurationOutOfRange(*ContentViolationPollDurationOutOfRange) error
+	VisitPollMultipleChoice(*ContentViolationPollMultipleChoice) error
+	VisitPollWithMedia(*ContentViolationPollWithMedia) error
 	VisitMediaRequired(*ContentViolationMediaRequired) error
 	VisitTooManyHashtags(*ContentViolationTooManyHashtags) error
 	VisitTooManyMentions(*ContentViolationTooManyMentions) error
@@ -3080,6 +3206,27 @@ func (c *ContentViolation) Accept(visitor ContentViolationVisitor) error {
 	}
 	if c.TooManyParts != nil {
 		return visitor.VisitTooManyParts(c.TooManyParts)
+	}
+	if c.PartsNeedReconnect != nil {
+		return visitor.VisitPartsNeedReconnect(c.PartsNeedReconnect)
+	}
+	if c.PollNotSupported != nil {
+		return visitor.VisitPollNotSupported(c.PollNotSupported)
+	}
+	if c.PollChoiceCount != nil {
+		return visitor.VisitPollChoiceCount(c.PollChoiceCount)
+	}
+	if c.PollChoiceLength != nil {
+		return visitor.VisitPollChoiceLength(c.PollChoiceLength)
+	}
+	if c.PollDurationOutOfRange != nil {
+		return visitor.VisitPollDurationOutOfRange(c.PollDurationOutOfRange)
+	}
+	if c.PollMultipleChoice != nil {
+		return visitor.VisitPollMultipleChoice(c.PollMultipleChoice)
+	}
+	if c.PollWithMedia != nil {
+		return visitor.VisitPollWithMedia(c.PollWithMedia)
 	}
 	if c.MediaRequired != nil {
 		return visitor.VisitMediaRequired(c.MediaRequired)
@@ -3169,6 +3316,27 @@ func (c *ContentViolation) validate() error {
 	}
 	if c.TooManyParts != nil {
 		fields = append(fields, "tooManyParts")
+	}
+	if c.PartsNeedReconnect != nil {
+		fields = append(fields, "partsNeedReconnect")
+	}
+	if c.PollNotSupported != nil {
+		fields = append(fields, "pollNotSupported")
+	}
+	if c.PollChoiceCount != nil {
+		fields = append(fields, "pollChoiceCount")
+	}
+	if c.PollChoiceLength != nil {
+		fields = append(fields, "pollChoiceLength")
+	}
+	if c.PollDurationOutOfRange != nil {
+		fields = append(fields, "pollDurationOutOfRange")
+	}
+	if c.PollMultipleChoice != nil {
+		fields = append(fields, "pollMultipleChoice")
+	}
+	if c.PollWithMedia != nil {
+		fields = append(fields, "pollWithMedia")
 	}
 	if c.MediaRequired != nil {
 		fields = append(fields, "mediaRequired")
@@ -5492,6 +5660,992 @@ func (c *ContentViolationOverrideWithoutChannel) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContentViolationOverrideWithoutChannel) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPartsNeedReconnectFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPartsNeedReconnectFieldPart      = big.NewInt(1 << 1)
+	contentViolationPartsNeedReconnectFieldPlatform  = big.NewInt(1 << 2)
+)
+
+type ContentViolationPartsNeedReconnect struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPartsNeedReconnect) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPartsNeedReconnect) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPartsNeedReconnect) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPartsNeedReconnect) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPartsNeedReconnect) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPartsNeedReconnect) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPartsNeedReconnectFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPartsNeedReconnect) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPartsNeedReconnectFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPartsNeedReconnect) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPartsNeedReconnectFieldPlatform)
+}
+
+func (c *ContentViolationPartsNeedReconnect) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPartsNeedReconnect
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPartsNeedReconnect(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPartsNeedReconnect) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPartsNeedReconnect
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPartsNeedReconnect) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollChoiceCountFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollChoiceCountFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollChoiceCountFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationPollChoiceCountFieldCount     = big.NewInt(1 << 3)
+	contentViolationPollChoiceCountFieldMaximum   = big.NewInt(1 << 4)
+	contentViolationPollChoiceCountFieldMinimum   = big.NewInt(1 << 5)
+)
+
+type ContentViolationPollChoiceCount struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+	Count     int      `json:"count" url:"count"`
+	Maximum   int      `json:"maximum" url:"maximum"`
+	Minimum   int      `json:"minimum" url:"minimum"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollChoiceCount) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollChoiceCount) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollChoiceCount) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollChoiceCount) GetCount() int {
+	if c == nil {
+		return 0
+	}
+	return c.Count
+}
+
+func (c *ContentViolationPollChoiceCount) GetMaximum() int {
+	if c == nil {
+		return 0
+	}
+	return c.Maximum
+}
+
+func (c *ContentViolationPollChoiceCount) GetMinimum() int {
+	if c == nil {
+		return 0
+	}
+	return c.Minimum
+}
+
+func (c *ContentViolationPollChoiceCount) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollChoiceCount) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollChoiceCountFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollChoiceCountFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollChoiceCountFieldPlatform)
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetCount(count int) {
+	c.Count = count
+	c.require(contentViolationPollChoiceCountFieldCount)
+}
+
+// SetMaximum sets the Maximum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetMaximum(maximum int) {
+	c.Maximum = maximum
+	c.require(contentViolationPollChoiceCountFieldMaximum)
+}
+
+// SetMinimum sets the Minimum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceCount) SetMinimum(minimum int) {
+	c.Minimum = minimum
+	c.require(contentViolationPollChoiceCountFieldMinimum)
+}
+
+func (c *ContentViolationPollChoiceCount) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollChoiceCount
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollChoiceCount(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollChoiceCount) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollChoiceCount
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollChoiceCount) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollChoiceLengthFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollChoiceLengthFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollChoiceLengthFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationPollChoiceLengthFieldChoice    = big.NewInt(1 << 3)
+	contentViolationPollChoiceLengthFieldLength    = big.NewInt(1 << 4)
+	contentViolationPollChoiceLengthFieldMaximum   = big.NewInt(1 << 5)
+	contentViolationPollChoiceLengthFieldUnit      = big.NewInt(1 << 6)
+)
+
+type ContentViolationPollChoiceLength struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+	Choice    int      `json:"choice" url:"choice"`
+	Length    int      `json:"length" url:"length"`
+	Maximum   int      `json:"maximum" url:"maximum"`
+	Unit      TextUnit `json:"unit" url:"unit"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollChoiceLength) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollChoiceLength) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollChoiceLength) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollChoiceLength) GetChoice() int {
+	if c == nil {
+		return 0
+	}
+	return c.Choice
+}
+
+func (c *ContentViolationPollChoiceLength) GetLength() int {
+	if c == nil {
+		return 0
+	}
+	return c.Length
+}
+
+func (c *ContentViolationPollChoiceLength) GetMaximum() int {
+	if c == nil {
+		return 0
+	}
+	return c.Maximum
+}
+
+func (c *ContentViolationPollChoiceLength) GetUnit() TextUnit {
+	if c == nil {
+		return ""
+	}
+	return c.Unit
+}
+
+func (c *ContentViolationPollChoiceLength) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollChoiceLength) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollChoiceLengthFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollChoiceLengthFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollChoiceLengthFieldPlatform)
+}
+
+// SetChoice sets the Choice field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetChoice(choice int) {
+	c.Choice = choice
+	c.require(contentViolationPollChoiceLengthFieldChoice)
+}
+
+// SetLength sets the Length field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetLength(length int) {
+	c.Length = length
+	c.require(contentViolationPollChoiceLengthFieldLength)
+}
+
+// SetMaximum sets the Maximum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetMaximum(maximum int) {
+	c.Maximum = maximum
+	c.require(contentViolationPollChoiceLengthFieldMaximum)
+}
+
+// SetUnit sets the Unit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceLength) SetUnit(unit TextUnit) {
+	c.Unit = unit
+	c.require(contentViolationPollChoiceLengthFieldUnit)
+}
+
+func (c *ContentViolationPollChoiceLength) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollChoiceLength
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollChoiceLength(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollChoiceLength) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollChoiceLength
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollChoiceLength) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollDurationOutOfRangeFieldChannelID       = big.NewInt(1 << 0)
+	contentViolationPollDurationOutOfRangeFieldPart            = big.NewInt(1 << 1)
+	contentViolationPollDurationOutOfRangeFieldPlatform        = big.NewInt(1 << 2)
+	contentViolationPollDurationOutOfRangeFieldDurationMinutes = big.NewInt(1 << 3)
+	contentViolationPollDurationOutOfRangeFieldMaximumMinutes  = big.NewInt(1 << 4)
+	contentViolationPollDurationOutOfRangeFieldMinimumMinutes  = big.NewInt(1 << 5)
+)
+
+type ContentViolationPollDurationOutOfRange struct {
+	ChannelID       string   `json:"channelId" url:"channelId"`
+	Part            *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform        Platform `json:"platform" url:"platform"`
+	DurationMinutes int      `json:"durationMinutes" url:"durationMinutes"`
+	MaximumMinutes  int      `json:"maximumMinutes" url:"maximumMinutes"`
+	MinimumMinutes  int      `json:"minimumMinutes" url:"minimumMinutes"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetDurationMinutes() int {
+	if c == nil {
+		return 0
+	}
+	return c.DurationMinutes
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetMaximumMinutes() int {
+	if c == nil {
+		return 0
+	}
+	return c.MaximumMinutes
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetMinimumMinutes() int {
+	if c == nil {
+		return 0
+	}
+	return c.MinimumMinutes
+}
+
+func (c *ContentViolationPollDurationOutOfRange) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollDurationOutOfRange) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollDurationOutOfRangeFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollDurationOutOfRangeFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollDurationOutOfRangeFieldPlatform)
+}
+
+// SetDurationMinutes sets the DurationMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetDurationMinutes(durationMinutes int) {
+	c.DurationMinutes = durationMinutes
+	c.require(contentViolationPollDurationOutOfRangeFieldDurationMinutes)
+}
+
+// SetMaximumMinutes sets the MaximumMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetMaximumMinutes(maximumMinutes int) {
+	c.MaximumMinutes = maximumMinutes
+	c.require(contentViolationPollDurationOutOfRangeFieldMaximumMinutes)
+}
+
+// SetMinimumMinutes sets the MinimumMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollDurationOutOfRange) SetMinimumMinutes(minimumMinutes int) {
+	c.MinimumMinutes = minimumMinutes
+	c.require(contentViolationPollDurationOutOfRangeFieldMinimumMinutes)
+}
+
+func (c *ContentViolationPollDurationOutOfRange) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollDurationOutOfRange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollDurationOutOfRange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollDurationOutOfRange) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollDurationOutOfRange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollDurationOutOfRange) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollMultipleChoiceFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollMultipleChoiceFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollMultipleChoiceFieldPlatform  = big.NewInt(1 << 2)
+)
+
+type ContentViolationPollMultipleChoice struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollMultipleChoice) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollMultipleChoice) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollMultipleChoice) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollMultipleChoice) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollMultipleChoice) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollMultipleChoice) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollMultipleChoiceFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollMultipleChoice) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollMultipleChoiceFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollMultipleChoice) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollMultipleChoiceFieldPlatform)
+}
+
+func (c *ContentViolationPollMultipleChoice) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollMultipleChoice
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollMultipleChoice(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollMultipleChoice) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollMultipleChoice
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollMultipleChoice) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollNotSupportedFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollNotSupportedFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollNotSupportedFieldPlatform  = big.NewInt(1 << 2)
+)
+
+type ContentViolationPollNotSupported struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollNotSupported) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollNotSupported) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollNotSupported) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollNotSupported) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollNotSupported) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollNotSupported) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollNotSupportedFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollNotSupported) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollNotSupportedFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollNotSupported) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollNotSupportedFieldPlatform)
+}
+
+func (c *ContentViolationPollNotSupported) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollNotSupported
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollNotSupported(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollNotSupported) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollNotSupported
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollNotSupported) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollWithMediaFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollWithMediaFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollWithMediaFieldPlatform  = big.NewInt(1 << 2)
+)
+
+type ContentViolationPollWithMedia struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollWithMedia) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollWithMedia) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollWithMedia) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollWithMedia) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollWithMedia) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollWithMedia) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollWithMediaFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollWithMedia) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollWithMediaFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollWithMedia) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollWithMediaFieldPlatform)
+}
+
+func (c *ContentViolationPollWithMedia) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollWithMedia
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollWithMedia(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollWithMedia) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollWithMedia
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollWithMedia) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -11021,13 +12175,20 @@ var (
 	postContentFieldFollowUps = big.NewInt(1 << 0)
 	postContentFieldMedia     = big.NewInt(1 << 1)
 	postContentFieldOverrides = big.NewInt(1 << 2)
-	postContentFieldText      = big.NewInt(1 << 3)
+	postContentFieldPoll      = big.NewInt(1 << 3)
+	postContentFieldText      = big.NewInt(1 << 4)
 )
+
+// postContentNullableFields maps the wire names of PostContent's nullable fields (required or optional) to their field bits.
+var postContentNullableFields = map[string]*big.Int{
+	"poll": postContentFieldPoll,
+}
 
 type PostContent struct {
 	FollowUps []*PostPart        `json:"followUps,omitempty" url:"followUps,omitempty"`
 	Media     []*MediaAttachment `json:"media" url:"media"`
 	Overrides []*TextOverride    `json:"overrides" url:"overrides"`
+	Poll      *Poll              `json:"poll,omitempty" url:"poll,omitempty"`
 	Text      string             `json:"text" url:"text"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -11056,6 +12217,13 @@ func (p *PostContent) GetOverrides() []*TextOverride {
 		return nil
 	}
 	return p.Overrides
+}
+
+func (p *PostContent) GetPoll() *Poll {
+	if p == nil {
+		return nil
+	}
+	return p.Poll
 }
 
 func (p *PostContent) GetText() string {
@@ -11102,6 +12270,13 @@ func (p *PostContent) SetOverrides(overrides []*TextOverride) {
 	p.require(postContentFieldOverrides)
 }
 
+// SetPoll sets the Poll field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostContent) SetPoll(poll *Poll) {
+	p.Poll = poll
+	p.require(postContentFieldPoll)
+}
+
 // SetText sets the Text field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostContent) SetText(text string) {
@@ -11121,6 +12296,13 @@ func (p *PostContent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, postContentNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
 }

@@ -150,6 +150,105 @@ pub enum ContentViolation {
         maximum: i64,
     },
 
+    #[serde(rename = "partsNeedReconnect")]
+    #[non_exhaustive]
+    PartsNeedReconnect {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+    },
+
+    #[serde(rename = "pollNotSupported")]
+    #[non_exhaustive]
+    PollNotSupported {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+    },
+
+    #[serde(rename = "pollChoiceCount")]
+    #[non_exhaustive]
+    PollChoiceCount {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(default)]
+        count: i64,
+        #[serde(default)]
+        maximum: i64,
+        #[serde(default)]
+        minimum: i64,
+    },
+
+    #[serde(rename = "pollChoiceLength")]
+    #[non_exhaustive]
+    PollChoiceLength {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(default)]
+        choice: i64,
+        #[serde(default)]
+        length: i64,
+        #[serde(default)]
+        maximum: i64,
+        unit: TextUnit,
+    },
+
+    #[serde(rename = "pollDurationOutOfRange")]
+    #[non_exhaustive]
+    PollDurationOutOfRange {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(rename = "durationMinutes")]
+        #[serde(default)]
+        duration_minutes: i64,
+        #[serde(rename = "maximumMinutes")]
+        #[serde(default)]
+        maximum_minutes: i64,
+        #[serde(rename = "minimumMinutes")]
+        #[serde(default)]
+        minimum_minutes: i64,
+    },
+
+    #[serde(rename = "pollMultipleChoice")]
+    #[non_exhaustive]
+    PollMultipleChoice {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+    },
+
+    #[serde(rename = "pollWithMedia")]
+    #[non_exhaustive]
+    PollWithMedia {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+    },
+
     #[serde(rename = "mediaRequired")]
     #[non_exhaustive]
     MediaRequired {
@@ -542,6 +641,91 @@ impl ContentViolation {
         }
     }
 
+    pub fn parts_need_reconnect(channel_id: String, platform: Platform) -> Self {
+        Self::PartsNeedReconnect {
+            channel_id,
+            part: None,
+            platform,
+        }
+    }
+
+    pub fn poll_not_supported(channel_id: String, platform: Platform) -> Self {
+        Self::PollNotSupported {
+            channel_id,
+            part: None,
+            platform,
+        }
+    }
+
+    pub fn poll_choice_count(
+        channel_id: String,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+        minimum: i64,
+    ) -> Self {
+        Self::PollChoiceCount {
+            channel_id,
+            part: None,
+            platform,
+            count,
+            maximum,
+            minimum,
+        }
+    }
+
+    pub fn poll_choice_length(
+        channel_id: String,
+        platform: Platform,
+        choice: i64,
+        length: i64,
+        maximum: i64,
+        unit: TextUnit,
+    ) -> Self {
+        Self::PollChoiceLength {
+            channel_id,
+            part: None,
+            platform,
+            choice,
+            length,
+            maximum,
+            unit,
+        }
+    }
+
+    pub fn poll_duration_out_of_range(
+        channel_id: String,
+        platform: Platform,
+        duration_minutes: i64,
+        maximum_minutes: i64,
+        minimum_minutes: i64,
+    ) -> Self {
+        Self::PollDurationOutOfRange {
+            channel_id,
+            part: None,
+            platform,
+            duration_minutes,
+            maximum_minutes,
+            minimum_minutes,
+        }
+    }
+
+    pub fn poll_multiple_choice(channel_id: String, platform: Platform) -> Self {
+        Self::PollMultipleChoice {
+            channel_id,
+            part: None,
+            platform,
+        }
+    }
+
+    pub fn poll_with_media(channel_id: String, platform: Platform) -> Self {
+        Self::PollWithMedia {
+            channel_id,
+            part: None,
+            platform,
+        }
+    }
+
     pub fn media_required(channel_id: String, platform: Platform) -> Self {
         Self::MediaRequired {
             channel_id,
@@ -908,6 +1092,102 @@ impl ContentViolation {
             platform,
             count,
             maximum,
+        }
+    }
+
+    pub fn parts_need_reconnect_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+    ) -> Self {
+        Self::PartsNeedReconnect {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn poll_not_supported_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
+        Self::PollNotSupported {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn poll_choice_count_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+        minimum: i64,
+    ) -> Self {
+        Self::PollChoiceCount {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+            minimum,
+        }
+    }
+
+    pub fn poll_choice_length_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        choice: i64,
+        length: i64,
+        maximum: i64,
+        unit: TextUnit,
+    ) -> Self {
+        Self::PollChoiceLength {
+            channel_id,
+            part: Some(part),
+            platform,
+            choice,
+            length,
+            maximum,
+            unit,
+        }
+    }
+
+    pub fn poll_duration_out_of_range_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        duration_minutes: i64,
+        maximum_minutes: i64,
+        minimum_minutes: i64,
+    ) -> Self {
+        Self::PollDurationOutOfRange {
+            channel_id,
+            part: Some(part),
+            platform,
+            duration_minutes,
+            maximum_minutes,
+            minimum_minutes,
+        }
+    }
+
+    pub fn poll_multiple_choice_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+    ) -> Self {
+        Self::PollMultipleChoice {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn poll_with_media_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
+        Self::PollWithMedia {
+            channel_id,
+            part: Some(part),
+            platform,
         }
     }
 

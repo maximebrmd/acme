@@ -181,6 +181,14 @@ public class SendTest : BaseMockServerTest
                     "text": "x"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices",
+                    "choices"
+                  ],
+                  "durationMinutes": 43829,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {
@@ -382,6 +390,7 @@ public class SendTest : BaseMockServerTest
                             Text = "x",
                         },
                     },
+                    Poll = null,
                     Text = "text",
                 },
                 DefaultSignatures = null,
@@ -458,6 +467,13 @@ public class SendTest : BaseMockServerTest
                     "text": "text"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices"
+                  ],
+                  "durationMinutes": 1,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {

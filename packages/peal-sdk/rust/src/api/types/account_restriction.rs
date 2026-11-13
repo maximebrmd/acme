@@ -45,6 +45,10 @@ pub enum AccountRestriction {
         field: String,
     },
 
+    #[serde(rename = "partsNeedReconnect")]
+    #[non_exhaustive]
+    PartsNeedReconnect {},
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -71,6 +75,10 @@ impl AccountRestriction {
 
     pub fn option_needs_reconnect(field: String) -> Self {
         Self::OptionNeedsReconnect { field }
+    }
+
+    pub fn parts_need_reconnect() -> Self {
+        Self::PartsNeedReconnect {}
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

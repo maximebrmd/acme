@@ -1661,6 +1661,7 @@ var (
 	postReviewFieldChannels  = big.NewInt(1 << 1)
 	postReviewFieldComments  = big.NewInt(1 << 2)
 	postReviewFieldMedia     = big.NewInt(1 << 3)
+	postReviewFieldPoll      = big.NewInt(1 << 4)
 )
 
 type PostReview struct {
@@ -1668,6 +1669,7 @@ type PostReview struct {
 	Channels  []*ReviewedChannel `json:"channels" url:"channels"`
 	Comments  []*ReviewComment   `json:"comments" url:"comments"`
 	Media     []*ReviewedMedia   `json:"media" url:"media"`
+	Poll      *Poll              `json:"poll,omitempty" url:"poll,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1702,6 +1704,13 @@ func (p *PostReview) GetMedia() []*ReviewedMedia {
 		return nil
 	}
 	return p.Media
+}
+
+func (p *PostReview) GetPoll() *Poll {
+	if p == nil {
+		return nil
+	}
+	return p.Poll
 }
 
 func (p *PostReview) GetExtraProperties() map[string]interface{} {
@@ -1746,6 +1755,13 @@ func (p *PostReview) SetComments(comments []*ReviewComment) {
 func (p *PostReview) SetMedia(media []*ReviewedMedia) {
 	p.Media = media
 	p.require(postReviewFieldMedia)
+}
+
+// SetPoll sets the Poll field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostReview) SetPoll(poll *Poll) {
+	p.Poll = poll
+	p.require(postReviewFieldPoll)
 }
 
 func (p *PostReview) UnmarshalJSON(data []byte) error {

@@ -153,6 +153,14 @@ public class RescheduleTest : BaseMockServerTest
                     "text": "x"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices",
+                    "choices"
+                  ],
+                  "durationMinutes": 43829,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {
@@ -379,6 +387,13 @@ public class RescheduleTest : BaseMockServerTest
                     "text": "text"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices"
+                  ],
+                  "durationMinutes": 1,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {

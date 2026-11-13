@@ -20,6 +20,9 @@ public record PostContent : IJsonOnDeserialized
     [JsonPropertyName("overrides")]
     public IEnumerable<TextOverride> Overrides { get; set; } = new List<TextOverride>();
 
+    [JsonPropertyName("poll")]
+    public Poll? Poll { get; set; }
+
     [JsonPropertyName("text")]
     public required string Text { get; set; }
 

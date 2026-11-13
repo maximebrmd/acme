@@ -79,6 +79,7 @@ type AccountRestriction struct {
 	VideoDuration        *AccountRestrictionVideoDuration
 	MediaTypesRefused    *AccountRestrictionMediaTypesRefused
 	OptionNeedsReconnect *AccountRestrictionOptionNeedsReconnect
+	PartsNeedReconnect   *AccountRestrictionPartsNeedReconnect
 
 	rawJSON json.RawMessage
 }
@@ -125,6 +126,13 @@ func (a *AccountRestriction) GetOptionNeedsReconnect() *AccountRestrictionOption
 	return a.OptionNeedsReconnect
 }
 
+func (a *AccountRestriction) GetPartsNeedReconnect() *AccountRestrictionPartsNeedReconnect {
+	if a == nil {
+		return nil
+	}
+	return a.PartsNeedReconnect
+}
+
 func (a *AccountRestriction) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -167,6 +175,12 @@ func (a *AccountRestriction) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		a.OptionNeedsReconnect = value
+	case "partsNeedReconnect":
+		value := new(AccountRestrictionPartsNeedReconnect)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		a.PartsNeedReconnect = value
 	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
@@ -191,6 +205,9 @@ func (a AccountRestriction) MarshalJSON() ([]byte, error) {
 	if a.OptionNeedsReconnect != nil {
 		return internal.MarshalJSONWithExtraProperty(a.OptionNeedsReconnect, "_tag", "optionNeedsReconnect")
 	}
+	if a.PartsNeedReconnect != nil {
+		return internal.MarshalJSONWithExtraProperty(a.PartsNeedReconnect, "_tag", "partsNeedReconnect")
+	}
 	if len(a.rawJSON) > 0 {
 		return a.rawJSON, nil
 	}
@@ -203,6 +220,7 @@ type AccountRestrictionVisitor interface {
 	VisitVideoDuration(*AccountRestrictionVideoDuration) error
 	VisitMediaTypesRefused(*AccountRestrictionMediaTypesRefused) error
 	VisitOptionNeedsReconnect(*AccountRestrictionOptionNeedsReconnect) error
+	VisitPartsNeedReconnect(*AccountRestrictionPartsNeedReconnect) error
 }
 
 func (a *AccountRestriction) Accept(visitor AccountRestrictionVisitor) error {
@@ -220,6 +238,9 @@ func (a *AccountRestriction) Accept(visitor AccountRestrictionVisitor) error {
 	}
 	if a.OptionNeedsReconnect != nil {
 		return visitor.VisitOptionNeedsReconnect(a.OptionNeedsReconnect)
+	}
+	if a.PartsNeedReconnect != nil {
+		return visitor.VisitPartsNeedReconnect(a.PartsNeedReconnect)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", a)
 }
@@ -243,6 +264,9 @@ func (a *AccountRestriction) validate() error {
 	}
 	if a.OptionNeedsReconnect != nil {
 		fields = append(fields, "optionNeedsReconnect")
+	}
+	if a.PartsNeedReconnect != nil {
+		fields = append(fields, "partsNeedReconnect")
 	}
 	if len(fields) == 0 {
 		if a.Type != "" {
@@ -632,6 +656,73 @@ func (a *AccountRestrictionOptionValues) MarshalJSON() ([]byte, error) {
 }
 
 func (a *AccountRestrictionOptionValues) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AccountRestrictionPartsNeedReconnect struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AccountRestrictionPartsNeedReconnect) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AccountRestrictionPartsNeedReconnect) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+func (a *AccountRestrictionPartsNeedReconnect) UnmarshalJSON(data []byte) error {
+	type unmarshaler AccountRestrictionPartsNeedReconnect
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AccountRestrictionPartsNeedReconnect(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AccountRestrictionPartsNeedReconnect) MarshalJSON() ([]byte, error) {
+	type embed AccountRestrictionPartsNeedReconnect
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AccountRestrictionPartsNeedReconnect) String() string {
 	if a == nil {
 		return "<nil>"
 	}
@@ -1299,19 +1390,28 @@ func (c *ChannelCapabilities) String() string {
 }
 
 var (
-	followUpCapabilitiesFieldKind     = big.NewInt(1 << 0)
-	followUpCapabilitiesFieldMaxCount = big.NewInt(1 << 1)
+	followUpCapabilitiesFieldCommentTextLimits = big.NewInt(1 << 0)
+	followUpCapabilitiesFieldKind              = big.NewInt(1 << 1)
+	followUpCapabilitiesFieldMaxCount          = big.NewInt(1 << 2)
 )
 
 type FollowUpCapabilities struct {
-	Kind     FollowUpCapabilitiesKind `json:"kind" url:"kind"`
-	MaxCount int                      `json:"maxCount" url:"maxCount"`
+	CommentTextLimits []*TextLimit             `json:"commentTextLimits,omitempty" url:"commentTextLimits,omitempty"`
+	Kind              FollowUpCapabilitiesKind `json:"kind" url:"kind"`
+	MaxCount          int                      `json:"maxCount" url:"maxCount"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpCapabilities) GetCommentTextLimits() []*TextLimit {
+	if f == nil {
+		return nil
+	}
+	return f.CommentTextLimits
 }
 
 func (f *FollowUpCapabilities) GetKind() FollowUpCapabilitiesKind {
@@ -1342,6 +1442,13 @@ func (f *FollowUpCapabilities) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	f.explicitFields = next
+}
+
+// SetCommentTextLimits sets the CommentTextLimits field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpCapabilities) SetCommentTextLimits(commentTextLimits []*TextLimit) {
+	f.CommentTextLimits = commentTextLimits
+	f.require(followUpCapabilitiesFieldCommentTextLimits)
 }
 
 // SetKind sets the Kind field and marks it as non-optional;
@@ -2796,9 +2903,10 @@ var (
 	platformCapabilitiesFieldMedia       = big.NewInt(1 << 4)
 	platformCapabilitiesFieldOptions     = big.NewInt(1 << 5)
 	platformCapabilitiesFieldPlatform    = big.NewInt(1 << 6)
-	platformCapabilitiesFieldPostFormats = big.NewInt(1 << 7)
-	platformCapabilitiesFieldText        = big.NewInt(1 << 8)
-	platformCapabilitiesFieldVersion     = big.NewInt(1 << 9)
+	platformCapabilitiesFieldPoll        = big.NewInt(1 << 7)
+	platformCapabilitiesFieldPostFormats = big.NewInt(1 << 8)
+	platformCapabilitiesFieldText        = big.NewInt(1 << 9)
+	platformCapabilitiesFieldVersion     = big.NewInt(1 << 10)
 )
 
 // platformCapabilitiesNullableFields maps the wire names of PlatformCapabilities's nullable fields (required or optional) to their field bits.
@@ -2814,6 +2922,7 @@ type PlatformCapabilities struct {
 	Media       *MediaCapabilities             `json:"media" url:"media"`
 	Options     *PlatformCapabilitiesOptions   `json:"options" url:"options"`
 	Platform    Platform                       `json:"platform" url:"platform"`
+	Poll        *PollCapabilities              `json:"poll,omitempty" url:"poll,omitempty"`
 	PostFormats []*PostFormatCapabilities      `json:"postFormats,omitempty" url:"postFormats,omitempty"`
 	Text        *TextCapabilities              `json:"text" url:"text"`
 	Version     int                            `json:"version" url:"version"`
@@ -2872,6 +2981,13 @@ func (p *PlatformCapabilities) GetPlatform() Platform {
 		return ""
 	}
 	return p.Platform
+}
+
+func (p *PlatformCapabilities) GetPoll() *PollCapabilities {
+	if p == nil {
+		return nil
+	}
+	return p.Poll
 }
 
 func (p *PlatformCapabilities) GetPostFormats() []*PostFormatCapabilities {
@@ -2958,6 +3074,13 @@ func (p *PlatformCapabilities) SetOptions(options *PlatformCapabilitiesOptions) 
 func (p *PlatformCapabilities) SetPlatform(platform Platform) {
 	p.Platform = platform
 	p.require(platformCapabilitiesFieldPlatform)
+}
+
+// SetPoll sets the Poll field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilities) SetPoll(poll *PollCapabilities) {
+	p.Poll = poll
+	p.require(platformCapabilitiesFieldPoll)
 }
 
 // SetPostFormats sets the PostFormats field and marks it as non-optional;
@@ -3307,6 +3430,270 @@ func (p *PlatformCapabilitiesOptions) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PlatformCapabilitiesOptions) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pollCapabilitiesFieldChoiceLimit     = big.NewInt(1 << 0)
+	pollCapabilitiesFieldDurationMinutes = big.NewInt(1 << 1)
+	pollCapabilitiesFieldMaxChoices      = big.NewInt(1 << 2)
+	pollCapabilitiesFieldMinChoices      = big.NewInt(1 << 3)
+	pollCapabilitiesFieldMultipleChoice  = big.NewInt(1 << 4)
+)
+
+// pollCapabilitiesNullableFields maps the wire names of PollCapabilities's nullable fields (required or optional) to their field bits.
+var pollCapabilitiesNullableFields = map[string]*big.Int{
+	"durationMinutes": pollCapabilitiesFieldDurationMinutes,
+}
+
+type PollCapabilities struct {
+	ChoiceLimit     *TextLimit                       `json:"choiceLimit" url:"choiceLimit"`
+	DurationMinutes *PollCapabilitiesDurationMinutes `json:"durationMinutes,omitempty" url:"durationMinutes,omitempty"`
+	MaxChoices      int                              `json:"maxChoices" url:"maxChoices"`
+	MinChoices      int                              `json:"minChoices" url:"minChoices"`
+	MultipleChoice  bool                             `json:"multipleChoice" url:"multipleChoice"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PollCapabilities) GetChoiceLimit() *TextLimit {
+	if p == nil {
+		return nil
+	}
+	return p.ChoiceLimit
+}
+
+func (p *PollCapabilities) GetDurationMinutes() *PollCapabilitiesDurationMinutes {
+	if p == nil {
+		return nil
+	}
+	return p.DurationMinutes
+}
+
+func (p *PollCapabilities) GetMaxChoices() int {
+	if p == nil {
+		return 0
+	}
+	return p.MaxChoices
+}
+
+func (p *PollCapabilities) GetMinChoices() int {
+	if p == nil {
+		return 0
+	}
+	return p.MinChoices
+}
+
+func (p *PollCapabilities) GetMultipleChoice() bool {
+	if p == nil {
+		return false
+	}
+	return p.MultipleChoice
+}
+
+func (p *PollCapabilities) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PollCapabilities) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChoiceLimit sets the ChoiceLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilities) SetChoiceLimit(choiceLimit *TextLimit) {
+	p.ChoiceLimit = choiceLimit
+	p.require(pollCapabilitiesFieldChoiceLimit)
+}
+
+// SetDurationMinutes sets the DurationMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilities) SetDurationMinutes(durationMinutes *PollCapabilitiesDurationMinutes) {
+	p.DurationMinutes = durationMinutes
+	p.require(pollCapabilitiesFieldDurationMinutes)
+}
+
+// SetMaxChoices sets the MaxChoices field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilities) SetMaxChoices(maxChoices int) {
+	p.MaxChoices = maxChoices
+	p.require(pollCapabilitiesFieldMaxChoices)
+}
+
+// SetMinChoices sets the MinChoices field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilities) SetMinChoices(minChoices int) {
+	p.MinChoices = minChoices
+	p.require(pollCapabilitiesFieldMinChoices)
+}
+
+// SetMultipleChoice sets the MultipleChoice field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilities) SetMultipleChoice(multipleChoice bool) {
+	p.MultipleChoice = multipleChoice
+	p.require(pollCapabilitiesFieldMultipleChoice)
+}
+
+func (p *PollCapabilities) UnmarshalJSON(data []byte) error {
+	type unmarshaler PollCapabilities
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PollCapabilities(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, pollCapabilitiesNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PollCapabilities) MarshalJSON() ([]byte, error) {
+	type embed PollCapabilities
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PollCapabilities) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pollCapabilitiesDurationMinutesFieldMaximum = big.NewInt(1 << 0)
+	pollCapabilitiesDurationMinutesFieldMinimum = big.NewInt(1 << 1)
+)
+
+type PollCapabilitiesDurationMinutes struct {
+	Maximum int `json:"maximum" url:"maximum"`
+	Minimum int `json:"minimum" url:"minimum"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PollCapabilitiesDurationMinutes) GetMaximum() int {
+	if p == nil {
+		return 0
+	}
+	return p.Maximum
+}
+
+func (p *PollCapabilitiesDurationMinutes) GetMinimum() int {
+	if p == nil {
+		return 0
+	}
+	return p.Minimum
+}
+
+func (p *PollCapabilitiesDurationMinutes) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PollCapabilitiesDurationMinutes) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetMaximum sets the Maximum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilitiesDurationMinutes) SetMaximum(maximum int) {
+	p.Maximum = maximum
+	p.require(pollCapabilitiesDurationMinutesFieldMaximum)
+}
+
+// SetMinimum sets the Minimum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PollCapabilitiesDurationMinutes) SetMinimum(minimum int) {
+	p.Minimum = minimum
+	p.require(pollCapabilitiesDurationMinutesFieldMinimum)
+}
+
+func (p *PollCapabilitiesDurationMinutes) UnmarshalJSON(data []byte) error {
+	type unmarshaler PollCapabilitiesDurationMinutes
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PollCapabilitiesDurationMinutes(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PollCapabilitiesDurationMinutes) MarshalJSON() ([]byte, error) {
+	type embed PollCapabilitiesDurationMinutes
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PollCapabilitiesDurationMinutes) String() string {
 	if p == nil {
 		return "<nil>"
 	}

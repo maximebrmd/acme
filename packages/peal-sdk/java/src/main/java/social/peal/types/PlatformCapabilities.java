@@ -40,6 +40,8 @@ public final class PlatformCapabilities {
 
     private final Platform platform;
 
+    private final Optional<PollCapabilities> poll;
+
     private final Optional<List<PostFormatCapabilities>> postFormats;
 
     private final TextCapabilities text;
@@ -56,6 +58,7 @@ public final class PlatformCapabilities {
             MediaCapabilities media,
             PlatformCapabilitiesOptions options,
             Platform platform,
+            Optional<PollCapabilities> poll,
             Optional<List<PostFormatCapabilities>> postFormats,
             TextCapabilities text,
             int version,
@@ -67,6 +70,7 @@ public final class PlatformCapabilities {
         this.media = media;
         this.options = options;
         this.platform = platform;
+        this.poll = poll;
         this.postFormats = postFormats;
         this.text = text;
         this.version = version;
@@ -111,6 +115,11 @@ public final class PlatformCapabilities {
         return platform;
     }
 
+    @JsonProperty("poll")
+    public Optional<PollCapabilities> getPoll() {
+        return poll;
+    }
+
     @JsonProperty("postFormats")
     public Optional<List<PostFormatCapabilities>> getPostFormats() {
         return postFormats;
@@ -151,6 +160,7 @@ public final class PlatformCapabilities {
                 && media.equals(other.media)
                 && options.equals(other.options)
                 && platform.equals(other.platform)
+                && poll.equals(other.poll)
                 && postFormats.equals(other.postFormats)
                 && text.equals(other.text)
                 && version == other.version;
@@ -166,6 +176,7 @@ public final class PlatformCapabilities {
                 this.media,
                 this.options,
                 this.platform,
+                this.poll,
                 this.postFormats,
                 this.text,
                 this.version);
@@ -229,6 +240,10 @@ public final class PlatformCapabilities {
 
         _FinalStage addAllLookups(List<LookupDescription> lookups);
 
+        _FinalStage poll(Optional<PollCapabilities> poll);
+
+        _FinalStage poll(PollCapabilities poll);
+
         _FinalStage postFormats(Optional<List<PostFormatCapabilities>> postFormats);
 
         _FinalStage postFormats(List<PostFormatCapabilities> postFormats);
@@ -260,6 +275,8 @@ public final class PlatformCapabilities {
 
         private Optional<List<PostFormatCapabilities>> postFormats = Optional.empty();
 
+        private Optional<PollCapabilities> poll = Optional.empty();
+
         private List<LookupDescription> lookups = new ArrayList<>();
 
         private Optional<FollowUpCapabilities> followUps = Optional.empty();
@@ -277,6 +294,7 @@ public final class PlatformCapabilities {
             media(other.getMedia());
             options(other.getOptions());
             platform(other.getPlatform());
+            poll(other.getPoll());
             postFormats(other.getPostFormats());
             text(other.getText());
             version(other.getVersion());
@@ -346,6 +364,19 @@ public final class PlatformCapabilities {
         }
 
         @java.lang.Override
+        public _FinalStage poll(PollCapabilities poll) {
+            this.poll = Optional.ofNullable(poll);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "poll", nulls = Nulls.SKIP)
+        public _FinalStage poll(Optional<PollCapabilities> poll) {
+            this.poll = poll;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllLookups(List<LookupDescription> lookups) {
             if (lookups != null) {
                 this.lookups.addAll(lookups);
@@ -404,6 +435,7 @@ public final class PlatformCapabilities {
                     media,
                     options,
                     platform,
+                    poll,
                     postFormats,
                     text,
                     version,
@@ -419,6 +451,7 @@ public final class PlatformCapabilities {
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("options")
                     || key.equalsIgnoreCase("platform")
+                    || key.equalsIgnoreCase("poll")
                     || key.equalsIgnoreCase("postFormats")
                     || key.equalsIgnoreCase("text")
                     || key.equalsIgnoreCase("version")) {

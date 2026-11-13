@@ -15,6 +15,13 @@ export type ContentViolation =
     | Peal.ContentViolation.ForbiddenCharacters
     | Peal.ContentViolation.TooManyMedia
     | Peal.ContentViolation.TooManyParts
+    | Peal.ContentViolation.PartsNeedReconnect
+    | Peal.ContentViolation.PollNotSupported
+    | Peal.ContentViolation.PollChoiceCount
+    | Peal.ContentViolation.PollChoiceLength
+    | Peal.ContentViolation.PollDurationOutOfRange
+    | Peal.ContentViolation.PollMultipleChoice
+    | Peal.ContentViolation.PollWithMedia
     | Peal.ContentViolation.MediaRequired
     | Peal.ContentViolation.TooManyHashtags
     | Peal.ContentViolation.TooManyMentions
@@ -78,6 +85,34 @@ export namespace ContentViolation {
 
     export interface TooManyParts extends Peal.ContentViolationTooManyParts {
         _tag: "tooManyParts";
+    }
+
+    export interface PartsNeedReconnect extends Peal.ContentViolationPartsNeedReconnect {
+        _tag: "partsNeedReconnect";
+    }
+
+    export interface PollNotSupported extends Peal.ContentViolationPollNotSupported {
+        _tag: "pollNotSupported";
+    }
+
+    export interface PollChoiceCount extends Peal.ContentViolationPollChoiceCount {
+        _tag: "pollChoiceCount";
+    }
+
+    export interface PollChoiceLength extends Peal.ContentViolationPollChoiceLength {
+        _tag: "pollChoiceLength";
+    }
+
+    export interface PollDurationOutOfRange extends Peal.ContentViolationPollDurationOutOfRange {
+        _tag: "pollDurationOutOfRange";
+    }
+
+    export interface PollMultipleChoice extends Peal.ContentViolationPollMultipleChoice {
+        _tag: "pollMultipleChoice";
+    }
+
+    export interface PollWithMedia extends Peal.ContentViolationPollWithMedia {
+        _tag: "pollWithMedia";
     }
 
     export interface MediaRequired extends Peal.ContentViolationMediaRequired {

@@ -372,6 +372,7 @@ public class ValidateTest : BaseMockServerTest
                             Text = "x",
                         },
                     },
+                    Poll = null,
                     Text = "text",
                 },
                 DefaultSignatures = null,

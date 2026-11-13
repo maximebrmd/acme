@@ -21,6 +21,13 @@ class ContentViolation extends JsonSerializableType
      *   |'forbiddenCharacters'
      *   |'tooManyMedia'
      *   |'tooManyParts'
+     *   |'partsNeedReconnect'
+     *   |'pollNotSupported'
+     *   |'pollChoiceCount'
+     *   |'pollChoiceLength'
+     *   |'pollDurationOutOfRange'
+     *   |'pollMultipleChoice'
+     *   |'pollWithMedia'
      *   |'mediaRequired'
      *   |'tooManyHashtags'
      *   |'tooManyMentions'
@@ -55,6 +62,13 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationForbiddenCharacters
      *   |ContentViolationTooManyMedia
      *   |ContentViolationTooManyParts
+     *   |ContentViolationPartsNeedReconnect
+     *   |ContentViolationPollNotSupported
+     *   |ContentViolationPollChoiceCount
+     *   |ContentViolationPollChoiceLength
+     *   |ContentViolationPollDurationOutOfRange
+     *   |ContentViolationPollMultipleChoice
+     *   |ContentViolationPollWithMedia
      *   |ContentViolationMediaRequired
      *   |ContentViolationTooManyHashtags
      *   |ContentViolationTooManyMentions
@@ -90,6 +104,13 @@ class ContentViolation extends JsonSerializableType
      *   |'forbiddenCharacters'
      *   |'tooManyMedia'
      *   |'tooManyParts'
+     *   |'partsNeedReconnect'
+     *   |'pollNotSupported'
+     *   |'pollChoiceCount'
+     *   |'pollChoiceLength'
+     *   |'pollDurationOutOfRange'
+     *   |'pollMultipleChoice'
+     *   |'pollWithMedia'
      *   |'mediaRequired'
      *   |'tooManyHashtags'
      *   |'tooManyMentions'
@@ -120,6 +141,13 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationForbiddenCharacters
      *   |ContentViolationTooManyMedia
      *   |ContentViolationTooManyParts
+     *   |ContentViolationPartsNeedReconnect
+     *   |ContentViolationPollNotSupported
+     *   |ContentViolationPollChoiceCount
+     *   |ContentViolationPollChoiceLength
+     *   |ContentViolationPollDurationOutOfRange
+     *   |ContentViolationPollMultipleChoice
+     *   |ContentViolationPollWithMedia
      *   |ContentViolationMediaRequired
      *   |ContentViolationTooManyHashtags
      *   |ContentViolationTooManyMentions
@@ -287,6 +315,90 @@ class ContentViolation extends JsonSerializableType
         return new ContentViolation([
             'type' => 'tooManyParts',
             'value' => $tooManyParts,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPartsNeedReconnect $partsNeedReconnect
+     * @return ContentViolation
+     */
+    public static function partsNeedReconnect(ContentViolationPartsNeedReconnect $partsNeedReconnect): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'partsNeedReconnect',
+            'value' => $partsNeedReconnect,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollNotSupported $pollNotSupported
+     * @return ContentViolation
+     */
+    public static function pollNotSupported(ContentViolationPollNotSupported $pollNotSupported): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollNotSupported',
+            'value' => $pollNotSupported,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollChoiceCount $pollChoiceCount
+     * @return ContentViolation
+     */
+    public static function pollChoiceCount(ContentViolationPollChoiceCount $pollChoiceCount): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollChoiceCount',
+            'value' => $pollChoiceCount,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollChoiceLength $pollChoiceLength
+     * @return ContentViolation
+     */
+    public static function pollChoiceLength(ContentViolationPollChoiceLength $pollChoiceLength): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollChoiceLength',
+            'value' => $pollChoiceLength,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollDurationOutOfRange $pollDurationOutOfRange
+     * @return ContentViolation
+     */
+    public static function pollDurationOutOfRange(ContentViolationPollDurationOutOfRange $pollDurationOutOfRange): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollDurationOutOfRange',
+            'value' => $pollDurationOutOfRange,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollMultipleChoice $pollMultipleChoice
+     * @return ContentViolation
+     */
+    public static function pollMultipleChoice(ContentViolationPollMultipleChoice $pollMultipleChoice): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollMultipleChoice',
+            'value' => $pollMultipleChoice,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollWithMedia $pollWithMedia
+     * @return ContentViolation
+     */
+    public static function pollWithMedia(ContentViolationPollWithMedia $pollWithMedia): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollWithMedia',
+            'value' => $pollWithMedia,
         ]);
     }
 
@@ -737,6 +849,160 @@ class ContentViolation extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isPartsNeedReconnect(): bool
+    {
+        return $this->value instanceof ContentViolationPartsNeedReconnect && $this->type === 'partsNeedReconnect';
+    }
+
+    /**
+     * @return ContentViolationPartsNeedReconnect
+     */
+    public function asPartsNeedReconnect(): ContentViolationPartsNeedReconnect
+    {
+        if (!($this->value instanceof ContentViolationPartsNeedReconnect && $this->type === 'partsNeedReconnect')) {
+            throw new Exception(
+                "Expected partsNeedReconnect; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollNotSupported(): bool
+    {
+        return $this->value instanceof ContentViolationPollNotSupported && $this->type === 'pollNotSupported';
+    }
+
+    /**
+     * @return ContentViolationPollNotSupported
+     */
+    public function asPollNotSupported(): ContentViolationPollNotSupported
+    {
+        if (!($this->value instanceof ContentViolationPollNotSupported && $this->type === 'pollNotSupported')) {
+            throw new Exception(
+                "Expected pollNotSupported; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollChoiceCount(): bool
+    {
+        return $this->value instanceof ContentViolationPollChoiceCount && $this->type === 'pollChoiceCount';
+    }
+
+    /**
+     * @return ContentViolationPollChoiceCount
+     */
+    public function asPollChoiceCount(): ContentViolationPollChoiceCount
+    {
+        if (!($this->value instanceof ContentViolationPollChoiceCount && $this->type === 'pollChoiceCount')) {
+            throw new Exception(
+                "Expected pollChoiceCount; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollChoiceLength(): bool
+    {
+        return $this->value instanceof ContentViolationPollChoiceLength && $this->type === 'pollChoiceLength';
+    }
+
+    /**
+     * @return ContentViolationPollChoiceLength
+     */
+    public function asPollChoiceLength(): ContentViolationPollChoiceLength
+    {
+        if (!($this->value instanceof ContentViolationPollChoiceLength && $this->type === 'pollChoiceLength')) {
+            throw new Exception(
+                "Expected pollChoiceLength; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollDurationOutOfRange(): bool
+    {
+        return $this->value instanceof ContentViolationPollDurationOutOfRange && $this->type === 'pollDurationOutOfRange';
+    }
+
+    /**
+     * @return ContentViolationPollDurationOutOfRange
+     */
+    public function asPollDurationOutOfRange(): ContentViolationPollDurationOutOfRange
+    {
+        if (!($this->value instanceof ContentViolationPollDurationOutOfRange && $this->type === 'pollDurationOutOfRange')) {
+            throw new Exception(
+                "Expected pollDurationOutOfRange; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollMultipleChoice(): bool
+    {
+        return $this->value instanceof ContentViolationPollMultipleChoice && $this->type === 'pollMultipleChoice';
+    }
+
+    /**
+     * @return ContentViolationPollMultipleChoice
+     */
+    public function asPollMultipleChoice(): ContentViolationPollMultipleChoice
+    {
+        if (!($this->value instanceof ContentViolationPollMultipleChoice && $this->type === 'pollMultipleChoice')) {
+            throw new Exception(
+                "Expected pollMultipleChoice; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollWithMedia(): bool
+    {
+        return $this->value instanceof ContentViolationPollWithMedia && $this->type === 'pollWithMedia';
+    }
+
+    /**
+     * @return ContentViolationPollWithMedia
+     */
+    public function asPollWithMedia(): ContentViolationPollWithMedia
+    {
+        if (!($this->value instanceof ContentViolationPollWithMedia && $this->type === 'pollWithMedia')) {
+            throw new Exception(
+                "Expected pollWithMedia; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isMediaRequired(): bool
     {
         return $this->value instanceof ContentViolationMediaRequired && $this->type === 'mediaRequired';
@@ -1132,6 +1398,34 @@ class ContentViolation extends JsonSerializableType
                 $value = $this->asTooManyParts()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'partsNeedReconnect':
+                $value = $this->asPartsNeedReconnect()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollNotSupported':
+                $value = $this->asPollNotSupported()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollChoiceCount':
+                $value = $this->asPollChoiceCount()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollChoiceLength':
+                $value = $this->asPollChoiceLength()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollDurationOutOfRange':
+                $value = $this->asPollDurationOutOfRange()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollMultipleChoice':
+                $value = $this->asPollMultipleChoice()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollWithMedia':
+                $value = $this->asPollWithMedia()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'mediaRequired':
                 $value = $this->asMediaRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -1263,6 +1557,27 @@ class ContentViolation extends JsonSerializableType
                 break;
             case 'tooManyParts':
                 $args['value'] = ContentViolationTooManyParts::jsonDeserialize($data);
+                break;
+            case 'partsNeedReconnect':
+                $args['value'] = ContentViolationPartsNeedReconnect::jsonDeserialize($data);
+                break;
+            case 'pollNotSupported':
+                $args['value'] = ContentViolationPollNotSupported::jsonDeserialize($data);
+                break;
+            case 'pollChoiceCount':
+                $args['value'] = ContentViolationPollChoiceCount::jsonDeserialize($data);
+                break;
+            case 'pollChoiceLength':
+                $args['value'] = ContentViolationPollChoiceLength::jsonDeserialize($data);
+                break;
+            case 'pollDurationOutOfRange':
+                $args['value'] = ContentViolationPollDurationOutOfRange::jsonDeserialize($data);
+                break;
+            case 'pollMultipleChoice':
+                $args['value'] = ContentViolationPollMultipleChoice::jsonDeserialize($data);
+                break;
+            case 'pollWithMedia':
+                $args['value'] = ContentViolationPollWithMedia::jsonDeserialize($data);
                 break;
             case 'mediaRequired':
                 $args['value'] = ContentViolationMediaRequired::jsonDeserialize($data);
