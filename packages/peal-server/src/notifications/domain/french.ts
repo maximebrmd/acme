@@ -284,6 +284,20 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Nouveau commentaire sur une publication",
   },
+  firstCommentFailed: {
+    action: "Ouvrir la publication",
+    body: "Une publication de {workspaceName} est en ligne sur {channel}, mais son premier commentaire n’est pas parti : {reason} La publication elle-même reste en ligne : depuis Peal, renvoyez le commentaire, ou gardez la publication sans lui.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Un premier commentaire n’est pas parti sur {channel}",
+  },
+  laterPartsFailed: {
+    action: "Ouvrir la publication",
+    body: "Une publication de {workspaceName} est en ligne sur {channel}, mais les parties après la première ne sont pas parties : {reason} La publication elle-même reste en ligne : renvoyez la suite depuis Peal.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "La suite d’un fil n’est pas partie sur {channel}",
+  },
   postFailed: {
     action: "Ouvrir la publication",
     body: "Une publication de {workspaceName} n’est pas partie sur {channel} : {reason}",

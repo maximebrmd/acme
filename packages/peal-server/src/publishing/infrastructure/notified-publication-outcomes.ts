@@ -5,12 +5,31 @@ import { Notify } from "#notifications/application/notify.ts";
 import type { NoticeRequest } from "#notifications/application/notify.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
+import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 
 type NoticeEvent = NoticeRequest["event"];
 
 type Channel = Extract<NoticeEvent, { readonly _tag: "PostFailed" }>["channel"];
+
+// What did not go out of a failed target whose post itself is live there:
+// its first comment where the platform's parts are comments, else the
+// parts after its first in a thread; none when the post did not go out.
+const notSentOf = (
+  target: PostTarget,
+  channel: Channel
+): Option.Option<"firstComment" | "laterParts"> =>
+  target.liveParts.length === 0
+    ? Option.none()
+    : Option.some(
+        Option.exists(
+          channel,
+          ({ platform }) => followUpsOn(platform)?.kind === "comment"
+        )
+          ? "firstComment"
+          : "laterParts"
+      );
 
 // What the members who schedule posts hear about a settled target. A
 // cancelled one was someone's choice: nobody needs telling.
@@ -20,7 +39,18 @@ const eventOf = (target: PostTarget, channel: Channel) => {
   return Match.valueTags(target.status, {
     cancelled: () => Option.none<NoticeEvent>(),
     failed: ({ reason }) =>
-      Option.some<NoticeEvent>({ _tag: "PostFailed", channel, postId, reason }),
+      Option.some<NoticeEvent>(
+        Option.match(notSentOf(target, channel), {
+          onNone: () => ({ _tag: "PostFailed", channel, postId, reason }),
+          onSome: (notSent) => ({
+            _tag: "PostFailed",
+            channel,
+            notSent,
+            postId,
+            reason,
+          }),
+        })
+      ),
     pending: () => Option.none<NoticeEvent>(),
     published: ({ permalink }) =>
       Option.some<NoticeEvent>({

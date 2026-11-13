@@ -277,6 +277,20 @@ export const english: EmailCatalog = {
       "You receive this email because you wrote this post in {workspaceName} on Peal, asked for its approval or took part in its review. Choose which notifications you receive by email in your notification preferences.",
     subject: "A new comment on a post",
   },
+  firstCommentFailed: {
+    action: "Open the post",
+    body: "A post of {workspaceName} is live on {channel}, but its first comment did not go out: {reason} The post itself stays live: from Peal, send the comment again, or settle the post without it.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A first comment did not go out on {channel}",
+  },
+  laterPartsFailed: {
+    action: "Open the post",
+    body: "A post of {workspaceName} is live on {channel}, but the parts after its first did not go out: {reason} The post itself stays live: send the rest again from Peal.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
+    subject: "The rest of a thread did not go out on {channel}",
+  },
   postFailed: {
     action: "Open the post",
     body: "A post of {workspaceName} did not go out on {channel}: {reason}",

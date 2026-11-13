@@ -2033,6 +2033,8 @@
     "event": {
       "PostPublished": "Une publication de {workspace} est en ligne sur {channel}.",
       "PostFailed": "Une publication de {workspace} n’est pas partie sur {channel} : {reason}",
+      "FirstCommentFailed": "Une publication de {workspace} est en ligne sur {channel}, mais son premier commentaire n’est pas parti : {reason}",
+      "LaterPartsFailed": "Une publication de {workspace} est en ligne sur {channel}, mais les parties après la première ne sont pas parties : {reason}",
       "PostUnconfirmed": "Une publication de {workspace} est peut-être partie sur {channel}. Vérifiez sur la plateforme avant de la republier.",
       "PostApprovalRequested": "Une publication de {workspace} attend une approbation, pour partir le {scheduledAt, date, long} à {scheduledAt, time, short}.",
       "PostApproved": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a approuvé une publication de {workspace}. Elle est programmée.",
