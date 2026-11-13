@@ -13,8 +13,8 @@ import type { Messages } from "./i18n/messages.ts";
 
 // Per-account pricing as the pricing page states it, from the contract's
 // rate card, which the server bills from (a test there keeps them equal).
-// Prices are US dollars excluding tax; a locale whose strings ask for it
-// (French) also shows each amount with France's VAT, still in dollars.
+// Prices are US dollars excluding VAT, each also shown with France's VAT,
+// in every language.
 // Nothing here converts a currency: checkout does.
 
 /** The meters whose allowance and price the page states. */
@@ -68,10 +68,10 @@ const size = (locale: Locale, bytes: number) =>
     unit: "gigabyte",
   }).format(bytes / gigabyte);
 
-/** An amount, excluding tax, and with France's VAT where the page shows it. */
+/** An amount, excluding VAT and with France's VAT. */
 export interface Amount {
   readonly excluded: string;
-  readonly included: string | null;
+  readonly included: string;
   /** What the page writes. */
   readonly text: string;
 }
@@ -83,10 +83,6 @@ const amountOf = (
 ): Amount => {
   const excluded = dollars(locale, cents);
 
-  if (!t.taxes.showVat) {
-    return { excluded, included: null, text: excluded };
-  }
-
   // Exact, not rounded to the cent: a cent's price with VAT is 1.2 cents.
   const included = dollars(
     locale,
@@ -96,7 +92,11 @@ const amountOf = (
   return {
     excluded,
     included,
-    text: fill(t.taxes.withVat, { excluded, included }),
+    text: fill(t.taxes.withVat, {
+      excluded,
+      included,
+      rate: count(locale, rateCard.displayVatRate),
+    }),
   };
 };
 
@@ -270,8 +270,8 @@ export interface PricingPage {
   readonly meters: readonly MeterRow[];
   readonly partMonth: PartMonth;
   readonly storage: string;
-  /** France's VAT, on the pages that show it. */
-  readonly vat: string | null;
+  /** How amounts show France's VAT. */
+  readonly vat: string;
 }
 
 /** The pricing page's figures, from the rate card, in the reader's language. */
@@ -305,8 +305,6 @@ export const pricingPage = (
       perAccount: size(locale, storage.perAccount),
       without: size(locale, storage.withoutPaymentMethod),
     }),
-    vat: t.taxes.showVat
-      ? fill(t.taxes.shown, { rate: count(locale, rateCard.displayVatRate) })
-      : null,
+    vat: fill(t.taxes.shown, { rate: count(locale, rateCard.displayVatRate) }),
   };
 };

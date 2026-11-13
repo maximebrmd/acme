@@ -49,9 +49,7 @@ describe("the pricing page", () => {
         expect(example?.text).toBe(messages(locale).pricing.ladder.free);
       } else {
         expect(example?.price?.excluded).toBe(dollars(locale, cents));
-        expect(example?.price?.included).toBe(
-          locale === "fr" ? dollars(locale, withVat(cents)) : null
-        );
+        expect(example?.price?.included).toBe(dollars(locale, withVat(cents)));
       }
     }
   });
@@ -84,13 +82,25 @@ describe("the pricing page", () => {
 
     expect(partMonth.accountDays).toBe("314");
     expect(partMonth.units).toBe("10.467");
-    expect(partMonth.price.text).toBe("$41.40");
+    expect(partMonth.price.excluded).toBe("$41.40");
     expect(accountsCharge(314)).toBe(4140);
   });
 
-  it("shows French VAT on the French page only", () => {
-    expect(pageOf("en").vat).toBeNull();
-    expect(pageOf("fr").vat).toContain(String(rateCard.displayVatRate));
+  it("shows each price excluding VAT and with France's VAT, labelled, in both languages", () => {
+    const en = pageOf("en");
+    const fr = pageOf("fr");
+
+    expect(en.ladder[1]?.price?.text).toBe(
+      "$5.00 excl. VAT · $6.00 with France's 20% VAT"
+    );
+    expect(fr.ladder[1]?.price?.text).toBe(
+      `${dollars("fr", 500)} HT · ${dollars("fr", 600)} avec la TVA française de 20 %`
+    );
+    expect(en.partMonth.price.text).toBe(
+      "$41.40 excl. VAT · $49.68 with France's 20% VAT"
+    );
+    expect(en.vat).toContain("France's 20% VAT");
+    expect(fr.vat).toContain("TVA française de 20 %");
   });
 
   it.each(locales)("gives a row to each band of the ladder in %s", (locale) => {

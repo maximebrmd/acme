@@ -22,7 +22,7 @@ const page = pricingPage(locale, t);
     <p class="mt-4 max-w-3xl text-lg text-neutral-600">{page.lead}</p>
     <ul class="mt-4 flex max-w-3xl flex-col gap-1 text-sm text-neutral-600">
       <li>{t.taxes.excluded}</li>
-      {page.vat === null ? null : <li>{page.vat}</li>}
+      <li>{page.vat}</li>
       <li>{t.taxes.vat}</li>
       <li>{t.taxes.currency}</li>
       <li>{t.taxes.reverseCharge}</li>

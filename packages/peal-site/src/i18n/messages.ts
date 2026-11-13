@@ -79,7 +79,7 @@ const en = {
     dayRule:
       "Counted by the day: each UTC day of the month counts the most accounts connected at once that day, across every workspace of the billing account, for days {first} to {days} only (day {after} is never counted). The month's account-days are added up and divided by {days}, and that number of accounts goes through the ladder, so the first {freeDays} account-days are free. An account you disconnect stops counting from the next day, and nothing else is charged for accounts: no fee of any kind.",
     description:
-      "Peal Cloud's prices: per connected account, by the day, with your first accounts free, in US dollars excluding tax.",
+      "Peal Cloud's prices: per connected account, by the day, with your first accounts free, in US dollars, excluding VAT and with France's VAT.",
     examples: {
       accounts: "Accounts",
       caption: "What a month costs, each account connected all month",
@@ -161,11 +161,11 @@ const en = {
         "At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars.",
       excluded: "Prices are in US dollars and exclude tax.",
       reverseCharge:
-        "A business in another EU country with a valid VAT number pays no VAT: it is reverse-charged.",
-      showVat: false,
-      shown: "",
-      vat: "VAT is added at checkout for customers in the EU, at their country's rate.",
-      withVat: "{included} ({excluded} excl. VAT)",
+        "A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies.",
+      shown:
+        "Each price is shown excluding VAT and with France's {rate}% VAT, in US dollars.",
+      vat: "The VAT you pay depends on your country: it is added at checkout for customers in the EU, at their country's rate.",
+      withVat: "{excluded} excl. VAT · {included} with France's {rate}% VAT",
     },
     title: "Pricing",
     unlimited: {
@@ -258,7 +258,7 @@ const fr: Messages = {
     dayRule:
       "Compté au jour : chaque jour UTC du mois compte le plus grand nombre de comptes connectés en même temps ce jour-là, dans tous les espaces de travail du compte de facturation, pour les jours {first} à {days} seulement (le jour {after} n’est jamais compté). Les jours-comptes du mois sont additionnés et divisés par {days}, et ce nombre de comptes passe au barème : les {freeDays} premiers jours-comptes sont donc gratuits. Un compte que vous déconnectez cesse de compter dès le lendemain, et rien d’autre n’est facturé pour les comptes : aucuns frais.",
     description:
-      "Les tarifs de Peal Cloud : au compte connecté, au jour, vos premiers comptes gratuits, en dollars américains, TTC et HT.",
+      "Les tarifs de Peal Cloud : au compte connecté, au jour, vos premiers comptes gratuits, en dollars américains, HT et avec la TVA française.",
     examples: {
       accounts: "Comptes",
       caption: "Ce que coûte un mois, chaque compte connecté tout le mois",
@@ -340,12 +340,11 @@ const fr: Messages = {
         "Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains.",
       excluded: "Les prix sont fixés en dollars américains, hors taxes.",
       reverseCharge:
-        "Une entreprise d’un autre pays de l’UE avec un numéro de TVA valide ne paie pas de TVA : celle-ci est autoliquidée.",
-      showVat: true,
+        "Une entreprise avec un numéro de TVA valide paie le prix HT, la TVA étant autoliquidée ; en France, la TVA française s’applique.",
       shown:
-        "Chaque montant est affiché TTC, avec la TVA française de {rate} %, puis HT, toujours en dollars américains.",
-      vat: "La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays.",
-      withVat: "{included} TTC ({excluded} HT)",
+        "Chaque prix est affiché HT et avec la TVA française de {rate} %, en dollars américains.",
+      vat: "La TVA que vous payez dépend de votre pays : elle est ajoutée au paiement pour les clients de l’UE, au taux de leur pays.",
+      withVat: "{excluded} HT · {included} avec la TVA française de {rate} %",
     },
     title: "Tarifs",
     unlimited: {
