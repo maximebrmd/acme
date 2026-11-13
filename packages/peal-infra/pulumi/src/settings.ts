@@ -54,6 +54,13 @@ export const AccountSettingsSchema = Schema.Struct({
   ownerName: Schema.NonEmptyString,
   // The uptime server, once it exists: unset, no record is made for it.
   uptime: Schema.optionalKey(UptimeSettingsSchema),
+  // The DID of Peal's Bluesky account, whose handle is the domain itself:
+  // unset, no `_atproto` record is made.
+  blueskyDid: Schema.optionalKey(
+    Schema.String.check(
+      Schema.makeFilter((did) => /^did:(?:plc|web):[\w.:%-]+$/u.test(did))
+    )
+  ),
 });
 
 export type AccountSettings = typeof AccountSettingsSchema.Type;
