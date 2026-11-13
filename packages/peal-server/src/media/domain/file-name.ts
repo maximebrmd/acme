@@ -56,6 +56,24 @@ export const fileNameOf = (raw: string): Option.Option<FileName> => {
   );
 };
 
+/** The longest text the library's search compares, as the contract's. */
+export const maxSearchTextLength = 100;
+
+/**
+ * Text to find in names and descriptions, made as they are kept: composed
+ * (NFC), on one line, without control characters or what shows nothing,
+ * at most `maxSearchTextLength` characters. None when nothing is left,
+ * which searches for nothing in particular.
+ */
+export const searchTextOf = (raw: string): Option.Option<string> => {
+  const text = storableLine(
+    visible(raw.toWellFormed().normalize("NFC")),
+    maxSearchTextLength
+  );
+
+  return text === "" ? Option.none() : Option.some(text);
+};
+
 // The segment as its percent-encoding says, or as written when that is
 // not one (a lone `%`).
 const decoded = (segment: string): string => {

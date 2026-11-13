@@ -3358,6 +3358,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           { items: [{ fileName: "Regatta.mp4", id: video }] }
         );
 
+        assert.include(
+          yield* reader.refused("list_media", { q: "a\u0000b" }),
+          "q"
+        );
+
         yield* sql`DELETE FROM media.media_assets WHERE id IN (${video}, ${image})`;
       })
     );

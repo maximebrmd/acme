@@ -3,8 +3,11 @@ import { randomUUID } from "node:crypto";
 import { assert, layer } from "@effect/vitest";
 import { eq } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
+import type { MediaPageRequest } from "#media/application/ports/media-assets.ts";
+import { listMedia } from "#media/application/use-cases/view-media.ts";
 import { AltTextSchema } from "#media/domain/alt-text.ts";
 import { fileNameOf } from "#media/domain/file-name.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
@@ -13,13 +16,17 @@ import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
 import type { MediaStatus } from "#media/domain/media-status.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import { storageKeyFor } from "#media/domain/storage-key.ts";
-import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
+import {
+  DrizzleMediaAssetsLive,
+  listing,
+} from "#media/infrastructure/drizzle-media-assets.ts";
+import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { mediaAssets } from "#media/infrastructure/schema.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
-import { DatabaseTest } from "#test/media/support.ts";
+import { DatabaseTest, storageSettings } from "#test/media/support.ts";
 
 // A workspace that shares its storage with no other.
 const alone = Effect.succeed<readonly WorkspaceId[]>([]);
@@ -27,6 +34,9 @@ const alone = Effect.succeed<readonly WorkspaceId[]>([]);
 const RepositoryTest = DrizzleMediaAssetsLive.pipe(
   Layer.provideMerge(DatabaseTest)
 );
+
+// The store, for the use case that lists what the repository answers.
+const viewing = S3MediaStorageLive.pipe(Layer.provide(storageSettings));
 
 const createdAt = DateTime.makeUnsafe("2026-06-15T07:00:00.123Z");
 
@@ -705,6 +715,48 @@ layer(RepositoryTest)("the library's search", (it) => {
       })
   );
 
+  it.effect(
+    "finds a name and a description whatever way their accents were written",
+    () =>
+      Effect.gen(function* composed() {
+        const assets = yield* MediaAssets;
+        const workspaceId = WorkspaceIdSchema.make(yield* (yield* Ids).next);
+
+        // As macOS hands an accented name to a browser: decomposed.
+        const fromMac = yield* fileIn(
+          workspaceId,
+          "image/png",
+          "e\u0301te\u0301 2026.png",
+          null
+        );
+
+        const described = yield* fileIn(
+          workspaceId,
+          "image/png",
+          "other.png",
+          "Un caf\u00E9"
+        );
+
+        yield* Effect.forEach([fromMac, described], (file) =>
+          assets.insert(file)
+        );
+
+        const found = (text: string) =>
+          listMedia({
+            ...everything,
+            text: Option.some(text),
+            workspaceId,
+          }).pipe(
+            Effect.map((page) => page.items.map(({ asset }) => asset.id))
+          );
+
+        assert.deepStrictEqual(yield* found("\u00E9t\u00E9"), [fromMac.id]);
+        assert.deepStrictEqual(yield* found("cafe\u0301"), [described.id]);
+        // Text with nothing left to search for lists everything.
+        assert.lengthOf(yield* found("\u200B"), 2);
+      }).pipe(Effect.provide(viewing))
+  );
+
   it.effect("reads wildcards in the text as the characters they are", () =>
     Effect.gen(function* literal() {
       const assets = yield* MediaAssets;
@@ -788,5 +840,60 @@ layer(RepositoryTest)("the library's search", (it) => {
         [files[3]?.id]
       );
     })
+  );
+});
+
+// The plan Postgres picks for a page of the list, with sequential scans
+// and sorts priced out, as on a table too large for either: the order
+// must be one of the workspace's indexes', never the primary key read
+// backwards across every workspace.
+const planOf = (workspaceId: WorkspaceId, request: MediaPageRequest) =>
+  Effect.gen(function* plan() {
+    const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
+    const statement = listing(db, workspaceId, request).toSQL();
+
+    return yield* client
+      .withTransaction(
+        Effect.gen(function* explained() {
+          yield* client`SET LOCAL enable_seqscan = off`;
+          yield* client`SET LOCAL enable_sort = off`;
+
+          return yield* client.unsafe(`EXPLAIN ${statement.sql}`, [
+            ...statement.params,
+          ]);
+        })
+      )
+      .pipe(
+        Effect.orDie,
+        Effect.map((rows) => JSON.stringify(rows))
+      );
+  });
+
+layer(RepositoryTest)("the list's plans", (it) => {
+  it.effect(
+    "read a workspace's files newest first from its own indexes, filtered or not",
+    () =>
+      Effect.gen(function* plans() {
+        const workspaceId = WorkspaceIdSchema.make(yield* (yield* Ids).next);
+        const plain = yield* planOf(workspaceId, everything);
+
+        const kind = yield* planOf(workspaceId, {
+          ...everything,
+          kind: Option.some("document"),
+        });
+
+        const text = yield* planOf(workspaceId, {
+          ...everything,
+          text: Option.some("launch"),
+        });
+
+        for (const plan of [plain, kind, text]) {
+          assert.notInclude(plan, "media_assets_pkey");
+          assert.notInclude(plan, "Sort");
+        }
+
+        assert.include(plain, "media_assets_workspace_id_id_index");
+      })
   );
 });

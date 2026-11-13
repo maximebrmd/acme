@@ -354,6 +354,12 @@ describe(altTextOf, () => {
     );
   });
 
+  it("keeps a description composed, as a keyboard types it", () => {
+    expect(
+      Result.getOrThrow(altTextOf("Cafe\u0301 au lait")).pipe(Option.getOrNull)
+    ).toBe("Caf\u00E9 au lait");
+  });
+
   it("refuses a longer description", () => {
     expect(failureTag(altTextOf("a".repeat(maxAltTextLength + 1)))).toBe(
       "AltTextTooLong"

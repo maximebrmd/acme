@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import {
+  HttpApi,
   HttpApiEndpoint,
   HttpApiError,
   HttpApiGroup,
@@ -214,6 +215,15 @@ export const maxMediaPageSize = 100;
 /** The longest text a search of the media library takes. */
 export const maxMediaQueryLength = 100;
 
+/**
+ * Text to find in the library's file names and descriptions: 1 to
+ * `maxMediaQueryLength` characters, without a NUL, which no name holds.
+ */
+export const MediaQuerySchema = Schema.String.check(
+  Schema.isBetweenLength(1, maxMediaQueryLength),
+  Schema.isPattern(/^[^\0]*$/u)
+).annotate({ identifier: "MediaQuery" });
+
 const workspace = { workspaceId: Schema.String };
 
 const media = { ...workspace, mediaId: Schema.String };
@@ -237,17 +247,19 @@ export class MediaApi extends HttpApiGroup.make("media")
             Schema.isBetween({ maximum: maxMediaPageSize, minimum: 1 })
           )
         ),
-        q: Schema.optionalKey(
-          Schema.String.check(Schema.isBetweenLength(1, maxMediaQueryLength))
-        ),
+        q: Schema.optionalKey(MediaQuerySchema),
       },
       success: MediaPageSchema,
-    }).annotateMerge(
-      OpenApi.annotations({
-        description: `Lists the workspace's media, newest first, ${defaultMediaPageSize} a page unless \`limit\` (at most ${maxMediaPageSize}) says otherwise. Every filter given must hold: \`kind\` (\`image\`, \`video\` or \`document\`), and \`q\`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters, for the next one. Needs media:read.`,
-        summary: "List media",
-      })
-    ),
+    })
+      // The text searched is part of members' file names and descriptions:
+      // the server's span keeps the query without it.
+      .annotate(HttpApi.RedactedNames, { query: ["q"] })
+      .annotateMerge(
+        OpenApi.annotations({
+          description: `Lists the workspace's media, newest first, ${defaultMediaPageSize} a page unless \`limit\` (at most ${maxMediaPageSize}) says otherwise. Every filter given must hold: \`kind\` (\`image\`, \`video\` or \`document\`), and \`q\`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters, for the next one. Needs media:read.`,
+          summary: "List media",
+        })
+      ),
     HttpApiEndpoint.post("create", "/", {
       error: [
         Forbidden,

@@ -3,9 +3,11 @@ import {
   ConfigProvider,
   DateTime,
   Effect,
+  Exit,
   Layer,
   Logger,
   Option,
+  Schema,
 } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
@@ -14,6 +16,7 @@ import {
   Forbidden,
   MediaInUse,
   MediaNotFound,
+  MediaQuerySchema,
   MediaStoreUnavailable,
   UploadIncomplete,
   UploadRejected,
@@ -580,6 +583,16 @@ layer(UseCasesTest)("the media endpoints", (it) => {
           poster.id,
         ]);
         assert.deepStrictEqual(yield* found({ q: "nothing of the sort" }), []);
+        // A NUL is no text to search for: the contract refuses it, so the
+        // client never sends it, and the server answers such a query with
+        // InvalidRequest (400), as any query it cannot decode.
+        assert.strictEqual(
+          (yield* Effect.flip(found({ q: "a\u0000b" })))._tag,
+          "SchemaError"
+        );
+        assert.isTrue(
+          Exit.isFailure(Schema.decodeUnknownExit(MediaQuerySchema)("a\u0000b"))
+        );
       })
   );
 

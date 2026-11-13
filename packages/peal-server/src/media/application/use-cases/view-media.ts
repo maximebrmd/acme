@@ -7,6 +7,7 @@ import {
 import type { MediaPageRequest } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
+import { searchTextOf } from "#media/domain/file-name.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -83,8 +84,14 @@ export const listMedia = Effect.fn("Media.listMedia")(function* listMedia({
   workspaceId,
   ...page
 }: ListMediaRequest) {
+  // The text compared as names and descriptions are kept; once cleaned,
+  // nothing left means no filter.
+  const text = page.text.pipe(
+    Option.flatMap((written) => searchTextOf(written))
+  );
+
   const listed = yield* MediaAssets.use((assets) =>
-    assets.list(workspaceId, page)
+    assets.list(workspaceId, { ...page, text })
   );
 
   const shown: MediaItemPage = {

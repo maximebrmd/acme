@@ -7,6 +7,7 @@ import {
   fileNameOf,
   maxFileNameLength,
   nameInAddress,
+  searchTextOf,
 } from "#media/domain/file-name.ts";
 
 // A file's name is what a member's device or an address called it: the
@@ -155,5 +156,18 @@ describe(nameInAddress, () => {
 describe("the contract's bound", () => {
   it("is the one the server keeps", () => {
     expect(maxFileNameLength).toBe(maxMediaFileNameLength);
+  });
+});
+
+describe(searchTextOf, () => {
+  it("compares as names are kept: composed, on one line, without what shows nothing", () => {
+    expect(Option.getOrNull(searchTextOf("  e\u0301te\u0301\u200B "))).toBe(
+      "\u00E9t\u00E9"
+    );
+    expect(Option.getOrNull(searchTextOf("two\nwords"))).toBe("two words");
+  });
+
+  it("is none when nothing is left to search for", () => {
+    expect(searchTextOf(" \u200B ")).toStrictEqual(Option.none());
   });
 });

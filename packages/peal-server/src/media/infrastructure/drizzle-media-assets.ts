@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, ilike, inArray, lt, or, sql } from "drizzle-orm";
+import { and, eq, gt, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -173,6 +173,24 @@ const listed = (
       Option.getOrUndefined
     )
   );
+
+/**
+ * The statement of a page of the list, one row past it, newest first.
+ * `id DESC NULLS LAST`, as the workspace's indexes are written: Postgres
+ * reads a bare `DESC` as `NULLS FIRST`, which no index of the workspace
+ * gives, and would read the primary key backwards across every workspace.
+ */
+export const listing = (
+  db: Drizzle["Service"],
+  workspaceId: WorkspaceId,
+  request: MediaPageRequest
+) =>
+  db
+    .select()
+    .from(mediaAssets)
+    .where(listed(workspaceId, request))
+    .orderBy(sql`${mediaAssets.id} DESC NULLS LAST`)
+    .limit(request.limit + 1);
 
 /**
  * Media assets in Postgres, through Drizzle. A database failure is a defect
@@ -432,13 +450,9 @@ export const DrizzleMediaAssetsLive = Layer.effect(
         const { limit } = request;
 
         // One row past the page tells whether another page follows.
-        const rows = yield* db
-          .select()
-          .from(mediaAssets)
-          .where(listed(workspaceId, request))
-          .orderBy(desc(mediaAssets.id))
-          .limit(limit + 1)
-          .pipe(Effect.orDie);
+        const rows = yield* listing(db, workspaceId, request).pipe(
+          Effect.orDie
+        );
 
         const assets = yield* Effect.forEach(rows.slice(0, limit), (row) =>
           fromRow(row)

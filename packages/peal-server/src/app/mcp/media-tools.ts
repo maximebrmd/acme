@@ -6,11 +6,11 @@ import {
   imageRequestCost,
   maxImagePromptLength,
   maxMediaPageSize,
-  maxMediaQueryLength,
   maxMediaUrlLength,
   mediaImportSeconds,
   MediaKindSchema,
   MediaPageSchema,
+  MediaQuerySchema,
   MediaSchema,
   MediaUsageSchema,
 } from "peal-contract";
@@ -31,9 +31,7 @@ export const ListMedia = Tool.make("list_media", {
         Schema.isBetween({ maximum: maxMediaPageSize, minimum: 1 })
       )
     ),
-    q: Schema.optionalKey(
-      Schema.String.check(Schema.isBetweenLength(1, maxMediaQueryLength))
-    ),
+    q: Schema.optionalKey(MediaQuerySchema),
   }),
   success: MediaPageSchema,
 })

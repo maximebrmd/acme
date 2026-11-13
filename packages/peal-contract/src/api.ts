@@ -1032,6 +1032,7 @@ export {
   mediaImportSeconds,
   MediaKindSchema,
   MediaPageSchema,
+  MediaQuerySchema,
   MediaSchema,
   MediaUsageSchema,
   NewUploadSchema,
