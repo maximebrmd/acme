@@ -6,6 +6,7 @@ import { Sharding } from "effect/cluster";
 
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { usageReporting } from "#billing/infrastructure/usage-report-cron.ts";
 
 const modeOf = (enabled: boolean) =>
@@ -27,6 +28,7 @@ const builtOn = (enabled: boolean) =>
         Layer.mergeAll(
           modeOf(enabled),
           Layer.mock(ReportUsage, {}),
+          Layer.mock(StartAccountDays, {}),
           Layer.mock(Sharding.Sharding, {
             getShardId: () => assert.fail("no cluster here"),
             hasShardId: () => assert.fail("no cluster here"),

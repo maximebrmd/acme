@@ -3,6 +3,7 @@ import { ClusterCron } from "effect/cluster";
 
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 
 /**
  * Every five minutes from minute 3, minutes no collection and no cron that
@@ -50,13 +51,41 @@ export const usageItems = ClusterCron.make({
 });
 
 /**
- * The reporter's crons, registered only on a server that bills: one that
- * does not reports nothing, so it runs neither.
+ * Every hour at minute 49: starts today's account-days of every billing
+ * account again. The 00:11 snapshot starts them first; a batch it could
+ * not start, or a day it did not run on, is started within the hour, and
+ * a second run changes nothing more. It calls no platform and no Stripe
+ * but through the outbox.
+ */
+export const accountDaysStart = ClusterCron.make({
+  cron: Cron.parseUnsafe("49 * * * *", "UTC"),
+  execute: StartAccountDays.use((start) => start.run).pipe(
+    Effect.tap(({ accounts, started }) =>
+      started === accounts
+        ? Effect.void
+        : Effect.logWarning("Some billing accounts' day is not started").pipe(
+            Effect.annotateLogs({ accounts, started })
+          )
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning("Starting the day's account-days failed", cause)
+    )
+  ),
+  name: "billing.account-days",
+  skipIfOlderThan: Duration.minutes(30),
+});
+
+/**
+ * The reporter's crons and the hourly start of the day, registered only
+ * on a server that bills: one that does not counts and reports nothing,
+ * so it runs none of them.
  */
 export const usageReporting = Layer.unwrap(
   Effect.gen(function* usageReporting() {
     const { enabled } = yield* BillingMode;
 
-    return enabled ? Layer.merge(usageReport, usageItems) : Layer.empty;
+    return enabled
+      ? Layer.mergeAll(usageReport, usageItems, accountDaysStart)
+      : Layer.empty;
   })
 );

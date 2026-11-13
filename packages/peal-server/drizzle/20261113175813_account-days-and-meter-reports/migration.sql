@@ -15,6 +15,7 @@ CREATE TABLE "billing"."meter_reports" (
 	"occurred_at" timestamp with time zone NOT NULL,
 	"refusal" text,
 	"sent_at" timestamp with time zone,
+	"stamped_at" timestamp with time zone,
 	"stripe_customer_id" text NOT NULL,
 	"value" bigint NOT NULL,
 	CONSTRAINT "meter_reports_value" CHECK ("value" > 0)

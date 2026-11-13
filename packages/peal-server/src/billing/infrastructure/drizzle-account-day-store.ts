@@ -35,6 +35,16 @@ const toDay = (row: DayRow) =>
     }))
   );
 
+const toUnsent = (row: ReportRow) =>
+  toReport(row).pipe(
+    Effect.map((report) => ({
+      ...report,
+      stampedAt: Option.fromNullOr(row.stampedAt).pipe(
+        Option.map((stamped) => DateTime.fromDateUnsafe(stamped))
+      ),
+    }))
+  );
+
 const toReport = (row: ReportRow) =>
   decodeWorkspaceId(row.holderWorkspaceId).pipe(
     Effect.orDie,
@@ -82,28 +92,58 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
     const db = yield* Drizzle;
     const client = yield* SqlClient.SqlClient;
 
+    // Raises the rows of counts above 0 and holds those of the others as
+    // they are, writing none for them: a raise to nothing reads the day.
     const raise = (day: DateTime.Utc, counts: readonly PeakRaise[]) => {
-      const rows = highestOf(counts).map(({ count, holder }) => ({
-        day: DateTime.toDateUtc(day),
-        holderWorkspaceId: holder,
-        peak: count,
-      }));
+      const highest = highestOf(counts);
+      const date = DateTime.toDateUtc(day);
 
-      return rows.length === 0
-        ? Effect.succeed([])
-        : db
-            .insert(accountDays)
-            .values(rows)
-            .onConflictDoUpdate({
-              set: { peak: sql`greatest(${accountDays.peak}, excluded.peak)` },
-              target: [accountDays.holderWorkspaceId, accountDays.day],
-            })
-            .returning()
-            .pipe(
-              Effect.mapError(failed),
-              Effect.flatMap(Effect.forEach(toDay)),
-              Effect.withSpan("AccountDayStore.raise")
-            );
+      const rows = highest
+        .filter(({ count }) => count > 0)
+        .map(({ count, holder }) => ({
+          day: date,
+          holderWorkspaceId: holder,
+          peak: count,
+        }));
+
+      const read = highest
+        .filter(({ count }) => count === 0)
+        .map(({ holder }) => holder);
+
+      return Effect.all({
+        held:
+          read.length === 0
+            ? Effect.succeed([])
+            : db
+                .select()
+                .from(accountDays)
+                .where(
+                  and(
+                    anyUuid(accountDays.holderWorkspaceId, read),
+                    eq(accountDays.day, date)
+                  )
+                )
+                .for("update"),
+        raised:
+          rows.length === 0
+            ? Effect.succeed([])
+            : db
+                .insert(accountDays)
+                .values(rows)
+                .onConflictDoUpdate({
+                  set: {
+                    peak: sql`greatest(${accountDays.peak}, excluded.peak)`,
+                  },
+                  target: [accountDays.holderWorkspaceId, accountDays.day],
+                })
+                .returning(),
+      }).pipe(
+        Effect.mapError(failed),
+        Effect.flatMap(({ held, raised }) =>
+          Effect.forEach([...raised, ...held], toDay)
+        ),
+        Effect.withSpan("AccountDayStore.raise")
+      );
     };
 
     const enqueue = (
@@ -189,16 +229,29 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
         .limit(limit)
         .pipe(
           Effect.mapError(failed),
-          Effect.flatMap(Effect.forEach(toReport)),
+          Effect.flatMap(Effect.forEach(toUnsent)),
           Effect.withSpan("AccountDayStore.unsent")
         );
+
+    const stamp = (identifier: string, at: DateTime.Utc) =>
+      client<{
+        readonly stamped: Date;
+      }>`UPDATE billing.meter_reports SET stamped_at = coalesce(stamped_at, ${DateTime.toDateUtc(at)}) WHERE identifier = ${identifier} RETURNING stamped_at AS stamped`.pipe(
+        Effect.map(([row]) =>
+          row === undefined
+            ? at
+            : DateTime.fromDateUnsafe(new Date(row.stamped))
+        ),
+        Effect.mapError(failed),
+        Effect.withSpan("AccountDayStore.stamp")
+      );
 
     // The identifiers as one text parameter split in the database: they
     // hold no comma.
     const markSent = (identifiers: readonly string[], at: DateTime.Utc) =>
       identifiers.length === 0
         ? Effect.void
-        : client`UPDATE billing.meter_reports SET sent_at = ${DateTime.toDateUtc(at)} WHERE identifier = ANY(string_to_array(${identifiers.join(",")}, ',')) AND sent_at IS NULL`.pipe(
+        : client`UPDATE billing.meter_reports SET sent_at = ${DateTime.toDateUtc(at)} WHERE identifier = ANY(string_to_array(${identifiers.join(",")}, ',')) AND sent_at IS NULL AND refusal IS NULL`.pipe(
             Effect.mapError(failed),
             Effect.asVoid,
             Effect.withSpan("AccountDayStore.markSent")
@@ -218,9 +271,11 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
     const backlog = client<{
       readonly left: number;
       readonly oldest: Date | null;
-    }>`SELECT count(*)::int AS left, min(created_at) AS oldest FROM billing.meter_reports WHERE sent_at IS NULL AND refusal IS NULL`.pipe(
+      readonly refused: number;
+    }>`SELECT count(*) FILTER (WHERE refusal IS NULL)::int AS left, min(created_at) FILTER (WHERE refusal IS NULL) AS oldest, count(*) FILTER (WHERE refusal IS NOT NULL)::int AS refused FROM billing.meter_reports WHERE sent_at IS NULL`.pipe(
       Effect.map(([row]) => ({
         left: row?.left ?? 0,
+        refused: row?.refused ?? 0,
         oldest: Option.fromNullOr(row?.oldest ?? null).pipe(
           Option.map((oldest) => DateTime.fromDateUnsafe(new Date(oldest)))
         ),
@@ -303,6 +358,7 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
       ofHolders,
       purgeBefore,
       raise,
+      stamp,
       unsent,
     });
   })

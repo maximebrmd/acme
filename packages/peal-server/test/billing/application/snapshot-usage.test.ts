@@ -125,7 +125,11 @@ const AccountDaysTest = Layer.mergeAll(
   Layer.succeed(
     StartAccountDays,
     StartAccountDays.of({
-      run: Ref.updateAndGet(started, (runs) => runs + 1).pipe(Effect.as(3)),
+      pooledOf: () => Effect.succeed(0),
+      raiseAccount: () => Effect.void,
+      run: Ref.updateAndGet(started, (runs) => runs + 1).pipe(
+        Effect.as({ accounts: 3, started: 3 })
+      ),
     })
   ),
   Layer.mock(AccountDayStore, {

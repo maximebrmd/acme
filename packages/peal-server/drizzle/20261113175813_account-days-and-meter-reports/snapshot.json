@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "cade15fa-f19b-4639-a9c9-206672f65f3a",
+  "id": "b6398e8e-994a-42b7-8a2c-524855ed5943",
   "prevIds": [
     "2c623494-2d6d-44a7-86f1-396051a5c37c"
   ],
@@ -329,6 +329,22 @@
         "schema": "billing",
         "table": "meter_reports",
         "name": "sent_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "stamped_at",
         "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": false,

@@ -30,6 +30,7 @@ import { AccountPayers } from "./ports/account-payers.ts";
 import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
+import { StartAccountDays } from "./start-account-days.ts";
 
 type Refusals = BillingOff | DatabaseError | MissingPermission | PersonRequired;
 
@@ -78,6 +79,21 @@ export class TransferWorkspace extends Context.Service<
       const channels = yield* AccountChannels;
       const { transaction } = yield* TransactionRunner;
       const context = yield* Effect.context<Ids>();
+      const days = yield* StartAccountDays;
+
+      // A day not raised now is raised by the next hourly start: the move
+      // stands.
+      const raisedDay = (accountId: BillingAccount["id"]) =>
+        days
+          .raiseAccount(accountId)
+          .pipe(
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Raising the day of the account a workspace moved into failed",
+                cause
+              )
+            )
+          );
 
       // The member in person, on a server that bills.
       const personOf = Effect.fn("TransferWorkspace.personOf")(
@@ -165,13 +181,13 @@ export class TransferWorkspace extends Context.Service<
       // with the account's free tier (or the person's, for an account
       // made then).
       const allowanceOf = (holder: WorkspaceId, freeTier: boolean) =>
-        subscriptions
-          .ofWorkspace(holder)
-          .pipe(
-            Effect.map((held) =>
-              entitlementsOf(held, freeTier).allowanceOf("channels")
-            )
-          );
+        subscriptions.ofWorkspace(holder).pipe(
+          Effect.map((held) =>
+            // Per-account pricing not paid yet holds its ceiling, as a
+            // connection does.
+            entitlementsOf(held, freeTier).connectableAccounts()
+          )
+        );
 
       const accept = Effect.fn("TransferWorkspace.accept")(function* accept(
         actor: Actor
@@ -257,6 +273,10 @@ export class TransferWorkspace extends Context.Service<
 
             return yield* accounts.moveTo(workspaceId, from.value, userId);
           })
+        ).pipe(
+          // The receiving account holds the workspace's accounts from
+          // today: its day is raised to them.
+          Effect.tap((taken) => raisedDay(taken.id))
         );
       });
 

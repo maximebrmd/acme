@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import {
   accountDayIdentifier,
@@ -48,12 +48,21 @@ export class AccountDays extends Context.Service<
     ) => Effect.Effect<readonly AccountDay[], DatabaseError>;
     /**
      * Reports the day so far of a holder whose per-account subscription
-     * was just recorded: its account-days of today before it paid, which
-     * the day's later rises would not send.
+     * was just recorded: its day raised to the accounts its pool holds
+     * now (once `bindPool` gave the count), and its account-days of today
+     * before it paid, which the day's later rises would not send.
      */
     readonly subscribed: (
       holder: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Gives the count of a holder's pool, once the contexts that count are
+     * built (the channels context is built after billing). Until then a
+     * subscription reports the day as counted so far.
+     */
+    readonly bindPool: (
+      pooledOf: (holder: WorkspaceId) => Effect.Effect<number, DatabaseError>
+    ) => Effect.Effect<void>;
     /** The holders' days of the month (UTC) `now` falls in, to today. */
     readonly ofMonth: (
       holders: readonly WorkspaceId[],
@@ -161,16 +170,33 @@ export class AccountDays extends Context.Service<
         yield* raise(yield* DateTime.now, [{ count: yield* count, holder }]);
       });
 
+      const pool = yield* Ref.make(
+        Option.none<
+          (holder: WorkspaceId) => Effect.Effect<number, DatabaseError>
+        >()
+      );
+
       const subscribed = Effect.fn("AccountDays.subscribed")(
         function* subscribed(holder: WorkspaceId) {
           if (!enabled) {
             return;
           }
 
-          // The day as counted so far: a raise to nothing reads it held.
-          yield* raise(yield* DateTime.now, [{ count: 0, holder }]);
+          const pooledOf = yield* Ref.get(pool);
+
+          // The pool now, or the day as counted so far: a raise to nothing
+          // reads the day's row held, and writes none.
+          const count = Option.isSome(pooledOf)
+            ? yield* pooledOf.value(holder)
+            : 0;
+
+          yield* raise(yield* DateTime.now, [{ count, holder }]);
         }
       );
+
+      const bindPool = (
+        pooledOf: (holder: WorkspaceId) => Effect.Effect<number, DatabaseError>
+      ) => Ref.set(pool, Option.some(pooledOf));
 
       const ofDays = (
         held: readonly WorkspaceId[],
@@ -183,7 +209,14 @@ export class AccountDays extends Context.Service<
           to: DateTime.startOf(now, "day"),
         });
 
-      return AccountDays.of({ counted, ofDays, ofMonth, raise, subscribed });
+      return AccountDays.of({
+        bindPool,
+        counted,
+        ofDays,
+        ofMonth,
+        raise,
+        subscribed,
+      });
     })
   );
 }

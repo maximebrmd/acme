@@ -160,6 +160,7 @@ const PortsInMemory = Layer.mergeAll(
     RecordLog.use(({ days }) =>
       Effect.succeed(
         AccountDays.of({
+          bindPool: () => Effect.void,
           counted: () => Effect.die("not counted here"),
           ofDays: () => Effect.succeed([]),
           ofMonth: () => Effect.succeed([]),

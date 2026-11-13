@@ -32,22 +32,55 @@ const StripeErrorSchema = Schema.Struct({
 const decodeError = Schema.decodeUnknownOption(StripeErrorSchema);
 
 /**
+ * Stripe's codes of an invalid request that are about the event itself:
+ * its value, its timestamp, its customer. Only these refuse an event for
+ * good; another refusal says nothing of the event (the key, a meter, the
+ * idempotency key), and is tried again.
+ */
+export const eventRefusals: ReadonlySet<string> = new Set([
+  "meter_event_customer_not_found",
+  "meter_event_invalid_value",
+  "meter_event_no_customer_defined",
+  "meter_event_value_not_found",
+  "parameter_invalid_empty",
+  "parameter_invalid_integer",
+  "parameter_invalid_string_empty",
+  "parameter_missing",
+  "string_length_exceeds_maximum",
+  "timestamp_in_future",
+  "timestamp_too_far_in_past",
+]);
+
+/**
  * What a failed meter event becomes: Stripe not answering, limiting the
- * rate (429) or failing itself (5xx) is tried again on the next run; any
- * other refusal of the request is final, kept by its code.
+ * rate (429), failing itself (5xx) or still running the same request
+ * (409) is `unavailable`; an invalid request with one of `eventRefusals`
+ * is final, kept by its code; anything else (401, 403, an idempotency
+ * key reused otherwise, a code not listed, an error of a kind not known)
+ * is `refusing`: tried again, and the customer paused.
  */
 export const outcomeOfFailure = (cause: unknown): ReportOutcome =>
   Option.match(decodeError(cause), {
-    onNone: () => ({ _tag: "retry" }),
-    onSome: ({ code, statusCode, type }) =>
-      statusCode === undefined ||
-      statusCode === 429 ||
-      statusCode >= 500 ||
-      type === "StripeConnectionError" ||
-      type === "StripeAPIError" ||
-      type === "StripeRateLimitError"
-        ? { _tag: "retry" }
-        : { _tag: "refused", code: code ?? type },
+    onNone: () => ({ _tag: "retry", reason: "unavailable" }),
+    onSome: ({ code, statusCode, type }): ReportOutcome => {
+      if (
+        statusCode === undefined ||
+        statusCode === 409 ||
+        statusCode === 429 ||
+        statusCode >= 500 ||
+        type === "StripeConnectionError" ||
+        type === "StripeRateLimitError"
+      ) {
+        return { _tag: "retry", reason: "unavailable" };
+      }
+
+      return statusCode === 400 &&
+        type === "StripeInvalidRequestError" &&
+        code !== undefined &&
+        eventRefusals.has(code)
+        ? { _tag: "refused", code }
+        : { _tag: "retry", reason: "refusing" };
+    },
   });
 
 const isRefused = Schema.is(
@@ -131,6 +164,14 @@ export const StripeUsageBillingLive = Layer.effect(
       Option.map((held) => stripeClientOf(held, { timeout: requestTimeout }))
     );
 
+    // Meter events are tried again by the next run, never by the client:
+    // a Stripe outage then costs a run one attempt a customer.
+    const reporting = settings.pipe(
+      Option.map((held) =>
+        stripeClientOf(held, { maxNetworkRetries: 0, timeout: requestTimeout })
+      )
+    );
+
     const withStripe = <A, E>(
       use: (stripe: Stripe) => Effect.Effect<A, E>
     ): Effect.Effect<A, E> =>
@@ -155,32 +196,38 @@ export const StripeUsageBillingLive = Layer.effect(
       );
 
     const report = (event: MeterEvent) =>
-      withStripe((stripe) =>
-        Effect.tryPromise({
-          catch: outcomeOfFailure,
-          try: async () =>
-            await stripe.billing.meterEvents.create(
-              {
-                event_name: event.eventName,
-                identifier: event.identifier,
-                payload: {
-                  stripe_customer_id: event.stripeCustomerId,
-                  value: String(event.value),
+      Option.match(reporting, {
+        onNone: () => Effect.die("Billing is off: Stripe has no key"),
+        onSome: (stripe) => {
+          const seconds = Math.floor(
+            DateTime.toEpochMillis(event.timestamp) / 1000
+          );
+
+          return Effect.tryPromise({
+            catch: outcomeOfFailure,
+            try: async () =>
+              await stripe.billing.meterEvents.create(
+                {
+                  event_name: event.eventName,
+                  identifier: event.identifier,
+                  payload: {
+                    stripe_customer_id: event.stripeCustomerId,
+                    value: String(event.value),
+                  },
+                  timestamp: seconds,
                 },
-                timestamp: Math.floor(
-                  DateTime.toEpochMillis(event.timestamp) / 1000
-                ),
-              },
-              { idempotencyKey: event.identifier }
-            ),
-        }).pipe(
-          Effect.match({
-            onFailure: (outcome): ReportOutcome => outcome,
-            onSuccess: (): ReportOutcome => ({ _tag: "sent" }),
-          }),
-          Effect.withSpan("UsageBilling.report")
-        )
-      );
+                // What is sent, whole: the same request on every retry.
+                { idempotencyKey: `${event.identifier}:${seconds}` }
+              ),
+          }).pipe(
+            Effect.match({
+              onFailure: (outcome): ReportOutcome => outcome,
+              onSuccess: (): ReportOutcome => ({ _tag: "sent" }),
+            }),
+            Effect.withSpan("UsageBilling.report")
+          );
+        },
+      });
 
     const ensureItems = (workspaceId: WorkspaceId, subscriptionId: string) =>
       Effect.gen(function* ensured() {

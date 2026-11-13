@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer, Metric, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
 import { stampOf } from "#billing/domain/account-days.ts";
 import { entitles } from "#billing/domain/subscription.ts";
@@ -6,7 +6,8 @@ import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { AccountDayStore } from "./ports/account-day-store.ts";
-import type { MeterReport } from "./ports/account-day-store.ts";
+import type { UnsentReport } from "./ports/account-day-store.ts";
+import { BillingMode } from "./ports/billing-mode.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { UsageBilling } from "./ports/usage-billing.ts";
@@ -57,10 +58,52 @@ export const reportsRefused = Metric.counter(
   }
 );
 
+/**
+ * Reports Stripe refused for good, kept unsent, when the last run ended:
+ * a state, so its alert fires however the counter was born
+ * (peal-usage-report-refused).
+ */
+export const refusedKept = Metric.gauge(
+  "peal.billing.usage_report.refused_kept",
+  {
+    description:
+      "Meter events Stripe refused for good, kept unsent in the outbox, when the reporter's last run ended",
+  }
+);
+
+/**
+ * Customers whose reports the last run left because Stripe refused what
+ * is not the event's own (the server's key, its permissions, a meter): an
+ * alert rule reads it (peal-usage-report-key-refused).
+ */
+export const customersPaused = Metric.gauge(
+  "peal.billing.usage_report.paused",
+  {
+    description:
+      "Customers whose meter events the reporter's last run left because Stripe refused the server's key, its permissions or a meter",
+  }
+);
+
+/** After this many attempts in a row Stripe did not take, a run stops. */
+export const retriesBeforeHalting = 5;
+
+/** What one customer's turn in a run did. */
+interface CustomerTurn {
+  /** Its reports left for the next run. */
+  readonly deferred: number;
+  /** Stopped by a refusal that is not the event's own. */
+  readonly paused: boolean;
+  readonly refused: number;
+  readonly sent: readonly string[];
+  readonly stalled: boolean;
+}
+
 /** What a run of the reporter did. */
 export interface UsageReportRun {
   /** Reports Stripe did not take this run, left for the next. */
   readonly deferred: number;
+  /** Customers paused by a refusal that is not their events' own. */
+  readonly paused: number;
   /** Reports still waiting when it ended, and the oldest's write. */
   readonly left: number;
   readonly oldest: Option.Option<DateTime.Utc>;
@@ -99,9 +142,9 @@ const withOutcome = (
 
 // Each customer's reports, in the order they were written.
 const byCustomer = (
-  reports: readonly MeterReport[]
-): readonly (readonly MeterReport[])[] => {
-  const grouped = new Map<string, MeterReport[]>();
+  reports: readonly UnsentReport[]
+): readonly (readonly UnsentReport[])[] => {
+  const grouped = new Map<string, UnsentReport[]>();
 
   for (const report of reports) {
     const kept = grouped.get(report.stripeCustomerId);
@@ -145,34 +188,89 @@ export class ReportUsage extends Context.Service<
         const billing = yield* UsageBilling;
         const subscriptions = yield* Subscriptions;
         const stripe = yield* StripeContracts;
+        const { enabled } = yield* BillingMode;
+
+        // On a server that bills, every series exists from the start: a
+        // counter's first refusal is then an increase, and a reporter that
+        // never ends a run is stopped 30 minutes after the start.
+        if (enabled) {
+          const started = Math.floor(
+            DateTime.toEpochMillis(yield* DateTime.now) / 1000
+          );
+
+          yield* Metric.update(reportsRefused, 0);
+          yield* Metric.update(refusedKept, 0);
+          yield* Metric.update(customersPaused, 0);
+          yield* Metric.update(reportedAt, started);
+        }
+
+        // A run stops asking Stripe after this many attempts in a row it
+        // did not take: an outage or a refused key answers every customer
+        // the same, and the next run comes in five minutes.
+        const halted = yield* Ref.make(0);
 
         // One customer's reports, in order, until Stripe does not take
-        // one: what was sent, what was refused, what waits.
+        // one, each stamped once at its first attempt, the customer's sent
+        // ones marked as soon as its turn ends.
         const sendAll = Effect.fn("ReportUsage.sendAll")(function* sendAll(
-          reports: readonly MeterReport[]
+          reports: readonly UnsentReport[]
         ) {
           const sent: string[] = [];
           let refused = 0;
 
+          let ended: CustomerTurn = {
+            deferred: 0,
+            paused: false,
+            refused: 0,
+            sent,
+            stalled: false,
+          };
+
           for (const [index, report] of reports.entries()) {
+            if ((yield* Ref.get(halted)) >= retriesBeforeHalting) {
+              ended = {
+                deferred: reports.length - index,
+                paused: false,
+                refused,
+                sent,
+                stalled: true,
+              };
+
+              break;
+            }
+
             const now = yield* DateTime.now;
+
+            const timestamp = Option.isSome(report.stampedAt)
+              ? report.stampedAt.value
+              : yield* store.stamp(
+                  report.identifier,
+                  stampOf(report.occurredAt, now)
+                );
 
             const outcome = yield* billing.report({
               eventName: report.eventName,
               identifier: report.identifier,
               stripeCustomerId: report.stripeCustomerId,
-              timestamp: stampOf(report.occurredAt, now),
+              timestamp,
               value: report.value,
             });
 
             if (outcome._tag === "retry") {
-              return {
+              yield* Ref.update(halted, (count) => count + 1);
+
+              ended = {
                 deferred: reports.length - index,
+                paused: outcome.reason === "refusing",
                 refused,
                 sent,
                 stalled: true,
               };
+
+              break;
             }
+
+            yield* Ref.set(halted, 0);
 
             if (outcome._tag === "sent") {
               sent.push(report.identifier);
@@ -191,9 +289,24 @@ export class ReportUsage extends Context.Service<
                 })
               );
             }
+
+            ended = { ...ended, refused };
           }
 
-          return { deferred: 0, refused, sent, stalled: false };
+          yield* store.markSent(sent, yield* DateTime.now);
+
+          if (ended.paused) {
+            yield* Effect.logWarning(
+              "Stripe refused a meter event for what is not the event's own: the customer waits for the next run"
+            ).pipe(
+              Effect.annotateLogs({
+                customers: 1,
+                eventName: reports[0]?.eventName ?? "",
+              })
+            );
+          }
+
+          return ended;
         });
 
         const send = Effect.fn("ReportUsage.send")(function* send() {
@@ -206,9 +319,12 @@ export class ReportUsage extends Context.Service<
           let sent = 0;
           let refused = 0;
           let deferred = 0;
+          let paused = 0;
           // A customer Stripe did not take one of is left to the next run,
           // its later reports with it, whatever page they are on.
           const stalled = new Set<string>();
+
+          yield* Ref.set(halted, 0);
 
           while (more) {
             const page = yield* store.unsent(after, batchSize);
@@ -226,22 +342,22 @@ export class ReportUsage extends Context.Service<
               concurrency: reportConcurrency,
             });
 
-            const identifiers = ended.flatMap((group) => group.sent);
-            yield* store.markSent(identifiers, yield* DateTime.now);
-
             for (const [index, group] of ended.entries()) {
               const customer = going[index]?.[0]?.stripeCustomerId;
 
               if (group.stalled && customer !== undefined) {
                 stalled.add(customer);
               }
+
+              sent += group.sent.length;
+              refused += group.refused;
+              deferred += group.deferred;
+              paused += group.paused ? 1 : 0;
             }
 
-            sent += identifiers.length;
-            refused += ended.reduce((sum, group) => sum + group.refused, 0);
-            deferred +=
-              ended.reduce((sum, group) => sum + group.deferred, 0) +
-              waiting.reduce((sum, group) => sum + group.length, 0);
+            for (const group of waiting) {
+              deferred += group.length;
+            }
 
             const last = page.at(-1);
 
@@ -254,15 +370,17 @@ export class ReportUsage extends Context.Service<
             );
           }
 
-          return { deferred, refused, sent };
+          return { deferred, paused, refused, sent };
         });
 
         const run = Effect.gen(function* run() {
           const done = yield* send();
-          const { left, oldest } = yield* store.backlog;
+          const { left, oldest, refused } = yield* store.backlog;
           const now = yield* DateTime.now;
 
           yield* Metric.update(reportsLeft, left);
+          yield* Metric.update(refusedKept, refused);
+          yield* Metric.update(customersPaused, done.paused);
           yield* Metric.update(
             oldestReportAge,
             Option.match(oldest, {

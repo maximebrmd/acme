@@ -142,14 +142,14 @@ export class SnapshotUsage extends Context.Service<
               )
             );
 
-          // Today's account-days, once every workspace has its account; a
-          // failure leaves them to the day's first connection.
-          const started = yield* startDays.run.pipe(
+          // Today's account-days, once every workspace has its account; what
+          // fails is started by the hourly run (billing.account-days).
+          const { started } = yield* startDays.run.pipe(
             Effect.catchCause((cause) =>
               Effect.logWarning(
                 "Starting the day's account-days failed",
                 cause
-              ).pipe(Effect.as(0))
+              ).pipe(Effect.as({ accounts: 0, started: 0 }))
             )
           );
 

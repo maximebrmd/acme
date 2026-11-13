@@ -14,7 +14,10 @@ import {
 } from "effect";
 
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
-import type { MeterEvent } from "#billing/application/ports/usage-billing.ts";
+import type {
+  MeterEvent,
+  ReportOutcome,
+} from "#billing/application/ports/usage-billing.ts";
 import {
   itemChanges,
   StripeUsageBillingLive,
@@ -64,6 +67,18 @@ const event = (identifier: string): MeterEvent => ({
   timestamp: DateTime.makeUnsafe("2026-11-13T12:00:00Z"),
   value: 3,
 });
+
+// A refusal Stripe would answer, its code given or not.
+const error = (status: number, type: string, code?: string) =>
+  json(
+    {
+      error:
+        code === undefined
+          ? { message: "synthetic", type }
+          : { code, message: "synthetic", type },
+    },
+    status
+  );
 
 const list = (data: readonly JsonValue[], url: string) =>
   json({ data: [...data], has_more: false, object: "list", url });
@@ -136,48 +151,82 @@ layer(Layer.empty)("usage at Stripe", (it) => {
         });
         assert.strictEqual(
           request ? headerOf(request, "idempotency-key") : "",
-          "acc:sent:1"
+          // What is sent, identifier and timestamp: a retry with the
+          // timestamp the row keeps is the same request.
+          "acc:sent:1:1794571200"
         );
       }).pipe(Effect.scoped)
   );
 
   it.effect(
-    "tries a limited, failed or unanswered event again, and keeps a refusal's code",
+    "tries a limited, failed or unanswered event again, pauses on what refuses the account, and keeps only an event's own refusal",
     () =>
       Effect.gen(function* refusals() {
-        const answers = new Map<string, PlatformAnswer>([
-          ["acc:dropped", dropped],
+        // What each identifier is answered, and what it becomes.
+        const cases: readonly (readonly [
+          string,
+          PlatformAnswer,
+          ReportOutcome,
+        ])[] = [
+          ["acc:dropped", dropped, { _tag: "retry", reason: "unavailable" }],
           [
             "acc:failed",
-            json({ error: { message: "synthetic", type: "api_error" } }, 500),
+            error(500, "api_error"),
+            { _tag: "retry", reason: "unavailable" },
           ],
           [
             "acc:limited",
-            json(
-              {
-                error: {
-                  code: "rate_limit",
-                  message: "synthetic",
-                  type: "invalid_request_error",
-                },
-              },
-              429
-            ),
+            error(429, "invalid_request_error", "rate_limit"),
+            { _tag: "retry", reason: "unavailable" },
           ],
           [
-            "acc:refused",
-            json(
-              {
-                error: {
-                  code: "parameter_invalid_integer",
-                  message: "synthetic",
-                  type: "invalid_request_error",
-                },
-              },
-              400
-            ),
+            "acc:in-use",
+            error(409, "idempotency_error", "idempotency_key_in_use"),
+            { _tag: "retry", reason: "unavailable" },
           ],
-        ]);
+          // The key, its permissions, the account, a request Stripe will
+          // not take under its key: nothing of the event's own.
+          [
+            "acc:key",
+            error(401, "invalid_request_error"),
+            { _tag: "retry", reason: "refusing" },
+          ],
+          [
+            "acc:permission",
+            error(403, "invalid_request_error", "secret_key_required"),
+            { _tag: "retry", reason: "refusing" },
+          ],
+          [
+            "acc:mismatch",
+            error(400, "idempotency_error"),
+            { _tag: "retry", reason: "refusing" },
+          ],
+          [
+            "acc:meter",
+            error(400, "invalid_request_error", "resource_missing"),
+            { _tag: "retry", reason: "refusing" },
+          ],
+          [
+            "acc:unknown",
+            error(418, "card_error", "synthetic_code"),
+            { _tag: "retry", reason: "refusing" },
+          ],
+          // The event's own: its value, its timestamp, its customer.
+          [
+            "acc:refused",
+            error(400, "invalid_request_error", "parameter_invalid_integer"),
+            { _tag: "refused", code: "parameter_invalid_integer" },
+          ],
+          [
+            "acc:too-old",
+            error(400, "invalid_request_error", "timestamp_too_far_in_past"),
+            { _tag: "refused", code: "timestamp_too_far_in_past" },
+          ],
+        ];
+
+        const answers = new Map(
+          cases.map(([identifier, answer]) => [identifier, answer] as const)
+        );
 
         const stripe = yield* platformServer(
           (request) =>
@@ -190,16 +239,31 @@ layer(Layer.empty)("usage at Stripe", (it) => {
 
         assert.deepStrictEqual(
           yield* Effect.all(
-            ["acc:dropped", "acc:failed", "acc:limited", "acc:refused"].map(
-              (identifier) => usage.report(event(identifier))
-            )
+            cases.map(([identifier]) => usage.report(event(identifier)))
           ),
-          [
-            { _tag: "retry" },
-            { _tag: "retry" },
-            { _tag: "retry" },
-            { _tag: "refused", code: "parameter_invalid_integer" },
-          ]
+          cases.map((each) => each[2])
+        );
+
+        // Each answered sent once: the next run tries again, not the
+        // client.
+        const sentTimes = (identifier: string) =>
+          stripe
+            .requests()
+            .filter(
+              (request) =>
+                new URLSearchParams(textOf(request)).get("identifier") ===
+                identifier
+            ).length;
+
+        // The connection dropped may be opened again underneath, under the
+        // same idempotency key, so the same request.
+        const answered = cases.filter(
+          ([identifier]) => identifier !== "acc:dropped"
+        );
+
+        assert.deepStrictEqual(
+          answered.map(([identifier]) => sentTimes(identifier)),
+          answered.map(() => 1)
         );
       }).pipe(Effect.scoped)
   );

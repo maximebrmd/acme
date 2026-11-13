@@ -1,12 +1,22 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
+import {
+  ConfigProvider,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Metric,
+  Option,
+  Ref,
+} from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
 import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import type { MeterReport } from "#billing/application/ports/account-day-store.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
@@ -15,14 +25,23 @@ import type {
   ReportOutcome,
 } from "#billing/application/ports/usage-billing.ts";
 import {
+  customersPaused,
   ReportUsage,
   reportsRefused,
 } from "#billing/application/report-usage.ts";
 import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-account-day-store.ts";
+import { StripeUsageBillingLive } from "#billing/infrastructure/stripe-usage-billing.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { subscriptionOf, subscriptionsHolding } from "#test/billing/support.ts";
 import { DatabaseTest } from "#test/channels/support.ts";
+import {
+  headerOf,
+  json,
+  platformServer,
+  textOf,
+} from "#test/publishing/fakes/platform-server.ts";
+import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 
 const at = (written: string) => DateTime.makeUnsafe(written);
 
@@ -31,6 +50,10 @@ const at = (written: string) => DateTime.makeUnsafe(written);
 const sentEvents = Ref.makeUnsafe<readonly MeterEvent[]>([]);
 
 const answers = Ref.makeUnsafe<ReadonlyMap<string, ReportOutcome>>(new Map());
+
+// The customers whose every event Stripe answers as one that refuses the
+// server's key.
+const refusingCustomers = Ref.makeUnsafe<ReadonlySet<string>>(new Set());
 
 // The subscriptions whose items were kept, and the thresholds set.
 const itemsKept = Ref.makeUnsafe<readonly string[]>([]);
@@ -60,7 +83,14 @@ const UsageBillingTest = Layer.succeed(
 
         const answer = (yield* Ref.get(answers)).get(event.identifier);
 
-        return answer ?? { _tag: "sent" };
+        const refusing = (yield* Ref.get(refusingCustomers)).has(
+          event.stripeCustomerId
+        );
+
+        return (
+          answer ??
+          (refusing ? { _tag: "retry", reason: "refusing" } : { _tag: "sent" })
+        );
       }),
     setThreshold: (_workspaceId, id, cents) =>
       Ref.update(thresholds, (all) => [...all, { cents, id }]),
@@ -90,6 +120,14 @@ const ReportTest = ReportUsage.make(2).pipe(
     Layer.mergeAll(
       UsageBillingTest,
       StripeTest,
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled: true,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      ),
       subscriptionsHolding([
         subscriptionOf({
           plan: "payAsYouGo",
@@ -135,6 +173,10 @@ const reportOf = (
 });
 
 const customer = () => `cus_synthetic_${randomUUID()}`;
+
+// A gauge's value as this process last set it.
+const gaugeOf = (gauge: typeof customersPaused) =>
+  Metric.value(gauge).pipe(Effect.map(({ value }) => value));
 
 // The events sent of these customers, in the order Stripe got them.
 const sentOf = (customers: readonly string[]) =>
@@ -227,7 +269,12 @@ layer(ReportTest)("the reporter of usage to Stripe", (it) => {
 
         yield* Ref.set(
           answers,
-          new Map([[refusedFirst?.identifier ?? "", { _tag: "retry" }]])
+          new Map([
+            [
+              refusedFirst?.identifier ?? "",
+              { _tag: "retry", reason: "unavailable" },
+            ],
+          ])
         );
 
         yield* store.enqueue(reports, []);
@@ -322,6 +369,86 @@ layer(ReportTest)("the reporter of usage to Stripe", (it) => {
   );
 
   it.effect(
+    "marks nothing refused when Stripe refuses the server's key, pauses each customer, stops the run, and sends everything once it takes it",
+    () =>
+      Effect.gen(function* keyRefused() {
+        const store = yield* AccountDayStore;
+        const report = yield* ReportUsage;
+        const now = yield* DateTime.now;
+        const customers = Array.from({ length: 30 }, () => customer());
+
+        const reports = customers.flatMap((each, index) => [
+          reportOf(each, now, 30 + index),
+          reportOf(each, now, 31 + index),
+        ]);
+
+        yield* Ref.set(refusingCustomers, new Set(customers));
+        yield* store.enqueue(reports, []);
+
+        const ran = yield* report.run;
+        const rows = yield* rowsOf(reports.map(({ identifier }) => identifier));
+
+        // Nothing refused for good, nothing sent, and the run stopped
+        // asking after a few: every customer would answer the same.
+        assert.isTrue(
+          rows.every(({ refusal, sent }) => refusal === null && !sent)
+        );
+        assert.isBelow((yield* sentOf(customers)).length, customers.length);
+        assert.isAtLeast(ran.paused, 1);
+        assert.isAtLeast(yield* gaugeOf(customersPaused), 1);
+
+        yield* Ref.set(refusingCustomers, new Set());
+        yield* report.run;
+
+        const again = yield* rowsOf(
+          reports.map(({ identifier }) => identifier)
+        );
+
+        assert.isTrue(
+          again.every(({ refusal, sent }) => refusal === null && sent)
+        );
+        assert.strictEqual(yield* gaugeOf(customersPaused), 0);
+
+        yield* Ref.set(sentEvents, []);
+        yield* cleanUp(holder);
+      })
+  );
+
+  it.effect(
+    "sends a report again with the timestamp of its first attempt, however late",
+    () =>
+      Effect.gen(function* firstStamp() {
+        const store = yield* AccountDayStore;
+        const report = yield* ReportUsage;
+        const failing = customer();
+        const written = yield* DateTime.now;
+        const late = reportOf(failing, written, 0);
+
+        yield* Ref.set(
+          answers,
+          new Map([[late.identifier, { _tag: "retry", reason: "unavailable" }]])
+        );
+        yield* store.enqueue([late], []);
+        yield* report.run;
+
+        // Two hours on, Stripe answers: the same request as the first.
+        yield* TestClock.adjust("2 hours");
+        yield* Ref.set(answers, new Map());
+        yield* report.run;
+
+        const sent = yield* sentOf([failing]);
+
+        assert.lengthOf(sent, 2);
+        assert.deepStrictEqual(sent[1]?.timestamp, sent[0]?.timestamp);
+        assert.deepStrictEqual(sent[0]?.timestamp, written);
+        assert.isTrue((yield* rowsOf([late.identifier]))[0]?.sent);
+
+        yield* Ref.set(sentEvents, []);
+        yield* cleanUp(holder);
+      })
+  );
+
+  it.effect(
     "stamps a report with the instant it describes within the last hour, else with the sending time",
     () =>
       Effect.gen(function* stamped() {
@@ -389,3 +516,130 @@ layer(ReportTest)("the reporter of usage to Stripe", (it) => {
       })
   );
 });
+
+// Stripe as its idempotency rule says: the first answer to a key is kept
+// and given again to the same request, a 500 included, and a request with
+// the same key and other parameters is refused.
+const idempotentStripe = (failFirst: ReadonlySet<string>) =>
+  platformServer((request) => {
+    const form = textOf(request);
+    const key = headerOf(request, "idempotency-key");
+    const kept = seen.get(key);
+
+    if (kept !== undefined) {
+      return kept.form === form
+        ? kept.answer
+        : json(
+            {
+              error: {
+                message: "synthetic: keys are for the same request",
+                type: "idempotency_error",
+              },
+            },
+            400
+          );
+    }
+
+    const identifier = new URLSearchParams(form).get("identifier") ?? "";
+
+    const answer = failFirst.has(identifier)
+      ? json({ error: { message: "synthetic", type: "api_error" } }, 500)
+      : json({ identifier, object: "billing.meter_event" });
+
+    seen.set(key, { answer, form });
+
+    return answer;
+  });
+
+const seen = new Map<
+  string,
+  { readonly answer: PlatformAnswer; readonly form: string }
+>();
+
+const reporterOn = (apiUrl: string) =>
+  Layer.build(
+    ReportUsage.make(500).pipe(
+      Layer.provide(
+        Layer.mergeAll(
+          StripeUsageBillingLive.pipe(
+            Layer.provide(
+              ConfigProvider.layer(
+                ConfigProvider.fromUnknown({
+                  STRIPE_API_URL: apiUrl,
+                  STRIPE_SECRET_KEY: "sk_test_synthetic",
+                  STRIPE_WEBHOOK_SECRET: "whsec_synthetic_reporter",
+                })
+              )
+            )
+          ),
+          StripeTest,
+          subscriptionsHolding([]),
+          Layer.succeed(
+            BillingMode,
+            BillingMode.of({
+              enabled: true,
+              graceSince: Option.none(),
+              graceUntil: Option.none(),
+            })
+          )
+        )
+      )
+    )
+  ).pipe(Effect.map(Context.get(ReportUsage)));
+
+layer(Layer.provideMerge(DrizzleAccountDayStoreLive, DatabaseTest))(
+  "the reporter against Stripe's idempotency rule",
+  (it) => {
+    it.effect(
+      "keeps waiting, never refusing, on a 500 Stripe gives again past the hour",
+      () =>
+        Effect.gen(function* replayed() {
+          const store = yield* AccountDayStore;
+          const failing = customer();
+          const report = reportOf(failing, yield* DateTime.now, 0);
+          const stripe = yield* idempotentStripe(new Set([report.identifier]));
+          const reporter = yield* reporterOn(stripe.url);
+
+          yield* store.enqueue([report], []);
+          yield* reporter.run;
+          yield* TestClock.adjust("2 hours");
+          yield* reporter.run;
+
+          assert.deepStrictEqual(yield* rowsOf([report.identifier]), [
+            { identifier: report.identifier, refusal: null, sent: false },
+          ]);
+
+          yield* cleanUp(holder);
+        }).pipe(Effect.scoped)
+    );
+
+    it.effect(
+      "ends sent a report Stripe took but the run never marked, sent again past the hour",
+      () =>
+        Effect.gen(function* unmarked() {
+          const store = yield* AccountDayStore;
+          const report = reportOf(customer(), yield* DateTime.now, 0);
+          const stripe = yield* idempotentStripe(new Set());
+          const reporter = yield* reporterOn(stripe.url);
+
+          yield* store.enqueue([report], []);
+          yield* reporter.run;
+
+          // The run ended before it marked it, as when a release replaces
+          // the server.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE billing.meter_reports SET sent_at = NULL WHERE identifier = ${report.identifier}`
+          ).pipe(Effect.orDie);
+          yield* TestClock.adjust("2 hours");
+          yield* reporter.run;
+
+          assert.deepStrictEqual(yield* rowsOf([report.identifier]), [
+            { identifier: report.identifier, refusal: null, sent: true },
+          ]);
+
+          yield* cleanUp(holder);
+        }).pipe(Effect.scoped)
+    );
+  }
+);

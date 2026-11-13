@@ -30,6 +30,7 @@ import { ReceiveContractRequest } from "#billing/application/receive-contract-re
 import { ReportUsage } from "#billing/application/report-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
@@ -124,6 +125,7 @@ const ChannelJobsTest = Layer.mergeAll(
     })
   ),
   Layer.mock(ReportUsage, {}),
+  Layer.mock(StartAccountDays, {}),
   Layer.succeed(PurgeAuditLog, PurgeAuditLog.of({ purge: Effect.succeed(0) })),
   Layer.succeed(
     SendBillingReminders,

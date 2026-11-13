@@ -21,6 +21,11 @@ export interface MeterReport {
   readonly value: number;
 }
 
+/** A report waiting to be sent, with its stamp once first attempted. */
+export interface UnsentReport extends MeterReport {
+  readonly stampedAt: Option.Option<DateTime.Utc>;
+}
+
 /** Where the reporter's pages of unsent reports go on from. */
 export interface ReportCursor {
   readonly createdAt: DateTime.Utc;
@@ -33,10 +38,13 @@ export interface PeakRaise {
   readonly holder: WorkspaceId;
 }
 
-/** What the outbox holds that was not sent, nor refused for good. */
+/** What the outbox holds that was not sent. */
 export interface ReportBacklog {
+  /** Neither sent nor refused for good. */
   readonly left: number;
   readonly oldest: Option.Option<DateTime.Utc>;
+  /** Refused for good, kept unsent. */
+  readonly refused: number;
 }
 
 /**
@@ -77,7 +85,16 @@ export class AccountDayStore extends Context.Service<
     readonly unsent: (
       after: Option.Option<ReportCursor>,
       limit: number
-    ) => Effect.Effect<readonly MeterReport[], DatabaseError>;
+    ) => Effect.Effect<readonly UnsentReport[], DatabaseError>;
+    /**
+     * Fixes the report's stamp at `at`, unless an earlier attempt fixed
+     * one: the stamp it keeps.
+     */
+    readonly stamp: (
+      identifier: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<DateTime.Utc, DatabaseError>;
+    /** Marks sent the reports neither sent nor refused already. */
     readonly markSent: (
       identifiers: readonly string[],
       at: DateTime.Utc

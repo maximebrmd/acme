@@ -65,7 +65,11 @@ const Unreadable = Layer.succeed(
 const NoAccountDaysTest = Layer.mergeAll(
   Layer.succeed(
     StartAccountDays,
-    StartAccountDays.of({ run: Effect.succeed(0) })
+    StartAccountDays.of({
+      pooledOf: () => Effect.succeed(0),
+      raiseAccount: () => Effect.void,
+      run: Effect.succeed({ accounts: 0, started: 0 }),
+    })
   ),
   Layer.mock(AccountDayStore, { purgeBefore: () => Effect.succeed(0) })
 );

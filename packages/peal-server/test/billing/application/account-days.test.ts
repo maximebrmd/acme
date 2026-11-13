@@ -389,6 +389,43 @@ layer(DaysTest)("the account-days", (it) => {
   );
 
   it.effect(
+    "report the pool's accounts of a holder subscribed on a day not started, and write no day for an empty pool",
+    () =>
+      Effect.gen(function* unstarted() {
+        const days = yield* AccountDays;
+        const start = yield* StartAccountDays;
+        const day = yield* today;
+        const holder = yield* workspaceOwnedBy([yield* person]);
+        const empty = yield* workspaceOwnedBy([yield* person]);
+
+        yield* days.bindPool(start.pooledOf);
+        yield* WorkspaceEntitlements.use((entitlements) =>
+          entitlements.ofEach([holder, empty])
+        );
+        yield* fill(holder, 3);
+        yield* subscribe(holder, "active", "payAsYouGo");
+        yield* subscribe(empty, "active", "payAsYouGo");
+        yield* days.subscribed(holder);
+        yield* days.subscribed(empty);
+
+        assert.deepStrictEqual(yield* keptOf(holder), {
+          days: [{ day, peak: 3, reported: 3 }],
+          reports: [
+            {
+              customer: "cus_synthetic",
+              event: "peal_accounts",
+              identifier: identifierOf(holder, day, 3),
+              value: 3,
+            },
+          ],
+        });
+        assert.deepStrictEqual(yield* keptOf(empty), { days: [], reports: [] });
+
+        yield* cleanUp([holder, empty]);
+      })
+  );
+
+  it.effect(
     "count a partner's customers on its home, and a person's workspaces on their billing workspace",
     () =>
       Effect.gen(function* pooled() {

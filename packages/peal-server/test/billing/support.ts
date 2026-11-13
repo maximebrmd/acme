@@ -95,6 +95,7 @@ export const everyWorkspaceOn = (plan: Plan, freeTier = true) =>
  * without billing's days.
  */
 export const AccountDaysUncountedTest = Layer.mock(AccountDays, {
+  bindPool: () => Effect.void,
   counted: () => Effect.void,
   ofDays: () => Effect.succeed([]),
   ofMonth: () => Effect.succeed([]),
@@ -181,6 +182,7 @@ export const AccountDaysInMemory = Layer.effect(
       markSent: () => unkept,
       ofHolders: () => unkept,
       purgeBefore: () => unkept,
+      stamp: () => unkept,
       raise: (day, counts) =>
         Ref.modify(days, (all) => {
           const raised = counts.map(({ count, holder }): AccountDay => {

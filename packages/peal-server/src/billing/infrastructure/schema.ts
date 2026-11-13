@@ -425,8 +425,9 @@ export const accountDays = billing.table(
  * The outbox of usage to Stripe: one row per meter event, written in the
  * transaction that changed the count it reports, its `identifier` derived
  * from that fact (Stripe's event identifier), so the same fact never makes
- * two rows. The reporter sends unsent rows oldest first and marks them
- * sent; one Stripe refused for good keeps its error code in `refusal`.
+ * two rows. The reporter stamps a row at its first attempt, sends unsent
+ * rows oldest first and marks them sent; one Stripe refused for good keeps
+ * its error code in `refusal`.
  * Ids and counts only. Deleted 400 days after it was sent (or written,
  * never sent), and with the workspace.
  */
@@ -440,6 +441,9 @@ export const meterReports = billing.table(
     occurredAt: instant("occurred_at").notNull(),
     refusal: text("refusal"),
     sentAt: instant("sent_at"),
+    // The timestamp the event is sent with, fixed at its first attempt
+    // and sent again unchanged, so a retry is the same request.
+    stampedAt: instant("stamped_at"),
     stripeCustomerId: text("stripe_customer_id").notNull(),
     value: bigint("value", { mode: "number" }).notNull(),
   },

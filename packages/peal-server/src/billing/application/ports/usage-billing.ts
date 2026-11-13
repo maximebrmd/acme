@@ -10,18 +10,26 @@ export interface MeterEvent {
   readonly eventName: string;
   readonly identifier: string;
   readonly stripeCustomerId: string;
+  /** Fixed at the event's first attempt, the same on every retry. */
   readonly timestamp: DateTime.Utc;
   readonly value: number;
 }
 
 /**
- * What became of a meter event: taken, to be tried again on the next run
- * (Stripe did not answer, limited the rate or failed itself), or refused
- * for good, with Stripe's error code (never its message).
+ * What became of a meter event: taken; to be tried again on the next run,
+ * because Stripe did not answer, limited the rate or failed itself
+ * (`unavailable`), or refused what is not the event's own, as the
+ * server's key, its permissions or a meter (`refusing`), which pauses the
+ * customer and is alerted on; or refused for good for the event's own
+ * fault (its value, its timestamp, its customer), with Stripe's error code
+ * (never its message).
  */
 export type ReportOutcome =
   | { readonly _tag: "sent" }
-  | { readonly _tag: "retry" }
+  | {
+      readonly _tag: "retry";
+      readonly reason: "refusing" | "unavailable";
+    }
   | { readonly _tag: "refused"; readonly code: string };
 
 /** What keeping a subscription's items changed. */
@@ -42,7 +50,10 @@ export class UsageBilling extends Context.Service<
   {
     /** Each catalogue line's meter event name at Stripe. */
     readonly eventNames: { readonly [L in CatalogueLine]: string };
-    /** Sends one meter event, under its identifier. Never fails. */
+    /**
+     * Sends one meter event, under its identifier, its idempotency key the
+     * identifier and timestamp together. Never fails, never retries itself.
+     */
     readonly report: (event: MeterEvent) => Effect.Effect<ReportOutcome>;
     /**
      * Gives the subscription one item per catalogue price: adds the

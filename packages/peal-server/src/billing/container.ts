@@ -92,6 +92,18 @@ const AccountsLive = BillingAccounts.layer.pipe(
   Layer.provide(Layer.merge(AccountStoresLive, KeyedPseudonymsLive))
 );
 
+// Starting each billing account's day, and raising one's after a
+// subscription or a move, from the channels the channels context counts.
+const StartDaysLive = StartAccountDays.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ContextAccountChannelsLive,
+      DrizzleBillingAccountStoreLive,
+      ConfiguredBillingModeLive
+    )
+  )
+);
+
 // What a workspace's billing page and standing say of its account, and
 // handing a workspace to another payer, which counts the channels the
 // channels context holds.
@@ -100,7 +112,12 @@ const AccountActionsLive = Layer.mergeAll(
   TransferWorkspace.layer
 ).pipe(
   Layer.provide(
-    Layer.mergeAll(AccountsLive, AccountStoresLive, ContextAccountChannelsLive)
+    Layer.mergeAll(
+      AccountsLive,
+      AccountStoresLive,
+      ContextAccountChannelsLive,
+      StartDaysLive
+    )
   )
 );
 
@@ -186,6 +203,17 @@ const UsageAtCheckoutBound = Layer.effectDiscard(
   })
 ).pipe(Layer.provide(UsageAtCheckout.layer));
 
+// Gives the account-days the count of a holder's pool, once the channels
+// context is built, so a subscription recorded mid-day reports the pool.
+const PoolBound = Layer.effectDiscard(
+  Effect.gen(function* bindPool() {
+    const days = yield* AccountDays;
+    const start = yield* StartAccountDays;
+
+    yield* days.bindPool(start.pooledOf);
+  })
+).pipe(Layer.provide(StartDaysLive));
+
 /**
  * The billing page's use cases: a workspace's plan and what it uses of
  * it, counted by the channels, publishing, media, workspace and assistant
@@ -211,14 +239,10 @@ export const BillingOverviewLive = Layer.mergeAll(
   CancelSubscription.layer,
   Withdraw.layer,
   SendBillingReminders.layer,
-  // Today's account-days start with the snapshot, from the channels the
-  // channels context counts.
   ReportUsage.layer,
-  SnapshotUsage.layer.pipe(
-    Layer.provide(
-      StartAccountDays.layer.pipe(Layer.provide(ContextAccountChannelsLive))
-    )
-  ),
+  // Today's account-days start with the snapshot and every hour.
+  SnapshotUsage.layer.pipe(Layer.provideMerge(StartDaysLive)),
+  PoolBound,
   UsageReports.layer,
   UsageAtCheckoutBound,
   AccountActionsLive,
@@ -306,7 +330,8 @@ export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
       AccountStoresLive,
       KeyedPseudonymsLive,
       ContextAccountChannelsLive,
-      AuditedAccountDeskLive
+      AuditedAccountDeskLive,
+      StartDaysLive
     )
   )
 );
