@@ -3184,6 +3184,162 @@ public partial class PostsClient : IPostsClient
         }
     }
 
+    private async Task<WithRawResponse<Post>> RemoveTargetAsyncCore(
+        RemoveTargetPostsRequest request,
+        RequestOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var _queryString = new Peal.Core.QueryStringBuilder.Builder(capacity: 0)
+            .MergeAdditional(options?.AdditionalQueryParameters)
+            .Build();
+        var _headers = await new Peal.Core.HeadersBuilder.Builder()
+            .Add(_client.Options.Headers)
+            .Add(_client.Options.AdditionalHeaders)
+            .Add(options?.AdditionalHeaders)
+            .BuildAsync()
+            .ConfigureAwait(false);
+        var response = await _client
+            .SendRequestAsync(
+                new JsonRequest
+                {
+                    Method = HttpMethod.Delete,
+                    Path = string.Format(
+                        "api/workspaces/{0}/posts/{1}/targets/{2}",
+                        ValueConvert.ToPathParameterString(request.WorkspaceId),
+                        ValueConvert.ToPathParameterString(request.PostId),
+                        ValueConvert.ToPathParameterString(request.TargetId)
+                    ),
+                    QueryString = _queryString,
+                    Headers = _headers,
+                    Options = options,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (response.StatusCode is >= 200 and < 400)
+        {
+            var responseBody = await response
+                .Raw.Content.ReadAsStringAsync(cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                var responseData = JsonUtils.Deserialize<Post>(responseBody)!;
+                return new WithRawResponse<Post>()
+                {
+                    Data = responseData,
+                    RawResponse = new Peal.RawResponse()
+                    {
+                        StatusCode = response.Raw.StatusCode,
+                        Url = response.Raw.RequestMessage?.RequestUri ?? new Uri("about:blank"),
+                        Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                    },
+                };
+            }
+            catch (JsonException e)
+            {
+                throw new PealClientApiException(
+                    "Failed to deserialize response",
+                    response.StatusCode,
+                    responseBody,
+                    e,
+                    rawResponse: new Peal.RawResponse()
+                    {
+                        StatusCode = response.Raw.StatusCode,
+                        Url = response.Raw.RequestMessage?.RequestUri ?? new Uri("about:blank"),
+                        Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                    }
+                );
+            }
+        }
+        {
+            var responseBody = await response
+                .Raw.Content.ReadAsStringAsync(cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                switch (response.StatusCode)
+                {
+                    case 401:
+                        throw new UnauthorizedError(
+                            JsonUtils.Deserialize<UnauthenticatedEncoded>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 403:
+                        throw new ForbiddenError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 404:
+                        throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 409:
+                        throw new ConflictError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                }
+            }
+            catch (JsonException)
+            {
+                // unable to map error response, throwing generic error
+            }
+            throw new PealClientApiException(
+                $"Error with status code {response.StatusCode}",
+                response.StatusCode,
+                responseBody,
+                rawResponse: new Peal.RawResponse()
+                {
+                    StatusCode = response.Raw.StatusCode,
+                    Url = response.Raw.RequestMessage?.RequestUri ?? new Uri("about:blank"),
+                    Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                }
+            );
+        }
+    }
+
     private async Task<WithRawResponse<Post>> ConfirmAsyncCore(
         ConfirmPostsRequest request,
         RequestOptions? options = null,
@@ -4588,6 +4744,30 @@ public partial class PostsClient : IPostsClient
     )
     {
         return new WithRawResponseTask<Post>(RepostAsyncCore(request, options, cancellationToken));
+    }
+
+    /// <summary>
+    /// Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+    /// </summary>
+    /// <example><code>
+    /// await client.Posts.RemoveTargetAsync(
+    ///     new RemoveTargetPostsRequest
+    ///     {
+    ///         WorkspaceId = "workspaceId",
+    ///         PostId = "postId",
+    ///         TargetId = "targetId",
+    ///     }
+    /// );
+    /// </code></example>
+    public WithRawResponseTask<Post> RemoveTargetAsync(
+        RemoveTargetPostsRequest request,
+        RequestOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return new WithRawResponseTask<Post>(
+            RemoveTargetAsyncCore(request, options, cancellationToken)
+        );
     }
 
     /// <summary>

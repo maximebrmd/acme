@@ -2,23 +2,29 @@ import { assert, describe, it } from "@effect/vitest";
 import { Duration, Effect, Option, Result } from "effect";
 import type { Layer } from "effect";
 
+import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
+import { isDropped } from "#publishing/domain/post-target.ts";
+import { Schedule } from "#publishing/domain/schedule.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   FakeApprovalGate,
   GateLog,
 } from "#test/publishing/fakes/fake-approval-gate.ts";
 import {
+  eventually,
+  isSuspended,
   setTime,
   storedPost,
   utc,
@@ -65,6 +71,225 @@ const at8 = (
   placement: { _tag: "at", at: utc("2026-06-15T08:00:00Z") },
   timeZone: TimeZoneIdSchema.make("Europe/Paris"),
   ...more,
+});
+
+describe("taking a channel off a post behind an ApprovalGate", () => {
+  it.effect(
+    "asks for an approval again, and stops the job, once the approval no longer covers it",
+    () =>
+      onGatedServer(
+        Effect.gen(function* dropsApproved() {
+          const scheduling = yield* PostScheduling;
+          const gate = yield* GateLog;
+          const workspaceId = yield* freshWorkspace;
+          const kept = yield* connect(workspaceId, "mastodon");
+          const removed = yield* connect(workspaceId, "bluesky");
+          const editor = actorIn(workspaceId);
+
+          const held = yield* scheduling.send(
+            editor,
+            at8(kept, "Two channels for now.", { channelIds: [kept, removed] })
+          );
+
+          // Approved as it is, then admitted when it is moved.
+          yield* gate.approve(held.post.id);
+
+          const admitted = yield* scheduling.reschedule(
+            editor,
+            held.post.id,
+            new Schedule({
+              at: utc("2026-06-15T09:00:00Z"),
+              timeZone: TimeZoneIdSchema.make("Europe/Paris"),
+            })
+          );
+
+          assert.strictEqual(admitted.post.status._tag, "scheduled");
+          assert.isTrue(
+            Option.isSome((yield* storedPost(held.post.id)).execution)
+          );
+
+          const target = admitted.targets.find(
+            ({ channelId }) => channelId === removed
+          );
+
+          assert(target !== undefined);
+
+          const dropped = yield* scheduling.dropTarget(
+            editor,
+            held.post.id,
+            target.id
+          );
+
+          assert.strictEqual(dropped.post.status._tag, "awaitingApproval");
+
+          // Its job stopped: it goes out once approved as it now is.
+          yield* eventually(
+            "the job stops",
+            isSuspended(held.post.id).pipe(Effect.map((waits) => !waits))
+          );
+
+          yield* scheduling.cancel(editor, held.post.id);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("taking a channel off a post that waits for an approval", () => {
+  it.effect(
+    "keeps it waiting, its request following what it now is",
+    () =>
+      onGatedServer(
+        Effect.gen(function* dropsHeld() {
+          const scheduling = yield* PostScheduling;
+          const gate = yield* GateLog;
+          const workspaceId = yield* freshWorkspace;
+          const kept = yield* connect(workspaceId, "mastodon");
+          const removed = yield* connect(workspaceId, "bluesky");
+          const editor = actorIn(workspaceId);
+
+          const held = yield* scheduling.send(
+            editor,
+            at8(kept, "Waiting on two channels.", {
+              channelIds: [kept, removed],
+            })
+          );
+
+          const target = held.targets.find(
+            ({ channelId }) => channelId === removed
+          );
+
+          assert(target !== undefined);
+
+          const dropped = yield* scheduling.dropTarget(
+            editor,
+            held.post.id,
+            target.id
+          );
+
+          assert.strictEqual(dropped.post.status._tag, "awaitingApproval");
+          assert.deepStrictEqual(
+            (yield* storedPost(held.post.id)).execution,
+            Option.none()
+          );
+          assert.deepStrictEqual(yield* gate.withdrawn, []);
+
+          yield* scheduling.cancel(editor, held.post.id);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("a held post that lost a channel, back to draft", () => {
+  // A post on two channels, waiting, with a text of its own on the one
+  // taken off it.
+  const heldWithoutOne = Effect.gen(function* heldWithoutOne() {
+    const scheduling = yield* PostScheduling;
+    const workspaceId = yield* freshWorkspace;
+    const kept = yield* connect(workspaceId, "mastodon");
+    const removed = yield* connect(workspaceId, "bluesky");
+    const editor = actorIn(workspaceId);
+
+    const held = yield* scheduling.send(
+      editor,
+      at8(kept, "Waiting on two channels.", {
+        channelIds: [kept, removed],
+        content: contentOf("Waiting on two channels.", {
+          overrides: [[removed, "Its own words there."]],
+        }),
+      })
+    );
+
+    const target = held.targets.find(({ channelId }) => channelId === removed);
+
+    assert(target !== undefined);
+
+    yield* scheduling.dropTarget(editor, held.post.id, target.id);
+
+    return { editor, held, kept, removed, workspaceId };
+  });
+
+  // The draft has the kept channel only, and none of the removed one's
+  // texts; chosen again, that channel gets a target of its own, pending.
+  const draftsCleanly = (
+    sentBack: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<unknown, unknown, GateLog | HeldPosts>
+  ) =>
+    Effect.gen(function* backToDraft() {
+      const scheduling = yield* PostScheduling;
+
+      const { editor, held, kept, removed, workspaceId } =
+        yield* heldWithoutOne;
+
+      yield* sentBack(workspaceId, held.post.id);
+
+      const { post } = yield* storedPost(held.post.id);
+
+      const targets = yield* PostRepository.use((posts) =>
+        posts.targets(held.post.id)
+      );
+
+      assert.strictEqual(post.status._tag, "draft");
+      assert.deepStrictEqual(
+        targets.map(({ channelId }) => channelId),
+        [kept]
+      );
+      assert.deepStrictEqual(post.content.overrides, []);
+
+      const again = yield* scheduling.scheduleDraft(editor, held.post.id, {
+        channelIds: [kept, removed],
+        schedule: new Schedule({
+          at: utc("2026-06-15T09:00:00Z"),
+          timeZone: TimeZoneIdSchema.make("Europe/Paris"),
+        }),
+      });
+
+      assert.deepStrictEqual(
+        again.targets.map(({ channelId, status }) => [channelId, status._tag]),
+        [
+          [kept, "pending"],
+          [removed, "pending"],
+        ]
+      );
+      assert.isFalse(again.targets.some(isDropped));
+
+      yield* scheduling.cancel(editor, held.post.id);
+    });
+
+  it.effect(
+    "drops the removed channel and its texts when a reviewer sends it back",
+    () =>
+      onGatedServer(
+        draftsCleanly((workspaceId, postId) =>
+          HeldPosts.use((held) => held.sendBack(workspaceId, postId))
+        )
+      ),
+    timeout
+  );
+
+  it.effect(
+    "drops the removed channel and its texts when it is approved too late",
+    () =>
+      onGatedServer(
+        draftsCleanly((workspaceId, postId) =>
+          Effect.gen(function* late() {
+            yield* GateLog.use((gate) => gate.approve(postId));
+            yield* setTime("2026-06-15T09:30:00Z");
+
+            const { late: wasLate } = yield* HeldPosts.use((held) =>
+              held.release(workspaceId, postId)
+            );
+
+            assert.isTrue(wasLate);
+            yield* setTime(start);
+          })
+        )
+      ),
+    timeout
+  );
 });
 
 describe("posting in one call behind an ApprovalGate", () => {

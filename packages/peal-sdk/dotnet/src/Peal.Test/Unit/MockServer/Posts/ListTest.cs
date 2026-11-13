@@ -33,10 +33,12 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         }
                       ],
@@ -57,10 +59,12 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         }
                       ],
@@ -80,10 +84,30 @@ public class ListTest : BaseMockServerTest
                   "overrides": [
                     {
                       "channelId": "channelId",
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        },
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        }
+                      ],
                       "text": "x"
                     },
                     {
                       "channelId": "channelId",
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        },
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        }
+                      ],
                       "text": "x"
                     }
                   ],
@@ -118,6 +142,7 @@ public class ListTest : BaseMockServerTest
                 "targets": [
                   {
                     "channelId": "channelId",
+                    "dropped": true,
                     "editedAt": "editedAt",
                     "failureReason": "contentRejected",
                     "id": "id",
@@ -168,6 +193,7 @@ public class ListTest : BaseMockServerTest
                   },
                   {
                     "channelId": "channelId",
+                    "dropped": true,
                     "editedAt": "editedAt",
                     "failureReason": "contentRejected",
                     "id": "id",
@@ -257,10 +283,12 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         }
                       ],
@@ -281,10 +309,12 @@ public class ListTest : BaseMockServerTest
                       "overrides": [
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         },
                         {
                           "channelId": "channelId",
+                          "media": [],
                           "text": "x"
                         }
                       ],
@@ -304,10 +334,30 @@ public class ListTest : BaseMockServerTest
                   "overrides": [
                     {
                       "channelId": "channelId",
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        },
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        }
+                      ],
                       "text": "x"
                     },
                     {
                       "channelId": "channelId",
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        },
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        }
+                      ],
                       "text": "x"
                     }
                   ],
@@ -342,6 +392,7 @@ public class ListTest : BaseMockServerTest
                 "targets": [
                   {
                     "channelId": "channelId",
+                    "dropped": true,
                     "editedAt": "editedAt",
                     "failureReason": "contentRejected",
                     "id": "id",
@@ -392,6 +443,7 @@ public class ListTest : BaseMockServerTest
                   },
                   {
                     "channelId": "channelId",
+                    "dropped": true,
                     "editedAt": "editedAt",
                     "failureReason": "contentRejected",
                     "id": "id",

@@ -64,5 +64,10 @@
     "change": "The SDKs' BadGatewayErrorBody (one type for every 502 body with several errors) names TextProviderRefused and AssistantFailed, no longer AssistantFailed and ImageProviderRefused; AssistantFailedEncoded lost its _tag field, and its tag type (AssistantFailedEncodedTag, AssistantFailedEncoded.Tag) is gone",
     "kind": "sdk",
     "reason": "The suggestions endpoint and the text provider's test now answer 502 with two errors each, and the generator names a single body type for each status, after one of the endpoints that has a union there. Nothing changes on the wire: every 502 body still carries its _tag. Code that matched BadGatewayErrorBody.ImageProviderRefused, or read AssistantFailedEncoded's _tag through its type, reads the body's _tag as a string instead. The SDKs are 0.x: this ships in their next minor release, 0.4.0, whose notes say so."
+  },
+  {
+    "change": "A post.cancelled webhook may name one channel taken off a post that still goes out on its others (scope: \"target\"), as well as a cancelled post (scope: \"post\")",
+    "kind": "behaviour",
+    "reason": "Removing one channel from a scheduled post (DELETE …/posts/{postId}/targets/{targetId}) is told as a post.cancelled naming that channel alone, as a channel cancelled while its post was going out already was. A receiver that marked the whole post cancelled on every post.cancelled reads the new scope field: \"target\" means the post still goes out on its other channels. Events made before the field was sent have none, and are about the post."
   }
 ]

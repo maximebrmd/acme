@@ -14,6 +14,12 @@ class PostTarget extends JsonSerializableType
     public string $channelId;
 
     /**
+     * @var ?bool $dropped
+     */
+    #[JsonProperty('dropped')]
+    public ?bool $dropped;
+
+    /**
      * @var ?string $editedAt
      */
     #[JsonProperty('editedAt')]
@@ -98,6 +104,7 @@ class PostTarget extends JsonSerializableType
      *   parts: TargetParts,
      *   round: int,
      *   status: value-of<PostTargetStatus>,
+     *   dropped?: ?bool,
      *   editedAt?: ?string,
      *   failureReason?: ?value-of<FailureReason>,
      *   keptPrivate?: ?bool,
@@ -113,6 +120,7 @@ class PostTarget extends JsonSerializableType
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->dropped = $values['dropped'] ?? null;
         $this->editedAt = $values['editedAt'] ?? null;
         $this->failureReason = $values['failureReason'] ?? null;
         $this->id = $values['id'];

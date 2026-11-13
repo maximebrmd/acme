@@ -20,7 +20,11 @@ import { RecyclingHandlers } from "#publishing/api/recycling.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { memberOf } from "#test/channels/support.ts";
-import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
+import {
+  attachableImage,
+  connect,
+  onPostsServerAt,
+} from "#test/publishing/posts-server.ts";
 import type { PostsServerTest } from "#test/publishing/posts-server.ts";
 import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -95,6 +99,96 @@ const studio = Effect.gen(function* studio() {
     });
 
   return { editor, mastodon, params, sent, viewer, workspaceId };
+});
+
+describe("a recycling variant on a source with a channel's own media", () => {
+  it.effect(
+    "is refused when it gives that channel no text to carry them",
+    () =>
+      onServer(
+        Effect.gen(function* refusesEmpty() {
+          const { editor, mastodon, params } = yield* studio;
+
+          const source = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: {
+              channelIds: [mastodon],
+              content: {
+                media: [],
+                overrides: [
+                  {
+                    channelId: mastodon,
+                    media: [
+                      {
+                        altText: "A synthetic picture",
+                        mediaId: attachableImage,
+                      },
+                    ],
+                    text: "Its own picture here",
+                  },
+                ],
+                text: "Our opening hours, all summer.",
+              },
+              when: {
+                _tag: "at",
+                at: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+                timeZone: "Europe/Paris",
+              },
+            },
+            query: {},
+          });
+
+          const refused = yield* editor.recycling
+            .create({
+              params,
+              payload: {
+                count: 3,
+                every: { count: 1, unit: "weeks" },
+                postId: source.id,
+                variants: [{ text: "" }, { text: "Open all summer." }],
+              },
+            })
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            refused,
+            new RecyclingVariantsInvalid({
+              variants: [
+                {
+                  variant: 1,
+                  violations: [
+                    {
+                      _tag: "empty",
+                      channelId: mastodon,
+                      platform: "mastodon",
+                    },
+                  ],
+                },
+              ],
+            })
+          );
+
+          // The second variant alone keeps the channel's picture.
+          const rule = yield* editor.recycling.create({
+            params,
+            payload: {
+              count: 3,
+              every: { count: 1, unit: "weeks" },
+              postId: source.id,
+              variants: [{ text: "Open all summer." }],
+            },
+          });
+
+          assert.strictEqual(rule.status, "active");
+
+          yield* editor.posts.cancel({
+            params: { ...params, postId: source.id },
+          });
+        })
+      ),
+    timeout
+  );
 });
 
 describe("recycling rules", () => {

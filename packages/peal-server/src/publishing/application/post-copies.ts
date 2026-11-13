@@ -1,15 +1,18 @@
 import { Effect } from "effect";
 
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import {
   keepingMedia,
   referencedMedia,
 } from "#publishing/domain/named-media.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
+import { isDropped } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
+import { changedOverride } from "#publishing/domain/text-override.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
@@ -34,7 +37,7 @@ export interface PostCopy {
  * its texts on those channels, its options on them, an option naming a
  * file gone since left out (`keepingMedia`), and its tags still kept. What
  * the post became (its time, its outcome, its targets' states, a removal
- * from a platform) is not copied. Duplicating a post and a recycling
+ * from a platform, a channel taken off it) is not copied. Duplicating a post and a recycling
  * rule's occurrences copy through it.
  */
 export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
@@ -43,7 +46,9 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
   targets: readonly PostTarget[]
 ) {
   const { content } = post;
-  const named = targets.map(({ channelId }) => channelId);
+  // A channel taken off the post before it went out is not copied.
+  const kept = targets.filter((target) => !isDropped(target));
+  const named = kept.map(({ channelId }) => channelId);
 
   const channels = yield* WorkspaceChannels.use((workspace) =>
     workspace.lookUp(actor, named)
@@ -51,7 +56,7 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
 
   // Every file it depends on: those it shows, in any of its parts, and
   // those its options name.
-  const referenced = referencedMedia(content, optionsOfTargets(targets, named));
+  const referenced = referencedMedia(content, optionsOfTargets(kept, named));
 
   const media =
     referenced.length === 0
@@ -66,22 +71,32 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
   const mediaIds = new Set<string>(media.map(({ mediaId }) => mediaId));
   const tagIds = new Set<string>(tags.map(({ id }) => id));
 
-  // Each part's media and texts, of what the workspace still has.
-  const kept = (part: Pick<PostContent, "media" | "overrides">) => ({
-    media: part.media.filter(({ mediaId }) => mediaIds.has(mediaId)),
-    overrides: part.overrides.filter(({ channelId }) =>
-      channelIds.includes(channelId)
-    ),
+  const stillThere = (attached: readonly MediaAttachment[]) =>
+    attached.filter(({ mediaId }) => mediaIds.has(mediaId));
+
+  // Each part's media and texts, and the media it has on a channel, of
+  // what the workspace still has.
+  const keptOf = (part: Pick<PostContent, "media" | "overrides">) => ({
+    media: stillThere(part.media),
+    overrides: part.overrides
+      .filter(({ channelId }) => channelIds.includes(channelId))
+      .map((override) =>
+        override.media === undefined
+          ? override
+          : changedOverride(override, {
+              media: stillThere(override.media),
+            })
+      ),
   });
 
   const copy: PostCopy = {
     channelIds,
     content: new PostContent({
-      ...kept(content),
+      ...keptOf(content),
       followUps: content.followUps.map(
         (part) =>
           new PostPart({
-            ...kept(part),
+            ...keptOf(part),
             delaySeconds: part.delaySeconds,
             text: part.text,
           })
@@ -89,7 +104,7 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
       text: content.text,
     }),
     // An option naming a file gone since is left out.
-    options: optionsOfTargets(targets, channelIds).map(
+    options: optionsOfTargets(kept, channelIds).map(
       (chosen) =>
         new ChannelOptions({
           channelId: chosen.channelId,

@@ -14,6 +14,9 @@ public record TextOverride : IJsonOnDeserialized
     [JsonPropertyName("channelId")]
     public required string ChannelId { get; set; }
 
+    [JsonPropertyName("media")]
+    public IEnumerable<MediaAttachment>? Media { get; set; }
+
     [JsonPropertyName("text")]
     public required string Text { get; set; }
 

@@ -26,6 +26,7 @@ import social.peal.resources.posts.requests.PostImport;
 import social.peal.resources.posts.requests.PostTags;
 import social.peal.resources.posts.requests.PostToValidate;
 import social.peal.resources.posts.requests.QueuePost;
+import social.peal.resources.posts.requests.RemoveTargetPostsRequest;
 import social.peal.resources.posts.requests.RepostPostsRequest;
 import social.peal.resources.posts.requests.ReschedulePostsRequest;
 import social.peal.resources.posts.requests.SchedulePost;
@@ -962,6 +963,73 @@ public class AsyncPostsClient {
             RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
                 this.rawClient.repost(workspaceId, postId, targetId, request, requestOptions);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public CompletableFuture<Post> removeTarget(String workspaceId, String postId, String targetId) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.removeTarget(workspaceId, postId, targetId);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public CompletableFuture<Post> removeTarget(
+            String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.removeTarget(workspaceId, postId, targetId, requestOptions);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public CompletableFuture<Post> removeTarget(
+            String workspaceId, String postId, String targetId, RemoveTargetPostsRequest request) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.removeTarget(workspaceId, postId, targetId, request);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public CompletableFuture<Post> removeTarget(
+            String workspaceId,
+            String postId,
+            String targetId,
+            RemoveTargetPostsRequest request,
+            RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.removeTarget(workspaceId, postId, targetId, request, requestOptions);
         CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {

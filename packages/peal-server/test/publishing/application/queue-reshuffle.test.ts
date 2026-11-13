@@ -98,6 +98,7 @@ const Hearing = Layer.effectContext(
       PostEvents.of({
         cancelled: () => Effect.void,
         confirmed: () => Effect.void,
+        dropped: () => Effect.void,
         finished: () => Effect.void,
         scheduled: (post) => Ref.update(scheduled, (ids) => [...ids, post.id]),
         unscheduled: () => Effect.void,

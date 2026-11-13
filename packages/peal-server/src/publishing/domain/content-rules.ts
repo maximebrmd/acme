@@ -23,6 +23,7 @@ import {
   overriddenChannels,
   partAlone,
   partCount,
+  sentTo,
   textOn,
 } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
@@ -773,7 +774,8 @@ export const partViolationsOn = (
 /**
  * Whether the post can be scheduled on these channels: for one channel at
  * least, with text overrides and options for them only, within each
- * platform's rules on the text it has there and on its media, in every
+ * platform's rules on the text it has there and on the media it shows
+ * there (its own, when an override gives it some: `sentTo`), in every
  * part, whose files are `files`, and with the options each platform needs,
  * as `options` gives them.
  */
@@ -792,13 +794,15 @@ export const checkPublishable = (
     ...channels.flatMap((connected) => {
       const channel = named(connected);
       const chosen = optionsOn(options, channel.channelId);
+      // The post with the media the channel receives, which may be its own.
+      const sent = sentTo(content, channel.channelId);
 
       return [
-        ...violationsOn(content, channel, chosen),
-        ...mediaViolationsOn(content, channel, filesOf(content, files), chosen),
-        ...partViolationsOn(content, channel, files, chosen),
+        ...violationsOn(sent, channel, chosen),
+        ...mediaViolationsOn(sent, channel, filesOf(sent, files), chosen),
+        ...partViolationsOn(sent, channel, files, chosen),
         ...optionViolationsOn(channel, chosen),
-        ...mediaOptionViolationsOn(content, channel, chosen, files),
+        ...mediaOptionViolationsOn(sent, channel, chosen, files),
         ...connectionViolationsOn(connected, chosen),
       ];
     }),

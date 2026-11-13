@@ -348,14 +348,15 @@ Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la re
 
 ### post.cancelled [#post-cancelled]
 
-La publication a été annulée. `targets` liste les canaux où elle ne partira pas ; un canal qu’elle avait déjà atteint garde son propre événement. Un canal vers lequel Peal envoyait à ce moment-là se termine par son propre événement : `post.published`, `post.failed` ou `post.unconfirmed` si la plateforme a été appelée, ou un `post.cancelled` qui le nomme seul si elle ne l’a pas été.
+La publication a été annulée. `targets` liste les canaux où elle ne partira pas ; un canal qu’elle avait déjà atteint garde son propre événement. Un canal vers lequel Peal envoyait à ce moment-là se termine par son propre événement : `post.published`, `post.failed` ou `post.unconfirmed` si la plateforme a été appelée, ou un `post.cancelled` qui le nomme seul si elle ne l’a pas été. Un canal que quelqu’un retire d’une publication qui attend son heure est annoncé par un `post.cancelled` qui le nomme seul, avec `scope` `target` : la publication garde son heure et part toujours sur ses autres canaux, un `post.scheduled` annoncé quand elle est déplacée ne nomme plus ce canal, et son `post.finished` le liste comme `cancelled`.
 
-| Champ         | Type    | Ce qu’il contient                                                                    |
-| ------------- | ------- | ------------------------------------------------------------------------------------ |
-| `workspaceId` | chaîne  | L’espace de travail                                                                  |
-| `postId`      | chaîne  | La publication                                                                       |
-| `cancelledAt` | chaîne  | Le moment où elle a été annulée, en instant UTC                                      |
-| `targets`     | tableau | Les canaux où elle ne partira pas, chacun avec `targetId`, `channelId` et `platform` |
+| Champ         | Type    | Ce qu’il contient                                                                                                                                                                                         |
+| ------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                                                                                                                       |
+| `postId`      | chaîne  | La publication                                                                                                                                                                                            |
+| `cancelledAt` | chaîne  | Le moment où elle a été annulée, en instant UTC                                                                                                                                                           |
+| `scope`       | chaîne  | `post` quand la publication a été annulée ; `target` quand un canal a été retiré d’une publication qui part toujours. Absent des événements faits avant qu’il soit envoyé, qui portent sur la publication |
+| `targets`     | tableau | Les canaux où elle ne partira pas, chacun avec `targetId`, `channelId` et `platform`                                                                                                                      |
 
 ```json title="post.cancelled"
 {
@@ -368,6 +369,7 @@ La publication a été annulée. `targets` liste les canaux où elle ne partira 
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
     "cancelledAt": "2026-11-09T18:30:00.000Z",
+    "scope": "post",
     "targets": [
       {
         "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",

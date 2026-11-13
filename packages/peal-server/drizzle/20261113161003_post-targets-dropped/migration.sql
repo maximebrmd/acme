@@ -1,0 +1,1 @@
+ALTER TABLE "publishing"."post_targets" ADD COLUMN "dropped" boolean DEFAULT false NOT NULL;

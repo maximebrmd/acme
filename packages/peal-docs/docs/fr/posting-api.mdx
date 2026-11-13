@@ -88,6 +88,7 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate
 Chaque entrée de `channels` contient :
 
 - `text` : le texte que reçoit le canal, c’est-à-dire celui qui lui est propre, ou celui de la publication ;
+- les nombres ci-dessous portent sur les médias que reçoit le canal : les siens, quand son entrée lui en donne ([Des médias propres sur un canal](#channel-media)), ou ceux de la publication ;
 - `textCounts` : la longueur de ce texte, comptée comme la compte la plateforme du canal, face à chacune de ses limites. Bluesky en a deux, en graphèmes et en octets ;
 - `hashtags`, `mentions`, `links` et `media` : combien la publication en contient (`count`) et le maximum que prend la plateforme (`maximum`, null quand Peal ne lui connaît pas de limite). `links` compte les liens différents ;
 - `parts` : les parties qui suivent la première d’un [fil](/scheduling#threads), dans l’ordre, chacune avec son rang (`part`, à partir de 1), son texte (`text`) sur le canal et les mêmes décomptes ; aucune pour une publication seule. Une plateforme qui ne prend qu’une publication seule les liste quand même, et les refuse avec `tooManyParts` ;
@@ -485,7 +486,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
 `GET …/recycling` liste les règles, de la plus ancienne à la plus récente (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` en lit une, `PATCH` change son `count` ou son `until` (null le retire), ses `variants` (un tableau vide les retire) ou la met en pause (`paused`), `POST …/recycling/{ruleId}/resume` avec `{ "variants"? }` relance une règle en pause, ou terminée pour `planLimit`, `contentRejected`, `noChannels`, `queueFull` ou `sourceWithdrawn` (sa publication annulée ou remise en brouillon, une fois programmée de nouveau : 409 `post_not_recyclable` d’ici là, ou tant qu’une autre règle la répète, et 409 `too_many_recycling_rules` au-delà de 100), et `DELETE` l’arrête : les publications créées restent. Chaque publication créée par une règle porte `recyclingId` et `occurrence` (sa place, la source étant 1), et `GET …/posts/search?recyclingId=…` les liste. Chacune agit au nom de qui a lancé la règle, tel qu’il est alors : la règle d’une clé s’arrête une fois la clé révoquée. Changer, mettre en pause, reprendre ou arrêter une règle demande post:schedule, ou d’être la personne qui l’a lancée, agissant comme elle l’a lancée : dans l’application web, par la même application ou avec la même clé.
 
 - Une publication qui ne peut pas se répéter répond 409 `post_not_recyclable`, avec `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`.
-- Des variantes qui enfreignent les règles des canaux de la source répondent 422 `recycling_variants_invalid`, chacune par sa place à partir de 1 avec ses violations ; une fin qui ne laisse aucune publication à créer, 422 `recycling_ends_too_soon`.
+- Des variantes qui enfreignent les règles des canaux de la source répondent 422 `recycling_variants_invalid`, chacune par sa place à partir de 1 avec ses violations (un texte de variante vide qui laisse sans texte un canal montrant des [médias propres](#channel-media) y est `empty`) ; une fin qui ne laisse aucune publication à créer, 422 `recycling_ends_too_soon`.
 - 100 règles en cours répondent 409 `too_many_recycling_rules` ; une modification d’une règle terminée, 409 `recycling_rule_ended`.
 
 ## Publier depuis un flux [#feeds]
@@ -503,6 +504,51 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
 
 - Une adresse qui n’est pas une adresse HTTPS publique répond 422 `feed_address_refused` (`reason`) ; une qui n’est pas un flux, 422 `feed_unreadable` (`notAFeed`, `tooLarge`, `unreachable`) ; un modèle qui nomme un autre champ, 422 `feed_template_invalid`.
 - 10 flux répondent 409 `too_many_feeds`. Ajouter, déplacer, reprendre et prévisualiser lisent 30 adresses par espace de travail et par heure, puis 429 `feed_reads_limited` avec `retryAfterSeconds` et `Retry-After`.
+
+## Des médias propres sur un canal [#channel-media]
+
+Le texte d’une publication sur un canal (une entrée de `content.overrides`, ou des `overrides` d’une partie) peut aussi donner à ce canal des images et vidéos propres, dans `media`, qu’il montre alors à la place de celles de la publication : dans l’ordre, chacune avec son texte alternatif, 20 au plus, des médias prêts de l’espace de travail. Une liste vide n’en montre aucun sur ce canal ; absente, le canal montre ceux de la publication, et Peal ne répond `media` que sur une entrée qui en donne. Une entrée a toujours son `text`, qui ne peut pas être vide : envoyez-y le texte de la publication pour ne donner au canal que des médias. Ce texte est désormais celui du canal : quand vous changez le texte de la publication, changez-le là aussi (l’application web le fait).
+
+```json
+{
+  "text": "Cinq images du catalogue de printemps",
+  "media": [
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f001",
+      "altText": "La couverture"
+    },
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+      "altText": "La page deux"
+    }
+  ],
+  "overrides": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "text": "Cinq images du catalogue de printemps",
+      "media": [
+        {
+          "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+          "altText": "La page deux"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Chaque canal est vérifié sur les médias qu’il reçoit, par `validate` (son nombre de `media` et ses `violations`) comme quand la publication est programmée, et la vérification des doublons compare ce que reçoit chaque canal. Une approbation couvre les médias de chaque canal : changer les médias propres d’un canal après l’approbation de la publication en redemande une. Tant qu’une publication programmée montre un fichier sur un canal, il ne peut pas être supprimé de la médiathèque ; un brouillon le lâche, sur chaque canal.
+
+## Retirer un canal d’une publication programmée [#remove-target]
+
+`DELETE …/posts/{postId}/targets/{targetId}` retire un canal d’une publication qui attend son heure, programmée ou en attente d’approbation : elle part à son heure sur ses autres canaux, et jamais sur celui-ci, dont la cible est `cancelled` avec `"dropped": true`. La publication garde son heure et son créneau de file d’attente, et son `outcome`, une fois partie, laisse ce canal de côté. La réponse est la publication.
+
+- Le dernier canal sur lequel la publication part encore répond 409 `last_target_left` : annulez plutôt la publication (`POST …/posts/{postId}/cancel`).
+- Une publication en cours d’envoi ou terminée, ou un brouillon, dont les canaux changent par une mise à jour, répond 409 `post_status_conflict` ; un canal annulé avec sa publication, 409 `target_status_conflict`. Un canal déjà retiré répond la publication telle qu’elle est : une requête renvoyée après une réponse perdue est sans risque.
+- C’est une modification de la publication : là où vos publications demandent une [approbation](/review), l’approbation donnée ne la couvre plus, et la réponse porte `awaitingApproval`, en attente d’une nouvelle. Une publication déjà en attente d’approbation garde sa demande, qui couvre ce qu’elle est maintenant.
+- Les webhooks reçoivent un [`post.cancelled`](/webhooks#post-cancelled) qui nomme ce seul canal. Une publication repassée en brouillon (`unschedule`, des changements demandés, ou une approbation après son heure) garde les canaux qu’elle avait encore : le canal retiré part avec sa cible et ses entrées d’`overrides` dans chaque partie, et nommé de nouveau dans `channelIds`, il reçoit une nouvelle cible, en attente.
+
+Il faut post:schedule, ou, sur une publication en attente d’approbation, le droit de demander que des publications partent ; un client OAuth a besoin du scope `workspace:publish`.
 
 ## Dépublier une publication [#unpublish]
 

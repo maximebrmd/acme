@@ -295,6 +295,59 @@ describe("a post's webhook events", () => {
   );
 
   it.effect(
+    "say a channel was taken off the post, once, and no longer name it",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* dropsOne() {
+          const { endpointId, owner } = yield* listening;
+          const scheduling = yield* PostScheduling;
+          const kept = yield* connect(owner.workspaceId, "mastodon");
+          const removed = yield* connect(owner.workspaceId, "bluesky");
+          const post = yield* schedule(owner, [kept, removed]);
+
+          const target = post.targets.find(
+            ({ channelId }) => channelId === removed
+          );
+
+          assert(target !== undefined);
+
+          yield* scheduling.dropTarget(owner, post.post.id, target.id);
+          yield* scheduling.reschedule(
+            owner,
+            post.post.id,
+            scheduleIn("2026-06-15T09:00:00Z")
+          );
+
+          const sent = yield* eventsSentTo(owner, endpointId);
+
+          assert.deepStrictEqual(
+            sent.map(({ type }) => type),
+            ["post.scheduled", "post.cancelled", "post.scheduled"]
+          );
+
+          const [, cancelled, moved] = sent;
+
+          assert(cancelled?.type === "post.cancelled");
+          assert(moved?.type === "post.scheduled");
+          assert.deepStrictEqual(
+            cancelled.data.targets.map(({ targetId }) => targetId),
+            [target.id]
+          );
+          // One channel, not the post: it still goes out on the others.
+          assert.strictEqual(cancelled.data.scope, "target");
+          assert.deepStrictEqual(
+            moved.data.targets.map(({ channelId }) => channelId),
+            [kept]
+          );
+
+          yield* scheduling.cancel(owner, post.post.id);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "say when it is moved, taken back to draft or cancelled",
     () =>
       onServerAt(
@@ -344,6 +397,7 @@ describe("a post's webhook events", () => {
             cancelled.data.targets.map(({ targetId }) => targetId),
             moved.targets.map(({ id }) => id)
           );
+          assert.strictEqual(cancelled.data.scope, "post");
         })
       ),
     timeout
