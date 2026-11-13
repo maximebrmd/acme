@@ -33,27 +33,31 @@ uptime_caddy_admin: http://127.0.0.1:2019
 
 # What each environment of uptime_environments is checked for, every
 # uptime_check_interval: the status a request answers, and how fast, in
-# milliseconds, through Cloudflare as people reach it. A redirect is a
-# failure, so a page that sends visitors to Cloudflare Access's sign-in never
+# milliseconds, through Cloudflare as people reach it; the status page
+# shows each by its title. A redirect is a failure, so a page that sends visitors to Cloudflare Access's sign-in never
 # passes for the page itself.
 uptime_checks:
   - name: site
+    title: Website
     host: site
     path: /
     status: 200
     max_ms: 1000
   - name: docs
+    title: Docs
     host: docs
     path: /
     status: 200
     max_ms: 1000
   - name: web app
+    title: Web app
     host: app
     path: /sign-in
     status: 200
     max_ms: 2000
   # Readiness: the server answers and its database too.
   - name: api
+    title: API
     host: app
     path: /api/ready
     status: 204
@@ -63,6 +67,7 @@ uptime_checks:
   # error code (body_code) nothing before it gives: cloudflared's 404, for a
   # path the rewrite missed, has no body. It counts no visit.
   - name: short links
+    title: Short links
     host: short_links
     path: /0000000
     status: 404
@@ -82,7 +87,22 @@ uptime_dns_interval: 5m
 # every 5 minutes or so, so two may go missing first.
 uptime_heartbeat_interval: 15m
 
-# Telegram hears of a check after this many failures in a row, and that it
-# passes again after this many successes.
-uptime_failure_threshold: 3
+# Telegram hears of an incident, not of a blip: of a page or the API after
+# this many failures in a row (5 minutes at uptime_check_interval), and that
+# it passes again after this many successes.
+uptime_failure_threshold: 5
 uptime_success_threshold: 2
+# A host name after this many failed lookups in a row (15 minutes at
+# uptime_dns_interval): a public resolver drops a query now and then.
+uptime_dns_failure_threshold: 3
+# A certificate after this many hourly failures in a row: one that expires
+# within uptime_certificate_hours leaves days to act, and a single failed
+# connection is not one.
+uptime_certificate_failure_threshold: 3
+
+# The status page's mark, icon and fonts (DESIGN.md), copied from the
+# repository to this folder, which Caddy serves under /peal/: the web app's
+# mark and icon, and peal-ui's Geist, from its node_modules
+# (`bun install --frozen-lockfile` before uptime.yml). Outside uptime_root,
+# which only root reads, so a shared host's Caddy reads it too.
+uptime_brand_root: /srv/uptime-brand

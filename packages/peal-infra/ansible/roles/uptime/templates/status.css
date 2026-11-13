@@ -1,0 +1,354 @@
+/* Managed by Ansible (peal-infra): the status page in Peal's design
+   (DESIGN.md at the repository's root), over Gatus's own stylesheet. Gatus
+   serves it as /css/custom.css, before its own, so each rule here is one
+   step more specific than the rule it replaces. Peal is light only: Caddy
+   gives every visitor Gatus's theme cookie set to light (status.caddy), and
+   the dark tokens below repeat the light ones for the moment before it
+   applies. The fonts and the mark are Caddy's, under /peal/. */
+
+@font-face {
+  font-family: "Geist";
+  src: url("/peal/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/peal/geist-mono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* DESIGN.md's tokens, as the H S% L% triplets Gatus's theme reads. */
+html:root,
+html:root.dark {
+  color-scheme: light;
+  --background: 60 9.1% 97.8%; /* #FAFAF9 */
+  --foreground: 20 14.3% 4.1%; /* #0C0A09 */
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --primary: 20 14.3% 4.1%; /* the ink */
+  --primary-foreground: 60 9.1% 97.8%;
+  --secondary: 60 4.8% 95.9%; /* #F5F5F4 */
+  --secondary-foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 27.3 5.1% 42.2%; /* #716B66 */
+  --accent: 40 8.6% 93.1%; /* #EFEEEC */
+  --accent-foreground: 20 14.3% 4.1%;
+  --destructive: 4.2 74.3% 48.8%; /* #D92D20 */
+  --destructive-foreground: 0 0% 100%;
+  --border: 20 5.9% 90%; /* #E7E5E4 */
+  --input: 24 5.7% 82.9%; /* #D6D3D1 */
+  --ring: 229.9 83.6% 59.4%; /* blue */
+  --radius: 6px;
+
+  --peal-blue: #415eee;
+  --peal-blue-hover: #2f47c9;
+  --peal-up: #16a34a;
+  --peal-up-tint: #f0fdf4;
+  --peal-up-text: #166534;
+  --peal-down: #d92d20;
+  --peal-down-tint: #fdecec;
+  --peal-down-text: #b42318;
+  --peal-degraded: #e0a800;
+  --peal-degraded-tint: #fffbeb;
+  --peal-degraded-text: #92400e;
+  --peal-empty: #e7e5e4;
+}
+
+html:root body {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  background: #fafaf9;
+  color: #0c0a09;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Times, durations and counts are read character by character. */
+html:root .font-mono,
+html:root .endpoint-content p,
+html:root .endpoint-content span,
+html:root code {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+html:root a {
+  text-underline-offset: 2px;
+}
+
+html:root :focus-visible {
+  outline: 2px solid var(--peal-blue);
+  outline-offset: 2px;
+}
+
+/* The top bar: 56 px, the mark at 24 px beside the name, as on the site. */
+html:root #global > div > header {
+  background: #fafaf9;
+  backdrop-filter: none;
+}
+
+html:root #global > div > header > div {
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+html:root #global > div > header .w-12.h-12 {
+  width: 24px;
+  height: 24px;
+}
+
+html:root #global > div > header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Gatus's tagline under the name, which it shows beside buttons. */
+html:root #global > div > header h1 + p {
+  display: none;
+}
+
+html:root #global > div > header nav a {
+  font-size: 14px;
+  font-weight: 500;
+  color: #716b66;
+  border-radius: 6px;
+}
+
+html:root #global > div > header nav a:hover {
+  color: #0c0a09;
+  background: #efeeec;
+}
+
+/* Titles: 24 px for the page's, 15 px for a section's, 600 at most. */
+html:root main h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+html:root main h3.text-2xl {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+html:root main .font-bold {
+  font-weight: 600;
+}
+
+html:root .dashboard-container h1 + p {
+  font-size: 14px;
+}
+
+/* The group's name, in sentence case: the inventory writes it in lower
+   case. Each card's line under its name repeats it, and goes. */
+html:root .endpoint-group-header h2::first-letter {
+  text-transform: uppercase;
+}
+
+html:root .endpoint .endpoint-header .min-h-\[1\.25rem\] {
+  display: none;
+}
+
+/* Groups and cards: borders before shadows, 6 px corners. */
+html:root .endpoint-group {
+  background: #ffffff;
+  border-radius: 6px;
+}
+
+html:root .endpoint-group-header {
+  background: #ffffff;
+  padding: 12px 16px;
+}
+
+html:root .endpoint-group-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+html:root .endpoint-group-content {
+  padding: 16px;
+  background: #fafaf9;
+}
+
+html:root .endpoint {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+html:root .endpoint:hover {
+  box-shadow: none;
+  transform: none;
+  border-color: #d6d3d1;
+}
+
+html:root .endpoint .endpoint-header span[role="link"] {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html:root .endpoint .endpoint-header span[role="link"]:hover {
+  color: var(--peal-blue);
+}
+
+html:root .rounded-sm {
+  border-radius: 2px;
+}
+
+/* States: the dot, tint and text of DESIGN.md's published and failed. */
+html:root .bg-green-500,
+html:root .bg-green-600 {
+  background-color: var(--peal-up);
+}
+
+html:root .bg-green-700,
+html:root .hover\:bg-green-700:hover {
+  background-color: var(--peal-up-text);
+}
+
+html:root .bg-red-500,
+html:root .bg-red-600 {
+  background-color: var(--peal-down);
+}
+
+html:root .bg-red-700,
+html:root .hover\:bg-red-700:hover {
+  background-color: var(--peal-down-text);
+}
+
+html:root .bg-yellow-400,
+html:root .bg-yellow-500 {
+  background-color: var(--peal-degraded);
+}
+
+html:root .bg-gray-200,
+html:root .bg-gray-300 {
+  background-color: var(--peal-empty);
+}
+
+html:root .bg-green-50 {
+  background-color: var(--peal-up-tint);
+}
+
+html:root .bg-red-50,
+html:root .bg-red-100 {
+  background-color: var(--peal-down-tint);
+}
+
+html:root .bg-yellow-50 {
+  background-color: var(--peal-degraded-tint);
+}
+
+html:root .text-green-500,
+html:root .text-green-600,
+html:root .text-green-700,
+html:root .text-green-800 {
+  color: var(--peal-up-text);
+}
+
+html:root .text-red-500,
+html:root .text-red-600,
+html:root .text-red-700,
+html:root .text-red-800 {
+  color: var(--peal-down-text);
+}
+
+html:root .text-yellow-600,
+html:root .text-yellow-700 {
+  color: var(--peal-degraded-text);
+}
+
+html:root .text-blue-600,
+html:root .text-blue-700 {
+  color: var(--peal-blue);
+}
+
+/* A check's state is a chip: dot, tint and text, 4 px corners. */
+html:root main .border-transparent.rounded-full {
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+}
+
+html:root main .border-transparent.bg-green-500 {
+  background-color: var(--peal-up-tint);
+  color: var(--peal-up-text);
+}
+
+html:root main .border-transparent.bg-destructive {
+  background-color: var(--peal-down-tint);
+  color: var(--peal-down-text);
+}
+
+html:root main .border-transparent.bg-yellow-500 {
+  background-color: var(--peal-degraded-tint);
+  color: var(--peal-degraded-text);
+}
+
+html:root main .border-transparent.bg-secondary {
+  background-color: #f5f5f4;
+  color: #44403c;
+}
+
+html:root main .border-transparent > .bg-green-400 {
+  background-color: var(--peal-up);
+}
+
+html:root main .border-transparent > .bg-red-400 {
+  background-color: var(--peal-down);
+}
+
+html:root main .border-transparent > .bg-gray-400 {
+  background-color: #a8a29e;
+}
+
+/* The group's count of failing checks. */
+html:root .endpoint-group-header .bg-red-600 {
+  background-color: var(--peal-down-tint);
+  color: var(--peal-down-text);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* No theme switch: Peal is light only. The refresh menu stays. */
+html:root #settings button[aria-label*="mode"],
+html:root #settings .w-px {
+  display: none;
+}
+
+html:root #settings > div {
+  box-shadow: 0 1px 2px rgb(12 10 9 / 0.06);
+}
+
+/* The footer, quiet: the credit stays, the corner's link to its source
+   goes. */
+html:root #social {
+  display: none;
+}
+
+html:root footer {
+  background: #fafaf9;
+}
+
+html:root footer .text-sm {
+  font-size: 12px;
+}
+
+html:root footer a {
+  color: #716b66;
+}
+
+html:root footer a:hover {
+  color: #0c0a09;
+}

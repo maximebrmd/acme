@@ -80,6 +80,10 @@ services:
       peal.config: "{{ (uptime_caddyfile ~ uptime_caddy_routes ~ uptime_caddy_status) | hash('sha256') }}"
     volumes:
       - ./caddy:/etc/caddy:ro
+{% if uptime_public_status %}
+      # The status page's mark and fonts, at the path status.caddy names.
+      - {{ uptime_brand_root }}:{{ uptime_brand_root }}:ro
+{% endif %}
       # The certificate and its key.
       - caddy-data:/data
       - caddy-config:/config

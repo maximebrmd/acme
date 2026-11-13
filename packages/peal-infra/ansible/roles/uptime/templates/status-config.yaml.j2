@@ -14,20 +14,44 @@ storage:
 web:
   port: 8080
 
+{% set public = uptime_environments | selectattr('public', 'defined') | selectattr('public') | list %}
+# In Peal's design (DESIGN.md): its mark and fonts, which Caddy serves under
+# /peal/ (status.caddy), its tokens in status.css, light only.
 ui:
   title: Peal status
   description: Whether Peal answers, checked from outside every minute
   header: Peal status
-  link: https://peal.social
-  dashboard-heading: Peal status
-  dashboard-subheading: Peal, checked from outside every minute
-  default-sort-by: group
+  logo: /peal/mark.svg
+  link: {{ text('https://' ~ public[0].hostnames.site ~ '/' if public else 'https://peal.social/') }}
+  favicon:
+    default: /peal/mark.svg
+    size16x16: /peal/apple-touch-icon.png
+    size32x32: /peal/apple-touch-icon.png
+{% if public %}
+  buttons:
+    - name: Docs
+      link: {{ text('https://' ~ public[0].hostnames.docs ~ '/') }}
+    - name: Open Peal
+      link: {{ text('https://' ~ public[0].hostnames.app ~ '/') }}
+{% endif %}
+  dashboard-heading: Is Peal up?
+  dashboard-subheading: The website, the docs, the web app, the API and short links, checked from outside every minute
+  # By name: Gatus folds every group until a visitor opens it, and the page
+  # has one group, so it lists the checks themselves.
+  default-sort-by: name
+  dark-mode: false
+  custom-css: |
+{% filter indent(width=4, first=true) %}
+{% include 'status.css' %}
+{% endfilter %}
 
 endpoints:
-{% for environment in uptime_environments | selectattr('public', 'defined') | selectattr('public') %}
+{% for environment in public %}
 {% for check in uptime_checks %}
-  - name: {{ text(check.name) }}
-    group: {{ text(environment.name) }}
+  - name: {{ text(check.title) }}
+    # Peal <environment>: a key of its own, apart from the private
+    # dashboard's, under which Gatus keeps each check's title.
+    group: {{ text('Peal ' ~ environment.name) }}
     url: {{ text('https://' ~ environment.hostnames[check.host] ~ check.path) }}
     interval: {{ uptime_check_interval }}
     client:
