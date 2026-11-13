@@ -1,4 +1,12 @@
-import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Metric,
+  Option,
+  Schema,
+} from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
@@ -52,6 +60,20 @@ export interface SubscriptionEvent {
 export type RecordedEvent = RecordOutcome | "ignored";
 
 const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
+
+/**
+ * The second per-account subscriptions of one billing account ended: a
+ * customer who paid twice and holds two confirmations, which someone must
+ * answer. An alert rule reads it (peal-duplicate-subscription).
+ */
+export const duplicateSubscriptions = Metric.counter(
+  "peal.billing.duplicate_subscriptions",
+  {
+    description:
+      "Second per-account subscriptions of one billing account, ended when recorded",
+    incremental: true,
+  }
+);
 
 // Whether Stripe already ends the trial, cancelled, when it ends.
 const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
@@ -289,6 +311,7 @@ export class RecordSubscription extends Context.Service<
                   "duplicateSubscription"
                 )
                 .pipe(
+                  Effect.andThen(Metric.update(duplicateSubscriptions, 1)),
                   Effect.andThen(
                     Effect.logError(
                       "Ended a second per-account subscription of one billing account"

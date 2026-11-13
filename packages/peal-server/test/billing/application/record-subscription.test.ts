@@ -1,11 +1,14 @@
 import { assert, layer } from "@effect/vitest";
-import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
-import { RecordSubscription } from "#billing/application/record-subscription.ts";
+import {
+  duplicateSubscriptions,
+  RecordSubscription,
+} from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
@@ -293,6 +296,8 @@ layer(RecordTest)("recording a subscription", (it) => {
     "ends at once, without a charge, a second per-account subscription of the account, keeping the older",
     () =>
       Effect.gen(function* duplicate() {
+        const before = (yield* Metric.value(duplicateSubscriptions)).count;
+
         yield* reset;
         yield* perAccount("sub_synthetic_first", "2026-11-09T10:00:00Z");
         yield* perAccount("sub_synthetic_second", "2026-11-09T10:05:00Z");
@@ -309,6 +314,11 @@ layer(RecordTest)("recording a subscription", (it) => {
         assert.deepStrictEqual(yield* askedOfStripe, [
           "endNow sub_synthetic_late duplicateSubscription",
         ]);
+        // Each counted, for the alert (peal-duplicate-subscription).
+        assert.strictEqual(
+          (yield* Metric.value(duplicateSubscriptions)).count - before,
+          2
+        );
       })
   );
 

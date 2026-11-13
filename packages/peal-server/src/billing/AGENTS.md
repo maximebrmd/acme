@@ -423,7 +423,14 @@
   Once `payAsYouGo` is recorded, `RecordSubscription` ends a trial
   (`orderedDuringTrial`) and sets a legacy plan to end with its period
   (`cancelAtPeriodEnd`, key `moved-<subscription>`; the move with a credit
-  is T10's `movedToRateCard`). The Stripe portal has plan switching and
+  is T10's `movedToRateCard`). One per-account subscription per billing
+  account: an order is refused while one Stripe may still bill exists,
+  past due and unpaid included (`AlreadySubscribed`, in `PlaceOrder` and
+  again in `CheckoutOrders.take`), and one recorded beside another (two
+  checkouts finished together) is ended at once without a charge, the
+  newer by start (`duplicateSubscription`), counted
+  (`peal.billing.duplicate_subscriptions`) for the critical alert
+  `peal-duplicate-subscription`. The Stripe portal has plan switching and
   cancellation turned off (the self-hosting docs say so): plans change and
   end on the billing page only.
 - The trial: Pro for 14 days (`trialPlan`, `trialDays`), once per account
