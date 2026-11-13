@@ -15,8 +15,8 @@
     "#*": "./src/*"
   },
   "dependencies": {
-    "@better-auth/oauth-provider": "1.7.18",
-    "@better-auth/stripe": "1.7.18",
+    "@better-auth/oauth-provider": "1.7.19",
+    "@better-auth/stripe": "1.7.19",
     "@dnd-kit/react": "0.5.3",
     "@effect/atom-react": "4.1.2",
     "@marsidev/react-turnstile": "1.6.3",
@@ -27,7 +27,7 @@
     "@tiptap/extensions": "3.33.0",
     "@tiptap/pm": "3.33.0",
     "@tiptap/react": "3.33.0",
-    "better-auth": "1.7.18",
+    "better-auth": "1.7.19",
     "effect": "4.1.2",
     "emojibase-data": "18.0.0",
     "lucide-react": "1.70.0",
