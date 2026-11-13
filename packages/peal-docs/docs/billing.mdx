@@ -1,6 +1,6 @@
 ---
 title: Plans and billing
-description: Peal Cloud's per-account pricing, the free tier, the plans priced by channels that subscriptions still hold, ordering, cancelling online, withdrawing within 14 days, and what each plan limits.
+description: Peal Cloud's per-account pricing in US dollars, its usage meters and free tier, billing accounts, ordering, cancelling online, withdrawing within 14 days, and the plans priced by channels that subscriptions still hold.
 sidebar:
   order: 25
 ---
@@ -9,27 +9,54 @@ On Peal Cloud, each workspace is on its [billing account](#accounts)'s plan: the
 
 ## Per-account pricing [#pricing]
 
-A billing account connects its first {{free-accounts}} accounts for nothing, across all its workspaces. With a payment method, it connects any number: each account past the first {{free-accounts}} costs {{account-price-en}} a month excluding tax ({{account-price-vat-en}} with France's {{vat-rate}}% VAT), less from account {{account-less-from}} on, counted by the day it is connected and billed each month for the month past. Prices are in US dollars, excluding tax: VAT is added at checkout for customers in the EU, at their country's rate, and at checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars. Media storage is fair use: {{free-storage-en}} across the billing account without a payment method, {{storage-per-account-en}} per connected account with one. The writing assistant on Peal's own models needs a payment method; a workspace's own [providers](/settings#image-provider) work on any plan, and cost nothing.
+A billing account pays for the social media accounts connected across all its workspaces, on one graduated ladder: each account is priced by the band it falls in, per month, excluding tax.
 
-## The plans priced by channels [#plans]
+| Accounts                                           | A month, per account   |
+| -------------------------------------------------- | ---------------------- |
+| {{accounts-band-1-from}} to {{accounts-band-1-to}} | {{accounts-band-1-en}} |
+| {{accounts-band-2-from}} to {{accounts-band-2-to}} | {{accounts-band-2-en}} |
+| {{accounts-band-3-from}} to {{accounts-band-3-to}} | {{accounts-band-3-en}} |
+| {{accounts-band-4-from}} and up                    | {{accounts-band-4-en}} |
 
-These plans are no longer sold: a subscription to one keeps it, with the limits below, until it ends. Prices include France's {{vat-rate}}% VAT; the price excluding VAT is in brackets. A year costs ten months.
+An account is counted by the day: each day it is connected costs 1/{{days-per-month}} of its monthly price, for {{days-per-month}} days a month at most, and a day counts the most accounts connected at once that day (UTC), across the billing account. A channel that is turned off or needs reconnecting still counts; an ad account does not. On the first of each month, the invoice bills the month past. With every account connected all month:
 
-| Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
-| -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
-| Free     | {{free-channels-en}}     | {{free-members-en}}     | {{free-scheduledPosts-en}}     | {{free-assistantRequests-en}}     | {{free-mediaStorage-en}}     | free                                               | free                                             |
-| Starter  | {{starter-channels-en}}  | {{starter-members-en}}  | {{starter-scheduledPosts-en}}  | {{starter-assistantRequests-en}}  | {{starter-mediaStorage-en}}  | {{starter-month-en}} ({{starter-month-excl-en}})   | {{starter-year-en}} ({{starter-year-excl-en}})   |
-| Pro      | {{pro-channels-en}}      | {{pro-members-en}}      | {{pro-scheduledPosts-en}}      | {{pro-assistantRequests-en}}      | {{pro-mediaStorage-en}}      | {{pro-month-en}} ({{pro-month-excl-en}})           | {{pro-year-en}} ({{pro-year-excl-en}})           |
-| Business | {{business-channels-en}} | {{business-members-en}} | {{business-scheduledPosts-en}} | {{business-assistantRequests-en}} | {{business-mediaStorage-en}} | {{business-month-en}} ({{business-month-excl-en}}) | {{business-year-en}} ({{business-year-excl-en}}) |
-| Agency   | {{agency-channels-en}}   | {{agency-members-en}}   | {{agency-scheduledPosts-en}}   | {{agency-assistantRequests-en}}   | {{agency-mediaStorage-en}}   | {{agency-month-en}} ({{agency-month-excl-en}})     | {{agency-year-en}} ({{agency-year-excl-en}})     |
+| Accounts | A month              |
+| -------- | -------------------- |
+| 2        | {{accounts-2-en}}    |
+| 5        | {{accounts-5-en}}    |
+| 10       | {{accounts-10-en}}   |
+| 20       | {{accounts-20-en}}   |
+| 50       | {{accounts-50-en}}   |
+| 100      | {{accounts-100-en}}  |
+| 1,000    | {{accounts-1000-en}} |
+
+Prices are in US dollars and exclude tax. VAT is added at checkout for customers in the EU, at their country's rate; a business in another EU country with a valid VAT number pays none, as it is reverse-charged. At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars. Invoices are in US dollars.
 
 The workspace's **Billing** page shows its plan and how much of each limit it uses; `GET /api/workspaces/:workspaceId/billing` answers them too.
 
-## The free tier and trials [#trial]
+## Usage meters [#meters]
 
-A new workspace is on its [billing account](#accounts)'s plan: the free tier, until a payment method is added for the account. An account may make as many workspaces as it likes, but they share one plan and count their accounts together, so another workspace adds nothing free.
+What costs Peal by use has a meter, with a monthly allowance per billing account across all its workspaces, from the first of each calendar month (UTC).
 
-No trial is offered any more: the free accounts replace it. A trial started before runs to its end, without a charge, and the workspace is then on the free tier, with its content; three days before, the members who manage billing are reminded, with what the workspace holds beyond the free tier.
+| Meter                                                                 | Included each month       | Past the allowance                            |
+| --------------------------------------------------------------------- | ------------------------- | --------------------------------------------- |
+| Messages sent from the [inbox](/inbox), comment replies included      | {{messages-allowance-en}} | {{messages-price-en}} per {{messages-per-en}} |
+| [Managed ads](/ads), each ad active in the month                      | {{ads-allowance-en}}      | {{ads-price-en}} per ad                       |
+| The writing assistant's requests and images, on the instance's models | coming soon               | coming soon                                   |
+| X's API, at X's published rates with nothing added                    | coming soon               | coming soon                                   |
+
+Without a payment method, a meter pauses at its allowance until the first of the next month, while reading, analytics and publishing go on. With one, each unit past the allowance is billed on the month's invoice. The writing assistant on the instance's models needs a payment method; until its monthly allowance and prices are set, it keeps the daily allowance under [What a plan limits](#limits). A workspace's own [image](/settings#image-provider) and [text](/settings#text-provider) providers cost nothing, on any plan.
+
+## A payment method [#payment-method]
+
+Ordering per-account pricing ([Ordering](#ordering)) adds a payment method to the billing account, and moves it off the free tier:
+
+- **Accounts**: without a payment method, the first {{free-accounts}} across the billing account, and no more; with one, any number, billed by the ladder.
+- **Meters**: without one, each stops at its allowance; with one, use past it is billed.
+- **Writing assistant**, on the instance's models: needs one.
+- **Media storage**, fair use across the billing account: {{free-storage-en}} without one; with one, {{storage-per-account-en}} per connected account, {{storage-minimum-en}} at least.
+
+A billing account may make as many workspaces as it likes: they share one ladder, one set of free accounts and one allowance of each meter, so another workspace adds nothing free. The free tier is one per person: a person pays for one billing account at most, and staff may merge billing accounts opened to multiply it, or require a payment method of one.
 
 ## Billing accounts [#accounts]
 
@@ -90,13 +117,30 @@ Cancel online at any time with **Cancel your contract**: the link is at the foot
 - **With the contract number**, which is in the email that confirmed the subscription and in the renewal reminder: applied at once, without signing in, whatever address you give.
 - **With neither**: Peal emails the address an acknowledgement. If that address manages a workspace's billing, the email holds a link, good for 30 days, that shows its contracts and applies the cancellation to the one you choose; otherwise a person looks at the request and writes to you. This keeps someone who only knows your address from ending your contract.
 
-Whichever way, the cancellation counts from the moment Peal received it, which the acknowledgement states: a renewal charged after that moment is refunded. A paid plan ends with the period paid for, and nothing more is charged; with a later day, it ends on that day and the last period is charged only up to it; a trial ends at once. The members who manage billing get the confirmation by email, with the date it takes effect. Deleting the workspace cancels at once too ([Workspaces and your account](/settings#delete-workspace)).
+Whichever way, the cancellation counts from the moment Peal received it, which the acknowledgement states: a renewal charged after that moment is refunded. Per-account pricing ends with the month, whose use the last invoice bills; a plan priced by channels ends with the period paid for, and nothing more is charged; with a later day, it ends on that day and the last period is charged only up to it; a trial ends at once. The members who manage billing get the confirmation by email, with the date it takes effect. Deleting the workspace cancels at once too ([Workspaces and your account](/settings#delete-workspace)).
 
 ## Withdrawing within 14 days [#withdrawal]
 
 As a consumer, you may withdraw from the contract within 14 days of subscribing, without giving a reason, with **Withdraw from contract here**: at the foot of every page, signed in or not, and on the **Billing** page while the 14 days run, even after cancelling. It works as cancelling does: your name, the address for the acknowledgement and the contract, a summary, then **Confirm withdrawal**; applied at once when you are signed in or give the contract number, and otherwise from the link Peal emails you. The 14 days and the refund count from the moment Peal received your statement, which the acknowledgement states with what you sent.
 
 Withdrawing ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice. Per-account pricing is billed for the month past: withdrawing invoices its use to that moment, and nothing paid ahead is refunded. A business that gave a VAT number Stripe verified has no right to withdraw, and can cancel instead.
+
+## Plans priced by channels [#legacy-plans]
+
+These plans are no longer sold: a subscription to one keeps it, with its price and the limits below, until it ends. Their prices are in euros, with France's {{vat-rate}}% VAT included; the price excluding VAT is in brackets. A year costs ten months.
+
+| Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
+| -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Starter  | {{starter-channels-en}}  | {{starter-members-en}}  | {{starter-scheduledPosts-en}}  | {{starter-assistantRequests-en}}  | {{starter-mediaStorage-en}}  | {{starter-month-en}} ({{starter-month-excl-en}})   | {{starter-year-en}} ({{starter-year-excl-en}})   |
+| Pro      | {{pro-channels-en}}      | {{pro-members-en}}      | {{pro-scheduledPosts-en}}      | {{pro-assistantRequests-en}}      | {{pro-mediaStorage-en}}      | {{pro-month-en}} ({{pro-month-excl-en}})           | {{pro-year-en}} ({{pro-year-excl-en}})           |
+| Business | {{business-channels-en}} | {{business-members-en}} | {{business-scheduledPosts-en}} | {{business-assistantRequests-en}} | {{business-mediaStorage-en}} | {{business-month-en}} ({{business-month-excl-en}}) | {{business-year-en}} ({{business-year-excl-en}}) |
+| Agency   | {{agency-channels-en}}   | {{agency-members-en}}   | {{agency-scheduledPosts-en}}   | {{agency-assistantRequests-en}}   | {{agency-mediaStorage-en}}   | {{agency-month-en}} ({{agency-month-excl-en}})     | {{agency-year-en}} ({{agency-year-excl-en}})     |
+
+Such a plan is paid in advance and holds its workspace alone, apart from its billing account, until it ends; the workspace then joins its billing account's plan.
+
+## Trials [#trial]
+
+No trial is offered any more: the free accounts replace it. A trial started before runs to its end, without a charge, and the workspace is then on the free tier, with its content; three days before, the members who manage billing are reminded, with what the workspace holds beyond the free tier.
 
 ## Yearly plans [#renewal]
 

@@ -1,6 +1,6 @@
 ---
 title: Abonnements et facturation
-description: Le tarif par compte de Peal Cloud, l’offre gratuite, les abonnements par paliers de canaux que des abonnés gardent encore, la commande, la résiliation en ligne, la rétractation sous 14 jours et ce que chaque abonnement limite.
+description: Le tarif par compte de Peal Cloud en dollars américains, ses compteurs d’usage et son offre gratuite, les comptes de facturation, la commande, la résiliation en ligne, la rétractation sous 14 jours, et les abonnements par paliers de canaux que des abonnés gardent encore.
 sidebar:
   order: 25
 ---
@@ -9,27 +9,54 @@ Sur Peal Cloud, chaque espace de travail suit l’abonnement de son [compte de f
 
 ## Le tarif par compte [#pricing]
 
-Un compte de facturation connecte ses {{free-accounts}} premiers comptes gratuitement, sur tous ses espaces de travail. Avec un moyen de paiement, il en connecte autant qu’il veut : chaque compte au-delà des {{free-accounts}} premiers coûte {{account-price-fr}} HT par mois ({{account-price-vat-fr}} avec la TVA française de {{vat-rate}} %), moins à partir du compte {{account-less-from}}, compté au jour de connexion et facturé chaque mois pour le mois écoulé. Les prix sont en dollars américains, hors taxes : la TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays, et au paiement vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains. Le stockage des médias est un usage raisonnable : {{free-storage-fr}} sur tout le compte de facturation sans moyen de paiement, {{storage-per-account-fr}} par compte connecté avec. L’assistant d’écriture sur les modèles de Peal demande un moyen de paiement ; les [fournisseurs](/settings#image-provider) propres d’un espace de travail fonctionnent avec tout abonnement, et ne coûtent rien.
+Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif : chaque compte est facturé au prix de la tranche où il se trouve, par mois. Les montants sont en dollars américains, TTC avec la TVA française de {{vat-rate}} %, puis HT entre parenthèses.
 
-## Les abonnements par paliers de canaux [#plans]
+| Comptes                                           | Par mois et par compte |
+| ------------------------------------------------- | ---------------------- |
+| {{accounts-band-1-from}} à {{accounts-band-1-to}} | {{accounts-band-1-fr}} |
+| {{accounts-band-2-from}} à {{accounts-band-2-to}} | {{accounts-band-2-fr}} |
+| {{accounts-band-3-from}} à {{accounts-band-3-to}} | {{accounts-band-3-fr}} |
+| {{accounts-band-4-from}} et au-delà               | {{accounts-band-4-fr}} |
 
-Ces abonnements ne sont plus vendus : un abonné le garde, avec les limites ci-dessous, jusqu’à sa fin. Prix TTC, TVA française de {{vat-rate}} % comprise ; le prix HT est entre parenthèses. Une année coûte dix mois.
+Un compte est compté au jour : chaque jour où il est connecté coûte 1/{{days-per-month}} de son prix mensuel, pour {{days-per-month}} jours par mois au plus, et un jour compte le plus grand nombre de comptes connectés en même temps ce jour-là (UTC), sur tout le compte de facturation. Un canal désactivé ou à reconnecter compte toujours ; un compte publicitaire ne compte pas. Le premier de chaque mois, la facture porte sur le mois écoulé. Avec chaque compte connecté tout le mois :
 
-| Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                               | Annuel                                              |
-| ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | ----------------------------------------------------- | --------------------------------------------------- |
-| Gratuit    | {{free-channels-fr}}     | {{free-members-fr}}     | {{free-scheduledPosts-fr}}     | {{free-assistantRequests-fr}}     | {{free-mediaStorage-fr}}     | gratuit                                               | gratuit                                             |
-| Starter    | {{starter-channels-fr}}  | {{starter-members-fr}}  | {{starter-scheduledPosts-fr}}  | {{starter-assistantRequests-fr}}  | {{starter-mediaStorage-fr}}  | {{starter-month-fr}} ({{starter-month-excl-fr}} HT)   | {{starter-year-fr}} ({{starter-year-excl-fr}} HT)   |
-| Pro        | {{pro-channels-fr}}      | {{pro-members-fr}}      | {{pro-scheduledPosts-fr}}      | {{pro-assistantRequests-fr}}      | {{pro-mediaStorage-fr}}      | {{pro-month-fr}} ({{pro-month-excl-fr}} HT)           | {{pro-year-fr}} ({{pro-year-excl-fr}} HT)           |
-| Business   | {{business-channels-fr}} | {{business-members-fr}} | {{business-scheduledPosts-fr}} | {{business-assistantRequests-fr}} | {{business-mediaStorage-fr}} | {{business-month-fr}} ({{business-month-excl-fr}} HT) | {{business-year-fr}} ({{business-year-excl-fr}} HT) |
-| Agency     | {{agency-channels-fr}}   | {{agency-members-fr}}   | {{agency-scheduledPosts-fr}}   | {{agency-assistantRequests-fr}}   | {{agency-mediaStorage-fr}}   | {{agency-month-fr}} ({{agency-month-excl-fr}} HT)     | {{agency-year-fr}} ({{agency-year-excl-fr}} HT)     |
+| Comptes | Par mois             |
+| ------- | -------------------- |
+| 2       | {{accounts-2-fr}}    |
+| 5       | {{accounts-5-fr}}    |
+| 10      | {{accounts-10-fr}}   |
+| 20      | {{accounts-20-fr}}   |
+| 50      | {{accounts-50-fr}}   |
+| 100     | {{accounts-100-fr}}  |
+| 1 000   | {{accounts-1000-fr}} |
 
-La page **Facturation** de l’espace de travail montre son abonnement et ce qu’il utilise de chaque limite ; `GET /api/workspaces/:workspaceId/billing` les donne aussi.
+Les prix sont fixés en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays ; une entreprise d’un autre pays de l’UE avec un numéro de TVA valide n’en paie pas, car elle est autoliquidée. Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains. Les factures sont en dollars américains.
 
-## L’offre gratuite et les essais [#trial]
+La page **Facturation** de l’espace de travail indique son abonnement et ce qu’il utilise de chaque limite ; `GET /api/workspaces/:workspaceId/billing` répond la même chose.
 
-Un nouvel espace de travail est sur l’abonnement de son [compte de facturation](#accounts) : l’offre gratuite, tant qu’aucun moyen de paiement n’est ajouté pour le compte. Un compte peut créer autant d’espaces de travail qu’il veut, mais ils partagent un abonnement et comptent leurs comptes ensemble : un espace de plus n’apporte rien de gratuit.
+## Les compteurs d’usage [#meters]
 
-Aucun essai n’est plus proposé : les comptes gratuits le remplacent. Un essai commencé avant va jusqu’à sa fin, sans rien facturer, et l’espace de travail passe ensuite à l’offre gratuite, avec son contenu ; trois jours avant, les membres qui gèrent la facturation reçoivent un rappel, avec ce que l’espace de travail possède au-delà de l’offre gratuite.
+Ce qui coûte à Peal à l’usage a un compteur, avec une franchise mensuelle par compte de facturation pour tous ses espaces de travail, à partir du premier de chaque mois civil (UTC).
+
+| Compteur                                                                                     | Inclus chaque mois        | Au-delà de la franchise                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------------- |
+| Messages envoyés depuis la [boîte de réception](/inbox), réponses aux commentaires comprises | {{messages-allowance-fr}} | {{messages-price-fr}} par tranche de {{messages-per-fr}} |
+| [Publicités gérées](/ads), chaque publicité active dans le mois                              | {{ads-allowance-fr}}      | {{ads-price-fr}} par publicité                           |
+| Les demandes et les images de l’assistant d’écriture, sur les modèles de l’instance          | bientôt                   | bientôt                                                  |
+| L’API de X, aux tarifs publiés par X sans rien ajouter                                       | bientôt                   | bientôt                                                  |
+
+Sans moyen de paiement, un compteur s’arrête à sa franchise jusqu’au premier du mois suivant, tandis que la lecture, les statistiques et la publication continuent. Avec un moyen de paiement, chaque unité au-delà de la franchise est facturée sur la facture du mois. L’assistant d’écriture sur les modèles de l’instance demande un moyen de paiement ; tant que sa franchise mensuelle et ses prix ne sont pas fixés, il garde la franchise quotidienne décrite sous [Ce qu’un abonnement limite](#limits). Les fournisseurs d’[images](/settings#image-provider) et de [texte](/settings#text-provider) propres à un espace de travail ne coûtent rien, quel que soit l’abonnement.
+
+## Un moyen de paiement [#payment-method]
+
+Commander le tarif par compte ([Commander](#ordering)) ajoute un moyen de paiement au compte de facturation, et le fait sortir de l’offre gratuite :
+
+- **Comptes** : sans moyen de paiement, les {{free-accounts}} premiers sur tout le compte de facturation, et pas davantage ; avec un moyen de paiement, autant qu’il en faut, facturés selon le barème.
+- **Compteurs** : sans moyen de paiement, chacun s’arrête à sa franchise ; avec un moyen de paiement, l’usage au-delà est facturé.
+- **Assistant d’écriture**, sur les modèles de l’instance : en demande un.
+- **Stockage des médias**, en usage raisonnable sur tout le compte de facturation : {{free-storage-fr}} sans moyen de paiement ; avec un moyen de paiement, {{storage-per-account-fr}} par compte connecté, {{storage-minimum-fr}} au moins.
+
+Un compte de facturation peut créer autant d’espaces de travail qu’il veut : ils partagent un barème, un lot de comptes gratuits et une franchise de chaque compteur, si bien qu’un espace de plus n’apporte rien de gratuit. L’offre gratuite est unique par personne : une personne paie un seul compte de facturation au plus, et l’équipe de Peal peut fusionner des comptes de facturation ouverts pour la multiplier, ou exiger un moyen de paiement de l’un d’eux.
 
 ## Comptes de facturation [#accounts]
 
@@ -90,7 +117,7 @@ Résiliez en ligne à tout moment avec **Résilier votre contrat** : le lien fig
 - **Avec le numéro de contrat**, qui figure dans l’e-mail de confirmation de l’abonnement et dans le rappel de renouvellement : appliquée immédiatement, sans connexion, quelle que soit l’adresse indiquée.
 - **Sans l’un ni l’autre** : Peal envoie un accusé de réception à l’adresse. Si cette adresse gère la facturation d’un espace de travail, l’e-mail contient un lien, valable 30 jours, qui présente ses contrats et applique la résiliation à celui que vous choisissez ; sinon, une personne examine la demande et vous écrit. Ainsi, quelqu’un qui ne connaît que votre adresse ne peut pas mettre fin à votre contrat.
 
-Dans tous les cas, la résiliation compte à partir du moment où Peal l’a reçue, que l’accusé de réception indique : un renouvellement facturé après ce moment est remboursé. Un abonnement payant prend fin avec la période payée, et plus rien n’est facturé ; avec une date ultérieure, il prend fin ce jour-là et la dernière période n’est facturée que jusqu’à cette date ; un essai prend fin immédiatement. Les membres qui gèrent la facturation reçoivent la confirmation par e-mail, avec la date à laquelle elle prend effet. Supprimer l’espace de travail résilie aussi immédiatement ([Espaces de travail et compte](/settings#delete-workspace)).
+Dans tous les cas, la résiliation compte à partir du moment où Peal l’a reçue, que l’accusé de réception indique : un renouvellement facturé après ce moment est remboursé. Le tarif par compte prend fin avec le mois, dont la dernière facture porte l’usage ; un abonnement par paliers de canaux prend fin avec la période payée, et plus rien n’est facturé ; avec une date ultérieure, il prend fin ce jour-là et la dernière période n’est facturée que jusqu’à cette date ; un essai prend fin immédiatement. Les membres qui gèrent la facturation reçoivent la confirmation par e-mail, avec la date à laquelle elle prend effet. Supprimer l’espace de travail résilie aussi immédiatement ([Espaces de travail et compte](/settings#delete-workspace)).
 
 ## Se rétracter sous 14 jours [#withdrawal]
 
@@ -98,6 +125,23 @@ En tant que consommateur, vous pouvez vous rétracter du contrat dans les 14 jou
 
 La rétractation met fin à l’abonnement immédiatement et rembourse, pour chaque paiement depuis la souscription, la part non utilisée de la période qu’il a payée, à la seconde, sur votre moyen de paiement sous 14 jours, par un avoir sur chaque facture. Le tarif par compte est facturé pour le mois écoulé : la rétractation facture son usage jusqu’à ce moment, et rien de payé d’avance n’est à rembourser. Une entreprise qui a donné un numéro de TVA vérifié par Stripe n’a pas de droit de rétractation, et peut résilier.
 
+## Les abonnements par paliers de canaux [#legacy-plans]
+
+Ces abonnements ne sont plus vendus : un abonnement à l’un d’eux le garde, avec son prix et les limites ci-dessous, jusqu’à sa fin. Leurs prix sont en euros, TTC avec la TVA française de {{vat-rate}} % ; le prix HT est entre parenthèses. Une année coûte dix mois.
+
+| Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                            | Annuel                                           |
+| ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Starter    | {{starter-channels-fr}}  | {{starter-members-fr}}  | {{starter-scheduledPosts-fr}}  | {{starter-assistantRequests-fr}}  | {{starter-mediaStorage-fr}}  | {{starter-month-fr}} ({{starter-month-excl-fr}})   | {{starter-year-fr}} ({{starter-year-excl-fr}})   |
+| Pro        | {{pro-channels-fr}}      | {{pro-members-fr}}      | {{pro-scheduledPosts-fr}}      | {{pro-assistantRequests-fr}}      | {{pro-mediaStorage-fr}}      | {{pro-month-fr}} ({{pro-month-excl-fr}})           | {{pro-year-fr}} ({{pro-year-excl-fr}})           |
+| Business   | {{business-channels-fr}} | {{business-members-fr}} | {{business-scheduledPosts-fr}} | {{business-assistantRequests-fr}} | {{business-mediaStorage-fr}} | {{business-month-fr}} ({{business-month-excl-fr}}) | {{business-year-fr}} ({{business-year-excl-fr}}) |
+| Agency     | {{agency-channels-fr}}   | {{agency-members-fr}}   | {{agency-scheduledPosts-fr}}   | {{agency-assistantRequests-fr}}   | {{agency-mediaStorage-fr}}   | {{agency-month-fr}} ({{agency-month-excl-fr}})     | {{agency-year-fr}} ({{agency-year-excl-fr}})     |
+
+Un tel abonnement est payé d’avance et porte son espace de travail seul, à part de son compte de facturation, jusqu’à sa fin ; l’espace rejoint ensuite l’abonnement de son compte de facturation.
+
+## Les essais [#trial]
+
+Aucun essai n’est plus proposé : les comptes gratuits le remplacent. Un essai commencé avant va jusqu’à sa fin, sans rien facturer, et l’espace de travail passe ensuite à l’offre gratuite, avec son contenu ; trois jours avant, les membres qui gèrent la facturation reçoivent un rappel, avec ce que l’espace de travail possède au-delà de l’offre gratuite.
+
 ## Abonnements annuels [#renewal]
 
-Les abonnements annuels ne sont plus vendus. Un abonnement annuel se renouvelle chaque année jusqu’à résiliation. 45 jours avant le renouvellement, et jamais moins d’un mois avant, les membres qui gèrent la facturation reçoivent un rappel, dans l’application et par un e-mail dédié, de la possibilité de ne pas reconduire le contrat : avec ce que Stripe facturera, TVA comprise, la date limite de non-reconduction dans un encadré, le numéro de contrat et la façon de résilier. Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant.
+Les abonnements annuels ne sont plus vendus. Un abonnement annuel au nombre de canaux se renouvelle chaque année jusqu’à résiliation. 45 jours avant le renouvellement, et jamais moins d’un mois avant, les membres qui gèrent la facturation reçoivent un rappel, dans l’application et par un e-mail dédié, de la possibilité de ne pas reconduire le contrat : avec ce que Stripe facturera, TVA comprise, la date limite de non-reconduction dans un encadré, le numéro de contrat et la façon de résilier. Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant.
