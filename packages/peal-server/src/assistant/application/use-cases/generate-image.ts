@@ -173,7 +173,8 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
       window.day,
       dailyLimit,
       imageRequestCost,
-      allowance.sharedWith(workspaceId)
+      // Alone, where no day is shared: one statement.
+      allowance.pooled ? allowance.sharedWith(workspaceId) : undefined
     );
 
     if (Option.isNone(claimed)) {

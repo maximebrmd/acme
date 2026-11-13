@@ -50,9 +50,17 @@ export const PlanAssistantAllowanceLive = Layer.effect(
         ),
       // A server that does not bill counts each workspace alone, and
       // reads or holds no pool.
+      pooled: enabled,
       sharedWith: (workspaceId) =>
         enabled
           ? pools.sharedWith(workspaceId).pipe(Effect.orDie)
+          : Effect.succeed([]),
+      sharingWith: (workspaceId) =>
+        enabled
+          ? pools.sharingIn([workspaceId]).pipe(
+              Effect.map((shared) => shared.get(workspaceId) ?? []),
+              Effect.orDie
+            )
           : Effect.succeed([]),
     });
   })

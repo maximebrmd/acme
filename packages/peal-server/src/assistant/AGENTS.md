@@ -31,13 +31,18 @@
 - The quota is per UTC day, across the billing account's workspaces on a
   server that bills and per workspace elsewhere: `AssistantAllowance` gives
   the limit (the plan's on a server that bills, otherwise
-  `PEAL_AI_DAILY_REQUESTS`, 100) and the pool (`sharedWith`, billing's
-  `PlanPools`, none when it does not bill), and `AssistantUsage.claim`
-  counts a request before the call: alone, in one conditional upsert; in
-  a pool, in a transaction holding the pool, then each of its workspaces'
-  lock in their order, the pool's day summed with it. Each workspace keeps
-  its own count; the status and billing's usage show the pool's
-  (`pooledUsed`). Requests sent together never pass it. Give a
+  `PEAL_AI_DAILY_REQUESTS`, 100), whether a day is shared (`pooled`, on a
+  server that bills) and the pool (`sharedWith`, billing's `PlanPools`,
+  held; `sharingWith` for reports, holding nothing). `AssistantUsage.claim`
+  counts a request before the call: alone (`pooled` false), in one
+  conditional upsert, as before per-account pricing; in a pool, in a
+  transaction holding the pool, whose claims so take turns, the pool's day
+  counted with it in one count, the ids as one parameter (`anyUuid`).
+  Never lock each workspace of a pool: a partner's holds thousands, and
+  Postgres's lock table would run out. Each workspace keeps its own count;
+  the status and billing's usage show the pool's (`pooledUsed`, with
+  `sharingWith`). A partner's customers share the partner's day, as one
+  payer. Requests sent together never pass it. Give a
   request back only when the provider never ran it (`unreachable`); a
   timeout, a refusal or an unusable answer counts.
 - The model has 90 seconds to answer (`answerTimeout`). Anything between the

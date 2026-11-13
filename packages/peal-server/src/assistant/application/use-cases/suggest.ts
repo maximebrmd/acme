@@ -117,7 +117,8 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
           window.day,
           dailyLimit,
           1,
-          allowance.sharedWith(workspaceId)
+          // Alone, where no day is shared: one statement.
+          allowance.pooled ? allowance.sharedWith(workspaceId) : undefined
         )
       : Option.none();
 

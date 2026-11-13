@@ -18,12 +18,21 @@ export class AssistantAllowance extends Context.Service<
      */
     readonly imageRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
     /**
+     * Whether workspaces share a day at all: on a server that bills. When
+     * not, a claim is one statement, and neither read below is made.
+     */
+    readonly pooled: boolean;
+    /**
      * The other workspaces whose requests count with the workspace's
      * against the day's limit: its billing account's, on a server that
      * bills; none elsewhere. In a transaction, the pool stays held until
      * it ends (`AssistantUsage.claim`).
      */
     readonly sharedWith: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly WorkspaceId[]>;
+    /** The same, holding nothing: for reports of the day. */
+    readonly sharingWith: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly WorkspaceId[]>;
   }

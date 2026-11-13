@@ -1,12 +1,33 @@
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/assistant/support.ts";
 
 const ninth = { day: 9, month: 11, year: 2026 };
 const tenth = { day: 10, month: 11, year: 2026 };
+
+// Workspaces that exist nowhere: a pool's count reads them as none sent.
+const strangers = (count: number): readonly WorkspaceId[] =>
+  Array.from({ length: count }, () => WorkspaceIdSchema.make(randomUUID()));
+
+// The others of a pool, its hold taken as billing's PlanPools takes it: in
+// the claim's transaction, until it ends.
+const heldPool = (
+  client: SqlClient.SqlClient,
+  pool: string,
+  others: readonly WorkspaceId[]
+) =>
+  client`SELECT pg_advisory_xact_lock(hashtext('peal-server/test/pool'), hashtext(${pool}))`.pipe(
+    Effect.as(others),
+    Effect.orDie
+  );
 
 const UsageTest = DrizzleAssistantUsageLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -103,14 +124,27 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
     () =>
       Effect.gen(function* pooledTogether() {
         const usage = yield* AssistantUsage;
+        const client = yield* SqlClient.SqlClient;
         const first = yield* freshWorkspace;
         const second = yield* freshWorkspace;
 
         const claims = yield* Effect.all(
           Array.from({ length: 12 }, (_, index) =>
             index % 2 === 0
-              ? usage.claim(first, ninth, 5, 1, Effect.succeed([second]))
-              : usage.claim(second, ninth, 5, 1, Effect.succeed([first]))
+              ? usage.claim(
+                  first,
+                  ninth,
+                  5,
+                  1,
+                  heldPool(client, first, [second])
+                )
+              : usage.claim(
+                  second,
+                  ninth,
+                  5,
+                  1,
+                  heldPool(client, first, [first])
+                )
           ),
           { concurrency: "unbounded" }
         );
@@ -121,6 +155,31 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
         assert.strictEqual(
           [...used.values()].reduce((sum, requests) => sum + requests, 0),
           5
+        );
+      })
+  );
+
+  it.effect(
+    "claims for a pool of 20,000 workspaces, locking nothing a workspace",
+    () =>
+      Effect.gen(function* largePool() {
+        const usage = yield* AssistantUsage;
+        const client = yield* SqlClient.SqlClient;
+        const workspaceId = yield* freshWorkspace;
+        const others = strangers(20_000);
+
+        const claimed = yield* usage.claim(
+          workspaceId,
+          ninth,
+          5,
+          1,
+          heldPool(client, workspaceId, others)
+        );
+
+        assert.deepStrictEqual(Option.getOrNull(claimed), 1);
+        assert.deepStrictEqual(
+          yield* usage.usedIn([workspaceId, ...strangers(70_000)], ninth),
+          new Map([[workspaceId, 1]])
         );
       })
   );
