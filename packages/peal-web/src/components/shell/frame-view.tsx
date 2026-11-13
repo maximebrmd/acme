@@ -72,7 +72,7 @@ export const FrameView = ({
           docsUrl={docsUrl}
           supportUrl={supportUrl}
           menu={
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen} side="left">
               <SheetTrigger
                 render={
                   <Button
@@ -87,7 +87,7 @@ export const FrameView = ({
               </SheetTrigger>
               {/* Closed by Escape or a tap beside it: a corner button would
                   sit on the sidebar's head. */}
-              <SheetContent side="left">
+              <SheetContent>
                 <SheetTitle className="sr-only">{label}</SheetTitle>
                 <CloseMenu value={closeMenu}>{sidebar}</CloseMenu>
               </SheetContent>
