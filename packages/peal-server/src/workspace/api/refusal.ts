@@ -3,6 +3,10 @@ import { Forbidden } from "peal-contract";
 import type { Member, Permission } from "peal-contract";
 
 import { setAnswerHeader } from "#shared/api/answer-headers.ts";
+import {
+  commandLineOnlyPermissions,
+  personOnlyPermissions,
+} from "#workspace/domain/oauth-grant.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
 
 import { missingScope } from "./missing-scope.ts";
@@ -33,6 +37,19 @@ const withoutPermission = (member: Member, permission: Permission) => {
 
   if (principal._tag === "partnerKey") {
     return `This partner key does not have the permission ${permission} in the workspaces its partner owns. An owner or an admin of the partner's workspace creates a key that has it.`;
+  }
+
+  // What no connected application does, whatever the user's role and the
+  // scopes it holds: the person does it, or Peal's command line may.
+  if (
+    principal.oauth !== undefined &&
+    commandLineOnlyPermissions.has(permission)
+  ) {
+    return `No application connected over OAuth does this (permission ${permission}), whatever its scopes: the person does it in the web app, or with Peal's command line (peal login).`;
+  }
+
+  if (principal.oauth !== undefined && personOnlyPermissions.has(permission)) {
+    return `No application connected over OAuth does this (permission ${permission}), whatever its scopes: the person does it themselves, in the web app.`;
   }
 
   return principal.impersonatedBy === null
