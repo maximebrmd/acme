@@ -29,6 +29,7 @@ layer(Layer.mergeAll(HmacDigestLinks, MacLive))(
           const token = yield* DigestLinks.use((links) =>
             links.tokenOf(userId, 3)
           );
+
           const secret = yield* authSecretConfig;
           const mac = yield* Mac.Mac;
 
