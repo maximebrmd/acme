@@ -8,6 +8,7 @@ import {
   Schema,
 } from "effect";
 
+import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
@@ -36,7 +37,10 @@ import type {
   RecyclingChange,
   RecyclingStatus,
 } from "#publishing/domain/recycling-rule.ts";
-import { sayingVariant } from "#publishing/domain/recycling-variant.ts";
+import {
+  mediaWithoutTextOf,
+  sayingVariant,
+} from "#publishing/domain/recycling-variant.ts";
 import type { RecyclingVariant } from "#publishing/domain/recycling-variant.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -364,12 +368,34 @@ export class Recycling extends Context.Service<
                 Effect.catchTag("UnknownMedia", () => Effect.succeed([]))
               );
 
-              const violations = yield* violationsOf(
-                content,
-                channels,
-                files,
-                copy.options
+              // A channel whose own media the variant gives no text.
+              const unsaid: readonly ContentViolation[] = mediaWithoutTextOf(
+                copy.content,
+                copy.channelIds,
+                variant
+              ).flatMap((channelId) =>
+                channels.flatMap((channel) =>
+                  channel.channelId === channelId
+                    ? [
+                        {
+                          _tag: "empty" as const,
+                          channelId,
+                          platform: channel.platform,
+                        },
+                      ]
+                    : []
+                )
               );
+
+              const violations = [
+                ...unsaid,
+                ...(yield* violationsOf(
+                  content,
+                  channels,
+                  files,
+                  copy.options
+                )),
+              ];
 
               return Arr.isReadonlyArrayNonEmpty(violations)
                 ? [{ variant: place + 1, violations }]

@@ -3,6 +3,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { partsOn, PostContent } from "#publishing/domain/post-content.ts";
 import {
+  mediaWithoutTextOf,
   RecyclingVariant,
   sayingVariant,
 } from "#publishing/domain/recycling-variant.ts";
@@ -64,5 +65,26 @@ describe(sayingVariant, () => {
 
     expect(mediaOn(said, square)).toStrictEqual([attached("2").mediaId]);
     expect(partsOn(said, square)[0]?.text).toBe("Varied here");
+  });
+});
+
+describe(mediaWithoutTextOf, () => {
+  it("names a channel whose own media an empty variant gives no text", () => {
+    const empty = new RecyclingVariant({ overrides: [], text: "" });
+
+    expect(mediaWithoutTextOf(source, [square, other], empty)).toStrictEqual([
+      square,
+    ]);
+    expect(() => sayingVariant(source, [square, other], empty)).not.toThrow();
+    expect(
+      mediaWithoutTextOf(
+        source,
+        [square, other],
+        new RecyclingVariant({
+          overrides: [new TextOverride({ channelId: square, text: "Here" })],
+          text: "",
+        })
+      )
+    ).toStrictEqual([]);
   });
 });

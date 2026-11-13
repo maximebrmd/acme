@@ -19,11 +19,40 @@ export class RecyclingVariant extends Schema.Class<RecyclingVariant>(
   text: PostTextSchema,
 }) {}
 
+// The channels that show media of their own in the source, with them.
+const ownMediaOf = (content: PostContent, channelIds: readonly ChannelId[]) =>
+  content.overrides.flatMap(({ channelId, media }) =>
+    media === undefined || !channelIds.includes(channelId)
+      ? []
+      : [{ channelId, media }]
+  );
+
+/**
+ * The channels a variant gives no text to carry the media they show of
+ * their own in the source: no text of the variant's there, and an empty
+ * text of its own. Their media would go nowhere, so the variant is
+ * refused there (`empty`, as a check answers it).
+ */
+export const mediaWithoutTextOf = (
+  content: PostContent,
+  channelIds: readonly ChannelId[],
+  { overrides, text }: RecyclingVariant
+): readonly ChannelId[] =>
+  text === ""
+    ? ownMediaOf(content, channelIds).flatMap(({ channelId }) =>
+        overrides.some((said) => said.channelId === channelId)
+          ? []
+          : [channelId]
+      )
+    : [];
+
 /**
  * What a variant makes of the source's content on these channels: its
  * text, and its texts on those channels, with the media each channel had
  * of its own in the source kept under them (under the variant's own text
- * when it gives the channel none). Media and later parts stay the source's.
+ * when it gives the channel none, and with none at all when that text is
+ * empty: `mediaWithoutTextOf` refuses such a variant first). Media and
+ * later parts stay the source's.
  */
 export const sayingVariant = (
   content: PostContent,
@@ -34,11 +63,7 @@ export const sayingVariant = (
     channelIds.includes(channelId)
   );
 
-  const ownMedia = content.overrides.flatMap(({ channelId, media }) =>
-    media === undefined || !channelIds.includes(channelId)
-      ? []
-      : [{ channelId, media }]
-  );
+  const ownMedia = ownMediaOf(content, channelIds);
 
   const withMedia = said.map((override) => {
     const own = ownMedia.find(
@@ -50,13 +75,18 @@ export const sayingVariant = (
       : changedOverride(override, { media: own.media });
   });
 
-  const mediaOnly = ownMedia
-    .filter(
-      ({ channelId }) => !said.some((kept) => kept.channelId === channelId)
-    )
-    .map(
-      ({ channelId, media }) => new TextOverride({ channelId, media, text })
-    );
+  const mediaOnly =
+    text === ""
+      ? []
+      : ownMedia
+          .filter(
+            ({ channelId }) =>
+              !said.some((kept) => kept.channelId === channelId)
+          )
+          .map(
+            ({ channelId, media }) =>
+              new TextOverride({ channelId, media, text })
+          );
 
   return new PostContent({
     followUps: content.followUps,
