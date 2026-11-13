@@ -133,18 +133,22 @@
   of, so they run only while `<prefix>media/.owner` (JSON: `id`, `epoch`,
   `system`, `timeline`) agrees with this database: its id
   (`media.store_identity`, made once, kept through restores), its Postgres
-  cluster (`pg_control_system()`'s system identifier,
-  `pg_control_checkpoint()`'s timeline: `restored` otherwise, as after any
+  cluster (`pg_control_system()`'s system identifier, and the timeline of
+  `pg_walfile_name(pg_current_wal_lsn())`, which a promotion changes at
+  once where the control file waits for a checkpoint: `restored` otherwise, as after any
   pgBackRest restore, a failover, `pg_upgrade` or a dump loaded), and an
   epoch no greater than the database's (`rewound` otherwise). Each owned
   run commits `epoch + 1`, then writes the marker with `If-Match` on the
   version it read, and reads it back (`contended` if it changed). The
   first run writes it create-only; another id (`foreign`) or none once
-  claimed (`unmarked`) stops them too. The pending sweep also stops on
-  more than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` expired uploads at once.
+  claimed (`unmarked`) stops them too, and each page of a long run reads
+  the marker again (`contended` once it changed). The pending sweep also
+  stops when more than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` workspaces hold
+  expired uploads (never a count of uploads, which one user can raise).
   Never replace the marker but through `claimMediaFolder`
-  (`bun src/claim-media-folder.ts`, which prints what it would write and
-  writes only with `--yes`), an operator's act.
+  (`bun src/claim-media-folder.ts`: read only, migrating and creating
+  nothing, unless `--yes`, then failing unless the store holds the marker
+  it wrote), an operator's act.
 - Listing sweeps keep where they stopped (`media.sweep_cursors`, keys
   relative to the prefix). `MediaBucket` lists `<prefix>media/` only and
   hands out only what `mediaKeyOf` reads as a key Peal writes: never widen

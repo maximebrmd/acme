@@ -111,7 +111,11 @@ sandbox). Times are UTC.
    3. Watch the first runs, at minute 19 (uploads never completed) and
       minute 49 (orphans): `peal-media-sweep-refused` must stay quiet, and
       the server's log says what each run deleted (`Swept the media
-      store`).
+      store`). A `breaker` refusal is not cleared by the claim: if the
+      database is known sound and many uploads or files were left while
+      the sweeps were off, raise `PEAL_MEDIA_SWEEP_PENDING_LIMIT` or
+      `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` in `peal_settings` for a run (apply
+      `site.yml`, restart the server as above), then set it back.
 
 8. **Start the stack**, and check it answers:
 
