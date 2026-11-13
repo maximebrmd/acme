@@ -751,7 +751,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
 
         // Once the store holds the file, the copy links to it, as the
         // user provided it.
-        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending', page_count = 12 WHERE workspace_id = ${atelier}`;
+        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending', page_count = 12, file_name = 'Synthetic atelier.pdf' WHERE workspace_id = ${atelier}`;
 
         const withFile = yield* decodeExport(
           (yield* app.request("/api/me/export", {
@@ -767,6 +767,12 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         // What the probe counted of a document goes with it.
         assert.strictEqual(file?.pageCount, 12);
         assert.isNull(own?.media[0]?.pageCount);
+        // So does the name the file had, which a file stored before names
+        // were kept has none of.
+        assert.deepStrictEqual(
+          [file, own?.media[0]].map((media) => media?.fileName),
+          ["Synthetic atelier.pdf", null]
+        );
 
         const downloaded = yield* Effect.promise(async () => {
           const response = await fetch(link);

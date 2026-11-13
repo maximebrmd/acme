@@ -1,10 +1,102 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Ref } from "effect";
+import { Effect, Ref, Schema } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
-import { readyMediaId } from "./studio.ts";
+import { image, readyMediaId } from "./studio.ts";
+
+// The ids of a page as --json printed it.
+const MediaPage = {
+  decode: Schema.decodeUnknownSync(
+    Schema.fromJsonString(
+      Schema.Struct({
+        items: Schema.Array(Schema.Struct({ id: Schema.String })),
+      })
+    )
+  ),
+};
 
 const inStudio = ["--workspace", "studio"];
+
+describe("peal media list", () => {
+  it.effect("finds media by name or description, and by kind", () =>
+    Effect.gen(function* lists() {
+      const session = yield* signedIn();
+
+      yield* Ref.update(session.studio.state, (current) => ({
+        ...current,
+        media: [
+          image("f-video", {
+            contentType: "video/mp4",
+            fileName: "Catalogue teaser.mp4",
+            kind: "video",
+          }),
+          image("f-other", { fileName: "beach.png" }),
+          ...current.media,
+        ],
+      }));
+
+      const printed = yield* session.printed([
+        "media",
+        "list",
+        "--search",
+        "CATALOGUE",
+        ...inStudio,
+      ]);
+
+      assert.include(printed, "Catalogue teaser.mp4");
+      assert.include(printed, readyMediaId);
+      assert.notInclude(printed, "beach.png");
+      assert.include(printed, 'matching "CATALOGUE"');
+
+      const videos = yield* session.printed([
+        "media",
+        "list",
+        "--search",
+        "catalogue",
+        "--kind",
+        "video",
+        "--json",
+        ...inStudio,
+      ]);
+
+      assert.deepStrictEqual(
+        MediaPage.decode(videos).items.map(({ id }) => id),
+        ["f-video"]
+      );
+
+      assert.include(
+        yield* session.refused([
+          "media",
+          "list",
+          "--search",
+          "  ",
+          ...inStudio,
+        ]),
+        "--search takes 1 to 100 characters"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("prints a file's name as text, whatever it holds", () =>
+    Effect.gen(function* printsNames() {
+      const session = yield* signedIn();
+
+      yield* Ref.update(session.studio.state, (current) => ({
+        ...current,
+        media: [
+          image("f-odd", {
+            fileName: `odd${String.fromCodePoint(0x1b)}[31m.png`,
+          }),
+        ],
+      }));
+
+      const printed = yield* session.printed(["media", "list", ...inStudio]);
+
+      assert.notInclude(printed, String.fromCodePoint(0x1b));
+      assert.include(printed, "[31m.png");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
 
 describe("peal media describe and delete", () => {
   it.effect("sets and removes a media's description", () =>

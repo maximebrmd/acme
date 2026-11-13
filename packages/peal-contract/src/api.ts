@@ -1027,6 +1027,8 @@ export {
   MediaContentTypeSchema,
   MediaDescriptionSchema,
   MediaImportSchema,
+  maxMediaFileNameLength,
+  maxMediaQueryLength,
   mediaImportSeconds,
   MediaKindSchema,
   MediaPageSchema,

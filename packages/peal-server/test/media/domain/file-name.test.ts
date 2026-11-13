@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
+import { maxMediaFileNameLength } from "peal-contract";
 
 import {
   fileNameOf,
@@ -83,5 +84,11 @@ describe(nameInAddress, () => {
       Option.none()
     );
     expect(nameInAddress("not an address")).toStrictEqual(Option.none());
+  });
+});
+
+describe("the contract's bound", () => {
+  it("is the one the server keeps", () => {
+    expect(maxFileNameLength).toBe(maxMediaFileNameLength);
   });
 });

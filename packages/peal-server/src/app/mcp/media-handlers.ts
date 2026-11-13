@@ -256,7 +256,7 @@ export const MediaToolsLive = MediaTools.toLayer(
 
           return itemView(imported);
         }),
-      list_media: ({ cursor, limit }) =>
+      list_media: ({ cursor, kind, limit, q }) =>
         Effect.gen(function* listing() {
           // A cursor is the id of the last media of the page before.
           const after = Option.fromUndefinedOr(cursor).pipe(
@@ -272,9 +272,9 @@ export const MediaToolsLive = MediaTools.toLayer(
           const page = yield* library
             .listMedia(yield* actor, {
               after: Option.flatten(after),
-              kind: Option.none(),
+              kind: Option.fromUndefinedOr(kind),
               limit: limit ?? defaultMediaPageSize,
-              text: Option.none(),
+              text: Option.fromUndefinedOr(q),
             })
             .pipe(
               Effect.catchTags({

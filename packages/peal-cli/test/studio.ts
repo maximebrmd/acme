@@ -846,7 +846,8 @@ export const storeHost = "store.example.test";
 /** The instant the studio takes for now: the tests' clock. */
 export const studioNow = at("2026-11-09T12:00:00Z");
 
-const image = (id: string, overrides: Partial<Media> = {}): Media => ({
+/** A ready image of the studio, as the server describes one. */
+export const image = (id: string, overrides: Partial<Media> = {}): Media => ({
   aiGenerated: false,
   altText: null,
   byteSize: 2048,
@@ -855,6 +856,7 @@ const image = (id: string, overrides: Partial<Media> = {}): Media => ({
   createdAt: at("2026-11-05T10:00:00Z"),
   dimensions: { height: 600, width: 800 },
   durationMs: null,
+  fileName: null,
   id,
   kind: "image",
   pageCount: null,
@@ -4346,6 +4348,7 @@ export const studioGroupsLive = (studio: Studio) =>
                 contentType,
                 createdAt: studioNow,
                 dimensions: null,
+                fileName: payload.fileName ?? null,
                 kind,
                 status: { _tag: "pending" },
                 updatedAt: studioNow,
@@ -4476,7 +4479,18 @@ export const studioGroupsLive = (studio: Studio) =>
             yield* allowed("media:read");
 
             const { media: all } = yield* Ref.get(studio.state);
-            const listed = params.workspaceId === studioId ? all : [];
+            const text = query.q?.toLowerCase();
+
+            // As the server searches: the kind, and text in the name or
+            // the description, whatever its case.
+            const listed = (params.workspaceId === studioId ? all : []).filter(
+              (media) =>
+                (query.kind === undefined || media.kind === query.kind) &&
+                (text === undefined ||
+                  [media.fileName, media.altText].some(
+                    (written) => written?.toLowerCase().includes(text) === true
+                  ))
+            );
 
             const start =
               query.cursor === undefined

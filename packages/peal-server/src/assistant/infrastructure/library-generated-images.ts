@@ -36,6 +36,7 @@ const generatedImageOf = (
     createdAt: asset.createdAt,
     dimensions: Option.getOrNull(asset.metadata.dimensions),
     durationMs: null,
+    fileName: null,
     id: asset.id,
     kind: "image",
     pageCount: null,

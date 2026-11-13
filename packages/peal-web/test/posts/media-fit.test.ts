@@ -35,6 +35,7 @@ const file = (
     createdAt: created,
     dimensions: facts.dimensions ?? { height: 800, width: 1200 },
     durationMs: facts.durationMs ?? null,
+    fileName: null,
     id,
     kind: kindOf(contentType),
     pageCount: null,

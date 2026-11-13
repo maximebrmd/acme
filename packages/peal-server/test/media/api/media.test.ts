@@ -524,6 +524,65 @@ layer(UseCasesTest)("the media endpoints", (it) => {
     })
   );
 
+  it.effect(
+    "keep each file's name, and search them by name, description and kind",
+    () =>
+      Effect.gen(function* search() {
+        const { client, workspaceId } = yield* as("owner");
+        const params = { workspaceId };
+
+        const upload = (
+          contentType: string,
+          fileName: string | null,
+          altText: string | null
+        ) =>
+          client.media
+            .create({
+              params,
+              payload: {
+                altText,
+                byteSize: 10,
+                contentType,
+                fileName,
+              },
+            })
+            .pipe(Effect.map(({ media }) => media));
+
+        const poster = yield* upload("image/png", "Launch poster.png", null);
+        const clip = yield* upload("video/mp4", "clip.mp4", "The LAUNCH");
+        const other = yield* upload("image/png", null, null);
+
+        assert.strictEqual(poster.fileName, "Launch poster.png");
+        assert.isNull(other.fileName);
+        assert.strictEqual(
+          (yield* client.media.get({ params: { ...params, mediaId: clip.id } }))
+            .fileName,
+          "clip.mp4"
+        );
+
+        const found = (query: {
+          readonly kind?: "image" | "video";
+          readonly q?: string;
+        }) =>
+          client.media
+            .list({ params, query })
+            .pipe(Effect.map((page) => page.items.map(({ id }) => id)));
+
+        assert.deepStrictEqual(yield* found({ q: "launch" }), [
+          clip.id,
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ kind: "image" }), [
+          other.id,
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ kind: "image", q: "launch" }), [
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ q: "nothing of the sort" }), []);
+      })
+  );
+
   it.effect("let a viewer read media, and nothing more", () =>
     Effect.gen(function* viewer() {
       const workspaceId = yield* freshWorkspace;

@@ -5,10 +5,12 @@ import {
   imageRequestCost,
   maxImagePromptLength,
   maxMediaPageSize,
+  maxMediaQueryLength,
+  MediaKindSchema,
   MediaPageSchema,
   MediaSchema,
 } from "peal-contract";
-import type { Media } from "peal-contract";
+import type { Media, MediaKind } from "peal-contract";
 
 import { confirmed, neverAsksInJson, yesFlagName } from "#confirm.ts";
 import { explain } from "#explain.ts";
@@ -17,6 +19,26 @@ import { importAddress, statusOf, uploadFile } from "#media-files.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
+
+// A filter the command was given, as the query names it; nothing otherwise.
+const given = <A, B extends object>(
+  value: Option.Option<A>,
+  named: (value: A) => B
+) =>
+  Option.match(value, {
+    onNone: () => ({}),
+    onSome: named,
+  });
+
+// What the list was narrowed to, as its heading says it.
+const matching = (
+  kind: Option.Option<MediaKind>,
+  text: Option.Option<string>
+) =>
+  [
+    ...Option.toArray(kind).map((only) => ` (${only}s)`),
+    ...Option.toArray(text).map((asked) => ` matching "${asked}"`),
+  ].join("");
 
 const altFlag = Flag.String("alt").pipe(
   Flag.withMetavar("<text>"),
@@ -181,31 +203,54 @@ const list = Command.make(
       Flag.optional
     ),
     json: jsonFlag,
+    kind: Flag.Literals("kind", MediaKindSchema.literals).pipe(
+      Flag.withDescription(
+        "Only the media of this kind: image, video or document."
+      ),
+      Flag.optional
+    ),
     limit: Flag.Int("limit").pipe(
       Flag.withDescription(
         `How many media a page holds, at most ${String(maxMediaPageSize)}.`
       ),
       Flag.optional
     ),
+    search: Flag.String("search").pipe(
+      Flag.withMetavar("<text>"),
+      Flag.withDescription(
+        `Only the media whose file name or description holds this text, whatever its case: ${String(maxMediaQueryLength)} characters at most. A file added before Peal kept names is found by its description only.`
+      ),
+      Flag.optional
+    ),
     workspace: workspaceFlag,
   },
   Effect.fn("media.list")(function* list(input) {
+    const text = input.search.pipe(Option.map((written) => written.trim()));
+
+    // Text the search would not take is refused before a request leaves.
+    yield* Option.exists(
+      text,
+      ({ length }) => length === 0 || length > maxMediaQueryLength
+    )
+      ? Effect.fail(
+          new Refused({
+            reason: `--search takes 1 to ${String(maxMediaQueryLength)} characters.`,
+          })
+        )
+      : Effect.void;
+
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
     const page = yield* client.media
       .list({
         params: { workspaceId: workspace.id },
         query: {
-          ...Option.match(input.cursor, {
-            onNone: () => ({}),
-            onSome: (after) => ({ cursor: after }),
-          }),
-          ...Option.match(input.limit, {
-            onNone: () => ({}),
-            onSome: (size) => ({
-              limit: Math.min(Math.max(size, 1), maxMediaPageSize),
-            }),
-          }),
+          ...given(input.cursor, (cursor) => ({ cursor })),
+          ...given(input.kind, (kind) => ({ kind })),
+          ...given(input.limit, (size) => ({
+            limit: Math.min(Math.max(size, 1), maxMediaPageSize),
+          })),
+          ...given(text, (q) => ({ q })),
         },
       })
       .pipe(Effect.mapError(explain(url)));
@@ -216,13 +261,21 @@ const list = Command.make(
       return;
     }
 
+    const filtered = Option.isSome(text) || Option.isSome(input.kind);
+
     if (page.items.length === 0) {
-      yield* Console.log(`${workspace.name} has no media.`);
+      yield* Console.log(
+        filtered
+          ? `${workspace.name} has no media that match.`
+          : `${workspace.name} has no media.`
+      );
 
       return;
     }
 
-    yield* Console.log(`Media of ${workspace.name}, newest first:`);
+    yield* Console.log(
+      `Media of ${workspace.name}${matching(input.kind, text)}, newest first:`
+    );
 
     for (const line of columns(
       page.items.map((media) => [
@@ -231,6 +284,7 @@ const list = Command.make(
         `${String(media.byteSize)} bytes`,
         statusOf(media),
         instant(media.createdAt),
+        media.fileName ?? "",
         media.altText === null ? "" : excerpt(media.altText),
       ])
     )) {
@@ -239,13 +293,15 @@ const list = Command.make(
 
     if (page.nextCursor !== null) {
       yield* Console.log(
-        `More: peal media list --workspace ${workspace.slug} --cursor ${page.nextCursor}`
+        filtered
+          ? `More: the same command with --cursor ${page.nextCursor}`
+          : `More: peal media list --workspace ${workspace.slug} --cursor ${page.nextCursor}`
       );
     }
   })
 ).pipe(
   Command.withDescription(
-    "List the workspace's images and videos, newest first, with the ids posts attach and whether each is ready."
+    "List the workspace's images, videos and documents, newest first, with the ids posts attach, whether each is ready, its file name and its description. --search and --kind narrow the list, every filter holding."
   )
 );
 

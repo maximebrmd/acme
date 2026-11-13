@@ -28,6 +28,7 @@ const pending: Media = {
   createdAt,
   dimensions: null,
   durationMs: null,
+  fileName: null,
   id: mediaId,
   kind: "video",
   pageCount: null,
