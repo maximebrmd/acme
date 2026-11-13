@@ -523,6 +523,7 @@
         "timedOut": "Votre fournisseur a mis trop de temps à répondre.",
         "declined": "Votre fournisseur a refusé le texte du test selon ses règles.",
         "invalidAnswer": "Votre fournisseur a répondu, mais pas sous la forme que demande l’assistant : choisissez un modèle qui donne une sortie structurée (un schéma JSON).",
+        "ownBusy": "Votre espace de travail a déjà autant de demandes en cours chez son fournisseur qu’il le peut. Testez-le de nouveau dans un instant.",
         "ownLimit": "Votre espace de travail a envoyé à son fournisseur autant de demandes qu’une journée le permet. Testez-le de nouveau demain (UTC).",
         "forbidden": "Votre rôle ne vous permet pas de modifier les réglages de l’assistant.",
         "generic": "Une erreur est survenue. Réessayez."
@@ -538,6 +539,7 @@
       "declined": "L’assistant a refusé de travailler sur ce texte.",
       "invalidAnswer": "La réponse de l’assistant est inutilisable. Réessayez.",
       "forbidden": "Votre rôle ne vous permet pas d’utiliser l’assistant.",
+      "ownBusy": "Votre espace de travail a déjà autant de demandes en cours chez son propre fournisseur de texte qu’il le peut. Rien n’a été dépensé : réessayez quand l’une d’elles a abouti.",
       "ownLimit": "Votre espace de travail a envoyé {dailyLimit, number} demandes à son propre fournisseur de texte aujourd’hui, le maximum par jour. Redemandez demain (UTC).",
       "providerRefused": "Le fournisseur de texte de votre espace de travail a refusé ses réglages : sa clé, son compte, son modèle ou son adresse. Rien n’a été dépensé. Un propriétaire ou un administrateur les corrige dans les réglages de l’assistant.",
       "providerRedirected": "Le fournisseur de texte de votre espace de travail a répondu par une redirection, que Peal ne suit jamais : son adresse n’est pas celle de l’API. Rien n’a été dépensé. Un propriétaire ou un administrateur corrige l’adresse dans les réglages de l’assistant.",

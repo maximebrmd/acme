@@ -23,6 +23,13 @@ import { publicLibraryHttpClientWith } from "#shared/infrastructure/platforms/pu
 // it is, never its host or its model, which are the workspace's business.
 const source = { "peal.assistant.text_source": "workspace" } as const;
 
+/**
+ * The most an answer may carry: 4,096 tokens of JSON, with room, far less
+ * than the public client's megabyte, so a slow endpoint holds little
+ * memory.
+ */
+export const maxAnswerBytes = 256 * 1024;
+
 // The statuses that say the workspace's settings are wrong: its key, its
 // account, its model or its address.
 const settingsRefused: ReadonlySet<number> = new Set([401, 402, 403, 404]);
@@ -134,6 +141,7 @@ export const ownWritingModel = ({
       // refuses there (a name that changed its answer since the check) is
       // one that could not be sent: `unreachable`.
       const client = yield* publicLibraryHttpClientWith({
+        maxResponseBytes: maxAnswerBytes,
         timeout: Duration.sum(
           Duration.fromInputUnsafe(timeout),
           Duration.seconds(1)

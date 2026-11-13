@@ -523,6 +523,7 @@
         "timedOut": "Your provider took too long to answer.",
         "declined": "Your provider declined the test's text under its policies.",
         "invalidAnswer": "Your provider answered, but not in the shape the assistant asks for: choose a model that gives structured output (a JSON schema).",
+        "ownBusy": "Your workspace already has as many requests under way to its provider as it may. Test it again in a moment.",
         "ownLimit": "Your workspace sent its provider as many requests as a day allows. Test it again tomorrow (UTC).",
         "forbidden": "Your role does not let you change the assistant's settings.",
         "generic": "Something went wrong. Try again."
@@ -538,6 +539,7 @@
       "declined": "The assistant declined to work on this text.",
       "invalidAnswer": "The assistant's answer could not be used. Try again.",
       "forbidden": "Your role does not let you use the assistant.",
+      "ownBusy": "Your workspace already has as many requests under way to its own text provider as it may. Nothing was spent: try again once one has finished.",
       "ownLimit": "Your workspace sent its own text provider {dailyLimit, number} requests today, the most a day allows. Ask again tomorrow (UTC).",
       "providerRefused": "Your workspace's text provider refused its settings: its key, its account, its model or its address. Nothing was spent. An owner or an admin fixes them in the assistant settings.",
       "providerRedirected": "Your workspace's text provider answered with a redirect, which Peal never follows: its address is not the API's own. Nothing was spent. An owner or an admin fixes the address in the assistant settings.",

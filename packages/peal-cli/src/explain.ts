@@ -802,6 +802,10 @@ const reasonOf =
         ),
       TextProviderAddressRefused: ({ reason }) =>
         refused(textAddressRefusals[reason]),
+      TextProviderBusy: () =>
+        refused(
+          "The workspace already has as many requests under way to its own text provider as it may, or the server does: nothing was sent or counted. Try again in a moment."
+        ),
       TextProviderKeyRequired: () =>
         refused(
           "The workspace has no key stored for its text provider that can be read, or --base-url is not the address the key was given for (another host or path): Peal never sends a key to another address. Give the key again, on standard input."

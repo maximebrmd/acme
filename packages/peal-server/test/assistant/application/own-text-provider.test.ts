@@ -1,10 +1,13 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Option } from "effect";
+import { Effect, Fiber, Option } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import type { AssistantRequest } from "#assistant/application/writing-assistant.ts";
-import { ownTextRequestsPerDay } from "#assistant/domain/text-provider.ts";
+import {
+  ownTextAtOnce,
+  ownTextRequestsPerDay,
+} from "#assistant/domain/text-provider.ts";
 import { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -269,6 +272,54 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
 
           assert.strictEqual(refused._tag, "MissingPermission");
           assert.lengthOf(yield* ownCalls, 0);
+        }).pipe(Effect.provide(assistantTest()))
+    );
+
+    it.effect(
+      "holds so many requests at once a workspace, refusing the next at once, and frees the slot when one ends",
+      () =>
+        Effect.gen(function* busy() {
+          const workspaceId = yield* freshWorkspace;
+          const other = yield* freshWorkspace;
+          const model = yield* FakeOwnWritingModel;
+
+          yield* bringProvider(workspaceId);
+          yield* bringProvider(other);
+          yield* model.replyWith({ _tag: "held" });
+
+          const waiting = yield* Effect.forEach(
+            Array.from({ length: ownTextAtOnce.perWorkspace }),
+            () =>
+              WritingAssistant.use((assistant) =>
+                assistant.suggest(actorIn(workspaceId), rewrite)
+              ).pipe(Effect.forkChild)
+          );
+
+          yield* model.arrived(ownTextAtOnce.perWorkspace);
+
+          const refused = yield* WritingAssistant.use((assistant) =>
+            assistant.suggest(actorIn(workspaceId), rewrite)
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "OwnTextBusy");
+          // Refused before it was counted or sent.
+          assert.lengthOf(yield* ownCalls, ownTextAtOnce.perWorkspace);
+
+          // Another workspace's request still reaches its provider.
+          const elsewhere = yield* WritingAssistant.use((assistant) =>
+            assistant.suggest(actorIn(other), rewrite)
+          ).pipe(Effect.forkChild);
+
+          yield* model.arrived(1);
+          yield* model.release({ _tag: "answer", value: { text: "Done." } });
+
+          yield* Effect.forEach([...waiting, elsewhere], Fiber.join);
+
+          const after = yield* WritingAssistant.use((assistant) =>
+            assistant.suggest(actorIn(workspaceId), rewrite)
+          );
+
+          assert.strictEqual(after._tag, "text");
         }).pipe(Effect.provide(assistantTest()))
     );
 

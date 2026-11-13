@@ -133,6 +133,10 @@
   `redirected`, the rest `WritingFailed` as for the server's model. Never
   the server's `WritingModel`, not even when it fails, nor with a key that
   no longer opens (`keyUnreadable`); staff impersonating are refused.
+  Each takes one of the `ownTextAtOnce` slots first (four a workspace,
+  32 a server, `TextSlots`, apart from the server's model; past them
+  `OwnTextBusy`, 429 `TextProviderBusy`, counted nothing), and answers are
+  read up to 256 KiB (`maxAnswerBytes`).
   Every request counts in `ownTextRequestsPerDay` (500) a workspace and
   UTC day, whatever it ends with (`OwnTextCounts`,
   `assistant.own_text_days`; `OwnTextExhausted`, 429), and nothing of

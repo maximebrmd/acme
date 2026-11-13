@@ -12,6 +12,7 @@ import type {
   OwnTextLimitReached,
   Platform,
   Suggestion,
+  TextProviderBusy,
   TextProviderRefused,
   TooManyRequests,
   Unauthenticated,
@@ -28,6 +29,7 @@ export type AssistantFailure =
   | Forbidden
   // The workspace's own text provider: its day's bound, and its refusals.
   | OwnTextLimitReached
+  | TextProviderBusy
   | TextProviderRefused
   // Answered to keys and applications only: the web app signs in with a
   // session, whose requests are not counted.

@@ -1229,6 +1229,8 @@ export { OwnTextLimitReached } from "./own-text-limit-reached.ts";
 
 export { TextProviderAddressRefused } from "./text-provider-address-refused.ts";
 
+export { TextProviderBusy } from "./text-provider-busy.ts";
+
 export { TextProviderKeyRequired } from "./text-provider-key-required.ts";
 
 export { TextProviderNotFound } from "./text-provider-not-found.ts";

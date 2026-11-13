@@ -9,6 +9,7 @@ import type { ImageProviderKeyRequired } from "#assistant/application/image-prov
 import type { ImageProviderRefused } from "#assistant/application/image-provider-refused.ts";
 import type { ImagesBusy } from "#assistant/application/images-busy.ts";
 import type { OwnImagesExhausted } from "#assistant/application/own-images-exhausted.ts";
+import type { OwnTextBusy } from "#assistant/application/own-text-busy.ts";
 import type { OwnTextExhausted } from "#assistant/application/own-text-exhausted.ts";
 import type { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import type { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
@@ -26,6 +27,7 @@ import type { OwnWritingModel } from "#assistant/application/ports/own-writing-m
 import type { PlatformLimits } from "#assistant/application/ports/platform-limits.ts";
 import type { ProviderAddressCheck } from "#assistant/application/ports/provider-address-check.ts";
 import type { TextProviders } from "#assistant/application/ports/text-providers.ts";
+import type { TextSlots } from "#assistant/application/ports/text-slots.ts";
 import type { WritingModel } from "#assistant/application/ports/writing-model.ts";
 import type { ProviderAddressNotPublic } from "#assistant/application/provider-address-not-public.ts";
 import type { ProviderSecretsNotConfigured } from "#assistant/application/provider-secrets-not-configured.ts";
@@ -82,6 +84,7 @@ type AssistantPorts =
   | PlatformLimits
   | ProviderAddressCheck
   | TextProviders
+  | TextSlots
   | WritingModel;
 
 /** What to do with which text, in the actor's workspace. */
@@ -124,6 +127,7 @@ export type SuggestFailure =
   | AssistantUnavailable
   | DraftRejected
   | MissingPermission
+  | OwnTextBusy
   | OwnTextExhausted
   | TextProviderRefused
   | WritingFailed;
@@ -131,6 +135,7 @@ export type SuggestFailure =
 export type TestTextProviderFailure =
   | AnswerRejected
   | MissingPermission
+  | OwnTextBusy
   | OwnTextExhausted
   | TextProviderNotSet
   | TextProviderRefused

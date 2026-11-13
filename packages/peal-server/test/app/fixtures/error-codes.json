@@ -695,6 +695,11 @@
     "tag": "TextProviderAddressRefused"
   },
   {
+    "code": "text_provider_busy",
+    "status": 429,
+    "tag": "TextProviderBusy"
+  },
+  {
     "code": "text_provider_key_required",
     "status": 422,
     "tag": "TextProviderKeyRequired"

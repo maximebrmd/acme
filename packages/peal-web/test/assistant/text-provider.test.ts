@@ -5,6 +5,7 @@ import {
   AssistantSecretsNotConfigured,
   OwnTextLimitReached,
   TextProviderAddressRefused,
+  TextProviderBusy,
   TextProviderKeyRequired,
   TextProviderNotFound,
   TextProviderRefused,
@@ -142,6 +143,7 @@ describe(testFailureKey, () => {
           dailyLimit: 500,
           resetsAt: DateTime.makeUnsafe("2026-11-14T00:00:00Z"),
         }),
+        new TextProviderBusy(),
         new TextProviderNotFound(),
       ].map(testFailureKey)
     ).toStrictEqual([
@@ -152,6 +154,7 @@ describe(testFailureKey, () => {
       "invalidAnswer",
       "unreachable",
       "ownLimit",
+      "ownBusy",
       "generic",
     ]);
   });

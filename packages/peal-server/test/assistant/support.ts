@@ -13,6 +13,7 @@ import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { ProviderAddressSchema } from "#assistant/domain/image-provider.ts";
 import { CipherProviderSecrets } from "#assistant/infrastructure/cipher-provider-secrets.ts";
 import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
+import { CountedTextSlots } from "#assistant/infrastructure/counted-text-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
 import { DrizzleImageProvidersLive } from "#assistant/infrastructure/drizzle-image-providers.ts";
 import { DrizzleOwnImageCountsLive } from "#assistant/infrastructure/drizzle-own-image-counts.ts";
@@ -213,6 +214,7 @@ export const ImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
   DrizzleOwnImageCountsLive,
   DrizzleOwnTextCountsLive,
+  CountedTextSlots,
   FakeOwnWritingModelLive,
   GuardedProviderAddressCheck.pipe(
     Layer.provide(
@@ -246,6 +248,7 @@ export const LoopbackImageProvidersTest = Layer.mergeAll(
   SealedImageProviders,
   DrizzleOwnImageCountsLive,
   DrizzleOwnTextCountsLive,
+  CountedTextSlots,
   FakeOwnWritingModelLive,
   AnyProviderAddress,
   openAiCompatibleOwnImageModel({ timeout: "10 seconds" }).pipe(

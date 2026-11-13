@@ -25,6 +25,7 @@ import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
 import { maxPostTextLength } from "./post-text.ts";
 import { TextProviderAddressRefused } from "./text-provider-address-refused.ts";
+import { TextProviderBusy } from "./text-provider-busy.ts";
 import { TextProviderKeyRequired } from "./text-provider-key-required.ts";
 import { TextProviderNotFound } from "./text-provider-not-found.ts";
 import { TextProviderRefused } from "./text-provider-refused.ts";
@@ -395,6 +396,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         AssistantFailed,
         TextProviderRefused,
         OwnTextLimitReached,
+        TextProviderBusy,
       ],
       params: workspace,
       payload: SuggestionRequestSchema,
@@ -402,7 +404,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
+          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
         summary: "Suggest a change to a post's text",
       })
     ),
@@ -509,6 +511,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         TextProviderNotFound,
         TextProviderRefused,
         OwnTextLimitReached,
+        TextProviderBusy,
         AssistantFailed,
       ],
       params: workspace,

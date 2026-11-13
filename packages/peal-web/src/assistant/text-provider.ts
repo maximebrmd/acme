@@ -7,6 +7,7 @@ import type {
   OwnTextLimitReached,
   TextProvider,
   TextProviderAddressRefused,
+  TextProviderBusy,
   TextProviderChange,
   TextProviderKeyRequired,
   TextProviderKind,
@@ -130,6 +131,7 @@ export type TextProviderTestFailure =
   | AssistantFailed
   | Forbidden
   | OwnTextLimitReached
+  | TextProviderBusy
   | TextProviderNotFound
   | TextProviderRefused
   | TooManyRequests
@@ -151,6 +153,7 @@ export type TextProviderTestKey =
   | (typeof refusalKeys)[keyof typeof refusalKeys]
   | "forbidden"
   | "generic"
+  | "ownBusy"
   | "ownLimit";
 
 export const testFailureKey = (
@@ -160,6 +163,7 @@ export const testFailureKey = (
     AssistantFailed: ({ reason }): TextProviderTestKey => reason,
     Forbidden: (): TextProviderTestKey => "forbidden",
     OwnTextLimitReached: (): TextProviderTestKey => "ownLimit",
+    TextProviderBusy: (): TextProviderTestKey => "ownBusy",
     // Removed meanwhile, in another tab: the page reads it again.
     TextProviderNotFound: (): TextProviderTestKey => "generic",
     TextProviderRefused: ({ reason }): TextProviderTestKey =>

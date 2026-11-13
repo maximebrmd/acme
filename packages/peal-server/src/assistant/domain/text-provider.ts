@@ -32,6 +32,14 @@ export const anthropicAddress = "https://api.anthropic.com";
 export const ownTextRequestsPerDay = 500;
 
 /**
+ * How many requests to workspaces' own text providers run at once: so
+ * many a workspace, and so many on a server in all. Each may wait 90
+ * seconds at an endpoint the workspace chose, which may never answer, so
+ * the day's bound alone would let one workspace hold hundreds together.
+ */
+export const ownTextAtOnce = { perServer: 32, perWorkspace: 4 } as const;
+
+/**
  * The settings of the text provider a workspace brought: the API it
  * speaks, its address, its model and when they were saved. Its key is
  * kept apart, sealed, and never part of them.

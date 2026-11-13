@@ -60,6 +60,7 @@ export const failureMessage = (
     Forbidden: () => t("errors.forbidden"),
     OwnTextLimitReached: ({ dailyLimit }) =>
       t("errors.ownLimit", { dailyLimit }),
+    TextProviderBusy: () => t("errors.ownBusy"),
     TextProviderRefused: ({ reason }) => t(`errors.${ownRefusals[reason]}`),
     TooManyRequests: () => t("errors.generic"),
     Unauthenticated: () => t("errors.generic"),

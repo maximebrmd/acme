@@ -1,10 +1,12 @@
 import { DateTime, Effect, Option } from "effect";
 import type { Schema } from "effect";
 
+import { OwnTextBusy } from "#assistant/application/own-text-busy.ts";
 import { OwnTextExhausted } from "#assistant/application/own-text-exhausted.ts";
 import { OwnTextCounts } from "#assistant/application/ports/own-text-counts.ts";
 import { OwnWritingModel } from "#assistant/application/ports/own-writing-model.ts";
 import type { OpenedTextProvider } from "#assistant/application/ports/text-providers.ts";
+import { TextSlots } from "#assistant/application/ports/text-slots.ts";
 import { TextProviderRefused } from "#assistant/application/text-provider-refused.ts";
 import { ownTextRequestsPerDay } from "#assistant/domain/text-provider.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
@@ -17,7 +19,8 @@ import { MissingPermission } from "#shared/domain/missing-permission.ts";
  * model, not even when it fails, nor when its key no longer opens. Staff
  * acting as a member are refused, as the workspace's account at its
  * provider would pay; a key that no longer opens asks nobody anything;
- * then one of the `ownTextRequestsPerDay` the workspace's provider is
+ * then one of the `ownTextAtOnce` slots (OwnTextBusy past them), and one
+ * of the `ownTextRequestsPerDay` the workspace's provider is
  * sent each day is counted, whatever the call ends with. Nothing of
  * Peal's daily requests is read or counted, whatever the plan.
  */
@@ -42,6 +45,12 @@ export const askOwnProvider = <A, I extends Readonly<Record<string, unknown>>>(
         reason: "keyUnreadable",
         status: null,
       });
+    }
+
+    // One of the requests the workspace and the server run at once, for as
+    // long as this one takes: refused before it is counted.
+    if (!(yield* TextSlots.use((slots) => slots.take(actor.workspaceId)))) {
+      return yield* new OwnTextBusy();
     }
 
     // Every request counts, whatever it ends with: what bounds a
@@ -71,4 +80,8 @@ export const askOwnProvider = <A, I extends Readonly<Record<string, unknown>>>(
         answer
       )
     );
-  }).pipe(Effect.withSpan("WritingAssistant.askOwnProvider"));
+  }).pipe(
+    // The slot goes back when the request ends, however it ends.
+    Effect.scoped,
+    Effect.withSpan("WritingAssistant.askOwnProvider")
+  );

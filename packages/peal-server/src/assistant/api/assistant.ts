@@ -17,6 +17,7 @@ import {
   OwnImageLimitReached,
   OwnTextLimitReached,
   TextProviderAddressRefused,
+  TextProviderBusy,
   TextProviderKeyRequired,
   TextProviderNotFound,
   TextProviderRefused,
@@ -252,6 +253,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
               DraftRejected: ({ maxLength, reason }) =>
                 Effect.fail(new AssistantInputRejected({ maxLength, reason })),
               MissingPermission: forbidden,
+              OwnTextBusy: () => Effect.fail(new TextProviderBusy()),
               OwnTextExhausted: ownTextExhausted,
               TextProviderRefused: textProviderRefused,
               WritingFailed: ({ reason }) =>
@@ -268,6 +270,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
               AnswerRejected: () =>
                 Effect.fail(new AssistantFailed({ reason: "invalidAnswer" })),
               MissingPermission: forbidden,
+              OwnTextBusy: () => Effect.fail(new TextProviderBusy()),
               OwnTextExhausted: ownTextExhausted,
               TextProviderNotSet: () => Effect.fail(new TextProviderNotFound()),
               TextProviderRefused: textProviderRefused,
