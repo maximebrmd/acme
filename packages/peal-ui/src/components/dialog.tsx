@@ -25,7 +25,7 @@ const Dialog = (props: React.ComponentProps<typeof DialogPrimitive>) => (
 
 const DialogTrigger = (
   props: React.ComponentProps<typeof DialogTriggerPrimitive>
-) => <DialogTriggerPrimitive data-slot="dialog-trigger" {...props} />;
+) => <DialogTriggerPrimitive {...props} />;
 
 const DialogClose = (
   props: React.ComponentProps<typeof DialogClosePrimitive>

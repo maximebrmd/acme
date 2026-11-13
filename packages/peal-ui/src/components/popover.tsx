@@ -21,7 +21,7 @@ const Popover = (props: React.ComponentProps<typeof PopoverPrimitive>) => (
 
 const PopoverTrigger = (
   props: React.ComponentProps<typeof PopoverTriggerPrimitive>
-) => <PopoverTriggerPrimitive data-slot="popover-trigger" {...props} />;
+) => <PopoverTriggerPrimitive {...props} />;
 
 const PopoverContent = ({
   className,

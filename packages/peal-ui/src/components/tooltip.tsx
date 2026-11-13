@@ -19,7 +19,7 @@ const Tooltip = ({
 
 const TooltipTrigger = (
   props: React.ComponentProps<typeof TooltipTriggerPrimitive>
-) => <TooltipTriggerPrimitive data-slot="tooltip-trigger" {...props} />;
+) => <TooltipTriggerPrimitive {...props} />;
 
 const TooltipContent = ({
   className,

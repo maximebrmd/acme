@@ -24,9 +24,7 @@ const AlertDialog = (
 
 const AlertDialogTrigger = (
   props: React.ComponentProps<typeof AlertDialogTriggerPrimitive>
-) => (
-  <AlertDialogTriggerPrimitive data-slot="alert-dialog-trigger" {...props} />
-);
+) => <AlertDialogTriggerPrimitive {...props} />;
 
 const AlertDialogOverlay = ({
   className,

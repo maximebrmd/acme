@@ -30,7 +30,7 @@ const Sheet = ({
 
 const SheetTrigger = (
   props: React.ComponentProps<typeof SheetTriggerPrimitive>
-) => <SheetTriggerPrimitive data-slot="sheet-trigger" {...props} />;
+) => <SheetTriggerPrimitive {...props} />;
 
 const SheetClose = (
   props: React.ComponentProps<typeof SheetClosePrimitive>
