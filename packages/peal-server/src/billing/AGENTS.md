@@ -192,8 +192,9 @@
   `rateCard.unverifiedCeiling` (100) accounts
   (`Entitlements.connectableAccounts`, what `ChannelAllowance.channels`
   and a transfer's room answer); the standing reads `allowanceOf`, so
-  nothing connected is ever over it. Its refusal names no way out yet
-  (T6's words). First recorded paying, a subscription is set to invoice
+  nothing connected is ever over it. Its refusal (`planWithRoom` null)
+  is the upgrade dialog's ceiling words: until a first invoice is paid,
+  and how to ask for more. First recorded paying, a subscription is set to invoice
   at `unverifiedThreshold` ($100, `billing_thresholds`, its billing month
   kept) before the event is recorded; a refusal for good is counted
   (`peal.billing.threshold_unset`, alert `peal-threshold-unset`) and the
