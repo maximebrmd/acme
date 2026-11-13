@@ -641,6 +641,70 @@ groups:
                     type: gt
                     params: [2.5]
 
+      - uid: peal-media-sweep-failing
+        title: A sweep of the media store keeps failing
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The sweeps of the media store failed three times or more in three hours (peal.media.sweep.failures, labelled by sweep), as one that fails at every hourly run, or a store that refuses them all, would. The store then keeps uploads never completed, multipart uploads left open, files no media holds or, for the folders sweep, the files of a deleted workspace, which erasure must remove. The server's warnings name the sweep and give the cause; check the store's credentials and reach, then wait for the next run.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The sweeps run every hour. A series that was there in the day before the window counts its increase, a restart's included; one born in the window, which increase never sees at its first sample, counts whole. A gap in the telemetry shorter than a day is not read as a birth.
+              expr: (sum(increase(peal_media_sweep_failures_total[3h]) unless (peal_media_sweep_failures_total unless max_over_time(peal_media_sweep_failures_total[1d] offset 3h))) or vector(0)) + (sum(peal_media_sweep_failures_total unless max_over_time(peal_media_sweep_failures_total[1d] offset 3h)) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
+
+      - uid: peal-media-sweep-refused
+        title: A sweep of the media store refuses to delete
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A sweep of the media store deleted nothing on purpose (peal.media.sweep.refusals, by sweep and reason). foreign - the media folder's owner marker (media/.owner) names another database; unmarked - this database wrote the marker and it is gone; restored - the marker names another Postgres cluster or timeline, as after a restore, a failover, pg_upgrade or a database loaded from a dump; rewound - the marker counts more owned runs than the database, which went back in time; contended - the marker changed while a run moved it on; breaker - a page of the bucket held more files the database does not know of, or more workspaces held uploads never completed, than a sound database leaves; the claim does not clear it - once the database is known sound, raise PEAL_MEDIA_SWEEP_ORPHANS_LIMIT or PEAL_MEDIA_SWEEP_PENDING_LIMIT for a run and restart the server. This database may not be the bucket's newest truth. Set PEAL_MEDIA_SWEEPS=off if in doubt, and for the other reasons, once the database is meant to own the folder, hand it over as packages/peal-infra/ansible/runbooks/restore-database.md step 7 says - sudo peal-compose run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts, which shows what it would write, then again with --yes.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 7200
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The sweeps run every hour, and a refusing one refuses at each run: two hours see one. A series born in the window counts whole.
+              expr: (sum(increase(peal_media_sweep_refusals_total[2h]) unless (peal_media_sweep_refusals_total unless max_over_time(peal_media_sweep_refusals_total[1d] offset 2h))) or vector(0)) + (sum(peal_media_sweep_refusals_total unless max_over_time(peal_media_sweep_refusals_total[1d] offset 2h)) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B

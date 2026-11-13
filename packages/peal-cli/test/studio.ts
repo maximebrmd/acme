@@ -726,6 +726,38 @@ const billing: Billing = {
   withdrawableUntil: null,
 };
 
+// The studio on a partner's account that pays per account, billed by the
+// partner's home: the pool's counts and limits, none of its money or
+// contract.
+const billedByHome: Billing = {
+  ...billing,
+  account: {
+    ...account,
+    billingWorkspaceId: "0190f3a0-0000-7000-8000-0000000c0001",
+    billingWorkspaceName: "Home",
+    partner: true,
+    payer: false,
+    workspaces: 3,
+  },
+  accounts: {
+    accountDays: null,
+    connected: 2,
+    estimate: null,
+    nextAccount: null,
+    pooled: 12,
+  },
+  allowances: {
+    ...billing.allowances,
+    channels: 100,
+    mediaStorage: 60_000_000_000,
+  },
+  estimate: null,
+  paymentFailed: false,
+  paymentMethod: true,
+  plan: "payAsYouGo",
+  usage: { ...billing.usage, channels: 12, mediaStorage: 4_000_000_000 },
+};
+
 // The workspace's usage over three days: two with posts, the last
 // without a snapshot.
 const usageReport = (period: {
@@ -1285,6 +1317,11 @@ export interface StudioState {
   /** The channels' default options, by channel. */
   readonly defaults: Readonly<Record<string, TargetOptions>>;
   readonly deliveries: readonly StudioDelivery[];
+  /**
+   * Whether another workspace of the studio's billing account bills it,
+   * as a test sets it: a partner's customer, a person's other workspace.
+   */
+  readonly billedElsewhere: boolean;
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   /** Whether its new posts ask for short links unless they say. */
@@ -1406,6 +1443,7 @@ export const makeStudio = (
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
+      billedElsewhere: false,
       overPlan: false,
       policy: "contributorsAndApplications",
       posts,
@@ -4839,7 +4877,13 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "billing", (handlers) =>
       handlers.handleAll({
-        get: () => allowed("billing:read").pipe(Effect.as(billing)),
+        get: () =>
+          allowed("billing:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ billedElsewhere }) =>
+              billedElsewhere ? billedByHome : billing
+            )
+          ),
         standing: () =>
           Ref.get(studio.state).pipe(
             Effect.map(({ overPlan }) => (overPlan ? over : within))

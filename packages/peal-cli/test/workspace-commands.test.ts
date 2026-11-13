@@ -1011,6 +1011,30 @@ describe("peal billing, members and invitations", () => {
   );
 
   it.effect(
+    "names the workspace that bills the account, with the pool's limits and none of its contract",
+    () =>
+      Effect.gen(function* elsewhere() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.state, (state) => ({
+          ...state,
+          billedElsewhere: true,
+        }));
+
+        const shown = yield* session.printed(["billing", ...inStudio]);
+
+        assert.include(shown, "Plan: per-account pricing, billed by Home.");
+        assert.match(shown, /Channels\s+12 of 100/u);
+        assert.match(shown, /Media stored\s+4\.0 GB of 60\.0 GB/u);
+        assert.include(
+          shown,
+          "Owners and admins of Home add a payment method, cancel or withdraw on its Billing page in the web app."
+        );
+        assert.notInclude(shown, "with no subscription");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "says what a workspace holds beyond its plan, and the way out",
     () =>
       Effect.gen(function* over() {

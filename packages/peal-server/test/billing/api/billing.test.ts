@@ -125,7 +125,7 @@ const overviewWith = (
   Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
     Layer.provide(NoMetersTest),
-    Layer.provide(WorkspaceEntitlements.layer),
+    Layer.provide(WorkspaceEntitlements.layerShared),
     Layer.provide(Layer.mergeAll(holders, OwnChannelsTest, billed)),
     Layer.provide(subscriptions),
     Layer.provide(NoTrialsTest),
@@ -389,7 +389,18 @@ const home = WorkspaceIdSchema.make("5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81");
 layer(
   overviewWith(
     true,
-    subscriptionsHolding([]),
+    // The partner's own contract, its card failing.
+    subscriptionsHolding([
+      subscriptionOf({
+        currentPeriodEnd: Option.some(
+          DateTime.makeUnsafe("2026-12-01T00:00:00Z")
+        ),
+        plan: "payAsYouGo",
+        startedAt: Option.some(startedAt),
+        status: "past_due",
+        workspaceId: home,
+      }),
+    ]),
     Layer.merge(DaysTest, Layer.mock(StripeContracts, {})),
     Layer.succeed(
       PlanHolders,
@@ -421,6 +432,88 @@ layer(
         assert.isNull(billing.estimate);
         assert.isNull(billing.upcomingInvoice);
       })
+  );
+
+  it.effect(
+    "tell it the account's pool and limits, as its usage does, but none of its contract or its payment failing",
+    () =>
+      Effect.gen(function* contract() {
+        yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+        const client = yield* as(permissionsFor("owner"));
+        const billing = yield* client.billing.get({ params });
+
+        // The plan it shares, and nothing of whose contract gives it.
+        assert.strictEqual(billing.plan, "payAsYouGo");
+        assert.isNull(billing.subscription);
+        assert.isNull(billing.withdrawableUntil);
+        assert.isFalse(billing.paymentFailed ?? false);
+        // The pool's counts and limits, which its uploads and connections
+        // are held to: never "no limit".
+        assert.strictEqual(billing.usage.channels, 2);
+        assert.strictEqual(billing.usage.mediaStorage, 1_250_000);
+        assert.isNotNull(billing.allowances.mediaStorage);
+      })
+  );
+});
+
+// A billing account whose per-account contract is past due: it still
+// entitles while Stripe retries, and its payment method needs updating.
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([
+      subscriptionOf({
+        plan: "payAsYouGo",
+        startedAt: Option.some(startedAt),
+        status: "past_due",
+        workspaceId,
+      }),
+    ]),
+    Layer.merge(DaysTest, UpcomingTest)
+  )
+)("the billing endpoint for a past due per-account contract", (it) => {
+  it.effect("say its payment failed to the workspace that bills it", () =>
+    Effect.gen(function* pastDue() {
+      yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+      const client = yield* as(permissionsFor("owner"));
+      const billing = yield* client.billing.get({ params });
+
+      assert.strictEqual(billing.plan, "payAsYouGo");
+      assert.strictEqual(billing.subscription?.status, "past_due");
+      assert.isTrue(billing.paymentFailed);
+    })
+  );
+});
+
+// A billing account whose per-account contract went unpaid: back on the
+// free tier, yet Stripe may still bill it, so nothing is ordered.
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([
+      subscriptionOf({
+        plan: "payAsYouGo",
+        startedAt: Option.some(startedAt),
+        status: "unpaid",
+        workspaceId,
+      }),
+    ]),
+    Layer.merge(DaysTest, Layer.mock(StripeContracts, {}))
+  )
+)("the billing endpoint for an unpaid per-account contract", (it) => {
+  it.effect("say its payment failed to the workspace that bills it", () =>
+    Effect.gen(function* unpaid() {
+      yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+      const client = yield* as(permissionsFor("owner"));
+      const billing = yield* client.billing.get({ params });
+
+      assert.strictEqual(billing.plan, "free");
+      assert.isNull(billing.subscription);
+      assert.isTrue(billing.paymentFailed);
+    })
   );
 });
 

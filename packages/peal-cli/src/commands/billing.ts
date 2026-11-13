@@ -53,9 +53,40 @@ export const usageLines = (
     ["  Media stored", storage(usage.mediaStorage, allowances.mediaStorage)],
   ]);
 
-const planLine = (billing: Billing): string => {
+// The workspace that bills the account the workspace is on, when it is
+// another: its name, for a member of it.
+const billedBy = (
+  billing: Billing,
+  workspaceId: string
+): { readonly name: string | null } | null => {
+  const { account } = billing;
+
+  return account === undefined || account.billingWorkspaceId === workspaceId
+    ? null
+    : { name: account.billingWorkspaceName };
+};
+
+// A plan as the command names it: the two sold by the rate card in words,
+// a legacy plan by its id.
+const planName = (plan: string): string => {
+  if (plan === "free") {
+    return "free tier";
+  }
+
+  return plan === "payAsYouGo" ? "per-account pricing" : plan;
+};
+
+const planLine = (billing: Billing, workspaceId: string): string => {
   if (!billing.enabled || billing.plan === null) {
     return "This server does not bill: nothing is limited.";
+  }
+
+  const elsewhere = billedBy(billing, workspaceId);
+
+  // Another workspace bills the account: the plan, and where; its
+  // contract is told there only.
+  if (elsewhere !== null) {
+    return `Plan: ${planName(billing.plan)}, billed by ${elsewhere.name ?? "another workspace of its billing account"}.`;
   }
 
   const { subscription } = billing;
@@ -161,7 +192,7 @@ export const billing = Command.make(
     }
 
     yield* Console.log(`Billing of ${workspace.name}:`);
-    yield* Console.log(planLine(found));
+    yield* Console.log(planLine(found, workspace.id));
 
     for (const line of standingLines(standing)) {
       yield* Console.log(line);
@@ -180,8 +211,12 @@ export const billing = Command.make(
     }
 
     if (found.enabled) {
+      const elsewhere = billedBy(found, workspace.id);
+
       yield* Console.log(
-        "Owners and admins add a payment method, cancel or withdraw on the workspace's Billing page in the web app."
+        elsewhere === null
+          ? "Owners and admins add a payment method, cancel or withdraw on the workspace's Billing page in the web app."
+          : `Owners and admins of ${elsewhere.name ?? "the workspace that bills the account"} add a payment method, cancel or withdraw on its Billing page in the web app.`
       );
     }
   })

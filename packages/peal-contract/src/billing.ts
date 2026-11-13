@@ -264,7 +264,13 @@ export type SpendCeiling = typeof SpendCeilingSchema.Type;
  * priced by tiers of channels keeps its plan until it ends. On a server
  * that does not bill, `enabled` is false, `plan`, `subscription`, `trial`
  * and `withdrawableUntil` are null, every allowance is null and `plans` is
- * empty: nothing is limited.
+ * empty: nothing is limited. A workspace whose billing account another of
+ * its workspaces bills (a partner's customer, a person's other workspaces)
+ * shares that account's plan, and reads its pool and limits as its usage
+ * does (`accounts.pooled`, `usage`, `allowances`), but none of its money
+ * or contract: `subscription`, `withdrawableUntil`, `estimate`,
+ * `upcomingInvoice` and the month's figures are null, and `paymentFailed`
+ * false. `account.billingWorkspaceId` names the workspace that bills.
  */
 export const BillingSchema = Schema.Struct({
   // The billing account the workspace is on, on a server that does not
@@ -285,6 +291,13 @@ export const BillingSchema = Schema.Struct({
   // The billing account's meters this month, on a server that bills;
   // null elsewhere, where nothing is metered.
   meters: Schema.NullOr(Schema.Array(BillingMeterSchema)),
+  // Whether the last payment of the billing account's per-account
+  // subscription failed: past due while Stripe retries (it still
+  // entitles), or unpaid once Stripe gave up (it no longer entitles, yet
+  // Stripe may still bill it, so nothing is ordered). Its payment method is
+  // updated in the customer portal. Told to the workspace that bills the
+  // account only (false elsewhere); older servers leave it out.
+  paymentFailed: Schema.optionalKey(Schema.Boolean),
   // Whether the billing account pays with a payment method: its
   // per-account subscription is active or past due.
   paymentMethod: Schema.Boolean,

@@ -113,9 +113,12 @@ export const accountShown = <E, R>(
 export const billingView = (
   {
     accounts,
+    allowances,
+    billsHere,
     entitlements,
     estimate,
     meters,
+    paymentFailed,
     paymentMethod,
     plans,
     rateCard,
@@ -137,7 +140,7 @@ export const billingView = (
     nextAccount: Option.getOrNull(accounts.nextAccount),
     pooled: accounts.pooled,
   },
-  allowances: allowancesView(entitlements.allowancesFor(usage.channels)),
+  allowances: allowancesView(allowances),
   currency,
   enabled: Option.isSome(entitlements.plan),
   estimate: Option.getOrNull(estimate),
@@ -147,14 +150,17 @@ export const billingView = (
     ),
     Option.getOrNull
   ),
+  paymentFailed,
   paymentMethod,
   plan: Option.getOrNull(entitlements.plan),
-  plans: plans.map(({ allowances, plan, price }) => ({
-    allowances: allowancesView(allowances),
+  plans: plans.map(({ allowances: offered, plan, price }) => ({
+    allowances: allowancesView(offered),
     plan,
     price: Option.getOrNull(price),
   })),
+  // The account's contract, for the workspace that bills it only.
   subscription: entitlements.subscription.pipe(
+    Option.filter(() => billsHere),
     Option.map((subscription) => ({
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       currentPeriodEnd: Option.getOrNull(subscription.currentPeriodEnd),

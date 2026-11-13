@@ -8,7 +8,7 @@ import { StorageKeySchema } from "#media/domain/storage-key.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { mediaAssets } from "./schema.ts";
+import { erasedFolders, mediaAssets } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -55,6 +55,17 @@ export const DrizzleMediaRecords = Layer.effect(
             .delete(mediaAssets)
             .where(eq(mediaAssets.workspaceId, workspaceId))
             .pipe(Effect.mapError(failed));
+
+          // In the erasure's transaction: the folder is on the list until
+          // the store holds nothing of it, whatever fails after the commit.
+          yield* db
+            .insert(erasedFolders)
+            .values({
+              erasedAt: DateTime.toDate(yield* DateTime.now),
+              workspaceId,
+            })
+            .onConflictDoNothing()
+            .pipe(Effect.mapError(failed));
         }
       ),
       exportWorkspace: Effect.fn("MediaRecords.exportWorkspace")(
@@ -93,8 +104,25 @@ export const DrizzleMediaRecords = Layer.effect(
           );
         }
       ),
-      removeWorkspaceFiles: (workspaceId) =>
-        folders.removeWorkspace(workspaceId),
+      removeWorkspaceFiles: Effect.fn("MediaRecords.removeWorkspaceFiles")(
+        function* removeWorkspaceFiles(workspaceId) {
+          yield* folders.removeWorkspace(workspaceId);
+
+          // The folder is empty: a row left would only have the sweep
+          // empty it again, which changes nothing.
+          yield* db
+            .delete(erasedFolders)
+            .where(eq(erasedFolders.workspaceId, workspaceId))
+            .pipe(
+              Effect.catchCause((cause) =>
+                Effect.logWarning(
+                  "An emptied media folder stays listed for the sweep",
+                  cause
+                )
+              )
+            );
+        }
+      ),
     });
   })
 );

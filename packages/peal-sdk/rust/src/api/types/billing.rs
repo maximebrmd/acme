@@ -14,6 +14,9 @@ pub struct Billing {
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub estimate: Option<Money>,
+    #[serde(rename = "paymentFailed")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payment_failed: Option<bool>,
     #[serde(rename = "paymentMethod")]
     #[serde(default)]
     pub payment_method: bool,
@@ -56,6 +59,7 @@ pub struct BillingBuilder {
     currency: Option<String>,
     enabled: Option<bool>,
     estimate: Option<Money>,
+    payment_failed: Option<bool>,
     payment_method: Option<bool>,
     plan: Option<Plan>,
     plans: Option<Vec<PlanOffer>>,
@@ -96,6 +100,11 @@ impl BillingBuilder {
 
     pub fn estimate(mut self, value: Money) -> Self {
         self.estimate = Some(value);
+        self
+    }
+
+    pub fn payment_failed(mut self, value: bool) -> Self {
+        self.payment_failed = Some(value);
         self
     }
 
@@ -175,6 +184,7 @@ impl BillingBuilder {
                 .enabled
                 .ok_or_else(|| BuildError::missing_field("enabled"))?,
             estimate: self.estimate,
+            payment_failed: self.payment_failed,
             payment_method: self
                 .payment_method
                 .ok_or_else(|| BuildError::missing_field("payment_method"))?,

@@ -1,4 +1,4 @@
-// The billing alerts as Prometheus evaluates them (promtool, in the
+// The billing and media sweep alerts as Prometheus evaluates them (promtool, in the
 // production image), on made-up series: each fires the first time, a
 // counter born at 1 or a gauge set once at the start included, and stays
 // quiet otherwise. Skipped without Docker.
@@ -285,12 +285,79 @@ const cases: readonly Case[] = [
     series: { peal_billing_duplicate_subscriptions_total: "_x30 1x90" },
     uid: "peal-duplicate-subscription",
   },
+  {
+    expected: [
+      ["95m", false],
+      ["155m", true],
+    ],
+    interval: "1m",
+    name: "a media sweep that fails at three hourly runs, the counter born at 1",
+    series: {
+      'peal_media_sweep_failures_total{sweep="orphans"}': "_x30 1x60 2x60 3x60",
+    },
+    uid: "peal-media-sweep-failing",
+  },
+  {
+    expected: [["370m", true]],
+    interval: "1m",
+    name: "a media sweep that fails three times in three hours, long after it first did",
+    series: {
+      'peal_media_sweep_failures_total{sweep="orphans"}':
+        "5x200 6x60 7x60 8x60",
+    },
+    uid: "peal-media-sweep-failing",
+  },
+  {
+    expected: [["160m", true]],
+    interval: "1m",
+    name: "a media sweep that fails three times across a restart, the counter born again at 1",
+    series: {
+      'peal_media_sweep_failures_total{sweep="orphans"}': "4x30 1x60 2x60 3x60",
+    },
+    uid: "peal-media-sweep-failing",
+  },
+  {
+    expected: [
+      ["185m", false],
+      ["200m", false],
+    ],
+    interval: "1m",
+    name: "media sweep failures long ago, across a telemetry gap",
+    series: {
+      'peal_media_sweep_failures_total{sweep="orphans"}': "2x180 _x10 2x80",
+    },
+    uid: "peal-media-sweep-failing",
+  },
+  {
+    expected: [
+      ["29m", false],
+      ["31m", true],
+      ["100m", true],
+    ],
+    interval: "1m",
+    name: "a media sweep that refuses at each run, the counter born at 1",
+    series: {
+      'peal_media_sweep_refusals_total{reason="foreign",sweep="orphans"}':
+        "_x30 1x60 2x60",
+    },
+    uid: "peal-media-sweep-refused",
+  },
+  {
+    expected: [["300m", false]],
+    interval: "1m",
+    name: "a media sweep that refused once, long ago",
+    series: {
+      'peal_media_sweep_refusals_total{reason="breaker",sweep="orphans"}':
+        "_x30 1x400",
+    },
+    uid: "peal-media-sweep-refused",
+  },
 ];
 
 const dockerRuns =
   spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
 
-describe("the billing alerts in Prometheus", () => {
+describe("the billing and media sweep alerts in Prometheus", () => {
   it.skipIf(!dockerRuns)(
     "fire as their tests say",
     () => {
