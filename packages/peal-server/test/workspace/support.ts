@@ -8,7 +8,10 @@ import { assert } from "@effect/vitest";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Effect, Option, Redacted, Schema } from "effect";
 
-import { lookupKeysOf } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  catalogueKeysOf,
+  lookupKeysOf,
+} from "#shared/infrastructure/stripe-settings.ts";
 import {
   bodyOf,
   origin,
@@ -263,6 +266,7 @@ export const authWithoutDatabase = () =>
       secret: Redacted.make("synthetic-auth-secret-for-tests-0123456789"),
       stripe: Option.some({
         apiUrl: Option.none(),
+        catalogue: catalogueKeysOf("synthetic"),
         prices: lookupKeysOf("synthetic"),
         secretKey: Redacted.make("sk_test_synthetic_routes"),
         webhookSecret: Redacted.make("whsec_synthetic_routes"),

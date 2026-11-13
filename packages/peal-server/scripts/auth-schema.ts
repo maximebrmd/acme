@@ -10,7 +10,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Option, Redacted } from "effect";
 import { format } from "oxfmt";
 
-import { lookupKeysOf } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  catalogueKeysOf,
+  lookupKeysOf,
+} from "#shared/infrastructure/stripe-settings.ts";
 import { makeAuth } from "#workspace/infrastructure/auth/options.ts";
 
 import oxfmtConfig from "../../../oxfmt.config.ts";
@@ -76,6 +79,7 @@ const auth = makeAuth({
     secret: Redacted.make("auth-schema-generator-only-0123456789abcdef"),
     stripe: Option.some({
       apiUrl: Option.none(),
+      catalogue: catalogueKeysOf("schema_only"),
       prices: lookupKeysOf("schema_only"),
       secretKey: Redacted.make("sk_test_schema_only"),
       webhookSecret: Redacted.make("whsec_schema_only"),

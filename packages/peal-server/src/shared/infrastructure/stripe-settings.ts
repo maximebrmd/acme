@@ -8,6 +8,21 @@ export interface PlanLookupKeys {
   readonly year: string;
 }
 
+/**
+ * The lookup keys of per-account pricing's prices at Stripe, one per line
+ * of the invoice: the connected accounts' ladder and each meter of the rate
+ * card (`billing/domain/rate-card.ts`). Each is also the event name of the
+ * line's Stripe meter.
+ */
+export interface CatalogueLookupKeys {
+  readonly accounts: string;
+  readonly assistantImages: string;
+  readonly assistantRequests: string;
+  readonly managedAds: string;
+  readonly outboundMessages: string;
+  readonly xApi: string;
+}
+
 /** How this server bills through Stripe. */
 export interface StripeSettings {
   /**
@@ -15,6 +30,11 @@ export interface StripeSettings {
    * names another, such as stripe-mock in tests.
    */
   readonly apiUrl: Option.Option<URL>;
+  /**
+   * The lookup keys of per-account pricing's prices, `<prefix>_accounts`,
+   * `<prefix>_outbound_messages`…, the prefix being the plans' below.
+   */
+  readonly catalogue: CatalogueLookupKeys;
   /**
    * The lookup keys of the Stripe prices each paid plan is sold at, monthly
    * and yearly: `<prefix>_<plan>_monthly` and `<prefix>_<plan>_yearly`, the
@@ -43,6 +63,25 @@ const LookupKeyPrefixSchema = Schema.String.check(
   Schema.isPattern(/^[a-z0-9_]{1,160}$/u)
 );
 
+/**
+ * STRIPE_LOOKUP_KEY_PREFIX, `peal` unless set: the start of every lookup
+ * key and meter event name this server reads at Stripe.
+ */
+export const lookupKeyPrefixConfig = Config.schema(
+  LookupKeyPrefixSchema,
+  "STRIPE_LOOKUP_KEY_PREFIX"
+).pipe(Config.withDefault("peal"));
+
+/** The lookup keys of per-account pricing's prices, under `prefix`. */
+export const catalogueKeysOf = (prefix: string): CatalogueLookupKeys => ({
+  accounts: `${prefix}_accounts`,
+  assistantImages: `${prefix}_assistant_images`,
+  assistantRequests: `${prefix}_assistant_requests`,
+  managedAds: `${prefix}_managed_ads`,
+  outboundMessages: `${prefix}_outbound_messages`,
+  xApi: `${prefix}_x_api`,
+});
+
 /** The lookup keys of each legacy plan's prices, under `prefix`. */
 export const lookupKeysOf = (
   prefix: string
@@ -63,13 +102,16 @@ export const lookupKeysOf = (
 const billing = (secretKey: Redacted.Redacted) =>
   Config.all({
     apiUrl: Config.option(Config.URL("STRIPE_API_URL")),
-    prices: Config.schema(
-      LookupKeyPrefixSchema,
-      "STRIPE_LOOKUP_KEY_PREFIX"
-    ).pipe(Config.withDefault("peal"), Config.map(lookupKeysOf)),
+    prefix: lookupKeyPrefixConfig,
     webhookSecret: requiredSecret("STRIPE_WEBHOOK_SECRET"),
   }).pipe(
-    Config.map((settings): StripeSettings => ({ ...settings, secretKey }))
+    Config.map(({ apiUrl, prefix, webhookSecret }): StripeSettings => ({
+      apiUrl,
+      catalogue: catalogueKeysOf(prefix),
+      prices: lookupKeysOf(prefix),
+      secretKey,
+      webhookSecret,
+    }))
   );
 
 /**
@@ -82,7 +124,8 @@ const billing = (secretKey: Redacted.Redacted) =>
  *   events;
  *
  * and reads `STRIPE_LOOKUP_KEY_PREFIX` (the prices' lookup keys,
- * `peal_<plan>_monthly` and `peal_<plan>_yearly` unless set) and
+ * `peal_accounts`… and `peal_<plan>_monthly`, `peal_<plan>_yearly` unless
+ * set) and
  * `STRIPE_API_URL`. Checkout always has Stripe Tax compute the VAT, as the
  * prices are tax-exclusive and every page shows them VAT included: the
  * Stripe account needs Stripe Tax set up. A webhook secret without a key

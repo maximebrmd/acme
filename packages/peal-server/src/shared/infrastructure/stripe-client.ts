@@ -22,7 +22,7 @@ const portOf = (url: URL): number => {
  * and `maxNetworkRetries` how often one is sent again.
  */
 export const stripeClientOf = (
-  settings: StripeSettings,
+  settings: Pick<StripeSettings, "apiUrl" | "secretKey">,
   options: {
     readonly maxNetworkRetries?: number;
     readonly timeout?: number;

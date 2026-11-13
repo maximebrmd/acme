@@ -58,6 +58,26 @@ describe("the Stripe settings", () => {
     })
   );
 
+  it.effect(
+    "read the lookup keys of per-account pricing's six prices, which are also its meters' event names",
+    () =>
+      Effect.gen(function* catalogue() {
+        const settings = yield* settingsFrom(billing);
+
+        assert.deepStrictEqual(
+          settings.pipe(Option.map(({ catalogue: keys }) => keys)),
+          Option.some({
+            accounts: "peal_accounts",
+            assistantImages: "peal_assistant_images",
+            assistantRequests: "peal_assistant_requests",
+            managedAds: "peal_managed_ads",
+            outboundMessages: "peal_outbound_messages",
+            xApi: "peal_x_api",
+          })
+        );
+      })
+  );
+
   it.effect("call another API when asked", () =>
     Effect.gen(function* api() {
       const settings = yield* settingsFrom({
@@ -88,6 +108,11 @@ describe("the Stripe settings", () => {
           month: "peal_sandbox_pro_monthly",
           year: "peal_sandbox_pro_yearly",
         })
+      );
+
+      assert.deepStrictEqual(
+        settings.pipe(Option.map(({ catalogue }) => catalogue.accounts)),
+        Option.some("peal_sandbox_accounts")
       );
 
       const malformed = yield* settingsFrom({
