@@ -230,6 +230,7 @@
     "rules": {
       "followUps": {
         "comment": {
+          "needs": "pageAdministrator",
           "textLimits": [
             {
               "maximum": 3000,

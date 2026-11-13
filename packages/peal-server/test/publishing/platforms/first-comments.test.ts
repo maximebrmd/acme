@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Duration, Effect, Option } from "effect";
 
 import type { PlatformClient } from "#publishing/application/platform-client.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
   dropped,
@@ -166,6 +167,37 @@ describe("a first comment on a Facebook Page", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "fails as refused, never a refused token, on a missing permission",
+    () =>
+      Effect.gen(function* permission() {
+        const server = yield* fakeWith(() =>
+          json(
+            {
+              error: {
+                code: 200,
+                message: "Permissions error",
+                type: "OAuthException",
+              },
+            },
+            403
+          )
+        );
+
+        const client = yield* facebookOn(server);
+
+        const failure = yield* client
+          .publish(yield* commentPart(pageId))
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          failure,
+          new BadRequest({ code: "permissionDenied" })
+        );
+        assert.strictEqual(posted(server, facebookComments).length, 1);
+      }).pipe(Effect.scoped)
+  );
+
   it.live("fails as the Page's refusal, which Meta gave before making it", () =>
     Effect.gen(function* refused() {
       const server = yield* fakeWith(() =>
@@ -321,6 +353,90 @@ describe("a first comment on a LinkedIn page", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "fails as refused, never a refused token, when LinkedIn answers 403",
+    () =>
+      Effect.gen(function* forbidden() {
+        const server = yield* fakeWith(() =>
+          json(
+            {
+              code: "ACCESS_DENIED",
+              message: "Not enough permissions",
+              status: 403,
+            },
+            403
+          )
+        );
+
+        const client = yield* linkedinOn(server);
+
+        const failure = yield* client
+          .publish(yield* commentPart(organization))
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          failure,
+          new BadRequest({ code: "permissionDenied" })
+        );
+        // Asked once: no renewal, no second try.
+        assert.strictEqual(posted(server, linkedinComments).length, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("takes a 401 with LinkedIn's own error for a refused token", () =>
+    Effect.gen(function* unauthorized() {
+      const server = yield* fakeWith(() =>
+        json({ message: "Invalid access token", status: 401 }, 401)
+      );
+
+      const client = yield* linkedinOn(server);
+
+      const failure = yield* client
+        .publish(yield* commentPart(organization))
+        .pipe(Effect.flip);
+
+      assert.strictEqual(failure._tag, "TokenExpired");
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("waits a minute on LinkedIn's comment throttle, not a day", () =>
+    Effect.gen(function* throttled() {
+      const server = yield* fakeWith(() =>
+        json({ message: "Too many requests", status: 429 }, 429)
+      );
+
+      const client = yield* linkedinOn(server);
+
+      const failure = yield* client
+        .publish(yield* commentPart(organization))
+        .pipe(Effect.flip);
+
+      assert.strictEqual(failure._tag, "RateLimited");
+      assert.strictEqual(
+        failure._tag === "RateLimited" && failure.retryAfter !== undefined
+          ? Duration.toMillis(failure.retryAfter)
+          : 0,
+        60_000
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("keeps the comment's URN when LinkedIn gives only its id", () =>
+    Effect.gen(function* bareId() {
+      const server = yield* fakeWith(() =>
+        json({}, 201, { "x-restli-id": "7004" })
+      );
+
+      const client = yield* linkedinOn(server);
+      const result = yield* client.publish(yield* commentPart(organization));
+
+      assert.strictEqual(
+        result._tag === "published" ? result.platformPostId : "",
+        `urn:li:comment:(${root},7004)`
+      );
+    }).pipe(Effect.scoped)
+  );
+
   it.live("is refused on a member's profile, sending nothing", () =>
     Effect.gen(function* profile() {
       const server = yield* fakeWith(() => json({}));
@@ -416,6 +532,33 @@ describe("a first comment on YouTube", () => {
       assert.strictEqual(
         result._tag === "published" ? result.platformPostId : "",
         "UgzFoundThread"
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("fails as refused, never a refused token, on a 403 permission", () =>
+    Effect.gen(function* insufficient() {
+      const server = yield* fakeWith(() =>
+        json(
+          {
+            error: {
+              code: 403,
+              errors: [{ domain: "global", reason: "insufficientPermissions" }],
+            },
+          },
+          403
+        )
+      );
+
+      const client = yield* youtubeOn(server);
+
+      const failure = yield* client
+        .publish(yield* commentPart(channelOnYouTube))
+        .pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        failure,
+        new BadRequest({ code: "insufficientPermissions" })
       );
     }).pipe(Effect.scoped)
   );

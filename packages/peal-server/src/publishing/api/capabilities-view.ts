@@ -56,9 +56,17 @@ const followUpsView = ({ followUps }: PlatformRules) => {
 
   const described = { kind: followUps.kind, maxCount: followUps.maximum };
 
-  return followUps.comment === undefined
-    ? described
-    : { ...described, commentTextLimits: followUps.comment.textLimits };
+  const { comment } = followUps;
+
+  if (comment === undefined) {
+    return described;
+  }
+
+  const limited = { ...described, commentTextLimits: comment.textLimits };
+
+  return comment.needs === undefined
+    ? limited
+    : { ...limited, commentNeeds: comment.needs };
 };
 
 /**

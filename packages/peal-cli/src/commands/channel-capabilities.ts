@@ -262,7 +262,12 @@ const partsLine = ({ followUps }: PlatformCapabilities): string => {
     .map(({ maximum, unit }) => `${String(maximum)} ${unit}`)
     .join(", ");
 
-  return `Parts: a first comment under the post (--then), text alone, at most ${limits}.`;
+  const needs =
+    followUps.commentNeeds === "pageAdministrator"
+      ? " The page's administrator must have connected it: a content administrator cannot comment."
+      : "";
+
+  return `Parts: a first comment under the post (--then), text alone, at most ${limits}.${needs}`;
 };
 
 // The poll, where the platform takes one.

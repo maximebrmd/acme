@@ -1,4 +1,4 @@
-import { DateTime, Effect, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { Headers, HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
@@ -14,14 +14,20 @@ import type {
 } from "#publishing/infrastructure/platforms/first-comment.ts";
 import { commitUnanswered } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PlatformPostId } from "#shared/domain/publish-result.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import {
   encodedUrn,
+  isLinkedInError,
   isOrganization,
 } from "#shared/infrastructure/platforms/linkedin-rest.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
 import { postRefusal } from "./linkedin-refusal.ts";
+import type { LinkedInRefusal } from "./linkedin-refusal.ts";
 
 // A first comment under a LinkedIn page's post, as the page, from the
 // Comments API (learn.microsoft.com/en-us/linkedin/marketing/
@@ -72,20 +78,79 @@ const unreadable = new BadRequest({ code: "unreadable" });
 const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
   response.status >= 200 && response.status < 300;
 
+// LinkedIn's short-term limit on creating comments: the Comments API
+// lists a 429 "creation rate limit exceeded for member", a one-minute
+// limit; a minute is waited when it names no wait.
+const commentThrottle = Duration.minutes(1);
+
+/**
+ * What LinkedIn refusing a comment means. Only a 401 in LinkedIn's own
+ * words is a refused token, as in the inbox's adapter: the post went live
+ * with the same token, and a 403 here is about the page role or the body
+ * (the Comments API's tables: a content administrator posts, and is not
+ * listed among the roles that comment), never a channel to reconnect. A
+ * 401 without LinkedIn's words is a proxy on the way. The rest is read as
+ * a post's refusal.
+ */
+const commentRefusal = (
+  response: HttpClientResponse.HttpClientResponse
+): Effect.Effect<never, LinkedInRefusal> => {
+  if (response.status === 401) {
+    return isLinkedInError(response).pipe(
+      Effect.flatMap((own) =>
+        Effect.fail(own ? new TokenRejected() : new PlatformUnavailable())
+      )
+    );
+  }
+
+  if (response.status === 403) {
+    return Effect.fail(new BadRequest({ code: "permissionDenied" }));
+  }
+
+  if (response.status === 429) {
+    return DateTime.now.pipe(
+      Effect.flatMap((now) =>
+        Effect.fail(
+          new RateLimited({
+            retryAfter: retryAfterOf(response.headers, now).pipe(
+              Option.getOrElse(() => commentThrottle)
+            ),
+          })
+        )
+      )
+    );
+  }
+
+  return postRefusal(response);
+};
+
 const profileRefused = new BadRequest({
   code: ownRefusalCodes.partsNotSupported,
 });
 
-// The comment's URN as LinkedIn wrote it, or the bare id its header gives.
-const madeOf = (response: HttpClientResponse.HttpClientResponse) =>
+// The comment's URN, as LinkedIn writes it (`urn:li:comment:(<post>,<id>)`),
+// also when its answer gives only the bare id in `x-restli-id`: one shape
+// for every comment Peal keeps.
+const madeOf = (
+  response: HttpClientResponse.HttpClientResponse,
+  root: PlatformPostId
+) =>
   HttpClientResponse.schemaBodyJson(MadeSchema)(response).pipe(
     Effect.map(({ commentUrn }) => Option.fromUndefinedOr(commentUrn)),
     Effect.orElseSucceed(() => Option.none<string>()),
     Effect.flatMap((urn) =>
       urn.pipe(
-        Option.orElse(() => Headers.get(response.headers, "x-restli-id")),
-        Option.map((id) => id.trim()),
-        Option.filter((id) => id !== ""),
+        Option.map((given) => given.trim()),
+        Option.filter((given) => given !== ""),
+        Option.orElse(() =>
+          Headers.get(response.headers, "x-restli-id").pipe(
+            Option.map((id) => id.trim()),
+            Option.filter((id) => id !== ""),
+            Option.map((id) =>
+              id.startsWith("urn:") ? id : `urn:li:comment:(${root},${id})`
+            )
+          )
+        ),
         Option.match({
           onNone: () =>
             Effect.fail(new OutcomeUnknown({ reason: "unreadableResponse" })),
@@ -128,7 +193,9 @@ export const linkedinCommentCalls = (options: {
             )
             .pipe(
               Effect.flatMap((response) =>
-                isSuccess(response) ? madeOf(response) : postRefusal(response)
+                isSuccess(response)
+                  ? madeOf(response, root)
+                  : commentRefusal(response)
               ),
               Effect.catchTags({
                 HttpClientError: commitUnanswered,

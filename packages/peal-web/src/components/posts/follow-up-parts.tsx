@@ -397,12 +397,19 @@ export const FollowUpParts = ({
         <ul className="text-muted-foreground flex flex-col gap-1 text-sm">
           {commenting.map((channel) => (
             <li key={channel.id}>
-              {t("comment", {
-                channel: tComposer("channelDetail", {
-                  handle: channel.handle,
-                  platform: tPosts("platform", { platform: channel.platform }),
-                }),
-              })}
+              {t(
+                channel.platform === "linkedin"
+                  ? "commentAdministrator"
+                  : "comment",
+                {
+                  channel: tComposer("channelDetail", {
+                    handle: channel.handle,
+                    platform: tPosts("platform", {
+                      platform: channel.platform,
+                    }),
+                  }),
+                }
+              )}
             </li>
           ))}
         </ul>

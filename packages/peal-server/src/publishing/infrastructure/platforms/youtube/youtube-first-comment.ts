@@ -16,6 +16,7 @@ import type {
   PlatformPostId,
   Published,
 } from "#shared/domain/publish-result.ts";
+import { googleReasonOf } from "#shared/infrastructure/platforms/google-refusal.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
 import { refusalOf } from "./youtube-refusal.ts";
@@ -120,7 +121,27 @@ export const youtubeCommentCalls = (options: {
                 );
               }
 
-              return refusalOf(response).pipe(Effect.flatMap(options.refused));
+              // Only a 401 is the token: a permission or a role refused
+              // here refuses this comment alone, as the video went live with
+              // the same token, never a channel to reconnect.
+              return Effect.all([
+                refusalOf(response),
+                googleReasonOf(response),
+              ]).pipe(
+                Effect.flatMap(([refusal, reason]) =>
+                  refusal.failure._tag === "TokenRejected" &&
+                  response.status !== 401
+                    ? Effect.fail(
+                        new BadRequest({
+                          code: Option.getOrElse(
+                            reason,
+                            () => `http${String(response.status)}`
+                          ),
+                        })
+                      )
+                    : options.refused(refusal)
+                )
+              );
             }
           ),
           Effect.catchTags({

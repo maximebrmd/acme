@@ -241,6 +241,12 @@ export type FollowUpKind = "comment" | "thread";
  * comments: text alone, within every limit, in place of a post's rules.
  */
 export interface CommentRules {
+  /**
+   * Who on the account may comment, where the platform restricts it: on a
+   * LinkedIn page, an administrator (the Comments API lists no content
+   * administrator among the roles that comment, while one posts).
+   */
+  readonly needs?: "pageAdministrator";
   readonly textLimits: readonly TextLimit[];
 }
 
@@ -480,8 +486,11 @@ const shortChoices = { maximum: 25, unit: "codePoints" } as const;
 // A first comment, which the account posts under its own post once it is
 // live, held to the platform's limits on a post's text (no platform's
 // page states one for a comment), with no file.
-const firstComment = (textLimits: readonly TextLimit[]): FollowUpRules => ({
-  comment: { textLimits },
+const firstComment = (
+  textLimits: readonly TextLimit[],
+  needs?: "pageAdministrator"
+): FollowUpRules => ({
+  comment: needs === undefined ? { textLimits } : { needs, textLimits },
   kind: "comment",
   maximum: 1,
 });
@@ -564,7 +573,10 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
-    followUps: firstComment([{ maximum: 3000, unit: "codePoints" }]),
+    followUps: firstComment(
+      [{ maximum: 3000, unit: "codePoints" }],
+      "pageAdministrator"
+    ),
     maxMedia: 20,
     media: {
       formats: {

@@ -110,9 +110,13 @@ export const publishedAs = (
   return { _tag: "published", permalink, platformPostId };
 };
 
-// The answer read with `schema`, or Meta's refusal.
+// The answer read with `schema`, or Meta's refusal, as `refusing` reads it.
 const answered =
-  <A, I>(call: GraphCall, schema: Schema.Codec<A, I>) =>
+  <A, I>(
+    call: GraphCall,
+    schema: Schema.Codec<A, I>,
+    refusing: typeof graphRefusal = graphRefusal
+  ) =>
   (
     response: HttpClientResponse.HttpClientResponse
   ): Effect.Effect<
@@ -126,7 +130,7 @@ const answered =
     response.status >= 200 && response.status < 300
       ? HttpClientResponse.schemaBodyJson(schema)(response)
       : graphRefusalOf(response).pipe(
-          Effect.flatMap((refusal) => Effect.fail(graphRefusal(call, refusal)))
+          Effect.flatMap((refusal) => Effect.fail(refusing(call, refusal)))
         );
 
 /** A read with a token in hand, for what `commit` does after the post. */
@@ -221,13 +225,15 @@ export const graphCalls = Effect.fn("MetaGraph.calls")(
         auth: GraphAuth,
         account: PublishingAccount
       ) => Effect.Effect<B, unknown>,
-      fallback: (made: A) => B
+      fallback: (made: A) => B,
+      // What Meta's refusal of this request means: a post's, by default.
+      refusing: typeof graphRefusal = graphRefusal
     ) =>
       credentials.withToken(post.channelId, (token) =>
         authOf(token.accessToken, token).pipe(
           Effect.flatMap((auth) =>
             http.execute(request(auth, token)).pipe(
-              Effect.flatMap(answered("post", schema)),
+              Effect.flatMap(answered("post", schema, refusing)),
               Effect.catchTags({
                 HttpClientError: commitUnanswered,
                 OutboundRequestRefused: commitUnanswered,

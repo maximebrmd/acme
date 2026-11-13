@@ -200,6 +200,9 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
   // when it is scheduled (`tooManyParts`).
   followUps: Schema.NullOr(
     Schema.Struct({
+      // Who on the account may comment, where the platform restricts it:
+      // on a LinkedIn page, the page's administrator.
+      commentNeeds: Schema.optionalKey(Schema.Literals(["pageAdministrator"])),
       commentTextLimits: Schema.optionalKey(Schema.Array(TextLimitSchema)),
       kind: Schema.Literals(["thread", "comment"]),
       maxCount: Schema.Int,

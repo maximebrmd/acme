@@ -360,8 +360,10 @@ describe("the platforms' capabilities endpoint", () => {
         const client = yield* clientWith(
           viewer,
           ready,
-          threadedPlatformsWith(true, new Set(["facebook", "youtube"]))
-            .takesParts
+          threadedPlatformsWith(
+            true,
+            new Set(["facebook", "youtube", "linkedin"])
+          ).takesParts
         );
 
         const all = yield* client.capabilities.platforms({
@@ -374,11 +376,18 @@ describe("the platforms' capabilities endpoint", () => {
           ),
           [
             ["x", "thread"],
+            ["linkedin", "comment"],
             ["bluesky", "thread"],
             ["mastodon", "thread"],
             ["facebook", "comment"],
             ["youtube", "comment"],
           ]
+        );
+        // A LinkedIn page comments through its administrator.
+        assert.strictEqual(
+          all.find(({ platform }) => platform === "linkedin")?.followUps
+            ?.commentNeeds,
+          "pageAdministrator"
         );
         assert.deepStrictEqual(
           all.find(({ platform }) => platform === "youtube")?.followUps,

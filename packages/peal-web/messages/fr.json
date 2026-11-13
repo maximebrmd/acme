@@ -1170,6 +1170,7 @@
       "alone": "{channel} : cette plateforme prend une publication seule, sans rien à sa suite. Retirez les parties, ou laissez ce canal de côté : la publication y serait refusée.",
       "tooMany": "{channel} : {maximum} parties au plus après la première.",
       "comment": "{channel} : la partie après la publication part en premier commentaire sous elle, une fois la publication en ligne.",
+      "commentAdministrator": "{channel} : la partie après la publication part en premier commentaire sous elle, une fois la publication en ligne. LinkedIn ne le prend que de l’administrateur de la page : un administrateur de contenu qui a connecté la page ne peut pas commenter.",
       "full": "Une publication a au plus {maximum} parties après la première."
     },
     "Poll": {

@@ -70,6 +70,12 @@ export type FollowUpKind = "comment" | "thread";
  * a comment.
  */
 export interface CommentRules {
+  /**
+   * Who on the account may comment, where the platform restricts it: on a
+   * LinkedIn page, an administrator (the Comments API lists no content
+   * administrator among the roles that comment, while one posts).
+   */
+  readonly needs?: "pageAdministrator";
   readonly textLimits: readonly TextLimit[];
 }
 
@@ -465,8 +471,11 @@ const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 // refuse for its length shorter than what Peal lets through, as the inbox
 // holds its replies. Text alone: Instagram and YouTube document no file
 // on a comment, LinkedIn's page contradicts itself on images.
-const firstComment = (textLimits: readonly TextLimit[]): FollowUpRules => ({
-  comment: { textLimits },
+const firstComment = (
+  textLimits: readonly TextLimit[],
+  needs?: "pageAdministrator"
+): FollowUpRules => ({
+  comment: needs === undefined ? { textLimits } : { needs, textLimits },
   kind: "comment",
   maximum: 1,
 });
@@ -549,7 +558,10 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
-    followUps: firstComment([{ maximum: 3000, unit: "codePoints" }]),
+    followUps: firstComment(
+      [{ maximum: 3000, unit: "codePoints" }],
+      "pageAdministrator"
+    ),
     maxMedia: 20,
     media: {
       formats: {

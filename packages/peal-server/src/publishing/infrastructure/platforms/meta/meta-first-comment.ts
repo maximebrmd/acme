@@ -8,9 +8,10 @@ import type {
   CommentCalls,
   ListedComment,
 } from "#publishing/infrastructure/platforms/first-comment.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { PlatformPostId } from "#shared/domain/publish-result.ts";
 
-import { formPost, query } from "./graph-calls.ts";
+import { formPost, graphRefusal, query } from "./graph-calls.ts";
 import type { GraphAuth, graphCalls, MetaHttp } from "./graph-calls.ts";
 
 // A first comment on Facebook Pages and Instagram, with the call the inbox
@@ -112,6 +113,18 @@ interface MetaCommentOptions {
   ) => URL;
 }
 
+/**
+ * What Meta refusing a comment means: as a post's (`graphRefusal`), but a
+ * permission the token lacks (code 10, 200 to 299), or a role the person
+ * lost, refuses this comment alone. The post is live with the same token,
+ * so the channel is never marked to reconnect for it: the part fails as
+ * `permissionDenied`, which a member reads.
+ */
+const commentRefusal: typeof graphRefusal = (call, refusal) =>
+  refusal._tag === "token" && refusal.permission
+    ? new BadRequest({ code: "permissionDenied" })
+    : graphRefusal(call, refusal);
+
 const commentOf =
   ({ api, calls, node }: MetaCommentOptions) =>
   (post: OutgoingPost, root: PlatformPostId) =>
@@ -122,7 +135,8 @@ const commentOf =
         formPost(node(on, root, "comments"), { ...auth, message: post.text }),
       CommentMadeSchema,
       ({ id }) => Effect.succeed(commentPublished(id)),
-      ({ id }) => commentPublished(id)
+      ({ id }) => commentPublished(id),
+      commentRefusal
     );
 
 /** A first comment under a Facebook Page's post, as the Page. */

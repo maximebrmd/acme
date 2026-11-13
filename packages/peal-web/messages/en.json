@@ -1170,6 +1170,7 @@
       "alone": "{channel}: this platform takes a post alone, with nothing after it. Remove the parts, or leave this channel out: the post would be refused there.",
       "tooMany": "{channel}: at most {maximum} parts after the first.",
       "comment": "{channel}: the part after the post goes out as a first comment under it, once the post is live.",
+      "commentAdministrator": "{channel}: the part after the post goes out as a first comment under it, once the post is live. LinkedIn takes it only from the page's administrator: a content administrator who connected the page cannot comment.",
       "full": "A post has {maximum} parts after its first at most."
     },
     "Poll": {
