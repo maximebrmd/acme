@@ -122,3 +122,50 @@ def test_the_sandbox_keeps_static_docs(rendered: Path) -> None:
     assert found["peal_docs_server"] is False
     assert rule["service"] == f"http://127.0.0.1:{settings('sandbox')['peal_ports']['docs']}", rule
     assert "--profile docs" not in (rendered / "peal-sandbox" / "peal-compose").read_text()
+
+
+def _routes_tasks() -> list[dict[str, Any]]:
+    return yaml.safe_load((Path(__file__).parent.parent / "roles" / "cloudflared" / "tasks" / "routes.yml").read_text())
+
+
+def test_until_the_docs_server_answers_the_tunnel_sends_the_docs_to_the_static_image(tmp_path: Path) -> None:
+    """site.yml can run before the release that starts the docs server: the
+    route waits for it to answer, so the host name never points at nothing."""
+    rendered = render_inventory(tmp_path, cloudflared_docs_to_server=False)
+    rule = _docs_rule(rendered, "production")
+
+    assert _resolved("production")["peal_docs_server"] is True
+    assert rule["service"] == f"http://127.0.0.1:{settings('production')['peal_ports']['docs']}", rule
+
+
+def test_the_route_asks_the_docs_server_even_in_check_mode() -> None:
+    probe = next(found for found in _routes_tasks() if found.get("name") == "Check whether the docs server answers")
+
+    assert probe["check_mode"] is False
+    assert probe["failed_when"] is False
+    assert "peal_ports.docs_server" in probe["ansible.builtin.uri"]["url"]
+
+
+def test_the_route_follows_the_answer() -> None:
+    choose = next(found for found in _routes_tasks() if found.get("name") == "Choose where the docs go")
+    expression = choose["ansible.builtin.set_fact"]["cloudflared_docs_to_server"]
+
+    assert ansible_render(expression, peal_docs_server=True, cloudflared_docs_probe={"status": 200}) is True
+    assert ansible_render(expression, peal_docs_server=True, cloudflared_docs_probe={"status": -1}) is False
+    assert ansible_render(expression, peal_docs_server=False, cloudflared_docs_probe={}) is False
+
+
+def test_the_release_sends_the_docs_to_the_server_once_it_answers() -> None:
+    """After its own check of the docs server, and before it checks the app
+    through the tunnel, so a restart of cloudflared is part of what it checks."""
+    release = Path(__file__).parent.parent / "roles" / "peal_release" / "tasks" / "main.yml"
+    names = [found.get("name") for found in yaml.safe_load(release.read_text())]
+    switch = task("peal_release", "Send the docs to the docs server")
+
+    assert switch["ansible.builtin.include_role"] == {"name": "cloudflared", "tasks_from": "routes.yml"}
+    assert (
+        names.index("Check the server, the web app and the docs server on the server")
+        < names.index("Send the docs to the docs server")
+        < names.index("Apply a changed route now")
+        < names.index("Check the app through the tunnel")
+    )
