@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
-import { Api, LastTargetLeft, TargetStatusConflict } from "peal-contract";
+import { Api, LastTargetLeft } from "peal-contract";
 import type { PostContent } from "peal-contract";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
@@ -290,16 +290,12 @@ describe("removing a channel from a scheduled post", () => {
             )
           );
 
-          const again = yield* client.posts
-            .removeTarget({
-              params: { postId: post.id, targetId: onBluesky.id, workspaceId },
-            })
-            .pipe(Effect.flip);
+          // Asked again, as after a lost answer: the post as it is.
+          const again = yield* client.posts.removeTarget({
+            params: { postId: post.id, targetId: onBluesky.id, workspaceId },
+          });
 
-          assert.deepStrictEqual(
-            again,
-            new TargetStatusConflict({ status: "cancelled" })
-          );
+          assert.deepStrictEqual(again, removed);
 
           const last = yield* client.posts
             .removeTarget({

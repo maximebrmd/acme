@@ -3653,6 +3653,14 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new LastTargetLeft();
             }
 
+            const already = post.targets.find(
+              ({ dropped, id }) => id === params.targetId && dropped === true
+            );
+
+            if (already !== undefined) {
+              return post;
+            }
+
             const removed = yield* changingTarget(studio, params, (target) =>
               target.status === "pending"
                 ? Option.some({

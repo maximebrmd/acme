@@ -549,7 +549,7 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const RemovePostTarget = Tool.make("remove_post_target", {
   dependencies: [CurrentMember],
-  description: `Takes one channel off a post that waits for its time (scheduled, or awaiting approval), by its target (get_post's \`targets\`): the post goes out at its time on its other channels and never on this one, whose target stays listed as cancelled, with \`dropped\`. The last channel the post still goes out on is refused: cancel_post cancels the post instead. In a workspace that asks for approvals, a post whose approval no longer covers it waits for one again. Nothing reaches a platform. ${needsPublishing}`,
+  description: `Takes one channel off a post that waits for its time (scheduled, or awaiting approval), by its target (get_post's \`targets\`): the post goes out at its time on its other channels and never on this one, whose target stays listed as cancelled, with \`dropped\`, and its texts and media there go with it. Calling it again for a channel already taken off answers the post as it is. The last channel the post still goes out on is refused: cancel_post cancels the post instead. In a workspace that asks for approvals, a post whose approval no longer covers it waits for one again. Nothing reaches a platform. ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ postId, targetId }),
   success: PostSchema,

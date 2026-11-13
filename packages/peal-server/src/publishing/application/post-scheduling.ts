@@ -20,7 +20,11 @@ import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { PostOccurrence } from "#publishing/domain/post-occurrence.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
-import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
+import {
+  cancelTarget,
+  isDropped,
+  isSettled,
+} from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
@@ -550,7 +554,9 @@ export class PostScheduling extends Context.Service<
      * Takes one channel off a post that waits for its time (scheduled, or
      * awaiting an approval), which still goes out on its others: the
      * target is cancelled, marked `dropped`, and never sent
-     * (`dropTarget`). Refused for a post that is publishing or done
+     * (`dropTarget`). A target taken off already answers the post as it
+     * is, so a request sent again is safe. Refused for a post that is
+     * publishing or done
      * (`InvalidPostTransition`), a target that is not pending
      * (`InvalidTargetTransition`), and the last target still pending
      * (`LastTargetLeft`: cancel the post instead). It is an edit of the
@@ -1945,6 +1951,17 @@ export class PostScheduling extends Context.Service<
 
               if (target === undefined) {
                 return yield* new PostNotFound({ postId });
+              }
+
+              // Taken off already, as by a request sent again after its
+              // answer was lost: nothing more to do.
+              if (isDropped(target)) {
+                const unchanged: PostWithTargets = {
+                  post: current.post,
+                  targets,
+                };
+
+                return unchanged;
               }
 
               const dropped = yield* Effect.fromResult(
