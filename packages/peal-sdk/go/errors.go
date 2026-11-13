@@ -196,11 +196,11 @@ func (n *NotFoundError) GetBody() any {
 // The workspace's plan (`plan`) allows `allowed` of `limit`, across every workspace of its billing account, and holds `used`: nothing was changed. `planWithRoom` is `payAsYouGo` when a payment method gives room (as for a third connected account on the free tier), which an owner or an admin adds by ordering on the billing page (`billingUrl`); it is null when no plan holds that much. Removing some makes room too. A workspace holding more than its plan allows, as after a subscription ended, adds nothing until it is back within it.
 type PaymentRequiredError struct {
 	*core.APIError
-	Body *PlanLimitReachedEncoded
+	Body any
 }
 
 func (p *PaymentRequiredError) UnmarshalJSON(data []byte) error {
-	var body *PlanLimitReachedEncoded
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (p *PaymentRequiredError) Unwrap() error {
 	return p.APIError
 }
 
-func (p *PaymentRequiredError) GetBody() *PlanLimitReachedEncoded {
+func (p *PaymentRequiredError) GetBody() any {
 	if p == nil {
 		return nil
 	}

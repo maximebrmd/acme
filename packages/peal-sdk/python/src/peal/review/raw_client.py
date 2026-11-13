@@ -23,7 +23,6 @@ from ..types.approval_policy import ApprovalPolicy
 from ..types.approval_request import ApprovalRequest
 from ..types.changes_outcome import ChangesOutcome
 from ..types.created_review_link import CreatedReviewLink
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.post_review import PostReview
 from ..types.review_comment import ReviewComment
 from ..types.review_link import ReviewLink
@@ -716,9 +715,9 @@ class RawReviewClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1887,9 +1886,9 @@ class AsyncRawReviewClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

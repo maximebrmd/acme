@@ -35,6 +35,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventPaymentMethodNeeded }, key: "PAYMENT_METHOD_NEEDED"
 
+      member -> { Peal::Types::NoticeEventAllowanceReached }, key: "ALLOWANCE_REACHED"
+
       member -> { Peal::Types::NoticeEventSubscriptionRenewing }, key: "SUBSCRIPTION_RENEWING"
 
       member -> { Peal::Types::NoticeEventSubscriptionCancelled }, key: "SUBSCRIPTION_CANCELLED"

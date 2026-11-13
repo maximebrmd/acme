@@ -24,7 +24,6 @@ from ..types.media_kind import MediaKind
 from ..types.media_page import MediaPage
 from ..types.media_query import MediaQuery
 from ..types.media_usage import MediaUsage
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.prepared_upload import PreparedUpload
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -242,9 +241,9 @@ class RawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -381,9 +380,9 @@ class RawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -833,9 +832,9 @@ class RawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1213,9 +1212,9 @@ class AsyncRawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1352,9 +1351,9 @@ class AsyncRawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1804,9 +1803,9 @@ class AsyncRawMediaClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

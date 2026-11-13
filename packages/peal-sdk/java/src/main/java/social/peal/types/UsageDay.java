@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UsageDay.Builder.class)
 public final class UsageDay {
+    private final int assistantImages;
+
     private final Optional<Integer> assistantRequests;
 
     private final Optional<Integer> billableAccounts;
@@ -40,11 +42,14 @@ public final class UsageDay {
 
     private final Optional<Integer> members;
 
+    private final int outboundMessages;
+
     private final int publishedPosts;
 
     private final Map<String, Object> additionalProperties;
 
     private UsageDay(
+            int assistantImages,
             Optional<Integer> assistantRequests,
             Optional<Integer> billableAccounts,
             List<PlatformPosts> byPlatform,
@@ -52,8 +57,10 @@ public final class UsageDay {
             String day,
             Optional<Long> mediaStorage,
             Optional<Integer> members,
+            int outboundMessages,
             int publishedPosts,
             Map<String, Object> additionalProperties) {
+        this.assistantImages = assistantImages;
         this.assistantRequests = assistantRequests;
         this.billableAccounts = billableAccounts;
         this.byPlatform = byPlatform;
@@ -61,8 +68,14 @@ public final class UsageDay {
         this.day = day;
         this.mediaStorage = mediaStorage;
         this.members = members;
+        this.outboundMessages = outboundMessages;
         this.publishedPosts = publishedPosts;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("assistantImages")
+    public int getAssistantImages() {
+        return assistantImages;
     }
 
     @JsonIgnore
@@ -115,6 +128,11 @@ public final class UsageDay {
         return members;
     }
 
+    @JsonProperty("outboundMessages")
+    public int getOutboundMessages() {
+        return outboundMessages;
+    }
+
     @JsonProperty("publishedPosts")
     public int getPublishedPosts() {
         return publishedPosts;
@@ -162,19 +180,22 @@ public final class UsageDay {
     }
 
     private boolean equalTo(UsageDay other) {
-        return assistantRequests.equals(other.assistantRequests)
+        return assistantImages == other.assistantImages
+                && assistantRequests.equals(other.assistantRequests)
                 && billableAccounts.equals(other.billableAccounts)
                 && byPlatform.equals(other.byPlatform)
                 && channels.equals(other.channels)
                 && day.equals(other.day)
                 && mediaStorage.equals(other.mediaStorage)
                 && members.equals(other.members)
+                && outboundMessages == other.outboundMessages
                 && publishedPosts == other.publishedPosts;
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.assistantImages,
                 this.assistantRequests,
                 this.billableAccounts,
                 this.byPlatform,
@@ -182,6 +203,7 @@ public final class UsageDay {
                 this.day,
                 this.mediaStorage,
                 this.members,
+                this.outboundMessages,
                 this.publishedPosts);
     }
 
@@ -190,14 +212,22 @@ public final class UsageDay {
         return ObjectMappers.stringify(this);
     }
 
-    public static DayStage builder() {
+    public static AssistantImagesStage builder() {
         return new Builder();
     }
 
-    public interface DayStage {
-        PublishedPostsStage day(@NotNull String day);
+    public interface AssistantImagesStage {
+        DayStage assistantImages(int assistantImages);
 
         Builder from(UsageDay other);
+    }
+
+    public interface DayStage {
+        OutboundMessagesStage day(@NotNull String day);
+    }
+
+    public interface OutboundMessagesStage {
+        PublishedPostsStage outboundMessages(int outboundMessages);
     }
 
     public interface PublishedPostsStage {
@@ -249,8 +279,13 @@ public final class UsageDay {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements DayStage, PublishedPostsStage, _FinalStage {
+    public static final class Builder
+            implements AssistantImagesStage, DayStage, OutboundMessagesStage, PublishedPostsStage, _FinalStage {
+        private int assistantImages;
+
         private String day;
+
+        private int outboundMessages;
 
         private int publishedPosts;
 
@@ -272,6 +307,7 @@ public final class UsageDay {
 
         @java.lang.Override
         public Builder from(UsageDay other) {
+            assistantImages(other.getAssistantImages());
             assistantRequests(other.getAssistantRequests());
             billableAccounts(other.getBillableAccounts());
             byPlatform(other.getByPlatform());
@@ -279,14 +315,29 @@ public final class UsageDay {
             day(other.getDay());
             mediaStorage(other.getMediaStorage());
             members(other.getMembers());
+            outboundMessages(other.getOutboundMessages());
             publishedPosts(other.getPublishedPosts());
             return this;
         }
 
         @java.lang.Override
+        @JsonSetter("assistantImages")
+        public DayStage assistantImages(int assistantImages) {
+            this.assistantImages = assistantImages;
+            return this;
+        }
+
+        @java.lang.Override
         @JsonSetter("day")
-        public PublishedPostsStage day(@NotNull String day) {
+        public OutboundMessagesStage day(@NotNull String day) {
             this.day = Objects.requireNonNull(day, "day must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("outboundMessages")
+        public PublishedPostsStage outboundMessages(int outboundMessages) {
+            this.outboundMessages = outboundMessages;
             return this;
         }
 
@@ -449,6 +500,7 @@ public final class UsageDay {
         @java.lang.Override
         public UsageDay build() {
             return new UsageDay(
+                    assistantImages,
                     assistantRequests,
                     billableAccounts,
                     byPlatform,
@@ -456,19 +508,22 @@ public final class UsageDay {
                     day,
                     mediaStorage,
                     members,
+                    outboundMessages,
                     publishedPosts,
                     additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("assistantRequests")
+            if (key.equalsIgnoreCase("assistantImages")
+                    || key.equalsIgnoreCase("assistantRequests")
                     || key.equalsIgnoreCase("billableAccounts")
                     || key.equalsIgnoreCase("byPlatform")
                     || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("day")
                     || key.equalsIgnoreCase("mediaStorage")
                     || key.equalsIgnoreCase("members")
+                    || key.equalsIgnoreCase("outboundMessages")
                     || key.equalsIgnoreCase("publishedPosts")) {
                 return;
             }

@@ -46,7 +46,6 @@ import social.peal.types.ApprovalOutcome;
 import social.peal.types.ApprovalRequest;
 import social.peal.types.ChangesOutcome;
 import social.peal.types.CreatedReviewLink;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.PostReview;
 import social.peal.types.ReviewComment;
 import social.peal.types.ReviewLink;
@@ -671,8 +670,7 @@ public class RawReviewClient {
                                 response);
                     case 402:
                         throw new PaymentRequiredError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

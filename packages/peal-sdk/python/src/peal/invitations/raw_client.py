@@ -18,7 +18,6 @@ from ..errors.payment_required_error import PaymentRequiredError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..types.invitation import Invitation
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.role import Role
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -191,9 +190,9 @@ class RawInvitationsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -496,9 +495,9 @@ class AsyncRawInvitationsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

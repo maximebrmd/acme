@@ -286,22 +286,24 @@ var (
 	billingFieldCurrency          = big.NewInt(1 << 3)
 	billingFieldEnabled           = big.NewInt(1 << 4)
 	billingFieldEstimate          = big.NewInt(1 << 5)
-	billingFieldPaymentFailed     = big.NewInt(1 << 6)
-	billingFieldPaymentMethod     = big.NewInt(1 << 7)
-	billingFieldPlan              = big.NewInt(1 << 8)
-	billingFieldPlans             = big.NewInt(1 << 9)
-	billingFieldRateCard          = big.NewInt(1 << 10)
-	billingFieldSubscription      = big.NewInt(1 << 11)
-	billingFieldTrial             = big.NewInt(1 << 12)
-	billingFieldUpcomingInvoice   = big.NewInt(1 << 13)
-	billingFieldUsage             = big.NewInt(1 << 14)
-	billingFieldVatRate           = big.NewInt(1 << 15)
-	billingFieldWithdrawableUntil = big.NewInt(1 << 16)
+	billingFieldMeters            = big.NewInt(1 << 6)
+	billingFieldPaymentFailed     = big.NewInt(1 << 7)
+	billingFieldPaymentMethod     = big.NewInt(1 << 8)
+	billingFieldPlan              = big.NewInt(1 << 9)
+	billingFieldPlans             = big.NewInt(1 << 10)
+	billingFieldRateCard          = big.NewInt(1 << 11)
+	billingFieldSubscription      = big.NewInt(1 << 12)
+	billingFieldTrial             = big.NewInt(1 << 13)
+	billingFieldUpcomingInvoice   = big.NewInt(1 << 14)
+	billingFieldUsage             = big.NewInt(1 << 15)
+	billingFieldVatRate           = big.NewInt(1 << 16)
+	billingFieldWithdrawableUntil = big.NewInt(1 << 17)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
 var billingNullableFields = map[string]*big.Int{
 	"estimate":          billingFieldEstimate,
+	"meters":            billingFieldMeters,
 	"plan":              billingFieldPlan,
 	"rateCard":          billingFieldRateCard,
 	"subscription":      billingFieldSubscription,
@@ -317,6 +319,7 @@ type Billing struct {
 	Currency          string                `json:"currency" url:"currency"`
 	Enabled           bool                  `json:"enabled" url:"enabled"`
 	Estimate          *Money                `json:"estimate,omitempty" url:"estimate,omitempty"`
+	Meters            []*BillingMeter       `json:"meters,omitempty" url:"meters,omitempty"`
 	PaymentFailed     *bool                 `json:"paymentFailed,omitempty" url:"paymentFailed,omitempty"`
 	PaymentMethod     bool                  `json:"paymentMethod" url:"paymentMethod"`
 	Plan              *Plan                 `json:"plan,omitempty" url:"plan,omitempty"`
@@ -376,6 +379,13 @@ func (b *Billing) GetEstimate() *Money {
 		return nil
 	}
 	return b.Estimate
+}
+
+func (b *Billing) GetMeters() []*BillingMeter {
+	if b == nil {
+		return nil
+	}
+	return b.Meters
 }
 
 func (b *Billing) GetPaymentFailed() *bool {
@@ -511,6 +521,13 @@ func (b *Billing) SetEnabled(enabled bool) {
 func (b *Billing) SetEstimate(estimate *Money) {
 	b.Estimate = estimate
 	b.require(billingFieldEstimate)
+}
+
+// SetMeters sets the Meters field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetMeters(meters []*BillingMeter) {
+	b.Meters = meters
+	b.require(billingFieldMeters)
 }
 
 // SetPaymentFailed sets the PaymentFailed field and marks it as non-optional;
@@ -1000,6 +1017,267 @@ func (b *BillingAccountsUsage) MarshalJSON() ([]byte, error) {
 }
 
 func (b *BillingAccountsUsage) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
+	billingMeterFieldAllowance      = big.NewInt(1 << 0)
+	billingMeterFieldBillable       = big.NewInt(1 << 1)
+	billingMeterFieldCeiling        = big.NewInt(1 << 2)
+	billingMeterFieldEstimate       = big.NewInt(1 << 3)
+	billingMeterFieldGroup          = big.NewInt(1 << 4)
+	billingMeterFieldMeter          = big.NewInt(1 << 5)
+	billingMeterFieldMost           = big.NewInt(1 << 6)
+	billingMeterFieldPrice          = big.NewInt(1 << 7)
+	billingMeterFieldPriceConfirmed = big.NewInt(1 << 8)
+	billingMeterFieldResetsAt       = big.NewInt(1 << 9)
+	billingMeterFieldUsed           = big.NewInt(1 << 10)
+)
+
+// billingMeterNullableFields maps the wire names of BillingMeter's nullable fields (required or optional) to their field bits.
+var billingMeterNullableFields = map[string]*big.Int{
+	"ceiling":  billingMeterFieldCeiling,
+	"estimate": billingMeterFieldEstimate,
+	"group":    billingMeterFieldGroup,
+	"most":     billingMeterFieldMost,
+}
+
+type BillingMeter struct {
+	Allowance      int         `json:"allowance" url:"allowance"`
+	Billable       int         `json:"billable" url:"billable"`
+	Ceiling        *Money      `json:"ceiling,omitempty" url:"ceiling,omitempty"`
+	Estimate       *Money      `json:"estimate,omitempty" url:"estimate,omitempty"`
+	Group          *SpendGroup `json:"group,omitempty" url:"group,omitempty"`
+	Meter          Meter       `json:"meter" url:"meter"`
+	Most           *int        `json:"most,omitempty" url:"most,omitempty"`
+	Price          *UnitPrice  `json:"price" url:"price"`
+	PriceConfirmed bool        `json:"priceConfirmed" url:"priceConfirmed"`
+	ResetsAt       string      `json:"resetsAt" url:"resetsAt"`
+	Used           int         `json:"used" url:"used"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingMeter) GetAllowance() int {
+	if b == nil {
+		return 0
+	}
+	return b.Allowance
+}
+
+func (b *BillingMeter) GetBillable() int {
+	if b == nil {
+		return 0
+	}
+	return b.Billable
+}
+
+func (b *BillingMeter) GetCeiling() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.Ceiling
+}
+
+func (b *BillingMeter) GetEstimate() *Money {
+	if b == nil {
+		return nil
+	}
+	return b.Estimate
+}
+
+func (b *BillingMeter) GetGroup() *SpendGroup {
+	if b == nil {
+		return nil
+	}
+	return b.Group
+}
+
+func (b *BillingMeter) GetMeter() Meter {
+	if b == nil {
+		return ""
+	}
+	return b.Meter
+}
+
+func (b *BillingMeter) GetMost() *int {
+	if b == nil {
+		return nil
+	}
+	return b.Most
+}
+
+func (b *BillingMeter) GetPrice() *UnitPrice {
+	if b == nil {
+		return nil
+	}
+	return b.Price
+}
+
+func (b *BillingMeter) GetPriceConfirmed() bool {
+	if b == nil {
+		return false
+	}
+	return b.PriceConfirmed
+}
+
+func (b *BillingMeter) GetResetsAt() string {
+	if b == nil {
+		return ""
+	}
+	return b.ResetsAt
+}
+
+func (b *BillingMeter) GetUsed() int {
+	if b == nil {
+		return 0
+	}
+	return b.Used
+}
+
+func (b *BillingMeter) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingMeter) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetAllowance sets the Allowance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetAllowance(allowance int) {
+	b.Allowance = allowance
+	b.require(billingMeterFieldAllowance)
+}
+
+// SetBillable sets the Billable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetBillable(billable int) {
+	b.Billable = billable
+	b.require(billingMeterFieldBillable)
+}
+
+// SetCeiling sets the Ceiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetCeiling(ceiling *Money) {
+	b.Ceiling = ceiling
+	b.require(billingMeterFieldCeiling)
+}
+
+// SetEstimate sets the Estimate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetEstimate(estimate *Money) {
+	b.Estimate = estimate
+	b.require(billingMeterFieldEstimate)
+}
+
+// SetGroup sets the Group field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetGroup(group *SpendGroup) {
+	b.Group = group
+	b.require(billingMeterFieldGroup)
+}
+
+// SetMeter sets the Meter field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetMeter(meter Meter) {
+	b.Meter = meter
+	b.require(billingMeterFieldMeter)
+}
+
+// SetMost sets the Most field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetMost(most *int) {
+	b.Most = most
+	b.require(billingMeterFieldMost)
+}
+
+// SetPrice sets the Price field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetPrice(price *UnitPrice) {
+	b.Price = price
+	b.require(billingMeterFieldPrice)
+}
+
+// SetPriceConfirmed sets the PriceConfirmed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetPriceConfirmed(priceConfirmed bool) {
+	b.PriceConfirmed = priceConfirmed
+	b.require(billingMeterFieldPriceConfirmed)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetResetsAt(resetsAt string) {
+	b.ResetsAt = resetsAt
+	b.require(billingMeterFieldResetsAt)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingMeter) SetUsed(used int) {
+	b.Used = used
+	b.require(billingMeterFieldUsed)
+}
+
+func (b *BillingMeter) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingMeter
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingMeter(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, billingMeterNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		b.require(presentFields)
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingMeter) MarshalJSON() ([]byte, error) {
+	type embed BillingMeter
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingMeter) String() string {
 	if b == nil {
 		return "<nil>"
 	}
@@ -3101,6 +3379,28 @@ func (r *RateCardXRates) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+type SpendGroup string
+
+const (
+	SpendGroupAssistant SpendGroup = "assistant"
+	SpendGroupX         SpendGroup = "x"
+)
+
+func NewSpendGroupFromString(s string) (SpendGroup, error) {
+	switch s {
+	case "assistant":
+		return SpendGroupAssistant, nil
+	case "x":
+		return SpendGroupX, nil
+	}
+	var t SpendGroup
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SpendGroup) Ptr() *SpendGroup {
+	return &s
+}
+
 var (
 	standingFieldAccount        = big.NewInt(1 << 0)
 	standingFieldGraceUntil     = big.NewInt(1 << 1)
@@ -3453,106 +3753,4 @@ func (t *TrialOffer) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", t)
-}
-
-var (
-	unitPriceFieldCents = big.NewInt(1 << 0)
-	unitPriceFieldPer   = big.NewInt(1 << 1)
-)
-
-type UnitPrice struct {
-	Cents int `json:"cents" url:"cents"`
-	Per   int `json:"per" url:"per"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UnitPrice) GetCents() int {
-	if u == nil {
-		return 0
-	}
-	return u.Cents
-}
-
-func (u *UnitPrice) GetPer() int {
-	if u == nil {
-		return 0
-	}
-	return u.Per
-}
-
-func (u *UnitPrice) GetExtraProperties() map[string]interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.extraProperties
-}
-
-func (u *UnitPrice) require(field *big.Int) {
-	next := new(big.Int)
-	if u.explicitFields != nil {
-		next.Set(u.explicitFields)
-	}
-	next.Or(next, field)
-	u.explicitFields = next
-}
-
-// SetCents sets the Cents field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UnitPrice) SetCents(cents int) {
-	u.Cents = cents
-	u.require(unitPriceFieldCents)
-}
-
-// SetPer sets the Per field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UnitPrice) SetPer(per int) {
-	u.Per = per
-	u.require(unitPriceFieldPer)
-}
-
-func (u *UnitPrice) UnmarshalJSON(data []byte) error {
-	type unmarshaler UnitPrice
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UnitPrice(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UnitPrice) MarshalJSON() ([]byte, error) {
-	type embed UnitPrice
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*u),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (u *UnitPrice) String() string {
-	if u == nil {
-		return "<nil>"
-	}
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
 }

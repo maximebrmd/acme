@@ -191,9 +191,9 @@ export type AssistantMonth = typeof AssistantMonthSchema.Type;
  * payment method, which the server's models need on a server that bills
  * (a provider of the workspace's own needs none).
  */
-export const AssistantOffReasonSchema = Schema.Literals([
-  "paymentMethod",
-]).annotate({ identifier: "AssistantOffReason" });
+export const AssistantOffReasonSchema = Schema.Literal(
+  "paymentMethod"
+).annotate({ identifier: "AssistantOffReason" });
 
 export type AssistantOffReason = typeof AssistantOffReasonSchema.Type;
 

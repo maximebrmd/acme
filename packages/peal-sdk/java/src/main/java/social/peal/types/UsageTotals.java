@@ -25,6 +25,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UsageTotals.Builder.class)
 public final class UsageTotals {
+    private final int assistantImages;
+
     private final Optional<Long> billableAccountDays;
 
     private final List<PlatformPosts> byPlatform;
@@ -33,27 +35,42 @@ public final class UsageTotals {
 
     private final int daysCounted;
 
+    private final int managedAds;
+
     private final List<MeteredPosts> meteredPosts;
+
+    private final int outboundMessages;
 
     private final int publishedPosts;
 
     private final Map<String, Object> additionalProperties;
 
     private UsageTotals(
+            int assistantImages,
             Optional<Long> billableAccountDays,
             List<PlatformPosts> byPlatform,
             long channelDays,
             int daysCounted,
+            int managedAds,
             List<MeteredPosts> meteredPosts,
+            int outboundMessages,
             int publishedPosts,
             Map<String, Object> additionalProperties) {
+        this.assistantImages = assistantImages;
         this.billableAccountDays = billableAccountDays;
         this.byPlatform = byPlatform;
         this.channelDays = channelDays;
         this.daysCounted = daysCounted;
+        this.managedAds = managedAds;
         this.meteredPosts = meteredPosts;
+        this.outboundMessages = outboundMessages;
         this.publishedPosts = publishedPosts;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("assistantImages")
+    public int getAssistantImages() {
+        return assistantImages;
     }
 
     @JsonIgnore
@@ -79,9 +96,19 @@ public final class UsageTotals {
         return daysCounted;
     }
 
+    @JsonProperty("managedAds")
+    public int getManagedAds() {
+        return managedAds;
+    }
+
     @JsonProperty("meteredPosts")
     public List<MeteredPosts> getMeteredPosts() {
         return meteredPosts;
+    }
+
+    @JsonProperty("outboundMessages")
+    public int getOutboundMessages() {
+        return outboundMessages;
     }
 
     @JsonProperty("publishedPosts")
@@ -107,22 +134,28 @@ public final class UsageTotals {
     }
 
     private boolean equalTo(UsageTotals other) {
-        return billableAccountDays.equals(other.billableAccountDays)
+        return assistantImages == other.assistantImages
+                && billableAccountDays.equals(other.billableAccountDays)
                 && byPlatform.equals(other.byPlatform)
                 && channelDays == other.channelDays
                 && daysCounted == other.daysCounted
+                && managedAds == other.managedAds
                 && meteredPosts.equals(other.meteredPosts)
+                && outboundMessages == other.outboundMessages
                 && publishedPosts == other.publishedPosts;
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.assistantImages,
                 this.billableAccountDays,
                 this.byPlatform,
                 this.channelDays,
                 this.daysCounted,
+                this.managedAds,
                 this.meteredPosts,
+                this.outboundMessages,
                 this.publishedPosts);
     }
 
@@ -131,18 +164,30 @@ public final class UsageTotals {
         return ObjectMappers.stringify(this);
     }
 
-    public static ChannelDaysStage builder() {
+    public static AssistantImagesStage builder() {
         return new Builder();
     }
 
-    public interface ChannelDaysStage {
-        DaysCountedStage channelDays(long channelDays);
+    public interface AssistantImagesStage {
+        ChannelDaysStage assistantImages(int assistantImages);
 
         Builder from(UsageTotals other);
     }
 
+    public interface ChannelDaysStage {
+        DaysCountedStage channelDays(long channelDays);
+    }
+
     public interface DaysCountedStage {
-        PublishedPostsStage daysCounted(int daysCounted);
+        ManagedAdsStage daysCounted(int daysCounted);
+    }
+
+    public interface ManagedAdsStage {
+        OutboundMessagesStage managedAds(int managedAds);
+    }
+
+    public interface OutboundMessagesStage {
+        PublishedPostsStage outboundMessages(int outboundMessages);
     }
 
     public interface PublishedPostsStage {
@@ -176,10 +221,23 @@ public final class UsageTotals {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements ChannelDaysStage, DaysCountedStage, PublishedPostsStage, _FinalStage {
+    public static final class Builder
+            implements AssistantImagesStage,
+                    ChannelDaysStage,
+                    DaysCountedStage,
+                    ManagedAdsStage,
+                    OutboundMessagesStage,
+                    PublishedPostsStage,
+                    _FinalStage {
+        private int assistantImages;
+
         private long channelDays;
 
         private int daysCounted;
+
+        private int managedAds;
+
+        private int outboundMessages;
 
         private int publishedPosts;
 
@@ -195,12 +253,22 @@ public final class UsageTotals {
 
         @java.lang.Override
         public Builder from(UsageTotals other) {
+            assistantImages(other.getAssistantImages());
             billableAccountDays(other.getBillableAccountDays());
             byPlatform(other.getByPlatform());
             channelDays(other.getChannelDays());
             daysCounted(other.getDaysCounted());
+            managedAds(other.getManagedAds());
             meteredPosts(other.getMeteredPosts());
+            outboundMessages(other.getOutboundMessages());
             publishedPosts(other.getPublishedPosts());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("assistantImages")
+        public ChannelDaysStage assistantImages(int assistantImages) {
+            this.assistantImages = assistantImages;
             return this;
         }
 
@@ -213,8 +281,22 @@ public final class UsageTotals {
 
         @java.lang.Override
         @JsonSetter("daysCounted")
-        public PublishedPostsStage daysCounted(int daysCounted) {
+        public ManagedAdsStage daysCounted(int daysCounted) {
             this.daysCounted = daysCounted;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("managedAds")
+        public OutboundMessagesStage managedAds(int managedAds) {
+            this.managedAds = managedAds;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("outboundMessages")
+        public PublishedPostsStage outboundMessages(int outboundMessages) {
+            this.outboundMessages = outboundMessages;
             return this;
         }
 
@@ -301,22 +383,28 @@ public final class UsageTotals {
         @java.lang.Override
         public UsageTotals build() {
             return new UsageTotals(
+                    assistantImages,
                     billableAccountDays,
                     byPlatform,
                     channelDays,
                     daysCounted,
+                    managedAds,
                     meteredPosts,
+                    outboundMessages,
                     publishedPosts,
                     additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("billableAccountDays")
+            if (key.equalsIgnoreCase("assistantImages")
+                    || key.equalsIgnoreCase("billableAccountDays")
                     || key.equalsIgnoreCase("byPlatform")
                     || key.equalsIgnoreCase("channelDays")
                     || key.equalsIgnoreCase("daysCounted")
+                    || key.equalsIgnoreCase("managedAds")
                     || key.equalsIgnoreCase("meteredPosts")
+                    || key.equalsIgnoreCase("outboundMessages")
                     || key.equalsIgnoreCase("publishedPosts")) {
                 return;
             }

@@ -118,14 +118,16 @@ func (p *PartnerUsageRequest) SetTo(to *CalendarDay) {
 }
 
 var (
-	usageDayFieldAssistantRequests = big.NewInt(1 << 0)
-	usageDayFieldBillableAccounts  = big.NewInt(1 << 1)
-	usageDayFieldByPlatform        = big.NewInt(1 << 2)
-	usageDayFieldChannels          = big.NewInt(1 << 3)
-	usageDayFieldDay               = big.NewInt(1 << 4)
-	usageDayFieldMediaStorage      = big.NewInt(1 << 5)
-	usageDayFieldMembers           = big.NewInt(1 << 6)
-	usageDayFieldPublishedPosts    = big.NewInt(1 << 7)
+	usageDayFieldAssistantImages   = big.NewInt(1 << 0)
+	usageDayFieldAssistantRequests = big.NewInt(1 << 1)
+	usageDayFieldBillableAccounts  = big.NewInt(1 << 2)
+	usageDayFieldByPlatform        = big.NewInt(1 << 3)
+	usageDayFieldChannels          = big.NewInt(1 << 4)
+	usageDayFieldDay               = big.NewInt(1 << 5)
+	usageDayFieldMediaStorage      = big.NewInt(1 << 6)
+	usageDayFieldMembers           = big.NewInt(1 << 7)
+	usageDayFieldOutboundMessages  = big.NewInt(1 << 8)
+	usageDayFieldPublishedPosts    = big.NewInt(1 << 9)
 )
 
 // usageDayNullableFields maps the wire names of UsageDay's nullable fields (required or optional) to their field bits.
@@ -138,6 +140,7 @@ var usageDayNullableFields = map[string]*big.Int{
 }
 
 type UsageDay struct {
+	AssistantImages   int              `json:"assistantImages" url:"assistantImages"`
 	AssistantRequests *int             `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
 	BillableAccounts  *int             `json:"billableAccounts,omitempty" url:"billableAccounts,omitempty"`
 	ByPlatform        []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
@@ -145,6 +148,7 @@ type UsageDay struct {
 	Day               CalendarDay      `json:"day" url:"day"`
 	MediaStorage      *int64           `json:"mediaStorage,omitempty" url:"mediaStorage,omitempty"`
 	Members           *int             `json:"members,omitempty" url:"members,omitempty"`
+	OutboundMessages  int              `json:"outboundMessages" url:"outboundMessages"`
 	PublishedPosts    int              `json:"publishedPosts" url:"publishedPosts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -152,6 +156,13 @@ type UsageDay struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UsageDay) GetAssistantImages() int {
+	if u == nil {
+		return 0
+	}
+	return u.AssistantImages
 }
 
 func (u *UsageDay) GetAssistantRequests() *int {
@@ -203,6 +214,13 @@ func (u *UsageDay) GetMembers() *int {
 	return u.Members
 }
 
+func (u *UsageDay) GetOutboundMessages() int {
+	if u == nil {
+		return 0
+	}
+	return u.OutboundMessages
+}
+
 func (u *UsageDay) GetPublishedPosts() int {
 	if u == nil {
 		return 0
@@ -224,6 +242,13 @@ func (u *UsageDay) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	u.explicitFields = next
+}
+
+// SetAssistantImages sets the AssistantImages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageDay) SetAssistantImages(assistantImages int) {
+	u.AssistantImages = assistantImages
+	u.require(usageDayFieldAssistantImages)
 }
 
 // SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
@@ -273,6 +298,13 @@ func (u *UsageDay) SetMediaStorage(mediaStorage *int64) {
 func (u *UsageDay) SetMembers(members *int) {
 	u.Members = members
 	u.require(usageDayFieldMembers)
+}
+
+// SetOutboundMessages sets the OutboundMessages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageDay) SetOutboundMessages(outboundMessages int) {
+	u.OutboundMessages = outboundMessages
+	u.require(usageDayFieldOutboundMessages)
 }
 
 // SetPublishedPosts sets the PublishedPosts field and marks it as non-optional;

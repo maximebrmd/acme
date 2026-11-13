@@ -13,7 +13,9 @@ module Peal
       # Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (`source`:
       # the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images
       # (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how
-      # many requests the workspace has left today. Needs assistant:use.
+      # many requests the workspace has left today. On a server that bills, `month` and `images.month` tell the billing
+      # account's month of the server's models (included, used, price and ceiling), and `reason` `paymentMethod` why
+      # they are off without a payment method. Needs assistant:use.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -60,8 +62,13 @@ module Peal
       # the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily
       # requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once
       # (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model
-      # is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's
-      # provider could not be reached. Needs assistant:use.
+      # is never asked instead. Otherwise, on a server that does not bill, each request counts toward the workspace's
+      # daily quota, unless the model's provider could not be reached (AssistantQuotaExceeded past it). On a server that
+      # bills, the server's model needs a payment method on the billing account (UsageAllowanceReached
+      # `paymentMethodRequired` without one, before anything is asked): each request counts toward the month's allowance
+      # across the account's workspaces (the status's `month`), then is billed at its price up to the ceiling the
+      # account set (UsageAllowanceReached `ceilingReached`); a request that brings no suggestion, a timeout included,
+      # is not counted. Needs assistant:use.
       #
       # @param request_options [Hash]
       # @param params [Peal::Assistant::Types::SuggestionRequest]
@@ -116,13 +123,17 @@ module Peal
       # image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's
       # daily requests, on any plan, a trial and the free plan included, within a number of such images a day
       # (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's
-      # model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and
-      # an image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the
-      # provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in
-      # the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the
-      # provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube
-      # `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off
-      # unless the workspace brought a provider or the server has an image model (`images.source`).
+      # model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose. On a
+      # server that does not bill, an image costs the status's `images.requestCost` of the workspace's daily requests,
+      # given back only when the provider could not be reached. On a server that bills, it needs a payment method on the
+      # billing account (UsageAllowanceReached `paymentMethodRequired` without one, before anything is asked) and counts
+      # one of the month's images (`images.month`), billed past the allowance up to the account's ceiling
+      # (UsageAllowanceReached `ceilingReached`); an image that is not stored, whatever the reason, is not counted.
+      # Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which
+      # must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no
+      # platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok
+      # `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the workspace brought a
+      # provider or the server has an image model (`images.source`).
       #
       # @param request_options [Hash]
       # @param params [Peal::Assistant::Types::ImageRequest]
@@ -166,8 +177,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            402 => Peal::Types::PlanLimitReachedEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)

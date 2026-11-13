@@ -12,6 +12,10 @@ pub struct AssistantStatus {
     #[serde(rename = "maxTextLength")]
     #[serde(default)]
     pub max_text_length: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub month: Option<AssistantMonth>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<AssistantOffReason>,
     #[serde(default)]
     pub remaining: i64,
     #[serde(rename = "resetsAt")]
@@ -34,6 +38,8 @@ pub struct AssistantStatusBuilder {
     daily_limit: Option<i64>,
     images: Option<AssistantImagesStatus>,
     max_text_length: Option<i64>,
+    month: Option<AssistantMonth>,
+    reason: Option<AssistantOffReason>,
     remaining: Option<i64>,
     resets_at: Option<String>,
     source: Option<AssistantTextSource>,
@@ -57,6 +63,16 @@ impl AssistantStatusBuilder {
 
     pub fn max_text_length(mut self, value: i64) -> Self {
         self.max_text_length = Some(value);
+        self
+    }
+
+    pub fn month(mut self, value: AssistantMonth) -> Self {
+        self.month = Some(value);
+        self
+    }
+
+    pub fn reason(mut self, value: AssistantOffReason) -> Self {
+        self.reason = Some(value);
         self
     }
 
@@ -97,6 +113,8 @@ impl AssistantStatusBuilder {
             max_text_length: self
                 .max_text_length
                 .ok_or_else(|| BuildError::missing_field("max_text_length"))?,
+            month: self.month,
+            reason: self.reason,
             remaining: self
                 .remaining
                 .ok_or_else(|| BuildError::missing_field("remaining"))?,

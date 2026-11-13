@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class UsageDay extends JsonSerializableType
 {
     /**
+     * @var int $assistantImages
+     */
+    #[JsonProperty('assistantImages')]
+    public int $assistantImages;
+
+    /**
      * @var ?int $assistantRequests
      */
     #[JsonProperty('assistantRequests')]
@@ -51,6 +57,12 @@ class UsageDay extends JsonSerializableType
     public ?int $members;
 
     /**
+     * @var int $outboundMessages
+     */
+    #[JsonProperty('outboundMessages')]
+    public int $outboundMessages;
+
+    /**
      * @var int $publishedPosts
      */
     #[JsonProperty('publishedPosts')]
@@ -58,8 +70,10 @@ class UsageDay extends JsonSerializableType
 
     /**
      * @param array{
+     *   assistantImages: int,
      *   byPlatform: array<PlatformPosts>,
      *   day: string,
+     *   outboundMessages: int,
      *   publishedPosts: int,
      *   assistantRequests?: ?int,
      *   billableAccounts?: ?int,
@@ -71,6 +85,7 @@ class UsageDay extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->assistantImages = $values['assistantImages'];
         $this->assistantRequests = $values['assistantRequests'] ?? null;
         $this->billableAccounts = $values['billableAccounts'] ?? null;
         $this->byPlatform = $values['byPlatform'];
@@ -78,6 +93,7 @@ class UsageDay extends JsonSerializableType
         $this->day = $values['day'];
         $this->mediaStorage = $values['mediaStorage'] ?? null;
         $this->members = $values['members'] ?? null;
+        $this->outboundMessages = $values['outboundMessages'];
         $this->publishedPosts = $values['publishedPosts'];
     }
 

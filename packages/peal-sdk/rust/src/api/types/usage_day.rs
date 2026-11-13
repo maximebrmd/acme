@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct UsageDay {
+    #[serde(rename = "assistantImages")]
+    #[serde(default)]
+    pub assistant_images: i64,
     #[serde(rename = "assistantRequests")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assistant_requests: Option<i64>,
@@ -20,6 +23,9 @@ pub struct UsageDay {
     pub media_storage: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<i64>,
+    #[serde(rename = "outboundMessages")]
+    #[serde(default)]
+    pub outbound_messages: i64,
     #[serde(rename = "publishedPosts")]
     #[serde(default)]
     pub published_posts: i64,
@@ -34,6 +40,7 @@ impl UsageDay {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct UsageDayBuilder {
+    assistant_images: Option<i64>,
     assistant_requests: Option<i64>,
     billable_accounts: Option<i64>,
     by_platform: Option<Vec<PlatformPosts>>,
@@ -41,10 +48,16 @@ pub struct UsageDayBuilder {
     day: Option<CalendarDay>,
     media_storage: Option<i64>,
     members: Option<i64>,
+    outbound_messages: Option<i64>,
     published_posts: Option<i64>,
 }
 
 impl UsageDayBuilder {
+    pub fn assistant_images(mut self, value: i64) -> Self {
+        self.assistant_images = Some(value);
+        self
+    }
+
     pub fn assistant_requests(mut self, value: i64) -> Self {
         self.assistant_requests = Some(value);
         self
@@ -80,6 +93,11 @@ impl UsageDayBuilder {
         self
     }
 
+    pub fn outbound_messages(mut self, value: i64) -> Self {
+        self.outbound_messages = Some(value);
+        self
+    }
+
     pub fn published_posts(mut self, value: i64) -> Self {
         self.published_posts = Some(value);
         self
@@ -87,11 +105,16 @@ impl UsageDayBuilder {
 
     /// Consumes the builder and constructs a [`UsageDay`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`assistant_images`](UsageDayBuilder::assistant_images)
     /// - [`by_platform`](UsageDayBuilder::by_platform)
     /// - [`day`](UsageDayBuilder::day)
+    /// - [`outbound_messages`](UsageDayBuilder::outbound_messages)
     /// - [`published_posts`](UsageDayBuilder::published_posts)
     pub fn build(self) -> Result<UsageDay, BuildError> {
         Ok(UsageDay {
+            assistant_images: self
+                .assistant_images
+                .ok_or_else(|| BuildError::missing_field("assistant_images"))?,
             assistant_requests: self.assistant_requests,
             billable_accounts: self.billable_accounts,
             by_platform: self
@@ -101,6 +124,9 @@ impl UsageDayBuilder {
             day: self.day.ok_or_else(|| BuildError::missing_field("day"))?,
             media_storage: self.media_storage,
             members: self.members,
+            outbound_messages: self
+                .outbound_messages
+                .ok_or_else(|| BuildError::missing_field("outbound_messages"))?,
             published_posts: self
                 .published_posts
                 .ok_or_else(|| BuildError::missing_field("published_posts"))?,

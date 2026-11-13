@@ -3,9 +3,8 @@
 import typing
 
 from ..core.api_error import ApiError
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 
 
 class PaymentRequiredError(ApiError):
-    def __init__(self, body: PlanLimitReachedEncoded, headers: typing.Optional[typing.Dict[str, str]] = None):
+    def __init__(self, body: typing.Any, headers: typing.Optional[typing.Dict[str, str]] = None):
         super().__init__(status_code=402, headers=headers, body=body)

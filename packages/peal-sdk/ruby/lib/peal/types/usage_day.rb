@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class UsageDay < Internal::Types::Model
+      field :assistant_images, -> { Integer }, optional: false, nullable: false, api_name: "assistantImages"
+
       field :assistant_requests, -> { Integer }, optional: false, nullable: true, api_name: "assistantRequests"
 
       field :billable_accounts, -> { Integer }, optional: false, nullable: true, api_name: "billableAccounts"
@@ -18,6 +20,8 @@ module Peal
       field :media_storage, -> { Integer }, optional: false, nullable: true, api_name: "mediaStorage"
 
       field :members, -> { Integer }, optional: false, nullable: true
+
+      field :outbound_messages, -> { Integer }, optional: false, nullable: false, api_name: "outboundMessages"
 
       field :published_posts, -> { Integer }, optional: false, nullable: false, api_name: "publishedPosts"
     end

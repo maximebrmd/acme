@@ -1131,11 +1131,15 @@ var (
 	assistantImagesStatusFieldDailyLimit      = big.NewInt(1 << 2)
 	assistantImagesStatusFieldMaxPromptLength = big.NewInt(1 << 3)
 	assistantImagesStatusFieldRequestCost     = big.NewInt(1 << 4)
-	assistantImagesStatusFieldSource          = big.NewInt(1 << 5)
+	assistantImagesStatusFieldMonth           = big.NewInt(1 << 5)
+	assistantImagesStatusFieldReason          = big.NewInt(1 << 6)
+	assistantImagesStatusFieldSource          = big.NewInt(1 << 7)
 )
 
 // assistantImagesStatusNullableFields maps the wire names of AssistantImagesStatus's nullable fields (required or optional) to their field bits.
 var assistantImagesStatusNullableFields = map[string]*big.Int{
+	"month":  assistantImagesStatusFieldMonth,
+	"reason": assistantImagesStatusFieldReason,
 	"source": assistantImagesStatusFieldSource,
 }
 
@@ -1145,6 +1149,8 @@ type AssistantImagesStatus struct {
 	DailyLimit      int                   `json:"dailyLimit" url:"dailyLimit"`
 	MaxPromptLength int                   `json:"maxPromptLength" url:"maxPromptLength"`
 	RequestCost     int                   `json:"requestCost" url:"requestCost"`
+	Month           *AssistantMonth       `json:"month,omitempty" url:"month,omitempty"`
+	Reason          *AssistantOffReason   `json:"reason,omitempty" url:"reason,omitempty"`
 	Source          *AssistantImageSource `json:"source,omitempty" url:"source,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1187,6 +1193,20 @@ func (a *AssistantImagesStatus) GetRequestCost() int {
 		return 0
 	}
 	return a.RequestCost
+}
+
+func (a *AssistantImagesStatus) GetMonth() *AssistantMonth {
+	if a == nil {
+		return nil
+	}
+	return a.Month
+}
+
+func (a *AssistantImagesStatus) GetReason() *AssistantOffReason {
+	if a == nil {
+		return nil
+	}
+	return a.Reason
 }
 
 func (a *AssistantImagesStatus) GetSource() *AssistantImageSource {
@@ -1247,6 +1267,20 @@ func (a *AssistantImagesStatus) SetRequestCost(requestCost int) {
 	a.require(assistantImagesStatusFieldRequestCost)
 }
 
+// SetMonth sets the Month field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetMonth(month *AssistantMonth) {
+	a.Month = month
+	a.require(assistantImagesStatusFieldMonth)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetReason(reason *AssistantOffReason) {
+	a.Reason = reason
+	a.require(assistantImagesStatusFieldReason)
+}
+
 // SetSource sets the Source field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (a *AssistantImagesStatus) SetSource(source *AssistantImageSource) {
@@ -1304,17 +1338,222 @@ func (a *AssistantImagesStatus) String() string {
 }
 
 var (
+	assistantMonthFieldAllowance      = big.NewInt(1 << 0)
+	assistantMonthFieldCeiling        = big.NewInt(1 << 1)
+	assistantMonthFieldMost           = big.NewInt(1 << 2)
+	assistantMonthFieldPrice          = big.NewInt(1 << 3)
+	assistantMonthFieldPriceConfirmed = big.NewInt(1 << 4)
+	assistantMonthFieldResetsAt       = big.NewInt(1 << 5)
+	assistantMonthFieldUsed           = big.NewInt(1 << 6)
+)
+
+type AssistantMonth struct {
+	Allowance      int        `json:"allowance" url:"allowance"`
+	Ceiling        *Money     `json:"ceiling" url:"ceiling"`
+	Most           int        `json:"most" url:"most"`
+	Price          *UnitPrice `json:"price" url:"price"`
+	PriceConfirmed bool       `json:"priceConfirmed" url:"priceConfirmed"`
+	ResetsAt       string     `json:"resetsAt" url:"resetsAt"`
+	Used           int        `json:"used" url:"used"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantMonth) GetAllowance() int {
+	if a == nil {
+		return 0
+	}
+	return a.Allowance
+}
+
+func (a *AssistantMonth) GetCeiling() *Money {
+	if a == nil {
+		return nil
+	}
+	return a.Ceiling
+}
+
+func (a *AssistantMonth) GetMost() int {
+	if a == nil {
+		return 0
+	}
+	return a.Most
+}
+
+func (a *AssistantMonth) GetPrice() *UnitPrice {
+	if a == nil {
+		return nil
+	}
+	return a.Price
+}
+
+func (a *AssistantMonth) GetPriceConfirmed() bool {
+	if a == nil {
+		return false
+	}
+	return a.PriceConfirmed
+}
+
+func (a *AssistantMonth) GetResetsAt() string {
+	if a == nil {
+		return ""
+	}
+	return a.ResetsAt
+}
+
+func (a *AssistantMonth) GetUsed() int {
+	if a == nil {
+		return 0
+	}
+	return a.Used
+}
+
+func (a *AssistantMonth) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AssistantMonth) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetAllowance sets the Allowance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetAllowance(allowance int) {
+	a.Allowance = allowance
+	a.require(assistantMonthFieldAllowance)
+}
+
+// SetCeiling sets the Ceiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetCeiling(ceiling *Money) {
+	a.Ceiling = ceiling
+	a.require(assistantMonthFieldCeiling)
+}
+
+// SetMost sets the Most field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetMost(most int) {
+	a.Most = most
+	a.require(assistantMonthFieldMost)
+}
+
+// SetPrice sets the Price field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetPrice(price *UnitPrice) {
+	a.Price = price
+	a.require(assistantMonthFieldPrice)
+}
+
+// SetPriceConfirmed sets the PriceConfirmed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetPriceConfirmed(priceConfirmed bool) {
+	a.PriceConfirmed = priceConfirmed
+	a.require(assistantMonthFieldPriceConfirmed)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetResetsAt(resetsAt string) {
+	a.ResetsAt = resetsAt
+	a.require(assistantMonthFieldResetsAt)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantMonth) SetUsed(used int) {
+	a.Used = used
+	a.require(assistantMonthFieldUsed)
+}
+
+func (a *AssistantMonth) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantMonth
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantMonth(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantMonth) MarshalJSON() ([]byte, error) {
+	type embed AssistantMonth
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AssistantMonth) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantOffReason string
+
+const (
+	AssistantOffReasonPaymentMethod AssistantOffReason = "paymentMethod"
+)
+
+func NewAssistantOffReasonFromString(s string) (AssistantOffReason, error) {
+	switch s {
+	case "paymentMethod":
+		return AssistantOffReasonPaymentMethod, nil
+	}
+	var t AssistantOffReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantOffReason) Ptr() *AssistantOffReason {
+	return &a
+}
+
+var (
 	assistantStatusFieldAvailable     = big.NewInt(1 << 0)
 	assistantStatusFieldDailyLimit    = big.NewInt(1 << 1)
 	assistantStatusFieldImages        = big.NewInt(1 << 2)
 	assistantStatusFieldMaxTextLength = big.NewInt(1 << 3)
-	assistantStatusFieldRemaining     = big.NewInt(1 << 4)
-	assistantStatusFieldResetsAt      = big.NewInt(1 << 5)
-	assistantStatusFieldSource        = big.NewInt(1 << 6)
+	assistantStatusFieldMonth         = big.NewInt(1 << 4)
+	assistantStatusFieldReason        = big.NewInt(1 << 5)
+	assistantStatusFieldRemaining     = big.NewInt(1 << 6)
+	assistantStatusFieldResetsAt      = big.NewInt(1 << 7)
+	assistantStatusFieldSource        = big.NewInt(1 << 8)
 )
 
 // assistantStatusNullableFields maps the wire names of AssistantStatus's nullable fields (required or optional) to their field bits.
 var assistantStatusNullableFields = map[string]*big.Int{
+	"month":  assistantStatusFieldMonth,
+	"reason": assistantStatusFieldReason,
 	"source": assistantStatusFieldSource,
 }
 
@@ -1323,6 +1562,8 @@ type AssistantStatus struct {
 	DailyLimit    int                    `json:"dailyLimit" url:"dailyLimit"`
 	Images        *AssistantImagesStatus `json:"images" url:"images"`
 	MaxTextLength int                    `json:"maxTextLength" url:"maxTextLength"`
+	Month         *AssistantMonth        `json:"month,omitempty" url:"month,omitempty"`
+	Reason        *AssistantOffReason    `json:"reason,omitempty" url:"reason,omitempty"`
 	Remaining     int                    `json:"remaining" url:"remaining"`
 	ResetsAt      string                 `json:"resetsAt" url:"resetsAt"`
 	Source        *AssistantTextSource   `json:"source,omitempty" url:"source,omitempty"`
@@ -1360,6 +1601,20 @@ func (a *AssistantStatus) GetMaxTextLength() int {
 		return 0
 	}
 	return a.MaxTextLength
+}
+
+func (a *AssistantStatus) GetMonth() *AssistantMonth {
+	if a == nil {
+		return nil
+	}
+	return a.Month
+}
+
+func (a *AssistantStatus) GetReason() *AssistantOffReason {
+	if a == nil {
+		return nil
+	}
+	return a.Reason
 }
 
 func (a *AssistantStatus) GetRemaining() int {
@@ -1425,6 +1680,20 @@ func (a *AssistantStatus) SetImages(images *AssistantImagesStatus) {
 func (a *AssistantStatus) SetMaxTextLength(maxTextLength int) {
 	a.MaxTextLength = maxTextLength
 	a.require(assistantStatusFieldMaxTextLength)
+}
+
+// SetMonth sets the Month field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantStatus) SetMonth(month *AssistantMonth) {
+	a.Month = month
+	a.require(assistantStatusFieldMonth)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantStatus) SetReason(reason *AssistantOffReason) {
+	a.Reason = reason
+	a.require(assistantStatusFieldReason)
 }
 
 // SetRemaining sets the Remaining field and marks it as non-optional;

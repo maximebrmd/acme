@@ -39,7 +39,6 @@ import social.peal.resources.invitations.requests.ListInvitationsRequest;
 import social.peal.resources.invitations.requests.NewInvitation;
 import social.peal.resources.invitations.requests.RevokeInvitationsRequest;
 import social.peal.types.Invitation;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class AsyncRawInvitationsClient {
@@ -245,8 +244,7 @@ public class AsyncRawInvitationsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:

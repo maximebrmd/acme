@@ -1099,12 +1099,13 @@ export class AdsClient {
     }
 
     /**
-     * **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.
+     * **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached `paymentMethodRequired`); running boosts are never touched. Needs ads:spend; never staff acting as a member.
      *
      * @param {Peal.CreateBoostAdsRequest} request
      * @param {AdsClient.RequestOptions} requestOptions - Request-specific configuration.
      *
      * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.PaymentRequiredError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
@@ -1165,6 +1166,7 @@ export class AdsClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 402: throw new Peal.PaymentRequiredError(_response.error.body as unknown, _response.rawResponse);
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
