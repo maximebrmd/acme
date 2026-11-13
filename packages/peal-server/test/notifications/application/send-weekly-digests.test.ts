@@ -252,6 +252,7 @@ const worldLayer = (world: World) =>
   );
 
 const pace = Layer.succeed(DigestPaceRef, {
+  deferralsBeforeStop: 3,
   lease: Duration.minutes(10),
   pageSize: 2,
   retries: 2,
@@ -263,14 +264,18 @@ const pace = Layer.succeed(DigestPaceRef, {
 // answering `modes` in turn, one a run.
 const runs = (
   world: World,
-  modes: readonly [MailerMode, MailerMode] = ["accept", "accept"]
+  modes: readonly [MailerMode, MailerMode] = ["accept", "accept"],
+  // Addresses refused for now in the first run only.
+  refusedFirst: readonly string[] = []
 ) =>
   Effect.gen(function* running() {
     const digests = yield* SendWeeklyDigests;
     const mailer = yield* TestMailer;
 
     yield* mailer.setMode(modes[0]);
+    yield* mailer.refuseForNowTo(refusedFirst);
     const first = yield* digests.run(runAt);
+    yield* mailer.refuseForNowTo([]);
     const readFirst = yield* WorldLog.use((log) => log.sources);
 
     yield* mailer.setMode(modes[1]);
@@ -333,12 +338,13 @@ describe(SendWeeklyDigests, () => {
           [1, 2, 3, 4].map((n) => `reader${n}@example.test`)
         );
         assert.deepStrictEqual(first, {
-          deferred: false,
+          deferred: 0,
           failed: 0,
           nothingToTell: 0,
           readers: 4,
           sent: 4,
           skipped: 0,
+          stopped: false,
         });
         // The same week again: nobody read, nothing more.
         assert.strictEqual(again.readers, 0);
@@ -426,12 +432,13 @@ describe(SendWeeklyDigests, () => {
           ["reader4@example.test", "reader7@example.test"]
         );
         assert.deepStrictEqual(first, {
-          deferred: false,
+          deferred: 0,
           failed: 3,
           nothingToTell: 2,
           readers: 7,
           sent: 2,
           skipped: 0,
+          stopped: false,
         });
       })
   );
@@ -453,32 +460,60 @@ describe(SendWeeklyDigests, () => {
 
   // On the real clock: the retries wait a millisecond each.
   it.live(
-    "leaves a digest refused for now to a later run, and stops there, then sends it once",
+    "leaves a digest refused for now to a later run, goes on with the others, then sends it once",
     () =>
       Effect.gen(function* deferred() {
         const { again, first, sent } = yield* runs(
           {
             failing: new Map(),
-            preferences: wantingAll(1, 2),
-            readers: new Map([reader(1, [busy]), reader(2, [busy])]),
+            preferences: wantingAll(1, 2, 3, 4, 5),
+            readers: new Map([1, 2, 3, 4, 5].map((n) => reader(n, [busy]))),
+          },
+          ["accept", "accept"],
+          ["reader2@example.test"]
+        );
+
+        assert.deepStrictEqual(first, {
+          deferred: 1,
+          failed: 0,
+          nothingToTell: 0,
+          readers: 5,
+          sent: 4,
+          skipped: 0,
+          stopped: false,
+        });
+        assert.strictEqual(again.sent, 1);
+        assert.deepStrictEqual(
+          sent.map(({ to }) => to),
+          [1, 3, 4, 5, 2].map((n) => `reader${n}@example.test`)
+        );
+      })
+  );
+
+  it.live(
+    "stops a run after three refusals for now in a row, as the transport is down, and the next sends them all",
+    () =>
+      Effect.gen(function* down() {
+        const { again, first, sent } = yield* runs(
+          {
+            failing: new Map(),
+            preferences: wantingAll(1, 2, 3, 4, 5),
+            readers: new Map([1, 2, 3, 4, 5].map((n) => reader(n, [busy]))),
           },
           ["refuseForNow", "accept"]
         );
 
-        // Stopped at the first: the transport refuses for now.
         assert.deepStrictEqual(first, {
-          deferred: true,
+          deferred: 3,
           failed: 0,
           nothingToTell: 0,
-          readers: 1,
+          readers: 3,
           sent: 0,
           skipped: 0,
+          stopped: true,
         });
-        assert.strictEqual(again.sent, 2);
-        assert.deepStrictEqual(
-          sent.map(({ to }) => to),
-          ["reader1@example.test", "reader2@example.test"]
-        );
+        assert.strictEqual(again.sent, 5);
+        assert.lengthOf(sent, 5);
       })
   );
 

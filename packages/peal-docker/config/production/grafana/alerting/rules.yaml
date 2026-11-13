@@ -552,7 +552,7 @@ groups:
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: Ten or more weekly digests did not go in two hours (peal.notifications.weekly_digest.failures), each refused for good, refused for now after its retries (the run then stops, and the next hour's goes on), or for a reader that could not be read. The digests run every hour of Monday, at 19 past. The server's errors and warnings name each reader by id.
+          summary: Ten or more weekly digests did not go in two hours (peal.notifications.weekly_digest.failures), each refused for good by the mail transport or for a reader that could not be read. The digests run every hour of Monday from 06:19 UTC. The server's errors name each reader by id.
         labels:
           severity: warning
         data:
@@ -565,7 +565,7 @@ groups:
               refId: A
               instant: true
               # A counter born at its first failure has no sample before it.
-              expr: (sum(increase(peal_notifications_weekly_digest_failures_total[2h])) or vector(0)) + (sum(peal_notifications_weekly_digest_failures_total unless peal_notifications_weekly_digest_failures_total offset 2h) or vector(0))
+              expr: (sum(increase(peal_notifications_weekly_digest_failures_total{reason!="deferred"}[2h])) or vector(0)) + (sum(peal_notifications_weekly_digest_failures_total{reason!="deferred"} unless peal_notifications_weekly_digest_failures_total{reason!="deferred"} offset 2h) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -576,6 +576,38 @@ groups:
                 - evaluator:
                     type: gt
                     params: [9.5]
+
+      - uid: peal-weekly-digest-deferred
+        title: The mail transport keeps refusing weekly digests for now
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more weekly digests were refused for now in three hours (peal.notifications.weekly_digest.failures, reason deferred), after their retries. Each is left to the next hourly run, the last at 23:19 UTC on Monday; three in a row stop a run, as the transport is then down. Check the mail transport (Resend or SMTP) and the server's warnings, which name each reader by id.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A counter born at its first deferral has no sample before it.
+              expr: (sum(increase(peal_notifications_weekly_digest_failures_total{reason="deferred"}[3h])) or vector(0)) + (sum(peal_notifications_weekly_digest_failures_total{reason="deferred"} unless peal_notifications_weekly_digest_failures_total{reason="deferred"} offset 3h) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
 
       - uid: peal-comments-forget-failing
         title: Comments past their platform's bound are not forgotten

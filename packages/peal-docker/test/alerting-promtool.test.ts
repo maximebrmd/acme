@@ -91,6 +91,49 @@ interface Case {
 const cases: readonly Case[] = [
   {
     expected: [
+      ["50m", false],
+      ["70m", true],
+    ],
+    interval: "1m",
+    name: "a weekly digest deferred in two runs, the counter born at 1",
+    series: {
+      'peal_notifications_weekly_digest_failures_total{reason="deferred"}':
+        "_x30 1x30 2x30",
+    },
+    uid: "peal-weekly-digest-deferred",
+  },
+  {
+    expected: [["70m", false]],
+    interval: "1m",
+    name: "one weekly digest deferred",
+    series: {
+      'peal_notifications_weekly_digest_failures_total{reason="deferred"}':
+        "_x30 1x60",
+    },
+    uid: "peal-weekly-digest-deferred",
+  },
+  {
+    expected: [["40m", false]],
+    interval: "1m",
+    name: "digests deferred are not failures",
+    series: {
+      'peal_notifications_weekly_digest_failures_total{reason="deferred"}':
+        "_x30 20x30",
+    },
+    uid: "peal-weekly-digest-failing",
+  },
+  {
+    expected: [["40m", true]],
+    interval: "1m",
+    name: "ten weekly digests refused for good, the counter born at 1",
+    series: {
+      'peal_notifications_weekly_digest_failures_total{reason="refused"}':
+        "_x30 1x5 10x30",
+    },
+    uid: "peal-weekly-digest-failing",
+  },
+  {
+    expected: [
       ["29m", false],
       ["31m", true],
     ],

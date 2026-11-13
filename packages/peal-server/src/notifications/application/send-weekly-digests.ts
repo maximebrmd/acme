@@ -32,12 +32,14 @@ import { PreferenceStore } from "./preference-store.ts";
  * How a run goes: `pageSize` readers read at a time; each email given
  * `sendTimeout`, and one the transport refuses for now tried `retries`
  * more times, waiting `retryBase`, then twice that (a few seconds in all,
- * never more), before the run stops and leaves it to the next; a reader
- * whose send started more than `lease` ago, and never ended, may be taken
- * again. Emails go one at a time, so a transport's rate limit is met
+ * never more), then left to the next run while this one goes on, unless
+ * `deferralsBeforeStop` in a row were: the transport is down, and the run
+ * stops; a reader whose send started more than `lease` ago, and never
+ * ended, may be taken again. Emails go one at a time, so a transport's rate limit is met
  * rather than fought.
  */
 export interface DigestPace {
+  readonly deferralsBeforeStop: number;
   readonly lease: Duration.Duration;
   readonly pageSize: number;
   readonly retries: number;
@@ -49,6 +51,7 @@ export const DigestPaceRef = Context.Reference<DigestPace>(
   "peal-server/notifications/application/DigestPace",
   {
     defaultValue: () => ({
+      deferralsBeforeStop: 3,
       lease: Duration.minutes(10),
       pageSize: 100,
       retries: 2,
@@ -77,16 +80,18 @@ const counted = (reason: Failure) =>
  * What a run did: of the `readers` it took, those `sent` one, those whose
  * workspaces had nothing to tell (or who are gone), those `skipped` as
  * another send holds theirs, those it `failed` for (refused for good, or
- * that could not be read), and whether it stopped early (`deferred`): the
- * transport refused one for now, and the next run goes on from there.
+ * that could not be read), those `deferred` to the next run (refused for
+ * now), and whether it `stopped` early, as the transport refused several
+ * in a row.
  */
 export interface DigestReport {
-  readonly deferred: boolean;
+  readonly deferred: number;
   readonly failed: number;
   readonly nothingToTell: number;
   readonly readers: number;
   readonly sent: number;
   readonly skipped: number;
+  readonly stopped: boolean;
 }
 
 type Outcome = "deferred" | "failed" | "nothingToTell" | "sent" | "skipped";
@@ -102,7 +107,7 @@ const pageRetry = { schedule: Schedule.exponential("1 second"), times: 3 };
  * a page at a time by id, so a server where nobody did reads one page of
  * nobody. A reader's week is marked once the email was accepted, or
  * refused for good; one refused for now is left for the next run, which
- * the cron starts every hour of the Monday.
+ * the cron starts every hour of the Monday from 06:19 UTC.
  */
 export class SendWeeklyDigests extends Context.Service<
   SendWeeklyDigests,
@@ -259,17 +264,19 @@ export class SendWeeklyDigests extends Context.Service<
       const run = Effect.fn("SendWeeklyDigests.run")(function* run(
         at: DateTime.Utc
       ) {
-        const { pageSize } = yield* DigestPaceRef;
+        const { deferralsBeforeStop, pageSize } = yield* DigestPaceRef;
         const week = digestWeekOf(at);
         let after = Option.none<UserId>();
+        let inARow = 0;
 
         const report = {
-          deferred: false,
+          deferred: 0,
           failed: 0,
           nothingToTell: 0,
           readers: 0,
           sent: 0,
           skipped: 0,
+          stopped: false,
         };
 
         for (;;) {
@@ -281,13 +288,14 @@ export class SendWeeklyDigests extends Context.Service<
             const outcome = yield* isolated(userId, week);
 
             report.readers += 1;
-
-            if (outcome === "deferred") {
-              // The transport refuses for now: the next run goes on.
-              return { ...report, deferred: true };
-            }
-
             report[outcome] += 1;
+            inARow = outcome === "deferred" ? inARow + 1 : 0;
+
+            // Several refused for now in a row: the transport is down, and
+            // the next run goes on.
+            if (inARow >= deferralsBeforeStop) {
+              return { ...report, stopped: true };
+            }
           }
 
           const last = page.at(-1);

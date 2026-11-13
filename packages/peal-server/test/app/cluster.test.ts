@@ -294,12 +294,13 @@ const ChannelJobsTest = Layer.mergeAll(
     SendWeeklyDigests.of({
       run: () =>
         Effect.succeed({
-          deferred: false,
+          deferred: 0,
           failed: 0,
           nothingToTell: 0,
           readers: 0,
           sent: 0,
           skipped: 0,
+          stopped: false,
         }),
     })
   ),
