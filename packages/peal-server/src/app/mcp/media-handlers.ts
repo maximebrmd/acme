@@ -272,7 +272,9 @@ export const MediaToolsLive = MediaTools.toLayer(
           const page = yield* library
             .listMedia(yield* actor, {
               after: Option.flatten(after),
+              kind: Option.none(),
               limit: limit ?? defaultMediaPageSize,
+              text: Option.none(),
             })
             .pipe(
               Effect.catchTags({

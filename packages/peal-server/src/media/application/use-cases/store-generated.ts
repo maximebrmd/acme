@@ -67,6 +67,8 @@ export const storeGenerated = Effect.fn("Media.storeGenerated")(
     const item = yield* recordArrived({
       aiGenerated: true,
       altText: Option.none(),
+      // A file the assistant made was never called anything.
+      fileName: Option.none(),
       id,
       room,
       stored,

@@ -7,6 +7,7 @@ import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { finishUpload } from "#media/application/use-cases/finish-upload.ts";
 import { pooledRoom } from "#media/application/use-cases/pooled-storage.ts";
 import type { AltText } from "#media/domain/alt-text.ts";
+import type { FileName } from "#media/domain/file-name.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { acceptUpload, startUpload } from "#media/domain/media-asset.ts";
 import { kindOf, maxByteSize } from "#media/domain/media-format.ts";
@@ -204,6 +205,7 @@ export const recordArrived = Effect.fn("Media.recordArrived")(
   function* recordArrived({
     aiGenerated,
     altText,
+    fileName,
     id,
     room,
     stored,
@@ -211,6 +213,8 @@ export const recordArrived = Effect.fn("Media.recordArrived")(
   }: {
     readonly aiGenerated: boolean;
     readonly altText: Option.Option<AltText>;
+    /** What the file was called where it came from, if anything. */
+    readonly fileName: Option.Option<FileName>;
     readonly id: MediaAssetId;
     readonly room: ArrivalRoom;
     readonly stored: StoredArrival;
@@ -225,6 +229,7 @@ export const recordArrived = Effect.fn("Media.recordArrived")(
         accepted,
         aiGenerated,
         altText,
+        fileName,
         id,
         upload: { _tag: "single" },
         workspaceId,

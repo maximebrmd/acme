@@ -11,6 +11,7 @@ import {
   storeArriving,
 } from "#media/application/use-cases/arrived-file.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
+import { nameInAddress } from "#media/domain/file-name.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { kindOf } from "#media/domain/media-format.ts";
 import type { MediaKind } from "#media/domain/media-format.ts";
@@ -32,7 +33,8 @@ export interface ImportMediaRequest {
 
 /**
  * Fetches a file from a public address and stores it as media of the
- * workspace, as an upload that arrived: its format is read from its first
+ * workspace, as an upload that arrived, named after the last segment of
+ * the address that served it: its format is read from its first
  * bytes, its size counted as it comes, against the limit for its kind and
  * the workspace's storage allowance, and its bytes go to the store in
  * parts, never held whole. The asset is recorded once the file is stored,
@@ -64,7 +66,9 @@ export const importMedia = Effect.fn("Media.importMedia")(
     const room = yield* roomIn(workspaceId, 1);
     const id = yield* newId(MediaAssetIdSchema);
 
-    const stored = yield* RemoteMedia.use((remote) => remote.open(url)).pipe(
+    const { fileName, stored } = yield* RemoteMedia.use((remote) =>
+      remote.open(url)
+    ).pipe(
       Effect.flatMap((file) =>
         storeArriving(file, {
           accepts: (contentType) =>
@@ -72,7 +76,13 @@ export const importMedia = Effect.fn("Media.importMedia")(
           id,
           room,
           workspaceId,
-        })
+        }).pipe(
+          // Named after the address that served it, redirects followed.
+          Effect.map((arrived) => ({
+            fileName: nameInAddress(file.address),
+            stored: arrived,
+          }))
+        )
       ),
       Effect.scoped,
       Effect.timeoutOrElse({
@@ -90,6 +100,7 @@ export const importMedia = Effect.fn("Media.importMedia")(
     return yield* recordArrived({
       aiGenerated: false,
       altText: description,
+      fileName,
       id,
       room,
       stored,

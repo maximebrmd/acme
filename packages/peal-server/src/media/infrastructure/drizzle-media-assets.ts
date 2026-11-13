@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -11,6 +11,7 @@ import type {
 import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { MediaAsset } from "#media/domain/media-asset.ts";
+import { contentTypesOf } from "#media/domain/media-format.ts";
 import type { MediaStatusName } from "#media/domain/media-status.ts";
 import { roomFor } from "#shared/domain/allowance.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
@@ -46,6 +47,7 @@ const stateColumns = (asset: MediaAsset): Omit<NewRow, "altText"> => {
       Option.map((duration) => Math.round(Duration.toMillis(duration))),
       Option.getOrNull
     ),
+    fileName: Option.getOrNull(asset.fileName),
     height: dimensions?.height ?? null,
     id: asset.id,
     multipartPartSize: multipart?.partSize ?? null,
@@ -107,6 +109,7 @@ const fromRow = (row: Row): Effect.Effect<MediaAsset> =>
     byteSize: row.byteSize,
     contentType: row.contentType,
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
+    fileName: Option.fromNullOr(row.fileName),
     id: row.id,
     metadata: {
       codec: Option.fromNullOr(row.codec),
@@ -133,6 +136,41 @@ const takingRoom = (pendingSince: DateTime.Utc) =>
     and(
       eq(mediaAssets.status, "pending"),
       gt(mediaAssets.createdAt, DateTime.toDate(pendingSince))
+    )
+  );
+
+// The text as a LIKE pattern that finds it anywhere, its own wildcards
+// read as the characters they are.
+const containing = (text: string) =>
+  `%${text.replaceAll(/[\\%_]/gu, (wildcard) => `\\${wildcard}`)}%`;
+
+// What an asset must be to be listed: of the workspace, before the cursor,
+// of the kind and holding the text, each when asked. The trigram indexes
+// find the text, the workspace's indexes the rest (schema.ts).
+const listed = (
+  workspaceId: WorkspaceId,
+  { after, kind, text }: MediaPageRequest
+) =>
+  and(
+    eq(mediaAssets.workspaceId, workspaceId),
+    after.pipe(
+      Option.map((id) => lt(mediaAssets.id, id)),
+      Option.getOrUndefined
+    ),
+    kind.pipe(
+      Option.map((asked) =>
+        inArray(mediaAssets.contentType, contentTypesOf(asked))
+      ),
+      Option.getOrUndefined
+    ),
+    text.pipe(
+      Option.map((asked) =>
+        or(
+          ilike(mediaAssets.fileName, containing(asked)),
+          ilike(mediaAssets.altText, containing(asked))
+        )
+      ),
+      Option.getOrUndefined
     )
   );
 
@@ -389,22 +427,15 @@ export const DrizzleMediaAssetsLive = Layer.effect(
       insertWithin,
       list: Effect.fn("MediaAssets.list")(function* list(
         workspaceId: WorkspaceId,
-        { after, limit }: MediaPageRequest
+        request: MediaPageRequest
       ) {
+        const { limit } = request;
+
         // One row past the page tells whether another page follows.
         const rows = yield* db
           .select()
           .from(mediaAssets)
-          .where(
-            Option.match(after, {
-              onNone: () => eq(mediaAssets.workspaceId, workspaceId),
-              onSome: (id) =>
-                and(
-                  eq(mediaAssets.workspaceId, workspaceId),
-                  lt(mediaAssets.id, id)
-                ),
-            })
-          )
+          .where(listed(workspaceId, request))
           .orderBy(desc(mediaAssets.id))
           .limit(limit + 1)
           .pipe(Effect.orDie);

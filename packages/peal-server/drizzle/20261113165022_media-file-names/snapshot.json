@@ -1,0 +1,201 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "779dcf7f-4ff3-4bbb-8e9b-01e80ed0527d",
+  "prevIds": [
+    "097bce05-4b68-40e5-a6d4-bc6bf6626116"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "media",
+        "media_assets",
+        "file_name"
+      ],
+      "writes": [
+        "s|col|media.media_assets.file_name",
+        "n|col|media.media_assets.file_name",
+        "e|col|media.media_assets.file_name"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_workspace_id_content_type_id_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_workspace_id_content_type_id_index",
+        "n|idx|media.media_assets_workspace_id_content_type_id_index",
+        "e|idx|media.media_assets_workspace_id_content_type_id_index",
+        "n|rel|media.media_assets_workspace_id_content_type_id_index"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.workspace_id",
+        "n|col|media.media_assets.content_type",
+        "n|col|media.media_assets.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_file_name_trigram_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_file_name_trigram_index",
+        "n|idx|media.media_assets_file_name_trigram_index",
+        "e|idx|media.media_assets_file_name_trigram_index",
+        "n|rel|media.media_assets_file_name_trigram_index"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.file_name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_alt_text_trigram_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_alt_text_trigram_index",
+        "n|idx|media.media_assets_alt_text_trigram_index",
+        "e|idx|media.media_assets_alt_text_trigram_index",
+        "n|rel|media.media_assets_alt_text_trigram_index"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.alt_text"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "file_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "media_assets_workspace_id_content_type_id_index",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "content_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": false,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "media_assets_file_name_trigram_index",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "file_name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": {
+              "name": "gin_trgm_ops",
+              "default": false
+            }
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gin",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "media_assets_alt_text_trigram_index",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "alt_text",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": {
+              "name": "gin_trgm_ops",
+              "default": false
+            }
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gin",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

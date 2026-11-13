@@ -4,6 +4,7 @@ import {
   getAsset,
   MediaAssets,
 } from "#media/application/ports/media-assets.ts";
+import type { MediaPageRequest } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
@@ -30,10 +31,11 @@ export interface GetMediaRequest {
   readonly workspaceId: WorkspaceId;
 }
 
-/** A page of the workspace's media to show. */
-export interface ListMediaRequest {
-  readonly after: Option.Option<MediaAssetId>;
-  readonly limit: number;
+/**
+ * A page of the workspace's media to show: of a kind, and holding a text
+ * in its name or description, when asked (see `MediaPageRequest`).
+ */
+export interface ListMediaRequest extends MediaPageRequest {
   readonly workspaceId: WorkspaceId;
 }
 
@@ -73,20 +75,22 @@ export const getMedia = Effect.fn("Media.getMedia")(function* getMedia({
   return yield* itemOf(yield* getAsset(workspaceId, assetId));
 });
 
-/** The workspace's assets, newest first, whatever their status. */
+/**
+ * The workspace's assets, newest first, whatever their status: all of
+ * them, or those of a kind and holding a text, when asked.
+ */
 export const listMedia = Effect.fn("Media.listMedia")(function* listMedia({
-  after,
-  limit,
   workspaceId,
+  ...page
 }: ListMediaRequest) {
-  const page = yield* MediaAssets.use((assets) =>
-    assets.list(workspaceId, { after, limit })
+  const listed = yield* MediaAssets.use((assets) =>
+    assets.list(workspaceId, page)
   );
 
-  const listed: MediaItemPage = {
-    items: yield* Effect.all(page.assets.map((asset) => itemOf(asset))),
-    next: page.next,
+  const shown: MediaItemPage = {
+    items: yield* Effect.all(listed.assets.map((asset) => itemOf(asset))),
+    next: listed.next,
   };
 
-  return listed;
+  return shown;
 });

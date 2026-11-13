@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Result } from "effect";
 
 import { altTextOf, maxAltTextLength } from "#media/domain/alt-text.ts";
+import { fileNameOf } from "#media/domain/file-name.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import {
   acceptUpload,
@@ -391,5 +392,43 @@ describe("the mark of a file made by AI", () => {
       ready.aiGenerated,
       describeAsset(ready, Option.none(), now).aiGenerated,
     ]).toStrictEqual([true, true, true]);
+  });
+});
+
+describe("the file's name", () => {
+  it("is none unless the file came with one", () => {
+    expect(pending.fileName).toStrictEqual(Option.none());
+  });
+
+  it("stays with the asset through every change", () => {
+    const fileName = fileNameOf("launch.png");
+
+    const withName = startUpload(
+      {
+        accepted: png,
+        altText: Option.none(),
+        fileName,
+        id,
+        upload: { _tag: "single" },
+        workspaceId,
+      },
+      createdAt
+    );
+
+    const uploadedWithName = Result.getOrThrow(markUploaded(withName, now));
+
+    const ready = Result.getOrThrow(
+      markReady(uploadedWithName, MediaMetadata.unknown, now)
+    );
+
+    expect([
+      withName.fileName,
+      uploadedWithName.fileName,
+      ready.fileName,
+      Result.getOrThrow(markUnprobed(uploadedWithName, "unavailable", now))
+        .fileName,
+      Result.getOrThrow(markRejected(withName, "sizeMismatch", now)).fileName,
+      describeAsset(ready, Option.none(), now).fileName,
+    ]).toStrictEqual(Array.from({ length: 6 }, () => fileName));
   });
 });

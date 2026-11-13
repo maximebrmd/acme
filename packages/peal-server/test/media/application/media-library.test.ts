@@ -87,6 +87,7 @@ const prepare = Effect.fn("prepare")(function* prepare(
     altText: Option.none(),
     byteSize,
     contentType,
+    fileName: Option.none(),
   });
 
   const { status, storageKey } = prepared.asset;
@@ -198,6 +199,42 @@ layer(LibraryTest)("the media library", (it) => {
 
       assert.deepStrictEqual(bytes, body);
     })
+  );
+
+  it.effect(
+    "keeps the name the file had, without its folders, and none for a blank one",
+    () =>
+      Effect.gen(function* names() {
+        const workspaceId = yield* freshWorkspace;
+        const library = yield* MediaLibrary;
+        const member = memberIn(workspaceId);
+
+        const named = yield* library.createUpload(member, {
+          altText: Option.none(),
+          byteSize: 10,
+          contentType: "image/png",
+          fileName: Option.some(String.raw`C:\Users\someone\Launch day.png`),
+        });
+
+        const blank = yield* library.createUpload(member, {
+          altText: Option.none(),
+          byteSize: 10,
+          contentType: "image/png",
+          fileName: Option.some("   "),
+        });
+
+        assert.deepStrictEqual(
+          named.asset.fileName,
+          Option.some("Launch day.png")
+        );
+        assert.deepStrictEqual(
+          (yield* recorded(named)).pipe(
+            Option.flatMap((asset) => asset.fileName)
+          ),
+          Option.some("Launch day.png")
+        );
+        assert.deepStrictEqual(blank.asset.fileName, Option.none());
+      })
   );
 
   it.effect("refuses a type it does not store", () =>
@@ -534,7 +571,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const listed = yield* library.listMedia(member, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 10,
+        text: Option.none(),
       });
 
       assert.strictEqual(completed._tag, "MediaAssetNotFound");
@@ -719,6 +758,7 @@ layer(LibraryTest)("the media library", (it) => {
         altText: Option.none(),
         byteSize: 10,
         contentType: "image/png",
+        fileName: Option.none(),
       };
 
       const refusals = [
@@ -728,7 +768,12 @@ layer(LibraryTest)("the media library", (it) => {
         yield* Effect.flip(library.deleteMedia(viewer, id)),
         yield* Effect.flip(library.getMedia(stranger, id)),
         yield* Effect.flip(
-          library.listMedia(stranger, { after: Option.none(), limit: 10 })
+          library.listMedia(stranger, {
+            after: Option.none(),
+            kind: Option.none(),
+            limit: 10,
+            text: Option.none(),
+          })
         ),
       ];
 
@@ -764,6 +809,7 @@ layer(LibraryTest)("the media library", (it) => {
         altText: Option.some("  A white square  "),
         byteSize: 100,
         contentType: "image/png",
+        fileName: Option.none(),
       });
 
       const { id } = prepared.asset;
@@ -816,7 +862,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const page = yield* library.listMedia(member, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 1,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -826,7 +874,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const next = yield* library.listMedia(member, {
         after: page.next,
+        kind: Option.none(),
         limit: 1,
+        text: Option.none(),
       });
 
       const [item] = next.items;
@@ -892,6 +942,7 @@ layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
         altText: Option.none(),
         byteSize: body.length,
         contentType: "image/webp",
+        fileName: Option.none(),
         workspaceId,
       }).pipe(Effect.provideService(StorageAllowance, smallStorage));
 
@@ -956,6 +1007,7 @@ layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
         altText: Option.none(),
         byteSize: body.length,
         contentType: "image/webp",
+        fileName: Option.none(),
         workspaceId,
       }).pipe(Effect.provideService(StorageAllowance, smallStorage));
 

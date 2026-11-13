@@ -173,7 +173,12 @@ const importFrom = (workspaceId: typeof WorkspaceIdSchema.Type, url: string) =>
 
 const assetsOf = (workspaceId: typeof WorkspaceIdSchema.Type) =>
   MediaAssets.use((assets) =>
-    assets.list(workspaceId, { after: Option.none(), limit: 10 })
+    assets.list(workspaceId, {
+      after: Option.none(),
+      kind: Option.none(),
+      limit: 10,
+      text: Option.none(),
+    })
   ).pipe(Effect.map(({ assets }) => assets));
 
 // Parts of the stores' 5 MiB minimum, so a file of 11 MiB goes in three.
@@ -205,6 +210,8 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
           imported.asset.altText,
           Option.some("A synthetic picture.")
         );
+        // Named after the address the file came from, after its redirects.
+        assert.deepStrictEqual(imported.asset.fileName, Option.some("picture"));
 
         const { bytes } = yield* fetchBytes(
           Option.getOrElse(imported.url, () => "")

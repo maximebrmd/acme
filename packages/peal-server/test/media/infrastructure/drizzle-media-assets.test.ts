@@ -6,6 +6,7 @@ import { DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { AltTextSchema } from "#media/domain/alt-text.ts";
+import { fileNameOf } from "#media/domain/file-name.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { MediaAsset, startUpload } from "#media/domain/media-asset.ts";
 import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
@@ -64,6 +65,7 @@ const changed = (
     byteSize: asset.byteSize,
     contentType: asset.contentType,
     createdAt: asset.createdAt,
+    fileName: asset.fileName,
     id: asset.id,
     metadata,
     status,
@@ -109,6 +111,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
           byteSize: first.byteSize,
           contentType: first.contentType,
           createdAt: first.createdAt,
+          fileName: first.fileName,
           id: secondId,
           metadata: first.metadata,
           status: first.status,
@@ -183,6 +186,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
           byteSize: first.byteSize,
           contentType: first.contentType,
           createdAt: first.createdAt,
+          fileName: first.fileName,
           id: secondId,
           metadata: first.metadata,
           status: first.status,
@@ -395,7 +399,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
 
       const page = yield* assets.list(plain.workspaceId, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 10,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -447,7 +453,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
 
       const firstPage = yield* assets.list(workspace, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 2,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -458,7 +466,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
 
       const secondPage = yield* assets.list(workspace, {
         after: firstPage.next,
+        kind: Option.none(),
         limit: 2,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -468,7 +478,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
 
       const lastPage = yield* assets.list(workspace, {
         after: secondPage.next,
+        kind: Option.none(),
         limit: 2,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -480,7 +492,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       // Exactly a page left: no next page.
       const exact = yield* assets.list(workspace, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 5,
+        text: Option.none(),
       });
 
       assert.strictEqual(exact.assets.length, 5);
@@ -568,6 +582,211 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       const found = yield* assets.findById(asset.workspaceId, asset.id);
 
       assert.deepStrictEqual(Option.getOrUndefined(found)?.status, uploaded);
+    })
+  );
+});
+
+// A file of a workspace, with a name and a description, of a content type.
+const fileIn = (
+  workspaceId: WorkspaceId,
+  contentType: "application/pdf" | "image/png" | "video/mp4",
+  fileName: string | null,
+  altText: string | null
+) =>
+  Effect.gen(function* file() {
+    const id = MediaAssetIdSchema.make(yield* (yield* Ids).next);
+
+    const kinds = {
+      "application/pdf": "document",
+      "image/png": "image",
+      "video/mp4": "video",
+    } as const;
+
+    return startUpload(
+      {
+        accepted: { byteSize: 100, contentType, kind: kinds[contentType] },
+        altText: Option.fromNullOr(altText).pipe(
+          Option.map((text) => AltTextSchema.make(text))
+        ),
+        fileName: fileName === null ? Option.none() : fileNameOf(fileName),
+        id,
+        upload: { _tag: "single" },
+        workspaceId,
+      },
+      createdAt
+    );
+  });
+
+const everything = {
+  after: Option.none(),
+  kind: Option.none(),
+  limit: 50,
+  text: Option.none(),
+};
+
+layer(RepositoryTest)("the library's search", (it) => {
+  it.effect("keeps a file's name, and none for a file without one", () =>
+    Effect.gen(function* names() {
+      const assets = yield* MediaAssets;
+      const workspaceId = WorkspaceIdSchema.make(yield* (yield* Ids).next);
+      const named = yield* fileIn(workspaceId, "image/png", "Été.png", null);
+      const nameless = yield* fileIn(workspaceId, "image/png", null, null);
+
+      yield* Effect.forEach([named, nameless], assets.insert);
+
+      assert.deepStrictEqual(
+        (yield* assets.findById(workspaceId, named.id)).pipe(
+          Option.flatMap((asset) => asset.fileName)
+        ),
+        fileNameOf("Été.png")
+      );
+      assert.deepStrictEqual(
+        (yield* assets.findById(workspaceId, nameless.id)).pipe(
+          Option.flatMap((asset) => asset.fileName)
+        ),
+        Option.none()
+      );
+    })
+  );
+
+  it.effect(
+    "finds text in a name or a description, whatever its case, in the workspace only",
+    () =>
+      Effect.gen(function* finds() {
+        const assets = yield* MediaAssets;
+        const ids = yield* Ids;
+        const workspaceId = WorkspaceIdSchema.make(yield* ids.next);
+        const otherId = WorkspaceIdSchema.make(yield* ids.next);
+
+        const byName = yield* fileIn(
+          workspaceId,
+          "image/png",
+          "Summer-LAUNCH.png",
+          null
+        );
+
+        const byDescription = yield* fileIn(
+          workspaceId,
+          "video/mp4",
+          "clip.mp4",
+          "The launch, from the stage"
+        );
+
+        const neither = yield* fileIn(
+          workspaceId,
+          "image/png",
+          "beach.png",
+          "Sand"
+        );
+
+        const nameless = yield* fileIn(workspaceId, "image/png", null, null);
+
+        const theirs = yield* fileIn(
+          otherId,
+          "image/png",
+          "launch.png",
+          "launch"
+        );
+
+        yield* Effect.forEach(
+          [byName, byDescription, neither, nameless, theirs],
+          assets.insert
+        );
+
+        const found = yield* assets.list(workspaceId, {
+          ...everything,
+          text: Option.some("Launch"),
+        });
+
+        assert.deepStrictEqual(
+          found.assets.map((asset) => asset.id),
+          [byDescription.id, byName.id]
+        );
+      })
+  );
+
+  it.effect("reads wildcards in the text as the characters they are", () =>
+    Effect.gen(function* literal() {
+      const assets = yield* MediaAssets;
+      const workspaceId = WorkspaceIdSchema.make(yield* (yield* Ids).next);
+      const percent = yield* fileIn(workspaceId, "image/png", "100%.png", null);
+
+      const underscore = yield* fileIn(
+        workspaceId,
+        "image/png",
+        "a_b.png",
+        null
+      );
+
+      const plain = yield* fileIn(workspaceId, "image/png", "100x.png", null);
+
+      const backslash = yield* fileIn(
+        workspaceId,
+        "image/png",
+        "plain.png",
+        String.raw`a\b`
+      );
+
+      yield* Effect.forEach(
+        [percent, underscore, plain, backslash],
+        assets.insert
+      );
+
+      const search = (text: string) =>
+        assets
+          .list(workspaceId, { ...everything, text: Option.some(text) })
+          .pipe(Effect.map((page) => page.assets.map((asset) => asset.id)));
+
+      assert.deepStrictEqual(yield* search("0%"), [percent.id]);
+      assert.deepStrictEqual(yield* search("a_"), [underscore.id]);
+      assert.deepStrictEqual(yield* search(String.raw`a\b`), [backslash.id]);
+    })
+  );
+
+  it.effect("filters by kind, with the text, a page at a time", () =>
+    Effect.gen(function* filters() {
+      const assets = yield* MediaAssets;
+      const workspaceId = WorkspaceIdSchema.make(yield* (yield* Ids).next);
+
+      const files = [
+        yield* fileIn(workspaceId, "video/mp4", "launch-1.mp4", null),
+        yield* fileIn(workspaceId, "image/png", "launch-2.png", null),
+        yield* fileIn(workspaceId, "video/mp4", "launch-3.mp4", null),
+        yield* fileIn(workspaceId, "application/pdf", "launch-4.pdf", null),
+        yield* fileIn(workspaceId, "video/mp4", "other.mp4", null),
+        yield* fileIn(workspaceId, "video/mp4", "launch-5.mp4", null),
+      ];
+
+      yield* Effect.all(files.map((file) => assets.insert(file)));
+
+      const videos = (after: Option.Option<(typeof files)[number]["id"]>) =>
+        assets.list(workspaceId, {
+          after,
+          kind: Option.some("video"),
+          limit: 2,
+          text: Option.some("launch"),
+        });
+
+      const first = yield* videos(Option.none());
+      const second = yield* videos(first.next);
+
+      assert.deepStrictEqual(
+        [...first.assets, ...second.assets].map((asset) => asset.fileName),
+        ["launch-5.mp4", "launch-3.mp4", "launch-1.mp4"].map((name) =>
+          fileNameOf(name)
+        )
+      );
+      assert.deepStrictEqual(second.next, Option.none());
+
+      const documents = yield* assets.list(workspaceId, {
+        ...everything,
+        kind: Option.some("document"),
+      });
+
+      assert.deepStrictEqual(
+        documents.assets.map((asset) => asset.id),
+        [files[3]?.id]
+      );
     })
   );
 });
