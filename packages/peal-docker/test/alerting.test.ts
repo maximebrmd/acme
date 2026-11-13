@@ -37,6 +37,7 @@ const watched = [
   "peal_billing_usage_report_paused",
   "peal_billing_account_days_started_day",
   "peal_billing_threshold_unset_total",
+  "peal_billing_meter_errors_total",
 ];
 
 const RuleSchema = Schema.Struct({

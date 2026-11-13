@@ -122,11 +122,12 @@
   never lowered (a disconnection counts the day it was connected in).
   Raised where a channel is added, inside `addingTo` and the pool's hold
   (`ChannelAllowance.counted`, its count read only where billing is on);
-  when the day starts (`StartAccountDays`, run by the 00:11 snapshot after
-  its sweep and again every hour by `billing.account-days` at minute 49:
-  accounts by id, three reads and one transaction a batch, a batch that
-  fails logged and left to the next run; gauges `.accounts`, `.started`
-  and `.started_day`, alert `peal-account-days-unstarted` past 02:00);
+  when the day starts (`StartAccountDays`, run when a server that bills
+  starts, by the 00:11 snapshot after its sweep, and every hour by
+  `billing.account-days` at minute 49: accounts by id, three reads and
+  one transaction a batch, a batch that fails logged and left to the next
+  run; gauges `.accounts`, `.started` and `.started_day`, alert
+  `peal-account-days-unstarted` past 02:00 and one hourly run);
   when a subscription is recorded (`subscribed`, to the pool's count,
   bound late through `bindPool` as the channels context is built after
   billing); and when a workspace is transferred, merged or detached
@@ -146,15 +147,22 @@
   first attempt (`stamped_at`: the instant described within the hour,
   else then) and every retry sends that stamp under the key
   `<identifier>:<timestamp>`, so it is the same request; never recompute
-  it. Outcomes (`outcomeOfFailure`): no answer, 409, 429 or 5xx is
-  `unavailable`; an invalid request whose code is the event's own
+  it. Its cost: a row first tried before a period's end and taken after
+  that period's invoice was finalised is not billed (Stripe takes it into
+  no invoice), and a 500 Stripe saved is given again for its 24 hours, the
+  customer waiting meanwhile (`behind` warns at 6 hours). Outcomes
+  (`outcomeOfFailure`): no answer, 409, 429 or 5xx is `unavailable`; 401
+  and 403 are `account`; an invalid request whose code is the event's own
   (`eventRefusals`: value, timestamp, customer) is refused for good, kept
-  by its code, logged and counted; anything else (401, 403, an
-  idempotency mismatch, a meter, a code not listed) is `refusing`: the
-  customer waits, nothing is marked, and `peal-usage-report-key-refused`
-  says so. A run stops after five attempts in a row Stripe did not take.
+  by its code, logged and counted; anything else (an idempotency
+  mismatch, a meter, a code not listed) is `refusing`. `account` and
+  `refusing` pause the customer, nothing marked, and
+  `peal-usage-report-key-refused` says so. Only `unavailable` and
+  `account`, the same for every customer, count toward stopping a run
+  (five in a row): a customer refused for its own reasons never stops the
+  others.
   Gauges `.left`, `.oldest_age`, `.ran_at` (set at start), `.refused_kept`
-  and `.paused` feed `peal-usage-report-behind` (6 hours), `-stopped` (30
+  (read from the rows at start, never zeroed) and `.paused` feed `peal-usage-report-behind` (6 hours), `-stopped` (30
   minutes), `-refused` (critical, a state) and `-key-refused`; their
   promtool tests are `peal-docker/test/alerting-promtool.test.ts`. An
   alert never tells the operator to report usage by hand: Stripe may hold
@@ -168,6 +176,17 @@
   `usageReports`) and erasure, which deletes unsent reports too (a rise in
   the minutes before a billing workspace is erased is not on its final
   invoice), and are the registry's `usage`.
+- Meter events Stripe took and could not count (a meter archived or
+  missing, a customer unknown) come back as thin events,
+  `v1.billing.meter.error_report_triggered` and `no_meter_found`, to an
+  event destination of their own: `POST /api/stripe/meter-errors`
+  (`src/app/meter-errors/`, no credentials, the signature checked with
+  `STRIPE_METER_WEBHOOK_SECRET`, unset: every event refused), read in full
+  from Stripe (`StripeMeterErrorEventsLive`), counted
+  (`peal.billing.meter_errors`, alert `peal-meter-errors`), and the reports
+  their samples name kept refused (`stripe:<code>`, sent or not), which
+  `refused_kept` and its alert read. Stripe names a sample, not every
+  event: the count is what alerts.
 - Unverified ceiling (D8): per-account pricing on an account none of
   whose subscriptions had an invoice paid connects up to
   `rateCard.unverifiedCeiling` (100) accounts
@@ -212,8 +231,13 @@
   `stripe-catalogue` and run the daily step (the item moved, no
   proration); revoke the key for a run (every customer paused, nothing
   refused, `peal-usage-report-key-refused`), restore it (everything
-  sent); and read, in the meter's event summaries, that each day bills
-  its peak once.
+  sent); send an event for a deleted customer, one 40 days old and one
+  whose value is no number, and write down each answer's status, type
+  and code (add the codes that are the event's own to `eventRefusals`);
+  deactivate a meter and send an event (the answer, then the meter error
+  event at the destination, `peal-meter-errors`, and its sample marked);
+  and read, in the meter's event summaries, that each day bills its peak
+  once.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before

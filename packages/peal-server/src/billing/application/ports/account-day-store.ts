@@ -43,7 +43,7 @@ export interface ReportBacklog {
   /** Neither sent nor refused for good. */
   readonly left: number;
   readonly oldest: Option.Option<DateTime.Utc>;
-  /** Refused for good, kept unsent. */
+  /** Refused for good, before Stripe took them or after. */
   readonly refused: number;
 }
 
@@ -104,6 +104,14 @@ export class AccountDayStore extends Context.Service<
       identifier: string,
       refusal: string
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Keeps `refusal` on the reports named, sent or not, that none was
+     * kept on: how many.
+     */
+    readonly markDropped: (
+      identifiers: readonly string[],
+      refusal: string
+    ) => Effect.Effect<number, DatabaseError>;
     /** How many reports wait, and since when the oldest. */
     readonly backlog: Effect.Effect<ReportBacklog, DatabaseError>;
     /**

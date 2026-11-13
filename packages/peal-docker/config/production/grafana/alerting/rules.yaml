@@ -933,3 +933,36 @@ groups:
                 - evaluator:
                     type: gt
                     params: [0]
+
+      - uid: peal-meter-errors
+        title: Stripe could not count meter events it took
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe reported meter events it took and could not count, a meter archived or missing, a customer unknown, a value it cannot read (peal.billing.meter_errors, from its meter error events at /api/stripe/meter-errors); their usage is not billed. The server's error log ("Stripe reported meter events it could not count") gives each code and count, and the reports Stripe named are kept refused in billing.meter_reports (stripe:<code>). Read the meter and the customer in Stripe's dashboard and stripe-catalogue --check; never report usage by hand before Stripe's own summaries say what it holds.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The hour's increase, a restart's included, and a series born
+              # within it counted whole.
+              expr: (sum(increase(peal_billing_meter_errors_total[1h])) or vector(0)) + (sum(peal_billing_meter_errors_total unless peal_billing_meter_errors_total offset 1h) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]

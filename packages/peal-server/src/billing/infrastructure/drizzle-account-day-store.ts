@@ -257,6 +257,18 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
             Effect.withSpan("AccountDayStore.markSent")
           );
 
+    // The identifiers as one text parameter split in the database.
+    const markDropped = (identifiers: readonly string[], refusal: string) =>
+      identifiers.length === 0
+        ? Effect.succeed(0)
+        : client<{
+            readonly identifier: string;
+          }>`UPDATE billing.meter_reports SET refusal = ${refusal} WHERE identifier = ANY(string_to_array(${identifiers.join(",")}, ',')) AND refusal IS NULL RETURNING identifier`.pipe(
+            Effect.map((rows) => rows.length),
+            Effect.mapError(failed),
+            Effect.withSpan("AccountDayStore.markDropped")
+          );
+
     const markRefused = (identifier: string, refusal: string) =>
       db
         .update(meterReports)
@@ -272,7 +284,7 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
       readonly left: number;
       readonly oldest: Date | null;
       readonly refused: number;
-    }>`SELECT count(*) FILTER (WHERE refusal IS NULL)::int AS left, min(created_at) FILTER (WHERE refusal IS NULL) AS oldest, count(*) FILTER (WHERE refusal IS NOT NULL)::int AS refused FROM billing.meter_reports WHERE sent_at IS NULL`.pipe(
+    }>`SELECT count(*) FILTER (WHERE refusal IS NULL)::int AS left, min(created_at) FILTER (WHERE refusal IS NULL) AS oldest, (SELECT count(*)::int FROM billing.meter_reports WHERE refusal IS NOT NULL) AS refused FROM billing.meter_reports WHERE sent_at IS NULL`.pipe(
       Effect.map(([row]) => ({
         left: row?.left ?? 0,
         refused: row?.refused ?? 0,
@@ -353,6 +365,7 @@ export const DrizzleAccountDayStoreLive = Layer.effect(
       backlog,
       enqueue,
       eraseWorkspace,
+      markDropped,
       markRefused,
       markSent,
       ofHolders,

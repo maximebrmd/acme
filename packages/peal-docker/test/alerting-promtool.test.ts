@@ -203,6 +203,23 @@ const cases: readonly Case[] = [
       ["95m", false],
     ],
     interval: "1m",
+    name: "meter events Stripe could not count, the counter born at 2",
+    series: { peal_billing_meter_errors_total: "_x30 2x90" },
+    uid: "peal-meter-errors",
+  },
+  {
+    expected: [["40m", true]],
+    interval: "1m",
+    name: "meter errors after a restart, the counter higher an hour before",
+    series: { peal_billing_meter_errors_total: "5x30 0x5 1x30" },
+    uid: "peal-meter-errors",
+  },
+  {
+    expected: [
+      ["35m", true],
+      ["95m", false],
+    ],
+    interval: "1m",
     name: "a second subscription ended, the counter born at 1",
     series: { peal_billing_duplicate_subscriptions_total: "_x30 1x90" },
     uid: "peal-duplicate-subscription",

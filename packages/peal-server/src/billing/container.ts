@@ -17,6 +17,7 @@ import { UsageAtCheckout } from "#billing/application/ports/usage-at-checkout.ts
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
+import { ReceiveMeterErrors } from "#billing/application/receive-meter-errors.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
@@ -59,6 +60,7 @@ import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-bil
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
+import { StripeMeterErrorEventsLive } from "#billing/infrastructure/stripe-meter-error-events.ts";
 import { StripeUsageBillingLive } from "#billing/infrastructure/stripe-usage-billing.ts";
 import { usageReporting } from "#billing/infrastructure/usage-report-cron.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
@@ -240,6 +242,8 @@ export const BillingOverviewLive = Layer.mergeAll(
   Withdraw.layer,
   SendBillingReminders.layer,
   ReportUsage.layer,
+  // Stripe's reports of meter events it took and could not count.
+  ReceiveMeterErrors.layer.pipe(Layer.provide(StripeMeterErrorEventsLive)),
   // Today's account-days start with the snapshot and every hour.
   SnapshotUsage.layer.pipe(Layer.provideMerge(StartDaysLive)),
   PoolBound,

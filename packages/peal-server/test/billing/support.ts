@@ -178,6 +178,7 @@ export const AccountDaysInMemory = Layer.effect(
           ),
         ]).pipe(Effect.asVoid),
       backlog: unkept,
+      markDropped: () => unkept,
       markRefused: () => unkept,
       markSent: () => unkept,
       ofHolders: () => unkept,

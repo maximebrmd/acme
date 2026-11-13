@@ -779,7 +779,9 @@ workspace.
 
 - Turning billing on, or upgrading a server that billed on the plans
   priced by channels to this model: put `STRIPE_SECRET_KEY` and
-  `STRIPE_WEBHOOK_SECRET` in the vault, and `PEAL_BILLING_GRACE_UNTIL` in
+  `STRIPE_WEBHOOK_SECRET` in the vault (and `STRIPE_METER_WEBHOOK_SECRET`,
+  the signing secret of the event destination of the meter error events,
+  `PUBLIC_URL/api/stripe/meter-errors`), and `PEAL_BILLING_GRACE_UNTIL` in
   `peal_settings` (a day a month or so ahead: without it, every workspace
   on the free tier with more than 2 accounts, those within the old free
   plan's 3 included, stops publishing at once), run `site.yml` so
