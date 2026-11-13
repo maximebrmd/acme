@@ -113,7 +113,7 @@ const en = {
       "A server you run yourself bills nothing and limits nothing: these plans are Peal Cloud's.",
     title: "Pricing",
     trial:
-      "Try {plan} free for {days} days, without a payment card. When it ends, the workspace moves to the free plan unless you order. One free workspace per account.",
+      "Try {plan} free for {days} days, without a payment card. When it ends, the workspace moves to the free plan unless you order. The workspaces you create share one plan and count their channels together.",
     unlimited: {
       assistantRequests: "Unlimited assistant requests",
       channels: "Unlimited channels",
@@ -239,7 +239,7 @@ const fr: Messages = {
       "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces abonnements sont ceux de Peal Cloud.",
     title: "Tarifs",
     trial:
-      "Essayez {plan} gratuitement pendant {days} jours, sans carte de paiement. À la fin de l’essai, l’espace de travail passe à l’offre gratuite, sauf si vous commandez. Un espace de travail gratuit par compte.",
+      "Essayez {plan} gratuitement pendant {days} jours, sans carte de paiement. À la fin de l’essai, l’espace de travail passe à l’offre gratuite, sauf si vous commandez. Les espaces de travail que vous créez partagent un abonnement et comptent leurs canaux ensemble.",
     unlimited: {
       assistantRequests: "Demandes à l’assistant illimitées",
       channels: "Canaux illimités",

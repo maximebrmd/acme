@@ -35,6 +35,8 @@ Les espaces d’un compte partagent un abonnement et comptent leurs canaux ensem
 
 Le payeur d’un espace de travail le confie à un autre de ses propriétaires depuis sa page Facturation : la proposition reste ouverte 7 jours, et le propriétaire à qui elle est faite l’accepte là, en personne, ou la refuse. Accepter fait passer l’espace sur son compte de facturation, créé s’il n’en a pas. C’est refusé quand l’abonnement de son compte n’a pas de place pour les canaux de l’espace, et pour l’espace de facturation tant que son abonnement peut encore être prélevé : résiliez-le d’abord, ou confiez un autre espace. Dans l’API, `POST …/billing/transfer`, `POST …/billing/transfer/acceptance` et `DELETE …/billing/transfer` ne répondent qu’à une personne dans sa propre session.
 
+Sur un serveur qui facture, le payeur reste l’un des propriétaires de l’espace de travail jusqu’à ce qu’il le confie : le quitter, en être retiré ou perdre le rôle de propriétaire répond 400 `PAYER_MUST_STAY`, et une réduction qui le retirerait `payerRequired`. Sur un serveur qui ne facture pas, rien n’est refusé : un espace dont le payeur n’est plus l’un des propriétaires passe sur le compte de son plus ancien propriétaire. Quand le payeur ferme son compte, chaque espace qu’il payait et que d’autres possèdent passe sur le compte de son plus ancien autre propriétaire, au-delà de son abonnement si ce compte n’a pas de place pour ses canaux.
+
 ## Ce qu’un abonnement limite [#limits]
 
 Un espace de travail ne dépasse jamais son abonnement : chaque limite est vérifiée quand quelque chose est ajouté, y compris pour des demandes envoyées en même temps, et ce pour quoi l’abonnement n’a pas de place est refusé.

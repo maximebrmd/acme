@@ -129,7 +129,10 @@ export const BillingLive = Layer.mergeAll(
   MeteredPosts.layer,
   RecordedUsage.layer,
   PurgeContractRecords.layer,
-  PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layerShared))
+  PlanUpgradePathsLive.pipe(
+    Layer.provide(WorkspaceEntitlements.layerShared),
+    Layer.provide(HoldersLive)
+  )
 ).pipe(
   Layer.provide(
     Layer.mergeAll(

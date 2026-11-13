@@ -169,6 +169,12 @@ export class ContextRecords extends Context.Service<
       email: string
     ) => Effect.Effect<void, DatabaseError>;
     /**
+     * Holds back, to the end of the closure's transaction, whoever changes
+     * what the user pays for: taken first, so the closure takes its locks
+     * in the order everyone else does.
+     */
+    readonly holdUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    /**
      * Keeps who held an account that closes, apart from everything else,
      * as the law requires of a host (loi n° 2004-575, art. 6, V, A; décret
      * n° 2021-1362): 5 years, the name and address; 1 year, how they

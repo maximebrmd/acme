@@ -35,6 +35,8 @@ The workspaces of an account share one plan and count their channels together: a
 
 The payer of a workspace hands it to another of its owners on its Billing page: the offer is open for 7 days, and the owner it is made to accepts it there, in person, or declines it. Accepting moves the workspace to their billing account, made if they have none. It is refused when their account's plan has no room for the workspace's channels, and for the billing workspace while its subscription may still charge: cancel it first, or hand over another workspace. The API's `POST …/billing/transfer`, `POST …/billing/transfer/acceptance` and `DELETE …/billing/transfer` answer only a person in their own session.
 
+On a server that bills, the payer stays one of the workspace's owners until they hand it over: leaving it, being removed from it or losing the owner role answers 400 `PAYER_MUST_STAY`, and a reduction that would remove them `payerRequired`. On a server that does not bill nothing is refused: a workspace whose payer is no longer one of its owners moves to its oldest owner's account. When the payer closes their account, each workspace they paid for that others own goes to its oldest other owner's account, over its plan if that account has no room for its channels.
+
 ## What a plan limits [#limits]
 
 A workspace never goes above its plan: each limit is checked when something is added, requests sent together included, and what the plan has no room for is refused.

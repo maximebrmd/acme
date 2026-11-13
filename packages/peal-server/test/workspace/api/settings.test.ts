@@ -382,6 +382,7 @@ const PortsLive = Layer.mergeAll(
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),
+        holdUser: () => Effect.void,
         legalRemains: () =>
           Effect.succeed({
             accountYears: 1,

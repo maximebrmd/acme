@@ -157,6 +157,11 @@ export class BillingRecords extends Context.Service<
      * they made, the trial they started, which stays the workspace's, and
      * by `pseudonym`, their email address's, for `trialMemory`.
      */
+    /**
+     * Holds back whoever resolves or changes what the user pays for, to the
+     * end of the transaction: the closure takes it first.
+     */
+    readonly holdUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     readonly forgetUser: (
       userId: UserId,
       pseudonym: string
@@ -398,6 +403,7 @@ export class BillingRecords extends Context.Service<
             // oldest owner left.
             Effect.andThen(accounts.forgetPayer(userId, pseudonym))
           ),
+        holdUser: (userId) => accountStore.holdPayer(userId),
         settleWorkspace,
       });
     })

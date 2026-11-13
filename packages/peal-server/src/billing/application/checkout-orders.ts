@@ -21,6 +21,7 @@ import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
 import { holdsSince, trialOpen } from "./place-order.ts";
 import { Orders } from "./ports/orders.ts";
+import { PlanHolders } from "./ports/plan-holders.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
 import { Trials } from "./ports/trials.ts";
 import { UsageAtCheckout } from "./ports/usage-at-checkout.ts";
@@ -72,6 +73,7 @@ export class CheckoutOrders extends Context.Service<
       const orders = yield* Orders;
       const usage = yield* UsageAtCheckout;
       const pseudonyms = yield* Pseudonyms;
+      const holders = yield* PlanHolders;
       const context = yield* Effect.context<Subscriptions | Trials>();
 
       const take = Effect.fn("CheckoutOrders.take")(function* take(
@@ -103,6 +105,14 @@ export class CheckoutOrders extends Context.Service<
         );
 
         if (Option.isNone(order)) {
+          return yield* new OrderRequired();
+        }
+
+        // Ordered while the workspace billed its account: handed over or
+        // joined to another since, it orders nothing more.
+        if (
+          (yield* holders.holderOf(request.workspaceId)) !== request.workspaceId
+        ) {
           return yield* new OrderRequired();
         }
 
