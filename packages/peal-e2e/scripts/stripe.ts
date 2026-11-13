@@ -13,12 +13,12 @@ import { Schema } from "effect";
 import { billingCurrency, PaidPlanSchema, planCatalogue } from "peal-contract";
 import type { LegacyPaidPlan } from "peal-contract";
 import {
+  catalogueLookupKeysOf,
   MeterSchema,
   rateCard,
   stripeTiersOf,
   stripeUnitAmountOf,
 } from "peal-contract/rate-card";
-import type { Meter } from "peal-contract/rate-card";
 
 const intervals = [
   { key: "monthly", name: "month" },
@@ -43,18 +43,14 @@ const prices = legacyPlans.flatMap((plan) =>
   }))
 );
 
-// Per-account pricing's lines, under the lookup keys the server reads
-// (`peal_accounts`, `peal_outbound_messages`…), each also its meter's
-// event name.
-const snakeCase = (meter: Meter): string =>
-  meter.replaceAll(/[A-Z]/gu, (letter) => `_${letter.toLowerCase()}`);
+// Per-account pricing's lines, under the lookup keys the server reads,
+// each also its meter's event name: the contract's, which its tests keep
+// equal to the server's.
+const keys = catalogueLookupKeysOf("peal");
 
 const lines = [
-  { key: "peal_accounts", meter: null },
-  ...MeterSchema.literals.map((meter) => ({
-    key: `peal_${snakeCase(meter)}`,
-    meter,
-  })),
+  { key: keys.accounts, meter: null },
+  ...MeterSchema.literals.map((meter) => ({ key: keys[meter], meter })),
 ];
 
 const meters = lines.map(({ key }) => ({

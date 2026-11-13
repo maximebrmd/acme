@@ -365,3 +365,19 @@ export const stripeUnitAmountOf = (
 
   return decimalOf(cents, per);
 };
+
+/**
+ * The lookup keys of per-account pricing's prices at Stripe under
+ * `prefix`, one per line of the invoice, each also its meter's event name,
+ * as a server that bills reads them (`STRIPE_LOOKUP_KEY_PREFIX`).
+ */
+export const catalogueLookupKeysOf = (
+  prefix: string
+): { readonly accounts: string } & { readonly [M in Meter]: string } => ({
+  accounts: `${prefix}_accounts`,
+  assistantImages: `${prefix}_assistant_images`,
+  assistantRequests: `${prefix}_assistant_requests`,
+  managedAds: `${prefix}_managed_ads`,
+  outboundMessages: `${prefix}_outbound_messages`,
+  xApi: `${prefix}_x_api`,
+});

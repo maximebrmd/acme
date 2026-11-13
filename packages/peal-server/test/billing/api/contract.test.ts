@@ -21,6 +21,7 @@ import {
   accountsMonthly as contractAccountsMonthly,
   meterCharge as contractMeterCharge,
   MeterSchema as ContractMeterSchema,
+  catalogueLookupKeysOf,
   rateCard as contractRateCard,
   RateCardSchema,
   stripeTiersOf as contractStripeTiersOf,
@@ -62,6 +63,7 @@ import {
   PaidPlanSchema,
   PlanSchema,
 } from "#shared/domain/plan.ts";
+import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 
 const decodeObjectSchema = Schema.decodeUnknownSync(
   Schema.Struct({
@@ -162,6 +164,17 @@ describe("the contract", () => {
       );
     }
   });
+
+  // The end-to-end tests' stand-in lists the catalogue under the contract's
+  // keys: a server reads the same.
+  it.each(["peal", "peal_sandbox"])(
+    "names the catalogue's lookup keys under %s as the server does",
+    (prefix) => {
+      expect(catalogueLookupKeysOf(prefix)).toStrictEqual(
+        catalogueKeysOf(prefix)
+      );
+    }
+  );
 
   // Clients generated from the API read a plain integer into 32 bits.
   it("states the rate card's storage sizes as 64-bit integers", () => {
