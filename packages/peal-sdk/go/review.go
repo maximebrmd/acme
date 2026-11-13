@@ -2455,9 +2455,10 @@ var (
 	reviewedChannelFieldChannelID = big.NewInt(1 << 0)
 	reviewedChannelFieldFollowUps = big.NewInt(1 << 1)
 	reviewedChannelFieldHandle    = big.NewInt(1 << 2)
-	reviewedChannelFieldOptions   = big.NewInt(1 << 3)
-	reviewedChannelFieldPlatform  = big.NewInt(1 << 4)
-	reviewedChannelFieldText      = big.NewInt(1 << 5)
+	reviewedChannelFieldMedia     = big.NewInt(1 << 3)
+	reviewedChannelFieldOptions   = big.NewInt(1 << 4)
+	reviewedChannelFieldPlatform  = big.NewInt(1 << 5)
+	reviewedChannelFieldText      = big.NewInt(1 << 6)
 )
 
 // reviewedChannelNullableFields maps the wire names of ReviewedChannel's nullable fields (required or optional) to their field bits.
@@ -2468,12 +2469,13 @@ var reviewedChannelNullableFields = map[string]*big.Int{
 }
 
 type ReviewedChannel struct {
-	ChannelID string          `json:"channelId" url:"channelId"`
-	FollowUps []*ReviewedPart `json:"followUps" url:"followUps"`
-	Handle    *string         `json:"handle,omitempty" url:"handle,omitempty"`
-	Options   *TargetOptions  `json:"options,omitempty" url:"options,omitempty"`
-	Platform  *Platform       `json:"platform,omitempty" url:"platform,omitempty"`
-	Text      string          `json:"text" url:"text"`
+	ChannelID string           `json:"channelId" url:"channelId"`
+	FollowUps []*ReviewedPart  `json:"followUps" url:"followUps"`
+	Handle    *string          `json:"handle,omitempty" url:"handle,omitempty"`
+	Media     []*ReviewedMedia `json:"media,omitempty" url:"media,omitempty"`
+	Options   *TargetOptions   `json:"options,omitempty" url:"options,omitempty"`
+	Platform  *Platform        `json:"platform,omitempty" url:"platform,omitempty"`
+	Text      string           `json:"text" url:"text"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2501,6 +2503,13 @@ func (r *ReviewedChannel) GetHandle() *string {
 		return nil
 	}
 	return r.Handle
+}
+
+func (r *ReviewedChannel) GetMedia() []*ReviewedMedia {
+	if r == nil {
+		return nil
+	}
+	return r.Media
 }
 
 func (r *ReviewedChannel) GetOptions() *TargetOptions {
@@ -2559,6 +2568,13 @@ func (r *ReviewedChannel) SetFollowUps(followUps []*ReviewedPart) {
 func (r *ReviewedChannel) SetHandle(handle *string) {
 	r.Handle = handle
 	r.require(reviewedChannelFieldHandle)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetMedia(media []*ReviewedMedia) {
+	r.Media = media
+	r.require(reviewedChannelFieldMedia)
 }
 
 // SetOptions sets the Options field and marks it as non-optional;
