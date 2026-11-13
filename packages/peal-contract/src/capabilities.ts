@@ -229,6 +229,23 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
     fields: Schema.Array(FieldDescriptionSchema),
   }),
   platform: PlatformSchema,
+  // The poll a post may ask there with its first part, whose text is the
+  // question: from `minChoices` to `maxChoices` choices, each within
+  // `choiceLimit`, open for `durationMinutes` (null: the platform decides
+  // how long, whatever the post asks), several picks where
+  // `multipleChoice`, never beside a file. Left out where Peal sends no
+  // poll, and a post asking one is refused there (`pollNotSupported`).
+  poll: Schema.optionalKey(
+    Schema.Struct({
+      choiceLimit: TextLimitSchema,
+      durationMinutes: Schema.NullOr(
+        Schema.Struct({ maximum: Schema.Int, minimum: Schema.Int })
+      ),
+      maxChoices: Schema.Int,
+      minChoices: Schema.Int,
+      multipleChoice: Schema.Boolean,
+    }).annotate({ identifier: "PollCapabilities" })
+  ),
   // The kinds of post whose rules differ from a feed post's there (an
   // Instagram story, a Facebook story or reel), each chosen by the
   // options' `format`; `media` above is a feed post's. Left out where the

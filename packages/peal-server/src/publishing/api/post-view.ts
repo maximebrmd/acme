@@ -162,6 +162,12 @@ export const postView = ({
         ...saidBy(part),
       })),
       ...saidBy(post.content),
+      ...Option.match(post.content.poll, {
+        onNone: () => ({}),
+        onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+          poll: { choices, durationMinutes, multipleChoice },
+        }),
+      }),
     },
     createdVia: originOrNull(post.attribution.createdVia),
     id: post.id,

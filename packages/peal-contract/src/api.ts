@@ -1384,6 +1384,15 @@ export type {
 } from "./posts.ts";
 
 export {
+  maxPollChoiceLength,
+  maxPollChoices,
+  maxPollDurationMinutes,
+  PollSchema,
+} from "./poll.ts";
+
+export type { Poll } from "./poll.ts";
+
+export {
   ChannelOptionsSchema,
   GoogleBusinessCallToActionSchema,
   googleBusinessLocalTimePattern,

@@ -25,6 +25,7 @@ import type {
   FormatLimits,
   MediaRules,
   PlatformRules,
+  PollRules,
 } from "#publishing/domain/platform-rules.ts";
 
 // Absent values are null in what clients read.
@@ -132,6 +133,21 @@ const mediaView = (
   required: rules.mediaRequired,
 });
 
+// The poll the platform takes, as the contract describes it.
+const pollView = (poll: PollRules) => ({
+  choiceLimit: poll.choiceLimit,
+  durationMinutes:
+    poll.duration._tag === "range"
+      ? {
+          maximum: poll.duration.maximumMinutes,
+          minimum: poll.duration.minimumMinutes,
+        }
+      : null,
+  maxChoices: poll.maxChoices,
+  minChoices: poll.minChoices,
+  multipleChoice: poll.multipleChoice,
+});
+
 const isPostCount = Schema.is(Schema.Literals(postCountNames));
 
 const isAccountNumber = Schema.is(Schema.Literals(accountNumberNames));
@@ -172,10 +188,13 @@ export const platformCapabilitiesView = (
 
   const formats = capabilities.postFormats;
 
+  const polled =
+    rules.poll === undefined ? view : { ...view, poll: pollView(rules.poll) };
+
   return formats === undefined
-    ? view
+    ? polled
     : {
-        ...view,
+        ...polled,
         postFormats: formats.map((format) => ({
           description: format.description,
           media: mediaView(format.rules, format),

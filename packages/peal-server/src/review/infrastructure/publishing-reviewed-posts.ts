@@ -107,6 +107,13 @@ export const PublishingReviewedPosts = Layer.effect(
           altText,
           mediaId,
         })),
+        poll: post.content.poll.pipe(
+          Option.map(({ choices, durationMinutes, multipleChoice }) => ({
+            choices,
+            durationMinutes,
+            multipleChoice,
+          }))
+        ),
         postId: post.id,
         schedule: scheduleOf(post.status),
         status: statusOf(post.status),

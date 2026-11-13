@@ -29,6 +29,7 @@ import {
 import { LivePostNotChangeable } from "./live-post-not-changeable.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
+import { PollSchema } from "./poll.ts";
 import {
   ImportCellProblemSchema,
   maxBulkPosts,
@@ -154,7 +155,12 @@ export type PostPart = typeof PostPartSchema.Type;
  * the parts after it, in order, a thread or comments depending on the
  * platform, `maxFollowUps` at most: left out, there are none, and
  * Peal always answers it. A post with parts is refused when it is
- * scheduled on a platform that takes a post alone (`tooManyParts`).
+ * scheduled on a platform that takes a post alone (`tooManyParts`). On
+ * Facebook Pages, Instagram, LinkedIn pages and YouTube the one part
+ * after the first is a first comment, which the account posts under its
+ * post once it is live. `poll` is a poll asked with the first part, where
+ * the platforms take one: left out or null, there is none, and Peal
+ * answers it only on a post that has one.
  */
 export const PostContentSchema = Schema.Struct({
   followUps: Schema.optionalKey(
@@ -162,6 +168,7 @@ export const PostContentSchema = Schema.Struct({
   ),
   media: PartMediaSchema,
   overrides: PartOverridesSchema,
+  poll: Schema.optionalKey(Schema.NullOr(PollSchema)),
   text: PostTextSchema,
 }).annotate({ identifier: "PostContent" });
 

@@ -322,6 +322,37 @@ describe("the platforms' capabilities endpoint", () => {
       })
   );
 
+  it.effect("describes the poll each platform takes, where it takes one", () =>
+    Effect.gen(function* polls() {
+      const client = yield* clientWith(viewer, ready);
+
+      const all = yield* client.capabilities.platforms({
+        params: { workspaceId },
+      });
+
+      assert.deepStrictEqual(
+        all.flatMap(({ platform, poll }) =>
+          poll === undefined ? [] : [[platform, poll.durationMinutes]]
+        ),
+        [
+          ["x", { maximum: 10_080, minimum: 5 }],
+          ["mastodon", { maximum: 43_829, minimum: 5 }],
+          ["threads", null],
+        ]
+      );
+      assert.deepStrictEqual(
+        all.find(({ platform }) => platform === "mastodon")?.poll,
+        {
+          choiceLimit: { maximum: 50, unit: "codePoints" },
+          durationMinutes: { maximum: 43_829, minimum: 5 },
+          maxChoices: 4,
+          minChoices: 2,
+          multipleChoice: true,
+        }
+      );
+    })
+  );
+
   it.effect(
     "offers a first comment where the inbox reads the platform's comments",
     () =>
