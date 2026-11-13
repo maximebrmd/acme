@@ -284,8 +284,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   logic in `src/pricing.ts`) and the docs' **Plans and billing** page
   (`docs/billing.mdx`, with the variables of `pricing-variables.ts`) show
   the contract's rate card and never type a figure (`test/pricing.test.ts`):
-  US dollars excluding tax, French pages also with France's VAT, still in
-  dollars, and no exchange rate. A figure the rate card marks as awaiting a
+  US dollars, each price excluding VAT and with France's VAT, labelled,
+  in every language, and no exchange rate. A figure the rate card marks as awaiting a
   decision shows as coming (`comingMeters`). Both work out the rate
   card's `pricingExamples`, a part month with `accountsCharge`, as the
   invoice bills it. The legal pages' plans

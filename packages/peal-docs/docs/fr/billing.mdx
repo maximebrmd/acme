@@ -9,7 +9,7 @@ Sur Peal Cloud, chaque espace de travail suit l’abonnement de son [compte de f
 
 ## Le tarif par compte [#pricing]
 
-Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif, par mois : les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche. Les montants sont en dollars américains, TTC avec la TVA française de {{vat-rate}} %, puis HT entre parenthèses.
+Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif, par mois : les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche. Chaque prix est affiché HT et avec la TVA française de {{vat-rate}} %, en dollars américains.
 
 | Comptes                                           | Par mois et par compte |
 | ------------------------------------------------- | ---------------------- |
@@ -32,7 +32,7 @@ Les comptes sont comptés au jour. Chaque jour UTC du mois compte le plus grand 
 
 Un mois incomplet : {{part-month-all-fr}} comptes connectés tout le mois, plus {{part-month-extras-fr}}, font {{part-month-days-fr}} jours-comptes. Divisés par {{days-per-month}}, cela fait {{part-month-units-fr}} comptes passés au barème : {{part-month-fr}} pour le mois.
 
-Les prix sont fixés en dollars américains, hors taxes. La TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays ; une entreprise d’un autre pays de l’UE avec un numéro de TVA valide n’en paie pas, car elle est autoliquidée. Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains. Les factures sont en dollars américains.
+Les prix sont fixés en dollars américains, hors taxes. La TVA que vous payez dépend de votre pays : elle est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Une entreprise avec un numéro de TVA valide paie le prix HT, la TVA étant autoliquidée ; en France, la TVA française s’applique. Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains. Les factures sont en dollars américains.
 
 La page **Facturation** de l’espace de travail indique son abonnement et ce qu’il utilise de chaque limite ; `GET /api/workspaces/:workspaceId/billing` répond la même chose.
 

@@ -103,18 +103,16 @@ const dollars = (locale: Locale, cents: number) =>
 const count = (locale: Locale, value: number) =>
   new Intl.NumberFormat(locale).format(value);
 
-// English pages show dollars excluding tax; French pages also show each
-// amount with France's VAT, still in dollars, not rounded to the cent.
+// Every page shows each amount excluding VAT and with France's VAT, still
+// in dollars, not rounded to the cent.
 const amount = (locale: Locale, cents: number): string => {
   const excluded = dollars(locale, cents);
-
-  if (locale === "en") {
-    return excluded;
-  }
-
   const included = dollars(locale, (cents * (100 + displayVatRate)) / 100);
+  const rate = count(locale, displayVatRate);
 
-  return `${included} TTC (${excluded} HT)`;
+  return locale === "en"
+    ? `${excluded} excl. VAT · ${included} with France's ${rate}% VAT`
+    : `${excluded} HT · ${included} avec la TVA française de ${rate} %`;
 };
 
 const free: Readonly<Record<Locale, string>> = {

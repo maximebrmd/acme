@@ -9,7 +9,7 @@ On Peal Cloud, each workspace is on its [billing account](#accounts)'s plan: the
 
 ## Per-account pricing [#pricing]
 
-A billing account pays for the social media accounts connected across all its workspaces, on one graduated ladder, per month, excluding tax: the month's accounts, counted by the day as below, are priced band by band.
+A billing account pays for the social media accounts connected across all its workspaces, on one graduated ladder, per month: the month's accounts, counted by the day as below, are priced band by band. Each price is shown excluding VAT and with France's {{vat-rate}}% VAT, in US dollars.
 
 | Accounts                                           | A month, per account   |
 | -------------------------------------------------- | ---------------------- |
@@ -32,7 +32,7 @@ Accounts are counted by the day. Each UTC day of the month counts the most accou
 
 A month not held in full: {{part-month-all-en}} accounts connected all month, plus {{part-month-extras-en}}, come to {{part-month-days-en}} account-days. Divided by {{days-per-month}}, that is {{part-month-units-en}} accounts through the ladder: {{part-month-en}} for the month.
 
-Prices are in US dollars and exclude tax. VAT is added at checkout for customers in the EU, at their country's rate; a business in another EU country with a valid VAT number pays none, as it is reverse-charged. At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars. Invoices are in US dollars.
+Prices are in US dollars and exclude VAT. The VAT you pay depends on your country: it is added at checkout for customers in the EU, at their country's rate. A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies. At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars. Invoices are in US dollars.
 
 The workspace's **Billing** page shows its plan and how much of each limit it uses; `GET /api/workspaces/:workspaceId/billing` answers them too.
 
