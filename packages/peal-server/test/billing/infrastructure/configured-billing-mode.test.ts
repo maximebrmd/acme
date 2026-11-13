@@ -111,13 +111,15 @@ describe("the billing grace's start", () => {
         // Another start, or another server, keeps the first.
         yield* sql`UPDATE billing.grace_starts SET started_at = '2026-11-13T10:00:00Z' WHERE grace_until = ${day}`;
 
-        const first = Option.some(DateTime.makeUnsafe("2026-11-13T10:00:00Z"));
+        const earliest = Option.some(
+          DateTime.makeUnsafe("2026-11-13T10:00:00Z")
+        );
 
-        assert.deepStrictEqual((yield* modeOn(day)).graceSince, first);
+        assert.deepStrictEqual((yield* modeOn(day)).graceSince, earliest);
 
         // A grace moved to a later day still counts from the first: the
         // accounts connected in between are not graced.
-        assert.deepStrictEqual((yield* modeOn(later)).graceSince, first);
+        assert.deepStrictEqual((yield* modeOn(later)).graceSince, earliest);
 
         yield* forget;
       }).pipe(Effect.provide(DatabaseTest))

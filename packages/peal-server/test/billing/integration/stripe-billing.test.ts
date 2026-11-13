@@ -284,6 +284,7 @@ const ordered = Effect.fn("ordered")(function* ordered(
   person: Person,
   workspaceId: string,
   order: {
+    readonly consentVersion?: string;
     readonly interval: "month" | "year";
     readonly plan: string;
     readonly trial: boolean;
