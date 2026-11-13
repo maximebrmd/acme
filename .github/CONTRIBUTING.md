@@ -68,13 +68,19 @@ you change before you change it. The ones contributors meet first:
   `packages/peal-infra/ansible/uv.lock`) is committed with them. Dependabot
   (`.github/dependabot.yml`) opens grouped pull requests each Monday for the
   Bun workspace, the Ansible toolchain (uv), the workflows' actions, the
-  Dockerfiles and the compose files. Run the checks on its branch and push
-  the follow-ups it cannot make: a Bun or Node image moves `.bun-version` or
-  CI's `node-version` with it, a compose image moves CI's service image of
-  the same name, and Effect, Drizzle or Better Auth may need code changes.
-  It leaves alone what it cannot read: the SDKs' generated manifests and
-  generator images, CI's service images, the Ansible collections and the
-  uptime role's images.
+  Dockerfiles and the compose files, a release three days after it ships;
+  an image's major version comes in a pull request of its own. Run the
+  checks on its branch and push the follow-ups it cannot make: a Bun or
+  Node image moves `.bun-version` or CI's `node-version` with it, a compose
+  image moves CI's service image of the same name, TypeScript moves with
+  `@effect/tsgo` (one group), and Effect or Better Auth may need code
+  changes. Upgrade by hand what it is told to leave: the SDKs' generated
+  manifests, `fern-api` (with the generators), Drizzle until 1.0 is npm's
+  `latest`, and the majors of Postgres (its data needs `pg_upgrade`) and
+  Node (kept on LTS). And what it does not read: the SDK generator and
+  toolchain images, CI's service images and Betterleaks, the Dockerfiles'
+  `# syntax=` and ffmpeg images, pgBackRest's apt pin, the Ansible
+  collections and the uptime role's images.
 - **Lint findings are fixed, not suppressed.** `bun run fix` applies what it
   can.
 - **Tests come with the change.** A fix has a test that failed before it; a
