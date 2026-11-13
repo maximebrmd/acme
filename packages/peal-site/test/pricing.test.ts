@@ -4,18 +4,18 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { accountsMonthly, rateCard } from "peal-contract/rate-card";
+import {
+  accountsCharge,
+  accountsMonthly,
+  pricingExamples,
+  rateCard,
+} from "peal-contract/rate-card";
 import { describe, expect, it } from "vitest";
 
 import { locales } from "../src/i18n/locales.ts";
 import type { Locale } from "../src/i18n/locales.ts";
 import { messages } from "../src/i18n/messages.ts";
-import {
-  comingMeters,
-  exampleAccounts,
-  pricedMeters,
-  pricingPage,
-} from "../src/pricing.ts";
+import { comingMeters, pricedMeters, pricingPage } from "../src/pricing.ts";
 
 const dollars = (locale: Locale, cents: number) =>
   new Intl.NumberFormat(locale, {
@@ -34,22 +34,58 @@ const pageOf = (locale: Locale) =>
 describe("the pricing page", () => {
   it.each(locales)("prices each example from the rate card in %s", (locale) => {
     const page = pageOf(locale);
+    const { fullMonths } = pricingExamples;
 
     expect(page.examples.map(({ accounts }) => accounts)).toStrictEqual(
-      exampleAccounts.map((count) =>
-        new Intl.NumberFormat(locale).format(count)
-      )
+      fullMonths.map((count) => new Intl.NumberFormat(locale).format(count))
     );
 
-    for (const [index, count] of exampleAccounts.entries()) {
+    for (const [index, count] of fullMonths.entries()) {
       const cents = accountsMonthly(count);
       const example = page.examples[index];
 
-      expect(example?.price.excluded).toBe(dollars(locale, cents));
-      expect(example?.price.included).toBe(
-        locale === "fr" ? dollars(locale, withVat(cents)) : null
-      );
+      if (cents === 0) {
+        expect(example?.price).toBeNull();
+        expect(example?.text).toBe(messages(locale).pricing.ladder.free);
+      } else {
+        expect(example?.price?.excluded).toBe(dollars(locale, cents));
+        expect(example?.price?.included).toBe(
+          locale === "fr" ? dollars(locale, withVat(cents)) : null
+        );
+      }
     }
+  });
+
+  it.each(locales)(
+    "works out the part month as the invoice bills it in %s",
+    (locale) => {
+      const { allMonth, forDays } = pricingExamples.partMonth;
+
+      const accountDays =
+        allMonth * rateCard.daysPerMonth +
+        forDays.reduce((sum, days) => sum + days, 0);
+
+      const cents = accountsCharge(accountDays);
+      const { partMonth } = pageOf(locale);
+
+      expect(partMonth.accountDays).toBe(
+        new Intl.NumberFormat(locale).format(accountDays)
+      );
+      expect(partMonth.price.excluded).toBe(dollars(locale, cents));
+      expect(partMonth.text).toContain(partMonth.price.text);
+      expect(partMonth.text).toContain(partMonth.units);
+    }
+  );
+
+  it("pins the part month to the ladder's figures", () => {
+    // 10 accounts all month and two for 7 days: 314 account-days, 10.467
+    // accounts through the ladder: 2 free, 8 at $5, 0.467 at $3.
+    const { partMonth } = pageOf("en");
+
+    expect(partMonth.accountDays).toBe("314");
+    expect(partMonth.units).toBe("10.467");
+    expect(partMonth.price.text).toBe("$41.40");
+    expect(accountsCharge(314)).toBe(4140);
   });
 
   it("shows French VAT on the French page only", () => {

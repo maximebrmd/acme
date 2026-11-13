@@ -25,6 +25,7 @@ const page = pricingPage(locale, t);
       {page.vat === null ? null : <li>{page.vat}</li>}
       <li>{t.taxes.vat}</li>
       <li>{t.taxes.currency}</li>
+      <li>{t.taxes.reverseCharge}</li>
     </ul>
   </section>
 
@@ -33,6 +34,17 @@ const page = pricingPage(locale, t);
       <h2 class="text-lg font-semibold">{t.ladder.title}</h2>
       <p class="mt-2 text-sm text-neutral-600">{t.ladder.lead}</p>
       <table class="mt-4 w-full text-sm">
+        <caption class="sr-only">{t.ladder.caption}</caption>
+        <thead>
+          <tr>
+            <th class="pb-2 text-left font-medium" scope="col">
+              {t.ladder.accounts}
+            </th>
+            <th class="pb-2 text-right font-medium" scope="col">
+              {t.ladder.price}
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {
             page.ladder.map((row) => (
@@ -53,6 +65,7 @@ const page = pricingPage(locale, t);
       <h2 class="text-lg font-semibold">{t.examples.title}</h2>
       <p class="mt-2 text-sm text-neutral-600">{t.examples.lead}</p>
       <table class="mt-4 w-full text-sm">
+        <caption class="sr-only">{t.examples.caption}</caption>
         <thead>
           <tr>
             <th class="pb-2 text-left font-medium" scope="col">
@@ -68,12 +81,16 @@ const page = pricingPage(locale, t);
             page.examples.map((row) => (
               <tr class="border-t border-neutral-200">
                 <td class="py-2 pr-4 tabular-nums">{row.accounts}</td>
-                <td class="py-2 text-right tabular-nums">{row.price.text}</td>
+                <td class="py-2 text-right tabular-nums">{row.text}</td>
               </tr>
             ))
           }
         </tbody>
       </table>
+      <h3 class="mt-6 font-semibold">{t.partMonth.title}</h3>
+      <p class="mt-2 text-sm text-neutral-600 tabular-nums">
+        {page.partMonth.text}
+      </p>
     </div>
   </section>
 
@@ -108,7 +125,6 @@ const page = pricingPage(locale, t);
     <div>
       <h2 class="text-lg font-semibold">{t.storage.title}</h2>
       <p class="mt-2 text-neutral-600">{page.storage}</p>
-      <p class="mt-4 text-sm text-neutral-600">{t.taxes.reverseCharge}</p>
     </div>
   </section>
 

@@ -77,11 +77,12 @@ const en = {
   pricing: {
     coming: "Coming soon: prices to be announced",
     dayRule:
-      "Counted by the day: each day an account is connected costs {fraction} of its monthly price, for {days} days a month at most. A day counts the most accounts connected at once that day (UTC), across every workspace of the billing account.",
+      "Counted by the day: each UTC day of the month counts the most accounts connected at once that day, across every workspace of the billing account, for days {first} to {days} only (day {after} is never counted). The month's account-days are added up and divided by {days}, and that number of accounts goes through the ladder, so the first {freeDays} account-days are free. An account you disconnect stops counting from the next day, and nothing else is charged for accounts: no fee of any kind.",
     description:
       "Peal Cloud's prices: per connected account, by the day, with your first accounts free, in US dollars excluding tax.",
     examples: {
       accounts: "Accounts",
+      caption: "What a month costs, each account connected all month",
       lead: "With every account connected all month.",
       month: "A month",
       title: "What a month costs",
@@ -89,8 +90,11 @@ const en = {
     ladder: {
       free: "Free",
       last: "Accounts {from} and up",
-      lead: "One ladder per billing account: the person, or the partner, who pays for its workspaces. Each account is priced by the band it falls in, so the first ones cost nothing and each one past them costs less the further up it is.",
+      accounts: "Accounts",
+      caption: "The ladder, per account and month",
+      lead: "One ladder per billing account: the person, or the partner, who pays for its workspaces. The month's accounts, counted by the day as below, are priced band by band: the first ones cost nothing, and each further band costs less.",
       perAccount: "{price} per account a month",
+      price: "A month, per account",
       range: "Accounts {from} to {to}",
       title: "Connected accounts",
     },
@@ -134,12 +138,18 @@ const en = {
         assistantImages: "then {price} per image",
         assistantRequests: "then {price} per request",
         managedAds: "then {price} per active ad a month",
-        outboundMessages: "then {price} per {per} messages",
+        outboundMessages:
+          "then {price} for {per} messages, billed by the message",
         xApi: "at X's rates",
       },
       title: "Usage",
     },
     nav: "Pricing",
+    partMonth: {
+      body: "{allMonth} accounts connected all month, plus {extras}, come to {accountDays} account-days. Divided by {days}, that is {units} accounts through the ladder: {price} for the month.",
+      extra: "one for {days}",
+      title: "A month not held in full",
+    },
     selfHost:
       "A server you run yourself bills nothing and limits nothing: these prices are Peal Cloud's.",
     storage: {
@@ -246,11 +256,12 @@ const fr: Messages = {
   pricing: {
     coming: "Bientôt : tarifs à venir",
     dayRule:
-      "Compté au jour : chaque jour où un compte est connecté coûte {fraction} de son prix mensuel, pour {days} jours par mois au plus. Un jour compte le plus grand nombre de comptes connectés en même temps ce jour-là (UTC), dans tous les espaces de travail du compte de facturation.",
+      "Compté au jour : chaque jour UTC du mois compte le plus grand nombre de comptes connectés en même temps ce jour-là, dans tous les espaces de travail du compte de facturation, pour les jours {first} à {days} seulement (le jour {after} n’est jamais compté). Les jours-comptes du mois sont additionnés et divisés par {days}, et ce nombre de comptes passe au barème : les {freeDays} premiers jours-comptes sont donc gratuits. Un compte que vous déconnectez cesse de compter dès le lendemain, et rien d’autre n’est facturé pour les comptes : aucuns frais.",
     description:
       "Les tarifs de Peal Cloud : au compte connecté, au jour, vos premiers comptes gratuits, en dollars américains, TTC et HT.",
     examples: {
       accounts: "Comptes",
+      caption: "Ce que coûte un mois, chaque compte connecté tout le mois",
       lead: "Chaque compte connecté tout le mois.",
       month: "Par mois",
       title: "Ce que coûte un mois",
@@ -258,8 +269,11 @@ const fr: Messages = {
     ladder: {
       free: "Gratuit",
       last: "Comptes {from} et au-delà",
-      lead: "Un barème par compte de facturation : la personne, ou le partenaire, qui paie ses espaces de travail. Chaque compte est facturé au prix de la tranche où il se trouve : les premiers ne coûtent rien, et chacun des suivants coûte moins à mesure qu’on monte.",
+      accounts: "Comptes",
+      caption: "Le barème, par compte et par mois",
+      lead: "Un barème par compte de facturation : la personne, ou le partenaire, qui paie ses espaces de travail. Les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche : les premiers ne coûtent rien, et chaque tranche suivante coûte moins.",
       perAccount: "{price} par compte et par mois",
+      price: "Par mois et par compte",
       range: "Comptes {from} à {to}",
       title: "Comptes connectés",
     },
@@ -303,12 +317,18 @@ const fr: Messages = {
         assistantImages: "puis {price} par image",
         assistantRequests: "puis {price} par demande",
         managedAds: "puis {price} par publicité active et par mois",
-        outboundMessages: "puis {price} par tranche de {per} messages",
+        outboundMessages:
+          "puis {price} pour {per} messages, facturé au message",
         xApi: "aux tarifs de X",
       },
       title: "Usage",
     },
     nav: "Tarifs",
+    partMonth: {
+      body: "{allMonth} comptes connectés tout le mois, plus {extras}, font {accountDays} jours-comptes. Divisés par {days}, cela fait {units} comptes passés au barème : {price} pour le mois.",
+      extra: "un pendant {days}",
+      title: "Un mois incomplet",
+    },
     selfHost:
       "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces tarifs sont ceux de Peal Cloud.",
     storage: {
@@ -320,7 +340,7 @@ const fr: Messages = {
         "Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains.",
       excluded: "Les prix sont fixés en dollars américains, hors taxes.",
       reverseCharge:
-        "Une entreprise d’un autre pays de l’UE avec un numéro de TVA valide ne paie pas de TVA : elle est autoliquidée.",
+        "Une entreprise d’un autre pays de l’UE avec un numéro de TVA valide ne paie pas de TVA : celle-ci est autoliquidée.",
       showVat: true,
       shown:
         "Chaque montant est affiché TTC, avec la TVA française de {rate} %, puis HT, toujours en dollars américains.",

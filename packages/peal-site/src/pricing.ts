@@ -1,6 +1,9 @@
 import {
+  accountsCharge,
   accountsMonthly,
   freeAccountsOf,
+  partMonthAccountDays,
+  pricingExamples,
   rateCard,
 } from "peal-contract/rate-card";
 import type { AccountBand, Meter } from "peal-contract/rate-card";
@@ -13,9 +16,6 @@ import type { Messages } from "./i18n/messages.ts";
 // Prices are US dollars excluding tax; a locale whose strings ask for it
 // (French) also shows each amount with France's VAT, still in dollars.
 // Nothing here converts a currency: checkout does.
-
-/** The accounts the page prices a month for, each connected all month. */
-export const exampleAccounts: readonly number[] = [2, 5, 10, 20, 50, 100, 1000];
 
 /** The meters whose allowance and price the page states. */
 export const pricedMeters: readonly Meter[] = [
@@ -138,8 +138,71 @@ const ladderRow = (
 /** What a month costs with some accounts connected all month. */
 export interface ExampleRow {
   readonly accounts: string;
-  readonly price: Amount;
+  /** None when it costs nothing. */
+  readonly price: Amount | null;
+  readonly text: string;
 }
+
+const exampleRow = (
+  locale: Locale,
+  t: PricingMessages,
+  accounts: number
+): ExampleRow => {
+  const cents = accountsMonthly(accounts);
+
+  if (cents === 0) {
+    return {
+      accounts: count(locale, accounts),
+      price: null,
+      text: t.ladder.free,
+    };
+  }
+
+  const price = amountOf(locale, t, cents);
+
+  return { accounts: count(locale, accounts), price, text: price.text };
+};
+
+/** A month not held in full, worked out as the invoice bills it. */
+export interface PartMonth {
+  readonly accountDays: string;
+  readonly price: Amount;
+  readonly text: string;
+  readonly units: string;
+}
+
+const partMonthOf = (locale: Locale, t: PricingMessages): PartMonth => {
+  const { allMonth, forDays } = pricingExamples.partMonth;
+  const accountDays = partMonthAccountDays(rateCard);
+  const price = amountOf(locale, t, accountsCharge(accountDays));
+
+  const days = (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit: "day",
+      unitDisplay: "long",
+    }).format(value);
+
+  const units = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 3,
+  }).format(accountDays / rateCard.daysPerMonth);
+
+  return {
+    accountDays: count(locale, accountDays),
+    price,
+    text: fill(t.partMonth.body, {
+      accountDays: count(locale, accountDays),
+      allMonth: count(locale, allMonth),
+      days: count(locale, rateCard.daysPerMonth),
+      extras: new Intl.ListFormat(locale, { type: "conjunction" }).format(
+        forDays.map((each) => fill(t.partMonth.extra, { days: days(each) }))
+      ),
+      price: price.text,
+      units,
+    }),
+    units,
+  };
+};
 
 /** A meter: what a month includes, and what each unit past it costs. */
 export interface MeterRow {
@@ -205,6 +268,7 @@ export interface PricingPage {
   readonly ladder: readonly LadderRow[];
   readonly lead: string;
   readonly meters: readonly MeterRow[];
+  readonly partMonth: PartMonth;
   readonly storage: string;
   /** France's VAT, on the pages that show it. */
   readonly vat: string | null;
@@ -221,12 +285,13 @@ export const pricingPage = (
   return {
     dayRule: fill(t.dayRule, {
       days: count(locale, rateCard.daysPerMonth),
-      fraction: `${count(locale, 1)}/${count(locale, rateCard.daysPerMonth)}`,
+      after: count(locale, rateCard.daysPerMonth + 1),
+      first: count(locale, 1),
+      freeDays: count(locale, freeAccountsOf(rateCard) * rateCard.daysPerMonth),
     }),
-    examples: exampleAccounts.map((accounts) => ({
-      accounts: count(locale, accounts),
-      price: amountOf(locale, t, accountsMonthly(accounts)),
-    })),
+    examples: pricingExamples.fullMonths.map((accounts) =>
+      exampleRow(locale, t, accounts)
+    ),
     ladder: bands.map((band, index) =>
       ladderRow(locale, t, band, (bands[index - 1]?.upTo ?? 0) + 1)
     ),
@@ -234,6 +299,7 @@ export const pricingPage = (
     meters: [...pricedMeters, ...comingMeters].map((meter) =>
       meterRow(locale, t, meter)
     ),
+    partMonth: partMonthOf(locale, t),
     storage: fill(t.storage.body, {
       minimum: size(locale, storage.minimum),
       perAccount: size(locale, storage.perAccount),
