@@ -11,13 +11,13 @@ A workspace's settings belong to its members, as their roles allow. Your account
 
 Choose **Settings** on a workspace's card. Every member sees **General**, **Members** and **Security**; members who may invite people see **Invitations**, those who may handle keys see **API keys**, those who may manage webhooks see **Webhooks**, and owners and admins see **Assistant**.
 
-| Role        | In the settings                                                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, the assistant's image provider, requiring two-step verification, and deleting it        |
-| Admin       | Rename, members other than owners, invitations, API keys, webhooks and the assistant's image provider; never owners, nor requiring two-step verification, nor deleting |
-| Editor      | Sees the members                                                                                                                                                       |
-| Contributor | Sees the members                                                                                                                                                       |
-| Viewer      | Sees the members                                                                                                                                                       |
+| Role        | In the settings                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, the assistant's image and text providers, requiring two-step verification, and deleting it        |
+| Admin       | Rename, members other than owners, invitations, API keys, webhooks and the assistant's image and text providers; never owners, nor requiring two-step verification, nor deleting |
+| Editor      | Sees the members                                                                                                                                                                 |
+| Contributor | Sees the members                                                                                                                                                                 |
+| Viewer      | Sees the members                                                                                                                                                                 |
 
 Under **General**, owners and admins also choose **Approvals**: whether posts wait for an approval before they are scheduled. See [Review and approval](/review#policy).
 
@@ -54,6 +54,19 @@ Under **Assistant**, owners and admins (`assistant:configure`, which an [API key
 - **Key**: your account's key at the provider, sent as a bearer token. Peal keeps it encrypted, for this workspace and this exact address alone, never shows it again and never writes it to its logs. A saved key shows as saved and is kept until you type another; any change to the address, its host or its path, asks for it again, as Peal never sends a key to an address it was not given for. The model can change alone.
 
 Once saved, the workspace's image descriptions go to that address with that key, and Peal's own model is never asked for them, even when your provider refuses. Its images cost none of the workspace's assistant requests, on any plan, the free plan and a trial included, up to 50 a day, and still take room in the plan's storage. Peal does not call the provider when you save it: the first image tells whether the settings work. When the provider refuses the key, the account, the model or the address, the image is not made and the dialog says so; when the instance's keys change and the saved key can no longer be read, the page asks for it again. **Remove**, which asks first, deletes the key: images come from the instance's model again, if it has one. Peal refuses, in words, an address that is not HTTPS (`notHttps`), carries credentials (`credentials`), a query or a fragment (`queryOrFragment`), is too long (`tooLong`) or not an address (`malformed`), or whose host is not public (`notPublic`) or does not resolve (`unknownHost`); a server whose operator set no keys that encrypt secrets keeps no key (`AssistantSecretsNotConfigured`). The [command line](/cli#assistant) has `peal assistant image-provider`; no MCP tool reads or sets it, as a key typed into a chat reaches a model.
+
+### The assistant's text provider [#text-provider]
+
+Under **Assistant**, owners and admins can also bring the workspace's own text provider, so the [writing assistant](/scheduling#assistant) writes with your account there rather than with the instance's model. It is the way a workspace uses the assistant without the instance's allowance: its requests are outside it, on any plan.
+
+- **API**: **Anthropic** (Anthropic's Messages API: Peal adds `/v1/messages` to the address and sends the key as `x-api-key`) or **OpenAI-compatible** (any endpoint that serves the chat completions API: Peal adds `/chat/completions` and sends the key as a bearer token).
+- **Address**: `https://api.anthropic.com` for Anthropic, which the page fills in; for an OpenAI-compatible endpoint, the address `/chat/completions` follows, such as `https://text.example.com/v1`. The same rules as the image provider's apply: HTTPS on the default port, on a public host, without a user, a password, a query or a fragment.
+- **Model**: your provider's model, as its documentation names it. The assistant asks it for structured output (an answer that follows a JSON schema): a model that cannot give one fails every request.
+- **Key**: your account's key at the provider. It is kept and shown as the image provider's is: encrypted, for this workspace and this exact address alone, never shown again, never logged, and asked again when the address changes.
+
+Once saved, the texts members ask the assistant about, and the subjects of the posts it writes, go to that address with that key, under that provider's terms, and the instance's model is never asked for them, even when your provider refuses. Those requests cost none of the workspace's assistant requests, up to 500 a day, each counted whatever it ends with. **Test** sends your provider one short request, the rewrite of a fixed sentence, and says whether it answered with a suggestion the assistant can use, or why not; it counts as one of those 500. When your provider refuses the key, the account, the model or the address, the assistant says so and nothing of the instance's allowance is spent. **Remove**, which asks first, deletes the key: the assistant uses the instance's model again, if it has one, within the workspace's allowance.
+
+Only a member in their own session, Peal's [command line](/cli#assistant) (`peal assistant text-provider`), an [API key](#api-keys) or a [partner key](/embedding#account) given `assistant:configure` set the image and text providers: no other application connected over OAuth, an [MCP](/mcp) client included, holds that permission, whatever it was granted, so none can send the workspace's drafts to an address of its own. Staff acting as a member neither set them nor ask them anything: the workspace's account at the provider would pay.
 
 ### The activity log [#activity]
 

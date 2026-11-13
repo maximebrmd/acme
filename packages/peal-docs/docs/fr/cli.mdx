@@ -450,7 +450,7 @@ peal media delete <media-id>
 
 Chaque commande affiche l’identifiant du média. Seul un média `ready` va dans une publication.
 
-## Le fournisseur d’images de l’assistant [#assistant]
+## Les fournisseurs de l’assistant [#assistant]
 
 ```sh
 peal assistant image-provider show
@@ -462,6 +462,17 @@ peal assistant image-provider clear
 - Ces commandes gèrent le [fournisseur d’images](/settings#image-provider) de l’espace de travail, et demandent `assistant:configure` (propriétaires, administrateurs, et les clés à qui il a été donné).
 - `set` ne prend jamais la clé en argument, que l’historique du shell et la liste des processus garderaient : dans un terminal, il la demande sans afficher ce que vous tapez ; sinon, il la lit sur l’entrée standard, jusqu’à sa fin, sans son dernier saut de ligne. `--keep-key` garde la clé déjà enregistrée, que le serveur accepte seulement tant que `--base-url` reste exactement le même (pour changer le modèle seul) ; toute autre adresse redemande la clé.
 - `show` affiche l’adresse, le modèle et si la clé peut encore être lue, jamais la clé. `clear` retire le fournisseur et supprime sa clé, après avoir demandé (`--yes` sinon).
+
+```sh
+peal assistant text-provider show
+peal assistant text-provider set --kind anthropic --model <le-modèle-de-votre-fournisseur> < cle.txt
+peal assistant text-provider set --kind openai-compatible --base-url https://text.example.com/v1 --model <le-modèle-de-votre-fournisseur> < cle.txt
+peal assistant text-provider test
+peal assistant text-provider clear
+```
+
+- Ces commandes gèrent de la même façon, et avec la même permission, le [fournisseur de texte](/settings#text-provider) de l’espace de travail, pour l’assistant de rédaction. `--kind` vaut `anthropic` ou `openai-compatible` ; `--base-url` vaut `https://api.anthropic.com` par défaut pour `anthropic`. `test` envoie au fournisseur une courte demande et dit s’il a répondu par une suggestion que l’assistant peut utiliser ; elle compte parmi les 500 demandes par jour que reçoit le fournisseur de l’espace de travail, et aucune de celles de Peal.
+- Le serveur ne laisse `assistant:configure` à aucune application connectée par OAuth sinon cette ligne de commande, que vous connectez vous-même dans votre terminal : un client MCP ne peut régler aucun des deux fournisseurs.
 
 ## Relectures et approbations [#review]
 
