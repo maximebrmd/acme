@@ -179,20 +179,29 @@ export const channelsView = (
   { channels }: ReviewedPost,
   shown: ShownMedia
 ): PageView["channels"] =>
-  channels.map(({ channelId, followUps, handle, options, platform, text }) => ({
-    channelId,
-    followUps: followUps.map((part) => ({
-      delaySeconds: part.delaySeconds,
-      media: part.media.map((file) => fileView(file, shown)),
-      text: part.text,
-    })),
-    handle: Option.getOrNull(handle),
-    // Options the contract cannot describe are a bug, never left out: an
-    // approval covers them.
-    options: options.pipe(Option.map(shownOptions), Option.getOrNull),
-    platform: Option.getOrNull(platform),
-    text,
-  }));
+  channels.map(
+    ({ channelId, followUps, handle, media, options, platform, text }) => ({
+      channelId,
+      followUps: followUps.map((part) => ({
+        delaySeconds: part.delaySeconds,
+        media: part.media.map((file) => fileView(file, shown)),
+        text: part.text,
+      })),
+      handle: Option.getOrNull(handle),
+      // A channel's own files only when it has some.
+      ...Option.match(media, {
+        onNone: () => ({}),
+        onSome: (files) => ({
+          media: files.map((file) => fileView(file, shown)),
+        }),
+      }),
+      // Options the contract cannot describe are a bug, never left out: an
+      // approval covers them.
+      options: options.pipe(Option.map(shownOptions), Option.getOrNull),
+      platform: Option.getOrNull(platform),
+      text,
+    })
+  );
 
 /**
  * The files the post shows, each with where it is read from when it can be

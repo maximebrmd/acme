@@ -32,6 +32,8 @@ public final class ReviewedChannel {
 
     private final Optional<String> handle;
 
+    private final Optional<List<ReviewedMedia>> media;
+
     private final Optional<TargetOptions> options;
 
     private final Optional<Platform> platform;
@@ -44,6 +46,7 @@ public final class ReviewedChannel {
             String channelId,
             List<ReviewedPart> followUps,
             Optional<String> handle,
+            Optional<List<ReviewedMedia>> media,
             Optional<TargetOptions> options,
             Optional<Platform> platform,
             String text,
@@ -51,6 +54,7 @@ public final class ReviewedChannel {
         this.channelId = channelId;
         this.followUps = followUps;
         this.handle = handle;
+        this.media = media;
         this.options = options;
         this.platform = platform;
         this.text = text;
@@ -73,6 +77,11 @@ public final class ReviewedChannel {
             return Optional.empty();
         }
         return handle;
+    }
+
+    @JsonProperty("media")
+    public Optional<List<ReviewedMedia>> getMedia() {
+        return media;
     }
 
     @JsonIgnore
@@ -129,6 +138,7 @@ public final class ReviewedChannel {
         return channelId.equals(other.channelId)
                 && followUps.equals(other.followUps)
                 && handle.equals(other.handle)
+                && media.equals(other.media)
                 && options.equals(other.options)
                 && platform.equals(other.platform)
                 && text.equals(other.text);
@@ -136,7 +146,8 @@ public final class ReviewedChannel {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.followUps, this.handle, this.options, this.platform, this.text);
+        return Objects.hash(
+                this.channelId, this.followUps, this.handle, this.media, this.options, this.platform, this.text);
     }
 
     @java.lang.Override
@@ -177,6 +188,10 @@ public final class ReviewedChannel {
 
         _FinalStage handle(Nullable<String> handle);
 
+        _FinalStage media(Optional<List<ReviewedMedia>> media);
+
+        _FinalStage media(List<ReviewedMedia> media);
+
         _FinalStage options(Optional<TargetOptions> options);
 
         _FinalStage options(TargetOptions options);
@@ -200,6 +215,8 @@ public final class ReviewedChannel {
 
         private Optional<TargetOptions> options = Optional.empty();
 
+        private Optional<List<ReviewedMedia>> media = Optional.empty();
+
         private Optional<String> handle = Optional.empty();
 
         private List<ReviewedPart> followUps = new ArrayList<>();
@@ -213,6 +230,7 @@ public final class ReviewedChannel {
             channelId(other.getChannelId());
             followUps(other.getFollowUps());
             handle(other.getHandle());
+            media(other.getMedia());
             options(other.getOptions());
             platform(other.getPlatform());
             text(other.getText());
@@ -284,6 +302,19 @@ public final class ReviewedChannel {
         }
 
         @java.lang.Override
+        public _FinalStage media(List<ReviewedMedia> media) {
+            this.media = Optional.ofNullable(media);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "media", nulls = Nulls.SKIP)
+        public _FinalStage media(Optional<List<ReviewedMedia>> media) {
+            this.media = media;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage handle(Nullable<String> handle) {
             if (handle.isNull()) {
                 this.handle = null;
@@ -334,7 +365,8 @@ public final class ReviewedChannel {
 
         @java.lang.Override
         public ReviewedChannel build() {
-            return new ReviewedChannel(channelId, followUps, handle, options, platform, text, additionalProperties);
+            return new ReviewedChannel(
+                    channelId, followUps, handle, media, options, platform, text, additionalProperties);
         }
 
         @JsonAnySetter
@@ -342,6 +374,7 @@ public final class ReviewedChannel {
             if (key.equalsIgnoreCase("channelId")
                     || key.equalsIgnoreCase("followUps")
                     || key.equalsIgnoreCase("handle")
+                    || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("options")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("text")) {

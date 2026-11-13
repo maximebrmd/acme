@@ -10,6 +10,7 @@ import {
   IdempotencyKeyReused,
   ImportUnreadable,
   InvalidTimeRange,
+  LastTargetLeft,
   LivePostNotChangeable,
   PostContentInvalid,
   PostNotFound,
@@ -665,6 +666,23 @@ export const PostsHandlers = HttpApiBuilder.group(
             );
 
           return postView(awaited);
+        }),
+      removeTarget: ({ params }) =>
+        Effect.gen(function* removeTarget() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const targetId = yield* targetIdFrom(params.targetId);
+
+          const removed = yield* scheduling
+            .dropTarget(actor, postId, targetId)
+            .pipe(
+              Effect.catchTags({
+                ...followUpFailures,
+                LastTargetLeft: () => Effect.fail(new LastTargetLeft()),
+              })
+            );
+
+          return postView(removed);
         }),
       repost: ({ params }) =>
         Effect.gen(function* repost() {

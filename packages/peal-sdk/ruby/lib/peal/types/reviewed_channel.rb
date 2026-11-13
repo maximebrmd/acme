@@ -11,6 +11,8 @@ module Peal
 
       field :handle, -> { String }, optional: false, nullable: true
 
+      field :media, -> { Internal::Types::Array[Peal::Types::ReviewedMedia] }, optional: true, nullable: false
+
       field :options, -> { Peal::Types::TargetOptions }, optional: false, nullable: true
 
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: true

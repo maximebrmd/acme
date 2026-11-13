@@ -56,8 +56,13 @@ export const FakeApprovalGate = Layer.effectContext(
             return "held";
           }),
         approved: stands,
-        // A held post moved stays held, as it is.
-        follow: () => Effect.void,
+        // A held post moved stays held; its request follows what it says.
+        follow: (_actor, { postId, subject }) =>
+          Ref.update(held, (posts) =>
+            posts.map((post) =>
+              post.postId === postId ? { postId, subject } : post
+            )
+          ),
         forgotten: () => Effect.void,
         holds: () => Effect.succeed(true),
         maySubmit: (actor) => Effect.succeed(can(actor, "post:create")),

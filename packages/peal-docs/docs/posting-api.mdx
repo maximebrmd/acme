@@ -88,6 +88,7 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate
 Each entry of `channels` holds:
 
 - `text`: the text the channel receives, which is its override there, or the post's own;
+- the counts below are of the media the channel receives: its own, when its override gives some ([Media of its own on a channel](#channel-media)), or the post's;
 - `textCounts`: that text's length, counted as the channel's platform counts it, against each of its limits. Bluesky has two, in graphemes and in bytes;
 - `hashtags`, `mentions`, `links` and `media`: how many the post holds (`count`) and the most the platform takes (`maximum`, null when Peal knows no limit for it). `links` counts different links;
 - `parts`: the parts after the first of a [thread](/scheduling#threads), in order, each with its `part` (its place, from 1), its `text` on the channel and the same counts; none for a post alone. A platform that takes a post alone still lists them, and refuses them with `tooManyParts`;
@@ -485,7 +486,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
 `GET …/recycling` lists the rules, oldest first (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` reads one, `PATCH` changes its `count` or `until` (null takes it away), its `variants` (an empty array takes them away) or pauses it (`paused`), `POST …/recycling/{ruleId}/resume` with `{ "variants"? }` sets a paused rule going again, or one that ended for `planLimit`, `contentRejected`, `noChannels`, `queueFull` or `sourceWithdrawn` (its post cancelled or taken back to draft, once it is scheduled again: 409 `post_not_recyclable` until then, or while another rule repeats it, and 409 `too_many_recycling_rules` past 100), and `DELETE` stops it: the posts it made stay. Each post a rule makes carries `recyclingId` and `occurrence` (its place, the source being 1), and `GET …/posts/search?recyclingId=…` lists them. Each post acts as the rule's starter as they are then: a key's rule stops once the key is revoked. Changing, pausing, resuming or stopping a rule needs post:schedule, or to be its starter acting as they started it: in the web app, through the same application or with the same key.
 
 - A post that cannot repeat answers 409 `post_not_recyclable`, with `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`.
-- Variants that break the source's channels' rules answer 422 `recycling_variants_invalid`, each by its place from 1 with its violations; an ending that leaves no post to make, 422 `recycling_ends_too_soon`.
+- Variants that break the source's channels' rules answer 422 `recycling_variants_invalid`, each by its place from 1 with its violations (an empty variant text that leaves a channel showing [media of its own](#channel-media) with no text is `empty` there); an ending that leaves no post to make, 422 `recycling_ends_too_soon`.
 - 100 rules going on answer 409 `too_many_recycling_rules`; a change to an ended rule, 409 `recycling_rule_ended`.
 
 ## Post from a feed [#feeds]
@@ -503,6 +504,48 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
 
 - An address that is not a public HTTPS one answers 422 `feed_address_refused` (`reason`); one that is not a feed, 422 `feed_unreadable` (`notAFeed`, `tooLarge`, `unreachable`); a template naming another placeholder, 422 `feed_template_invalid`.
 - 10 feeds answer 409 `too_many_feeds`. Adding, moving, resuming and previewing read 30 addresses a workspace an hour, then 429 `feed_reads_limited` with `retryAfterSeconds` and `Retry-After`.
+
+## Media of its own on a channel [#channel-media]
+
+A post's text on one channel (an entry of `content.overrides`, or of a part's `overrides`) may also give that channel images and videos of its own, in `media`, which it then shows instead of the post's: in order, each with its alt text, 20 at most, ready media of the workspace. An empty list shows none there; left out, the channel shows the post's, and Peal answers `media` only on an override that gives some. An override always has its `text`, which may not be empty: send the post's own text there to give a channel media alone. That text is the channel's from then on, so when you change the post's text, change it there too (the web app does).
+
+```json
+{
+  "text": "Five pictures of the spring catalogue",
+  "media": [
+    {
+      "mediaId": "0190f3a0-0000-7000-8000-00000000f001",
+      "altText": "The cover"
+    },
+    { "mediaId": "0190f3a0-0000-7000-8000-00000000f002", "altText": "Page two" }
+  ],
+  "overrides": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "text": "Five pictures of the spring catalogue",
+      "media": [
+        {
+          "mediaId": "0190f3a0-0000-7000-8000-00000000f002",
+          "altText": "Page two"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Each channel is checked on the media it receives, by `validate` (its `media` count and its `violations`) as when the post is scheduled, and the duplicate check compares what each channel receives. An approval covers the media of every channel: changing a channel's own media after the post was approved asks for an approval again. While a scheduled post shows a file on any channel, the file cannot be deleted from the library; a draft lets go of it, on every channel.
+
+## Remove a channel from a scheduled post [#remove-target]
+
+`DELETE …/posts/{postId}/targets/{targetId}` takes one channel off a post that waits for its time, scheduled or awaiting approval: it goes out at its time on its other channels, and never on this one, whose target is `cancelled` with `"dropped": true`. The post keeps its time and its queue slot, and its `outcome`, once it went out, leaves that channel out. It answers the post.
+
+- The last channel the post still goes out on answers 409 `last_target_left`: cancel the post instead (`POST …/posts/{postId}/cancel`).
+- A post publishing or done, or a draft, whose channels change with an update, answers 409 `post_status_conflict`; a channel cancelled with its post, 409 `target_status_conflict`. A channel already taken off answers the post as it is, so a request sent again after a lost answer is safe.
+- It is an edit of the post: where your posts need an [approval](/review), the approval given no longer covers it, and it is answered `awaitingApproval`, waiting for one again. A post already awaiting approval keeps its request, which covers what the post now is.
+- Webhooks hear a [`post.cancelled`](/webhooks#post-cancelled) naming that channel alone. A post taken back to draft (`unschedule`, changes requested, or an approval after its time) keeps the channels it still had: the channel taken off it goes with its target and its overrides in every part, and named again in `channelIds` it gets a new, pending target.
+
+It needs post:schedule, or, on a post awaiting approval, leave to ask for posts to go out; an OAuth client needs the scope `workspace:publish`.
 
 ## Unpublish a post [#unpublish]
 

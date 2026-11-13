@@ -770,6 +770,51 @@ func (o *OutcomePostsRequest) SetWait(wait *string) {
 }
 
 var (
+	removeTargetPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	removeTargetPostsRequestFieldPostID      = big.NewInt(1 << 1)
+	removeTargetPostsRequestFieldTargetID    = big.NewInt(1 << 2)
+)
+
+type RemoveTargetPostsRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	PostID      string `json:"-" url:"-"`
+	TargetID    string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *RemoveTargetPostsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RemoveTargetPostsRequest) SetWorkspaceID(workspaceID string) {
+	r.WorkspaceID = workspaceID
+	r.require(removeTargetPostsRequestFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RemoveTargetPostsRequest) SetPostID(postID string) {
+	r.PostID = postID
+	r.require(removeTargetPostsRequestFieldPostID)
+}
+
+// SetTargetID sets the TargetID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RemoveTargetPostsRequest) SetTargetID(targetID string) {
+	r.TargetID = targetID
+	r.require(removeTargetPostsRequestFieldTargetID)
+}
+
+var (
 	repostPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	repostPostsRequestFieldPostID      = big.NewInt(1 << 1)
 	repostPostsRequestFieldTargetID    = big.NewInt(1 << 2)
@@ -9873,108 +9918,6 @@ func (l *LivePostRefusedTarget) String() string {
 }
 
 var (
-	mediaAttachmentFieldAltText = big.NewInt(1 << 0)
-	mediaAttachmentFieldMediaID = big.NewInt(1 << 1)
-)
-
-type MediaAttachment struct {
-	AltText string `json:"altText" url:"altText"`
-	MediaID string `json:"mediaId" url:"mediaId"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (m *MediaAttachment) GetAltText() string {
-	if m == nil {
-		return ""
-	}
-	return m.AltText
-}
-
-func (m *MediaAttachment) GetMediaID() string {
-	if m == nil {
-		return ""
-	}
-	return m.MediaID
-}
-
-func (m *MediaAttachment) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MediaAttachment) require(field *big.Int) {
-	next := new(big.Int)
-	if m.explicitFields != nil {
-		next.Set(m.explicitFields)
-	}
-	next.Or(next, field)
-	m.explicitFields = next
-}
-
-// SetAltText sets the AltText field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MediaAttachment) SetAltText(altText string) {
-	m.AltText = altText
-	m.require(mediaAttachmentFieldAltText)
-}
-
-// SetMediaID sets the MediaID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MediaAttachment) SetMediaID(mediaID string) {
-	m.MediaID = mediaID
-	m.require(mediaAttachmentFieldMediaID)
-}
-
-func (m *MediaAttachment) UnmarshalJSON(data []byte) error {
-	type unmarshaler MediaAttachment
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MediaAttachment(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MediaAttachment) MarshalJSON() ([]byte, error) {
-	type embed MediaAttachment
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MediaAttachment) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-var (
 	partPreviewFieldHashtags   = big.NewInt(1 << 0)
 	partPreviewFieldLinks      = big.NewInt(1 << 1)
 	partPreviewFieldMedia      = big.NewInt(1 << 2)
@@ -12456,19 +12399,20 @@ func (p PostSort) Ptr() *PostSort {
 
 var (
 	postTargetFieldChannelID         = big.NewInt(1 << 0)
-	postTargetFieldEditedAt          = big.NewInt(1 << 1)
-	postTargetFieldFailureReason     = big.NewInt(1 << 2)
-	postTargetFieldID                = big.NewInt(1 << 3)
-	postTargetFieldKeptPrivate       = big.NewInt(1 << 4)
-	postTargetFieldOptions           = big.NewInt(1 << 5)
-	postTargetFieldParts             = big.NewInt(1 << 6)
-	postTargetFieldPermalink         = big.NewInt(1 << 7)
-	postTargetFieldPublishedAt       = big.NewInt(1 << 8)
-	postTargetFieldRemovedAt         = big.NewInt(1 << 9)
-	postTargetFieldRound             = big.NewInt(1 << 10)
-	postTargetFieldStatus            = big.NewInt(1 << 11)
-	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 12)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 13)
+	postTargetFieldDropped           = big.NewInt(1 << 1)
+	postTargetFieldEditedAt          = big.NewInt(1 << 2)
+	postTargetFieldFailureReason     = big.NewInt(1 << 3)
+	postTargetFieldID                = big.NewInt(1 << 4)
+	postTargetFieldKeptPrivate       = big.NewInt(1 << 5)
+	postTargetFieldOptions           = big.NewInt(1 << 6)
+	postTargetFieldParts             = big.NewInt(1 << 7)
+	postTargetFieldPermalink         = big.NewInt(1 << 8)
+	postTargetFieldPublishedAt       = big.NewInt(1 << 9)
+	postTargetFieldRemovedAt         = big.NewInt(1 << 10)
+	postTargetFieldRound             = big.NewInt(1 << 11)
+	postTargetFieldStatus            = big.NewInt(1 << 12)
+	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 13)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 14)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
@@ -12484,6 +12428,7 @@ var postTargetNullableFields = map[string]*big.Int{
 
 type PostTarget struct {
 	ChannelID         string             `json:"channelId" url:"channelId"`
+	Dropped           *bool              `json:"dropped,omitempty" url:"dropped,omitempty"`
 	EditedAt          *string            `json:"editedAt,omitempty" url:"editedAt,omitempty"`
 	FailureReason     *FailureReason     `json:"failureReason,omitempty" url:"failureReason,omitempty"`
 	ID                string             `json:"id" url:"id"`
@@ -12510,6 +12455,13 @@ func (p *PostTarget) GetChannelID() string {
 		return ""
 	}
 	return p.ChannelID
+}
+
+func (p *PostTarget) GetDropped() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.Dropped
 }
 
 func (p *PostTarget) GetEditedAt() *string {
@@ -12624,6 +12576,13 @@ func (p *PostTarget) require(field *big.Int) {
 func (p *PostTarget) SetChannelID(channelID string) {
 	p.ChannelID = channelID
 	p.require(postTargetFieldChannelID)
+}
+
+// SetDropped sets the Dropped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetDropped(dropped *bool) {
+	p.Dropped = dropped
+	p.require(postTargetFieldDropped)
 }
 
 // SetEditedAt sets the EditedAt field and marks it as non-optional;

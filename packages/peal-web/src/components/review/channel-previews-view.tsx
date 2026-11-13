@@ -33,6 +33,11 @@ export interface PreviewedChannel {
   readonly followUps: readonly PreviewedPart[];
   /** The account's name; none once it was disconnected. */
   readonly handle: string | null;
+  /**
+   * The files the post shows there instead of its own, when the channel
+   * has some of its own; left out where it shows the post's.
+   */
+  readonly media?: readonly PreviewedMedia[] | undefined;
   /** What the post has there that only its platform knows; none if none. */
   readonly options: TargetOptions | null;
   readonly platform: string | null;
@@ -224,6 +229,24 @@ export const ChannelPreviewsView = ({
               text={channel.text}
               {...channelText(channel.channelId)}
             />
+            {channel.media === undefined ? null : (
+              <section
+                aria-label={t("preview.channelMediaLabel", {
+                  handle: channel.handle ?? t("preview.disconnected"),
+                })}
+                className="grid gap-4 sm:grid-cols-2"
+              >
+                {channel.media.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    {t("preview.noChannelMedia")}
+                  </p>
+                ) : (
+                  channel.media.map((file) => (
+                    <MediaView key={file.mediaId} media={file} />
+                  ))
+                )}
+              </section>
+            )}
             {channel.options === null ? null : (
               <OptionsView options={channel.options} />
             )}

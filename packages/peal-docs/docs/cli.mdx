@@ -275,6 +275,7 @@ peal posts publish <post-id>
 peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
 peal posts unschedule <post-id>
 peal posts cancel <post-id>
+peal posts remove-target <post-id> <target-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
@@ -295,6 +296,7 @@ peal posts duplicate <post-id>
 - `peal posts reschedule` moves a scheduled post to another time. A draft is scheduled then, on the channels it has.
 - `peal posts unschedule` takes a scheduled post back to draft, so it goes out at no time until it is scheduled again. A post already publishing cannot be unscheduled.
 - `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
+- `peal posts remove-target` takes one channel off a post that waits for its time, scheduled or awaiting approval: it goes out on its other channels and never on this one (`peal posts show` lists the target ids). The last channel is refused: cancel the post instead. Where your posts need an approval, the post waits for one again.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
 - `peal posts unpublish` deletes a published post from its platforms, for everyone, every part of a thread ([Unpublish a post](/scheduling#unpublish)): from one channel with `--channel` (its id, its exact handle, or its platform and handle, as in `--channel "bluesky studio.example"`; a handle two of the post's channels share is refused, listing them), or from every channel it can be. It cannot be undone: it asks first, unless `--yes`, and with `--json` it needs `--yes`. `--wait <seconds>`, with `--channel`, waits for the deletion to end. `peal posts changes` lists what was asked of the post once live, and `peal posts list --removed` the posts removed from a channel.

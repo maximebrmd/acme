@@ -5,7 +5,11 @@ import {
   optionsOn,
 } from "#publishing/domain/channel-options.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
-import { createTarget, withOptions } from "#publishing/domain/post-target.ts";
+import {
+  createTarget,
+  isDropped,
+  withOptions,
+} from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -59,7 +63,10 @@ export const targetsOn = Effect.fn("Publishing.targetsOn")(function* targetsOn(
     channelIds.map((channelId) =>
       Option.match(
         Option.fromUndefinedOr(
-          existing.find((target) => target.channelId === channelId)
+          // A channel taken off the post and chosen again starts afresh.
+          existing.find(
+            (target) => target.channelId === channelId && !isDropped(target)
+          )
         ),
         {
           onNone: () =>

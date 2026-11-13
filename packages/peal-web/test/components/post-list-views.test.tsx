@@ -111,6 +111,29 @@ describe(PostItemView, () => {
     );
   });
 
+  it("names no channel taken off the post", async () => {
+    const shown = post({ status: "scheduled" });
+    const [kept, removed] = shown.targets;
+
+    const html = await render(
+      "en",
+      <Item
+        item={{
+          ...shown,
+          targets: [
+            ...(kept === undefined ? [] : [kept]),
+            ...(removed === undefined
+              ? []
+              : [{ ...removed, dropped: true, status: "cancelled" as const }]),
+          ],
+        }}
+      />
+    );
+
+    expect(html).toContain("Field Notes (@notes@social.example)");
+    expect(html).not.toContain("A disconnected channel");
+  });
+
   it("shows a failed post's time in the reader's zone, and its outcome", async () => {
     const html = await render(
       "en",

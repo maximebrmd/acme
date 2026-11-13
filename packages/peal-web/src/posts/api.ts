@@ -257,6 +257,9 @@ export const cancelPost = PealApi.mutation("posts", "cancel");
 
 export const unschedulePost = PealApi.mutation("posts", "unschedule");
 
+/** Takes one channel off a post that waits for its time. */
+export const removePostTarget = PealApi.mutation("posts", "removeTarget");
+
 export const discardPost = PealApi.mutation("posts", "discard");
 
 /** Makes a new draft that says what a post says, whatever its status. */

@@ -110,6 +110,10 @@ const UnconfirmedSchema = Schema.TaggedStruct("unconfirmed", {
 
 const CancelledSchema = Schema.TaggedStruct("cancelled", {
   cancelledAt: Schema.DateTimeUtc,
+  // Someone took the channel off the post while it waited for its time,
+  // and the post goes out on its other channels (`../target-removal.ts`).
+  // Absent on a target cancelled with its post.
+  dropped: Schema.optionalKey(Schema.Boolean),
 });
 
 /** Where the publication of a post on one channel is. */

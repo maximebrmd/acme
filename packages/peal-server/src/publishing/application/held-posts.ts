@@ -9,6 +9,7 @@ import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
+import { saveBackToDraft } from "./back-to-draft.ts";
 import type { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
@@ -141,9 +142,11 @@ export class HeldPosts extends Context.Service<
             }
 
             if (released.status._tag !== "scheduled") {
-              yield* applied(yield* posts.update(released, current.post));
+              const draft = yield* saveBackToDraft(released, current.post).pipe(
+                Effect.provideService(PostRepository, posts)
+              );
 
-              return { late: true, post: released, targets };
+              return { late: true, ...draft };
             }
 
             // An approval schedules the post: a workspace that went over
@@ -189,9 +192,9 @@ export class HeldPosts extends Context.Service<
 
             const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
-            yield* applied(yield* posts.update(draft, current.post));
-
-            return { post: draft, targets: yield* posts.targets(postId) };
+            return yield* saveBackToDraft(draft, current.post).pipe(
+              Effect.provideService(PostRepository, posts)
+            );
           })
         );
       });

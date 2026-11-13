@@ -61,6 +61,11 @@
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.
+- `peal posts remove-target <post-id> <target-id>` takes a channel off a
+  post that waits; it words `LastTargetLeft` and `TargetStatusConflict`
+  itself, before `explainingPublishing`, which leaves `src/explain.ts` and
+  `src/api-error.ts` as they are. The command line has no flag for a
+  channel's own text or media: they go through the API or MCP.
 - `peal media describe <id> --text …|--clear` sets a media's
   description; `peal media delete <id>` reads `media.usage` first to say
   which drafts lose it, then asks (`confirmed`, `--yes`; `neverAsksInJson`).

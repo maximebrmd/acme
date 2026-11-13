@@ -25,7 +25,7 @@ An AI agent can post through Peal the way a member does: it reads the workspace'
 | Schedule a draft, publish a post now, or create and send one in a single call                  | `schedule_post`, `publish_post`, `create_post`                                                |
 | Check a post before sending it, and see what each channel would receive                        | `validate_post`                                                                               |
 | Create and send up to 50 posts in one call                                                     | `create_posts`                                                                                |
-| Move a scheduled post, take it back to draft or cancel it                                      | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
+| Move a scheduled post, take a channel off it, take it back to draft or cancel it               | `reschedule_post`, `remove_post_target`, `unschedule_post`, `cancel_post`                     |
 | Read how a post went on each channel, and every attempt Peal made                              | `get_post`, `list_post_attempts`                                                              |
 | Wait until a post that goes out now has its result on every channel                            | `await_post`                                                                                  |
 | Post again where a post failed, or record what you found on the platform                       | `repost_target`, `confirm_target`                                                             |
@@ -244,6 +244,7 @@ Have the agent run `peal doctor --json` first: it checks the server, the credent
 | `get_channel_defaults`, `set_channel_defaults` | `peal channels defaults show <channel-id>`, `peal channels defaults set <channel-id> --options <json>`        |
 | `list_activity`                                | `peal activity list`                                                                                          |
 | `repost_target`, `confirm_target`              | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`               |
+| `remove_post_target`                           | `peal posts remove-target <post-id> <target-id>`                                                              |
 
 ```sh
 peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
@@ -291,6 +292,7 @@ Your own agent or script can call the endpoints the tools are built on, under `/
 | `get_channel_defaults`, `set_channel_defaults` | `GET …/channels/{channelId}/default-options`, `PUT …/channels/{channelId}/default-options` |
 | `await_post`                                   | `GET …/posts/{postId}/outcome`                                                             |
 | `repost_target`, `confirm_target`              | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                             |
+| `remove_post_target`                           | `DELETE …/posts/{postId}/targets/{targetId}`                                               |
 
 `POST …/posts/send` creates a post and sends it in one request. Send an `Idempotency-Key` header, any text of your choosing of 255 characters at most, such as a UUID, to make the request safe to send again:
 

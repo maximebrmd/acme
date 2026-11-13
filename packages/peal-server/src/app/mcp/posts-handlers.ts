@@ -825,6 +825,33 @@ export const PostToolsLive = PostTools.toLayer(
 
           return ruleView(listed);
         }).pipe(Effect.catchTags(malformedPost)),
+      remove_post_target: ({ postId, targetId }) =>
+        Effect.gen(function* removeTarget() {
+          const removed = yield* scheduling
+            .dropTarget(
+              yield* actor,
+              yield* postIdFrom(postId),
+              yield* targetIdFrom(targetId)
+            )
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidPostTransition: postConflict,
+                InvalidTargetTransition: ({ from }) =>
+                  refuse(
+                    `The post is ${from} on that channel: only a channel it has not been sent to yet is removed.`
+                  ),
+                LastTargetLeft: () =>
+                  refuse(
+                    "This is the last channel the post goes out on: cancel_post cancels the post instead."
+                  ),
+                MissingPermission: notAllowed("change scheduled posts"),
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(removed);
+        }).pipe(Effect.catchTags(malformedPost)),
       repost_target: ({ postId, targetId }) =>
         Effect.gen(function* repost() {
           const reposted = yield* followUp

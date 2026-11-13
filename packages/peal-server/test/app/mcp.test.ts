@@ -333,6 +333,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "quote_boost",
           "recycle_post",
           "redeliver_webhooks",
+          "remove_post_target",
           "rename_channel",
           "reply_to_comment",
           "repost_target",

@@ -275,6 +275,7 @@ peal posts publish <post-id>
 peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
 peal posts unschedule <post-id>
 peal posts cancel <post-id>
+peal posts remove-target <post-id> <target-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
@@ -295,6 +296,7 @@ peal posts duplicate <post-id>
 - `peal posts reschedule` déplace une publication programmée à une autre heure. Un brouillon est alors programmé, sur les canaux qu’il a.
 - `peal posts unschedule` ramène une publication programmée à l’état de brouillon : elle ne part à aucune heure tant qu’elle n’est pas reprogrammée. Une publication déjà en cours de publication ne peut pas être déprogrammée.
 - `peal posts cancel` annule pour de bon un brouillon ou une publication programmée : elle ne part sur aucun canal. Une publication déjà en cours de publication finit avec ce que ses canaux ont fait, et ceux qui n’ont pas encore reçu l’envoi sont annulés. Pour modifier une publication programmée et la garder, déprogrammez-la plutôt.
+- `peal posts remove-target` retire un canal d’une publication qui attend son heure, programmée ou en attente d’approbation : elle part sur ses autres canaux et jamais sur celui-ci (`peal posts show` liste les identifiants des cibles). Le dernier canal est refusé : annulez plutôt la publication. Là où vos publications demandent une approbation, la publication en attend de nouveau une.
 - `peal posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `peal posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication que Peal n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `peal posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
 - `peal posts unpublish` supprime une publication partie de ses plateformes, pour tout le monde, toutes les parties d’un fil ([Dépublier une publication](/scheduling#unpublish)) : d’un canal avec `--channel` (son identifiant, son nom d’utilisateur exact, ou sa plateforme et son nom d’utilisateur, comme dans `--channel "bluesky studio.example"` ; un nom d’utilisateur que partagent deux canaux de la publication est refusé, en les listant), ou de chaque canal où c’est possible. C’est définitif : il demande d’abord, sauf avec `--yes`, et avec `--json` il exige `--yes`. `--wait <secondes>`, avec `--channel`, attend la fin de la suppression. `peal posts changes` liste ce qui a été demandé à la publication une fois partie, et `peal posts list --removed` les publications retirées d’un canal.

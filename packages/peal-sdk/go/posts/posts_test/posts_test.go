@@ -729,6 +729,34 @@ func TestPostsRepostWithWireMock(
 	VerifyRequestCount(t, "TestPostsRepostWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/targets/targetId/repost", nil, 1)
 }
 
+func TestPostsRemoveTargetWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.RemoveTargetPostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+		TargetID:    "targetId",
+	}
+	_, invocationErr := client.Posts.RemoveTarget(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsRemoveTargetWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsRemoveTargetWithWireMock", "DELETE", "/api/workspaces/workspaceId/posts/postId/targets/targetId", nil, 1)
+}
+
 func TestPostsConfirmWithWireMock(
 	t *testing.T,
 ) {

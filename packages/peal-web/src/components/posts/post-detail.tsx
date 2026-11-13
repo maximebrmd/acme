@@ -126,7 +126,7 @@ const statusText = (
   }
 
   if (status === "cancelled") {
-    return t("cancelled");
+    return target.dropped === true ? t("dropped") : t("cancelled");
   }
 
   return status === "pending" ? t("pending") : t("sending");

@@ -88,8 +88,12 @@ const targetView = (target: PostTarget, count: number): TargetView => {
     unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,
   };
 
-  // A published target's notes, each only when it holds.
+  // A target's notes, each only when it holds.
   let noted = view;
+
+  if (status._tag === "cancelled" && status.dropped === true) {
+    noted = { ...noted, dropped: true };
+  }
 
   if (status._tag === "published" && status.keptPrivate === true) {
     noted = { ...noted, keptPrivate: true };
@@ -128,10 +132,16 @@ const saidBy = ({
   text,
 }: Pick<PostContent, "media" | "overrides" | "text">) => ({
   media: media.map(({ altText, mediaId }) => ({ altText, mediaId })),
-  overrides: overrides.map(({ channelId, text: override }) => ({
-    channelId,
-    text: override,
-  })),
+  // An override's media only when it gives some.
+  overrides: overrides.map(({ channelId, media: own, text: override }) =>
+    own === undefined
+      ? { channelId, text: override }
+      : {
+          channelId,
+          media: own.map(({ altText, mediaId }) => ({ altText, mediaId })),
+          text: override,
+        }
+  ),
   text,
 });
 

@@ -33,6 +33,7 @@ import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
+import { ChannelMediaField } from "#components/posts/channel-media-field.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { ChannelSetPicker } from "#components/posts/channel-set-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
@@ -74,10 +75,19 @@ import { useAiLabels } from "#components/posts/use-ai-labels.ts";
 import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
 import { useAttachedMedia } from "#posts/attached-media.ts";
+import {
+  channelMediaOf,
+  channelTextsOf,
+  mediaWaitingForText,
+  overridesFrom,
+  withChannelMedia,
+} from "#posts/channel-media.ts";
+import type { ByChannel, ChannelMedia } from "#posts/channel-media.ts";
 import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
+import type { AttachedMedia } from "#posts/media-fit.ts";
 import { oneAtATime } from "#posts/one-at-a-time.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
@@ -130,14 +140,6 @@ const choiceOf = (schedule: PostSchedule | null): ScheduleChoice =>
         }),
       });
 
-const overridesOf = (post: Post | undefined): Record<string, string> =>
-  Object.fromEntries(
-    (post?.content.overrides ?? []).map(({ channelId, text }) => [
-      channelId,
-      text,
-    ])
-  );
-
 // The overrides with the channel's own text, or without it.
 const withOverride = (
   overrides: Readonly<Record<string, string>>,
@@ -151,27 +153,48 @@ const withOverride = (
   return Object.fromEntries([...others, ...entry]);
 };
 
-// What the post says, from the composer's fields: a text of its own only for
-// the channels it goes to, and only when it is not blank, then the parts
-// that follow it.
+// What the post says, from the composer's fields: a text, and media, of
+// its own only for the channels it goes to (`overridesFrom`), then the
+// parts that follow it.
 const contentOf = (
-  text: string,
-  overrides: Readonly<Record<string, string>>,
-  channelIds: readonly string[],
+  composed: ByChannel,
   media: readonly MediaAttachment[],
   parts: readonly PartDraft[]
 ): PostContent => ({
-  followUps: followUpsOf(parts, channelIds),
+  followUps: followUpsOf(parts, composed.channelIds),
   media,
-  overrides: channelIds.flatMap((channelId) => {
-    const own = overrides[channelId] ?? "";
-
-    return own.trim() === "" ? [] : [{ channelId, text: own }];
-  }),
-  text,
+  overrides: overridesFrom(composed),
+  text: composed.text,
 });
 
 type Translate = ReturnType<typeof useTranslations<"Posts.Composer">>;
+
+// Whether the post may be saved: the server's short links known, no
+// option it would refuse, and no channel's media waiting for a text.
+const savableUnless = (
+  linking: Parameters<typeof savableWith>[0],
+  problems: readonly unknown[],
+  blocked: string | undefined
+) => savableWith(linking, problems.length === 0 && blocked === undefined);
+
+// Why the post is neither saved nor scheduled while channels have media
+// of their own and no text to go out with; none otherwise.
+const ownMediaBlock = (
+  t: Translate,
+  list: ReturnType<typeof useFormatter>["list"],
+  selected: readonly Channel[],
+  waiting: readonly string[]
+) =>
+  waiting.length === 0
+    ? undefined
+    : t("ownMediaBlocks", {
+        handles: list(
+          selected.flatMap(({ handle, id }) =>
+            waiting.includes(id) ? [handle] : []
+          ),
+          { type: "conjunction" }
+        ),
+      });
 
 const titleOf = (t: Translate, post: Post | undefined) => {
   if (post === undefined) {
@@ -278,7 +301,15 @@ export const Composer = ({
   const [text, setText] = useState(start.text);
   // Counts the texts accepted from the assistant: each starts fresh editors.
   const [accepted, setAccepted] = useState(0);
-  const [overrides, setOverrides] = useState(() => overridesOf(post));
+
+  const [overrides, setOverrides] = useState(() =>
+    channelTextsOf(post?.content)
+  );
+
+  // The media some channels show instead of the post's, by channel.
+  const [channelMedia, setChannelMedia] = useState<ChannelMedia>(() =>
+    channelMediaOf(post?.content)
+  );
 
   // The options each channel's fields hold, by channel.
   const [optionValues, setOptionValues] = useState<ValuesByChannel>(() =>
@@ -345,9 +376,32 @@ export const Composer = ({
     channels.filter(({ id }) => id === channelId)
   );
 
-  const content = contentOf(text, overrides, channelIds, media, parts);
+  const composed: ByChannel = { channelIds, channelMedia, overrides, text };
+  const content = contentOf(composed, media, parts);
+  const waitingForText = mediaWaitingForText(composed);
 
   const attached = useAttachedMedia(workspaceId, media);
+
+  const ownAttached = useAttachedMedia(
+    workspaceId,
+    Object.values(channelMedia).flat()
+  );
+
+  // A channel's own media with their files once read; none while it shows
+  // the post's.
+  const ownAttachedOn = (channelId: string) =>
+    channelMedia[channelId]?.map((item): AttachedMedia => ({
+      altText: item.altText,
+      media:
+        ownAttached.find(({ mediaId }) => mediaId === item.mediaId)?.media ??
+        Option.none(),
+      mediaId: item.mediaId,
+    }));
+
+  // What the channel shows: its own media, or the post's.
+  const attachedOn = (channelId: string) =>
+    ownAttachedOn(channelId) ?? attached;
+
   // Files pasted into the post's texts are uploaded and attached to it.
   const uploader = useRef<MediaUploaderHandle>(null);
   const emoji = useEmojiTarget();
@@ -360,6 +414,7 @@ export const Composer = ({
   // made by AI in any part presets the AI labels.
   const everyAttached = useAttachedMedia(workspaceId, [
     ...media,
+    ...Object.values(channelMedia).flat(),
     ...parts.flatMap((part) => part.media),
   ]);
 
@@ -385,7 +440,11 @@ export const Composer = ({
 
   // Nothing is saved before the server says whether it shortens links, so
   // a new post takes the workspace's default.
-  const optionsTaken = savableWith(linking, optionProblems.length === 0);
+  // A channel's own media with no text to go out with: nothing is saved,
+  // so they are never lost silently, and the actions say why.
+  const blocked = ownMediaBlock(t, format.list, selected, waitingForText);
+
+  const optionsTaken = savableUnless(linking, optionProblems, blocked);
 
   // What a save sends, which the previews check too.
   const draft: PostDraft = {
@@ -413,12 +472,12 @@ export const Composer = ({
       fit: fitOn(
         channel.platform,
         own?.text ?? text,
-        media.length,
+        attachedOn(channel.id).length,
         optionsOfChannel(channel.id)
       ),
       media: mediaFitOn(
         channel.platform,
-        attached,
+        attachedOn(channel.id),
         optionsOfChannel(channel.id)
       ),
     };
@@ -887,6 +946,37 @@ export const Composer = ({
               />
               <TextTabs
                 key={accepted}
+                renderChannelMedia={(channel) => (
+                  <ChannelMediaField
+                    canBrowse={permissions.includes("media:read")}
+                    canGenerate={canGenerateImages(permissions)}
+                    canUpload={permissions.includes("media:upload")}
+                    channel={channel}
+                    disabled={locked}
+                    editable={canWrite}
+                    own={ownAttachedOn(channel.id)}
+                    platforms={
+                      showsAltText(
+                        channel.platform,
+                        optionsOfChannel(channel.id)
+                      )
+                        ? [channel.platform]
+                        : []
+                    }
+                    postMedia={media}
+                    waitingForText={waitingForText.includes(channel.id)}
+                    workspaceId={workspaceId}
+                    onChange={(update) => {
+                      setChannelMedia((current) =>
+                        withChannelMedia(
+                          current,
+                          channel.id,
+                          update(current[channel.id] ?? [])
+                        )
+                      );
+                    }}
+                  />
+                )}
                 selected={selected}
                 text={text}
                 overrides={overrides}
@@ -1024,6 +1114,7 @@ export const Composer = ({
           busy={busy}
           canSave={canWrite}
           savable={optionsTaken}
+          blocked={blocked}
           canSchedule={schedulable}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}

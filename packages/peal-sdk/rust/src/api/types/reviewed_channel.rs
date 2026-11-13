@@ -11,6 +11,8 @@ pub struct ReviewedChannel {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub handle: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<Vec<ReviewedMedia>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<TargetOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub platform: Option<Platform>,
@@ -30,6 +32,7 @@ pub struct ReviewedChannelBuilder {
     channel_id: Option<String>,
     follow_ups: Option<Vec<ReviewedPart>>,
     handle: Option<String>,
+    media: Option<Vec<ReviewedMedia>>,
     options: Option<TargetOptions>,
     platform: Option<Platform>,
     text: Option<String>,
@@ -48,6 +51,11 @@ impl ReviewedChannelBuilder {
 
     pub fn handle(mut self, value: impl Into<String>) -> Self {
         self.handle = Some(value.into());
+        self
+    }
+
+    pub fn media(mut self, value: Vec<ReviewedMedia>) -> Self {
+        self.media = Some(value);
         self
     }
 
@@ -80,6 +88,7 @@ impl ReviewedChannelBuilder {
                 .follow_ups
                 .ok_or_else(|| BuildError::missing_field("follow_ups"))?,
             handle: self.handle,
+            media: self.media,
             options: self.options,
             platform: self.platform,
             text: self.text.ok_or_else(|| BuildError::missing_field("text"))?,

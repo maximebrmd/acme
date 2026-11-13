@@ -369,6 +369,8 @@ export { IncorrectPassword } from "./incorrect-password.ts";
 
 export { LastOwner } from "./last-owner.ts";
 
+export { LastTargetLeft } from "./last-target-left.ts";
+
 export { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 
 export {

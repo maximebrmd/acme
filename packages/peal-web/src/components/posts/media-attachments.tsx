@@ -221,6 +221,11 @@ interface MediaAttachmentsProps {
    */
   readonly editable?: boolean;
   /**
+   * What the list is called for screen readers, when the page holds more
+   * than one (a channel's own media). Defaults to the post's media.
+   */
+  readonly label?: string | undefined;
+  /**
    * Changes the attachments from what they are now: a state setter, or
    * anything that applies the update to the list it holds.
    */
@@ -255,6 +260,7 @@ export const MediaAttachments = ({
   canUpload,
   disabled,
   editable = !disabled,
+  label,
   onChange,
   platforms,
   uploader,
@@ -350,7 +356,11 @@ export const MediaAttachments = ({
         {t("count", { count, maximum: maxMediaPerPost })}
       </p>
       {count === 0 ? null : (
-        <ol ref={list} aria-label={t("list")} className="flex flex-col gap-3">
+        <ol
+          ref={list}
+          aria-label={label ?? t("list")}
+          className="flex flex-col gap-3"
+        >
           {attached.map((item, index) => (
             <AttachmentRow
               key={item.mediaId}

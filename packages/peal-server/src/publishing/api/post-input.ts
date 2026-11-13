@@ -81,8 +81,14 @@ export const contentFrom = (input: ContentInput) =>
   Effect.gen(function* decodingContent() {
     const parts = [input, ...(input.followUps ?? [])];
 
+    // Each part's media, and those its overrides give some channels.
     const media = malformed(
-      parts.flatMap((part) => part.media.map(({ mediaId }) => mediaId)),
+      parts.flatMap((part) => [
+        ...part.media.map(({ mediaId }) => mediaId),
+        ...part.overrides.flatMap((override) =>
+          (override.media ?? []).map(({ mediaId }) => mediaId)
+        ),
+      ]),
       decodeMediaId
     );
 
