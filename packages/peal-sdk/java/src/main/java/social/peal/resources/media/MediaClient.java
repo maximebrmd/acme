@@ -36,56 +36,56 @@ public class MediaClient {
     }
 
     /**
-     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs media:read.
+     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>kind</code> (<code>image</code>, <code>video</code> or <code>document</code>), and <code>q</code>, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next one. Needs media:read.
      */
     public MediaPage list(String workspaceId) {
         return this.rawClient.list(workspaceId).body();
     }
 
     /**
-     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs media:read.
+     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>kind</code> (<code>image</code>, <code>video</code> or <code>document</code>), and <code>q</code>, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next one. Needs media:read.
      */
     public MediaPage list(String workspaceId, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, requestOptions).body();
     }
 
     /**
-     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs media:read.
+     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>kind</code> (<code>image</code>, <code>video</code> or <code>document</code>), and <code>q</code>, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next one. Needs media:read.
      */
     public MediaPage list(String workspaceId, ListMediaRequest request) {
         return this.rawClient.list(workspaceId, request).body();
     }
 
     /**
-     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs media:read.
+     * Lists the workspace's media, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>kind</code> (<code>image</code>, <code>video</code> or <code>document</code>), and <code>q</code>, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next one. Needs media:read.
      */
     public MediaPage list(String workspaceId, ListMediaRequest request, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, request, requestOptions).body();
     }
 
     /**
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give <code>fileName</code>, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public PreparedUpload create(String workspaceId, NewUpload request) {
         return this.rawClient.create(workspaceId, request).body();
     }
 
     /**
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give <code>fileName</code>, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public PreparedUpload create(String workspaceId, NewUpload request, RequestOptions requestOptions) {
         return this.rawClient.create(workspaceId, request, requestOptions).body();
     }
 
     /**
-     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
      */
     public Media importFromUrl(String workspaceId, MediaImport request) {
         return this.rawClient.importFromUrl(workspaceId, request).body();
     }
 
     /**
-     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
      */
     public Media importFromUrl(String workspaceId, MediaImport request, RequestOptions requestOptions) {
         return this.rawClient

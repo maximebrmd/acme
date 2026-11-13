@@ -976,6 +976,7 @@ const cover: Media = {
   createdAt: created,
   dimensions: { height: 720, width: 1280 },
   durationMs: null,
+  fileName: null,
   id: "019a0000-0000-7000-8000-00000000000c",
   kind: "image",
   pageCount: null,

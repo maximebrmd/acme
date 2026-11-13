@@ -18,9 +18,10 @@
 // collection; a day of posts is still scheduled. The first workspace has
 // two webhook endpoints and a million deliveries over the 30 days of the
 // log, one in twenty failed for good, to read the plans of the log across
-// endpoints and of the replay of failed deliveries on. It refuses a
-// database whose name does not end in "scale", and one that already holds
-// posts.
+// endpoints and of the replay of failed deliveries on. Each workspace has
+// 40 files of media, and the first 100,000, to read the library's search
+// on. It refuses a database whose name does not end in "scale", and one
+// that already holds posts.
 
 import { Option, Schema } from "effect";
 
@@ -302,6 +303,53 @@ await timed("webhook deliveries", async () => {
   ORDER BY event.n`;
 });
 
+// Each workspace's library: 40 files, and the first workspace's 100,000,
+// to read the plans of the library's search and filters on. Four in five
+// are images, three in twenty videos, one in twenty documents; one in two
+// has a description, one in ten no name (a file added before names were
+// kept, or one the assistant made), and one in ten thousand of the first
+// workspace's is a "launch" file, for a search that finds almost nothing.
+const mediaOfBusiest = 100_000;
+
+await timed("media", async () => {
+  await sql`
+  INSERT INTO media.media_assets
+    (id, workspace_id, status, content_type, byte_size, storage_key,
+     file_name, alt_text, width, height, created_at, updated_at)
+  SELECT file.id, file.workspace_id, 'ready', file.content_type,
+         100000 + file.n, 'media/' || file.workspace_id || '/' || file.id,
+         CASE
+           WHEN file.n % 10 = 0 THEN NULL
+           WHEN file.workspace_number = 1 AND file.n % 10000 = 1
+             THEN 'Synthetic launch ' || file.n || '.' || file.extension
+           ELSE 'synthetic-' || file.n || '.' || file.extension
+         END,
+         CASE WHEN file.n % 2 = 0 THEN 'Synthetic description ' || file.n END,
+         CASE WHEN file.content_type LIKE 'image/%' THEN 1080 END,
+         CASE WHEN file.content_type LIKE 'image/%' THEN 1080 END,
+         now() - interval '100 days', now() - interval '100 days'
+  FROM (
+    SELECT uuidv7() AS id, shuffled.*
+    FROM (
+      SELECT workspace.id AS workspace_id,
+             workspace.number AS workspace_number, n,
+             CASE WHEN n % 20 = 0 THEN 'application/pdf'
+                  WHEN n % 20 < 4 THEN 'video/mp4'
+                  ELSE 'image/jpeg' END AS content_type,
+             CASE WHEN n % 20 = 0 THEN 'pdf'
+                  WHEN n % 20 < 4 THEN 'mp4'
+                  ELSE 'jpg' END AS extension
+      FROM seed_workspaces AS workspace
+      CROSS JOIN LATERAL generate_series(
+        1, CASE WHEN workspace.number = 1 THEN ${mediaOfBusiest} ELSE 40 END
+      ) AS n
+      -- Uploads of every workspace come in turn, as they do over time:
+      -- ids are UUIDv7s, so their order is the order of upload.
+      ORDER BY random()
+    ) AS shuffled
+  ) AS file`;
+});
+
 await timed("analyze", async () => {
   await sql`ANALYZE`;
 });
@@ -311,6 +359,7 @@ const decodeCounts = Schema.decodeUnknownSync(
     Schema.Struct({
       channels: Schema.Number,
       collecting: Schema.Number,
+      media: Schema.Number,
       posts: Schema.Number,
       size: Schema.String,
       targets: Schema.Number,
@@ -325,6 +374,7 @@ const [counts] = decodeCounts(
          (SELECT count(*) FROM publishing.posts)::int AS posts,
          (SELECT count(*) FROM publishing.post_targets)::int AS targets,
          (SELECT count(*) FROM analytics.tracked_posts)::int AS tracked,
+         (SELECT count(*) FROM media.media_assets)::int AS media,
          (SELECT count(*) FROM analytics.tracked_posts WHERE next_collection_at IS NOT NULL)::int AS collecting,
          pg_size_pretty(pg_database_size(current_database())) AS size`
 );

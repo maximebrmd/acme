@@ -6,6 +6,8 @@ import type { MediaSourceUnreachable } from "#media/application/media-source-unr
 
 /** A file as its host serves it, read as it arrives. */
 export interface RemoteFile {
+  /** The address that served it, after redirects: what names the file. */
+  readonly address: string;
   /** The bytes after `start`, to the end of the file. */
   readonly rest: Stream.Stream<Uint8Array, MediaSourceUnreachable>;
   /** The size its host declares, if it does: not to be trusted. */

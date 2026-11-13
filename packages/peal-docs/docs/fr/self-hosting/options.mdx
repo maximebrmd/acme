@@ -93,6 +93,16 @@ Une limite s’applique quand on ajoute quelque chose : un espace de travail pas
     secret de signature. Laissez ce chemin ouvert à Stripe si quelque chose
     protège le reste de `/api/auth`.
   </Step>
+  <Step title="Ajouter la destination des erreurs de compteur">
+    Ajoutez une destination d’événements vers
+    `PUBLIC_URL/api/stripe/meter-errors`, avec des événements légers comme
+    contenu et les événements `v1.billing.meter.error_report_triggered` et
+    `v1.billing.meter.no_meter_found`, et définissez
+    `STRIPE_METER_WEBHOOK_SECRET` à son secret de signature. Stripe les envoie
+    quand il a accepté des événements de compteur sans pouvoir les compter,
+    dont l’usage n’est alors pas facturé ; sans la destination, personne ne
+    l’apprend. Laissez aussi ce chemin ouvert à Stripe.
+  </Step>
   <Step title="Activer Stripe Tax et l’espace client">
     Le paiement fait toujours ajouter la TVA par Stripe Tax, car les prix sont
     hors taxes et Peal les affiche TVA comprise. Activez l’espace client, où les

@@ -54,6 +54,7 @@ const uploaded = Effect.fn("uploaded")(function* uploaded(
     altText: Option.none(),
     byteSize: body.length,
     contentType: "image/png",
+    fileName: Option.none(),
   });
 
   yield* Effect.addFinalizer(() =>

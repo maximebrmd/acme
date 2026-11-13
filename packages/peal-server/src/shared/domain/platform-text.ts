@@ -62,7 +62,8 @@ export const storableText = (text: string, maximum: number): string =>
 /**
  * A name, a handle or any text shown on one line beside others: as
  * `storableText`, on a single line (white space runs become one space,
- * none at the ends), without the marks that reorder what is around it.
+ * none at the ends, even where the cut falls on one), without the marks
+ * that reorder what is around it.
  */
 export const storableLine = (text: string, maximum: number): string =>
   bounded(
@@ -73,4 +74,4 @@ export const storableLine = (text: string, maximum: number): string =>
       .replaceAll(/\s+/gu, " ")
       .trim(),
     maximum
-  );
+  ).trimEnd();

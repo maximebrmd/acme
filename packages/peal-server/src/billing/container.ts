@@ -50,6 +50,7 @@ import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-cont
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
+import { DrizzleStripeEventLedgerLive } from "#billing/infrastructure/drizzle-stripe-event-ledger.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { DrizzleTrialsLive } from "#billing/infrastructure/drizzle-trials.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
@@ -243,7 +244,11 @@ export const BillingOverviewLive = Layer.mergeAll(
   SendBillingReminders.layer,
   ReportUsage.layer,
   // Stripe's reports of meter events it took and could not count.
-  ReceiveMeterErrors.layer.pipe(Layer.provide(StripeMeterErrorEventsLive)),
+  ReceiveMeterErrors.layer.pipe(
+    Layer.provide(
+      Layer.merge(StripeMeterErrorEventsLive, DrizzleStripeEventLedgerLive)
+    )
+  ),
   // Today's account-days start with the snapshot and every hour.
   SnapshotUsage.layer.pipe(Layer.provideMerge(StartDaysLive)),
   PoolBound,

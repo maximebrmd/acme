@@ -21,13 +21,15 @@ export const AltTextSchema = Schema.Trimmed.check(
 export type AltText = typeof AltTextSchema.Type;
 
 /**
- * A description as a person typed it, trimmed: none when nothing is left,
- * `AltTextTooLong` past the limit.
+ * A description as a person typed it, trimmed and composed (NFC, as a
+ * keyboard types it, so the library's search finds it whatever way its
+ * accents came): none when nothing is left, `AltTextTooLong` past the
+ * limit.
  */
 export const altTextOf = (
   text: string
 ): Result.Result<Option.Option<AltText>, AltTextTooLong> => {
-  const trimmed = text.trim();
+  const trimmed = text.toWellFormed().normalize("NFC").trim();
 
   if (trimmed === "") {
     return Result.succeed(Option.none());

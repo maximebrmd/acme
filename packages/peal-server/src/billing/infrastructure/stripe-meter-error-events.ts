@@ -32,10 +32,14 @@ const FullSchema = Schema.Struct({
         Schema.Struct({
           code: Schema.String,
           error_count: Schema.Int,
-          sample_errors: Schema.Array(
-            Schema.Struct({
-              request: Schema.Struct({ identifier: Schema.String }),
-            })
+          sample_errors: Schema.optional(
+            Schema.Array(
+              Schema.Struct({
+                request: Schema.optional(
+                  Schema.Struct({ identifier: Schema.String })
+                ),
+              })
+            )
           ),
         })
       ),
@@ -50,6 +54,33 @@ const decodeFull = Schema.decodeUnknownOption(FullSchema);
 const noWorkspace = WorkspaceIdSchema.make(
   "00000000-0000-4000-8000-000000000000"
 );
+
+// Stripe answering, or not, a read of the full event: an outage is
+// waited on, anything else of a signed report is counted as unreadable.
+const OutageSchema = Schema.Struct({
+  statusCode: Schema.optional(Schema.Int),
+  type: Schema.String,
+});
+
+const decodeOutage = Schema.decodeUnknownOption(OutageSchema);
+
+const isOutage = (cause: unknown): boolean =>
+  Option.match(decodeOutage(cause), {
+    onNone: () => true,
+    onSome: ({ statusCode, type }) =>
+      statusCode === undefined ||
+      statusCode === 429 ||
+      statusCode >= 500 ||
+      type === "StripeConnectionError",
+  });
+
+const unreadable = (eventId: string): MeterErrorReading => ({
+  _tag: "report",
+  report: {
+    errors: [{ code: "unreadable", count: 1, identifiers: [] }],
+    eventId,
+  },
+});
 
 const refused: MeterErrorReading = { _tag: "refused" };
 const ignored: MeterErrorReading = { _tag: "ignored" };
@@ -69,9 +100,16 @@ export const StripeMeterErrorEventsLive = Layer.effect(
     const ready = Option.all({ secret, settings }).pipe(
       Option.map(({ secret: signing, settings: held }) => ({
         secret: Redacted.value(signing),
-        stripe: stripeClientOf(held, { timeout: 20_000 }),
+        // Asked once: Stripe sends the event again.
+        stripe: stripeClientOf(held, { maxNetworkRetries: 0, timeout: 20_000 }),
       }))
     );
+
+    if (Option.isSome(settings) && Option.isNone(secret)) {
+      yield* Effect.logWarning(
+        "This server bills without STRIPE_METER_WEBHOOK_SECRET: meter events Stripe takes and cannot count go unheard (the docs' self-hosting options, Billing)"
+      );
+    }
 
     const read = (body: string, signature: string) =>
       Option.match(ready, {
@@ -98,19 +136,37 @@ export const StripeMeterErrorEventsLive = Layer.effect(
               return ignored;
             }
 
-            const event = yield* Effect.tryPromise({
-              catch: () => new StripeUnreachable({ workspaceId: noWorkspace }),
-              try: async () =>
-                await stripe.v2.core.events.retrieve(verified.value.id),
-            });
+            const eventId = verified.value.id;
 
-            const full = decodeFull(event);
+            const event = yield* Effect.tryPromise({
+              catch: (cause) => ({ outage: isOutage(cause) }),
+              try: async () => await stripe.v2.core.events.retrieve(eventId),
+            }).pipe(
+              Effect.map(Option.some),
+              Effect.catch(({ outage }) =>
+                outage
+                  ? Effect.fail(
+                      new StripeUnreachable({ workspaceId: noWorkspace })
+                    )
+                  : Effect.logError(
+                      "Stripe refused to give a meter error event in full: counted as unreadable"
+                    ).pipe(
+                      Effect.annotateLogs({ eventId }),
+                      Effect.as(Option.none())
+                    )
+              )
+            );
+
+            const full = event.pipe(Option.flatMap(decodeFull));
 
             if (Option.isNone(full)) {
-              return yield* new StripeUnreachable({
-                permanent: true,
-                workspaceId: noWorkspace,
-              });
+              if (Option.isSome(event)) {
+                yield* Effect.logError(
+                  "A meter error event Stripe gave could not be read: counted as unreadable"
+                ).pipe(Effect.annotateLogs({ eventId }));
+              }
+
+              return unreadable(eventId);
             }
 
             const report: MeterErrorReading = {
@@ -120,8 +176,8 @@ export const StripeMeterErrorEventsLive = Layer.effect(
                   ({ code, error_count: count, sample_errors: samples }) => ({
                     code,
                     count,
-                    identifiers: samples.map(
-                      ({ request }) => request.identifier
+                    identifiers: (samples ?? []).flatMap(({ request }) =>
+                      request === undefined ? [] : [request.identifier]
                     ),
                   })
                 ),
@@ -133,6 +189,6 @@ export const StripeMeterErrorEventsLive = Layer.effect(
           }).pipe(Effect.withSpan("MeterErrorEvents.read")),
       });
 
-    return MeterErrorEvents.of({ read });
+    return MeterErrorEvents.of({ enabled: Option.isSome(ready), read });
   })
 );

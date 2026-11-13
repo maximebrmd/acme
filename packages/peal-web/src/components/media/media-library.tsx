@@ -21,19 +21,29 @@ import {
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Link } from "#i18n/navigation.ts";
 import { deleteMedia, mediaKey, mediaPage, usageOf } from "#media/atoms.ts";
+import {
+  everything,
+  isNarrowed,
+  searchDelayMs,
+} from "#media/library-search.ts";
+import type { LibrarySearch } from "#media/library-search.ts";
 import { failureOf } from "#posts/outcome.ts";
 
 import { GenerateImage } from "./generate-image.tsx";
+import { SearchStatus } from "./library-status.tsx";
+import { LibraryToolbarView } from "./library-toolbar.tsx";
+import { MediaPreviewDialog, useMediaName } from "./media-preview.tsx";
 import { MediaThumbnail } from "./media-thumbnail.tsx";
 import { MediaUploader } from "./media-uploader.tsx";
 import { MediaUsageNotice } from "./media-usage-notice.tsx";
-import { useFileSize } from "./use-file-size.ts";
+import { useDebounced } from "./use-debounced.ts";
 import { useHydrated } from "./use-hydrated.ts";
+import { useMediaFacts } from "./use-media-facts.ts";
 
 const badgeVariant = {
   pending: "outline",
@@ -195,6 +205,39 @@ const DeleteMedia = ({
   );
 };
 
+// The thumbnail, a button that opens the file at full size, and gives the
+// focus back to it when the dialog closes. Its focus ring is drawn inside
+// it, as the card clips what overflows it.
+const MediaPreview = ({ media }: { readonly media: Media }) => {
+  const t = useTranslations("Media.library");
+  const nameOf = useMediaName();
+  const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button
+        ref={opener}
+        type="button"
+        aria-label={t("preview", { name: nameOf(media) })}
+        aria-haspopup="dialog"
+        className="focus-visible:ring-ring relative block aspect-square w-full cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        <MediaThumbnail media={media} sizes="(min-width: 768px) 16rem, 50vw" />
+      </button>
+      <MediaPreviewDialog
+        media={media}
+        open={open}
+        returnFocusTo={() => opener.current}
+        onOpenChange={setOpen}
+      />
+    </>
+  );
+};
+
 const MediaCard = ({
   canDelete,
   media,
@@ -205,31 +248,11 @@ const MediaCard = ({
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media");
-  const fileSize = useFileSize();
-
-  const facts = [
-    t("library.kind", { kind: media.kind }),
-    fileSize(media.byteSize),
-    ...(media.dimensions === null
-      ? []
-      : [t("library.dimensions", media.dimensions)]),
-    ...(media.durationMs === null
-      ? []
-      : [
-          t("library.duration", {
-            seconds: Math.round(media.durationMs / 100) / 10,
-          }),
-        ]),
-    ...(media.pageCount === null
-      ? []
-      : [t("library.pages", { count: media.pageCount })]),
-  ];
+  const facts = useMediaFacts(media);
 
   return (
     <li className="flex flex-col overflow-hidden rounded-lg border">
-      <div className="relative aspect-square">
-        <MediaThumbnail media={media} sizes="(min-width: 768px) 16rem, 50vw" />
-      </div>
+      <MediaPreview media={media} />
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="flex items-center justify-between gap-2">
           <span className="flex flex-wrap items-center gap-1">
@@ -244,6 +267,11 @@ const MediaCard = ({
             <DeleteMedia media={media} workspaceId={workspaceId} />
           ) : null}
         </div>
+        {media.fileName === null ? null : (
+          <p className="truncate text-sm font-medium" title={media.fileName}>
+            {media.fileName}
+          </p>
+        )}
         <p className="text-muted-foreground text-xs">{facts.join(" · ")}</p>
         <StatusDetail status={media.status} />
         <p
@@ -260,6 +288,28 @@ const MediaCard = ({
         </p>
       </div>
     </li>
+  );
+};
+
+// What the search found, in a status region that stays mounted while the
+// search changes, so screen readers hear each answer.
+const LibraryStatus = ({
+  search,
+  workspaceId,
+}: {
+  readonly search: LibrarySearch;
+  readonly workspaceId: string;
+}) => {
+  const result = useAtomValue(mediaPage(workspaceId, Option.none(), search));
+
+  return AsyncResult.isSuccess(result) ? (
+    <SearchStatus
+      count={result.value.items.length}
+      more={result.value.nextCursor !== null}
+      narrowed={isNarrowed(search)}
+    />
+  ) : (
+    <SearchStatus count={0} more={false} narrowed={false} />
   );
 };
 
@@ -285,18 +335,22 @@ const MediaPages = ({
   canDelete,
   cursor,
   more,
+  onClear,
   onMore,
+  search,
   workspaceId,
 }: {
   readonly canDelete: boolean;
   readonly cursor: Option.Option<string>;
   // How many pages to show after this one.
   readonly more: number;
+  readonly onClear: () => void;
   readonly onMore: () => void;
+  readonly search: LibrarySearch;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media.library");
-  const page = mediaPage(workspaceId, cursor);
+  const page = mediaPage(workspaceId, cursor, search);
   const result = useAtomValue(page);
   const reload = useAtomRefresh(page);
 
@@ -316,7 +370,16 @@ const MediaPages = ({
     onInitial: () => <LoadingGrid />,
     onSuccess: ({ value }) => {
       if (Option.isNone(cursor) && value.items.length === 0) {
-        return <p className="text-muted-foreground">{t("empty")}</p>;
+        return isNarrowed(search) ? (
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-muted-foreground">{t("noMatch")}</p>
+            <Button variant="outline" size="sm" onClick={onClear}>
+              {t("clearSearch")}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">{t("empty")}</p>
+        );
       }
 
       const next = Option.fromNullOr(value.nextCursor);
@@ -338,7 +401,9 @@ const MediaPages = ({
               canDelete={canDelete}
               cursor={next}
               more={more - 1}
+              search={search}
               workspaceId={workspaceId}
+              onClear={onClear}
               onMore={onMore}
             />
           ) : null}
@@ -355,7 +420,10 @@ const MediaPages = ({
 
 /**
  * A workspace's media, newest first, with thumbnails, a page at a time, and
- * the uploader above them when the member may upload.
+ * the uploader above them when the member may upload. The toolbar narrows
+ * the list by text in a file's name or description and by kind, asking
+ * the API once the person pauses (`searchDelayMs`); a thumbnail opens the
+ * file at full size.
  */
 export const MediaLibrary = ({
   canDelete,
@@ -374,12 +442,30 @@ export const MediaLibrary = ({
 }) => {
   const t = useTranslations("Media.library");
   const [more, setMore] = useState(0);
+  const [search, setSearch] = useState(everything);
+  // What the list asks for: the search once the person paused typing.
+  const asked = useDebounced(search, searchDelayMs);
   // The list is fetched with the visitor's cookies, which only the browser
   // sends.
   const hydrated = useHydrated();
 
   const handleMore = () => {
     setMore((current) => current + 1);
+  };
+
+  // Another search starts again from its first page.
+  const handleSearch = (next: LibrarySearch) => {
+    setSearch(next);
+    setMore(0);
+  };
+
+  const searchField = useRef<HTMLInputElement>(null);
+
+  // The button that cleared the search goes with the message it stood
+  // in: the focus goes back to the search field.
+  const handleClear = () => {
+    handleSearch(everything);
+    searchField.current?.focus();
   };
 
   return (
@@ -397,12 +483,22 @@ export const MediaLibrary = ({
         <h2 id="media-library" className="text-xl font-semibold">
           {t("title")}
         </h2>
+        <LibraryToolbarView
+          inputRef={searchField}
+          search={search}
+          onSearch={handleSearch}
+        />
+        {hydrated ? (
+          <LibraryStatus search={asked} workspaceId={workspaceId} />
+        ) : null}
         {hydrated ? (
           <MediaPages
             canDelete={canDelete}
             cursor={Option.none()}
             more={more}
+            search={asked}
             workspaceId={workspaceId}
+            onClear={handleClear}
             onMore={handleMore}
           />
         ) : (

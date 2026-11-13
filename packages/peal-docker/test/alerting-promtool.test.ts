@@ -182,7 +182,7 @@ const cases: readonly Case[] = [
   },
   {
     expected: [
-      ["35m", true],
+      ["32m", true],
       ["95m", false],
     ],
     interval: "1m",
@@ -199,7 +199,7 @@ const cases: readonly Case[] = [
   },
   {
     expected: [
-      ["35m", true],
+      ["32m", true],
       ["95m", false],
     ],
     interval: "1m",
@@ -216,7 +216,25 @@ const cases: readonly Case[] = [
   },
   {
     expected: [
-      ["35m", true],
+      ["4h5m", false],
+      ["4h8m", false],
+      ["4h12m", false],
+    ],
+    interval: "1m",
+    name: "meter errors at 2 across a telemetry gap of ten minutes, nothing new",
+    series: { peal_billing_meter_errors_total: "2x180 _x10 2x80" },
+    uid: "peal-meter-errors",
+  },
+  {
+    expected: [["4h8m", false]],
+    interval: "1m",
+    name: "a threshold refused long ago, across a telemetry gap",
+    series: { peal_billing_threshold_unset_total: "1x180 _x10 1x80" },
+    uid: "peal-threshold-unset",
+  },
+  {
+    expected: [
+      ["32m", true],
       ["95m", false],
     ],
     interval: "1m",

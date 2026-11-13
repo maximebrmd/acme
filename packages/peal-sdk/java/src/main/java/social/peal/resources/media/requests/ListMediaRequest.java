@@ -16,20 +16,31 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.types.MediaKind;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ListMediaRequest.Builder.class)
 public final class ListMediaRequest {
     private final Optional<String> cursor;
 
+    private final Optional<MediaKind> kind;
+
     private final Optional<String> limit;
+
+    private final Optional<String> q;
 
     private final Map<String, Object> additionalProperties;
 
     private ListMediaRequest(
-            Optional<String> cursor, Optional<String> limit, Map<String, Object> additionalProperties) {
+            Optional<String> cursor,
+            Optional<MediaKind> kind,
+            Optional<String> limit,
+            Optional<String> q,
+            Map<String, Object> additionalProperties) {
         this.cursor = cursor;
+        this.kind = kind;
         this.limit = limit;
+        this.q = q;
         this.additionalProperties = additionalProperties;
     }
 
@@ -38,9 +49,19 @@ public final class ListMediaRequest {
         return cursor;
     }
 
+    @JsonProperty("kind")
+    public Optional<MediaKind> getKind() {
+        return kind;
+    }
+
     @JsonProperty("limit")
     public Optional<String> getLimit() {
         return limit;
+    }
+
+    @JsonProperty("q")
+    public Optional<String> getQ() {
+        return q;
     }
 
     @java.lang.Override
@@ -55,12 +76,12 @@ public final class ListMediaRequest {
     }
 
     private boolean equalTo(ListMediaRequest other) {
-        return cursor.equals(other.cursor) && limit.equals(other.limit);
+        return cursor.equals(other.cursor) && kind.equals(other.kind) && limit.equals(other.limit) && q.equals(other.q);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.cursor, this.limit);
+        return Objects.hash(this.cursor, this.kind, this.limit, this.q);
     }
 
     @java.lang.Override
@@ -76,7 +97,11 @@ public final class ListMediaRequest {
     public static final class Builder {
         private Optional<String> cursor = Optional.empty();
 
+        private Optional<MediaKind> kind = Optional.empty();
+
         private Optional<String> limit = Optional.empty();
+
+        private Optional<String> q = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -84,7 +109,9 @@ public final class ListMediaRequest {
 
         public Builder from(ListMediaRequest other) {
             cursor(other.getCursor());
+            kind(other.getKind());
             limit(other.getLimit());
+            q(other.getQ());
             return this;
         }
 
@@ -99,6 +126,17 @@ public final class ListMediaRequest {
             return this;
         }
 
+        @JsonSetter(value = "kind", nulls = Nulls.SKIP)
+        public Builder kind(Optional<MediaKind> kind) {
+            this.kind = kind;
+            return this;
+        }
+
+        public Builder kind(MediaKind kind) {
+            this.kind = Optional.ofNullable(kind);
+            return this;
+        }
+
         @JsonSetter(value = "limit", nulls = Nulls.SKIP)
         public Builder limit(Optional<String> limit) {
             this.limit = limit;
@@ -110,13 +148,27 @@ public final class ListMediaRequest {
             return this;
         }
 
+        @JsonSetter(value = "q", nulls = Nulls.SKIP)
+        public Builder q(Optional<String> q) {
+            this.q = q;
+            return this;
+        }
+
+        public Builder q(String q) {
+            this.q = Optional.ofNullable(q);
+            return this;
+        }
+
         public ListMediaRequest build() {
-            return new ListMediaRequest(cursor, limit, additionalProperties);
+            return new ListMediaRequest(cursor, kind, limit, q, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("cursor") || key.equalsIgnoreCase("limit")) {
+            if (key.equalsIgnoreCase("cursor")
+                    || key.equalsIgnoreCase("kind")
+                    || key.equalsIgnoreCase("limit")
+                    || key.equalsIgnoreCase("q")) {
                 return;
             }
             this.additionalProperties.put(key, value);

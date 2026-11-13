@@ -35,6 +35,9 @@ public record Media : IJsonOnDeserialized
     [JsonPropertyName("durationMs")]
     public int? DurationMs { get; set; }
 
+    [JsonPropertyName("fileName")]
+    public string? FileName { get; set; }
+
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 

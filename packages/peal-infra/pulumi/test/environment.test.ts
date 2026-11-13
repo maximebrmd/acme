@@ -145,6 +145,7 @@ describe("the sandbox at Cloudflare", () => {
     expect(input(callbacks, "destinations", DestinationsSchema)).toStrictEqual([
       { type: "public", uri: "sandbox.example.test/api/channels/oauth" },
       { type: "public", uri: "sandbox.example.test/api/auth/stripe/webhook" },
+      { type: "public", uri: "sandbox.example.test/api/stripe/meter-errors" },
       { type: "public", uri: "sandbox.example.test/api/data-deletion" },
     ]);
   });

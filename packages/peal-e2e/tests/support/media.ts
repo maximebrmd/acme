@@ -36,3 +36,40 @@ export const seedVideo = async (
     await client.end();
   }
 };
+
+/**
+ * Adds a ready synthetic image to the workspace's media library, named
+ * `fileName` and described as `description`, straight in the database as
+ * `seedVideo` does: tall (1080 × 1920), so its preview has to fit a phone.
+ * Nothing reads its file, so none is stored.
+ */
+export const seedImage = async (
+  workspaceId: string,
+  fileName: string,
+  description: string
+): Promise<void> => {
+  const client = new Client({
+    connectionString: process.env["DATABASE_URL"],
+  });
+
+  await client.connect();
+
+  try {
+    await client.query(
+      `WITH asset AS (SELECT uuidv7() AS id)
+      INSERT INTO media.media_assets (
+        id, workspace_id, status, content_type, byte_size, width, height,
+        file_name, alt_text, storage_key, created_at, updated_at
+      )
+      SELECT
+        asset.id, $1::uuid, 'ready', 'image/png', 200000, 1080, 1920,
+        $2::text, $3::text,
+        'e2e/media/' || $1::text || '/' || asset.id::text || '.png', now(),
+        now()
+      FROM asset`,
+      [workspaceId, fileName, description]
+    );
+  } finally {
+    await client.end();
+  }
+};

@@ -84,7 +84,9 @@ const cleanedUp = (workspaceId: WorkspaceId) =>
 
       const { assets: left } = yield* assets.list(workspaceId, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 50,
+        text: Option.none(),
       });
 
       yield* Effect.all(

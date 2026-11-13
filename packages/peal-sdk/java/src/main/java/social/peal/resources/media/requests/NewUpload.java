@@ -30,13 +30,20 @@ public final class NewUpload {
 
     private final String contentType;
 
+    private final Optional<String> fileName;
+
     private final Map<String, Object> additionalProperties;
 
     private NewUpload(
-            Optional<String> altText, long byteSize, String contentType, Map<String, Object> additionalProperties) {
+            Optional<String> altText,
+            long byteSize,
+            String contentType,
+            Optional<String> fileName,
+            Map<String, Object> additionalProperties) {
         this.altText = altText;
         this.byteSize = byteSize;
         this.contentType = contentType;
+        this.fileName = fileName;
         this.additionalProperties = additionalProperties;
     }
 
@@ -58,10 +65,24 @@ public final class NewUpload {
         return contentType;
     }
 
+    @JsonIgnore
+    public Optional<String> getFileName() {
+        if (fileName == null) {
+            return Optional.empty();
+        }
+        return fileName;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("altText")
     private Optional<String> _getAltText() {
         return altText;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("fileName")
+    private Optional<String> _getFileName() {
+        return fileName;
     }
 
     @java.lang.Override
@@ -76,12 +97,15 @@ public final class NewUpload {
     }
 
     private boolean equalTo(NewUpload other) {
-        return altText.equals(other.altText) && byteSize == other.byteSize && contentType.equals(other.contentType);
+        return altText.equals(other.altText)
+                && byteSize == other.byteSize
+                && contentType.equals(other.contentType)
+                && fileName.equals(other.fileName);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.altText, this.byteSize, this.contentType);
+        return Objects.hash(this.altText, this.byteSize, this.contentType, this.fileName);
     }
 
     @java.lang.Override
@@ -115,6 +139,12 @@ public final class NewUpload {
         _FinalStage altText(String altText);
 
         _FinalStage altText(Nullable<String> altText);
+
+        _FinalStage fileName(Optional<String> fileName);
+
+        _FinalStage fileName(String fileName);
+
+        _FinalStage fileName(Nullable<String> fileName);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -122,6 +152,8 @@ public final class NewUpload {
         private long byteSize;
 
         private String contentType;
+
+        private Optional<String> fileName = Optional.empty();
 
         private Optional<String> altText = Optional.empty();
 
@@ -134,6 +166,7 @@ public final class NewUpload {
             altText(other.getAltText());
             byteSize(other.getByteSize());
             contentType(other.getContentType());
+            fileName(other.getFileName());
             return this;
         }
 
@@ -148,6 +181,31 @@ public final class NewUpload {
         @JsonSetter("contentType")
         public _FinalStage contentType(@NotNull String contentType) {
             this.contentType = Objects.requireNonNull(contentType, "contentType must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage fileName(Nullable<String> fileName) {
+            if (fileName.isNull()) {
+                this.fileName = null;
+            } else if (fileName.isEmpty()) {
+                this.fileName = Optional.empty();
+            } else {
+                this.fileName = Optional.of(fileName.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage fileName(String fileName) {
+            this.fileName = Optional.ofNullable(fileName);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "fileName", nulls = Nulls.SKIP)
+        public _FinalStage fileName(Optional<String> fileName) {
+            this.fileName = fileName;
             return this;
         }
 
@@ -178,14 +236,15 @@ public final class NewUpload {
 
         @java.lang.Override
         public NewUpload build() {
-            return new NewUpload(altText, byteSize, contentType, additionalProperties);
+            return new NewUpload(altText, byteSize, contentType, fileName, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("altText")
                     || key.equalsIgnoreCase("byteSize")
-                    || key.equalsIgnoreCase("contentType")) {
+                    || key.equalsIgnoreCase("contentType")
+                    || key.equalsIgnoreCase("fileName")) {
                 return;
             }
             this.additionalProperties.put(key, value);

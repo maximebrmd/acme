@@ -5,16 +5,27 @@ import { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts"
 import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
+import type { MediaKind } from "#media/domain/media-format.ts";
 import type { MediaStatusName } from "#media/domain/media-status.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
-/** A page of a workspace's assets, newest first. */
+/**
+ * A page of a workspace's assets, newest first: all of them, or those of
+ * a kind and those whose name or description holds a text.
+ */
 export interface MediaPageRequest {
   /** The last asset of the page before, if this is not the first. */
   readonly after: Option.Option<MediaAssetId>;
+  /** Only the files of this kind, if given. */
+  readonly kind: Option.Option<MediaKind>;
   readonly limit: number;
+  /**
+   * Only the files whose name or description holds this text, whatever
+   * its case, if given: read as it is written, wildcards included.
+   */
+  readonly text: Option.Option<string>;
 }
 
 export interface MediaPage {
@@ -34,7 +45,10 @@ export class MediaAssets extends Context.Service<
       workspaceId: WorkspaceId,
       assetId: MediaAssetId
     ) => Effect.Effect<Option.Option<MediaAsset>>;
-    /** The workspace's assets, newest first, a page at a time. */
+    /**
+     * The workspace's assets, newest first, a page at a time, of a kind
+     * and holding a text when the request says so.
+     */
     readonly list: (
       workspaceId: WorkspaceId,
       page: MediaPageRequest

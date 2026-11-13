@@ -18,9 +18,11 @@ public partial class MediaClient : IMediaClient
         CancellationToken cancellationToken = default
     )
     {
-        var _queryString = new Peal.Core.QueryStringBuilder.Builder(capacity: 2)
+        var _queryString = new Peal.Core.QueryStringBuilder.Builder(capacity: 4)
             .Add("cursor", request.Cursor)
+            .Add("kind", request.Kind)
             .Add("limit", request.Limit)
+            .Add("q", request.Q)
             .MergeAdditional(options?.AdditionalQueryParameters)
             .Build();
         var _headers = await new Peal.Core.HeadersBuilder.Builder()
@@ -1344,7 +1346,7 @@ public partial class MediaClient : IMediaClient
     }
 
     /// <summary>
-    /// Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Pass the page's `nextCursor` as `cursor` for the next one. Needs media:read.
+    /// Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Every filter given must hold: `kind` (`image`, `video` or `document`), and `q`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's `nextCursor` as `cursor`, with the same filters, for the next one. Needs media:read.
     /// </summary>
     /// <example><code>
     /// await client.Media.ListAsync(new ListMediaRequest { WorkspaceId = "workspaceId" });
@@ -1361,7 +1363,7 @@ public partial class MediaClient : IMediaClient
     }
 
     /// <summary>
-    /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+    /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give `fileName`, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
     /// </summary>
     /// <example><code>
     /// await client.Media.CreateAsync(
@@ -1385,7 +1387,7 @@ public partial class MediaClient : IMediaClient
     }
 
     /// <summary>
-    /// Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+    /// Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
     /// </summary>
     /// <example><code>
     /// await client.Media.ImportFromUrlAsync(new MediaImport { WorkspaceId = "workspaceId", Url = "url" });

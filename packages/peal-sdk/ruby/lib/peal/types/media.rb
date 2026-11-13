@@ -21,6 +21,8 @@ module Peal
 
       field :duration_ms, -> { Integer }, optional: false, nullable: true, api_name: "durationMs"
 
+      field :file_name, -> { String }, optional: false, nullable: true, api_name: "fileName"
+
       field :id, -> { String }, optional: false, nullable: false
 
       field :kind, -> { Peal::Types::MediaKind }, optional: false, nullable: false
