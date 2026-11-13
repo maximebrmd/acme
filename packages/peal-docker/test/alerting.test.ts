@@ -26,6 +26,7 @@ const watched = [
   "peal_engagement_collection_thread_failures_total",
   "peal_engagement_retention_forget_failures_total",
   "peal_ads_sync_unfinished_total",
+  "peal_media_sweep_failures_total",
   "peal_publishing_uploads_waiting",
   "peal_publishing_recycling_overdue",
   "peal_publishing_feeds_overdue",
@@ -91,6 +92,20 @@ describe("the production alert rules", () => {
     expect(rule?.annotations.summary).toContain("runbooks/failed-disk.md");
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
       `max(last_over_time(${gauge}[45m]))`
+    );
+  });
+
+  it("alert when the media store's sweeps fail three times in three hours, a restart's and a new series included", () => {
+    const rule = ruleOf("peal-media-sweep-failing");
+
+    expect(rule).toMatchObject({
+      execErrState: "Error",
+      for: "0s",
+      labels: { severity: "warning" },
+      noDataState: "OK",
+    });
+    expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
+      "(sum(increase(peal_media_sweep_failures_total[3h])) or vector(0)) + (sum(peal_media_sweep_failures_total unless peal_media_sweep_failures_total offset 3h unless peal_media_sweep_failures_total offset 5m) or vector(0))"
     );
   });
 
