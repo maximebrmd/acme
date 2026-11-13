@@ -176,6 +176,55 @@
   `usageReports`) and erasure, which deletes unsent reports too (a rise in
   the minutes before a billing workspace is erased is not on its final
   invoice), and are the registry's `usage`.
+- Meters (`MeteredUsageLive`, the kernel's `MeteredUsage`; domain
+  `meter-claims.ts`): each billing account's units by calendar month UTC
+  on its holder (`billing.meter_usage`: `used`, `reported` past the
+  allowance, `events`). A claim holds the holder's rows of the meter's
+  group (the assistant's two share one ceiling; `metersOf`) in the
+  meters' order, decides (`decideClaim`: within `includedUnits`, which is
+  `allowanceWithout` for `free`, 0 when staff required a payment method,
+  `allowance` with one; past it for `payAsYouGo` while the group's spend
+  stays within its ceiling, `spend_ceilings` or `defaultCeilingOf`; a
+  legacy plan gets the allowance and nothing past it), and writes in one
+  transaction the count, the usage ledger's counter under the claiming
+  workspace (`usageCounterOf`: images, messages, ads; the assistant's
+  requests stay the snapshot's copy) and, for a `payAsYouGo` holder, an
+  outbox row of what changed in the billable units
+  (`<meter>:<holder>:<YYYY-MM>:<events>`, one per change, so a rise after a
+  fall never repeats an identifier). A unit given back lowers `used` and
+  the ledger (never below zero) and reports back what had been reported,
+  as a negative value (`meter_reports_value` is `<> 0`; Stripe sums a
+  meter and bills a negative period as none). The claim that uses a free
+  account's last unit of a meter with an allowance without a payment
+  method tells its billing managers (`AllowanceReached`, keyed
+  `allowance:<holder>:<YYYY-MM>:<meter>`: once per meter and month, always
+  emailed). A server that does not bill counts nothing and refuses
+  nothing (`MeteredUsage.layerUnmetered`): production must not change
+  while it bills nothing. A release before T7 does not decode the new
+  ledger counters or the negative report values: do not roll back past it
+  once a server that bills has written them.
+- `SpendCeilings.set` (`PUT …/billing/ceilings/:group`, in
+  `billingActions`): billing:manage in person, on the billing workspace
+  (`BilledElsewhere`), never on a server that does not bill; it may
+  always be lowered, below what the month spent too. The row names
+  nobody; the activity log keeps who. `GET …/billing` answers `meters`
+  (`meterMonthsOf`, `shownMeters`: X joins with its pass-through), their
+  money (`estimate`, in the total `estimate` too) to the billing
+  workspace's members only, `priceConfirmed` false for
+  `unconfirmedMeters` (the rate card's `awaitingDecision`), which every
+  surface shows as coming. Meters and ceilings go with the export
+  (`meterMonths`, `spendCeilings`) and the erasure.
+- Sandbox runbook for the meters (the owner, test mode, never in tests):
+  on a `payAsYouGo` subscription with a test clock, send 10,001 replies'
+  worth (seed `meter_usage` at 10,000, then reply once) and read the
+  `peal_outbound_messages` event under `outboundMessages:<holder>:<month>:1`;
+  give one back (a reply that fails) and read the `-1` event Stripe takes
+  (write down its answer: a negative value Stripe refuses is mapped in
+  `eventRefusals` or the give-back changes); advance past the first and
+  the finalisation hour (the invoice bills the sum, never below 0); raise
+  the assistant's ceiling on the billing page and check an assistant
+  request past the allowance is billed at the confirmed price; on a free
+  account, check the 10,000th message tells the billing managers once.
 - Meter events Stripe took and could not count (a meter archived or
   missing, a customer unknown) come back as thin events,
   `v1.billing.meter.error_report_triggered` and `no_meter_found`, to an

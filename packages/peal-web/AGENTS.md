@@ -521,6 +521,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`standingOfWorkspace`, read with the visitor's cookies): on the free
   tier it says the account holds more than its free accounts without a
   payment method; a grace shows `GraceBanner` above every page instead.
+- A meter's refusal (`UsageAllowanceReached`) opens the same dialog when
+  it asks for a payment method (`MeterReached`, `isMeterReason` in
+  `#billing/upgrade.ts`: what the month allowed, when it starts again, what
+  a payment method includes, never an unconfirmed price); a ceiling
+  reached is the page's own message (raise it on the billing page). The
+  composer's assistant, the image dialog and the inbox reply box offer it.
+  The billing page's `MeterTable` lists `meters`: counts and allowances
+  for every member, each unit price excluding VAT and with France's VAT,
+  "coming" while `priceConfirmed` is false, and the money so far for the
+  workspace that bills the account only; its managers with a payment
+  method set the assistant's ceiling (`setSpendCeiling`).
 - Dialogs fit the window (`DialogContent`: at most the viewport's height,
   scrolling): check a new one at 320 and 375 px wide, in English and
   French, as `upgrade-prompt.e2e.ts` does.

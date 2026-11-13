@@ -45,6 +45,21 @@
   payer. Requests sent together never pass it. Give a
   request back only when the provider never ran it (`unreachable`); a
   timeout, a refusal or an unusable answer counts.
+- On a server that bills the server's models are metered by billing
+  account and calendar month instead (`AssistantAllowance.metered`, chosen
+  when the layer is built): `suggest` claims one `assistantRequests`,
+  `generateImage` one `assistantImages` after its checks and slot, through
+  `MeteredUsage`, before the provider is asked; none without a payment
+  method (`AllowanceReached`, answered `UsageAllowanceReached`). Either is
+  given back whenever no suggestion or no stored image came of it, a
+  timeout and an unusable answer included (`Effect.onError`). A text
+  request still counts in `assistant.daily_usage`, unbounded, for the
+  usage ledger's snapshot; images no longer take the day's requests. The
+  status answers `month` and `images.month` (included, used, the most,
+  price, ceiling, `priceConfirmed`), the daily fields from the month, and
+  `available: false` with `reason: paymentMethod` without one. A
+  workspace's own providers claim nothing, on any standing: they are the
+  free tier's assistant. Elsewhere, nothing of this applies.
 - The model has 90 seconds to answer (`answerTimeout`). Anything between the
   browser and the server must wait longer: the web app's `/api` proxy waits
   120 seconds (`experimental.proxyTimeout` in `next.config.ts`).

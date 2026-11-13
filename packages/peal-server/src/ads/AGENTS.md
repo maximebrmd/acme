@@ -132,6 +132,15 @@ weaken a rule below to make something pass.
 - Handlers map each refusal to its contract error and `DatabaseError` to a
   defect inside `catchTags`: never `Effect.orDie` after it, which turns
   every refusal into a 500.
+- Managed ads (`MeteredUsage`, `managedAds`): `SyncAccount` counts each
+  ad it reads `active` or `inReview` once a calendar month (UTC), by the
+  workspace that connected it (`ActiveAdMonths`, `ads.active_ad_months`,
+  insert-or-nothing with its claim in one transaction, purged with the
+  days of numbers and erased with the workspace). Once the meter refuses
+  (no payment method, the month's allowance used) the ads it could not
+  count are not recorded and their days are not saved; nothing the
+  network runs is touched. `Boosts.request` refuses a new boost then,
+  before anything is reserved (`pausedOf`).
 - `PostBoosts` (`application/post-boosts.ts`) answers how many boosts of a
   published target are not over (requested, active, paused, unconfirmed):
   publishing refuses to delete such a post from its platform

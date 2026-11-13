@@ -102,6 +102,12 @@
   `Idempotency-Key`, kept `replyKeyLifetime`, the contract's 24 hours)
   answers a request sent again with the reply it made, or
   `ReplyKeyReused` for another comment or text.
+- Each reply is one of the billing account's `outboundMessages`
+  (`MeteredUsage`): a paused meter refuses before anything is journalled
+  (`pausedOf`), and the reply journalled claims its message in the
+  journal's transaction, so a refusal undoes it; a reply that ends as never
+  sent (`SendReply.settle` with `failed`, or confirmed not found) gives it
+  back (`messageOf`, the reply's `createdAt`). Reading is never metered.
 - A reply's status changes only through `EngagementStore.advanceReply`,
   from the state it was read in: a job, the handover and a person never
   overwrite each other. `SendReply` commits `attempted_at` before the
