@@ -1,16 +1,13 @@
 import { Cause, Exit, Option, Schema } from "effect";
+import type { BillingAccount } from "peal-contract";
 import {
   AssistantQuotaExceeded,
-  freeAccountsOf,
   PaidPlanSchema,
-  planCatalogue,
   PlanLimitReached,
   PlanLimitSchema,
   PlanSchema,
-  rateCard,
   withDisplayVat,
 } from "peal-contract";
-import type { PaidPlan } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -119,45 +116,31 @@ export interface OfferPrice {
   readonly included: number;
 }
 
-/** A plan to order, with what it costs each month or each year. */
-export interface PlanOffer {
-  readonly month: OfferPrice;
-  readonly plan: PaidPlan;
-  readonly year: OfferPrice;
-}
-
-const priced = (cents: number): OfferPrice => ({
+/** `cents` excluding VAT, with the VAT pages show beside (France's). */
+export const priced = (cents: number): OfferPrice => ({
   excluded: cents,
   included: withDisplayVat(cents),
 });
 
-/** What a legacy plan cost, as Peal published it. */
-export const offerOf = (plan: Exclude<PaidPlan, "payAsYouGo">): PlanOffer => {
-  // Every legacy paid plan had a price; only the free plan had none.
-  const price = planCatalogue[plan].price ?? { month: 0, year: 0 };
-
-  return { month: priced(price.month), plan, year: priced(price.year) };
-};
-
-/**
- * What per-account pricing costs, from the rate card, never typed: the
- * accounts free, what each account past them costs a month (with the VAT
- * shown first and without), and the account from which they cost less.
- */
-export interface PerAccountOffer {
-  readonly free: number;
-  readonly lessFrom: number;
-  readonly next: OfferPrice;
+/** The workspace that bills an account, when it is another. */
+export interface BillingWorkspace {
+  /** Its name, for a member of it; null for anyone else. */
+  readonly name: string | null;
+  readonly workspaceId: string;
 }
 
-export const perAccountOffer = (): PerAccountOffer => {
-  const { bands } = rateCard.prices.usd.accounts;
-  const free = freeAccountsOf(rateCard);
-  const paid = bands.find(({ monthly }) => monthly > 0);
-
-  return {
-    free,
-    lessFrom: (paid?.upTo ?? free) + 1,
-    next: priced(paid?.monthly ?? 0),
-  };
-};
+/**
+ * The workspace that bills the account `workspaceId` is on, when it is
+ * another, from the account the standing tells every member: none where
+ * the workspace bills its account, or a server says nothing of it.
+ */
+export const billedElsewhereOf = (
+  account: BillingAccount | undefined,
+  workspaceId: string
+): Option.Option<BillingWorkspace> =>
+  account === undefined || account.billingWorkspaceId === workspaceId
+    ? Option.none()
+    : Option.some({
+        name: account.billingWorkspaceName,
+        workspaceId: account.billingWorkspaceId,
+      });

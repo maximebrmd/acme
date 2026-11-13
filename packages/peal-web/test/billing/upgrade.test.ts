@@ -7,7 +7,11 @@ import {
 } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
-import { limitIn, limitOfAuthError, offerOf } from "#billing/upgrade.ts";
+import {
+  billedElsewhereOf,
+  limitIn,
+  limitOfAuthError,
+} from "#billing/upgrade.ts";
 
 const billingUrl = "https://peal.example/app/w/billing";
 
@@ -119,12 +123,32 @@ describe(limitOfAuthError, () => {
   });
 });
 
-describe(offerOf, () => {
-  it("prices the plan with room, VAT included first", () => {
-    expect(offerOf("starter")).toStrictEqual({
-      month: { excluded: 750, included: 900 },
-      plan: "starter",
-      year: { excluded: 7500, included: 9000 },
-    });
+describe(billedElsewhereOf, () => {
+  const account = {
+    billingWorkspaceId: "home",
+    billingWorkspaceName: null,
+    id: "0190f3a0-0000-7000-8000-00000000b001",
+    otherWorkspaces: [],
+    partner: true,
+    payer: false,
+    transfer: null,
+    workspaces: 9,
+  };
+
+  it("names the workspace that bills the account, from the standing every member reads", () => {
+    expect(billedElsewhereOf(account, "customer")).toStrictEqual(
+      Option.some({ name: null, workspaceId: "home" })
+    );
+    expect(
+      billedElsewhereOf(
+        { ...account, billingWorkspaceName: "Home" },
+        "customer"
+      )
+    ).toStrictEqual(Option.some({ name: "Home", workspaceId: "home" }));
+  });
+
+  it("names none where the workspace bills its account, or the server says nothing", () => {
+    expect(billedElsewhereOf(account, "home")).toStrictEqual(Option.none());
+    expect(billedElsewhereOf(undefined, "home")).toStrictEqual(Option.none());
   });
 });

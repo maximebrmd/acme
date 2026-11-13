@@ -286,16 +286,17 @@ var (
 	billingFieldCurrency          = big.NewInt(1 << 3)
 	billingFieldEnabled           = big.NewInt(1 << 4)
 	billingFieldEstimate          = big.NewInt(1 << 5)
-	billingFieldPaymentMethod     = big.NewInt(1 << 6)
-	billingFieldPlan              = big.NewInt(1 << 7)
-	billingFieldPlans             = big.NewInt(1 << 8)
-	billingFieldRateCard          = big.NewInt(1 << 9)
-	billingFieldSubscription      = big.NewInt(1 << 10)
-	billingFieldTrial             = big.NewInt(1 << 11)
-	billingFieldUpcomingInvoice   = big.NewInt(1 << 12)
-	billingFieldUsage             = big.NewInt(1 << 13)
-	billingFieldVatRate           = big.NewInt(1 << 14)
-	billingFieldWithdrawableUntil = big.NewInt(1 << 15)
+	billingFieldPaymentFailed     = big.NewInt(1 << 6)
+	billingFieldPaymentMethod     = big.NewInt(1 << 7)
+	billingFieldPlan              = big.NewInt(1 << 8)
+	billingFieldPlans             = big.NewInt(1 << 9)
+	billingFieldRateCard          = big.NewInt(1 << 10)
+	billingFieldSubscription      = big.NewInt(1 << 11)
+	billingFieldTrial             = big.NewInt(1 << 12)
+	billingFieldUpcomingInvoice   = big.NewInt(1 << 13)
+	billingFieldUsage             = big.NewInt(1 << 14)
+	billingFieldVatRate           = big.NewInt(1 << 15)
+	billingFieldWithdrawableUntil = big.NewInt(1 << 16)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
@@ -316,6 +317,7 @@ type Billing struct {
 	Currency          string                `json:"currency" url:"currency"`
 	Enabled           bool                  `json:"enabled" url:"enabled"`
 	Estimate          *Money                `json:"estimate,omitempty" url:"estimate,omitempty"`
+	PaymentFailed     *bool                 `json:"paymentFailed,omitempty" url:"paymentFailed,omitempty"`
 	PaymentMethod     bool                  `json:"paymentMethod" url:"paymentMethod"`
 	Plan              *Plan                 `json:"plan,omitempty" url:"plan,omitempty"`
 	Plans             []*PlanOffer          `json:"plans" url:"plans"`
@@ -374,6 +376,13 @@ func (b *Billing) GetEstimate() *Money {
 		return nil
 	}
 	return b.Estimate
+}
+
+func (b *Billing) GetPaymentFailed() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.PaymentFailed
 }
 
 func (b *Billing) GetPaymentMethod() bool {
@@ -502,6 +511,13 @@ func (b *Billing) SetEnabled(enabled bool) {
 func (b *Billing) SetEstimate(estimate *Money) {
 	b.Estimate = estimate
 	b.require(billingFieldEstimate)
+}
+
+// SetPaymentFailed sets the PaymentFailed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetPaymentFailed(paymentFailed *bool) {
+	b.PaymentFailed = paymentFailed
+	b.require(billingFieldPaymentFailed)
 }
 
 // SetPaymentMethod sets the PaymentMethod field and marks it as non-optional;

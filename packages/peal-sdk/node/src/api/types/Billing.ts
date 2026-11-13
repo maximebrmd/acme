@@ -9,6 +9,7 @@ export interface Billing {
     currency: string;
     enabled: boolean;
     estimate: Peal.Money | null;
+    paymentFailed?: boolean | undefined;
     paymentMethod: boolean;
     plan: Peal.Plan | null;
     plans: Peal.PlanOffer[];

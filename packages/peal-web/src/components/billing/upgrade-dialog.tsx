@@ -4,7 +4,8 @@ import { useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { BillingInterval, Excess, PaidPlan } from "peal-contract";
+import { rateCard } from "peal-contract";
+import type { RateCard } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -16,11 +17,14 @@ import {
 import { useState, useTransition } from "react";
 
 import { billingOf } from "#billing/api.ts";
-import { managesBilling, membersOf } from "#billing/members.ts";
+import { managesBilling, membersOf, standingOf } from "#billing/members.ts";
+import { billedElsewhereOf } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
 import { useCheckout } from "#billing/use-checkout.ts";
 import type { BillingError } from "#components/billing/billing-view.tsx";
 import { UpgradeView } from "#components/billing/upgrade-view.tsx";
+import type { BilledElsewhere } from "#components/billing/upgrade-view.tsx";
+import { Link } from "#i18n/navigation.ts";
 
 /** The workspace a plan is ordered for, and what its member may do. */
 export interface UpgradeWorkspace {
@@ -40,14 +44,46 @@ export interface UpgradeDialogProps {
   readonly workspace: UpgradeWorkspace;
 }
 
-// Whether the workspace is in its trial, for a member who reads billing.
-const useTrialing = (workspaceId: string): boolean => {
-  const billing = useAtomValue(billingOf(workspaceId));
+interface WorkspaceBilling {
+  /**
+   * The rate card the server answered, for a member who reads billing; the
+   * app's own otherwise.
+   */
+  readonly card: RateCard;
+  readonly elsewhere: BilledElsewhere | null;
+  readonly trialing: boolean;
+}
 
-  return (
-    AsyncResult.isSuccess(billing) &&
-    billing.value.subscription?.status === "trialing"
-  );
+// The workspace that bills the account, from the standing every member
+// reads, linked for its members; and, for a member who reads billing,
+// whether the workspace is in a legacy trial and the server's rate card.
+const useBillingOf = (workspaceId: string): WorkspaceBilling => {
+  const standing = useAtomValue(standingOf(workspaceId));
+  const billing = useAtomValue(billingOf(workspaceId));
+  const read = AsyncResult.isSuccess(billing) ? billing.value : null;
+
+  const elsewhere = AsyncResult.isSuccess(standing)
+    ? billedElsewhereOf(standing.value.account, workspaceId).pipe(
+        Option.map(({ name, workspaceId: id }): BilledElsewhere => ({
+          link:
+            name === null ? null : (
+              <Link
+                href={`/app/${id}/billing`}
+                className="underline underline-offset-4"
+              >
+                {name}
+              </Link>
+            ),
+        })),
+        Option.getOrNull
+      )
+    : null;
+
+  return {
+    card: read?.rateCard ?? rateCard,
+    elsewhere,
+    trialing: read?.subscription?.status === "trialing",
+  };
 };
 
 const ManagedOffer = ({
@@ -57,43 +93,24 @@ const ManagedOffer = ({
   workspace,
 }: Omit<UpgradeDialogProps, "onClose">) => {
   const checkout = useCheckout(workspace.id);
-  const trialing = useTrialing(workspace.id);
-
-  const [billingInterval, setBillingInterval] =
-    useState<BillingInterval>("month");
-
+  const { card, elsewhere, trialing } = useBillingOf(workspace.id);
   const [consented, setConsented] = useState(false);
   const [error, setError] = useState<BillingError | null>(null);
-  const [tooSmall, setTooSmall] = useState<readonly Excess[] | null>(null);
   const [ordering, startOrder] = useTransition();
 
   // Back to this page after the checkout, paid or not: what the person
   // was doing is still here.
-  const order = (plan: PaidPlan) => {
+  const order = () => {
     const here = `${globalThis.location.pathname}${globalThis.location.search}`;
 
     setError(null);
-    setTooSmall(null);
 
     startOrder(async () => {
-      const failed = await checkout({
-        // Per-account pricing is monthly only.
-        interval: plan === "payAsYouGo" ? "month" : billingInterval,
-        plan,
-        returnDone: here,
-        returnTo: here,
-        trial: false,
-      });
+      const failed = await checkout({ returnDone: here, returnTo: here });
 
       setError(
         failed.pipe(
           Option.map(({ error: reason_ }) => reason_),
-          Option.getOrNull
-        )
-      );
-      setTooSmall(
-        failed.pipe(
-          Option.map(({ tooSmall: over }) => over),
           Option.getOrNull
         )
       );
@@ -103,19 +120,18 @@ const ManagedOffer = ({
   return (
     <UpgradeView
       canManage
+      card={card}
       consented={consented}
       contactUrl={contactUrl}
+      elsewhere={elsewhere}
       error={error}
-      interval={billingInterval}
       managers={[]}
       ordering={ordering}
       reason={reason}
       termsUrl={termsUrl}
-      tooSmall={tooSmall}
       trialing={trialing}
       workspaceName={workspace.name}
       onConsent={setConsented}
-      onInterval={setBillingInterval}
       onOrder={order}
     />
   );
@@ -133,6 +149,7 @@ const AskManagers = ({
   workspace,
 }: Omit<UpgradeDialogProps, "onClose">) => {
   const members = useAtomValue(membersOf(workspace.id));
+  const { card, elsewhere } = useBillingOf(workspace.id);
 
   const managers = AsyncResult.isSuccess(members)
     ? members.value
@@ -143,19 +160,18 @@ const AskManagers = ({
   return (
     <UpgradeView
       canManage={false}
+      card={card}
       consented={false}
       contactUrl={contactUrl}
+      elsewhere={elsewhere}
       error={null}
-      interval="month"
       managers={managers}
       ordering={false}
       reason={reason}
       termsUrl={termsUrl}
-      tooSmall={null}
       trialing={false}
       workspaceName={workspace.name}
       onConsent={nothing}
-      onInterval={nothing}
       onOrder={nothing}
     />
   );
@@ -173,10 +189,10 @@ export const UpgradeOffer = (offer: Omit<UpgradeDialogProps, "onClose">) =>
   );
 
 /**
- * The dialog shown wherever a plan's limit refuses something: the upgrade
- * offer for the workspace, which a member who manages billing orders from
- * here, through the order and Stripe's checkout, coming back to the page
- * they were on. Rendered while there is a reason to show.
+ * The dialog shown wherever a plan's limit refuses something: the offer of
+ * a payment method for the workspace's billing account, which a member who
+ * manages billing orders from here, through the order and Stripe's
+ * checkout, coming back to the page they were on. Rendered while there is a reason to show.
  */
 export const UpgradeDialog = ({ onClose, ...offer }: UpgradeDialogProps) => {
   const t = useTranslations("Upgrade");
@@ -192,7 +208,14 @@ export const UpgradeDialog = ({ onClose, ...offer }: UpgradeDialogProps) => {
     >
       <DialogContent className="sm:max-w-lg" closeLabel={t("closeLabel")}>
         <DialogHeader>
-          <DialogTitle>{t("title", { limit: offer.reason.limit })}</DialogTitle>
+          <DialogTitle>
+            {/* Clear of the close button, at the top right. */}
+            <span className="block pe-8">
+              {offer.reason.planWithRoom === "payAsYouGo"
+                ? t("titlePerAccount", { limit: offer.reason.limit })
+                : t("title", { limit: offer.reason.limit })}
+            </span>
+          </DialogTitle>
         </DialogHeader>
         <UpgradeOffer {...offer} />
         <DialogFooter>
