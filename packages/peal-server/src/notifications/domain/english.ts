@@ -475,8 +475,8 @@ export const english: EmailCatalog = {
       },
       failed: { one: "{count} failed", other: "{count} failed" },
       scheduled: {
-        one: "{count} scheduled next week",
-        other: "{count} scheduled next week",
+        one: "{count} scheduled this week",
+        other: "{count} scheduled this week",
       },
       unconfirmed: {
         one: "{count} to check on its platform",

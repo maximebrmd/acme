@@ -103,7 +103,7 @@ describe(renderWeeklyDigest, () => {
     expect(
       [
         "What went out from November 9, 2026 to November 15, 2026, and what is planned until November 22, 2026",
-        "7 posts went out · 1 failed · 6 scheduled next week · 1 waiting for approval",
+        "7 posts went out · 1 failed · 6 scheduled this week · 1 waiting for approval",
         "- November 10, 2026 at 9:30 AM UTC: Autumn sale",
         "- November 11, 2026 at 9:30 AM UTC: No text",
         "- and 5 more",
@@ -148,7 +148,7 @@ describe(renderWeeklyDigest, () => {
       "Votre semaine sur Peal : du 9 novembre 2026 au 15 novembre 2026"
     );
     expect(text).toContain(
-      "1 publication partie · 2 à vérifier sur leurs plateformes · 6 programmées la semaine prochaine · 1 en attente d’approbation"
+      "1 publication partie · 2 à vérifier sur leurs plateformes · 6 programmées cette semaine · 1 en attente d’approbation"
     );
     expect(text).toContain("Impressions : 56 789.");
     expect(text).toContain(

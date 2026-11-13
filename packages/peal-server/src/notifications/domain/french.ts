@@ -488,8 +488,8 @@ export const french: EmailCatalog = {
       },
       failed: { one: "{count} en échec", other: "{count} en échec" },
       scheduled: {
-        one: "{count} programmée la semaine prochaine",
-        other: "{count} programmées la semaine prochaine",
+        one: "{count} programmée cette semaine",
+        other: "{count} programmées cette semaine",
       },
       unconfirmed: {
         one: "{count} à vérifier sur sa plateforme",
