@@ -1,0 +1,199 @@
+# Dependabot keeps every dependency on its exact latest release, as AGENTS.md
+# asks: once a week, one pull request per group, a few open at a time.
+#
+# A dependency that matches several groups goes to the first one listed, so
+# the narrow groups come before the broad ones. Groups apply to version
+# updates only: a security update always gets a pull request of its own.
+#
+# Left to hand updates:
+# - not asked of Dependabot: the SDKs' generated manifests under
+#   packages/peal-sdk, which keep the generator's ranges
+#   (packages/peal-sdk/AGENTS.md), and the dependencies ignored below;
+# - not read by Dependabot: the generator and toolchain images
+#   packages/peal-sdk/scripts/languages.ts pins; CI's service images and
+#   Betterleaks' version and checksum (.github/workflows/ci.yml); each
+#   Dockerfile's `# syntax=` image and the server's `COPY --from` ffmpeg
+#   image (it reads FROM lines only); pgBackRest's apt pin
+#   (postgres.Dockerfile); the Ansible collections (requirements.yml) and
+#   the images the uptime role templates;
+# - majors of Postgres and Node: a Postgres major needs its data upgraded
+#   (pg_upgrade, by a runbook), and Node stays on its LTS line.
+version: 2
+
+updates:
+  # The Bun workspace: the root package.json and every workspace it lists,
+  # the Pulumi project included, with bun.lock. Bun takes no
+  # versioning-strategy; an exact version stays exact when it moves.
+  - package-ecosystem: bun
+    directory: /
+    # A guard: no workspace is under packages/peal-sdk today.
+    exclude-paths:
+      - packages/peal-sdk/**
+    schedule:
+      interval: weekly
+      day: monday
+    # Dependabot's default, stated: a release waits three days, in case it
+    # is pulled.
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # Fern's CLI writes the committed SDKs with the generators
+      # packages/peal-sdk/scripts/languages.ts pins: upgrade it with them,
+      # regenerating the SDKs and reading the diff.
+      - dependency-name: fern-api
+      # Drizzle's 1.0 is a prerelease, and Drizzle publishes branch builds
+      # (1.0.0-rc.N-<hash>) that sort above the last rc: take its releases
+      # by hand until 1.0 is npm's latest.
+      - dependency-name: drizzle-orm
+      - dependency-name: drizzle-kit
+    groups:
+      # The language service patches TypeScript and ships a build for each
+      # version it supports: the two move together, or `bun install` fails.
+      typescript:
+        patterns:
+          - typescript
+          - "@effect/tsgo"
+      effect:
+        patterns:
+          - effect
+          - "@effect/*"
+      better-auth:
+        patterns:
+          - better-auth
+          - "@better-auth/*"
+          - better-call
+          - "@better-fetch/*"
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      react:
+        patterns:
+          - react
+          - react-dom
+          - react-is
+          - scheduler
+          - "@types/react"
+          - "@types/react-dom"
+      astro:
+        patterns:
+          - astro
+          - "@astrojs/*"
+      tailwind:
+        patterns:
+          - tailwindcss
+          - "@tailwindcss/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      pulumi:
+        patterns:
+          - "@pulumi/*"
+      e2e:
+        patterns:
+          - e2e
+          - "@e2e-dev/*"
+      lint-tooling:
+        patterns:
+          - ultracite
+          - oxlint
+          - oxlint-tsgolint
+          - oxfmt
+          - "@shadcn/lint"
+      dev-tooling:
+        patterns:
+          - nx
+          - vitest
+          - "@types/*"
+
+  # The Ansible toolchain and its tests, with uv.lock. The project pins each
+  # package with ==, and increase keeps it that way.
+  - package-ecosystem: uv
+    directory: /packages/peal-infra/ansible
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      ansible:
+        patterns:
+          - ansible-core
+          - ansible-lint
+      test-tooling:
+        patterns:
+          - "*"
+
+  # The workflows' actions, pinned by commit with the release in a comment;
+  # Dependabot moves both.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # The images the Dockerfiles build on, pinned by tag and digest. Bun's and
+  # Node's follow .bun-version and CI's Node: compose.test.ts fails until
+  # those move with them.
+  - package-ecosystem: docker
+    directory: /packages/peal-docker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+    # Minor and patch releases go together; a major comes alone, to be read.
+    groups:
+      runtimes:
+        patterns:
+          - oven/bun
+          - node
+        update-types: [minor, patch]
+      base-images:
+        patterns:
+          - "*"
+        update-types: [minor, patch]
+
+  # The compose files' images: the development stack's by tag, production's
+  # and the self-host overlay's by tag and digest, at the version development
+  # runs. An image moves in every compose file in one pull request, as
+  # compose.test.ts checks.
+  - package-ecosystem: docker-compose
+    directory: /packages/peal-docker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+    # Minor and patch releases go together; a major comes alone, to be read,
+    # and moves an image in every compose file at once.
+    groups:
+      compose-images:
+        patterns:
+          - "*"
+        update-types: [minor, patch]

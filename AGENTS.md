@@ -137,6 +137,8 @@ several:
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
   dependency changes, `packages/peal-infra/ansible/uv.lock` with Python ones. The
   SDKs' manifests are the exception (see [SDKs](packages/peal-sdk/AGENTS.md)).
+  Dependabot (`.github/dependabot.yml`) proposes the upgrades weekly, grouped;
+  a new package joins its group there.
 - A change to the contract regenerates the SDKs in the same change:
   `bun run sdk:generate` (Docker), then `bun run sdk:build`. CI's `sdks` job
   fails while they are stale.
@@ -155,8 +157,10 @@ several:
 
 ## Read the sources, not memory
 
-Effect 4, Drizzle 1.0, Better Auth, the AT Protocol OAuth client, Tiptap, Blume
-and Astro move faster than any training data. `bun run references` clones each
+Effect 4 and its language service, Drizzle 1.0, Better Auth, the AT Protocol
+OAuth client, Stripe's SDK, Base UI, Tiptap, Blume, Astro, the e2e runner and
+Ultracite's presets move faster than any training data. `bun run references`
+(`scripts/references.ts`, which skips a package not installed) clones each
 one's source, at the version this workspace installs, into
 `.local/references/<name>` (ignored by Git, Nx and the linters). Read the code,
 tests and docs there before using an API, and rerun the command after an
