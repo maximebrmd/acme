@@ -5,6 +5,11 @@ import type { MailDeliveryFailed } from "./mail-delivery-failed.ts";
 
 /** One email to one address, rendered, as a mail transport takes it. */
 export interface EmailMessage {
+  /**
+   * Headers of its own, such as the weekly digest's `List-Unsubscribe`;
+   * none for most.
+   */
+  readonly headers?: Readonly<Record<string, string>>;
   readonly html: string;
   /**
    * The same for every attempt at sending one email, so a transport that

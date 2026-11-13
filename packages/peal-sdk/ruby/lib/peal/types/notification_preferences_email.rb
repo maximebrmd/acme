@@ -22,6 +22,8 @@ module Peal
       field :recycling_ended, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "recyclingEnded"
 
       field :webhook_failing, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "webhookFailing"
+
+      field :weekly_digest, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "weeklyDigest"
     end
   end
 end

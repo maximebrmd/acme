@@ -13,15 +13,23 @@ export class TestMailer extends Context.Service<
   {
     readonly sent: Effect.Effect<readonly EmailMessage[]>;
     readonly setMode: (mode: MailerMode) => Effect.Effect<void>;
+    /** Refuses these addresses for now, whatever the mode. */
+    readonly refuseForNowTo: (
+      addresses: readonly string[]
+    ) => Effect.Effect<void>;
   }
 >()("peal-server/test/notifications/TestMailer") {
   static readonly layer = Layer.effectContext(
     Effect.gen(function* TestMailerLive() {
       const sent = yield* Ref.make<readonly EmailMessage[]>([]);
       const mode = yield* Ref.make<MailerMode>("accept");
+      const refusedForNow = yield* Ref.make<ReadonlySet<string>>(new Set());
 
       const send = (message: EmailMessage) =>
-        Ref.get(mode).pipe(
+        Effect.all([Ref.get(mode), Ref.get(refusedForNow)]).pipe(
+          Effect.map(([current, refused]): MailerMode =>
+            refused.has(message.to) ? "refuseForNow" : current
+          ),
           Effect.flatMap((current) =>
             current === "accept"
               ? Ref.update(sent, (all) => [...all, message])
@@ -39,6 +47,8 @@ export class TestMailer extends Context.Service<
           TestMailer,
           TestMailer.of({
             sent: Ref.get(sent),
+            refuseForNowTo: (addresses) =>
+              Ref.set(refusedForNow, new Set(addresses)),
             setMode: (next) => Ref.set(mode, next),
           })
         )

@@ -46,12 +46,27 @@ const everyCron = Effect.promise(async () => {
   return read.flatMap(cronsIn);
 });
 
-// The minutes of a day a cron runs on, from 0 to 1439.
+// The minutes of a day a cron runs on, from 0 to 1439, on any day of a
+// week (from Monday 9 November 2026), so a weekly cron is read too.
 const minutesOf = ({ expression }: Scheduled): readonly number[] => {
   const cron = Cron.parseUnsafe(expression, "UTC");
 
   return Array.from({ length: 24 * 60 }, (_, minute) => minute).filter(
-    (minute) => Cron.match(cron, new Date(Date.UTC(2026, 10, 10, 0, minute)))
+    (minute) =>
+      Array.from({ length: 7 }, (_, day) => day).some((day) =>
+        Cron.match(cron, new Date(Date.UTC(2026, 10, 9 + day, 0, minute)))
+      )
+  );
+};
+
+// The days of that week a cron runs on, from 0 (Monday) to 6.
+const daysOf = ({ expression }: Scheduled): readonly number[] => {
+  const cron = Cron.parseUnsafe(expression, "UTC");
+
+  return Array.from({ length: 7 }, (_, day) => day).filter((day) =>
+    Array.from({ length: 24 * 60 }, (_, minute) => minute).some((minute) =>
+      Cron.match(cron, new Date(Date.UTC(2026, 10, 9 + day, 0, minute)))
+    )
   );
 };
 
@@ -93,6 +108,23 @@ describe("the crons' schedules", () => {
           cron === undefined ? [] : minutesOf(cron).slice(0, 6),
           [4, 14, 24, 34, 44, 54]
         );
+      })
+  );
+
+  it.effect(
+    "send the weekly digest on Mondays only, at 19 past each hour",
+    () =>
+      Effect.gen(function* weekly() {
+        const cron = (yield* everyCron).find(
+          ({ name }) => name === "notifications.weekly-digest"
+        );
+
+        assert.isDefined(cron);
+        assert.deepStrictEqual(
+          minutesOf(cron),
+          Array.from({ length: 18 }, (_, hour) => (hour + 6) * 60 + 19)
+        );
+        assert.deepStrictEqual(daysOf(cron), [0]);
       })
   );
 

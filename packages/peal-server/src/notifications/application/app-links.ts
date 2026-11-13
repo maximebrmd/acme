@@ -11,5 +11,7 @@ export class AppLinks extends Context.Service<
      * the reader's language.
      */
     readonly url: (path: string, locale: Locale) => string;
+    /** The server's route at `path` (such as `/api/…`), at the same origin. */
+    readonly api: (path: string) => string;
   }
 >()("peal-server/notifications/application/AppLinks") {}

@@ -756,6 +756,12 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   workspace (a lateral read on `posts_workspace_scheduled_at` from the
   cursor, a page at most each), the text and channels read for the page's
   rows alone.
+  `PostAttention.week` gives one workspace's week and the week after it
+  for the weekly digest, by each post's time: three reads of
+  `posts_workspace_scheduled_at` over the fortnight (the counts, then the
+  first `listed` that went out and the first planned), whatever else the
+  workspace keeps (`weekStatements`, whose plans
+  `post-attention.test.ts` reads among years of posts).
 - `PostSearch` (`posts.search`, `list_posts`, `peal posts list`) pages by
   keyset on `(scheduled_at, id)` or on `id`, which orders by creation
   (UUIDv7), never by offset; a cursor is opaque (`PostPositionSchema`) and

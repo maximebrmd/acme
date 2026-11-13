@@ -16,6 +16,7 @@ const preferences = {
     postUnconfirmed: true,
     recyclingEnded: true,
     webhookFailing: true,
+    weeklyDigest: false,
   },
   everyPost: false,
 };
@@ -92,11 +93,29 @@ describe(PreferencesFields, () => {
         ],
         ["A post went out", { checked: false, labelled: true }],
         [
+          "A week starts: what went out last week and what is planned, each Monday",
+          { checked: false, labelled: true },
+        ],
+        [
           "Every post of my workspaces, not only the ones I wrote",
           { checked: false, labelled: true },
         ],
       ])
     );
+  });
+
+  it("says what the weekly digest holds, and when it comes", async () => {
+    const english = await render("en");
+    const french = await render("fr");
+
+    expect(english).toContain(
+      "Counts and the start of each post’s text, for the workspaces whose posts you may read, with days in UTC."
+    );
+    expect(
+      choices(french).get(
+        "Une semaine commence : ce qui est parti la semaine passée et ce qui est prévu, chaque lundi"
+      )
+    ).toStrictEqual({ checked: false, labelled: true });
   });
 
   it("asks apart whether to hear about other members' posts", async () => {

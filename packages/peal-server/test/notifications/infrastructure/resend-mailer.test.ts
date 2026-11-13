@@ -50,6 +50,7 @@ const resendAnswering = (status: number) => {
 const BodySchema = Schema.fromJsonString(
   Schema.Struct({
     from: Schema.String,
+    headers: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
     html: Schema.String,
     subject: Schema.String,
     text: Schema.String,
@@ -84,6 +85,7 @@ describe("the Resend mailer", () => {
 
       assert.deepStrictEqual(body, {
         from: "Peal <noreply@example.test>",
+        headers: {},
         html: message.html,
         subject: message.subject,
         text: message.text,
@@ -91,6 +93,28 @@ describe("the Resend mailer", () => {
       });
     }).pipe(Effect.provide(layer));
   });
+
+  it.effect(
+    "sends the headers a message names, such as an unsubscribe link",
+    () => {
+      const { layer, requests } = resendAnswering(200);
+
+      const headers = {
+        "List-Unsubscribe": "<https://app.example.test/api/u/x>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      };
+
+      return Effect.gen(function* withHeaders() {
+        yield* Mailer.use((mailer) => mailer.send({ ...message, headers }));
+
+        const body = yield* Schema.decodeUnknownEffect(BodySchema)(
+          yield* Effect.promise(async () => (await requests[0]?.text()) ?? "")
+        );
+
+        assert.deepStrictEqual(body.headers, headers);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 
   it.effect.each([
     { retryable: true, status: 429 },

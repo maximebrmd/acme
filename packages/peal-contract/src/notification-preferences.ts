@@ -27,6 +27,10 @@ export const NotificationPreferencesSchema = Schema.Struct({
     // Deliveries to a webhook endpoint that fail for good, for those who
     // manage webhooks: once a day per endpoint.
     webhookFailing: Schema.Boolean,
+    // Each Monday, an email of the last week's posts and the next week's,
+    // in each workspace whose posts the user may read: counts and the
+    // start of each post's text, written in UTC. Off until turned on.
+    weeklyDigest: Schema.Boolean,
   }),
   // How every post went, where the user may schedule posts, rather than
   // only the posts they wrote.
@@ -48,6 +52,7 @@ export const NotificationPreferencesChangeSchema = Schema.Struct({
       postUnconfirmed: Schema.optionalKey(Schema.Boolean),
       recyclingEnded: Schema.optionalKey(Schema.Boolean),
       webhookFailing: Schema.optionalKey(Schema.Boolean),
+      weeklyDigest: Schema.optionalKey(Schema.Boolean),
     })
   ),
   everyPost: Schema.optionalKey(Schema.Boolean),
@@ -67,7 +72,7 @@ export class NotificationPreferencesApi extends HttpApiGroup.make(
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed; and they hear only about the posts they wrote.",
+          "Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed, and no weekly digest; and they hear only about the posts they wrote.",
         summary: "Get notification preferences",
       })
     ),
