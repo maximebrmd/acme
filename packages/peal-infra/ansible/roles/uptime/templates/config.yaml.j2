@@ -23,6 +23,11 @@ ui:
   dashboard-subheading: Peal's public endpoints, checked from outside
   default-sort-by: group
 
+{% set own_chats = uptime_environments | selectattr('telegram', 'defined') | selectattr('telegram') | list %}
+# Alerts go to TELEGRAM_CHAT_ID, with TELEGRAM_BOT_TOKEN, but for an
+# environment with a chat of its own (telegram: true in
+# uptime_environments), whose checks, a group each, go to its chat, with its
+# bot: <NAME>_TELEGRAM_BOT_TOKEN and <NAME>_TELEGRAM_CHAT_ID.
 alerting:
   telegram:
     token: "${TELEGRAM_BOT_TOKEN}"
@@ -31,6 +36,14 @@ alerting:
       failure-threshold: {{ uptime_failure_threshold }}
       success-threshold: {{ uptime_success_threshold }}
       send-on-resolved: true
+{% if own_chats %}
+    overrides:
+{% for environment in own_chats %}
+      - group: {{ text(environment.name) }}
+        token: {{ secret(environment, 'TELEGRAM_BOT_TOKEN') }}
+        id: {{ secret(environment, 'TELEGRAM_CHAT_ID') }}
+{% endfor %}
+{% endif %}
 
 endpoints:
 {% for environment in uptime_environments %}
@@ -70,7 +83,7 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
       - type: telegram
-        failure-threshold: 1
+        failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of ' ~ host ~ ' expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
   - name: {{ text('dns of ' ~ host) }}
@@ -85,7 +98,7 @@ endpoints:
       - "[BODY] == pat(*.*.*.*)"
     alerts:
       - type: telegram
-        failure-threshold: 2
+        failure-threshold: {{ uptime_dns_failure_threshold }}
         description: {{ text(host ~ ' does not resolve through ' ~ uptime_dns_resolver ~ '.') }}
 {% endfor %}
 {% endfor %}
@@ -102,7 +115,7 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
       - type: telegram
-        failure-threshold: 1
+        failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of ' ~ uptime_hostname ~ ', which Caddy renews on this server, expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
 
@@ -119,7 +132,7 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
       - type: telegram
-        failure-threshold: 1
+        failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of the status page, ' ~ uptime_status_hostname ~ ', which Caddy renews on this server, expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
 {% endif %}

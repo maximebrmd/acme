@@ -6,8 +6,30 @@
 # and HEAD gets a 405 here.
 header -Server
 
+# Peal's mark and fonts, which the page's stylesheet names (status.css),
+# from {{ uptime_brand_root }}; the icons browsers ask for at fixed paths
+# are Peal's too, not Gatus's.
+@brand {
+	method GET HEAD
+	path /peal/* /apple-touch-icon.png /favicon.ico /favicon-16x16.png /favicon-32x32.png
+}
+handle @brand {
+	rewrite /apple-touch-icon.png /peal/apple-touch-icon.png
+	rewrite /favicon-16x16.png /peal/apple-touch-icon.png
+	rewrite /favicon-32x32.png /peal/apple-touch-icon.png
+	rewrite /favicon.ico /peal/mark.svg
+	uri strip_prefix /peal
+	root * {{ uptime_brand_root }}
+	header Cache-Control "public, max-age=86400"
+	file_server
+}
+
+# Peal is light only: Gatus picks its dark theme from the visitor's
+# system unless its theme cookie says light, which every answer sets. The
+# cookie holds that word alone, and nothing that tells visitors apart.
 @read method GET HEAD
 handle @read {
+	header Set-Cookie "theme=light; Path=/; Max-Age=31536000; SameSite=Strict; Secure"
 	reverse_proxy {{ uptime_status_upstream }}
 }
 

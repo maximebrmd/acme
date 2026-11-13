@@ -133,7 +133,7 @@ def test_the_status_page_shows_production_s_customer_facing_checks_alone(rendere
 
     assert public == ["production"]
     assert {_key(endpoint["group"], endpoint["name"]) for endpoint in config["endpoints"]} == {
-        _key("production", check["name"]) for check in DEFAULTS["uptime_checks"]
+        _key("Peal production", check["title"]) for check in DEFAULTS["uptime_checks"]
     }
     text = json.dumps(config)
     for host in ENVIRONMENTS["sandbox"]["hostnames"].values():
@@ -150,6 +150,45 @@ def test_the_status_page_shows_production_s_customer_facing_checks_alone(rendere
             "hide-port": True,
             "hide-url": True,
         }
+
+
+def test_the_status_page_wears_peal_s_design(rendered: Path) -> None:
+    """DESIGN.md: the mark, Geist, the tokens, light only."""
+    ui = _status_config(rendered)["ui"]
+    design = (INFRA.parent.parent.parent / "DESIGN.md").read_text()
+
+    assert ui["logo"] == "/peal/mark.svg"
+    assert ui["favicon"]["default"] == "/peal/mark.svg"
+    assert ui["dark-mode"] is False
+    assert ui["link"] == "https://peal.social/"
+    for value in ("#415EEE", "#FAFAF9", "#0C0A09", "#716B66", "#16A34A", "#D92D20"):
+        assert value in design
+        assert value.lower() in ui["custom-css"].lower(), value
+    assert '"Geist"' in ui["custom-css"]
+
+
+def _brand_files() -> list[dict[str, str]]:
+    """The status page's brand folder's files, and where the role takes
+    each from."""
+    names: dict[str, Any] = {"role_path": str(INFRA / "roles" / "uptime")}
+    names["uptime_packages"] = ansible_render(VARS["uptime_packages"], **names)
+    names["uptime_geist"] = ansible_render(VARS["uptime_geist"], **names)
+    return [{"src": ansible_render(item["src"], **names), "dest": item["dest"]} for item in VARS["uptime_brand_files"]]
+
+
+def test_the_status_page_s_brand_comes_from_the_repository() -> None:
+    """The web app's mark and icon, and peal-ui's Geist with its licence."""
+    files = _brand_files()
+    packages = INFRA.parent.parent
+
+    assert {item["dest"] for item in files} == {
+        "mark.svg", "apple-touch-icon.png", "geist.woff2", "geist-mono.woff2", "geist-license.txt",
+    }
+    for item in files:
+        assert Path(item["src"]).is_file(), item["src"]
+    sources = {item["dest"]: Path(item["src"]).resolve() for item in files}
+    assert sources["mark.svg"] == (packages / "peal-web" / "src" / "app" / "icon.svg").resolve()
+    assert sources["apple-touch-icon.png"] == (packages / "peal-web" / "src" / "app" / "apple-icon.png").resolve()
 
 
 def test_the_status_page_s_gatus_is_the_one_caddy_serves(rendered: Path) -> None:
@@ -204,6 +243,39 @@ def test_the_configuration_holds_no_secret(rendered: Path) -> None:
     assert telegram["id"] == "${TELEGRAM_CHAT_ID}"
     assert headers
     assert all(re.fullmatch(r"\$\{[A-Z0-9_]+\}", value) for value in [*headers, *tokens])
+
+
+def test_the_sandbox_alerts_its_own_chat(rendered: Path) -> None:
+    """The sandbox's alerts go to the sandbox's chat, with its bot;
+    production's and the uptime server's own to the default chat."""
+    telegram = _config(rendered)["alerting"]["telegram"]
+
+    assert telegram["overrides"] == [
+        {"group": "sandbox", "token": "${SANDBOX_TELEGRAM_BOT_TOKEN}", "id": "${SANDBOX_TELEGRAM_CHAT_ID}"}
+    ]
+    assert {"SANDBOX_TELEGRAM_BOT_TOKEN", "SANDBOX_TELEGRAM_CHAT_ID"} <= _provided()
+
+
+def _minutes(duration: str) -> int:
+    return int(duration[:-1]) * {"m": 1, "h": 60}[duration[-1]]
+
+
+def test_alerts_wait_for_an_incident(rendered: Path) -> None:
+    """A blip is not an incident: a page or the API alerts after 5 minutes
+    of failures, a host name after 15, a certificate after 3 hours."""
+    telegram = _config(rendered)["alerting"]["telegram"]
+    default = telegram["default-alert"]
+
+    assert default["send-on-resolved"] is True
+    for endpoint in _config(rendered)["endpoints"]:
+        (alert,) = endpoint["alerts"]
+        waited = alert.get("failure-threshold", default["failure-threshold"]) * _minutes(endpoint["interval"])
+        if "dns" in endpoint:
+            assert waited >= 15, endpoint["name"]
+        elif endpoint["name"].startswith("certificate of "):
+            assert waited >= 180, endpoint["name"]
+        else:
+            assert waited >= 5, endpoint["name"]
 
 
 def test_the_server_provides_every_secret_the_configuration_names(rendered: Path) -> None:
@@ -386,6 +458,19 @@ def _request(stack: Stack, url: str, *options: str) -> tuple[int, str]:
     return (int(statuses[-1]) if statuses else 0), answer.stdout
 
 
+def _headers(stack: Stack, url: str) -> dict[str, str]:
+    """The last answer's status and headers, its body left out: a font or
+    an image is no text."""
+    answer = _run(["docker", "run", "--rm", "--network", stack.network, BUSYBOX, "wget", "-S", "-O", "/dev/null", url])
+    lines = [line.strip() for line in answer.stderr.splitlines()]
+    starts = [index for index, line in enumerate(lines) if line.startswith("HTTP/1.")]
+    if not starts:
+        return {"status": "0"}
+    last = lines[starts[-1]:]
+    fields = dict(line.split(": ", 1) for line in last[1:] if ": " in line)
+    return {"status": last[0].split()[1], **fields}
+
+
 @pytest.fixture(scope="module")
 def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Stack]:
     compose = _compose(rendered)["services"]
@@ -407,7 +492,10 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
     shutil.copytree(rendered / "peal-uptime" / "gatus", config, dirs_exist_ok=True)
     public = tmp_path_factory.mktemp("status")
     shutil.copytree(rendered / "peal-uptime" / "status", public, dirs_exist_ok=True)
-    for path in [config, *config.rglob("*"), public, *public.rglob("*"), edge, *edge.rglob("*")]:
+    brand = tmp_path_factory.mktemp("brand")
+    for item in _brand_files():
+        shutil.copy(item["src"], brand / item["dest"])
+    for path in [config, *config.rglob("*"), public, *public.rglob("*"), edge, *edge.rglob("*"), brand, *brand.rglob("*")]:
         path.chmod(0o755 if path.is_dir() else 0o644)
     confined = ["--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true"]
     _run(["docker", "network", "create", "--internal", stack.network]).check_returncode()
@@ -428,7 +516,9 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
         _run(["docker", "run", "--detach", "--name", stack.caddy, "--network", stack.network,
               "--network-alias", "caddy", *confined, "--cap-add", "NET_BIND_SERVICE",
               "--tmpfs", "/tmp", "--tmpfs", "/data", "--tmpfs", "/config",
-              "--volume", f"{edge}:/etc/caddy:ro", compose["caddy"]["image"]]).check_returncode()
+              "--volume", f"{edge}:/etc/caddy:ro",
+              "--volume", f"{brand}:{DEFAULTS['uptime_brand_root']}:ro",
+              compose["caddy"]["image"]]).check_returncode()
         for _ in range(60):
             if (
                 _request(stack, "http://gatus:8080/health")[0] == 200
@@ -514,7 +604,7 @@ def test_caddy_takes_heartbeats_by_post_only(stack: Stack) -> None:
 @needs_docker
 @pytest.mark.parametrize(
     "path",
-    ["/", "/api/v1/endpoints/statuses", "/api/v1/endpoints/production_api/statuses"],
+    ["/", "/api/v1/endpoints/statuses", "/api/v1/endpoints/peal-production_api/statuses"],
 )
 def test_the_status_page_shows_the_dashboard(stack: Stack, path: str) -> None:
     assert _request(stack, f"{STATUS_PAGE}{path}")[0] == 200
@@ -534,6 +624,39 @@ def test_the_status_page_lists_production_s_checks_alone(stack: Stack, rendered:
 
     assert listed == expected
     assert "sandbox" not in body
+
+
+@needs_docker
+@pytest.mark.parametrize(
+    ("path", "source"),
+    [
+        ("/peal/mark.svg", "icon.svg"),
+        ("/favicon.ico", "icon.svg"),
+        ("/apple-touch-icon.png", "apple-icon.png"),
+        ("/favicon-32x32.png", "apple-icon.png"),
+    ],
+)
+def test_the_status_page_serves_peal_s_icons(stack: Stack, path: str, source: str) -> None:
+    """Peal's, not Gatus's, at the paths browsers ask for."""
+    icon = INFRA.parent.parent / "peal-web" / "src" / "app" / source
+
+    assert _headers(stack, f"{STATUS_PAGE}{path}")["Content-Length"] == str(icon.stat().st_size)
+
+
+@needs_docker
+@pytest.mark.parametrize("name", ["geist.woff2", "geist-mono.woff2", "geist-license.txt"])
+def test_the_status_page_serves_its_fonts(stack: Stack, name: str) -> None:
+    assert _headers(stack, f"{STATUS_PAGE}/peal/{name}")["status"] == "200"
+
+
+@needs_docker
+def test_the_status_page_is_light_only(stack: Stack) -> None:
+    """Gatus's theme cookie, set to light on the page itself, so its script
+    reads it before it draws; and Peal's tokens over Gatus's."""
+    _, css = _request(stack, f"{STATUS_PAGE}/css/custom.css")
+
+    assert _headers(stack, f"{STATUS_PAGE}/")["Set-Cookie"].startswith("theme=light; Path=/;")
+    assert "--background: 60 9.1% 97.8%" in css
 
 
 @needs_docker
