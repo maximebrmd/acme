@@ -1,0 +1,218 @@
+---
+title: Queues, repeats and feeds
+description: "Fill a channel's time slots from a queue, repeat a post, and post what a feed publishes."
+sidebar:
+  icon: list-ordered
+---
+
+Let Peal pick a post's time from a weekly timetable, make new posts from one at an interval, or turn a blog's new items into posts.
+
+## Queues [#queues]
+
+A queue is a weekly timetable of slots in a time zone, such as every weekday at 09:30 and 17:00 in Europe/Paris, for some channels and at most one [channel set](/guides/posts/organise#sets). Instead of choosing a time, add a post to a queue: it takes the queue's next free slot.
+
+**Settings**, **Queues** lists the workspace's queues with their next slots. Those who may change [channel sets](/guides/posts/organise#roles) can add one, change it, delete it or make it the default there: owners, admins, editors and contributors (`post:update` through the API). A workspace keeps up to 20 queues, each with up to 100 slots.
+
+Adding a post to a queue schedules it, so it takes what scheduling that post takes. A contributor's post waits for an approval where the workspace asks for one, and is refused otherwise.
+
+How slots and queues behave:
+
+- A slot is a day and a time of day on the queue's clock, daylight saving included, as a time you choose: a time the clocks skip moves to the moment they jump, and a time that happens twice is the first one.
+- A slot is taken while a post the queue placed is scheduled, waiting for an approval or publishing at exactly its time. Nothing else is kept of slots: unscheduling, cancelling or moving such a post by hand frees its slot, and a post of the queue moved onto a slot's time takes it.
+- The first queue of a workspace is its **default**, which a post added to no queue in particular goes to. Marking another as the default moves it; deleting the default leaves none until another is marked.
+- Changing a queue's slots moves no post: posts already placed keep their times, until you [move them onto the new slots](#reshuffle).
+- Deleting a queue leaves its posts scheduled at their times.
+
+### Add a post to a queue [#add-to-queue]
+
+<Tabs>
+  <Tab title="Web app">
+    <Steps>
+      <Step title="Choose Add to queue">
+        In the composer, under **When**, choose **Add to queue**.
+      </Step>
+      <Step title="Pick the queue">
+        Pick the queue (the default to start with), and read where the post would go: **Next free slot**.
+      </Step>
+      <Step title="Schedule">
+        Choose **Schedule**. The slot is decided when Peal receives the post, so two posts added at the same moment never take the same one.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal post "An evergreen tip" --default-queue
+peal posts queue <post-id> --queue Weekdays
+```
+
+See [Queues on the command line](/developers/cli/posts#queues).
+
+  </Tab>
+</Tabs>
+
+- A post that names no channel goes to the queue's channels and channel set. One of them disconnected since is left out, and said.
+- From then on the post is an ordinary scheduled post: it is checked against its channels, waits for an approval where the workspace asks for one, shows on the calendar with a queue mark, and can be moved, unscheduled or cancelled.
+- A queued post scheduled already moves to the queue's next free slot the same way.
+
+<Callout type="info">
+  The plan's posts a month count in the month of the slot found. When that month
+  has no room, the post is refused, as for a time you chose: Peal never skips to
+  a later month by itself. A queue with no slot, or with every slot of the next
+  366 days taken, refuses the post too.
+</Callout>
+
+### Move the waiting posts onto new slots [#reshuffle]
+
+After you change a queue's slots or its time zone, **Settings**, **Queues** offers **Move the waiting posts onto the new slots** while posts wait in it, with how many wait.
+
+Once you confirm, every post that waits in the queue (scheduled, or waiting for an approval, at a time to come) moves onto the queue's slots as they are now, in the order of their times: the first onto the first free slot, the second onto the next, and so on.
+
+- Posts moved by hand onto another time move too, as the queue keeps no record of which were.
+- A post already on its slot stays where it is, and a slot a publishing post holds is skipped.
+- What the posts say and where they go do not change.
+- Owners, admins and editors may do it (post:schedule through the API). Through the API, a contributor whose posts wait for an approval moves those alone.
+
+Peal then says how many posts moved, how many stayed, and how many remain. Moving them twice moves nothing the second time.
+
+<Accordion>
+  <AccordionItem title="Approvals and plan limits during a move">
+    Each post moves as if moved by hand, but for approvals: it gets its new time and counts in its new month.
+
+    A scheduled post goes through the workspace's approvals as if you scheduled it. A post waiting for an approval keeps waiting, at its new time, whoever moves it: its request stays with whoever asked for it, and nobody is asked again to decide. To schedule such a post yourself, when your own posts need no approval, move it by hand.
+
+    The move stops, keeping what it moved, at a month the plan has no room in, when no slot is left within 366 days, or when someone saves the queue meanwhile. Move them again once there is room.
+
+  </AccordionItem>
+</Accordion>
+
+## Repeat a post [#recycling]
+
+A post that is scheduled, or already out, can **repeat**: Peal makes a new post from it at an interval, until a number of posts or a date, saying its text or, in turn, text variants.
+
+Open the post and choose **Repeat**, then set:
+
+| Setting           | Values                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| Every             | So many days (1 to 365), weeks (1 to 52) or months (1 to 12)                                |
+| Ending            | After a number of posts (2 to 100, this one counted), on a date, or after 100 posts at most |
+| Queue             | Optionally, a [queue](#queues)                                                              |
+| **Text variants** | Up to 10                                                                                    |
+
+Owners, admins and editors may do it (post:schedule through the API). A contributor's posts, where the workspace lets them ask, each wait for an approval. **Settings**, **Repeating posts** lists the workspace's rules with their next three posts, and lets those who may schedule pause, resume or stop one.
+
+From the command line ([Repeating posts](/developers/cli/posts#recycling)):
+
+```sh
+peal recycling start <post-id> --every 2w --count 6 --variant "Open all summer, as before."
+peal recycling pause <rule-id>
+peal recycling resume <rule-id>
+peal recycling end <rule-id>
+```
+
+### How the new posts are made [#recycling-posts]
+
+- Each new post is an ordinary post, with its own channels' outcome, notifications and analytics. Move, unschedule or cancel one as any other, and the rule goes on by its own clock.
+- It is copied from the source with what the workspace still has (its channels still connected, its media, its options, its tags), never with a signature or a default option added since.
+- The next post is made once the latest one's time has passed, so the calendar shows one ahead.
+- It is due one interval after the one before, at the same time of day in the source's time zone, daylight saving included. A month shorter than the source's day takes its last day (31 January, then 28 February, then 31 March). On a queue, it takes the queue's first free slot from that time.
+- A time missed while Peal was down is skipped, never made up for.
+- A post whose time, or queue slot, would fall after the rule's last day is not made: the rule ends there, as after its last post.
+- The first post says the source's text, the next the first variant, and so on, then the source's again. A variant replaces the text of the post's first part, and its texts on some channels; its media, later parts and options stay.
+- Some platforms refuse a text they already published for the account: variants are for that. Each variant is checked as the source saying it would be when you save it, and again when its post is made.
+- A post repeats as whoever started it, with what they may do when it is made: their posts' approvals apply, and a member who left, a key revoked or an application whose access no longer publishes stops it.
+- A post has one rule going on at a time, and a workspace 100.
+- A rule keeps the source's first time: moving the source does not move the times it repeats at.
+
+### When a rule stops [#recycling-stops]
+
+Peal stops a rule, instead of skipping a post silently, and tells those it concerns ([notifications](/guides/workspace/notifications#events)) when:
+
+- its post was deleted, cancelled or taken back to draft;
+- its starter can no longer schedule;
+- none of its channels is left;
+- a platform refuses what it would say;
+- the month has no room in the plan;
+- its queue was deleted or has no free slot.
+
+While its post waits for an approval, it makes nothing and waits.
+
+Once that is put right (room in the plan, other variants, a channel connected again, slots on its queue, its post scheduled again), **Resume** sets it going from the next due time after now, with the same variants. Other variants for a refused text go with the resume through the [command line](/developers/cli/posts#recycling) or the API. It does not resume when another rule repeats the post by then, or when the workspace has 100 going. For any other end, make the post repeat again.
+
+## Post from a feed [#feeds]
+
+A workspace can follow a **web feed** (RSS 2.0, Atom 1.0 or JSON Feed 1.1), such as a blog's: each item that appears in it after you added it becomes a post.
+
+**Settings**, **Feeds** adds one:
+
+| What you give                  | What it holds                                                                                                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Its address                    | The feed's address, public HTTPS only                                                                                                                                             |
+| Its channels                   | The channels its posts go to (a channel set too, through the [command line](/developers/cli/posts#feeds) or the API)                                                              |
+| **Template**                   | What its posts are written from: `{title}`, `{link}` and `{summary}` (the item's summary as plain text, 280 characters at most). By default the title, a blank line and the link. |
+| **Attach each item's picture** | Imports the image an item names (its enclosure, its media or its JSON Feed `image`) into the media library, as the person who added the feed, described by the item's title       |
+| What items become              | A **draft** each by default, or posts on a **queue**                                                                                                                              |
+
+**Preview** reads the address and shows its three newest items as the template would write them, keeping nothing.
+
+From the command line ([Feeds](/developers/cli/posts#feeds)):
+
+```sh
+peal feeds preview https://blog.example/feed.xml --template "New on the blog: {title}"
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'{title}\n\n{link}'
+peal feeds add https://blog.example/feed.xml --mode queue --queue Weekdays
+```
+
+### Drafts or a queue [#feed-mode]
+
+By default each item becomes a **draft**, for a person to finish and schedule.
+
+Someone who may schedule (post:schedule) can choose a **queue** instead. Each item then goes on the queue's next free slot, through every rule a post goes through, the approval policy included. What the queue refuses becomes a draft, with why: a platform refuses the text, the month has no room in the plan, the queue has no free slot, a channel is gone, or the same post already goes out.
+
+<Callout type="warning">
+  In queue mode, each item is scheduled without anyone reading it first. A feed
+  never publishes at once.
+</Callout>
+
+A picture that cannot be had (not public, too large, not an image, the plan's storage full) is left out: the post goes without it, and the feed's items say why.
+
+### How Peal reads a feed [#feed-reading]
+
+- When you add a feed, Peal reads it once and records what it holds: only what appears afterwards becomes a post, and an item dated before the feed was added is never made. Changing its address, or resuming it, does the same.
+- Peal reads each feed about once an hour, and sends back what the site said of its last answer, so an unchanged feed costs it nothing.
+- It makes at most 3 posts a run and 12 a day per feed. The rest of a flood is skipped, never made later.
+- Each feed's page lists its 50 newest items with what became of each, never what they said.
+- A workspace follows 10 feeds at most. Adding, moving, resuming and previewing feeds read 30 addresses an hour at most.
+
+### When a feed stops [#feed-stops]
+
+A feed acts as whoever added it, as they are when an item is made. Peal stops it, and tells those it concerns ([notifications](/guides/workspace/notifications#events)), when:
+
+- its site says it is gone;
+- it could not be read, or gave something that is not a feed, for seven days;
+- its starter can no longer make posts there;
+- its queue was deleted.
+
+**Edit** changes its address, template, channels, mode and queue, the way to put right a channel or a queue gone since: pausing a feed is never refused for them, and resuming one says which to choose again.
+
+**Resume** sets it going again, reading it at once. Whoever resumes a feed whose starter is gone takes it over, so its posts act as them from then on.
+
+<Accordion>
+  <AccordionItem title="When a site changes its items' identities">
+    A site that changes its items' identities (moving its blog, say) makes them
+    all new to Peal. Up to three of those dated after the feed was added are
+    posted again that run, and the rest are skipped as too many. Pause the feed
+    before such a move, and resume it after.
+  </AccordionItem>
+  <AccordionItem title="How Peal checks a feed's host">
+    Peal reads a feed's host only once its address checked out as public, on
+    every redirect too. A host whose name answers otherwise between that check
+    and the connection is the one gap left, as Peal's HTTP client cannot connect
+    to the address it checked while keeping the name for TLS.
+  </AccordionItem>
+  <AccordionItem title="What Peal keeps of a feed">
+    What a feed says is other people's text. Peal keeps a digest of each item's
+    identity, never the item, and never gives a feed's text to anything but the
+    posts it makes.
+  </AccordionItem>
+</Accordion>

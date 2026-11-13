@@ -1,0 +1,115 @@
+---
+title: Idempotence
+description: Renvoyer une requête sans risque avec une clé d’idempotence, et traiter un résultat que la plateforme n’a pas confirmé.
+sidebar:
+  icon: repeat
+---
+
+## Idempotence [#idempotency]
+
+Une requête dont la réponse s’est perdue, après un délai dépassé ou une connexion coupée, a pu être appliquée, ou non. La renvoyer ne doit pas publier deux fois : un en-tête `Idempotency-Key` le garantit.
+
+La clé est un texte de votre choix, de 255 caractères au plus, comme un UUID, nouveau pour chaque publication. Les clés sont gardées par espace de travail. Sur `POST …/posts/send`, qui crée une publication et l’envoie :
+
+- Dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, dans son état du moment, sans en faire une autre.
+- La même clé avec un autre corps répond 409 `idempotency_key_reused`, et ne fait rien.
+- Une fois cette publication supprimée, la clé répond 404 `post_not_found`.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44" \
+  -d '{
+    "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+    "content": {
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```ts TypeScript
+// Keep the key with the post: send it again with the same key.
+const post = await peal.posts.send({
+  workspaceId,
+  "idempotency-key": "7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44",
+  channelIds: ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+  content: {
+    text: "Our spring catalogue is out. Read it at https://example.com/spring",
+    media: [],
+    overrides: [],
+  },
+  when: { _tag: "at", at: "2026-11-16T08:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+```bash CLI
+peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
+  --channel 019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11 \
+  --at 2026-11-16T08:00:00Z \
+  --idempotency-key 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44
+```
+
+```json MCP (create_post)
+{
+  "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+  "content": {
+    "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+    "media": [],
+    "overrides": []
+  },
+  "when": {
+    "_tag": "at",
+    "at": "2026-11-16T08:00:00Z",
+    "timeZone": "Europe/Paris"
+  },
+  "idempotencyKey": "7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44"
+}
+```
+
+</CodeGroup>
+
+[Publier depuis un agent IA](/developers/agents#api) montre une requête entière.
+
+### Les requêtes qui prennent une clé [#keyed]
+
+| Requête                                        | La clé                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST …/posts/send`                            | Facultative, comme ci-dessus.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `POST …/posts/bulk`, `POST …/posts/import`     | Facultative, pour la requête entière, et chacun de leurs éléments ou de leurs lignes peut porter sa propre clé ([Publier par l’API](/developers/posting)).                                                                                                                                                                                                                                                                                                         |
+| La création de l’espace de travail d’un client | Facultative, par l’API partenaire ([Intégrer Peal](/developers/embedding)).                                                                                                                                                                                                                                                                                                                                                                                        |
+| `POST …/inbox/comments/{commentId}/replies`    | Facultative. La requête répond à un commentaire en public. Dans les 24 heures, la même clé avec le même commentaire et le même texte répond la réponse créée par la première requête, dans son état du moment, sans en écrire une autre ; avec un autre commentaire ou un autre texte, elle répond 409 `idempotency_key_reused`. Sans clé, une seconde requête n’est refusée (409 `reply_pending`) que tant que la première réponse est en route ou non confirmée. |
+| `POST …/ads/boosts`                            | Obligatoire, car la requête dépense de l’argent. La même clé avec la même requête répond la mise en avant qu’elle a créée sans jamais en créer une autre, et avec une autre requête répond 409 `boost_key_reused` ([Publicités](/developers/ads#api-boost)).                                                                                                                                                                                                       |
+
+### Les requêtes sans clé [#unkeyed]
+
+Les autres écritures ne prennent pas de clé. Ce que fait chacune décide si elle peut être renvoyée sans risque :
+
+| Requête                                                                                                | Renvoyée                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Les lectures (`GET`)                                                                                   | Sans risque.                                                                                                                                                                                                                                                          |
+| `PUT`, `PATCH` et `DELETE`                                                                             | Sans risque : ils mettent une ressource dans l’état que dit la requête, ou la retirent. Un second `DELETE` répond 404.                                                                                                                                                |
+| Programmer, déplacer, déprogrammer ou annuler une publication, confirmer une cible                     | Sans risque : ils portent sur une seule publication, désignée par son identifiant, qui ne part qu’une fois, quel que soit le nombre de fois où elle est programmée. Une répétition ne change rien de plus, ou répond 409 avec le statut (`status`) de la publication. |
+| Créer un brouillon, importer un média, ajouter un point de terminaison de webhook, créer une clé d’API | En fait un de plus. Aucune ne fait rien partir : listez ce que l’espace de travail contient avant de renvoyer, et supprimez un doublon.                                                                                                                               |
+| Inviter quelqu’un                                                                                      | Remplace l’invitation en attente à cette adresse, et renvoie l’e-mail.                                                                                                                                                                                                |
+| Republier une cible (`POST …/posts/{postId}/targets/{targetId}/repost`)                                | Risqué : chaque republication renvoie la publication sur ce canal. Lisez d’abord la publication : seule une cible en échec ou non confirmée peut être republiée, et toute autre répond 409 `target_status_conflict`.                                                  |
+
+### Publications non confirmées [#unconfirmed]
+
+Peal a le même problème avec les plateformes. Quand la réponse d’une plateforme se perd, Peal y cherche la publication là où la plateforme le permet. Quand il ne peut pas savoir si elle est partie, la cible est non confirmée (`unconfirmed`), et Peal ne la renvoie pas, car un second essai pourrait montrer la publication deux fois.
+
+<Callout
+  type="warning"
+  title="Ne republiez jamais à l’aveugle une cible non confirmée"
+>
+  Demandez à quelqu’un de regarder sur la plateforme, puis enregistrez ce qu’il
+  a trouvé avec `…/targets/{targetId}/confirm`, ou republiez ([Suivre une
+  publication](/guides/posts/schedule#follow-up)).
+</Callout>
+
+Chaque tentative de publication, dans `GET …/posts/{postId}/attempts`, dit comment elle a fini dans `result`. Elle porte dans `refusalCode` le code qui accompagne un refus : celui de la plateforme, tel qu’elle l’a donné, ou celui de Peal quand Peal a refusé avant d’appeler la plateforme ; `null` quand il n’y en a pas. Les codes des plateformes leur appartiennent et changent avec elles : affichez-les, journalisez-les, et décidez d’après `result`.

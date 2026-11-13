@@ -1,0 +1,241 @@
+---
+title: Plusieurs publications à la fois
+description: Envoyer plusieurs publications en une requête, ou les importer d’un fichier CSV.
+sidebar:
+  icon: layers
+---
+
+Envoyez jusqu’à 50 publications en une requête, ou importez-les d’un fichier CSV, par l’API, les SDK ou la ligne de commande.
+
+## Envoyer plusieurs publications en une requête [#bulk]
+
+`POST …/posts/bulk` crée et envoie jusqu’à 50 publications, chacune comme le ferait `send`. Chaque élément est une publication, avec ses propres canaux, son contenu, ses options et son heure. Le même contenu à plusieurs heures, ce sont plusieurs éléments ; une publication qui part à une heure différente sur chaque canal aussi.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/bulk \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 9b2e4d6f-1a3c-4b5d-8e7f-0a1b2c3d4e5f" \
+  -d '{
+    "posts": [
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+        "content": {
+          "text": "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+      },
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"],
+        "content": {
+          "text": "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T17:00:00Z", "timeZone": "America/New_York" }
+      }
+    ]
+  }'
+```
+
+```ts TypeScript
+const result = await peal.posts.bulk({
+  workspaceId,
+  "idempotency-key": "9b2e4d6f-1a3c-4b5d-8e7f-0a1b2c3d4e5f",
+  posts: [
+    {
+      channelIds: ["0190f3a0-0000-7000-8000-00000000c001"],
+      content: {
+        text: "Our spring catalogue is out. Read it at https://example.com/spring",
+        media: [],
+        overrides: [],
+      },
+      when: {
+        _tag: "at",
+        at: "2026-11-16T08:00:00Z",
+        timeZone: "Europe/Paris",
+      },
+    },
+    {
+      channelIds: ["0190f3a0-0000-7000-8000-00000000c009"],
+      content: {
+        text: "Our spring catalogue is out. Read it at https://example.com/spring",
+        media: [],
+        overrides: [],
+      },
+      when: {
+        _tag: "at",
+        at: "2026-11-16T17:00:00Z",
+        timeZone: "America/New_York",
+      },
+    },
+  ],
+});
+```
+
+</CodeGroup>
+
+```json
+{
+  "created": 1,
+  "refused": 1,
+  "items": [
+    {
+      "_tag": "created",
+      "index": 0,
+      "replayed": false,
+      "post": {
+        "id": "0190f3a0-0000-7000-8000-00000000b002",
+        "status": "scheduled",
+        "schedule": {
+          "at": "2026-11-16T08:00:00.000Z",
+          "timeZone": "Europe/Paris"
+        }
+      }
+    },
+    {
+      "_tag": "refused",
+      "index": 1,
+      "refusal": {
+        "_tag": "UnknownChannels",
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"]
+      }
+    }
+  ]
+}
+```
+
+- Les éléments sont traités dans l’ordre, un à la fois, chacun pour lui-même. Un élément refusé n’empêche aucun des autres d’être créé, et rien n’est défait.
+- La réponse est 200 dès que la requête elle-même a pu être lue, même si tous les éléments ont été refusés. `items` dit, pour chaque élément repéré par sa place dans la requête (`index`, à partir de 0), `created` avec sa publication, ou `refused` avec ce que `send` aurait répondu pour lui seul, sous forme de données : les violations de son contenu, des canaux ou médias inconnus, une heure passée, la limite de l’abonnement, un doublon.
+- Une requête qui ne peut pas être lue du tout (mal formée, sans élément, plus de 50) répond 400, et ne crée rien.
+- Les limites de l’abonnement valent sur toute la requête : une fois le mois plein, les éléments restants sont refusés.
+- Chaque élément est comparé aux publications créées avant lui, éléments précédents de la requête compris, pour le même contenu sur le même canal ([Publications en double](/developers/posting#duplicates)).
+
+Un en-tête `Idempotency-Key` permet de renvoyer toute la requête sans risque pendant 24 heures. Chaque élément est gardé sous la clé et sa place :
+
+- la même requête renvoyée répond les publications qu’elle a créées, avec `replayed` à vrai, et crée celles qui ne l’avaient pas été la première fois si elles peuvent l’être désormais ;
+- un élément modifié sous la même clé est refusé avec `IdempotencyKeyReused` ;
+- un élément peut porter sa propre `idempotencyKey`, utilisée pour lui à la place de celle de l’en-tête.
+
+## Importer des publications depuis un fichier CSV [#import]
+
+Dans l’application web, [Importer depuis un fichier](/guides/posts/drafts#import-screen) vérifie un fichier et l’importe par ce point de terminaison.
+
+`POST …/posts/import` crée et envoie les publications que liste un fichier CSV, une par ligne. La première ligne du fichier nomme les colonnes, dans n’importe quel ordre :
+
+| Colonne           | Obligatoire | Ce qu’elle contient                                                                                                                                                   |
+| ----------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`            | oui         | Le texte de la publication                                                                                                                                            |
+| `channels`        | oui         | Des identifiants de canaux, séparés par des espaces, des virgules ou des points-virgules                                                                              |
+| `at`              | oui         | `now` ; un instant avec son décalage, comme `2026-11-20T09:00:00Z` ; ou une heure locale sans décalage, comme `2026-11-20 10:00`, lue dans le `time_zone` de la ligne |
+| `time_zone`       | non         | Un fuseau IANA, comme `Europe/Paris`. UTC s’il est absent.                                                                                                            |
+| `media`           | non         | Des identifiants de médias prêts de l’espace de travail                                                                                                               |
+| `allow_duplicate` | non         | `true` ou `false` ([Publications en double](/developers/posting#duplicates))                                                                                          |
+| `idempotency_key` | non         | La clé d’idempotence propre à la ligne                                                                                                                                |
+
+Une ligne est une publication seule, avec un même texte pour tous ses canaux : un [fil](/guides/posts#threads), un texte propre à un canal ou les options d’une plateforme ne tiennent pas dans une cellule, et passent par `send` ou `bulk`. Un fichier qui nomme une autre colonne est refusé en entier.
+
+Les cellules suivent strictement la RFC 4180, pour qu’aucun texte ne soit jamais coupé : une cellule qui contient une virgule, un guillemet ou un saut de ligne s’écrit entre guillemets doubles, et un guillemet à l’intérieur est doublé. Une ligne finit après sa dernière cellule, sans virgule. Un fichier contient au plus 100 lignes sous la première, et 1 000 000 de caractères.
+
+```csv title="publications.csv"
+text,channels,at,time_zone,media
+Notre catalogue de printemps est sorti.,0190f3a0-0000-7000-8000-00000000c001 0190f3a0-0000-7000-8000-00000000c002,2026-11-20 10:00,Europe/Paris,0190f3a0-0000-7000-8000-00000000a001
+"Derniers jours : les prix ""printemps"" s’arrêtent dimanche, à minuit.",0190f3a0-0000-7000-8000-00000000c001,2026-11-27T09:00:00Z,,
+```
+
+La requête est en JSON, avec le texte du fichier dans `csv`. Ici, `jq` l’écrit à partir du fichier :
+
+<CodeGroup>
+
+```bash curl
+jq -Rs '{ csv: ., dryRun: true }' publications.csv |
+  curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/import \
+    -H "Authorization: Bearer $PEAL_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d @-
+```
+
+```ts TypeScript
+import { readFileSync } from "node:fs";
+
+const result = await peal.posts.import({
+  workspaceId,
+  csv: readFileSync("publications.csv", "utf-8"),
+  dryRun: true,
+});
+```
+
+```bash CLI
+peal posts import publications.csv --dry-run
+```
+
+</CodeGroup>
+
+```json
+{
+  "created": 0,
+  "dryRun": true,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    { "_tag": "valid", "row": 2 }
+  ]
+}
+```
+
+Le fichier est d’abord vérifié, ligne par ligne, comme `validate` vérifie une publication, et comme le fichier qu’il est :
+
+- une ligne à laquelle une ligne précédente ne laisse plus de place dans son mois est refusée avec `PlanLimitReached` ;
+- une ligne qui dit ce que dit une ligne précédente, sur le même canal à moins de 23 heures d’elle, avec `DuplicatePost` (son `message` nomme cette ligne, puisqu’il n’y a pas encore de publication à nommer) ;
+- une ligne qui porte l’`idempotency_key` d’une ligne précédente avec une autre publication, avec `IdempotencyKeyReused`.
+
+<Callout type="info">
+  Si une seule ligne n’est pas valide, rien n’est créé. `dryRun: true` s’arrête
+  là même quand toutes les lignes sont valides. Sinon, les lignes sont ensuite
+  créées dans l’ordre, comme `bulk` crée ses éléments.
+</Callout>
+
+`rows` contient un résultat par ligne, repérée par sa place sous la première ligne, à partir de 1. Les lignes vides ne sont pas des lignes, et ne sont pas comptées.
+
+| `_tag`       | Signification                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `created`    | La publication de la ligne a été créée : `post` la contient, et `replayed` dit si sa clé d’idempotence a répondu une publication créée auparavant.                                                                                                                                                                                                                                                     |
+| `valid`      | La ligne a été vérifiée, pas créée : un essai à blanc, ou une autre ligne a empêché l’import du fichier.                                                                                                                                                                                                                                                                                               |
+| `refused`    | `refusal` contient ce que `send` aurait répondu pour elle. Une ligne qui était valide est refusée aussi quand quelque chose a changé depuis la vérification, ou quand elle répète une ligne précédente.                                                                                                                                                                                                |
+| `unreadable` | `problems` nomme les cellules en cause : chaque colonne (`column`), `missing` quand la ligne en a besoin, ou `invalid` pour ce qu’elle contient. Une ligne qui a plus ou moins de cellules que la première ligne n’en nomme n’est pas lue du tout : `cells` dit combien étaient attendues (`expected`) et trouvées (`found`). Une virgule dans un texte qui n’est pas entre guillemets en produit une. |
+
+```json
+{
+  "created": 0,
+  "dryRun": false,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    {
+      "_tag": "unreadable",
+      "row": 2,
+      "problems": [{ "column": "at", "problem": "invalid" }]
+    }
+  ]
+}
+```
+
+La réponse est 200 dès que le fichier a pu être lu. Un fichier qui ne peut pas être lu du tout répond 422 `ImportUnreadable`, et rien n’est créé. `problem` dit pourquoi, et `column` quelle colonne quand il s’agit d’une colonne :
+
+| `problem`           | Le fichier                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `empty`             | est vide                                                                                               |
+| `unterminatedQuote` | a une cellule entre guillemets qui ne finit pas                                                        |
+| `strayQuote`        | a un guillemet dans une cellule qui n’est pas entre guillemets, ou du texte après un guillemet fermant |
+| `unknownColumn`     | nomme une colonne que Peal ne connaît pas                                                              |
+| `repeatedColumn`    | nomme deux fois la même colonne                                                                        |
+| `missingColumn`     | n’a pas une colonne dont il a besoin                                                                   |
+| `tooManyRows`       | a plus de lignes qu’un import n’en prend                                                               |
+
+```json
+{ "_tag": "ImportUnreadable", "problem": "missingColumn", "column": "at" }
+```
+
+Un en-tête `Idempotency-Key` fonctionne comme sur `bulk`, ligne par ligne.

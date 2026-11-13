@@ -1,0 +1,68 @@
+---
+title: L’assistant de rédaction
+description: Demander à l’assistant de rédaction d’écrire, de réécrire, de raccourcir ou de traduire une publication, de suggérer des hashtags, ou de lui faire une image.
+sidebar:
+  icon: sparkles
+---
+
+L’assistant rédige et retravaille le texte d’une publication dans l’éditeur, et peut lui créer une image.
+
+## Demander de l’aide à l’assistant de rédaction [#assistant]
+
+Quand l’espace de travail a son propre [fournisseur de texte](/guides/workspace#text-provider), ou que l’instance Peal dispose d’un fournisseur d’IA, la section **Texte** de l’éditeur propose un menu **Assistant**. Il travaille sur le texte pour tous les canaux.
+
+| Action                       | Ce qu’elle fait                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Rédiger une publication…** | Dites de quoi parle la publication, avec vos mots, et l’assistant rédige un premier texte, dans la langue du sujet.         |
+| **Réécrire sur un ton**      | Professionnel, chaleureux, décontracté, enthousiaste ou spirituel, en gardant le sens, la langue et à peu près la longueur. |
+| **Raccourcir pour**          | L’une des plateformes des canaux choisis ou, tant qu’aucun ne l’est, chaque plateforme dont Peal connaît la limite.         |
+| **Traduire en**              | Anglais, français, allemand, espagnol, italien, portugais, néerlandais, polonais, japonais ou chinois (simplifié).          |
+| **Suggérer des hashtags**    | Jusqu’à 8, que le texte n’a pas encore.                                                                                     |
+
+À propos de **Rédiger une publication…** :
+
+- Choisissez un ton si vous le souhaitez et, quand la publication part sur une plateforme à la limite courte (X, Bluesky, Threads ou Mastodon), celle dont elle doit respecter la limite.
+- Il est proposé que le texte soit vide ou non, et utiliser son texte remplace celui que vous aviez.
+- Il a pour consigne de n’ajouter ni fait, ni chiffre, ni nom, ni date, ni lien que le sujet ne donne pas, et de n’ajouter des hashtags que si le sujet en demande.
+- Pour une autre idée, redemandez : chacune est une demande.
+
+<Steps>
+  <Step title="Choisissez une action">
+    Ouvrez **Assistant** et choisissez ce qu’il doit faire.
+  </Step>
+  <Step title="Lisez la suggestion">
+    La suggestion s’ouvre dans un aperçu, et rien ne change encore.
+  </Step>
+  <Step title="Utilisez-la ou écartez-la">
+    Choisissez **Utiliser ce texte**, ou **Ajouter ces hashtags**, qui les
+    ajoute sur une ligne à part. **Ignorer** l’écarte.
+  </Step>
+</Steps>
+
+<Callout type="warning">
+  Relisez la suggestion avant de l’utiliser. L’assistant garde les mentions, les
+  hashtags et les liens, et a pour consigne de n’ajouter aucun fait, mais il
+  peut encore se tromper.
+</Callout>
+
+## Images [#images]
+
+Quand l’espace de travail a son propre [fournisseur d’images](/guides/workspace#image-provider), ou que l’instance a un modèle d’images, **Choisir dans la médiathèque** propose **Générer une image**. Elle crée une image à partir d’une description dans la médiathèque, choisie pour la publication : voyez [Générer une image](/guides/media#generate).
+
+Une image du modèle de l’instance coûte 5 des demandes du jour ; une image du fournisseur de l’espace de travail n’en coûte aucune.
+
+## Limites [#limits]
+
+| Limite                                              | Valeur                                                                                                                                             |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Texte ou sujet                                      | 5 000 caractères au plus                                                                                                                           |
+| Demandes par jour                                   | 100 par espace de travail sauf si l’instance en fixe un autre nombre, comptées depuis minuit UTC. Le menu indique combien il en reste aujourd’hui. |
+| Avec le fournisseur de texte de l’espace de travail | Aucune ne compte : le menu dit que c’est le fournisseur de l’espace de travail qui écrit, et ce fournisseur reçoit jusqu’à 500 demandes par jour.  |
+
+- Une demande qui n’a pas pu joindre le fournisseur d’IA ne compte pas.
+- Une demande restée plus de 90 secondes sans réponse compte, car le fournisseur a pu la traiter.
+- Les demandes sont comptées pour chaque espace de travail, jamais pour chaque personne : tous les membres partagent la journée de l’espace de travail, et chaque espace de travail que possède un [partenaire](/developers/embedding) a la sienne.
+
+## Où part votre texte [#privacy]
+
+Votre texte, ou le sujet, part chez le fournisseur de texte de l’espace de travail quand il en a réglé un, et sinon chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Peal n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.

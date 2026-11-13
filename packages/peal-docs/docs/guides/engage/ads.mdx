@@ -1,0 +1,130 @@
+---
+title: Ads
+description: "Connect Meta ad accounts to a workspace and read their campaigns and daily numbers beside your posts' organic results."
+sidebar:
+  icon: megaphone
+---
+
+Connect a workspace to its ad accounts on Meta, see what their ads did beside what your posts did on their own, and boost a post you published through Peal as an ad on Facebook or Instagram.
+
+<Callout type="note" title="New">
+  This feature is new: its API may still grow. It is off unless the operator of
+  the instance turned it on, and an instance may offer reading without spending.
+  Nothing spends until an owner allows an ad account to, with a monthly ceiling.
+</Callout>
+
+## What works today [#what-works]
+
+- Connect Meta ad accounts, through a sign-in of its own, apart from the one that connects Facebook Pages and Instagram accounts as [channels](/guides/channels).
+- Read each connected ad account's campaigns, ad sets and ads, those made outside Peal included, and what each ad did each day.
+- See organic and paid side by side: a published post's own counts on each channel, beside what the ads that promote it did.
+- [Boost a published post](/guides/engage/boosts), on a Facebook Page, or on an Instagram account connected through its Page, with a budget, an end date and an audience.
+- Pause, resume and stop a boost.
+- Notifications to the workspace's owners about every boost, [webhook events](/developers/ads#webhooks) for your own systems, and an [audit trail](/guides/engage/boosts#audit) of every decision about money.
+
+The [API](/developers/ads#api), the SDKs, the [command line and MCP tools](/developers/ads#clients) do the same. [What is not built](#not-built) lists the rest.
+
+## Who can do what [#access]
+
+Ads have four permissions. A member holds those of their [role](/guides/posts#roles):
+
+| Permission      | What it allows                                                                                                                        | Who holds it               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `ads:read`      | See the ad accounts, their campaigns and numbers, a post's paid results, and the boosts                                               | Owners, admins and editors |
+| `ads:manage`    | Sign in to an ad network, connect and disconnect ad accounts, and pause or stop a boost                                               | Owners and admins          |
+| `ads:spend`     | Boost a post, resume a paused boost, and pause or stop one                                                                            | Owners and admins          |
+| `ads:authorize` | Decide whether an ad account may spend through Peal, set its monthly ceiling, and read the [audit trail](/guides/engage/boosts#audit) | Owners only                |
+
+Some of it is done by a person only, signed in to Peal in their own session, never by an API key, an application or staff acting as a member:
+
+- signing in to the ad network and choosing the ad accounts to connect (`ads:manage`), and only who signed in picks accounts from their sign-in;
+- allowing an ad account to spend, and setting or changing its ceiling (`ads:authorize`).
+
+An [API key](/guides/workspace#api-keys) does what the ads permissions it was given allow, `ads:authorize` never among them. An OAuth application needs the scope `workspace:ads` too, which opens nothing alone: beside `workspace:write` for what `ads:manage` allows an application, beside `workspace:publish` for `ads:spend` ([What each permission allows](/developers/agents#scopes)). Staff acting as a member only read.
+
+## Connect ad accounts [#connect]
+
+In the web app, open a workspace, then **Ads**.
+
+<Steps>
+  <Step title="Sign in to Meta">
+    An owner or an admin chooses to connect Meta, and signs in on Meta's page.
+    Peal asks to read ads. On an instance that offers spending, it also asks for
+    what making and running ads takes, which the person may decline: the
+    accounts are then read, and cannot boost.
+  </Step>
+  <Step title="Review the ad accounts">
+    Back in Peal, the sign-in lists the ad accounts it reaches, each with its
+    currency, time zone, status and spend cap. Nothing is connected yet.
+  </Step>
+  <Step title="Pick the accounts">
+    They tick the accounts the workspace uses. Up to 25 are connected at once.
+  </Step>
+</Steps>
+
+A sign-in is completed once, within 15 minutes, by who started it. One that connected no account is removed after a day. Peal stores the sign-in's access token encrypted, and never shows it.
+
+Spending is off on every newly connected account. An account whose time zone Peal does not know cannot be connected.
+
+When the network refuses a sign-in's token, its accounts show that they need reconnecting, and the members who manage ad accounts are [told](/guides/engage/boosts#notices). Nothing is read of those accounts, nor boosted there, until the person who signed in does it again.
+
+### Disconnect [#disconnect]
+
+- Disconnecting an ad account removes what Peal read of it.
+- Removing a sign-in removes its token and every account it connects.
+- Their boosts' records stay with the workspace, and what they committed in a month still counts against the ceiling when the same account is connected again.
+- What runs at the network that Peal did not make is left as it is.
+
+<Callout type="warning" title="Stop running boosts first">
+  Both are refused while a boost of theirs runs, may run, is paused or is being
+  made (`AdAccountBusy`), as a paused campaign can run again: stop it first.
+</Callout>
+
+## What Peal reads [#reading]
+
+Every hour, Peal reads each connected ad account from its network: its campaigns, ad sets and ads, and each ad's numbers for each day of the account's calendar.
+
+| Number      | What it is                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------- |
+| Spend       | What the ad cost, in the account's [minor units](/guides/engage/boosts#money)                           |
+| Impressions | How often it was shown                                                                                  |
+| Reach       | How many people saw it that day. Summed over several days, someone seen on several days counts each day |
+| Clicks      | Clicks on the ad                                                                                        |
+| Results     | Reactions, comments and shares the network counts on the post. Missing, not zero, when it reported none |
+
+- The first read of an account takes the last 90 days. Later ones read the last 7 days again, as networks correct recent days for a while.
+- A read stops once the account reaches 75% of the rate limit its network gives it, and goes on at a later hour: Peal never uses an ad account's whole allowance.
+- A day of numbers is kept 396 days (13 months), so a month can be compared with the same one a year before.
+- Numbers are the network's own, read with a delay of up to an hour or more. They are not an invoice: what the network bills is in the ad account.
+
+Peal keeps counts and money. It never reads who saw an ad.
+
+### Organic and paid for a post [#post-performance]
+
+A published post's page shows two sides:
+
+- its organic counts on each channel, as [Analytics](/guides/engage/analytics) last read them;
+- what the ads that promote it did, by ad account, with its boosts. An ad made outside Peal that promotes the same post is counted too.
+
+The two are never added together: what a platform counts on a post already includes what its ads brought. Amounts in different currencies are never added either, so paid totals come one per ad account.
+
+The organic side is empty for someone who may not read analytics, and for a platform whose counts Peal [does not read](/guides/engage/analytics#schedule), such as Facebook Pages.
+
+## Your data [#data]
+
+- Deleting a workspace deletes its sign-ins with their tokens, its ad accounts, what was read of them, its boosts, their journal and its audit trail. It is refused while a boost runs, may run or is being made: stop it first.
+- Closing your account removes your id from what stays with the workspaces you shared. The sign-ins you made stay with their ad accounts, without it, until the account is disconnected or the workspace deleted.
+- The [copy of your data](/guides/workspace/account#export) holds, for each workspace you are the only member of, an `ads` object: its sign-ins without their tokens, its ad accounts, its boosts and its audit trail.
+- When someone asks Meta to delete what an instance holds about them, Peal removes the sign-ins they made and the ad accounts these connect. When they remove the app from their Meta account, their sign-ins are marked to renew.
+
+What an ad needs goes to the ad network: the post's id, the budget, the dates, the audience, and the beneficiary and payer.
+
+## What is not built [#not-built]
+
+- Other ad networks than Meta's.
+- Creating campaigns, ad sets or ads with creatives of their own: Peal boosts a post that is already published.
+- Boosting a post that was not published through Peal, or one on an Instagram account connected with Instagram Login.
+- Changing a running boost's budget or audience: stop it, and make another.
+- Interests, custom audiences, gender, or locations finer than countries.
+- Special ad categories: housing, employment, financial products and services, social issues, elections or politics.
+- Conversions, lead forms and automated rules.

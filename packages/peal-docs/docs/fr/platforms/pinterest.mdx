@@ -1,0 +1,62 @@
+---
+title: Pinterest
+description: "Connecter Pinterest à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/pinterest.svg
+---
+
+Comment connecter un compte Pinterest, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                   |
+| ---------------- | --------------------------------- |
+| Texte            | {{platform-pinterest-text-fr}}    |
+| Images et vidéos | {{platform-pinterest-media-fr}}   |
+| Parties          | {{platform-pinterest-parts-fr}}   |
+| Formats          | {{platform-pinterest-formats-fr}} |
+| Texte alternatif | {{platform-pinterest-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **Pinterest**, choisissez **Connecter Pinterest**, connectez-vous sur Pinterest, et autorisez Peal à :
+
+- voir vos tableaux et vos épingles ;
+- créer des épingles ;
+- lire le nom et l’image de votre compte.
+
+Peal ne demande rien sur les tableaux secrets : il ne les liste donc jamais, et ne peut pas y épingler.
+
+**Canaux** propose Pinterest une fois le serveur Peal configuré pour lui (voir [Sur votre propre serveur](#self-hosting)).
+
+## Options [#options]
+
+L’éditeur propose ces options. **Nom dans l’API** est le nom de l’option par l’API.
+
+| Option                                   | Nom dans l’API   | Dans l’éditeur                                                           |
+| ---------------------------------------- | ---------------- | ------------------------------------------------------------------------ |
+| **Tableau**                              | `boardId`        | Obligatoire, l’un de ceux du compte                                      |
+| **Section du tableau**                   | `boardSectionId` | Une section du tableau choisi                                            |
+| **Titre**                                | `title`          | 100 caractères au plus                                                   |
+| **Lien**                                 | `link`           | Là où mène un clic sur l’épingle, commençant par `http://` ou `https://` |
+| **Couverture de la vidéo, à la seconde** | `coverSecond`    | La première image sauf choix contraire                                   |
+| **Couleur dominante**                    | `dominantColor`  | Comme `#6E7874`                                                          |
+
+### Tableaux [#boards]
+
+- Sur un canal Pinterest, l’éditeur lit les tableaux du compte sur Pinterest, jusqu’à 500, puis, une fois l’un d’eux choisi, ses sections.
+- Un tableau supprimé depuis, ou au-delà de ceux qui ont été lus, reste choisi et apparaît comme absent de la liste.
+- Quand Pinterest ne répond pas, **Réessayer** relit la liste.
+- Peal ne crée aucun tableau : créez-le d’abord sur Pinterest.
+
+Une épingle a un seul texte alternatif, celui du premier fichier, et les images d’un carrousel partagent le titre, la description et le lien de l’épingle.
+
+## Commentaires [#comments]
+
+Peal ne lit pas encore les commentaires sur Pinterest.
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Pinterest une fois son application enregistrée : voir [Pinterest](/self-hosting/platforms#pinterest). D’ici là, **Canaux** ne le propose pas.

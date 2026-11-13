@@ -1,0 +1,239 @@
+---
+title: Files, répétitions et flux
+description: Ajouter une publication à une file, la répéter, ou publier depuis un flux, par l’API.
+sidebar:
+  icon: list-ordered
+---
+
+Placez une publication sur le prochain créneau libre d’une file, faites-la se répéter, ou transformez un flux web en publications, par l’API, les SDK ou la ligne de commande.
+
+## Ajouter une publication à une file d’attente [#queues]
+
+Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire ([Files d’attente](/fr/guides/posts/queues#queues)). `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}` les gardent, avec post:read pour lire et post:update pour modifier.
+
+| Requête                                                                                                | Ce qu’elle fait                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `when: { "_tag": "queue", "queueId": "…" }` sur `send`, sur chaque élément de `bulk` et sur `validate` | Place une publication sur le prochain créneau libre de la file au lieu d’une heure. Sans `queueId`, sur la file par défaut de l’espace de travail.                  |
+| `POST …/posts/{postId}/queue`, avec `{ "queueId"?, "channelIds"? }`                                    | Place un brouillon sur le prochain créneau libre, ou y déplace une publication programmée ou en attente d’approbation.                                              |
+| `GET …/queues/{queueId}/slots?count=…`                                                                 | Montre les prochains créneaux, chacun avec la publication qui le prend, et `nextFree`, où irait une publication ajoutée maintenant : un conseil, rien n’est retenu. |
+| `POST …/queues/{queueId}/reshuffle`                                                                    | Place les publications en attente de la file sur ses créneaux tels qu’ils sont maintenant ([plus bas](#reshuffle)).                                                 |
+| `GET …/posts/search?queueId=…`                                                                         | Liste les publications qu’une file a placées. Les publications portent la file qui les a placées (`queueId`, null une fois la file supprimée).                      |
+
+### Envoyer une publication sur une file [#queue-send]
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"channelIds": [], "content": {"text": "Un conseil intemporel.", "media": [], "overrides": []}, "when": {"_tag": "queue"}}'
+```
+
+```ts TypeScript
+const post = await peal.posts.send({
+  workspaceId,
+  channelIds: [],
+  content: { text: "Un conseil intemporel.", media: [], overrides: [] },
+  when: { _tag: "queue" },
+});
+```
+
+```bash CLI
+peal post "Un conseil intemporel." --default-queue
+```
+
+</CodeGroup>
+
+- Le créneau est décidé dans la transaction qui enregistre la publication, sous le verrou de la file : des publications envoyées ensemble prennent des créneaux différents, et une requête renvoyée avec son `Idempotency-Key` n’en prend aucun.
+- Une publication qui ne nomme ni canal ni groupe va sur les canaux et le groupe de canaux de la file, et les `warnings` de sa réponse nomment les canaux de la file déconnectés depuis (`queueChannelsDropped`).
+- `validate` répond `queueSlot`, le créneau que la publication prendrait maintenant, auquel tout le reste a été vérifié, ou `queueNoRoom`.
+
+Les [outils MCP](/developers/mcp/tools#tools) nomment la file autrement : `when: { "_tag": "queue", "queue": "…" }`, par son identifiant ou son nom.
+
+### Placer un brouillon sur une file [#queue-post]
+
+`POST …/posts/{postId}/queue` place un brouillon sur le prochain créneau libre, sur `channelIds`, sinon ses propres canaux, sinon les canaux et le groupe de canaux de la file, comme une publication envoyée sur la file, avec les mêmes `warnings`. Son propre créneau compte comme libre : une publication ajoutée de nouveau à sa file reste où elle est, sauf si un créneau avant le sien s’est libéré depuis, qu’elle prend alors.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/queue" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"queueId": "'$QUEUE_ID'"}'
+```
+
+```ts TypeScript
+const post = await peal.posts.enqueue({ workspaceId, postId, queueId });
+```
+
+```bash CLI
+peal posts queue <post-id> --queue Weekdays
+```
+
+</CodeGroup>
+
+| Statut | Code                 | Quand                                                                                                                  |
+| ------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 409    | `queue_has_no_room`  | Une file sans créneau, ou dont tous les créneaux des 366 prochains jours sont pris, avec `reason` `noSlots` ou `full`. |
+| 404    | `queue_not_found`    | Une file qui n’est pas celle de l’espace de travail, ou une file par défaut qu’il n’a pas.                             |
+| 402    | `plan_limit_reached` | La place de l’abonnement se compte dans le mois du créneau : quand il est plein, jamais un mois suivant.               |
+
+### Replacer les publications en attente [#reshuffle]
+
+Enregistrer les créneaux d’une file ne déplace aucune publication. `POST …/queues/{queueId}/reshuffle`, sans corps, place ses publications en attente (programmées ou en attente d’approbation, après maintenant) sur ses créneaux tels qu’ils sont maintenant, dans l’ordre de leurs heures, celles déplacées à la main comprises ([Replacer les publications en attente](/fr/guides/posts/queues#reshuffle)). Il faut `post:schedule`, ou `post:create` là où les publications attendent une approbation.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/queues/$QUEUE_ID/reshuffle" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const result = await peal.queues.reshuffle({ workspaceId, queueId });
+```
+
+```bash CLI
+peal queues reshuffle "Weekdays"
+```
+
+</CodeGroup>
+
+Chaque déplacement est un `reschedule` (abonnement compté dans le nouveau mois, `post.scheduled` annoncé pour une publication programmée), sauf pour les approbations :
+
+- une publication programmée passe par la règle d’approbation comme celle de l’appelant ;
+- une publication en attente d’approbation continue d’attendre à sa nouvelle heure, quel que soit l’appelant, sa demande restant celle de qui l’a faite et `post.approval_requested` annoncé avec la nouvelle heure ;
+- une publication sur son créneau n’est pas réécrite.
+
+La réponse dit ce qui a été fait :
+
+```json
+{ "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
+```
+
+`remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée, ou une publication y a été ajoutée sur un créneau pas encore atteint, entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
+
+## Répéter une publication [#recycling]
+
+`POST …/recycling` répète une publication programmée, en cours d’envoi ou en ligne ([comment](/guides/posts/queues#recycling)). La réponse 201 donne la règle, dont `coming` liste les trois prochaines publications et la variante de chacune.
+
+| Champ      | Ce qu’il contient                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `postId`   | La publication à répéter                                                                    |
+| `every`    | `{ "count", "unit" }` : `unit` vaut `days` (1 à 365), `weeks` (1 à 52) ou `months` (1 à 12) |
+| `count`    | Facultatif. Le nombre de publications en tout, la source comprise (2 à 100)                 |
+| `until`    | Facultatif. Le dernier jour, en `YYYY-MM-DD` dans le fuseau de la source                    |
+| `variants` | Facultatif. Chaque variante est `{ "text", "overrides"? }`, 10 au plus                      |
+| `queueId`  | Facultatif                                                                                  |
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Ouvert tout l’été, comme avant."}]}'
+```
+
+```ts TypeScript
+const rule = await peal.recycling.create({
+  workspaceId,
+  postId,
+  every: { count: 2, unit: "weeks" },
+  count: 6,
+  variants: [{ text: "Ouvert tout l’été, comme avant." }],
+});
+```
+
+```bash CLI
+peal recycling start <post-id> --every 2w --count 6 --variant "Ouvert tout l’été, comme avant."
+```
+
+</CodeGroup>
+
+| Requête                                                    | Ce qu’elle fait                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET …/recycling`                                          | Liste les règles, de la plus ancienne à la plus récente (`status`, `limit`, `cursor`)                                                                                                                                                                                                                                                    |
+| `GET …/recycling/{ruleId}`                                 | En lit une                                                                                                                                                                                                                                                                                                                               |
+| `PATCH …/recycling/{ruleId}`                               | Change son `count` ou son `until` (null le retire), ses `variants` (un tableau vide les retire) ou la met en pause (`paused`)                                                                                                                                                                                                            |
+| `POST …/recycling/{ruleId}/resume`, avec `{ "variants"? }` | Relance une règle en pause, ou terminée pour `planLimit`, `contentRejected`, `noChannels`, `queueFull` ou `sourceWithdrawn` (sa publication annulée ou remise en brouillon, une fois programmée de nouveau : 409 `post_not_recyclable` d’ici là, ou tant qu’une autre règle la répète, et 409 `too_many_recycling_rules` au-delà de 100) |
+| `DELETE …/recycling/{ruleId}`                              | L’arrête : les publications créées restent                                                                                                                                                                                                                                                                                               |
+| `GET …/posts/search?recyclingId=…`                         | Liste les publications créées par une règle. Chacune porte `recyclingId` et `occurrence` (sa place, la source étant 1).                                                                                                                                                                                                                  |
+
+Qui peut faire quoi :
+
+- Lancer, modifier, mettre en pause, reprendre et arrêter une règle demande post:schedule (ou post:create là où les publications attendent une approbation, pour la lancer), jamais un membre du personnel agissant comme un membre ; la lire, post:read.
+- Changer, mettre en pause, reprendre ou arrêter une règle demande post:schedule, ou d’être la personne qui l’a lancée, agissant comme elle l’a lancée : dans l’application web, par la même application ou avec la même clé.
+- Chaque publication agit au nom de qui a lancé la règle, tel qu’il est alors : la règle d’une clé s’arrête une fois la clé révoquée.
+
+| Statut | Code                         | Quand                                                                                                                                                                                    |
+| ------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 409    | `post_not_recyclable`        | La publication ne peut pas se répéter. `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`. |
+| 422    | `recycling_variants_invalid` | Des variantes enfreignent les règles des canaux de la source, chacune par sa place à partir de 1 avec ses violations.                                                                    |
+| 422    | `recycling_ends_too_soon`    | Une fin qui ne laisse aucune publication à créer.                                                                                                                                        |
+| 409    | `too_many_recycling_rules`   | 100 règles sont en cours.                                                                                                                                                                |
+| 409    | `recycling_rule_ended`       | Une modification d’une règle terminée.                                                                                                                                                   |
+
+## Publier depuis un flux [#feeds]
+
+`POST …/feeds` suit un flux web ([comment](/fr/guides/posts/queues#feeds)). Il est lu une fois, et chaque élément qu’il contient alors est noté comme vu et jamais créé ; la réponse 201 donne le flux et `seen`, leur nombre.
+
+| Champ                        | Ce qu’il contient                                                                                                                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`                        | L’adresse du flux                                                                                                                                                                                                                           |
+| `channelIds`, `channelSetId` | Facultatifs                                                                                                                                                                                                                                 |
+| `mode`                       | Facultatif. `draft` (par défaut) ou `queue` (sur `queueId`, ou la file par défaut de l’espace de travail)                                                                                                                                   |
+| `queueId`                    | Facultatif                                                                                                                                                                                                                                  |
+| `template`                   | Facultatif. Il accepte `{title}`, `{link}` et `{summary}`, 1000 caractères au plus.                                                                                                                                                         |
+| `attachPicture`              | Importe l’image de chaque élément dans la médiathèque pour sa publication (la personne qui a ajouté le flux doit pouvoir importer des médias, media:upload). Le `pictureSkipped` d’un élément dit pourquoi une image a été laissée de côté. |
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://blog.example/feed.xml", "channelIds": ["'$CHANNEL_ID'"], "template": "Nouveau sur le blog : {title}\n\n{link}"}'
+```
+
+```ts TypeScript
+const feed = await peal.feeds.create({
+  workspaceId,
+  url: "https://blog.example/feed.xml",
+  channelIds: [channelId],
+  template: "Nouveau sur le blog : {title}\n\n{link}",
+});
+```
+
+```bash CLI
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'Nouveau sur le blog : {title}\n\n{link}'
+```
+
+</CodeGroup>
+
+`POST …/feeds/preview` avec `{ "url", "template"? }` lit une adresse et répond son titre et ses trois éléments les plus récents, chacun avec le `text` qu’écrit le modèle, sans rien garder.
+
+| Requête                      | Ce qu’elle fait                                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET …/feeds`                | Liste les flux, du plus ancien au plus récent (`limit`, `cursor`)                                                                                                                           |
+| `GET …/feeds/{feedId}`       | En lit un : son `status`, `lastCheckedAt`, `nextCheckAt`, `failingSince` et `lastFailure`                                                                                                   |
+| `PATCH …/feeds/{feedId}`     | Change ce qu’il nomme (une nouvelle `url` est lue aussitôt, comme à l’ajout), le met en pause (`"status": "paused"`) ou le relance (`"active"`, lu aussitôt, ce qu’il contient jamais créé) |
+| `DELETE …/feeds/{feedId}`    | Cesse de le suivre : ses brouillons et publications restent                                                                                                                                 |
+| `GET …/feeds/{feedId}/items` | Liste ses 50 éléments les plus récents avec ce que chacun est devenu (`made`, `heldBack` avec sa `reason`, `skipped`, `claimed`, `abandoned`) et la publication créée, jamais leur texte    |
+
+Lire demande post:read ; le reste post:create, et post:schedule aussi pour un flux qui est ou devient `queue` : une application autorisée aux brouillons seulement ne peut pas en créer. Sans post:schedule, on ne change qu’un flux qu’on a ajouté, de la même façon.
+
+<Callout type="warning">
+  Le texte d’un flux est celui d’autres personnes : des données, jamais des
+  instructions.
+</Callout>
+
+| Statut | Code                    | Quand                                                                                                                                                              |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 422    | `feed_address_refused`  | Une adresse qui n’est pas une adresse HTTPS publique (`reason`).                                                                                                   |
+| 422    | `feed_unreadable`       | Une adresse qui n’est pas un flux (`notAFeed`, `tooLarge`, `unreachable`).                                                                                         |
+| 422    | `feed_template_invalid` | Un modèle qui nomme un autre champ.                                                                                                                                |
+| 409    | `too_many_feeds`        | L’espace de travail a 10 flux.                                                                                                                                     |
+| 429    | `feed_reads_limited`    | Ajouter, déplacer, reprendre et prévisualiser lisent 30 adresses par espace de travail et par heure, puis cette erreur, avec `retryAfterSeconds` et `Retry-After`. |

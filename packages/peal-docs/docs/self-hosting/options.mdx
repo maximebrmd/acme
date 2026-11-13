@@ -1,0 +1,217 @@
+---
+title: Billing, captcha and sign-up
+description: Turn on billing with Stripe and a captcha with Turnstile, and choose who may sign up.
+sidebar:
+  icon: sliders-horizontal
+---
+
+Billing, the captcha and closed sign-up are all off on a new server. Each section says what to set to turn one on.
+
+## Billing [#billing]
+
+Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Starter, Pro, Business or Agency, monthly or yearly. [Plans and billing](/guides/workspace/billing) lists them, with what each limits, the trial, ordering, cancelling and withdrawing.
+
+| Setting                    | Where                | What it does                                                                                 |
+| -------------------------- | -------------------- | -------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`        | Server               | Turns billing on                                                                             |
+| `STRIPE_WEBHOOK_SECRET`    | Server               | The signing secret of the webhook endpoint                                                   |
+| `STRIPE_LOOKUP_KEY_PREFIX` | Server               | The prefix of the catalogue's lookup keys                                                    |
+| `PEAL_TERMS_URL`           | Web app              | Your terms of service, which the billing page links to before an order                       |
+| `PEAL_CONTACT_URL`         | Web app              | Where people write for more than the largest plan                                            |
+| `SITE_APP_URL`             | Marketing site build | Lets the site's footer link to the app's pages to cancel a contract and to withdraw from one |
+
+[Environment variables](/self-hosting/environment-variables#billing) has the server's, with their defaults, and the [web app's](/self-hosting/environment-variables#web-app) and the [site's](/self-hosting/environment-variables#compose).
+
+### What counts toward the limits [#limits]
+
+- Posts count in the calendar month (UTC) they go out in, once scheduled: drafts and cancelled posts do not, a post taken back to draft gives its place back, and one posted again on a channel counts once.
+- Members count with the invitations still pending when inviting.
+- Pages or Instagram accounts ticked together need room for all of them, or none is connected.
+- Media count by the bytes stored, uploads in progress included.
+
+A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has, but schedules nothing while it has more channels than its plan allows.
+
+### Set up Stripe [#stripe-setup]
+
+<Steps>
+  <Step title="Give Stripe Peal's catalogue">
+    With `STRIPE_SECRET_KEY` set, one command makes the per-account pricing
+    ([The catalogue](#catalogue)). Run it from the repository, or with the
+    server's image and settings, as in [With Docker Compose and
+    Caddy](/self-hosting#compose), so the key stays on the server:
+
+    <CodeGroup>
+
+    ```sh From the repository
+    bun nx run peal-server:stripe-catalogue
+    ```
+
+    ```sh With the server's image
+    docker compose --project-name peal --file compose.production.yaml \
+      --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+      run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
+    ```
+
+    </CodeGroup>
+
+  </Step>
+  <Step title="Create the plans' prices">
+    Create them by hand, as [The plans' prices](#plan-prices) says.
+  </Step>
+  <Step title="Add the webhook endpoint">
+    Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the
+    `customer.subscription.created`, `customer.subscription.updated`,
+    `customer.subscription.deleted` and `checkout.session.completed` events, and
+    set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to
+    Stripe if something guards the rest of `/api/auth`.
+  </Step>
+  <Step title="Turn on Stripe Tax and the customer portal">
+    Checkout always has Stripe Tax add the VAT, as the prices are
+    tax-exclusive and Peal shows them VAT included. Turn on the customer portal,
+    where members update their payment method and download invoices, without
+    retention offers, and with plan switching (subscription updates) and
+    cancellation turned off: plans change and end on the billing page only,
+    where each change takes an order. Set the web app's `PEAL_TERMS_URL` and
+    `PEAL_CONTACT_URL`.
+  </Step>
+  <Step title="Match your tax and invoicing duties">
+    Peal leaves these to Stripe:
+
+    - In Stripe Tax: your origin address, a registration for each place you collect tax in (for an EU seller, the home country and the One-Stop Shop), and the product tax code of each plan's product. That is software as a service, `txcd_10103001` for business use or `txcd_10103000` for personal use; the command gives the catalogue's products `txcd_10103001` when it makes them. The business and personal use split matters for US sales tax, a question for your accountant.
+    - In the invoice settings: your legal mentions (company identifiers, VAT number, footer), a numbering scheme, and emailing customers their invoices and receipts.
+    - In the customer portal: the invoice history, so members download their invoices from **Billing**.
+
+    Checkout then asks every customer for a billing address and offers a field
+    for a business's tax id, which Stripe prints on the invoice and uses for
+    the reverse charge.
+
+  </Step>
+  <Step title="Build the marketing site with SITE_APP_URL">
+    Set `SITE_APP_URL` when you build the marketing site, so its footer links to
+    the app's pages to cancel a contract and to withdraw from one ([environment
+    variables](/self-hosting/environment-variables)).
+  </Step>
+</Steps>
+
+### The catalogue [#catalogue]
+
+A server that bills checks Peal's catalogue when it starts. A plan price that differs stops it, with the list of what differs. Until per-account pricing is sold, a catalogue that differs does not: the server starts, logs what differs with the command that gives it, and the `peal-stripe-catalogue` alert fires. If Stripe does not answer, it starts and logs a warning.
+
+Per-account pricing is a meter, a product and a metered price in US dollars, tax-exclusive and billed monthly, for each line of the rate card. Their lookup keys, which are also the meters' event names, are these, or start with the prefix set in `STRIPE_LOOKUP_KEY_PREFIX`:
+
+| Lookup key                | Line of the rate card                                 |
+| ------------------------- | ----------------------------------------------------- |
+| `peal_accounts`           | Connected accounts, on graduated tiers by account-day |
+| `peal_assistant_requests` | Writing assistant requests                            |
+| `peal_assistant_images`   | Writing assistant images                              |
+| `peal_outbound_messages`  | Inbox messages sent                                   |
+| `peal_managed_ads`        | Managed ads                                           |
+| `peal_x_api`              | X API usage                                           |
+
+The command's key needs write access to meters, products and prices. It prints what it makes, by name and id, and changes nothing when run again. With `--check`, it only compares, and fails when something would change.
+
+<Accordion>
+  <AccordionItem title="When the rate card's amounts change, and rolling back">
+    The command makes a new price that takes the lookup key, and leaves the old
+    one active for the subscriptions on it. The release before then no longer
+    finds its own price under that key: to roll back, start the previous
+    release, then run its `stripe-catalogue`, which moves the key back.
+  </AccordionItem>
+  <AccordionItem title="Product names and tax codes">
+    The command gives each product it makes its name and the tax code
+    `txcd_10103001`, and never changes them afterwards: rename a product or give
+    it another tax code at Stripe, and the command says so and leaves them.
+  </AccordionItem>
+  <AccordionItem title="When the command stops">
+    It stops, changing nothing, on a price whose product is archived (restore
+    the product), and on a meter that counts otherwise than Peal sends, as
+    Stripe cannot change a meter: deactivate it at Stripe and run the command
+    again. From then on, subscriptions on a price that reads the old meter stop
+    counting until they move to the new price. If Stripe refuses the new meter
+    the old one's event name, set `STRIPE_LOOKUP_KEY_PREFIX` to a new prefix and
+    give Stripe the catalogue and the plans' prices under it.
+  </AccordionItem>
+</Accordion>
+
+### The plans' prices [#plan-prices]
+
+The plans are still sold until per-account pricing is. Create by hand a product for each paid plan, with a monthly and a yearly EUR price, both tax-exclusive, under the lookup keys `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), with the same prefix.
+
+Their amounts are those of [Plans and billing](/guides/workspace/billing#plans): Peal shows them before checkout, so keep them equal. The server checks that each one exists, is active, costs what Peal publishes at the right interval, and is tax-exclusive.
+
+### How subscriptions behave [#subscriptions]
+
+- Owners and admins order, cancel and withdraw from the workspace's billing page, in their own session; staff impersonating them, API keys and OAuth clients cannot.
+- A checkout starts only for an order placed there in the last 30 minutes, which records the request to start at once.
+- A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one.
+- A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan.
+- A trial is set to end, cancelled, with its trial, even if a payment method is added, so it never turns into a charge: its workspace is then on the free plan, and a paid plan ordered during the trial ends the trial once it is paid for.
+- The `billing.reminders` job reminds, every hour, the trials that end within three days and the yearly plans that renew within 45 days, always more than a month ahead.
+
+<Callout type="warning" title="Deleting a workspace that pays">
+  A workspace with a subscription Stripe may still bill, unpaid and paused ones
+  included, cannot be deleted, nor the account of its only member, until the
+  subscription is cancelled.
+</Callout>
+
+### Cancelling and withdrawing [#cancel-withdraw]
+
+Anyone cancels a contract or withdraws from one without signing in, from **Cancel your contract** and **Withdraw from contract here** at the foot of every page of the web app (`/cancel` and `/withdraw`), which a server that does not bill does not show.
+
+`POST /api/contract-requests` records each request with the moment it came, which is the one that counts whenever it is applied, and acknowledges it by email. It takes 5 requests an hour from an address (read from `AUTH_IP_HEADERS`), a Turnstile token when Turnstile is on, and writes to one email address 5 times a day at most.
+
+| Request                                                  | Applied                                                                             |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Gives the contract number                                | At once                                                                             |
+| Comes from an address that manages a workspace's billing | From the link in its acknowledgement                                                |
+| Any other                                                | Waits in the staff console ([Staff console](/self-hosting/staff#contract-requests)) |
+
+The `billing.contract-requests` job takes up, every five minutes, what the mail or Stripe could not take. Requests are kept with their workspace, then 5 years after it is deleted, as those no contract was found for are from their receipt.
+
+## Captcha [#captcha]
+
+With `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` ([Environment variables](/self-hosting/environment-variables#captcha)), signing up and asking for a password reset need a Cloudflare Turnstile token: the forms show the widget, and the server checks each token with Cloudflare before going on. Signing in relies on its rate limits.
+
+Add your public address to the widget's hostnames in Cloudflare. Cloudflare's test keys let you try it without a real widget.
+
+## Who may sign up [#sign-up]
+
+Anyone who reaches your instance may make an account, then a workspace, which uses your platform apps and your writing assistant's requests. To run Peal for your own people only, set `PEAL_SIGN_UP=invitation` ([Environment variables](/self-hosting/environment-variables#sign-in)).
+
+An account is then made only from an invitation's link, the one its email carries or **Copy link** gives, with the address the invitation went to, while it is pending. Knowing an invited address is not enough. The sign-up page says accounts are made by invitation to anyone else, and the server refuses any other sign-up the same way, so its answer never tells whether an address was invited.
+
+Each person you let in may then make a workspace of their own and invite anyone to it, who may do the same: invitation mode trusts everyone it lets in to invite.
+
+Signing in, password resets, accepting an invitation, the [staff console](/self-hosting/staff), [partner accounts](/developers/embedding) and connect links work as before.
+
+### The first account [#first-account]
+
+While the server has no account, the first one may be made without an invitation, so a new server can be set up: the sign-up page shows its form until then.
+
+<Callout
+  type="warning"
+  title="Make the first account before the address is public"
+>
+  Make it, then your workspace, before the address is public. Two sign-ups at
+  the same moment on an empty server could both pass, and the rule opens again
+  should every account be deleted.
+</Callout>
+
+An account counts as the first even before its address is confirmed.
+
+<Accordion>
+  <AccordionItem title="If the first account cannot be confirmed">
+    A mistyped address, email that does not work yet, or a stranger who took
+    the slot first: then nobody can sign in to invite anyone. Delete the
+    accounts no one confirmed, as long as none is, then sign up again:
+
+    ```bash
+    docker compose --project-name peal --file compose.production.yaml \
+      --file compose.self-host.yaml --env-file /srv/peal/peal.env exec postgres \
+      psql -U peal -d peal -c 'DELETE FROM auth."user" WHERE NOT email_verified AND NOT EXISTS (SELECT 1 FROM auth."user" WHERE email_verified);'
+    ```
+
+    It deletes nothing once an account is confirmed.
+
+  </AccordionItem>
+</Accordion>

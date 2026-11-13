@@ -1,0 +1,241 @@
+---
+title: Many posts at once
+description: Send several posts in one request, or import them from a CSV file.
+sidebar:
+  icon: layers
+---
+
+Send up to 50 posts in one request, or import them from a CSV file, through the API, the SDKs or the command line.
+
+## Send several posts in one request [#bulk]
+
+`POST …/posts/bulk` creates and sends up to 50 posts, each as `send` would. Each item is one post, with its own channels, content, options and time. The same content at several times is several items, and so is a post that goes out at a time of its own on each channel.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/bulk \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 9b2e4d6f-1a3c-4b5d-8e7f-0a1b2c3d4e5f" \
+  -d '{
+    "posts": [
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+        "content": {
+          "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+      },
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"],
+        "content": {
+          "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T17:00:00Z", "timeZone": "America/New_York" }
+      }
+    ]
+  }'
+```
+
+```ts TypeScript
+const result = await peal.posts.bulk({
+  workspaceId,
+  "idempotency-key": "9b2e4d6f-1a3c-4b5d-8e7f-0a1b2c3d4e5f",
+  posts: [
+    {
+      channelIds: ["0190f3a0-0000-7000-8000-00000000c001"],
+      content: {
+        text: "Our spring catalogue is out. Read it at https://example.com/spring",
+        media: [],
+        overrides: [],
+      },
+      when: {
+        _tag: "at",
+        at: "2026-11-16T08:00:00Z",
+        timeZone: "Europe/Paris",
+      },
+    },
+    {
+      channelIds: ["0190f3a0-0000-7000-8000-00000000c009"],
+      content: {
+        text: "Our spring catalogue is out. Read it at https://example.com/spring",
+        media: [],
+        overrides: [],
+      },
+      when: {
+        _tag: "at",
+        at: "2026-11-16T17:00:00Z",
+        timeZone: "America/New_York",
+      },
+    },
+  ],
+});
+```
+
+</CodeGroup>
+
+```json
+{
+  "created": 1,
+  "refused": 1,
+  "items": [
+    {
+      "_tag": "created",
+      "index": 0,
+      "replayed": false,
+      "post": {
+        "id": "0190f3a0-0000-7000-8000-00000000b002",
+        "status": "scheduled",
+        "schedule": {
+          "at": "2026-11-16T08:00:00.000Z",
+          "timeZone": "Europe/Paris"
+        }
+      }
+    },
+    {
+      "_tag": "refused",
+      "index": 1,
+      "refusal": {
+        "_tag": "UnknownChannels",
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"]
+      }
+    }
+  ]
+}
+```
+
+- Items are taken in order, one at a time, each on its own. One refused keeps none of the others from being made, and nothing is undone.
+- The answer is 200 whenever the request itself was read, even if every item was refused. `items` says, for each item by its place in the request (`index`, from 0), `created` with its post, or `refused` with what `send` would have answered for it alone, as data: its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate.
+- A request that cannot be read at all (malformed, no item, more than 50) answers 400, and makes nothing.
+- The plan's limits hold across the request: once the month has no room, the items left are refused.
+- Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel ([Duplicate posts](/developers/posting#duplicates)).
+
+An `Idempotency-Key` header makes the whole request safe to send again within 24 hours. Each item is kept under the key and its place:
+
+- the same request sent again answers the posts it made, with `replayed` true, and makes those that were not made the first time if they now can be;
+- an item that changed under the same key is refused with `IdempotencyKeyReused`;
+- an item may carry an `idempotencyKey` of its own, which is used instead of the header's for that item.
+
+## Import posts from a CSV file [#import]
+
+In the web app, [Import from a file](/guides/posts/drafts#import-screen) checks a file and imports it through this endpoint.
+
+`POST …/posts/import` creates and sends the posts a CSV file lists, one per row. The file's first line names the columns, in any order:
+
+| Column            | Required | What it holds                                                                                                                                             |
+| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`            | yes      | The post's text                                                                                                                                           |
+| `channels`        | yes      | Channel ids, separated by spaces, commas or semicolons                                                                                                    |
+| `at`              | yes      | `now`; an instant with its offset, such as `2026-11-20T09:00:00Z`; or a local time without one, such as `2026-11-20 10:00`, read in the row's `time_zone` |
+| `time_zone`       | no       | An IANA zone, such as `Europe/Paris`. UTC if left out.                                                                                                    |
+| `media`           | no       | Ids of ready media of the workspace                                                                                                                       |
+| `allow_duplicate` | no       | `true` or `false` ([Duplicate posts](/developers/posting#duplicates))                                                                                     |
+| `idempotency_key` | no       | The row's own idempotency key                                                                                                                             |
+
+A row is a post alone, with one text for all its channels: a [thread](/guides/posts#threads), a text of its own on a channel or a platform's options do not fit in a cell, and go through `send` or `bulk`. A file that names another column is refused whole.
+
+Cells follow RFC 4180 strictly, so that no text is ever cut short: a cell with a comma, a quote or a line break is written between double quotes, and a quote inside it is doubled. A row ends after its last cell, without a comma. A file holds at most 100 rows under its first line, and 1,000,000 characters.
+
+```csv title="posts.csv"
+text,channels,at,time_zone,media
+Our spring catalogue is out.,0190f3a0-0000-7000-8000-00000000c001 0190f3a0-0000-7000-8000-00000000c002,2026-11-20 10:00,Europe/Paris,0190f3a0-0000-7000-8000-00000000a001
+"Last days: the ""spring"" prices end on Sunday, at midnight.",0190f3a0-0000-7000-8000-00000000c001,2026-11-27T09:00:00Z,,
+```
+
+The request is JSON, with the file's text in `csv`. Here `jq` writes it from the file:
+
+<CodeGroup>
+
+```bash curl
+jq -Rs '{ csv: ., dryRun: true }' posts.csv |
+  curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/import \
+    -H "Authorization: Bearer $PEAL_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d @-
+```
+
+```ts TypeScript
+import { readFileSync } from "node:fs";
+
+const result = await peal.posts.import({
+  workspaceId,
+  csv: readFileSync("posts.csv", "utf-8"),
+  dryRun: true,
+});
+```
+
+```bash CLI
+peal posts import posts.csv --dry-run
+```
+
+</CodeGroup>
+
+```json
+{
+  "created": 0,
+  "dryRun": true,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    { "_tag": "valid", "row": 2 }
+  ]
+}
+```
+
+The file is checked first, every row, as `validate` checks a post, and as the file it is:
+
+- a row an earlier row leaves no room for in its month is refused with `PlanLimitReached`;
+- a row that says what an earlier row says, on the same channel less than 23 hours from it, with `DuplicatePost` (its `message` names that row, as there is no post to name yet);
+- a row that carries an earlier row's `idempotency_key` with another post, with `IdempotencyKeyReused`.
+
+<Callout type="info">
+  Unless every row is valid, nothing is made. `dryRun: true` stops there even
+  when every row is valid. Otherwise the rows are then made in order, as `bulk`
+  makes its items.
+</Callout>
+
+`rows` holds one result per row, by its place under the first line, from 1. Blank lines are no rows, and are not counted.
+
+| `_tag`       | Meaning                                                                                                                                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `created`    | The row's post was made: `post` holds it, and `replayed` says whether its idempotency key answered one made before.                                                                                                                                                                                                 |
+| `valid`      | The row was checked and not made: a dry run, or another row kept the file from being imported.                                                                                                                                                                                                                      |
+| `refused`    | `refusal` holds what `send` would have answered for it. A row that was valid is refused too when something changed since the check, or when it repeats an earlier row.                                                                                                                                              |
+| `unreadable` | `problems` names the cells at fault: each `column`, `missing` when the row needs it, or `invalid` for what it holds. A row with more or fewer cells than the first line names is not read at all: `cells` says how many were `expected` and `found`. A comma in a text that is not between double quotes makes one. |
+
+```json
+{
+  "created": 0,
+  "dryRun": false,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    {
+      "_tag": "unreadable",
+      "row": 2,
+      "problems": [{ "column": "at", "problem": "invalid" }]
+    }
+  ]
+}
+```
+
+The answer is 200 once the file was read. A file that cannot be read at all answers 422 `ImportUnreadable`, and nothing is made. `problem` says why, and `column` which column when it is about one:
+
+| `problem`           | The file                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `empty`             | is empty                                                                                   |
+| `unterminatedQuote` | has a quoted cell that never ends                                                          |
+| `strayQuote`        | has a double quote inside a cell that is not between quotes, or text after a closing quote |
+| `unknownColumn`     | names a column Peal does not know                                                          |
+| `repeatedColumn`    | names the same column twice                                                                |
+| `missingColumn`     | lacks a column it needs                                                                    |
+| `tooManyRows`       | has more rows than one import takes                                                        |
+
+```json
+{ "_tag": "ImportUnreadable", "problem": "missingColumn", "column": "at" }
+```
+
+An `Idempotency-Key` header works as on `bulk`, by row.

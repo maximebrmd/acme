@@ -1,0 +1,224 @@
+---
+title: "Run your customers' workspaces"
+description: Post for your customers, hear what happened, see who needs attention, follow usage and offboard a customer.
+sidebar:
+  icon: briefcase
+---
+
+## Post for them [#post]
+
+In a customer's workspace, your key uses the same endpoints as any other client: [media](/guides/media), [posts](/guides/posts), [analytics](/guides/engage/analytics). To publish in one call, now or at an instant:
+
+```typescript
+const post = await peal.posts.send({
+  workspaceId: workspace.id,
+  "idempotency-key": "campaign-881-cus_42",
+  channelIds: [channelId],
+  content: { text: "Fresh bread at 7.", media: [], overrides: [] },
+  when: { _tag: "at", at: "2026-11-12T06:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+Peal checks the post against every channel's platform before it takes it, and answers every violation at once ([How refusals read](/developers/agents#refusals)).
+
+<Callout type="warning">
+  What goes out is public on the platforms: Peal cannot take it back.
+</Callout>
+
+## Hear what happened [#webhooks]
+
+Add one endpoint to your home workspace with `scope: "partner"`. It hears the events of every workspace your partner account owns, and your home workspace's own.
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$HOME_WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $HOME_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://hooks.example.com/peal", "eventTypes": ["channel.connected", "channel.reconnect_needed", "post.published", "post.failed", "post.unconfirmed"], "scope": "partner"}'
+```
+
+A partner key does not act in your home workspace, so create the endpoint in the web app's **Settings**, then **Webhooks**, signed in, or with an [API key](/guides/workspace#api-keys) of the home workspace that holds `webhook:manage`. An endpoint with `scope: "partner"` in a workspace without a partner account answers 404 `PartnerNotFound`.
+
+Every payload names its workspace twice: `data.workspaceId`, Peal's id, and `workspaceExternalId`, yours, as it was when the event happened (null when you gave none).
+
+```json
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-10T09:14:02.000Z",
+  "workspaceExternalId": "cus_42",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6f40-11aa-7c3d-8e21-9f0b6a5d4c33",
+    "platform": "linkedin",
+    "reconnected": false
+  }
+}
+```
+
+[Webhooks](/developers/webhooks) tells how deliveries are signed, verified, retried and logged. An endpoint of one customer's workspace, with the default scope, hears that workspace alone.
+
+- To mark a customer's post done in your product once, subscribe to [`post.finished`](/developers/webhooks/events/posts#post-finished). It comes when every channel of the post has its result, with each one's.
+- [`channel.expiring`](/developers/webhooks/events/channels#channel-expiring) warns, a week ahead at most, that a channel's sign-in cannot be renewed: send your customer a [connect link](/developers/embedding#reconnect) before it lapses.
+- When your receiver sits behind a gateway that wants a token, give the endpoint [headers of its own](/developers/webhooks#headers) (`headers`). Their values are write-only.
+
+### Staging apart, with a workspace filter [#webhooks-staging]
+
+To keep your staging environment's customers apart from production's, give each environment a partner endpoint of its own and list, in `workspaceIds` (200 at most), the workspaces it should hear. Your staging endpoint hears your test customers, and your production endpoint, with no list, every workspace. Your home workspace is heard only when it is listed.
+
+Change the list as you add test customers with `PATCH …/webhooks/{endpointId}`. The deliveries of every endpoint, with each one's workspace and your id for it, are in your home workspace's [log across endpoints](/developers/webhooks/delivery#log), where the failed ones can be sent again together.
+
+## See which customers need attention [#health]
+
+Webhooks tell you each change as it happens. `GET /api/partner/overview` tells you how every customer stands now, in one call a page, so your product can show its own list of customers to look after, or check its state after an outage of its receiver.
+
+```bash
+curl "https://api.example.com/api/partner/overview?limit=100" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```json
+{
+  "account": { "overPlan": false },
+  "next": "eyJjcmVhdGVkQXQiOjE3OTQzMDEyMDMwMDAsImlkIjoiN2IxZiJ9",
+  "total": 412,
+  "workspaces": [
+    {
+      "id": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+      "externalId": "cus_42",
+      "name": "Garage Dupont",
+      "channels": { "connected": 3, "toReconnect": 1, "off": 0 },
+      "posts": {
+        "scheduledNext7Days": 4,
+        "awaitingApproval": 0,
+        "failedLast7Days": 1,
+        "unconfirmedLast7Days": 0,
+        "mayApprove": true
+      },
+      "inbox": { "unanswered": 2 }
+    }
+  ]
+}
+```
+
+| Figure                       | What it counts                                                                                                | Opened by         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `channels.connected`         | The channels connected in the workspace                                                                       | `channel:read`    |
+| `channels.toReconnect`       | Those to [reconnect](/developers/embedding#reconnect), as `channel.reconnect_needed` told                     | `channel:read`    |
+| `channels.off`               | Those turned off, on which nothing goes out                                                                   | `channel:read`    |
+| `posts.scheduledNext7Days`   | Posts going out in the next 7 days                                                                            | `post:read`       |
+| `posts.awaitingApproval`     | Posts waiting for an [approval](/guides/posts/review); `mayApprove` says whether the key holds `post:approve` | `post:read`       |
+| `posts.failedLast7Days`      | Posts that finished in the last 7 days with a channel that failed, as `post.failed` told                      | `post:read`       |
+| `posts.unconfirmedLast7Days` | Posts of the last 7 days with a channel that may be live and must be checked, as `post.unconfirmed` told      | `post:read`       |
+| `inbox.unanswered`           | Threads of the [inbox](/guides/engage/inbox) with a comment waiting for an answer                             | `engagement:read` |
+
+A section is `null` where the key was not given the permission that reads it, which is not the same as nothing to attend: a workspace with nothing answers zeros. The key needs the scope `workspaces:read`.
+
+`account.overPlan`, on the first page only, says whether your workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing until some are removed ([Plans and limits](#limits)); before your first customer, it is your home workspace's own standing. It is `null` on a server that does not bill.
+
+Pages follow the list of your workspaces: newest first, 50 a page unless `limit` (100 at most) says otherwise, `next` passed as `before`. Your home workspace is not listed: it is no customer. Nothing filters the list to the workspaces that need attention. Page through it, which for 1,000 customers is 10 to 20 calls, well within the [rate limit](/developers/conventions/rate-limits#rate-limits).
+
+The owners and admins of your home workspace read the same at `GET /api/workspaces/{homeWorkspaceId}/partner/overview` (`partner:read`), in **Settings**, then **Partner**, and with `peal partner overview` ([command line](/developers/cli/workspace#partner)). They see each section where they hold its permission in the home workspace (staff acting as one read no inbox), and `mayApprove` is always false, as they are members of no customer's workspace.
+
+## Offboard a customer [#offboard]
+
+```typescript
+await peal.partner.deleteWorkspace({ workspaceId: workspace.id });
+```
+
+<Callout type="warning" title="Deleting a workspace cannot be undone">
+  It erases, for good, everything the workspace holds: its channels and their
+  tokens (revoked at the platforms that take it), its posts, scheduled ones
+  included, which then go out nowhere, its media and their files, its analytics,
+  its webhook endpoints and its connect links.
+</Callout>
+
+The deletion answers 409 `WorkspaceBusy` while one of its posts is being published: send it again a moment later. Its external id is free again afterwards.
+
+Your partner account closes, and your home workspace is deleted, only once the account owns no workspace: both answer 409 `PartnerOwnsWorkspaces` until then.
+
+## Plans and limits [#limits]
+
+On an instance that bills, the workspaces your partner account owns have no subscription of their own: they are on your home workspace's plan.
+
+| Limit                                                                            | How it is counted                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Channels                                                                         | Together. The plan's channels cover those of your home workspace and of every workspace you own. Connecting one more when they are all taken answers 402 `PlanLimitReached`, and a hosted page says no more accounts can be connected for now. |
+| Posts scheduled in a month, media stored, the writing assistant's requests a day | For each workspace, as the plan gives them. Each customer's workspace counts its own requests: one that spent its day does not stop another. Images from a customer's own image provider count against none of them.                           |
+
+<Callout type="warning" title="Over the plan">
+  If your plan shrinks under what you hold, nothing is deleted, but until the
+  channels held are back within it, by disconnecting some or taking a larger
+  plan, your workspaces schedule and publish nothing ([A workspace over its
+  plan](/guides/workspace/billing#over)).
+</Callout>
+
+A self-hosted Peal without billing limits nothing. `GET /api/partner` answers what the account holds each day, and [its usage per customer](#usage) what each workspace used, which is what a price by the workspace or by the connected channel would count.
+
+## Usage per customer [#usage]
+
+One call answers what your partner account used across the workspaces it holds, per customer with your own id for each, over a period of UTC days: for your own billing and dashboards.
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/partner/usage?from=2026-11-01&to=2026-11-30&limit=50" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```typescript TypeScript
+const usage = await peal.partnerUsage.get({
+  from: "2026-11-01",
+  to: "2026-11-30",
+});
+// usage.workspaces.workspaces: your home workspace first, then each customer's
+```
+
+</CodeGroup>
+
+A partner key with the scope `workspaces:read` reads it at `GET /api/partner/usage`. Your home workspace's owners and admins (`partner:read`) read it at `GET /api/workspaces/{workspaceId}/usage/partner`, which answers the same; any other workspace answers 404 `PartnerNotFound`.
+
+`from` and `to` are UTC days, both included, 92 days at most; by default the 30 days that end today.
+
+| Field        | What it holds                                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `current`    | The workspaces you own now and the channels connected across them and your home workspace, which your plan's channel limit counts              |
+| `days`       | For each day, the workspaces and channels as the daily count found them at 23:41 UTC (null for a day without one), and the posts that went out |
+| `totals`     | The period's posts by platform, its channel-days and, for each calendar month it touches, the posts on platforms that bill per post            |
+| `workspaces` | A page of workspaces, [below](#usage-workspaces)                                                                                               |
+
+`current`, `days` and `totals`, which cover the whole account, come with the first page only, and are `null` on the pages after it, which read their own workspaces alone.
+
+### Per workspace [#usage-workspaces]
+
+`workspaces` is a page of them, newest first, in the order and with the cursor of [`GET /api/partner/workspaces`](/developers/embedding#workspaces), 50 a page unless `limit` (at most 100) says otherwise: pass `next` as `before` for the next page. Your home workspace comes first, on the first page only, one more than asked, with `home: true`.
+
+Each gives its `externalId`, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and metered posts.
+
+A customer offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it. The daily `workspaces` and `channels` still count it for the days it existed.
+
+The daily counts are kept {{keep-partner-usage-en}}. Counts only: nothing here is priced, and a self-hosted Peal without billing answers `plan` and `allowances` as null.
+
+## Where things are [#surfaces]
+
+| To                                              | Use                                                                                                                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Set the account up, create and revoke keys      | The web app: **Settings**, then **Partner**                                                                                                                                |
+| Create, find, change and delete workspaces      | `/api/partner`, with a partner key; `partner` in the SDKs                                                                                                                  |
+| Act inside a workspace                          | `/api/workspaces/{workspaceId}/…`, with the same key; `connectLinks`, `channels`, `media`, `posts`, `analytics` in the SDKs                                                |
+| Read the account and its workspaces as a person | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([command line](/developers/cli/workspace#partner))                                                    |
+| Read the usage per customer                     | `GET /api/partner/usage`, with the key; `partnerUsage` in the SDKs; `peal partner usage`, the MCP tool `get_partner_usage` and **Settings**, then **Partner**, as a person |
+| See which customers need attention              | `GET /api/partner/overview`, with the key; `partner.overview` in the SDKs; `peal partner overview` and **Settings**, then **Partner**, as a person ([Health](#health))     |
+| Make a link by hand for a workspace of yours    | `peal links create` ([command line](/developers/cli/workspace#links)), or the MCP tool `create_connect_link` ([MCP](/developers/mcp/tools#tools))                          |
+
+The [API reference](/reference) lists every endpoint with its errors. The [SDKs](/developers/sdks) are generated from the same contract, in eight languages; a partner key checks itself with `GET /api/credential` (`credential.get`), which names its partner, scopes and permissions, never its workspaces.
+
+### Without a partner account [#agencies]
+
+Connect links work in any workspace: a member who may connect channels, or an API key with `channel:connect`, creates one to hand to whoever owns an account, such as an agency's client. Such a link takes no `returnUrl`: its page ends by saying the account is connected.
+
+## Not there yet [#later]
+
+- Your own account picker: the choice among several accounts happens on Peal's hosted page.
+- Your own platform apps: your customers authorize Peal's app on each platform, whose name the platform's consent screen shows.
+- Your own domain for the hosted pages, and pages without Peal's name.

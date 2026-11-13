@@ -1,0 +1,381 @@
+---
+title: Publier depuis un agent IA
+description: "Laisser un agent IA écrire, programmer ou publier des publications, choisir s’il peut publier, et lire ce qu’il a fait."
+sidebar:
+  icon: bot
+---
+
+Un agent IA peut publier par Peal comme le fait un membre : il lit les canaux de l’espace de travail, y fait entrer des images et des vidéos, rédige un brouillon que vous relisez, ou programme et publie lui-même une publication, puis lit ce qu’elle est devenue. Il joint Peal par le [point d’accès MCP](/developers/mcp), la [ligne de commande](/developers/cli) ou l’[API HTTP](/developers), et vous décidez, pour chaque application, si elle peut faire partir des publications ou seulement rédiger des brouillons.
+
+<Prompt description="Donnez ce prompt à un agent de code pour publier par la ligne de commande `peal`.">
+Publie pour moi sur Peal par sa ligne de commande `peal`.
+
+1. Lance `peal doctor --json`, et corrige chaque vérification en échec comme elle le dit.
+2. Lance `peal whoami` pour voir l’espace de travail, et si cette connexion peut programmer et publier.
+3. Lance `peal channels list`, et demande-moi sur quels canaux part la publication.
+4. Rédige la publication en brouillon avec `peal drafts save --text "…" --channel <channel-id>`, montre-la-moi, et attends mon accord.
+5. Seulement quand je te le dis, programme-la avec `peal posts schedule <post-id> --at <instant>`, puis lis ce qu’elle est devenue avec `peal posts show <post-id>`.
+
+Un brouillon est sans risque ; publier est public et ne se reprend pas. Ne republie jamais une cible `unconfirmed` : demande-moi de regarder sur la plateforme. Décide d’après les codes d’erreur, jamais d’après les messages, et arrête-toi pour me demander quand une commande échoue.
+
+</Prompt>
+
+## Ce qu’un agent peut faire [#what]
+
+| Il peut                                                                                                               | Avec                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Voir pour qui il agit, dans quel espace de travail, et ce qu’il peut y faire                                          | `whoami`                                                                                      |
+| Trouver l’outil qui convient à une tâche, et savoir quels outils la connexion peut appeler                            | `find_tools`                                                                                  |
+| Lister les canaux où une publication peut partir, les médias qu’elle peut montrer, les brouillons et les publications | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
+| Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                                                                |
+| Lire un média, voir quelles publications le montrent, le décrire, ou le supprimer quand l’utilisateur le demande      | `get_media`, `get_media_usage`, `describe_media`, `delete_media`                              |
+| Créer un lien qui montre une publication à une personne sans compte, pour la voir ou la commenter, et y mettre fin    | `list_review_links`, `create_review_link`, `revoke_review_link`                               |
+| Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`                                               |
+| Rédiger un nouveau brouillon à partir d’une publication de l’espace de travail                                        | `duplicate_post`                                                                              |
+| Donner à un canal un nom propre à l’espace de travail, le désactiver ou le réactiver                                  | `rename_channel`, `disable_channel`, `enable_channel`                                         |
+| Ranger des publications sous les étiquettes de l’espace de travail, et lister celles d’une étiquette                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
+| Publier sur un groupe de canaux enregistré, avec une signature enregistrée et les options par défaut d’un canal       | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
+| Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`                                                |
+| Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                                                               |
+| Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                                                                |
+| Déplacer une publication programmée, la repasser en brouillon ou l’annuler                                            | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
+| Lire ce qu’une publication est devenue sur chaque canal, et chaque tentative de Peal                                  | `get_post`, `list_post_attempts`                                                              |
+| Attendre qu’une publication qui part maintenant ait son résultat sur chaque canal                                     | `await_post`                                                                                  |
+| Republier là où une publication a échoué, ou enregistrer ce que vous avez trouvé sur la plateforme                    | `repost_target`, `confirm_target`                                                             |
+
+[Connecter un client MCP](/developers/mcp/tools#tools) liste chaque outil avec ce qu’il change. Un agent ne connecte aucun canal : vous connectez les comptes dans l’application web, où vous vous identifiez sur chaque plateforme ([Connecter des canaux](/guides/channels)). Il agit dans un seul espace de travail, en votre nom, sans dépasser ce que votre [rôle](/guides/posts#roles) permet : propriétaires, administrateurs et éditeurs programment et publient ; les contributeurs rédigent des brouillons.
+
+## Connecter un client MCP [#connect]
+
+Le point d’accès est `/api/mcp`, à l’adresse où vous ouvrez Peal, comme `https://peal.example.com/api/mcp`. Donnez-le à votre assistant IA, ou à tout autre client MCP, comme sa documentation l’indique pour un serveur distant en HTTP ; `peal mcp` affiche une configuration que la plupart des clients acceptent ([Connecter un client MCP](/developers/mcp#endpoint)).
+
+Vous ne donnez aucune clé au client. À sa première requête, il ouvre un navigateur sur Peal :
+
+<Steps>
+  <Step title="Connectez-vous">Si ce n’est pas déjà fait.</Step>
+  <Step title="Choisissez un espace de travail">
+    Le client n’agit que dans celui-là.
+  </Step>
+  <Step title="Vérifiez la page de consentement">
+    Vérifiez ce que l’application demande et où elle vous renvoie ensuite.
+    Publier a sa propre ligne, avec une case : **L’autoriser à programmer et
+    publier des publications sur vos comptes connectés, où tout le monde peut
+    les voir**. Laissez-la cochée, ou décochez-la pour que l’application ne
+    rédige que des brouillons. Choisissez ensuite **Autoriser**, ou **Refuser**.
+  </Step>
+</Steps>
+
+<Callout type="warning">
+  Peal ne vérifie pas qui a fait une application qui s’est enregistrée
+  elle-même, et le dit sur cette page : n’en autorisez une que si vous lui
+  faites confiance et avez lancé la connexion vous-même.
+</Callout>
+
+## Un agent sans personne pour le connecter [#headless]
+
+Un agent qui tourne à heure fixe ou sur un serveur n’a pas de navigateur pour se connecter. Donnez-lui plutôt une [clé d’API](/guides/workspace#api-keys) de l’espace de travail, créée avec les seules permissions dont il a besoin :
+
+- sur le point d’accès MCP, la clé va dans l’en-tête `Authorization`, sous la forme `Bearer peal_…`, jamais dans l’adresse ([Se connecter avec une clé d’API](/developers/mcp#api-key)) ;
+- sur l’[API HTTP](#api), le même en-tête ;
+- sur la [ligne de commande](#cli), dans la variable `PEAL_API_KEY`, jamais dans une option, avec l’espace de travail nommé par son identifiant ([La lancer avec une clé d’API](/developers/cli#api-key)).
+
+Une clé n’a pas de scope : ce qu’elle peut faire, c’est la liste de ses permissions, que répond `whoami`, et `GET /api/credential` en HTTP ([SDK](/developers/sdks#credential)). Elle ne fait partir des publications que si elle porte `post:schedule`, et les outils réservés à une personne, comme inviter quelqu’un, la refusent. Gardez la clé parmi les secrets de l’agent, et révoquez-la, sous **Clés d’API**, le jour où l’agent s’arrête.
+
+## Ce que permet chaque permission [#scopes]
+
+Une application demande jusqu’à trois permissions sur l’espace de travail, qu’OAuth appelle des scopes :
+
+| Scope               | Ce que dit la page de consentement                                                                                                               | Ce qu’il permet                                                                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace:read`    | Lire l’espace de travail : publications, canaux, médias et statistiques                                                                          | Lire, sans rien changer                                                                                                                                                                                                                                                                                     |
+| `workspace:write`   | Faire ce que votre rôle permet dans l’espace de travail, comme rédiger des brouillons et gérer les médias, sans rien programmer ni publier       | Tout ce que votre rôle permet, sauf ce qui fait partir des publications : brouillons, médias, invitations. Rien de ce qu’il fait n’atteint une plateforme.                                                                                                                                                  |
+| `workspace:publish` | L’autoriser à programmer et publier des publications sur vos comptes connectés, et à y répondre aux commentaires, où tout le monde peut les voir | Ce que votre rôle permet de ce qui fait partir des publications : programmer, déplacer, publier et republier une publication, la déprogrammer, l’annuler, confirmer ce qu’elle est devenue, et approuver une publication qui attend une [approbation](/guides/posts/review) ou y demander des modifications |
+
+<Callout type="warning" title="Le scope des publicités dépense de l’argent">
+  Un quatrième scope, `workspace:ads`, sert aux
+  [publicités](/guides/engage/ads#access), et n’ouvre rien seul. Avec
+  `workspace:write`, il permet à l’application de déconnecter des comptes
+  publicitaires et de mettre en pause ou d’arrêter des mises en avant ; avec
+  `workspace:publish`, il lui permet de mettre en avant des publications, ce qui
+  dépense de l’argent sur un réseau publicitaire, dans la limite du plafond
+  mensuel fixé par un propriétaire. Aucune application ne décide jamais si un
+  compte publicitaire peut dépenser, ni combien : cela reste à un propriétaire,
+  connecté à Peal.
+</Callout>
+
+`workspace:write` et `workspace:publish` comprennent chacun la lecture. Sans `workspace:publish`, les outils qui rédigent des brouillons et gèrent les médias fonctionnent toujours, et ceux qui font partir des publications sont refusés, avec le nom du scope.
+
+`workspace:publish` couvre aussi les réponses aux commentaires de vos publications mises en ligne ([Boîte de réception](/guides/engage/inbox)) : une réponse est publique, comme une publication. Les lire demande `workspace:read`.
+
+Publier est un scope à part pour que vous puissiez le refuser. Une application connectée avant qu’il existe n’a que `workspace:write` : elle ne publie rien, et ne déprogramme, ne republie ni ne confirme plus rien, tant que vous ne l’avez pas connectée de nouveau en autorisant la publication. Une connexion garde jusque-là les scopes qu’elle a reçus.
+
+## Un exemple de session [#session]
+
+Ici, un agent publie une image sur deux canaux. Chaque étape est un appel d’outil avec ses arguments ; les identifiants et les adresses sont inventés.
+
+1. `whoami`, pour voir l’espace de travail et ce que la connexion peut y faire. Ses `permissions` ne contiennent `post:schedule` que si vous avez autorisé la publication.
+
+   ```json
+   {}
+   ```
+
+2. `list_channels`, pour les identifiants des canaux où part la publication.
+
+   ```json
+   {}
+   ```
+
+3. `import_media`, pour faire entrer l’image dans les médias de l’espace de travail. La réponse est le média : il peut être joint dès que son `status` est `ready`.
+
+   ```json
+   {
+     "url": "https://files.example/printemps/couverture.jpg",
+     "altText": "Un catalogue papier ouvert sur une table en bois, à côté d’une tasse de café."
+   }
+   ```
+
+4. `create_draft`, pour que vous relisiez la publication avant que rien ne parte. Elle rejoint les **Brouillons** de l’espace de travail, où vous la programmez ; l’agent peut aussi la programmer plus tard avec `schedule_post`.
+
+   ```json
+   {
+     "channelIds": [
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12"
+     ],
+     "content": {
+       "text": "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+       "media": [
+         {
+           "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+           "altText": "Un catalogue papier ouvert sur une table en bois, à côté d’une tasse de café."
+         }
+       ],
+       "overrides": []
+     }
+   }
+   ```
+
+   Ou, quand vous avez demandé que cette publication parte à une heure donnée, `create_post`, qui la crée et la programme en un seul appel. `when` vaut `at`, un instant, avec le fuseau IANA où il a été choisi, ou `{ "_tag": "now" }`, qui publie en quelques secondes. L’`idempotencyKey` est un texte au choix de l’agent, nouveau pour chaque publication, de 255 caractères au plus : rappelé avec la même clé et les mêmes arguments dans les 24 heures, après une réponse perdue par exemple, l’outil répond la publication créée par le premier appel, sans en faire une seconde.
+
+   ```json
+   {
+     "channelIds": [
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12"
+     ],
+     "content": {
+       "text": "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+       "media": [
+         {
+           "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+           "altText": "Un catalogue papier ouvert sur une table en bois, à côté d’une tasse de café."
+         }
+       ],
+       "overrides": []
+     },
+     "when": {
+       "_tag": "at",
+       "at": "2026-11-16T08:00:00Z",
+       "timeZone": "Europe/Paris"
+     },
+     "idempotencyKey": "catalogue-printemps-2026-11-16"
+   }
+   ```
+
+   En dehors des clés, une publication dont le contenu part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, en nommant la publication qui l’a déjà ([Publications en double](/developers/posting#duplicates)). `allowDuplicate: true` la laisse passer : un agent ne le passe que si vous voulez vraiment publier deux fois la même chose. Avec `waitSeconds`, 60 au plus, une publication qui part maintenant (`now`) est répondue une fois que chaque canal a son résultat, ou dans son état du moment quand le temps est écoulé ; `await_post` attend la suite.
+
+   `validate_post` prend les mêmes arguments et ne crée rien : il répond ce qui serait refusé, et ce que recevrait chaque canal. `create_posts` envoie jusqu’à 50 publications en un seul appel, chacune comme le ferait `create_post`, et répond pour chacune si elle a été créée ou pourquoi elle a été refusée.
+
+5. `get_post`, une fois son heure passée, pour lire le résultat. Le `status` de la publication est `finished` quand tous les canaux ont fini ; son `outcome` et chacune de ses cibles (`targets`) disent ce qui s’est passé, avec l’adresse de la publication sur la plateforme, ou la raison de l’échec.
+
+   ```json
+   { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" }
+   ```
+
+6. `list_post_attempts`, quand quelque chose a échoué ou est parti en retard : chaque tentative de Peal, canal par canal, avec son résultat et le moment où Peal a réessayé.
+
+   ```json
+   { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" }
+   ```
+
+Les canaux d’un compte YouTube ou TikTok demandent plus que du texte et des médias : `create_draft` et `create_post` les prennent dans `options` ([Options des plateformes](/guides/posts#options)), et `get_tiktok_creator` lit d’abord ce qu’offre un compte TikTok.
+
+## Comment lire les refus [#refusals]
+
+Une publication est vérifiée contre la plateforme de chaque canal avant d’être programmée : longueur du texte, types, tailles et nombre de médias, options requises, et ce que le compte lui-même refuse. Si quelque chose ne va pas, rien n’est enregistré, programmé ni publié, et le refus liste toutes les violations d’un coup, sous forme de données, pour qu’un seul appel de plus les corrige toutes :
+
+```json
+[
+  {
+    "_tag": "textTooLong",
+    "channelId": "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+    "platform": "bluesky",
+    "length": 342,
+    "maximum": 300,
+    "unit": "graphemes"
+  },
+  {
+    "_tag": "mediaTooLarge",
+    "channelId": "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+    "platform": "bluesky",
+    "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+    "byteSize": 3481600,
+    "maximum": 2000000
+  }
+]
+```
+
+Chaque violation nomme ce qui ne va pas (`_tag`), le canal (`channelId`) et sa plateforme (`platform`), l’option (`field`) ou le média (`mediaId`) concerné, et la limite dépassée. L’API répond la même liste dans `PostContentInvalid` (422).
+
+Les autres refus sont des phrases, en anglais, sur lesquelles l’agent peut agir, ou qu’il vous transmet :
+
+- un scope manquant est nommé, avec la façon de l’accorder : « the user did not give this client the scope workspace:publish (schedule and publish posts). To grant it, the user connects this client to Peal again and allows it there » ;
+- un rôle qui ne permet pas l’action est nommé avec sa permission, comme `post:schedule` : un propriétaire ou un administrateur change le rôle dans les paramètres de l’espace de travail ;
+- une heure passée de plus d’une minute, un fuseau qui n’est pas un fuseau IANA, un canal ou un média qui n’est pas à l’espace de travail, une publication dont le statut ne permet pas l’action et un abonnement qui n’a plus de place le disent chacun, et disent que rien n’a été fait.
+
+## Avant de laisser un agent publier [#safety]
+
+- Relisez d’abord des brouillons. Un brouillon ne part à aucune heure tant que personne ne le programme. Laissez une nouvelle application rédiger des brouillons, lisez-les dans l’application web et programmez-les vous-même, jusqu’à faire confiance à ce qu’elle écrit.
+- N’accordez la publication qu’aux applications en qui vous avez confiance. Ce qui part est public sur les plateformes, et vu par les abonnés des comptes. Peal ne peut pas le reprendre une fois parti : la suppression se fait sur chaque plateforme.
+- Arrêtez une publication avant son heure. `unschedule_post` repasse une publication programmée en brouillon, et `cancel_post` l’annule pour de bon ; **Repasser en brouillon** et **Annuler la publication**, dans l’éditeur, font de même. Une publication déjà en cours de publication ne peut pas être déprogrammée, et l’annuler n’arrête que les canaux qui n’ont pas encore reçu l’envoi.
+- Vérifiez sur la plateforme avant de republier. Quand une publication n’est pas confirmée, Peal n’a pas pu savoir si la plateforme l’a publiée. La republier risque alors de la montrer deux fois : regardez sur la plateforme, puis republiez, ou enregistrez ce que vous avez trouvé avec `confirm_target`.
+- Lisez ce que l’agent a fait. Le [journal d’activité](/guides/workspace#activity) de l’espace de travail garde chaque requête qui a demandé à changer quelque chose, aboutie ou refusée, et chaque appel d’un outil qui change quelque chose : quand, quelle opération, ce qui a été répondu, et la clé ou l’application par laquelle elle est passée, désignée par son nom. Les propriétaires le lisent, avec `GET …/activity`, `peal activity list` ou l’outil `list_activity` ; une clé à qui un propriétaire a donné `activity:read` aussi. Il est gardé {{keep-activity-fr}}, et ne contient le texte d’aucune publication.
+- Voyez qui a fait quoi. La page de chaque publication indique comment elle a été créée et comment elle a été programmée : dans l’application web, avec une clé d’API, ou par une application, désignée par son nom. L’API répond la même chose dans `createdVia` et `scheduledVia` (`via` : `web`, `apiKey` ou `application`, avec l’identifiant `id` et le nom `name` de la clé ou de l’application), et le membre qui l’a programmée ou déplacée en dernier dans `scheduledBy`.
+- Déconnectez une application sous **Applications connectées**, dans les **Paramètres du compte** : elle ne peut plus renouveler son accès, et celui qu’elle détient prend fin sous 15 minutes. Les publications qu’elle a programmées restent programmées : annulez ou déprogrammez celles dont vous ne voulez pas.
+- Seules les adresses publiques sont récupérées. Le serveur Peal télécharge le fichier lui-même, sans identifiants, depuis une URL `https://` sur le port par défaut dont l’hôte est public, en suivant trois redirections au plus, chacune vérifiée de la même façon. Le fichier doit arriver en 90 secondes au plus : images JPEG, PNG, GIF et WebP jusqu’à 16 Mio, vidéos MP4 et QuickTime jusqu’à 1 Gio. Chaque récupération ajoute un fichier aux médias de l’espace de travail, qui compte dans son abonnement sur une instance qui facture. Importez vous-même les fichiers plus lourds ou plus lents.
+
+## Un agent qui tourne longtemps [#reliability]
+
+- Ne renvoyez que ce qui peut l’être sans risque. Une réponse qui n’est pas arrivée ne dit pas que la publication n’a pas été créée. `create_post`, `peal post` et `POST …/posts/send` prennent une clé d’idempotence : sous la même clé et avec la même publication, un second appel dans les 24 heures répond la première publication. Créer un brouillon ou importer un média une seconde fois en fait un second ; republier renvoie la publication ([Idempotence](/developers/conventions/idempotency#idempotency)).
+- Ne touchez pas à une publication non confirmée. `unconfirmed` veut dire que Peal n’a pas pu savoir si la plateforme l’a publiée. Un agent qui la republie risque de la montrer deux fois : qu’il vous pose la question, et enregistre ce que vous avez trouvé avec `confirm_target`.
+- Décidez d’après le code d’erreur. Chaque erreur de l’API a un `code` stable, comme `post_status_conflict`, et un `message` en anglais dont la formulation peut changer ([Codes d’erreur](/developers/conventions/errors#error-codes)). Chaque tentative de publication porte le code de la plateforme elle-même dans `refusalCode`.
+- Restez sous la limite de débit. Une clé, ou une application pour chaque membre au nom duquel elle agit, peut envoyer 600 requêtes par minute, MCP et API confondus. Chaque réponse dit ce qui reste dans l’en-tête `RateLimit`, et un 429 dit combien de temps attendre dans `Retry-After` ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
+- Gardez l’identifiant de requête. Chaque réponse porte `X-Request-Id`, qui figure aussi dans chaque erreur et dans le journal d’activité. Un agent qui envoie le sien, de 8 à 128 lettres, chiffres, `.`, `_`, `:` ou `-`, y retrouve ses appels sous sa propre numérotation ([Requêtes et réponses](/developers/conventions#requests)).
+
+## Depuis la ligne de commande [#cli]
+
+Un agent qui lance des commandes dans un terminal utilise [`peal`](/developers/cli), connecté en votre nom avec `peal login`, qui demande la permission de programmer et publier. Un agent que personne ne peut connecter la lance plutôt avec une clé d’API dans `PEAL_API_KEY` ([La lancer avec une clé d’API](/developers/cli#api-key)). `--json` affiche la réponse de l’API en un seul document JSON sur la sortie standard ; un échec est un seul document JSON sur la sortie d’erreur, `{"error": {"code", "message", "requestId", …}}`, avec le code de sortie 1 ([Sortie pour les scripts](/developers/cli#json)).
+
+Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serveur, le moyen d’authentification, s’il peut programmer et publier, et l’espace de travail, ne change rien, et dit quoi faire pour chaque vérification en échec ([Vérifier la configuration](/developers/cli#doctor)).
+
+| Outil                                          | Commande                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `whoami`                                       | `peal whoami`                                                                                                          |
+| `list_channels`                                | `peal channels list`                                                                                                   |
+| `rename_channel`                               | `peal channels rename <channel-id> "…"`                                                                                |
+| `disable_channel`, `enable_channel`            | `peal channels disable <channel-id>`, `peal channels enable <channel-id>`                                              |
+| `list_media`, `import_media`                   | `peal media list`, `peal media import <url> --alt "…"` ; `peal media upload <file>` envoie un fichier depuis le disque |
+| `list_drafts`, `create_draft`                  | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                               |
+| `duplicate_post`                               | `peal posts duplicate <post-id>`                                                                                       |
+| `create_post`                                  | `peal post "…" --channel <channel-id> --at <instant>`, ou `--now`                                                      |
+| `validate_post`                                | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                                        |
+| `schedule_post`                                | `peal posts schedule <post-id> --at <instant>`                                                                         |
+| `publish_post`                                 | `peal posts publish <post-id>`                                                                                         |
+| `reschedule_post`                              | `peal posts reschedule <post-id> --at <instant>`                                                                       |
+| `unschedule_post`, `cancel_post`               | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                                       |
+| `get_post`                                     | `peal posts show <post-id>`                                                                                            |
+| `list_posts`, `await_post`                     | `peal posts list`, `peal posts wait <post-id>`                                                                         |
+| `list_post_attempts`                           | `peal posts attempts <post-id>`                                                                                        |
+| `list_tags`, `tag_post`                        | `peal tags list`, `peal posts tag <post-id> --tag <tag>`                                                               |
+| `list_signatures`, `list_channel_sets`         | `peal signatures list`, `peal sets list`                                                                               |
+| `get_channel_defaults`, `set_channel_defaults` | `peal channels defaults show <channel-id>`, `peal channels defaults set <channel-id> --options <json>`                 |
+| `list_activity`                                | `peal activity list`                                                                                                   |
+| `repost_target`, `confirm_target`              | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
+
+```sh
+peal post "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps" \
+  --channels 019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11,019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris \
+  --media https://files.example/printemps/couverture.jpg \
+  --alt "Un catalogue papier ouvert sur une table en bois, à côté d’une tasse de café." \
+  --json
+```
+
+`peal post` ne publie jamais par défaut : il lui faut `--at` ou `--now`. Avec `--idempotency-key`, le relancer dans les 24 heures avec la même publication n’en fait pas une seconde ; donnez alors à `--media` des identifiants de médias, car un fichier ou une adresse est stocké de nouveau à chaque lancement. [Ligne de commande](/developers/cli/posts#post) décrit chaque option.
+
+## La compétence pour agents [#skill]
+
+Le dépôt contient une compétence (skill) pour agents dans le dossier [`packages/peal-skills/skills/peal/`](https://github.com/peal-social/peal/tree/main/packages/peal-skills/skills/peal), au format [Agent Skills](https://agentskills.io) : des instructions qu’un agent charge quand une tâche concerne Peal. Elle enseigne la ligne de commande et l’API HTTP : s’installer et vérifier avec `peal doctor --json`, se connecter ou utiliser une clé d’API d’espace de travail, trouver les identifiants des canaux et des médias, rédiger, programmer et publier, envoyer sous une clé d’idempotence, lire ce qu’une publication est devenue, et traiter les erreurs et les limites de débit. Ses deux premières règles sont celles de cette page : un brouillon est sans risque et publier est public, et un refus ne se contourne jamais.
+
+- Pour l’installer, copiez le dossier là où votre agent lit ses compétences.
+- Le site de Peal la publie pour qu’elle soit découverte, à `https://peal.social/.well-known/agent-skills/index.json`, qui liste la compétence avec son adresse et son empreinte.
+- Elle est sous licence Apache 2.0, contrairement à la plus grande partie du dépôt : installez-la, modifiez-la et partagez-la.
+
+## Par l’API HTTP [#api]
+
+Votre propre agent ou script peut appeler les points d’accès sur lesquels reposent les outils, sous `/api/workspaces/{workspaceId}/` ([Présentation de l’API](/developers)) ; [Conventions de l’API](/developers/conventions) décrit leurs erreurs, leur pagination et leurs limites :
+
+| Outil                                          | Point d’accès                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `list_channels`                                | `GET …/channels`, `GET …/channels/search`                                                  |
+| `rename_channel`                               | `PATCH …/channels/{channelId}`                                                             |
+| `disable_channel`, `enable_channel`            | `POST …/channels/{channelId}/disable`, `…/enable`                                          |
+| `list_media`, `import_media`                   | `GET …/media`, `POST …/media/import`                                                       |
+| `list_drafts`, `list_posts`                    | `GET …/posts/drafts`, `GET …/posts/search`                                                 |
+| `create_draft`, `update_draft`                 | `POST …/posts`, `PUT …/posts/{postId}`                                                     |
+| `duplicate_post`                               | `POST …/posts/{postId}/duplicate`                                                          |
+| `create_post`                                  | `POST …/posts/send`                                                                        |
+| `create_posts`                                 | `POST …/posts/bulk`                                                                        |
+| `validate_post`                                | `POST …/posts/validate`                                                                    |
+| `schedule_post`                                | `POST …/posts/{postId}/schedule`                                                           |
+| `reschedule_post`, `publish_post`              | `POST …/posts/{postId}/reschedule`, avec l’instant présent pour publier maintenant         |
+| `unschedule_post`, `cancel_post`               | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`                         |
+| `get_post`, `list_post_attempts`               | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`                                    |
+| `list_tags`, `create_tag`                      | `GET …/tags`, `POST …/tags`                                                                |
+| `tag_post`                                     | `PUT …/posts/{postId}/tags`                                                                |
+| `list_signatures`, `create_signature`          | `GET …/signatures`, `POST …/signatures`                                                    |
+| `list_channel_sets`, `create_channel_set`      | `GET …/channel-sets`, `POST …/channel-sets`                                                |
+| `get_channel_defaults`, `set_channel_defaults` | `GET …/channels/{channelId}/default-options`, `PUT …/channels/{channelId}/default-options` |
+| `await_post`                                   | `GET …/posts/{postId}/outcome`                                                             |
+| `repost_target`, `confirm_target`              | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                             |
+
+`POST …/posts/send` crée une publication et l’envoie en une seule requête. Envoyez un en-tête `Idempotency-Key`, un texte de votre choix de 255 caractères au plus, comme un UUID, pour que la requête puisse être renvoyée sans risque :
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44" \
+  -d '{
+    "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+    "content": {
+      "text": "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```ts TypeScript
+const post = await peal.posts.send({
+  workspaceId,
+  "idempotency-key": "7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44",
+  channelIds: ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+  content: {
+    text: "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps",
+    media: [],
+    overrides: [],
+  },
+  when: { _tag: "at", at: "2026-11-16T08:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+</CodeGroup>
+
+- Dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, dans son état du moment, sans en faire une autre.
+- La même clé avec un autre corps répond 409 `idempotency_key_reused`, et ne fait rien : envoyez une nouvelle requête sous une nouvelle clé.
+- Une fois cette publication supprimée, la clé répond 404 `post_not_found`. Les clés sont gardées par espace de travail.
+
+Les [SDK](/developers/sdks) font ces appels dans huit langages. [Publier par l’API](/developers/posting) montre les autres requêtes avec des exemples : vérifier une publication sans la créer, attendre le résultat d’une publication qui part maintenant, envoyer plusieurs publications d’un coup, les importer depuis un fichier CSV, le refus des doublons, et lister les publications avec des filtres.
+
+`POST …/media/import` prend `{ "url": "https://files.example/printemps/couverture.jpg", "altText": "…" }` et répond le média, comme `import_media`. Il demande `media:upload`.
+
+Ce qu’un jeton ou une clé peut faire partir :
+
+- Un jeton d’accès OAuth a besoin du scope `workspace:publish` pour tout point d’accès qui demande `post:schedule` : envoyer, programmer, déplacer, déprogrammer, annuler, republier et confirmer ; et pour ceux qui demandent `post:approve` : approuver une publication qui attend, puisque l’approuver la fait partir, et y demander des modifications.
+- Dans un espace de travail qui demande des [approbations](/guides/posts/review#policy), ce qu’un jeton ou une clé envoie ou programme n’est pas refusé : la réponse porte l’état `awaitingApproval`, la publication garde son heure, et ne part qu’une fois approuvée par une personne, sans [webhook](/developers/webhooks) `post.scheduled` d’ici là.
+- Une [clé d’API](/guides/workspace#api-keys) n’a pas de scope : elle porte les permissions choisies à sa création ; une clé sans `post:schedule` reçoit donc 403 sur ces points d’accès, et écrit tout au plus des brouillons.
+- La page **Clés d’API** de l’espace de travail indique pour chaque clé si elle **peut programmer et publier des publications**, ce qui est le cas quand elle porte `post:schedule`, `post:publish` ou `post:approve`. Ne donnez ces permissions à une clé que si le script qui la détient doit publier.

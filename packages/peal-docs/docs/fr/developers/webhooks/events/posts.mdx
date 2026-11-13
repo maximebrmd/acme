@@ -1,0 +1,527 @@
+---
+title: Événements des publications
+description: "Les événements d’une publication : programmée, publiée, en échec, annulée, dépubliée, modifiée et approuvée."
+sidebar:
+  icon: square-pen
+  label: "Publications"
+---
+
+Les événements d’une publication, chacun avec ses champs et un exemple de contenu. Les événements qui nomment un canal portent les [champs d’un canal](/developers/webhooks/events#per-channel).
+
+## post.scheduled [#post-scheduled]
+
+Une publication a été programmée, ou déplacée à une autre heure. Une publication qui attend une [approbation](/guides/posts/review) n’est pas encore programmée : elle envoie `post.approval_requested`, et cet événement seulement une fois approuvée.
+
+| Champ         | Type    | Ce qu’il contient                                                          |
+| ------------- | ------- | -------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                        |
+| `postId`      | chaîne  | La publication                                                             |
+| `scheduledAt` | chaîne  | Le moment où elle part, en instant UTC                                     |
+| `timeZone`    | chaîne  | Le fuseau horaire IANA où elle a été programmée, comme `Europe/Paris`      |
+| `targets`     | tableau | Les canaux où elle part, chacun avec `targetId`, `channelId` et `platform` |
+
+```json title="post.scheduled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e01",
+  "type": "post.scheduled",
+  "version": 1,
+  "timestamp": "2026-11-09T16:42:10.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "scheduledAt": "2026-11-10T09:00:00.000Z",
+    "timeZone": "Europe/Paris",
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon"
+      },
+      {
+        "targetId": "019a6f3e-8c2b-7d03-b5c2-0f4e8a1d3c26",
+        "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+        "platform": "bluesky"
+      }
+    ]
+  }
+}
+```
+
+## post.unscheduled [#post-unscheduled]
+
+Une publication programmée, ou qui attendait une approbation, est repassée en brouillon : elle ne part nulle part tant qu’elle n’est pas programmée de nouveau.
+
+| Champ         | Type   | Ce qu’il contient   |
+| ------------- | ------ | ------------------- |
+| `workspaceId` | chaîne | L’espace de travail |
+| `postId`      | chaîne | La publication      |
+
+```json title="post.unscheduled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e02",
+  "type": "post.unscheduled",
+  "version": 1,
+  "timestamp": "2026-11-09T17:05:44.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01"
+  }
+}
+```
+
+## post.published [#post-published]
+
+La publication est en ligne sur le canal.
+
+| Champ         | Type           | Ce qu’il contient                                                                                              |
+| ------------- | -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                                                                            |
+| `postId`      | chaîne         | La publication                                                                                                 |
+| `targetId`    | chaîne         | La publication sur ce canal                                                                                    |
+| `channelId`   | chaîne         | Le canal                                                                                                       |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté                                                     |
+| `round`       | entier         | Combien de fois la publication y a été envoyée                                                                 |
+| `publishedAt` | chaîne         | Le moment où elle a été mise en ligne, en instant UTC                                                          |
+| `permalink`   | chaîne ou null | Son adresse sur la plateforme, quand la plateforme en a donné une, ou le membre qui l’a confirmée ; null sinon |
+
+```json title="post.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e03",
+  "type": "post.published",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:03.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "round": 1,
+    "publishedAt": "2026-11-10T09:00:02.000Z",
+    "permalink": "https://social.example/@peal_example/115512345678901234"
+  }
+}
+```
+
+## post.failed [#post-failed]
+
+La publication n’est pas partie sur le canal.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `round`       | entier         | Combien de fois la publication y a été envoyée             |
+| `failedAt`    | chaîne         | Le moment où elle a échoué, en instant UTC                 |
+| `reason`      | chaîne         | Pourquoi, l’un des codes ci-dessous                        |
+
+| `reason`              | Ce qui s’est passé                                                                                                                                                                 |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`     | La plateforme a refusé le texte ou le format de la publication.                                                                                                                    |
+| `channelDisconnected` | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                                           |
+| `channelDisabled`     | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                                   |
+| `mediaRemoved`        | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                                      |
+| `mediaRejected`       | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                              |
+| `missed`              | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                                        |
+| `notPublished`        | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                                         |
+| `rateLimited`         | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                                      |
+| `tokenExpired`        | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                                    |
+| `unavailable`         | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                              |
+| `appNotAudited`       | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                             |
+| `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                                |
+| `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                                     |
+| `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé.              |
+| `partsNotSent`        | Des parties de la publication sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre. Elle ne peut pas être republiée.           |
+| `repliesNotAllowed`   | Les premières parties sont en ligne, et X n’a pas laissé l’application de ce serveur publier la suite en réponse ([Fils](/guides/posts#threads)). Elle ne peut pas être republiée. |
+
+[Notifications](/guides/workspace/notifications#events) dit que faire dans chaque cas.
+
+```json title="post.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e04",
+  "type": "post.failed",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d03-b5c2-0f4e8a1d3c26",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky",
+    "round": 1,
+    "failedAt": "2026-11-10T09:00:04.000Z",
+    "reason": "tokenExpired"
+  }
+}
+```
+
+## post.unconfirmed [#post-unconfirmed]
+
+Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la renvoie jamais de lui-même : quelqu’un vérifie sur la plateforme, puis [la confirme ou la republie](/guides/posts/schedule#follow-up).
+
+Dès qu’un membre indique ce qu’il a trouvé, un `post.published`, ou un `post.failed` avec la raison `notPublished`, suit pour le même `round`. Une republication amène les événements du tour suivant.
+
+| Champ         | Type           | Ce qu’il contient                                           |
+| ------------- | -------------- | ----------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                         |
+| `postId`      | chaîne         | La publication                                              |
+| `targetId`    | chaîne         | La publication sur ce canal                                 |
+| `channelId`   | chaîne         | Le canal                                                    |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté  |
+| `round`       | entier         | Combien de fois la publication y a été envoyée              |
+| `attemptedAt` | chaîne         | Le moment de l’envoi, en instant UTC                        |
+| `reason`      | chaîne         | Pourquoi Peal ne peut pas savoir, l’un des codes ci-dessous |
+
+| `reason`             | Ce qui s’est passé                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `noResponse`         | La requête a peut-être atteint la plateforme, et aucune réponse n’est revenue.            |
+| `unreadableResponse` | Une réponse est revenue, que Peal n’a pas pu lire.                                        |
+| `interrupted`        | Le serveur s’est arrêté pendant l’appel : on ne sait pas si elle est partie.              |
+| `adapterFailure`     | Le code de Peal a échoué pendant l’appel, après que la requête a pu partir.               |
+| `stillProcessing`    | La plateforme a pris la publication et la traitait encore quand Peal a cessé de vérifier. |
+
+```json title="post.unconfirmed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e05",
+  "type": "post.unconfirmed",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:21.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "linkedin",
+    "round": 1,
+    "attemptedAt": "2026-11-10T09:00:01.000Z",
+    "reason": "noResponse"
+  }
+}
+```
+
+## post.cancelled [#post-cancelled]
+
+La publication a été annulée. `targets` liste les canaux où elle ne partira pas ; un canal qu’elle avait déjà atteint garde son propre événement.
+
+Un canal vers lequel Peal envoyait à ce moment-là se termine par son propre événement : `post.published`, `post.failed` ou `post.unconfirmed` si la plateforme a été appelée, ou un `post.cancelled` qui le nomme seul si elle ne l’a pas été.
+
+| Champ         | Type    | Ce qu’il contient                                                                    |
+| ------------- | ------- | ------------------------------------------------------------------------------------ |
+| `workspaceId` | chaîne  | L’espace de travail                                                                  |
+| `postId`      | chaîne  | La publication                                                                       |
+| `cancelledAt` | chaîne  | Le moment où elle a été annulée, en instant UTC                                      |
+| `targets`     | tableau | Les canaux où elle ne partira pas, chacun avec `targetId`, `channelId` et `platform` |
+
+```json title="post.cancelled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e06",
+  "type": "post.cancelled",
+  "version": 1,
+  "timestamp": "2026-11-09T18:30:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "cancelledAt": "2026-11-09T18:30:00.000Z",
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon"
+      }
+    ]
+  }
+}
+```
+
+## post.finished [#post-finished]
+
+Chaque canal de la publication a son résultat : elle y est en ligne, y a échoué, y est peut-être partie, ou y a été annulée. `post.published`, `post.failed` et `post.unconfirmed` disent chaque canal à mesure qu’il se termine ; celui-ci dit la publication entière une fois le dernier terminé, avec `outcome`, ce qu’ils donnent ensemble.
+
+Il peut venir plus d’une fois :
+
+- une publication renvoyée sur un canal se termine de nouveau quand ce tour se termine, et amène un autre `post.finished` avec son `round` ;
+- un membre qui confirme un canal non confirmé en amène un de plus quand cela change `outcome`.
+
+Un point de terminaison qui écoute certains canaux le reçoit quand l’un des canaux de la publication en fait partie.
+
+| Champ         | Type    | Ce qu’il contient                                                                                                                                                                                                                                            |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                                                                                                                                                                          |
+| `postId`      | chaîne  | La publication                                                                                                                                                                                                                                               |
+| `outcome`     | chaîne  | Ce que donnent ses canaux : `published` (chaque canal l’a en entier), `partiallyPublished` (certains l’ont), `unconfirmed` (au moins un l’a peut-être : vérifiez avant toute chose), `failed` (aucun ne l’a) ou `cancelled` (chaque canal a été annulé)      |
+| `finishedAt`  | chaîne  | Quand elle s’est terminée, sous forme d’instant en UTC                                                                                                                                                                                                       |
+| `round`       | entier  | Le dernier tour de la publication : 1, et un de plus chaque fois que l’un de ses canaux a été renvoyé                                                                                                                                                        |
+| `targets`     | tableau | Le résultat de chaque canal : `targetId`, `channelId`, `platform`, `status` (`published`, `failed`, `unconfirmed` ou `cancelled`), `failureReason` ([pourquoi](#post-failed) elle a échoué, ou null) et `permalink` (son adresse sur la plateforme, ou null) |
+
+```json title="post.finished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e1a",
+  "type": "post.finished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "outcome": "partiallyPublished",
+    "finishedAt": "2026-11-10T09:00:04.000Z",
+    "round": 1,
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon",
+        "status": "published",
+        "failureReason": null,
+        "permalink": "https://mastodon.example/@peal_example/113456789012345678"
+      },
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d16",
+        "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+        "platform": "bluesky",
+        "status": "failed",
+        "failureReason": "rateLimited",
+        "permalink": null
+      }
+    ]
+  }
+}
+```
+
+## post.unpublished [#post-unpublished]
+
+Peal a supprimé la publication de la plateforme du canal, toutes ses parties, à la demande d’un membre, d’une clé ou d’une application ([Dépublier une publication](/guides/posts/published#unpublish)). La publication reste `published` dans Peal : sa cible reçoit `removedAt` et garde son lien permanent pour mémoire.
+
+| Champ         | Type           | Ce qu’il contient                                                             |
+| ------------- | -------------- | ----------------------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                                           |
+| `postId`      | chaîne         | La publication                                                                |
+| `targetId`    | chaîne         | La publication sur ce canal                                                   |
+| `channelId`   | chaîne         | Le canal                                                                      |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté                    |
+| `removedAt`   | chaîne         | Le moment où la dernière partie a été supprimée, en instant UTC               |
+| `alreadyGone` | booléen        | Si la plateforme n’avait déjà plus une partie, supprimée chez elle auparavant |
+
+```json title="post.unpublished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e21",
+  "type": "post.unpublished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "removedAt": "2026-11-10T09:00:00.000Z",
+    "alreadyGone": false
+  }
+}
+```
+
+## post.unpublish_failed [#post-unpublish-failed]
+
+Peal n’a pas pu supprimer la publication de la plateforme du canal, après les essais qu’une suppression fait. `code` dit pourquoi, comme le `code` du changement : `unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme.
+
+La publication peut y être encore, entière ou en partie. Un membre peut redemander, ce qui supprime les parties restantes.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `code`        | chaîne         | Pourquoi la suppression s’est arrêtée                      |
+| `failedAt`    | chaîne         | Le moment où Peal a renoncé, en instant UTC                |
+
+```json title="post.unpublish_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e22",
+  "type": "post.unpublish_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T11:22:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "code": "unavailable",
+    "failedAt": "2026-11-10T11:22:00.000Z"
+  }
+}
+```
+
+## post.edited [#post-edited]
+
+Peal a remplacé le texte d’une partie de la publication sur la plateforme du canal, à la demande de quelqu’un ([Modifier une publication en ligne](/guides/posts/published#edit-live)) : le texte de cette partie sur le canal est aussi le nouveau dans Peal, et la cible a son `editedAt`. Le texte lui-même n’est pas envoyé : lisez la publication.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `part`        | entier         | La partie modifiée, depuis 0 (la publication elle-même)    |
+| `editedAt`    | chaîne         | Le moment où la plateforme a pris le texte, en instant UTC |
+
+```json title="post.edited"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e23",
+  "type": "post.edited",
+  "version": 1,
+  "timestamp": "2026-11-10T12:05:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "editedAt": "2026-11-10T12:05:00.000Z"
+  }
+}
+```
+
+## post.edit_failed [#post-edit-failed]
+
+Peal n’a pas pu modifier la partie de la publication sur la plateforme du canal, après les essais qu’une modification fait. `code` dit pourquoi, comme le `code` du changement : `postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme.
+
+Le texte de Peal n’a pas changé, et la publication dit très probablement ce qu’elle disait.
+
+<Callout type="warning" title="Après unavailable ou rateLimited">
+  Une réponse a pu se perdre, et la plateforme affiche peut-être le nouveau
+  texte : regardez-y avant qu’un membre ne redemande.
+</Callout>
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `part`        | entier         | La partie que Peal devait modifier, depuis 0               |
+| `code`        | chaîne         | Pourquoi la modification s’est arrêtée                     |
+| `failedAt`    | chaîne         | Le moment où Peal a renoncé, en instant UTC                |
+
+```json title="post.edit_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e24",
+  "type": "post.edit_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T12:07:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "code": "postGone",
+    "failedAt": "2026-11-10T12:07:00.000Z"
+  }
+}
+```
+
+## post.approval_requested [#post-approval-requested]
+
+Quelqu’un a demandé que la publication parte, dans un espace de travail qui demande des [approbations](/guides/posts/review) : elle attend. Elle garde son heure, et aucun `post.scheduled` n’est envoyé tant qu’elle n’est pas approuvée. Ce qu’une application y envoie ou y programme commence ainsi.
+
+Ce qui suit dit ce qu’elle est devenue, l’un de :
+
+- `post.approval_requested` de nouveau, avec son nouveau `scheduledAt` : elle a été déplacée à une autre heure, et attend toujours ;
+- [`post.approved`](#post-approved), puis `post.scheduled` sauf si l’approbation est arrivée en retard (`late`) ;
+- [`post.changes_requested`](#post-changes-requested) : elle est de nouveau un brouillon ;
+- `post.unscheduled` : quelqu’un l’a remise en brouillon avant toute décision ;
+- `post.cancelled` : elle a été annulée pendant qu’elle attendait ;
+- `post.scheduled` seul : un membre qui peut programmer sans approbation l’a programmée.
+
+| Champ         | Type   | Ce qu’il contient                                 |
+| ------------- | ------ | ------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                               |
+| `postId`      | chaîne | La publication                                    |
+| `scheduledAt` | chaîne | Le moment demandé pour son départ, en instant UTC |
+
+```json title="post.approval_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0a",
+  "type": "post.approval_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T16:40:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "scheduledAt": "2026-11-12T08:00:00.000Z"
+  }
+}
+```
+
+## post.approved [#post-approved]
+
+La publication a été approuvée. Approuvée à temps, elle est programmée, et un `post.scheduled` suit. Approuvée après son heure (`late`), rien ne part en retard : elle repasse en brouillon, et aucun `post.scheduled` ne suit.
+
+| Champ         | Type    | Ce qu’il contient                                                                                                               |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                                             |
+| `postId`      | chaîne  | La publication                                                                                                                  |
+| `by`          | chaîne  | Qui l’a approuvée, par type : `member`, `visitor` (une personne venue par un lien de relecture) ou `application`. Jamais un nom |
+| `late`        | booléen | Si son heure était passée                                                                                                       |
+
+```json title="post.approved"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "post.approved",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "visitor",
+    "late": false
+  }
+}
+```
+
+## post.changes_requested [#post-changes-requested]
+
+Des modifications ont été demandées sur une publication qui attendait : elle repasse en brouillon. Ce qui est demandé est un commentaire sur la publication, que l’événement ne porte pas : lisez la relecture de la publication par l’API.
+
+| Champ         | Type   | Ce qu’il contient                                              |
+| ------------- | ------ | -------------------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                                            |
+| `postId`      | chaîne | La publication                                                 |
+| `by`          | chaîne | Qui a demandé, par type : `member`, `visitor` ou `application` |
+
+```json title="post.changes_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "post.changes_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "member"
+  }
+}
+```

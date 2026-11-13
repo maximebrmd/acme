@@ -1,0 +1,86 @@
+---
+title: Instagram
+description: "Connect Instagram to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/instagram.svg
+---
+
+How to connect an Instagram account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                   |
+| ----------------- | --------------------------------- |
+| Text              | {{platform-instagram-text-en}}    |
+| Images and videos | {{platform-instagram-media-en}}   |
+| Parts             | {{platform-instagram-parts-en}}   |
+| Formats           | {{platform-instagram-formats-en}} |
+| Alt text          | {{platform-instagram-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Peal posts to Instagram professional accounts, business or creator. It reaches them in one of two ways, which **Instagram** offers as two buttons when the server has both.
+
+<Tabs>
+  <Tab title="Instagram Login">
+    **Connect with Instagram** is the default. Sign in to the professional
+    account itself on Instagram, and allow Peal to read its profile, publish,
+    and read its insights.
+
+    - The account needs no Facebook Page.
+    - Its access lasts 60 days, and Peal renews it on its own a week before it ends.
+    - You may decline insights: the account then posts, without counts in **Analytics**.
+
+  </Tab>
+  <Tab title="Facebook Login">
+    **Connect through a Facebook Page**: sign in with Facebook, as for Pages,
+    then tick the Instagram accounts linked to your Pages.
+
+    - An account posts with its Page's access, which does not expire, so it stays connected as long as you manage the Page.
+    - Use it for an account run from a Page, or for what only Meta's Facebook Login API gives, such as tagging products, collaborators and hashtag search, which Peal does not use yet.
+
+  </Tab>
+</Tabs>
+
+Both ways publish images, reels and carousels the same way, and read the same counts.
+
+- The channels list says which way each Instagram channel came through, and reconnecting it signs in that way again.
+- Connecting through Instagram Login an account the workspace has through a Page moves its channel there, with its posts and schedule: the workspace keeps one channel per account.
+
+## Options [#options]
+
+Each option is sent only when you choose it. Some apply only to some media: the composer shows them for those, and scheduling refuses them on another post. In the composer, these are a reel's settings and **Collaborators**. **API name** is the option's name through the API.
+
+| Option                           | API name        | Values                                                              | Left out             |
+| -------------------------------- | --------------- | ------------------------------------------------------------------- | -------------------- |
+| **Format**                       | `format`        | `story` (see [stories and reels](/guides/posts#formats)), or `feed` | A feed post          |
+| **Also share to the feed**       | `shareToFeed`   | A reel: yes or no                                                   | As Instagram decides |
+| **Cover image**                  | `coverMediaId`  | A reel: a JPEG image of the library, 8 MiB at most                  | The cover frame      |
+| **Cover frame, in milliseconds** | `thumbOffsetMs` | A reel: its frame, in milliseconds from its start, within it        | The first frame      |
+| **Audio name**                   | `audioName`     | A reel: one line, 100 characters at most                            | Instagram's name     |
+| **Trial reel**                   | `trialReel`     | A reel: `manual` or `performance`                                   | Not a trial          |
+| **Collaborators**                | `collaborators` | One to three Instagram usernames                                    | None                 |
+
+- On Instagram, a reel is a feed post of one video. A story takes none of these options.
+- A cover image wins over a cover frame: only the image is sent then.
+- Instagram renames a reel's audio once.
+- A trial reel is shown to accounts that do not follow yours first. It reaches your followers when you share it in the app (`manual`) or by itself when it does well (`performance`).
+- Instagram shows the alt text of a post's images, up to 1,000 characters, and none on a video.
+
+<Callout type="warning" title="Collaborators get an invitation">
+  Each collaborator is another account, which receives an invitation to be named
+  as a co-author: name only accounts you mean to invite. Instagram does not
+  document collaborators for accounts connected with Instagram Login: when
+  Instagram refuses such a post, the channel reads **Failed** with Meta's own
+  code.
+</Callout>
+
+## Comments [#comments]
+
+Peal reads the comments under your published posts there, and you answer them from Peal: see [Inbox](/guides/engage/inbox#meta).
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Instagram once its Meta app is registered: see [Threads, Instagram and Facebook Pages](/self-hosting/platforms#meta).

@@ -1,0 +1,227 @@
+---
+title: Write a post
+description: Write a post once, give it its own text and options on some channels, and preview it on each.
+sidebar:
+  icon: square-pen
+---
+
+A post has one text, which each of its channels may replace with its own, and a time it goes out, kept in the time zone you scheduled it in. Write it in the composer, then find it on the calendar.
+
+## Who can do what [#roles]
+
+| Role        | Posts                                                         |
+| ----------- | ------------------------------------------------------------- |
+| Owner       | Write, schedule, move, cancel, repost and discard any draft   |
+| Admin       | Write, schedule, move, cancel, repost and discard any draft   |
+| Editor      | Write, schedule, move, cancel, repost and discard any draft   |
+| Contributor | Write and save drafts, and discard their own; cannot schedule |
+| Viewer      | Read                                                          |
+
+- Cancelling a post (a draft included), taking it back to draft, reposting it and saying whether it went out take the same right as scheduling it.
+- A post's author is the member who created it.
+- Every role but Viewer may also ask the [writing assistant](/guides/posts/assistant#assistant).
+
+A workspace can ask that posts wait for an [approval](/guides/posts/review) before they are scheduled. Contributors may then ask for a post to go out, and a post that waits shows as **Awaiting approval**.
+
+## Write a post [#write]
+
+From a workspace's card on **Workspaces**, choose **New post**.
+
+<Steps>
+  <Step title="Pick the channels">
+    Under **Channels**, tick the accounts the post goes to. The list holds the
+    workspace's [channels](/guides/channels). From three channels up, **Select
+    all** ticks every channel that publishes (not one turned off or to
+    reconnect), and **Clear** none.
+  </Step>
+  <Step title="Write the text">
+    Write in **Text for all channels**. Mentions, hashtags and links stand out
+    as you type, and are kept as plain text.
+  </Step>
+  <Step title="Change the text on one channel, if you like">
+    Open the channel's tab and write its own text there. Left empty, a channel
+    uses the text for all channels.
+  </Step>
+  <Step title="Add images and videos">
+    Under **Images and videos**, attach images or videos from the media library,
+    or upload them there: see [Images and videos](/guides/media).
+  </Step>
+  <Step title="Fill in the platform options">
+    When a channel's platform asks for more, such as a YouTube video's title,
+    fill in its fields under **Platform options**: see [Platform
+    options](#options).
+  </Step>
+  <Step title="Save the draft">
+    Choose **Save as draft** to keep the post without a time. It joins the
+    workspace's **Drafts**, which the calendar does not show.
+  </Step>
+</Steps>
+
+<Accordion>
+  <AccordionItem title="Right-to-left text, emoji and pasting">
+    - Each line takes the direction of its first letter, so a text in Arabic or
+    Hebrew reads right to left. - The smiley button beside the assistant opens
+    an emoji picker, in your language. The emoji goes in where your cursor was,
+    in the text you last wrote in (the text for all channels, a channel's own
+    text or a part), and undo takes it back. The picker's data comes from Peal
+    itself, never from another site. - An image or a video pasted alone into a
+    text is uploaded and attached as if dropped there (to its part, when pasted
+    into a part), with the same limits. - A paste that also holds text, such as
+    cells copied from a spreadsheet, which come with a picture of them, pastes
+    the text only.
+  </AccordionItem>
+</Accordion>
+
+### Length on each channel [#length]
+
+Under **Length on each channel**, each channel the post goes to shows how much room its platform leaves, and what else the platform would refuse, its images and videos included. Platforms count differently, so the same text can fit on one and not on another:
+
+| Platform                | Text limit                                                                                                                                                      | Images and videos       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Bluesky                 | 300 characters, and 3,000 bytes                                                                                                                                 | 4                       |
+| Mastodon                | 500 characters (the default of a server)                                                                                                                        | 4                       |
+| X                       | 280, where a link counts 23, with or without `https://` (`peal.social` too), and an emoji or a character outside the Latin, Greek and Cyrillic scripts counts 2 | 4                       |
+| Threads                 | 500 characters, where an emoji counts its bytes, 4 for most; 5 different links                                                                                  | 20                      |
+| LinkedIn                | 3,000 characters                                                                                                                                                | 20                      |
+| Instagram               | 2,200 characters, 30 hashtags, 20 mentions; an image or a video is required                                                                                     | 20                      |
+| TikTok                  | 2,200, where most emoji count 2 (UTF-16 code units); an image or a video is required                                                                            | One video, or 35 photos |
+| YouTube                 | A description of 5,000 bytes, without `<` or `>`; a video is required                                                                                           | 1                       |
+| Pinterest               | A description of 800 characters; an image or a video is required                                                                                                | One video, or 5 images  |
+| Google Business Profile | 1,500 characters                                                                                                                                                | Photos only             |
+
+<Callout type="info">
+  Peal checks the limits when you schedule a post, not while you write a draft.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="How some platforms count">
+    - Bluesky counts what a reader sees as one character, so an emoji made of
+    several code points counts once. - YouTube counts bytes, so an accented
+    letter counts two. - TikTok takes 2,200 for a video's caption and 4,000 for
+    a photo post's description: Peal holds both to 2,200. - Facebook's limit is
+    the figure commonly reported, as Meta names none. So are Google Business
+    Profile's 1,500 characters, and the 58 of an event's or an offer's title, as
+    Google's reference and help pages name none.
+  </AccordionItem>
+</Accordion>
+
+### Previews [#previews]
+
+Beside the text (below it on a narrow screen), **Previews** shows what each channel the post goes to will receive:
+
+- its name and platform;
+- the text it gets, as plain text, counted as its platform counts it;
+- its images and videos, and the parts that follow.
+
+Peal asks for them a second after you stop typing, from the same check the API's `posts.validate` makes. The preview is the post as it would be saved, signatures and options included. It does not imitate the platform, which lays the post out its own way.
+
+A channel that would refuse the post is marked, and what to fix is shown below, with the lengths and the options. With short links on, links show as written: they are shortened only when the post goes out.
+
+## Threads [#threads]
+
+A post can have parts that follow it. Under **Thread**, choose **Add a part**. Each part has its own text, its own images and videos, a counter for every channel, and, if you like, a wait after the part before it, from a minute to a day. Move a part up or down, or remove it, with its buttons. A post has 24 parts after its first at most.
+
+On the platforms with threads, each part goes out as a reply to the part before it:
+
+| Platform | A post's parts become                                                |
+| -------- | -------------------------------------------------------------------- |
+| X        | A thread: each part replies to the one before it                     |
+| Bluesky  | A thread: each part names the thread's first post and its own parent |
+| Mastodon | A thread: each part replies to the one before it                     |
+
+Each part follows the rules of a post on its platform: its length, counted as the platform counts it, and its images and videos. The other platforms take a post alone: a post with parts is refused there when you schedule it, and the composer says so as soon as you tick such a channel. Comments under a post, on the platforms that take them, are not sent yet.
+
+<Callout type="warning" title="Threads on X">
+  Whether a thread goes out on X depends on the access the server's app has. X
+  documents that an app on self-serve access may reply only under a post whose
+  author mentioned or quoted the replying account. If X refuses the second part,
+  the post is partly published, with the reason that X does not allow this app
+  to post replies, and cannot be posted again from Peal. Whoever runs the server
+  can turn X threads off ([`X_THREADS`](/self-hosting/environment-variables)),
+  and X then takes a post alone.
+</Callout>
+
+Parts go out in order, each as its own request to the platform:
+
+| When                       | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A part failed              | Nothing is sent after it. The channel reads **Failed**, its page lists the parts that are live, with their addresses, and **Post again** sends the part that failed and those after it, never a part that is live.                                                                                                                                                                                                                                                                                                                                                       |
+| Peal cannot confirm a part | Nothing is sent after it. The channel reads **To check**: look on the platform, then say what you found. When that part is live and others were left, the channel reads **Failed** with the reason **Later parts not sent**: a part you found by hand has no id Peal knows, so the next part cannot reply to it. Peal offers no **Post again** there, and the API refuses a repost (409 `target_status_conflict`): post the rest on the platform yourself, as replies to the last part that is live. The same holds when the part to reply to is gone from the platform. |
+| You choose **Cancel**      | The parts not yet sent stop. A part that waits is not sent once its wait ends, and the parts that went out stay out.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+The post's address is its first part's, and [analytics](/guides/engage/analytics) reads the counts of the first part.
+
+## Platform options [#options]
+
+Some platforms ask each post for more than its text and media. When the post goes to a channel on one of them, **Platform options** shows that channel's fields. A draft keeps them as they are, unfinished. Scheduling needs those marked required, and shows under each field what its platform would refuse.
+
+| Platform                | Options                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YouTube                 | **Title** (required: 100 characters at most, without `<` or `>`), **Made for kids** (required, with no default), **Visibility** (public unless you choose otherwise), **Tags** (500 characters in all), **Category number**, **Notify subscribers** (on), altered or synthetic content, and [more](/platforms/youtube#options)                          |
+| TikTok                  | **Who can view this post** (required, with no default), **Allow comments**, **Allow Duet** and **Allow Stitch** (off until you turn them on), commercial content disclosure, AI-generated content, and [more](/platforms/tiktok#options)                                                                                                                |
+| LinkedIn                | **Who can see this post** (anyone unless you choose otherwise; connections only is for a profile), **Keep others from resharing this post**, **Pages to mention** (company pages, each written `@Name` in the text), **Link to show as a card** with its **Link title** (required with a link) and **Link description**, **Document title** (for a PDF) |
+| Pinterest               | **Board** (required, one of the account's), **Board section**, **Title** (100 characters at most), **Link** (where a click on the Pin leads, starting with `http://` or `https://`), **Video cover, at second** (the first frame unless you choose), **Dominant colour** (such as `#6E7874`)                                                            |
+| Instagram               | A reel's settings and **Collaborators** (see [Instagram](/platforms/instagram#options))                                                                                                                                                                                                                                                                 |
+| Facebook                | A video's **Video title** (see [Facebook](/platforms/facebook#options))                                                                                                                                                                                                                                                                                 |
+| Google Business Profile | **Post type** (an update unless you choose an event or an offer), **Title**, **Starts** and **Ends** (required for an event or an offer; a title of 58 characters at most), **Button** and its **Button link** (on an update or an event), **Coupon code**, **Link to redeem the offer** and **Terms and conditions** (on an offer)                     |
+
+Each platform's page lists its options in full: [Mastodon](/platforms/mastodon#options), [Bluesky](/platforms/bluesky#options), [Threads](/platforms/threads#options), [X](/platforms/x#options), [LinkedIn](/platforms/linkedin#options), [Facebook Pages](/platforms/facebook#options), [Instagram](/platforms/instagram#options), [TikTok](/platforms/tiktok#options), [YouTube](/platforms/youtube#options), [Pinterest](/platforms/pinterest#options), [Google Business Profile](/platforms/google-business#options).
+
+The post's text is the YouTube video's description, the TikTok post's caption, the Pinterest Pin's description, the LinkedIn post's commentary and the Google Business Profile post's description. Tags are separated by commas; YouTube counts the commas, and two more for a tag with a space in it.
+
+A thumbnail or a cover is a file of the library that the post does not show:
+
+- it must be ready and the workspace's;
+- it cannot be deleted while a post that goes out names it;
+- a draft loses it when it is deleted, and a copy of the post leaves it out once it is gone;
+- a channel set or a channel's default options cannot name one.
+
+Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube, TikTok or Pinterest, give it its options in the draft first.
+
+### Stories and reels [#formats]
+
+On Instagram and Facebook, **Format** chooses what kind of post a channel receives. Peal never guesses it from the file: a vertical video stays a feed post (a reel, on Instagram) unless you choose **Story**, or **Reel** on Facebook.
+
+| Format    | Where     | What it takes                                                                                                                 | The post's text |
+| --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Story** | Instagram | One JPEG image of 8 MiB at most, or one MP4 or QuickTime video of 3 to 60 seconds and 100 MiB at most                         | Not sent        |
+| **Story** | Facebook  | One JPEG, PNG or GIF image of 10 MiB at most, or one vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 60 seconds | Not sent        |
+| **Reel**  | Facebook  | One vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 90 seconds                                                  | Its description |
+
+- A story is sent without the post's text. The composer says so under the counters and counts nothing there, and a check through the API answers `textNotSent` for that channel.
+- A story takes no other option (no collaborators, none of a reel's settings, no title), and a story or a reel has no parts after it.
+- A Facebook reel's title is the **Video title**.
+- A story and the feed post of the same file and text are not taken for duplicates of each other. Two stories of the same file are, whatever text the posts hold, as a story shows none.
+- A story disappears after 24 hours. Peal keeps no link to it and reads no statistics or comments of it.
+- Neither a story nor a reel can be boosted from Peal. Each counts in the month's posts as any other.
+
+A reel or a video story reads **Published** only once Meta says it is published: Peal reads Meta's status for up to 10 minutes after sending it. A refusal Meta shows meanwhile reads **Failed** (`processingFailed`). If it is still not published then, or Peal does not hear whether a reel or a story went out, the channel reads **To check** (`stillProcessing` when Meta was still processing it) and Peal never sends it again: look on the Page, then say what you found.
+
+<Accordion>
+  <AccordionItem title="Frame rate, size and Meta's daily limit">
+    Meta asks a reel's and a video story's video to run at 24 to 60 frames a second, which Peal does not check: Meta refuses a video outside it, or below 540p, while it processes it.
+
+    Meta also takes 30 reels a Page within any 24 hours through its API. Past them, the reel fails with Meta's code, and you can post it again later.
+
+  </AccordionItem>
+  <AccordionItem title="When the server restarts during a reel or a story">
+    If Peal's server restarts while a Facebook reel or story is going out, Peal carries on where it stopped. It noted the video or photo it sent before publishing it, so it reads Meta's status again for up to 10 minutes, and sends the reel or story again only when its note says it was never published.
+
+    A reel or story the server had begun before an upgrade to this release, and one it cannot tell about, reads **To check**, which may also mean it never went out. So does an Instagram story cut short this way, for you to check the account, then confirm it or post it again. Peal never sends a story or a reel twice.
+
+  </AccordionItem>
+</Accordion>
+
+Through the API, a channel's capabilities list its platform's formats in `postFormats`, each with the media it takes and whether the text is sent.
+
+## Media [#media]
+
+A post can show images and videos from the workspace's media library. [Images and videos](/guides/media) explains how to upload and attach them, how to describe them, and what each platform accepts.
+
+## From an agent, the command line or the API [#api]
+
+An [MCP client](/developers/mcp/tools#tools), the [command line](/developers/cli/posts#posts) and the [HTTP API](/developers) do what the composer does, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it.
+
+`POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant. When the post breaks a rule of one of its channels' platforms, it refuses the post whole and lists every violation at once. [Posting through the API](/developers/posting) shows how to check a post first, send several at once, import them from a CSV file and list them.
+
+An application you connected schedules and publishes only if you let it. Publishing is a permission of its own, which you may leave out so that it writes drafts for you to review. An API key does only what the permissions it was given allow. [Posting from an AI agent](/developers/agents) explains both, with an example.

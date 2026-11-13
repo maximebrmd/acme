@@ -1,0 +1,178 @@
+---
+title: Boost a post
+description: Boost a published post on Facebook or Instagram within a monthly ceiling an owner sets, follow it and stop it.
+sidebar:
+  icon: trending-up
+---
+
+Boost a post the workspace published through Peal as an ad on Facebook or Instagram, within a monthly ceiling an owner sets, then follow it, pause it or stop it. The ad account must first be [connected](/guides/engage/ads#connect) and allowed to spend.
+
+<Callout type="warning" title="A boost spends real money">
+  The ad network bills the advertiser directly, on the ad account's payment
+  method. Peal never handles the money, and takes no payment details for ads.
+</Callout>
+
+## Boost a post [#boosts]
+
+A boost promotes one post the workspace published through Peal, on one ad account, as an ad that aims for engagement. Only a member who may spend boosts a post.
+
+<Steps>
+  <Step title="Open the post">Open the published post's page.</Step>
+  <Step title="Choose where it runs">
+    Choose the channel and the ad account.
+  </Step>
+  <Step title="Set the boost">
+    Set the budget, the start and the end, the audience, the category, and the
+    beneficiary and payer where needed. The table below gives the rules.
+  </Step>
+  <Step title="Check the quote">
+    Before the last step, Peal shows a quote: what the boost commits, the days
+    it touches, the ceiling, what the account's other boosts already commit, and
+    the room the account's own cap leaves. A quote checks everything and
+    reserves nothing.
+  </Step>
+  <Step title="Confirm">
+    The boost is accepted as `requested`, and its commitment is counted against
+    the ceiling.
+  </Step>
+</Steps>
+
+| What                  | Rule                                                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The post              | Published through Peal on a Facebook Page, or on an Instagram account connected through its Facebook Page. Not an Instagram account connected with Instagram Login. Not a [story or a reel](/guides/posts#formats) |
+| The budget            | `total` for the whole run, or `daily` for each day of it, above zero, in the ad account's currency                                                                                                                 |
+| The end               | Required. At least a day after the start (more than a day with a daily budget), 90 days at most                                                                                                                    |
+| The start             | Now, or up to 30 days ahead                                                                                                                                                                                        |
+| The audience          | 1 to 25 countries, and an age range from 18 to 65, where 65 means "65 and over". Nothing finer                                                                                                                     |
+| The category          | The advertiser declares the ad is of no special category. An ad about housing, employment, financial products and services, or social issues, elections or politics is refused                                     |
+| Beneficiary and payer | Who benefits from the ad and who pays for it, 512 characters each: required when any country of the audience is in the European Union                                                                              |
+
+Peal then makes the boost in the background. The campaign, its ad set and its ad are created paused, then turned on, the campaign last. The post's page, and the [notifications](#notices), say how that ended. The ad network may still review the ad before it shows it, refuse it or stop it, by its own rules.
+
+### Pause, resume and stop [#control]
+
+| Action     | What it does                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pause**  | Tells the network to pause the boost's campaign. The boost is `paused` once the network confirms. Its budget stays counted.                                   |
+| **Resume** | Runs a paused boost again until its end. It spends, so it is checked as a new boost is: spending still allowed, the account usable, the ceiling as it now is. |
+| **Stop**   | Ends a boost for good. One not yet made is never made. A stopped boost does not run again.                                                                    |
+
+Pausing and stopping are always available, to those who may spend and to those who manage ad accounts. Asked twice, they are done once. They take effect when the network applies them.
+
+When the network does not answer, the boost stands where it did (`AdNetworkUnavailable`), and asking again later is safe. A boost can always be paused or deleted at the network itself.
+
+### States [#states]
+
+| State         | What it means                                                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requested`   | Accepted, and being made. Paused at the network, spending nothing                                                                                 |
+| `active`      | Running                                                                                                                                           |
+| `paused`      | Paused by a member                                                                                                                                |
+| `ended`       | Its end date passed                                                                                                                               |
+| `stopped`     | Stopped by a member, for good                                                                                                                     |
+| `failed`      | It could not be made, and nothing ran. `failureReason` says why                                                                                   |
+| `unconfirmed` | Peal told the network to run it and could not read back whether it does. It may be spending. Its budget stays counted, and stopping it settles it |
+
+<Callout type="warning" title="An unconfirmed boost may be spending">
+  Peal never sends an unconfirmed boost again on its own. Someone checks it, on
+  the post's page or in the ad account, and stops it if it must not run.
+</Callout>
+
+### Why a boost failed [#failure-reasons]
+
+A failed boost spent nothing.
+
+| `failureReason`       | What happened                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `accountUnusable`     | The ad account cannot run ads now.                                                             |
+| `accountSpendCap`     | The account's own spend cap leaves too little room.                                            |
+| `ceilingExceeded`     | The monthly ceiling was lowered meanwhile, and leaves too little room.                         |
+| `spendingOff`         | Spending was turned off for the ad account meanwhile.                                          |
+| `currencyMismatch`    | The budget's currency is not the ad account's.                                                 |
+| `budgetTooLow`        | The budget is under the network's minimum.                                                     |
+| `postNotPromotable`   | The post was deleted, or cannot be shown as an ad.                                             |
+| `permissionMissing`   | The sign-in lacks a permission ads need.                                                       |
+| `reconnectNeeded`     | The network refused the sign-in, which its person renews by signing in again.                  |
+| `networkUnavailable`  | The network kept refusing for now. Peal tries a few times over about two hours, then gives up. |
+| `refused`             | The network refused for a reason of its own, which `networkCode` carries.                      |
+| `spendingUnavailable` | The instance no longer offers spending.                                                        |
+
+## Money [#money]
+
+Every amount is an integer in the minor units of the ad account's currency, as the network counts them: cents for `EUR` and `USD`, whole yen for `JPY`.
+
+- An ad account's `minorUnitDigits`, 2 or 0, says how to show one: divide by 10 to that power, with the `currency` (an ISO 4217 code). `5000` is 50.00 € on a `EUR` account, and 5,000 ¥ on a `JPY` one.
+- Do the arithmetic on the integers, and never on decimals.
+- A boost's budget is in its ad account's currency, and one in another currency is refused.
+
+### What a boost commits [#commitment]
+
+Before a boost is accepted, Peal counts the most it can cost, its commitment:
+
+| Budget  | What it commits                                                                                                                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `total` | Its amount                                                                                                                                                                                             |
+| `daily` | For each calendar week of the account's time zone (Sunday to Saturday) the run touches, its amount and 75% more for each day of the run in that week, and never more than 7 times its amount in a week |
+
+Meta's page "About daily budgets" says why: on any day the network may spend up to 75% over a daily budget, 175% of it, and in a week ending on Saturday at midnight never more than 7 times it.
+
+A daily budget of 10.00 € over a run of two days commits 35.00 €. Over a whole week, Sunday to Saturday, it commits 70.00 €.
+
+### The monthly ceiling [#ceiling]
+
+An owner allows an ad account to spend through Peal, with a monthly ceiling in the account's currency. The ceiling is the most the boosts made through Peal may commit on that account in one calendar month of its time zone.
+
+- A boost that would pass it is refused before anything is reserved or sent (`SpendCeilingExceeded`), in the fullest month its run touches.
+- A ceiling may always be lowered, under running boosts too: they run on, and nothing new starts or resumes until there is room.
+- Turning spending off is refused while a boost runs or may run: stop it first.
+- Peal never turns spending on, raises a ceiling or raises a budget on its own.
+
+A stopped boost's commitment is counted down to what it can have cost: nothing if it never ran, the days it ran for a daily budget, its whole budget for a total one.
+
+<Callout type="warning" title="The ceiling only limits Peal's boosts">
+  It is not a cap on the ad account itself: ads made elsewhere, at the network
+  or with another tool, are not counted, and not held back. See [the account's
+  own spend cap](#spend-cap).
+</Callout>
+
+### The account's own spend cap [#spend-cap]
+
+An ad account may have a spend cap of its own, set at the network, which covers everything the account spends. Peal reads it, with what the account spent against it, and refuses a boost the cap leaves too little room for (`AdAccountSpendCapExceeded`). The cap is raised at the network, never by Peal. To limit an ad account as a whole, set this cap: the monthly ceiling only limits Peal's own boosts.
+
+## Safety rules [#safety]
+
+Everything that spends follows the same rules, whatever asks for it:
+
+- Off by default, twice. Ads are off unless the instance's operator turns them on, and spending is off on each ad account until an owner turns it on, with an explicit monthly ceiling.
+- Only an owner decides what may be spent, in person. Peal never turns spending on, raises a ceiling or raises a budget on its own.
+- Everything is checked before anything is reserved or sent: the boost's own rules, the ceiling, the account's spend cap, the account's status and its sign-in.
+- An end date is required. No boost runs without one, nor for more than 90 days.
+- A boost is created paused and turned on last. Nothing can spend before the whole boost exists as it was asked.
+- Nothing is sent twice blindly. A request whose answer was lost is looked up at the network before anything is sent again. When Peal still cannot tell, the boost is `unconfirmed`, and a person decides.
+- Pause and stop are always there, for those who spend and those who manage ad accounts.
+- Every decision is recorded in the [audit trail](#audit), with who made it and the amounts.
+
+## Notifications [#notices]
+
+The workspace's owners hear about each boost, in the app and by email:
+
+- it started;
+- it ended;
+- it used its whole budget;
+- it could not be made;
+- Peal could not confirm that it runs.
+
+The members who manage ad accounts hear when an ad network sign-in must be renewed. These emails are always sent: an owner answers for what is spent. [Notifications](/guides/workspace/notifications#events) lists them with the others.
+
+## The audit trail [#audit]
+
+Every decision about spending and every change to a boost is recorded, with who made it and the amounts:
+
+- an ad account connected or disconnected;
+- spending turned on or off;
+- a ceiling changed;
+- a boost requested, started, unconfirmed, failed, paused, resumed, stopped or ended.
+
+A line names a member, or an API key, and the application that acted for the member when one did. What Peal's own jobs found, such as an end, names nobody.
+
+Owners read it, and nobody else (`ads:authorize`), newest first, 100 lines a page. A line is kept 396 days (13 months). Once a member closes their account, their lines stay without their name.

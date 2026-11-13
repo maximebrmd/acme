@@ -1,53 +1,88 @@
 ---
 title: Introduction
-description: Peal est une plateforme de planification pour les réseaux sociaux. Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats, seul ou en équipe.
+description: "Peal est une plateforme de programmation sur les réseaux sociaux : écrire une publication une fois, la programmer sur plusieurs plateformes, et voir comment elle marche."
 sidebar:
+  icon: house
   order: 1
 ---
 
-Peal est une plateforme de planification pour les réseaux sociaux.
+Peal est une plateforme de planification pour les réseaux sociaux : écrivez une publication une fois, programmez-la sur plusieurs plateformes, et voyez comment elle marche.
 
 <Callout type="warning" title="En cours de développement">
-  Peal se construit en public et n’est pas encore sorti. Vous pouvez déjà créer
-  des espaces de travail, connecter des comptes Mastodon, Bluesky, LinkedIn, X,
-  Threads et Instagram et des Pages Facebook, rédiger des publications avec
-  images et vidéos, les programmer sur un calendrier et les voir publiées,
-  savoir comment chacune s’est passée, voir ce qu’elles ont donné sur leurs
-  plateformes, et demander de l’aide à un assistant de rédaction. Ces pages
-  décrivent ce qui fonctionne aujourd’hui, et s’étofferont au fil des
-  fonctionnalités.
+  Peal se construit en public et n’est pas encore sorti. Ces pages décrivent ce
+  qui fonctionne aujourd’hui, et s’étofferont au fil des fonctionnalités.
 </Callout>
+
+Ce qui fonctionne aujourd’hui :
+
+- les espaces de travail ;
+- les comptes Mastodon, Bluesky, LinkedIn, X, Threads et Instagram, et les Pages Facebook ;
+- les publications avec images et vidéos, programmées sur un calendrier et mises en ligne ;
+- un avis sur la façon dont chaque publication s’est passée, et ce qu’elle a donné sur ses plateformes ;
+- un assistant de rédaction.
 
 ## Ce que fait Peal [#what-it-does]
 
-- **Écrire une fois.** Rédigez une publication dans un seul éditeur, puis donnez-lui un texte propre sur chaque canal où elle doit différer. Des compteurs montrent la place que laisse chaque plateforme.
-- **Planifier sur plusieurs plateformes.** Choisissez les comptes et l’heure. Peal met en ligne chaque publication à l’heure prévue, dans le fuseau horaire choisi, changements d’heure compris.
-- **Suivre les résultats.** Peal relève pendant un mois les j’aime, partages, réponses et citations de chaque publication, pour voir au même endroit ce qui a fonctionné.
-- **Travailler en équipe.** Les espaces de travail ont des membres et des rôles : plusieurs personnes peuvent rédiger, relire et planifier ensemble.
+| Tâche                               | Ce que fait Peal                                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Écrire une fois                     | Rédigez une publication dans un seul éditeur, puis donnez-lui un texte propre sur chaque canal où elle doit différer. Des compteurs montrent la place que laisse chaque plateforme. |
+| Planifier sur plusieurs plateformes | Choisissez les comptes et l’heure. Peal met en ligne chaque publication à l’heure prévue, dans le fuseau horaire choisi, changements d’heure compris.                               |
+| Suivre les résultats                | Peal relève pendant un mois les j’aime, partages, réponses et citations de chaque publication, pour voir au même endroit ce qui a fonctionné.                                       |
+| Travailler en équipe                | Les espaces de travail ont des membres et des rôles : plusieurs personnes peuvent rédiger, relire et planifier ensemble.                                                            |
 
-Peal ne republie jamais à l’aveugle : quand une plateforme ne confirme pas qu’une publication est partie, Peal ne redemande que de façons qui ne peuvent pas la publier deux fois. Si cela ne tranche toujours pas, il la marque comme non confirmée et vous invite à vérifier sur la plateforme avant de republier.
+<Callout type="info" title="Jamais de nouvel essai à l’aveugle">
+  Quand une plateforme ne confirme pas qu’une publication est partie, Peal ne
+  redemande que de façons qui ne peuvent pas la publier deux fois. Si cela ne
+  tranche toujours pas, il la marque comme non confirmée et vous invite à
+  vérifier sur la plateforme avant de republier.
+</Callout>
 
-## Guides [#guides]
+## Par où commencer [#guides]
 
-- [Connecter des canaux](/channels) : ajoutez les comptes sociaux sur lesquels publie un espace de travail.
-- [Programmer des publications](/scheduling) : rédigez une publication, choisissez ses canaux et son heure, déplacez-la sur le calendrier, et demandez de l’aide à l’assistant de rédaction.
-- [Images et vidéos](/media) : ajoutez des médias à une publication, et voyez ce que chaque plateforme accepte.
-- [Notifications](/notifications) : sachez comment se sont passées les publications et quels canaux reconnecter, dans l’application et par e-mail.
-- [Statistiques](/analytics) : voyez ce qu’ont donné les publications, par canal et par jour, et lesquelles ont le mieux marché.
-- [Publicités](/ads) : connectez des comptes publicitaires Meta, voyez côte à côte les résultats organiques et payants, et mettez en avant une publication parue, dans la limite d’un plafond fixé par un propriétaire.
-- [Espaces de travail et compte](/settings) : gérez les membres, les invitations et les clés d’API d’un espace de travail, choisissez votre langue, téléchargez vos données ou supprimez votre compte.
-- [Ligne de commande](/cli) : connectez-vous depuis un terminal avec `peal login`, et vérifiez qui vous êtes avec `peal whoami`.
-- [Connecter un client MCP](/mcp) : laissez un assistant IA travailler dans votre espace de travail, et voyez ce que fait chacun de ses outils.
-- [Publier depuis un agent IA](/agents) : laissez un agent rédiger des brouillons que vous relisez, ou programmer et publier lui-même, à votre choix.
-- [Webhooks](/webhooks) : laissez Peal prévenir vos propres systèmes de ce qui se passe dans un espace de travail, par des requêtes signées et réessayées.
+<CardGroup cols={2}>
+  <Card title="Démarrage rapide" href="/quickstart" icon="rocket">
+    Connecter un compte, puis écrire et programmer votre première publication
+    dans l’application.
+  </Card>
+  <Card title="Démarrage rapide de l’API" href="/api-quickstart" icon="code">
+    D’une clé d’API à une publication en ligne et un webhook, en cinq requêtes.
+  </Card>
+  <Card title="Plateformes" href="/platforms" icon="globe">
+    Ce qu’une publication peut contenir sur chacune des onze plateformes, et
+    leurs options.
+  </Card>
+  <Card title="Auto-hébergement" href="/self-hosting" icon="server">
+    Faire tourner Peal sur votre propre serveur, avec Postgres et un stockage
+    compatible S3.
+  </Card>
+</CardGroup>
+
+Les onglets du haut répartissent le reste par lecteur :
+
+- **Guides** : faire vivre un espace de travail dans l’application.
+- **Développeurs** : construire sur l’API, la ligne de commande, MCP et les webhooks.
+- **Auto-hébergement** : faire tourner un serveur.
+
+Le [glossaire](/glossary) dit ce que veut dire chaque mot.
 
 ## Auto-hébergeable [#self-hostable]
 
-Chaque service extérieur dont Peal dépend a une option par défaut auto-hébergeable. Une instance auto-hébergée a besoin de Postgres, d’un stockage compatible S3 et d’un moyen d’envoyer des e-mails ; la facturation, le captcha, l’IA et la télémétrie sont facultatifs. La page [Auto-hébergement](/self-hosting) explique comment la faire tourner, [Variables d’environnement](/environment-variables) liste chaque réglage, et la [console de l’équipe](/staff) est l’endroit où celles et ceux qui la font tourner trouvent comptes et espaces de travail.
+Chaque service extérieur dont Peal dépend a une option par défaut auto-hébergeable. Une instance auto-hébergée a besoin :
+
+- de Postgres ;
+- d’un stockage compatible S3 ;
+- d’un moyen d’envoyer des e-mails.
+
+La facturation, le captcha, l’IA et la télémétrie sont facultatifs. La page [Auto-hébergement](/self-hosting) explique comment la faire tourner, [Variables d’environnement](/self-hosting/environment-variables) liste chaque réglage, et la [console de l’équipe](/self-hosting/staff) est l’endroit où celles et ceux qui la font tourner trouvent comptes et espaces de travail.
 
 ## Fair source [#fair-source]
 
-Le code source est public, sous la Functional Source License (FSL-1.1-ALv2). Vous pouvez utiliser, modifier et auto-héberger Peal pour tout usage, sauf le proposer à d’autres comme produit ou service commercial concurrent, et chaque version passe aussi sous licence Apache 2.0 deux ans après sa sortie. C’est pourquoi Peal se dit « fair source » plutôt qu’open source.
+Le code source est public, sous la Functional Source License (FSL-1.1-ALv2) :
+
+- Vous pouvez utiliser, modifier et auto-héberger Peal pour tout usage, sauf le proposer à d’autres comme produit ou service commercial concurrent.
+- Chaque version passe aussi sous licence Apache 2.0 deux ans après sa sortie.
+
+C’est pourquoi Peal se dit « fair source » plutôt qu’open source.
 
 ## Licences [#licensing]
 
@@ -58,8 +93,8 @@ Peal, le concédant, publie le code source sur [GitHub](https://github.com/peal-
 | Le serveur, l’application web, la ligne de commande, cette documentation et le reste | FSL-1.1-ALv2, comme ci-dessus                                     |
 | Les SDK, et le contrat de l’API à partir duquel ils sont générés                     | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
 
-Une application qui appelle Peal par un SDK peut donc l’utiliser pour tout usage, service concurrent compris, aux conditions de la licence Apache. Un dossier qui a son propre fichier `LICENSE` relève de cette licence ; le reste du dépôt relève de `LICENSE.md`.
+Une application qui appelle Peal par un SDK peut l’utiliser pour tout usage, service concurrent compris, aux conditions de la licence Apache. Un dossier qui a son propre fichier `LICENSE` relève de cette licence ; le reste du dépôt relève de `LICENSE.md`.
 
 ## Construire sur l’API [#api]
 
-Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/api-overview) explique son organisation et comment s’authentifier, et la [référence de l’API](/reference) liste chaque point d’accès.
+Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/developers) explique son organisation et comment s’authentifier, et la [référence de l’API](/reference) liste chaque point d’accès.

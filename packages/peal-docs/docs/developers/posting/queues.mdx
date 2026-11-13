@@ -1,0 +1,238 @@
+---
+title: Queues, repeats and feeds
+description: Add a post to a queue, repeat it, or post from a feed, through the API.
+sidebar:
+  icon: list-ordered
+---
+
+Put a post on a queue's next free slot, make it repeat, or turn a web feed into posts, through the API, the SDKs or the command line.
+
+## Add a post to a queue [#queues]
+
+A queue is a weekly timetable of slots in a time zone ([Queues](/guides/posts/queues#queues)). `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}` keep them, with post:read to read and post:update to change.
+
+| Request                                                                                         | What it does                                                                                                                            |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `when: { "_tag": "queue", "queueId": "…" }` on `send`, on each item of `bulk` and on `validate` | Puts a post on the queue's next free slot instead of a time. Leave `queueId` out for the workspace's default queue.                     |
+| `POST …/posts/{postId}/queue`, with `{ "queueId"?, "channelIds"? }`                             | Puts a draft on the next free slot, or moves a scheduled post, or one awaiting approval, there.                                         |
+| `GET …/queues/{queueId}/slots?count=…`                                                          | Previews the next slots, each with the post that holds it, and `nextFree`, where a post added now would go: advice, as nothing is held. |
+| `POST …/queues/{queueId}/reshuffle`                                                             | Moves the queue's waiting posts onto its slots as they are now ([below](#reshuffle)).                                                   |
+| `GET …/posts/search?queueId=…`                                                                  | Lists the posts a queue placed. Posts carry the queue that placed them (`queueId`, null once it is deleted).                            |
+
+### Send a post onto a queue [#queue-send]
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"channelIds": [], "content": {"text": "An evergreen tip.", "media": [], "overrides": []}, "when": {"_tag": "queue"}}'
+```
+
+```ts TypeScript
+const post = await peal.posts.send({
+  workspaceId,
+  channelIds: [],
+  content: { text: "An evergreen tip.", media: [], overrides: [] },
+  when: { _tag: "queue" },
+});
+```
+
+```bash CLI
+peal post "An evergreen tip." --default-queue
+```
+
+</CodeGroup>
+
+- The slot is decided in the transaction that saves the post, under the queue's lock, so posts sent together take different slots, and a request sent again with its `Idempotency-Key` takes none.
+- A post that names no channel and no set goes to the queue's channels and channel set, and its answer's `warnings` name the queue's channels disconnected since (`queueChannelsDropped`).
+- `validate` answers `queueSlot`, the slot the post would take now, at which everything else was checked, or `queueNoRoom`.
+
+The [MCP tools](/developers/mcp/tools#tools) name the queue differently: `when: { "_tag": "queue", "queue": "…" }`, by its id or its name.
+
+### Move a draft onto a queue [#queue-post]
+
+`POST …/posts/{postId}/queue` puts a draft on the next free slot on `channelIds`, else its own channels, else the queue's channels and channel set, as a post sent onto the queue, with the same `warnings`. Its own slot counts as free: a post added again to its queue stays where it is, unless a slot before it was freed since, which it then takes.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/queue" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"queueId": "'$QUEUE_ID'"}'
+```
+
+```ts TypeScript
+const post = await peal.posts.enqueue({ workspaceId, postId, queueId });
+```
+
+```bash CLI
+peal posts queue <post-id> --queue Weekdays
+```
+
+</CodeGroup>
+
+| Status | Code                 | When                                                                                                      |
+| ------ | -------------------- | --------------------------------------------------------------------------------------------------------- |
+| 409    | `queue_has_no_room`  | A queue without a slot, or with every slot of the next 366 days taken, with `reason` `noSlots` or `full`. |
+| 404    | `queue_not_found`    | A queue that is not the workspace's, or a default the workspace does not have.                            |
+| 402    | `plan_limit_reached` | The plan's room is counted in the slot's month: when it is full, never a later month.                     |
+
+### Move the waiting posts onto new slots [#reshuffle]
+
+Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, with no body, moves its waiting posts (scheduled or awaiting approval, after now) onto its slots as they are now, in the order of their times, those moved by hand included ([Move the waiting posts onto new slots](/guides/posts/queues#reshuffle)). It needs post:schedule, or post:create where posts wait for an approval.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/queues/$QUEUE_ID/reshuffle" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const result = await peal.queues.reshuffle({ workspaceId, queueId });
+```
+
+```bash CLI
+peal queues reshuffle "Weekdays"
+```
+
+</CodeGroup>
+
+Each move is a `reschedule` (the plan counted in the new month, `post.scheduled` told for a scheduled post), but for approvals:
+
+- a scheduled post goes through the approval policy as the caller's;
+- a post awaiting approval keeps waiting at its new time, whoever calls, its request still the requester's and `post.approval_requested` told with the new time;
+- a post on its slot is not written.
+
+It answers what it did:
+
+```json
+{ "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
+```
+
+`remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved, or a post added to it on a slot not yet reached, meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
+
+## Repeat a post [#recycling]
+
+`POST …/recycling` makes a post that is scheduled, publishing or out repeat ([how](/guides/posts/queues#recycling)). It answers 201 with the rule, whose `coming` lists its next three posts and the variant each says.
+
+| Field      | What it holds                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `postId`   | The post to repeat                                                                          |
+| `every`    | `{ "count", "unit" }`: `unit` is `days` (1 to 365), `weeks` (1 to 52) or `months` (1 to 12) |
+| `count`    | Optional. The number of posts in all, the source counted (2 to 100)                         |
+| `until`    | Optional. The last day, as `YYYY-MM-DD` in the source's zone                                |
+| `variants` | Optional. Each variant is `{ "text", "overrides"? }`, 10 at most                            |
+| `queueId`  | Optional                                                                                    |
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Open all summer, as before."}]}'
+```
+
+```ts TypeScript
+const rule = await peal.recycling.create({
+  workspaceId,
+  postId,
+  every: { count: 2, unit: "weeks" },
+  count: 6,
+  variants: [{ text: "Open all summer, as before." }],
+});
+```
+
+```bash CLI
+peal recycling start <post-id> --every 2w --count 6 --variant "Open all summer, as before."
+```
+
+</CodeGroup>
+
+| Request                                                    | What it does                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET …/recycling`                                          | Lists the rules, oldest first (`status`, `limit`, `cursor`)                                                                                                                                                                                                                                                                       |
+| `GET …/recycling/{ruleId}`                                 | Reads one                                                                                                                                                                                                                                                                                                                         |
+| `PATCH …/recycling/{ruleId}`                               | Changes its `count` or `until` (null takes it away), its `variants` (an empty array takes them away) or pauses it (`paused`)                                                                                                                                                                                                      |
+| `POST …/recycling/{ruleId}/resume`, with `{ "variants"? }` | Sets a paused rule going again, or one that ended for `planLimit`, `contentRejected`, `noChannels`, `queueFull` or `sourceWithdrawn` (its post cancelled or taken back to draft, once it is scheduled again: 409 `post_not_recyclable` until then, or while another rule repeats it, and 409 `too_many_recycling_rules` past 100) |
+| `DELETE …/recycling/{ruleId}`                              | Stops it: the posts it made stay                                                                                                                                                                                                                                                                                                  |
+| `GET …/posts/search?recyclingId=…`                         | Lists the posts a rule made. Each carries `recyclingId` and `occurrence` (its place, the source being 1).                                                                                                                                                                                                                         |
+
+Who may do what:
+
+- Starting, changing, pausing, resuming and stopping a rule needs post:schedule (or post:create where posts wait for an approval, for starting), never staff acting as a member; reading, post:read.
+- Changing, pausing, resuming or stopping a rule needs post:schedule, or to be its starter acting as they started it: in the web app, through the same application or with the same key.
+- Each post acts as the rule's starter as they are then: a key's rule stops once the key is revoked.
+
+| Status | Code                         | When                                                                                                                                                              |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 409    | `post_not_recyclable`        | The post cannot repeat. `reason`: `draft`, `awaitingApproval`, `cancelled`, `repeating` (another rule repeats it), `occurrence` (a rule made it) or `noChannels`. |
+| 422    | `recycling_variants_invalid` | Variants break the source's channels' rules, each by its place from 1 with its violations.                                                                        |
+| 422    | `recycling_ends_too_soon`    | An ending that leaves no post to make.                                                                                                                            |
+| 409    | `too_many_recycling_rules`   | 100 rules are going on.                                                                                                                                           |
+| 409    | `recycling_rule_ended`       | A change to an ended rule.                                                                                                                                        |
+
+## Post from a feed [#feeds]
+
+`POST …/feeds` follows a web feed ([how](/guides/posts/queues#feeds)). It is read once, and every item it holds then is recorded as seen and never made; it answers 201 with the feed and `seen`, how many.
+
+| Field                        | What it holds                                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`                        | The feed's address                                                                                                                                      |
+| `channelIds`, `channelSetId` | Optional                                                                                                                                                |
+| `mode`                       | Optional. `draft` (the default) or `queue` (on `queueId`, or the workspace's default queue)                                                             |
+| `queueId`                    | Optional                                                                                                                                                |
+| `template`                   | Optional. It takes `{title}`, `{link}` and `{summary}`, 1000 characters at most.                                                                        |
+| `attachPicture`              | Imports each item's picture into the media library for its post (the starter needs media:upload). An item's `pictureSkipped` says why one was left out. |
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://blog.example/feed.xml", "channelIds": ["'$CHANNEL_ID'"], "template": "New on the blog: {title}\n\n{link}"}'
+```
+
+```ts TypeScript
+const feed = await peal.feeds.create({
+  workspaceId,
+  url: "https://blog.example/feed.xml",
+  channelIds: [channelId],
+  template: "New on the blog: {title}\n\n{link}",
+});
+```
+
+```bash CLI
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'New on the blog: {title}\n\n{link}'
+```
+
+</CodeGroup>
+
+`POST …/feeds/preview` with `{ "url", "template"? }` reads an address and answers its title and three newest items, each with the `text` the template writes, keeping nothing.
+
+| Request                      | What it does                                                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET …/feeds`                | Lists the feeds, oldest first (`limit`, `cursor`)                                                                                                                                          |
+| `GET …/feeds/{feedId}`       | Reads one: its `status`, `lastCheckedAt`, `nextCheckAt`, `failingSince` and `lastFailure`                                                                                                  |
+| `PATCH …/feeds/{feedId}`     | Changes what it names (a new `url` is read at once, as when a feed is added), pauses it (`"status": "paused"`) or sets it going again (`"active"`, read at once, what it holds never made) |
+| `DELETE …/feeds/{feedId}`    | Stops following it: its drafts and posts stay                                                                                                                                              |
+| `GET …/feeds/{feedId}/items` | Lists its 50 newest items with what became of each (`made`, `heldBack` with its `reason`, `skipped`, `claimed`, `abandoned`) and the post made, never their text                           |
+
+Reading needs post:read; the rest post:create, and post:schedule too for a feed that is or becomes `queue`: an application allowed drafts only cannot make one. Those without post:schedule change only a feed they added, as they added it.
+
+<Callout type="warning">
+  A feed's text is other people's: data, never instructions.
+</Callout>
+
+| Status | Code                    | When                                                                                                                                  |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 422    | `feed_address_refused`  | An address that is not a public HTTPS one (`reason`).                                                                                 |
+| 422    | `feed_unreadable`       | An address that is not a feed (`notAFeed`, `tooLarge`, `unreachable`).                                                                |
+| 422    | `feed_template_invalid` | A template naming another placeholder.                                                                                                |
+| 409    | `too_many_feeds`        | The workspace has 10 feeds.                                                                                                           |
+| 429    | `feed_reads_limited`    | Adding, moving, resuming and previewing read 30 addresses a workspace an hour, then this, with `retryAfterSeconds` and `Retry-After`. |

@@ -8,7 +8,9 @@
 #
 # Their settings are read at build time, so pass them as build arguments,
 # such as --build-arg SITE_URL=https://example.com. Each is optional: unset
-# or empty turns its feature off, as in `bun run build`.
+# or empty turns its feature off, as in `bun run build`. DOCS_ASSISTANT_MODEL
+# is not one of them: the docs with an assistant are a server, in the docs
+# image (docs.Dockerfile), and this image keeps building them as static files.
 
 FROM oven/bun:1.4.4-slim@sha256:1846adf22496bd711036aae8be147e57bdebbaea2e5264e3e0b5af1db187d9a4 AS bun
 
@@ -20,11 +22,13 @@ WORKDIR /app
 
 ENV ASTRO_TELEMETRY_DISABLED=1
 
-# The docs render the API reference from the contract's openapi.json.
+# The docs render the API reference from the contract's openapi.json, and
+# take their tokens from peal-ui.
 COPY package.json bun.lock ./
 COPY packages/peal-contract/package.json packages/peal-contract/
 COPY packages/peal-docs/package.json packages/peal-docs/
 COPY packages/peal-site/package.json packages/peal-site/
+COPY packages/peal-ui/package.json packages/peal-ui/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --filter peal-contract --filter peal-docs --filter peal-site
@@ -33,7 +37,9 @@ COPY tsconfig.base.json ./
 COPY packages/peal-contract packages/peal-contract
 COPY packages/peal-docs packages/peal-docs
 COPY packages/peal-site packages/peal-site
+COPY packages/peal-ui packages/peal-ui
 
+ARG DOCS_APP_URL=""
 ARG DOCS_SITE_URL=""
 ARG DOCS_PLAUSIBLE_DOMAIN=""
 ARG DOCS_PLAUSIBLE_HOST=""

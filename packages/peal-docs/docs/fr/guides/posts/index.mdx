@@ -1,0 +1,233 @@
+---
+title: Écrire une publication
+description: Écrire une publication une fois, lui donner son propre texte et ses options sur certains canaux, et la prévisualiser sur chacun.
+sidebar:
+  icon: square-pen
+---
+
+Une publication a un texte, que chacun de ses canaux peut remplacer par le sien, et une heure de départ, gardée dans le fuseau horaire où vous l’avez programmée. Rédigez-la dans l’éditeur, puis retrouvez-la sur le calendrier.
+
+## Qui peut faire quoi [#roles]
+
+| Rôle           | Publications                                                                   |
+| -------------- | ------------------------------------------------------------------------------ |
+| Propriétaire   | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Administrateur | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Éditeur        | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Contributeur   | Rédiger et enregistrer des brouillons, et supprimer les siens ; pas programmer |
+| Lecteur        | Lire                                                                           |
+
+- Annuler une publication (brouillon compris), la repasser en brouillon, la republier et indiquer si elle est partie demandent le même droit que la programmer.
+- L’auteur d’une publication est le membre qui l’a créée.
+- Tous les rôles sauf Lecteur peuvent aussi demander de l’aide à l’[assistant de rédaction](/guides/posts/assistant#assistant).
+
+Un espace de travail peut demander que les publications attendent une [approbation](/guides/posts/review) avant d’être programmées. Les contributeurs peuvent alors demander l’envoi d’une publication, et une publication qui attend apparaît comme **En attente d’approbation**.
+
+## Rédiger une publication [#write]
+
+Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez **Nouvelle publication**.
+
+<Steps>
+  <Step title="Choisissez les canaux">
+    Sous **Canaux**, cochez les comptes où part la publication. La liste reprend
+    les [canaux](/guides/channels) de l’espace de travail. À partir de trois
+    canaux, **Tout sélectionner** coche chaque canal qui publie (pas un canal
+    désactivé ou à reconnecter), et **Effacer** n’en coche aucun.
+  </Step>
+  <Step title="Écrivez le texte">
+    Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et
+    les liens ressortent pendant la saisie, et sont gardés en texte brut.
+  </Step>
+  <Step title="Changez le texte d’un canal, si vous le souhaitez">
+    Ouvrez l’onglet du canal et écrivez-y son propre texte. Laissé vide, un
+    canal reprend le texte de tous les canaux.
+  </Step>
+  <Step title="Ajoutez des images et des vidéos">
+    Sous **Images et vidéos**, ajoutez des images ou des vidéos de la
+    médiathèque, ou importez-les là : voyez [Images et vidéos](/guides/media).
+  </Step>
+  <Step title="Remplissez les options des plateformes">
+    Quand la plateforme d’un canal en demande plus, comme le titre d’une vidéo
+    YouTube, remplissez ses champs sous **Options des plateformes** : voyez
+    [Options des plateformes](#options).
+  </Step>
+  <Step title="Enregistrez le brouillon">
+    Choisissez **Enregistrer le brouillon** pour garder la publication sans
+    heure. Elle rejoint les **Brouillons** de l’espace de travail, que le
+    calendrier n’affiche pas.
+  </Step>
+</Steps>
+
+<Accordion>
+  <AccordionItem title="Écriture de droite à gauche, emoji et collage">
+    - Chaque ligne prend le sens de sa première lettre : un texte en arabe ou en
+    hébreu se lit de droite à gauche. - Le bouton en forme de sourire, à côté de
+    l’assistant, ouvre un sélecteur d’emoji dans votre langue. L’emoji s’insère
+    là où était votre curseur, dans le dernier texte où vous avez écrit (le
+    texte pour tous les canaux, le texte propre à un canal ou une partie), et
+    l’annulation le retire. Les données du sélecteur viennent de Peal lui-même,
+    jamais d’un autre site. - Une image ou une vidéo collée seule dans un texte
+    est importée et jointe comme si elle était déposée là (à sa partie, si elle
+    est collée dans une partie), avec les mêmes limites. - Un collage qui
+    contient aussi du texte, comme des cellules copiées d’un tableur, qui
+    viennent avec une image d’elles-mêmes, colle seulement le texte.
+  </AccordionItem>
+</Accordion>
+
+### Longueur sur chaque canal [#length]
+
+Sous **Longueur sur chaque canal**, chaque canal où part la publication montre la place que laisse sa plateforme, et ce qu’elle refuserait d’autre, images et vidéos comprises. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
+
+| Plateforme              | Limite du texte                                                                                                                                             | Images et vidéos        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Bluesky                 | 300 caractères, et 3 000 octets                                                                                                                             | 4                       |
+| Mastodon                | 500 caractères (la valeur par défaut d’un serveur)                                                                                                          | 4                       |
+| X                       | 280, où un lien compte 23, avec ou sans `https://` (`peal.social` aussi), et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                       |
+| Threads                 | 500 caractères, où un emoji compte ses octets, 4 pour la plupart ; 5 liens différents                                                                       | 20                      |
+| LinkedIn                | 3 000 caractères                                                                                                                                            | 20                      |
+| Instagram               | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                                                                         | 20                      |
+| TikTok                  | 2 200, où la plupart des emoji comptent 2 (unités de code UTF-16) ; une image ou une vidéo est obligatoire                                                  | Une vidéo, ou 35 photos |
+| YouTube                 | Une description de 5 000 octets, sans `<` ni `>` ; une vidéo est obligatoire                                                                                | 1                       |
+| Pinterest               | Une description de 800 caractères ; une image ou une vidéo est obligatoire                                                                                  | Une vidéo, ou 5 images  |
+| Google Business Profile | 1 500 caractères                                                                                                                                            | Des photos seulement    |
+
+<Callout type="info">
+  Peal vérifie les limites quand vous programmez une publication, pas pendant
+  que vous rédigez un brouillon.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="Comment certaines plateformes comptent">
+    - Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji
+    fait de plusieurs points de code compte une fois. - YouTube compte des
+    octets : une lettre accentuée en compte deux. - TikTok accepte 2 200 pour la
+    légende d’une vidéo et 4 000 pour la description d’une publication de photos
+    : Peal limite les deux à 2 200. - La limite de Facebook est le chiffre
+    couramment rapporté, Meta n’en nommant aucune. Il en va de même des 1 500
+    caractères de Google Business Profile, et des 58 du titre d’un événement ou
+    d’une offre, la référence et les pages d’aide de Google n’en nommant aucune.
+  </AccordionItem>
+</Accordion>
+
+### Aperçus [#previews]
+
+À côté du texte (en dessous sur un écran étroit), **Aperçus** montre ce que chaque canal où part la publication recevra :
+
+- son nom et sa plateforme ;
+- le texte qu’il reçoit, en texte brut, compté comme sa plateforme le compte ;
+- ses images et vidéos, et les parties qui suivent.
+
+Peal les demande une seconde après votre dernière frappe, par la même vérification que `posts.validate` dans l’API. L’aperçu est la publication telle qu’elle serait enregistrée, signatures et options comprises. Il n’imite pas la plateforme, qui met la publication en page à sa façon.
+
+Un canal qui la refuserait est signalé, et ce qu’il faut corriger est montré plus bas, avec les longueurs et les options. Avec les liens raccourcis, les liens apparaissent tels qu’écrits : ils ne sont raccourcis qu’au départ de la publication.
+
+## Fils [#threads]
+
+Une publication peut avoir des parties à sa suite. Sous **Fil**, choisissez **Ajouter une partie**. Chaque partie a son texte, ses images et vidéos, un compteur pour chaque canal et, si vous le souhaitez, une attente après la partie précédente, d’une minute à un jour. Montez ou descendez une partie, ou retirez-la, avec ses boutons. Une publication a au plus 24 parties après la première.
+
+Sur les plateformes qui ont des fils, chaque partie part en réponse à la précédente :
+
+| Plateforme | Ce que deviennent les parties                                             |
+| ---------- | ------------------------------------------------------------------------- |
+| X          | Un fil : chaque partie répond à la précédente                             |
+| Bluesky    | Un fil : chaque partie nomme la première publication du fil et son parent |
+| Mastodon   | Un fil : chaque partie répond à la précédente                             |
+
+Chaque partie suit les règles d’une publication sur sa plateforme : sa longueur, comptée comme la plateforme la compte, et ses images et vidéos. Les autres plateformes prennent une publication seule : une publication avec des parties y est refusée quand vous la programmez, et l’éditeur le dit dès que vous cochez un tel canal. Les commentaires sous une publication, sur les plateformes qui en prennent, ne sont pas encore envoyés.
+
+<Callout type="warning" title="Les fils sur X">
+  Qu’un fil parte sur X dépend de l’accès qu’a l’application du serveur. X
+  indique qu’une application en accès libre-service ne peut répondre que sous
+  une publication dont l’auteur a mentionné ou cité le compte qui répond. Si X
+  refuse la deuxième partie, la publication est publiée en partie, avec la
+  raison que X ne laisse pas cette application publier de réponses, et ne peut
+  pas être republiée depuis Peal. La personne qui exploite le serveur peut
+  désactiver les fils sur X
+  ([`X_THREADS`](/self-hosting/environment-variables)), et X prend alors une
+  publication seule.
+</Callout>
+
+Les parties partent dans l’ordre, chacune par sa propre requête à la plateforme :
+
+| Quand                                 | Ce qui se passe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Une partie a échoué                   | Rien n’est envoyé après elle. Le canal indique **Échec**, sa page liste les parties en ligne, avec leurs adresses, et **Republier** envoie la partie qui a échoué et les suivantes, jamais une partie en ligne.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Peal ne peut pas confirmer une partie | Rien n’est envoyé après elle. Le canal indique **À vérifier** : regardez sur la plateforme, puis dites ce que vous avez trouvé. Quand cette partie est en ligne et qu’il en restait, le canal indique **Échec** avec la raison **Suite non envoyée** : une partie retrouvée à la main n’a pas d’identifiant connu de Peal, et la suivante ne peut donc pas lui répondre. Peal n’y propose pas **Republier**, et l’API refuse une republication (409 `target_status_conflict`) : publiez la suite vous-même sur la plateforme, en réponse à la dernière partie en ligne. Il en va de même quand la partie à laquelle répondre n’existe plus sur la plateforme. |
+| Vous choisissez **Annuler**           | Les parties qui ne sont pas encore parties s’arrêtent. Une partie qui attend n’est pas envoyée à la fin de son attente, et les parties déjà parties restent en ligne.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+L’adresse de la publication est celle de sa première partie, et les [statistiques](/guides/engage/analytics) lisent les compteurs de la première partie.
+
+## Options des plateformes [#options]
+
+Certaines plateformes demandent à chaque publication plus que son texte et ses médias. Quand la publication part sur un canal de l’une d’elles, **Options des plateformes** montre les champs de ce canal. Un brouillon les garde tels quels, inachevés. La programmer exige ceux marqués obligatoires, et montre sous chaque champ ce que sa plateforme refuserait.
+
+| Plateforme              | Options                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| YouTube                 | **Titre** (obligatoire : 100 caractères au plus, sans `<` ni `>`), **Conçue pour les enfants** (obligatoire, sans valeur par défaut), **Visibilité** (publique sauf choix contraire), **Tags** (500 caractères en tout), **Numéro de catégorie**, **Prévenir les abonnés** (activé), contenus modifiés ou synthétiques, et [d’autres](/platforms/youtube#options)                                                                    |
+| TikTok                  | **Qui peut voir cette publication** (obligatoire, sans valeur par défaut), **Autoriser les commentaires**, **Autoriser le Duo** et **Autoriser le Collage** (désactivés tant que vous ne les activez pas), divulgation d’un contenu commercial, contenu généré par IA, et [d’autres](/platforms/tiktok#options)                                                                                                                      |
+| LinkedIn                | **Qui peut voir cette publication** (tout le monde, sauf choix contraire ; relations uniquement vaut pour un profil), **Empêcher les autres de republier cette publication**, **Pages à mentionner** (des pages d’entreprise, chacune écrite `@Nom` dans le texte), **Lien à afficher sous forme de carte** avec son **Titre du lien** (obligatoire avec un lien) et sa **Description du lien**, **Titre du document** (pour un PDF) |
+| Pinterest               | **Tableau** (obligatoire, l’un de ceux du compte), **Section du tableau**, **Titre** (100 caractères au plus), **Lien** (là où mène un clic sur l’épingle, commençant par `http://` ou `https://`), **Couverture de la vidéo, à la seconde** (la première image sauf choix contraire), **Couleur dominante** (comme `#6E7874`)                                                                                                       |
+| Instagram               | Les réglages d’un reel et les **Collaborateurs** (voir [Instagram](/platforms/instagram#options))                                                                                                                                                                                                                                                                                                                                    |
+| Facebook                | Le **Titre de la vidéo** d’une vidéo (voir [Facebook](/platforms/facebook#options))                                                                                                                                                                                                                                                                                                                                                  |
+| Google Business Profile | **Type de publication** (une actualité, sauf si vous choisissez un événement ou une offre), **Titre**, **Début** et **Fin** (obligatoires pour un événement ou une offre ; un titre de 58 caractères au plus), **Bouton** et son **Lien du bouton** (sur une actualité ou un événement), **Code promotionnel**, **Lien pour profiter de l’offre** et **Conditions générales** (sur une offre)                                        |
+
+La page de chaque plateforme liste toutes ses options : [Mastodon](/platforms/mastodon#options), [Bluesky](/platforms/bluesky#options), [Threads](/platforms/threads#options), [X](/platforms/x#options), [LinkedIn](/platforms/linkedin#options), [Pages Facebook](/platforms/facebook#options), [Instagram](/platforms/instagram#options), [TikTok](/platforms/tiktok#options), [YouTube](/platforms/youtube#options), [Pinterest](/platforms/pinterest#options), [Google Business Profile](/platforms/google-business#options).
+
+Le texte de la publication est la description de la vidéo YouTube, la légende de la publication TikTok, la description de l’épingle Pinterest, le commentaire de la publication LinkedIn et la description de la publication Google Business Profile. Les tags sont séparés par des virgules ; YouTube compte les virgules, et deux caractères de plus pour un tag qui contient une espace.
+
+Une miniature ou une couverture est un fichier de la médiathèque que la publication ne montre pas :
+
+- il doit être prêt et appartenir à l’espace de travail ;
+- il ne peut pas être supprimé tant qu’une publication qui part le nomme ;
+- un brouillon le perd quand il est supprimé, et une copie de la publication le laisse de côté une fois qu’il n’est plus là ;
+- un ensemble de canaux ou les options par défaut d’un canal ne peuvent pas en nommer un.
+
+Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
+
+### Stories et reels [#formats]
+
+Sur Instagram et Facebook, **Format** choisit le genre de publication que reçoit un canal. Peal ne le devine jamais d’après le fichier : une vidéo verticale reste une publication du fil (un reel, sur Instagram) tant que vous ne choisissez pas **Story**, ou **Reel** sur Facebook.
+
+| Format    | Où        | Ce qu’il prend                                                                                                                  | Le texte de la publication |
+| --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Story** | Instagram | Une image JPEG de 8 Mio au plus, ou une vidéo MP4 ou QuickTime de 3 à 60 secondes et 100 Mio au plus                            | Pas envoyé                 |
+| **Story** | Facebook  | Une image JPEG, PNG ou GIF de 10 Mio au plus, ou une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 60 secondes | Pas envoyé                 |
+| **Reel**  | Facebook  | Une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 90 secondes                                                  | Sa description             |
+
+- Une story est envoyée sans le texte de la publication. L’éditeur le dit sous les compteurs et n’y compte rien, et une vérification par l’API répond `textNotSent` pour ce canal.
+- Une story ne prend aucune autre option (ni collaborateurs, ni réglages de reel, ni titre), et une story ou un reel n’a pas de parties après lui.
+- Le titre d’un reel Facebook est le **Titre de la vidéo**.
+- Une story et la publication du fil du même fichier et du même texte ne sont pas prises pour des doublons l’une de l’autre. Deux stories du même fichier le sont, quel que soit le texte des publications, puisqu’une story n’en montre aucun.
+- Une story disparaît après 24 heures. Peal n’en garde pas de lien et n’en lit ni statistiques ni commentaires.
+- Ni une story ni un reel ne peuvent être sponsorisés depuis Peal. Chacun compte dans les publications du mois comme les autres.
+
+Un reel ou une story vidéo n’indique **Publié** qu’une fois que Meta dit l’avoir publié : Peal lit l’état chez Meta jusqu’à 10 minutes après l’envoi. Un refus que Meta montre entre-temps indique **Échec** (`processingFailed`). S’il n’est toujours pas publié alors, ou si Peal ne sait pas si un reel ou une story est parti, le canal indique **À vérifier** (`stillProcessing` quand Meta le traitait encore) et Peal ne l’envoie jamais de nouveau : regardez sur la Page, puis indiquez ce que vous avez trouvé.
+
+<Accordion>
+  <AccordionItem title="Fréquence d’images, taille et limite quotidienne de Meta">
+    Meta demande que la vidéo d’un reel ou d’une story vidéo défile à 24 à 60 images par seconde, ce que Peal ne vérifie pas : Meta refuse une vidéo hors de cette plage, ou sous 540p, pendant son traitement.
+
+    Meta n’accepte aussi que 30 reels par Page sur 24 heures glissantes par son API. Au-delà, le reel échoue avec le code de Meta, et vous pouvez le republier plus tard.
+
+  </AccordionItem>
+  <AccordionItem title="Quand le serveur redémarre pendant un reel ou une story">
+    Si le serveur de Peal redémarre pendant qu’un reel ou une story Facebook part, Peal reprend là où il s’était arrêté. Il a noté la vidéo ou la photo envoyée avant de la publier : il relit donc l’état donné par Meta pendant 10 minutes au plus, et ne renvoie le reel ou la story que si sa note dit qu’il n’a jamais été publié.
+
+    Un reel ou une story que le serveur avait commencé avant la mise à jour vers cette version, et celui dont il ne peut rien dire, indique **À vérifier**, ce qui peut aussi vouloir dire qu’il n’est jamais parti. De même pour une story Instagram interrompue ainsi, pour que vous vérifiiez le compte, puis la confirmiez ou la republiiez. Peal n’envoie jamais deux fois une story ou un reel.
+
+  </AccordionItem>
+</Accordion>
+
+Par l’API, les capacités d’un canal listent les formats de sa plateforme dans `postFormats`, chacun avec les médias qu’il prend et si le texte est envoyé.
+
+## Médias [#media]
+
+Une publication peut montrer des images et des vidéos de la médiathèque de l’espace de travail. [Images et vidéos](/guides/media) explique comment les importer et les ajouter, comment les décrire, et ce que chaque plateforme accepte.
+
+## Depuis un agent, la ligne de commande ou l’API [#api]
+
+Un [client MCP](/developers/mcp/tools#tools), la [ligne de commande](/developers/cli/posts#posts) et l’[API HTTP](/developers) font ce que fait l’éditeur, avec les mêmes vérifications : rédiger un brouillon, le programmer, le publier maintenant, le déplacer, le repasser en brouillon et l’annuler.
+
+`POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant. Quand la publication enfreint une règle de la plateforme de l’un de ses canaux, il la refuse en entier et liste toutes les violations d’un coup. [Publier par l’API](/developers/posting) montre comment vérifier d’abord une publication, en envoyer plusieurs d’un coup, les importer depuis un fichier CSV et les lister.
+
+Une application que vous avez connectée ne programme et ne publie que si vous l’y autorisez. Publier est une permission à part, que vous pouvez lui refuser pour qu’elle rédige des brouillons que vous relisez. Une clé d’API ne fait que ce que permettent les permissions qu’elle a reçues. [Publier depuis un agent IA](/developers/agents) explique les deux, avec un exemple.

@@ -1,0 +1,141 @@
+---
+title: After a post is published
+description: Unpublish a post, edit it where it was published, and shorten its links.
+sidebar:
+  icon: send
+---
+
+Delete a published post from its platforms, change its text where it is live, or have its links shortened, through the API, the SDKs or the command line.
+
+## Unpublish a post [#unpublish]
+
+Unpublishing deletes a published post from a channel's platform, for everyone, every part of a thread, the last first ([Unpublish a post](/guides/posts/published#unpublish)).
+
+| Request                                              | What it does                                                                                                                                                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST …/posts/{postId}/targets/{targetId}/unpublish` | Deletes the post from one channel's platform.                                                                                                                                              |
+| `POST …/posts/{postId}/unpublish`                    | Asks it of every channel the post is on, and answers each channel's change (`changes`) beside why the others could not (`refused`): one channel that cannot never fails the whole request. |
+| `GET …/posts/{postId}/changes`                       | Lists a post's changes, newest first, with post:read.                                                                                                                                      |
+
+Both unpublish requests need post:publish, and an OAuth client the scope `workspace:publish`.
+
+<Callout type="warning" title="It cannot be undone">
+  The post is deleted on the platform, for everyone.
+</Callout>
+
+The request is accepted (202) with the change, and a job deletes the post, one call at a time with the channel's other calls. `?wait=<seconds>` (60 at most) waits for it to end and answers it as it then stands.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/unpublish?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const change = await peal.posts.unpublishTarget({
+  workspaceId,
+  postId,
+  targetId,
+  wait: "30",
+});
+```
+
+```bash CLI
+peal posts unpublish <post-id> --channel <channel-id> --wait 30 --yes
+```
+
+</CodeGroup>
+
+```json
+{
+  "id": "019a7b10-0c21-7d3e-8f41-2a6b5c4d3e10",
+  "kind": "unpublish",
+  "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+  "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+  "status": "done",
+  "partsLeft": 0,
+  "requestedAt": "2026-11-10T09:00:00.000Z",
+  "finishedAt": "2026-11-10T09:00:01.000Z",
+  "code": null
+}
+```
+
+| `status`  | Meaning                                                                                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pending` | Parts are left (`partsLeft`).                                                                                                                               |
+| `done`    | None is left. The target keeps `status: published` and gets `removedAt`; `GET …/posts/search?removed=true` lists the posts removed from a channel at least. |
+| `failed`  | Peal gave up, with its `code` (`unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own): asking again deletes the parts left.             |
+
+`alreadyGone: true` says the platform no longer had a part.
+
+- Before anything is called, a request that cannot be carried out answers 409 `live_post_not_changeable`, with `reason`: `notPublished`, `alreadyRemoved`, `noPlatformId` (a post confirmed by hand), `notSupported` (the platform's capabilities say why, in `livePost`), `changeInProgress`, `channelUnavailable` or `boostRunning`.
+- Webhooks hear `post.unpublished` or `post.unpublish_failed` ([Webhooks](/developers/webhooks/events/posts#post-unpublished)).
+- `GET …/platforms/capabilities` says beforehand where Peal deletes posts: `livePost.unpublish`, and `livePost.unpublishBlockedBy` (`noApi`, `permission` or `unverified`) where it does not.
+
+## Edit a published post [#edit-live]
+
+`POST …/posts/{postId}/targets/{targetId}/edit` replaces the text of one part of a published post on one channel's platform, for everyone ([Edit a published post](/guides/posts/published#edit-live)). Peal edits on Mastodon and Google Business Profile.
+
+| Field  | What it holds                                                        |
+| ------ | -------------------------------------------------------------------- |
+| `text` | The new text                                                         |
+| `part` | The part, counted from 0, the post itself, which it is when left out |
+
+Only the text changes, never the media, the options or the time. It needs post:publish, an OAuth client the scope `workspace:publish`, and is refused to someone whose posts need an [approval](/guides/posts/review).
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/edit?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Doors open at 7 pm, not 6."}'
+```
+
+```ts TypeScript
+const change = await peal.posts.editTarget({
+  workspaceId,
+  postId,
+  targetId,
+  wait: "30",
+  text: "Doors open at 7 pm, not 6.",
+});
+```
+
+```bash CLI
+peal posts edit <post-id> --channel <channel-id> --text "Doors open at 7 pm, not 6." --wait 30
+```
+
+</CodeGroup>
+
+- The text is checked as that channel's text is when a post is scheduled, a Mastodon content warning counted: a text the platform would refuse answers 422 `post_content_invalid` with every violation, and so does a text of spaces alone; an empty `text` answers 400 `invalid_request`.
+- The request is accepted (202) with the change (`kind: "edit"`), and a job makes the edit, tried again as a deletion is; `?wait=<seconds>` waits for it to end. The change never holds the text.
+- A change that `failed` has its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied` for a Mastodon channel to reconnect, or the platform's own), and may be asked again.
+- Once done, the text is that part's own text on that channel (`content.overrides`, or the part's in `content.followUps`), the other channels keep theirs, and the target has its `editedAt`. Peal keeps no earlier text.
+- Before anything is called, 409 `live_post_not_changeable` says why not, as for a deletion, with `approvalRequired` too; a part the post does not have live there is `noPlatformId`.
+- Webhooks hear `post.edited` or `post.edit_failed` ([Webhooks](/developers/webhooks/events/posts#post-edited)), with the part, never the text. `livePost.edit` and `livePost.editBlockedBy` in the capabilities say beforehand where Peal edits.
+
+## Short links [#short-links]
+
+`shortenLinks` asks for the post's links to go out [shortened](/guides/posts/published#short-links), on a server that has short links. `GET …/short-links/status` says whether it has them, with what a short address starts with and how long it is.
+
+| `shortenLinks` | On `POST …/posts`, `PUT …/posts/{postId}`, `send` and each item of `bulk`                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `true`         | The links go out shortened.                                                                                                                |
+| `false`        | The links go out as written.                                                                                                               |
+| Left out       | A new post takes the workspace's default (`byDefault` in the status) when it is made, and keeps it; a draft that changes keeps its choice. |
+
+Every post carries `shortenLinks` in its answer.
+
+<Callout type="warning" title="A change of behaviour">
+  Leaving the field out used to mean `false` for every post but those the web
+  app made, and now means the workspace's default. A workspace that turns the
+  default on gets its posts made through the API, MCP, the command line and
+  feeds shortened too. Send `shortenLinks: false` where a post's links must go
+  out as written.
+</Callout>
+
+- `validate` takes it and checks the text as written, which a short address never makes longer.
+- A CSV import has no column for it: each row takes the workspace's default.
+- The links and their clicks are read through `GET …/short-links` ([Clicks on short links](/guides/engage/analytics#short-links)); no endpoint shortens an address outside a post.

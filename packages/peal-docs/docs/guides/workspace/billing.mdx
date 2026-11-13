@@ -1,0 +1,211 @@
+---
+title: Plans and billing
+description: "Peal Cloud's plans, priced by connected accounts, the free plan and the trial, and how to order, cancel or withdraw."
+sidebar:
+  icon: credit-card
+---
+
+On Peal Cloud, each workspace is on a plan. The plans are priced by connected accounts (channels): the more a workspace connects, the less each one costs.
+
+Every plan, the free one included, has every platform, the calendar, analytics, the API, the [MCP server](/developers/mcp) and the [command line](/developers/cli). A server you run yourself bills nothing and limits nothing ([Self-hosting](/self-hosting/options#billing)).
+
+## The plans [#plans]
+
+| Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
+| -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Free     | {{free-channels-en}}     | {{free-members-en}}     | {{free-scheduledPosts-en}}     | {{free-assistantRequests-en}}     | {{free-mediaStorage-en}}     | free                                               | free                                             |
+| Starter  | {{starter-channels-en}}  | {{starter-members-en}}  | {{starter-scheduledPosts-en}}  | {{starter-assistantRequests-en}}  | {{starter-mediaStorage-en}}  | {{starter-month-en}} ({{starter-month-excl-en}})   | {{starter-year-en}} ({{starter-year-excl-en}})   |
+| Pro      | {{pro-channels-en}}      | {{pro-members-en}}      | {{pro-scheduledPosts-en}}      | {{pro-assistantRequests-en}}      | {{pro-mediaStorage-en}}      | {{pro-month-en}} ({{pro-month-excl-en}})           | {{pro-year-en}} ({{pro-year-excl-en}})           |
+| Business | {{business-channels-en}} | {{business-members-en}} | {{business-scheduledPosts-en}} | {{business-assistantRequests-en}} | {{business-mediaStorage-en}} | {{business-month-en}} ({{business-month-excl-en}}) | {{business-year-en}} ({{business-year-excl-en}}) |
+| Agency   | {{agency-channels-en}}   | {{agency-members-en}}   | {{agency-scheduledPosts-en}}   | {{agency-assistantRequests-en}}   | {{agency-mediaStorage-en}}   | {{agency-month-en}} ({{agency-month-excl-en}})     | {{agency-year-en}} ({{agency-year-excl-en}})     |
+
+- Prices include France's {{vat-rate}}% VAT; the price excluding VAT is in brackets.
+- In another EU country, its own VAT applies at checkout, and a business with a valid VAT number pays the price excluding VAT (reverse charge).
+- A year costs ten months.
+
+The workspace's **Billing** page shows the same prices, its plan, and how much of each limit it uses. `GET /api/workspaces/:workspaceId/billing` answers them too, prices in cents excluding VAT.
+
+## The free plan and the trial [#trial]
+
+A new workspace is on its [billing account](#accounts)'s plan: the free plan, until a plan is ordered for the account. An account may make as many workspaces as it likes, but they share one plan and count their channels together, so another workspace adds nothing free.
+
+Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method.
+
+- Nothing is charged. Three days before the end, the members who manage billing are reminded, in the app and by email.
+- When the trial ends, the workspace is back on the free plan, with its content, even if a payment method was added meanwhile: a trial never turns into a charge.
+- A plan ordered during the trial starts once it is paid for, and the trial ends then. A checkout left unfinished leaves the trial running.
+- An account closed after its trial leaves a keyed pseudonym of its email address for 2 years, so the same address signing up again gets no second trial.
+
+## Billing accounts [#accounts]
+
+Every workspace belongs to one billing account, which pays for it.
+
+- The person who creates a workspace pays for it: each workspace they create joins their billing account, made with their first.
+- A workspace made before billing accounts is on its oldest owner's.
+- A [partner account](/developers/embedding)'s home workspace and the workspaces it owns are on the partner's billing account, apart from its owners' own.
+
+The workspaces of an account share one plan and count their channels together: a free account holds the free plan's channels across all its workspaces.
+
+The plan is ordered, cancelled and withdrawn from on the account's billing workspace, its oldest (a partner's home workspace), which holds the subscription. The Billing page of every other workspace of the account names it, with a link for its members, and orders nothing (409 `billed_elsewhere`). A workspace with a plan subscription of its own from before keeps it alone until it ends, then joins its payer's account. On a server that does not bill, the accounts are kept and limit nothing.
+
+### Hand a workspace to another owner [#transfer]
+
+The payer of a workspace hands it to another of its owners on its Billing page. The offer is open for 7 days, and the owner it is made to accepts it there, in person, or declines it. Accepting moves the workspace to their billing account, made if they have none.
+
+It is refused:
+
+- when their account's plan has no room for the workspace's channels;
+- for the billing workspace while its subscription may still charge: cancel it first, or hand over another workspace.
+
+The API's `POST …/billing/transfer`, `POST …/billing/transfer/acceptance` and `DELETE …/billing/transfer` answer only a person in their own session.
+
+<Accordion>
+  <AccordionItem title="When the payer leaves">
+    On a server that bills, the payer stays one of the workspace's owners
+    until they hand it over: leaving it, being removed from it or losing the
+    owner role answers 400 `PAYER_MUST_STAY`, and a reduction that would
+    remove them `payerRequired`.
+
+    On a server that does not bill nothing is refused: a workspace whose payer
+    is no longer one of its owners moves to its oldest owner's account.
+
+    When the payer closes their account, each workspace they paid for that
+    others own goes to its oldest other owner's account, over its plan if that
+    account has no room for its channels.
+
+  </AccordionItem>
+</Accordion>
+
+## What a plan limits [#limits]
+
+A workspace never goes above its plan: each limit is checked when something is added, requests sent together included, and what the plan has no room for is refused.
+
+| Limit             | How it is checked                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Channels          | Connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan.                                                                                                                                                                                                                                                       |
+| Members           | Pending invitations included, when inviting and again when an invitation is accepted.                                                                                                                                                                                                                                                                                                                                                                                     |
+| Posts             | Posts going out in a calendar month (UTC), on the free plan. Checked again when each post is due: once a trial or a larger plan ends, only the month's first posts the plan allows go out, by their time.                                                                                                                                                                                                                                                                 |
+| Writing assistant | Requests per UTC day, for each workspace. An image the instance's model makes costs 5 of them ([Generate an image](/guides/media#generate)), so the free plan makes none that way. An image from the workspace's own [image provider](/guides/workspace#image-provider), and a suggestion from its own [text provider](/guides/workspace#text-provider), cost none, on any plan: they are outside the allowance, and are not counted in the usage the billing page shows. |
+| Media             | The bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room. The room an upload is given is held for it for six hours: finished later, it needs room again.                                                                                                                                                                                                     |
+
+In the web app, a refusal opens a dialog that says which limit was reached, with what the workspace holds and its plan. It offers the smallest plan with room, its price with VAT first, monthly or yearly.
+
+- Owners and admins order it there, by card, as on the Billing page ([Ordering](#ordering)), and come back to what they were doing.
+- Other members read who can.
+- On the largest plan, the dialog says how to ask for more.
+
+Over the API, each refusal answers 402 `PlanLimitReached`, with the `limit`, what the plan `allowed`, what the workspace holds (`used`), its `plan`, the smallest plan with room (`planWithRoom`, null on the largest plan) and the billing page (`billingUrl`). The writing assistant's daily allowance answers 429 `AssistantQuotaExceeded` with the same plan fields. The command line and MCP tools say the same in words, with the plan to order and the billing page.
+
+## A workspace over its plan [#over]
+
+A plan can shrink under a workspace: its trial ends, or its subscription is cancelled or left unpaid. Nothing is deleted, so the workspace may then hold more than its plan allows. With more channels or members than the plan allows, it must come back within its plan before it does anything else.
+
+- Every member who opens the workspace sees what it holds beyond the plan.
+- Owners and admins can order the smallest plan that holds everything, or choose which channels stay connected and which members stay. The others are disconnected or removed in one confirmed step, and pending invitations are revoked. Disconnecting is the same as disconnecting each channel by hand: its tokens are deleted and the platforms that allow it are asked to forget Peal. Other members read who can do this.
+- More media than the plan allows refuses uploads only: the library stays open, to delete from.
+
+<Callout
+  type="warning"
+  title="Nothing is published until the workspace is within its plan"
+>
+  Until then nothing is scheduled or published. Posts already scheduled are kept
+  as they are and fail on their channels when due, with `planLimit` as the
+  reason and nothing sent. Once the workspace is within its plan, post each
+  again from its page.
+</Callout>
+
+Those posts are not moved back to drafts: a failed post keeps its time, text and channels, tells its author by notice and email, and is posted again in one step, where a draft would lose its schedule without telling anyone.
+
+Three days before a trial ends, the reminder lists what the workspace holds beyond the free plan. `GET /api/workspaces/:workspaceId/billing/standing` answers the same for every member: what is over, whether the workspace must come back within its plan, and the smallest plan that holds everything.
+
+## Usage [#usage]
+
+Under the plan, the workspace's **Billing** page shows what it did day by day over the last 7, 30 or 90 days: the posts that went out and the channels it had connected, as a chart and as a table, with the period's totals.
+
+`GET /api/workspaces/:workspaceId/usage?from=2026-10-01&to=2026-10-31`, [`peal usage`](/developers/cli/workspace#usage) and the MCP tool [`get_usage`](/developers/mcp) answer the same to whoever reads the workspace's billing: owners and admins, an API key or an application given it, and a partner's keys in the workspaces the partner owns.
+
+They are counts only: nothing is priced, charged or limited by them. A server that does not bill keeps and answers the same counts, with `plan` and `allowances` null.
+
+<Accordion>
+  <AccordionItem title="How usage is counted">
+    - Days are UTC days, as every limit is. `from` and `to` are both included, 92 days at most; without them, the 30 days that end today. A range that ends before it starts, or is longer, answers 400 `invalid_date_range`.
+    - Each day counts the posts that went out on it, one for each channel a post went out on, by platform. A thread counts once. A post sent again after it failed counts again, as it is another post on the platform. A post whose outcome could not be confirmed is not counted, even once someone confirms that it went out. The day also gives the workspace's requests to the writing assistant, which the note below copies: `null` for a day without the note, today's included, until it is taken.
+    - Shortly after each UTC midnight (at 00:11, or up to 12 hours later after an outage), the server notes what every workspace holds then, for the day that just ended: the channels it connected itself, its members and the bytes of media it stores. A day without that note (before usage was counted, or a day the note could not be taken) answers `null`, and shows a dash on the page, never another day's figure.
+    - The totals add up the period's posts, by platform, and its channel-days: each day's channels added up, the days without a note left out, with how many days they cover (`daysCounted`). For each calendar month the period touches, they also give the posts on platforms that bill the server for each post (X), with how many held a link. These count each part of a thread, as X bills each: a thread of three parts is one of the day's posts, and three here.
+    - `current` is what each limit counts now, as on the Billing page. A workspace a partner owns counts its channels against the partner's plan: `sharedWith` names the partner's workspace.
+    - The counts are kept {{keep-usage-en}}, then deleted; a range that starts earlier answers what is kept. They are deleted with the workspace, and its data export holds them.
+    - A partner account reads the same across every workspace it holds, per customer: [Usage per customer](/developers/embedding/operate#usage).
+
+  </AccordionItem>
+</Accordion>
+
+## Ordering [#ordering]
+
+Owners and admins order on the workspace's **Billing** page, in their own session.
+
+<Steps>
+  <Step title="Tick the box">
+    Before anything is paid, they tick a box that is never ticked for them: "I
+    ask Peal to start my subscription now. I know that, as a consumer, I may
+    withdraw within 14 days, with “Withdraw from contract here”, at the foot of
+    every page and on this one, and then pay only for the days used." Peal
+    records it with the order.
+  </Step>
+  <Step title="Pay at Stripe">
+    Peal then opens Stripe's checkout from the **Order with obligation to pay**
+    button. Stripe asks for the billing address and, for a business, the VAT
+    number, and computes the VAT.
+  </Step>
+  <Step title="Get the confirmation">
+    A confirmation of the subscription comes by email, with what Stripe charged,
+    VAT included, and the contract number, which cancels or withdraws without
+    signing in.
+  </Step>
+</Steps>
+
+- A plan changes on the billing page only, with an order each time.
+- Stripe's portal changes the payment method and gives the invoices and receipts, also once the plan has ended (**Invoices and receipts**).
+- An order for a plan too small for what the workspace holds, as when moving to a smaller plan, is refused (409 `PlanTooSmall`) with what to remove first: channels to disconnect, members to remove, media to delete.
+- An address that already had a trial, with an account since closed too, is shown none and cannot order one.
+
+## Cancelling [#cancelling]
+
+Cancel online at any time with **Cancel your contract**: the link is at the foot of every page, signed in or not, and on the **Billing** page. The page asks for what identifies you and the contract, and nothing else: your name, the email address the acknowledgement goes to, the contract, and, if you wish, the day you want it to end. It then shows a summary to check, and **Notify the cancellation** sends it.
+
+| How you cancel                                                                                              | What happens                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Signed in, as an owner or an admin                                                                          | Your name and address are filled in, you pick the contract from your workspaces, and the cancellation is applied at once. The **Billing** page has the same two steps for its own workspace.                                                                                                                                                           |
+| With the contract number, which is in the email that confirmed the subscription and in the renewal reminder | Applied at once, without signing in, whatever address you give.                                                                                                                                                                                                                                                                                        |
+| With neither                                                                                                | Peal emails the address an acknowledgement. If that address manages a workspace's billing, the email holds a link, good for 30 days, that shows its contracts and applies the cancellation to the one you choose; otherwise a person looks at the request and writes to you. This keeps someone who only knows your address from ending your contract. |
+
+Whichever way, the cancellation counts from the moment Peal received it, which the acknowledgement states: a renewal charged after that moment is refunded.
+
+- A paid plan ends with the period paid for, and nothing more is charged.
+- With a later day, it ends on that day and the last period is charged only up to it.
+- A trial ends at once.
+
+The members who manage billing get the confirmation by email, with the date it takes effect. Deleting the workspace cancels at once too ([Workspaces and your account](/guides/workspace#delete-workspace)).
+
+## Withdrawing within 14 days [#withdrawal]
+
+As a consumer, you may withdraw from the contract within 14 days of subscribing, without giving a reason, with **Withdraw from contract here**: at the foot of every page, signed in or not, and on the **Billing** page while the 14 days run, even after cancelling.
+
+It works as cancelling does: your name, the address for the acknowledgement and the contract, a summary, then **Confirm withdrawal**. It is applied at once when you are signed in or give the contract number, and otherwise from the link Peal emails you. The 14 days and the refund count from the moment Peal received your statement, which the acknowledgement states with what you sent.
+
+Withdrawing ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice.
+
+<Callout type="info">
+  A business that gave a VAT number Stripe verified has no right to withdraw,
+  and can cancel instead.
+</Callout>
+
+## Yearly plans [#renewal]
+
+A yearly plan renews each year until cancelled. 45 days before it renews, and never less than a month before, the members who manage billing are reminded, in the app and by an email of its own, that the contract need not be renewed. The reminder gives:
+
+- what Stripe will charge, VAT included;
+- the last day to refuse the renewal, in a box;
+- the contract number;
+- how to cancel.
+
+A price change is announced by email 30 days ahead, and applies from the next renewal.

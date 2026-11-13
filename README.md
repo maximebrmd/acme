@@ -70,10 +70,10 @@ write a post once, schedule it across platforms, and see how it performs.
 | Google Business Profile |    ✓    |                     |       |
 
 Each platform's limits, media rules and the counts it gives are in the docs'
-[Channels](https://docs.peal.social/channels) and
-[Analytics](https://docs.peal.social/analytics) pages. Meta ad accounts can be
+[Channels](https://docs.peal.social/guides/channels) and
+[Analytics](https://docs.peal.social/guides/engage/analytics) pages. Meta ad accounts can be
 connected to compare organic and paid results, and to boost a post within a
-ceiling an owner sets ([Ads](https://docs.peal.social/ads)).
+ceiling an owner sets ([Ads](https://docs.peal.social/guides/engage/ads)).
 
 ## Features
 
@@ -114,10 +114,10 @@ ceiling an owner sets ([Ads](https://docs.peal.social/ads)).
 
 **Automate and integrate**
 
-- An [HTTP API](https://docs.peal.social/api-overview) with workspace API keys and OAuth
-- [Webhooks](https://docs.peal.social/webhooks) signed as Standard Webhooks says
-- The [`peal` command line](https://docs.peal.social/cli) and an [MCP endpoint](https://docs.peal.social/mcp)
-- [Embedding](https://docs.peal.social/embedding) with partner accounts and connect links
+- An [HTTP API](https://docs.peal.social/developers) with workspace API keys and OAuth
+- [Webhooks](https://docs.peal.social/developers/webhooks) signed as Standard Webhooks says
+- The [`peal` command line](https://docs.peal.social/developers/cli) and an [MCP endpoint](https://docs.peal.social/developers/mcp)
+- [Embedding](https://docs.peal.social/developers/embedding) with partner accounts and connect links
 
 </td>
 </tr>
@@ -147,8 +147,8 @@ const me = await peal.session.me();
 ```
 
 AI agents work in a workspace through the
-[MCP endpoint](https://docs.peal.social/mcp), the
-[`peal` command line](https://docs.peal.social/cli) or the
+[MCP endpoint](https://docs.peal.social/developers/mcp), the
+[`peal` command line](https://docs.peal.social/developers/cli) or the
 [agent skill](packages/peal-skills/skills/peal/SKILL.md), drafting posts for a person to review or
 publishing them, as the workspace allows.
 
@@ -174,7 +174,7 @@ docker compose --project-name peal --file compose.production.yaml \
 Caddy then serves Peal on your domain, with a Let's Encrypt certificate. The
 [self-hosting guide](https://docs.peal.social/self-hosting) explains each
 service and how to connect each platform, and
-[environment variables](https://docs.peal.social/environment-variables) lists
+[environment variables](https://docs.peal.social/self-hosting/environment-variables) lists
 every setting.
 
 ## Resources

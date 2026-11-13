@@ -1,0 +1,97 @@
+---
+title: Lister les publications
+description: Lister les publications d’un espace de travail, filtrées par état, canal, étiquette ou date.
+sidebar:
+  icon: list-filter
+---
+
+## Lister les publications [#search]
+
+`GET …/posts/search` liste les publications de l’espace de travail, quel que soit leur état, une page à la fois : 20 sauf si `limit` en décide autrement, 100 au plus. Tous les filtres donnés doivent être satisfaits. L’[outil MCP](/developers/mcp/tools#tools) `list_posts` prend les mêmes filtres, et `peal posts list` liste les mêmes publications ([Ligne de commande](/developers/cli/posts#posts)).
+
+| Paramètre    | Ce qu’il garde                                                                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`     | `draft`, `awaitingApproval` (elle attend une [approbation](/guides/posts/review), et garde son horaire), `scheduled`, `publishing`, `finished` ou `cancelled`                   |
+| `outcome`    | Comment une publication terminée a fini : `published`, `partiallyPublished`, `unconfirmed`, `failed` ou `cancelled`                                                             |
+| `channelId`  | Les publications qui ont une cible sur ce canal                                                                                                                                 |
+| `platform`   | Les publications qui ont une cible sur un canal connecté de cette plateforme                                                                                                    |
+| `from`, `to` | Les publications programmées de `from` (compris) à `to` (exclu). L’un comme l’autre écarte les publications sans heure.                                                         |
+| `createdVia` | `web`, `apiKey` ou `application`                                                                                                                                                |
+| `authorId`   | Les publications créées par cet utilisateur                                                                                                                                     |
+| `sort`       | `createdDesc` (par défaut) ou `createdAsc`, par date de création ; `scheduledDesc` ou `scheduledAsc`, par instant programmé, qui ne listent que les publications avec une heure |
+| `limit`      | Le nombre de publications par page, de 1 à 100                                                                                                                                  |
+| `cursor`     | Le `nextCursor` de la page précédente                                                                                                                                           |
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=finished&outcome=failed&platform=bluesky&sort=scheduledDesc&limit=50" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const page = await peal.posts.search({
+  workspaceId,
+  status: "finished",
+  outcome: "failed",
+  platform: "bluesky",
+  sort: "scheduledDesc",
+  limit: "50",
+});
+```
+
+```json MCP (list_posts)
+{
+  "status": "finished",
+  "outcome": "failed",
+  "platform": "bluesky",
+  "sort": "scheduledDesc",
+  "limit": 50
+}
+```
+
+</CodeGroup>
+
+```json
+{
+  "items": [
+    {
+      "id": "0190f3a0-0000-7000-8000-00000000b003",
+      "status": "finished",
+      "outcome": "failed",
+      "schedule": {
+        "at": "2026-11-12T08:00:00.000Z",
+        "timeZone": "Europe/Paris"
+      },
+      "targets": [
+        {
+          "id": "0190f3a0-0000-7000-8000-00000000d003",
+          "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+          "status": "failed",
+          "permalink": null,
+          "failureReason": "tokenExpired"
+        }
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "platform": "bluesky"
+    }
+  ],
+  "nextCursor": "eyJhZnRlciI6IjAxOTBmM2EwIn0"
+}
+```
+
+- Chaque publication est répondue en entier, avec ses cibles, leur statut, leur adresse et la raison de leur échec.
+- `channels` donne la plateforme de chaque canal que nomme la page et qui est encore connecté : un client nomme ainsi chaque cible sans autre requête.
+- Pour la page suivante, passez `nextCursor` dans `cursor`, avec les mêmes filtres et le même tri. Il est null sur la dernière page.
+- Un curseur marque l’endroit où sa page s’est arrêtée : les publications créées, déplacées ou supprimées entre-temps ne font ni répéter ni sauter une publication d’une page à l’autre.
+- Un curseur d’un autre tri, ou qu’aucune page n’a donné, répond 400.
+
+<Callout type="info" title="Pour les calendriers">
+  `GET …/posts?from=…&to=…` reste : il liste en une seule réponse les
+  publications programmées entre deux instants, séparés de 62 jours au plus, par
+  instant programmé. Les brouillons n’en font pas partie.
+</Callout>

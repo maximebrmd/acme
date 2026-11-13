@@ -1,0 +1,55 @@
+---
+title: Stockage des médias
+description: Le stockage compatible S3 où un Peal auto-hébergé garde images et vidéos, et la règle d’envoi dont les navigateurs ont besoin.
+sidebar:
+  icon: hard-drive
+---
+
+Peal garde images et vidéos dans n’importe quel stockage compatible S3. Les navigateurs envoient directement au bucket : celui-ci a donc besoin d’une règle d’envoi, en plus des réglages du serveur.
+
+## Stockage des médias [#media-storage]
+
+| Réglage                                                                                    | Requis | Ce qu’il fait                                                                                         |
+| ------------------------------------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------- |
+| `PEAL_S3_ENDPOINT`, `PEAL_S3_BUCKET`, `PEAL_S3_ACCESS_KEY_ID`, `PEAL_S3_SECRET_ACCESS_KEY` | Oui    | Le stockage, le bucket et la clé. La clé du serveur n’a besoin que de lire et d’écrire des objets.    |
+| `PEAL_MEDIA_PUBLIC_BASE_URL`                                                               | Non    | L’adresse publique du bucket, s’il est aussi servi publiquement (voir [Liens publics](#public-links)) |
+
+[Variables d’environnement](/self-hosting/environment-variables#media) liste les autres réglages des médias, avec leurs valeurs par défaut.
+
+### Sur Cloudflare R2 dans l’UE [#r2-eu]
+
+Pour garder les médias dans l’UE sur Cloudflare R2, créez le bucket dans la juridiction UE de R2, depuis le tableau de bord ou avec Wrangler :
+
+```sh
+wrangler r2 bucket create <name> --jurisdiction eu
+```
+
+Joignez-le ensuite par le point d’accès `.eu.`, `https://<compte>.eu.r2.cloudflarestorage.com`, dans `PEAL_S3_ENDPOINT`. Les autres commandes de bucket de Wrangler demandent aussi `--jurisdiction eu`. Il en va de même pour un bucket de sauvegardes, dont le point d’accès est un hôte sans schéma.
+
+<Callout type="warning" title="La juridiction est définitive">
+  La juridiction d’un bucket ne peut plus changer ensuite.
+</Callout>
+
+### La règle d’envoi [#cors]
+
+Les navigateurs envoient les médias directement au bucket, avec des requêtes que le serveur signe. Le bucket doit donc laisser l’origine de l’application web les envoyer : une règle CORS qui autorise `PUT` depuis cette origine, avec les en-têtes `Content-Type` et `If-None-Match`.
+
+Avec les variables du serveur définies, et `PUBLIC_URL` et `TRUSTED_ORIGINS` nommant les origines de l’application web, cette commande pose la règle sur le bucket, en gardant ses autres règles :
+
+```sh
+bun nx run peal-server:media-cors
+```
+
+Elle affiche aussi la même politique pour le tableau de bord de Cloudflare R2 (R2 › le bucket › Settings › CORS policy). La relancer ne change rien. Sa clé d’accès doit pouvoir modifier les réglages du bucket.
+
+### Imports inachevés [#multipart]
+
+Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage : ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés après un jour, si votre stockage le permet.
+
+### Lecture des fichiers [#probe]
+
+Une fois un fichier stocké, le serveur le lit : les dimensions d’une image avec sharp, les dimensions, la durée et le codec d’une vidéo avec ffprobe, que l’image du serveur contient. Une vidéo importée sur un serveur sans ffprobe reste importée, marquée comme non lue, jusqu’à ce qu’elle soit complétée à nouveau sur un serveur qui en dispose.
+
+### Liens publics [#public-links]
+
+Les pages montrent les médias par des liens signés de courte durée. Si le bucket est aussi servi publiquement, par exemple par un domaine personnalisé R2, mettez cette adresse dans `PEAL_MEDIA_PUBLIC_BASE_URL`, et les liens vers les médias l’utilisent à la place.

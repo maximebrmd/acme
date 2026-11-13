@@ -28,17 +28,17 @@ self-hosting page, and [`peal-docker`](../../peal-docker)).
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
-| Host name             | Path                                                                    | Goes to                     | Access    |
-| --------------------- | ----------------------------------------------------------------------- | --------------------------- | --------- |
-| `grafana.peal.social` | any                                                                     | Grafana, 127.0.0.1:13000    | team only |
-| `ssh.peal.social`     | any                                                                     | sshd, 127.0.0.1:22          | team only |
-| `app.peal.social`     | `/api/auth/admin/*`, `/api/admin/*`, `/admin`, `/en/admin`, `/fr/admin` | the server or the web app   | team only |
-| `app.peal.social`     | `/api/*`, `/.well-known/oauth-*`                                        | the server, 127.0.0.1:3000  | public    |
-| `app.peal.social`     | anything else                                                           | the web app, 127.0.0.1:3001 | public    |
-| `peal.social`         | any                                                                     | the site, 127.0.0.1:4321    | public    |
-| `docs.peal.social`    | any                                                                     | the docs, 127.0.0.1:4322    | public    |
-| `peal.link`           | `/api/l/<code>`, which the edge rewrote from `/<code>`                  | the server, 127.0.0.1:3000  | public    |
-| `peal.link`           | anything else                                                           | 404                         | public    |
+| Host name             | Path                                                                    | Goes to                                                                                  | Access    |
+| --------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------- |
+| `grafana.peal.social` | any                                                                     | Grafana, 127.0.0.1:13000                                                                 | team only |
+| `ssh.peal.social`     | any                                                                     | sshd, 127.0.0.1:22                                                                       | team only |
+| `app.peal.social`     | `/api/auth/admin/*`, `/api/admin/*`, `/admin`, `/en/admin`, `/fr/admin` | the server or the web app                                                                | team only |
+| `app.peal.social`     | `/api/*`, `/.well-known/oauth-*`                                        | the server, 127.0.0.1:3000                                                               | public    |
+| `app.peal.social`     | anything else                                                           | the web app, 127.0.0.1:3001                                                              | public    |
+| `peal.social`         | any                                                                     | the site, 127.0.0.1:4321                                                                 | public    |
+| `docs.peal.social`    | any                                                                     | the docs server, 127.0.0.1:4323 (the static docs, 127.0.0.1:4322, without the assistant) | public    |
+| `peal.link`           | `/api/l/<code>`, which the edge rewrote from `/<code>`                  | the server, 127.0.0.1:3000                                                               | public    |
+| `peal.link`           | anything else                                                           | 404                                                                                      | public    |
 
 Short links are on a domain of their own (`peal_short_link_hostname`), whose
 zone the Pulumi project holds with the rules that send the bare domain to
@@ -46,6 +46,15 @@ the site and rewrite `/<code>` to `/api/l/<code>` ([`../pulumi`](../pulumi/READM
 a code is seven letters and digits, and no other path on the host reaches
 the stack. The server issues links on it (`PEAL_SHORT_LINK_BASE`, which
 `peal_runtime` derives from the host name).
+
+The docs have their assistant where `peal_static_build_args` names a model
+(`DOCS_ASSISTANT_MODEL`, production and the sandbox): `peal_docs_server`
+then has `release.yml` build the `peal-docs` image, Compose run its `docs`
+profile, and the tunnel send the docs' host name to it. Its Anthropic key,
+`DOCS_ANTHROPIC_API_KEY`, is a credential `site.yml` requires there. Its rate
+limit counts each reader by `cf-connecting-ip` (`AUTH_IP_HEADERS`), which
+the docs server copies into X-Forwarded-For; Cloudflare only appends to the
+X-Forwarded-For a reader sends.
 
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
 `sandbox-grafana.peal.social`, `sandbox.peal.link`…), all behind Access but for what outside
@@ -693,8 +702,9 @@ its backups ([Architecture](#architecture)).
 ## Releases
 
 `release.yml` checks the commit out from GitHub on the machine running
-Ansible, builds there the images of the four (`peal-server`, `peal-web`,
-`peal-static` with the environment's site and docs URLs, and `peal-postgres`,
+Ansible, builds there the images (`peal-server`, `peal-web`,
+`peal-static` with the environment's site and docs URLs, `peal-docs` with
+the docs' settings where the docs have their assistant, and `peal-postgres`,
 named after its Dockerfile) that the server does not have yet, and uploads
 them over SSH. An image the server has is never uploaded again, so Postgres's
 changes, and Postgres restarts, only when its Dockerfile does. The servers

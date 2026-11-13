@@ -1,0 +1,77 @@
+---
+title: LinkedIn
+description: "Connecter LinkedIn à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/linkedin.svg
+---
+
+Comment connecter un profil ou des pages d’entreprise LinkedIn, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                  |
+| ---------------- | -------------------------------- |
+| Texte            | {{platform-linkedin-text-fr}}    |
+| Images et vidéos | {{platform-linkedin-media-fr}}   |
+| Parties          | {{platform-linkedin-parts-fr}}   |
+| Formats          | {{platform-linkedin-formats-fr}} |
+| Texte alternatif | {{platform-linkedin-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **LinkedIn**, le bouton est **Connecter LinkedIn**. Sur un serveur configuré pour les pages d’entreprise, il y a deux boutons à la place : **Connecter votre profil** et **Connecter des pages d’entreprise**.
+
+<Tabs>
+  <Tab title="Votre profil">
+    Choisissez **Connecter LinkedIn** (ou **Connecter votre profil**),
+    connectez-vous sur LinkedIn et autorisez Peal. Peal connecte votre propre
+    profil LinkedIn, et publie en votre nom. Il demande à LinkedIn votre nom et
+    votre photo, et à publier.
+  </Tab>
+  <Tab title="Pages d’entreprise">
+    **Connecter des pages d’entreprise** vous connecte à une seconde
+    application LinkedIn, puis liste les pages où vous pouvez publier, celles
+    dont vous êtes administrateur ou administrateur de contenu. Choisissez-en
+    une ou plusieurs : chacune devient un canal qui publie au nom de la page.
+
+    Peal demande à LinkedIn de publier au nom de vos pages, de lire leurs
+    publications, et de lister les pages que vous administrez et de lire leurs
+    statistiques ; rien sur votre propre profil. Une page fonctionne tant que
+    vous gardez votre rôle sur elle : si vous le perdez, ou quittez
+    l’entreprise, reconnectez la page avec la connexion d’un autre
+    administrateur.
+
+  </Tab>
+</Tabs>
+
+**Canaux** propose LinkedIn, et les pages d’entreprise, une fois le serveur Peal configuré pour chacun (voir [Sur votre propre serveur](#self-hosting)).
+
+### Rester connecté [#expiry]
+
+- LinkedIn laisse Peal publier pendant 60 jours, puis vous demande de vous reconnecter. Le canal affiche la date, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une semaine avant.
+- Reconnectez-le d’ici là : si vous êtes connecté à LinkedIn, il ne redemande rien.
+- L’accès d’une page dure 60 jours aussi, sauf si LinkedIn a accordé à l’application du serveur des jetons de rafraîchissement, qu’il réserve à des partenaires approuvés. Peal le renouvelle alors une semaine à l’avance, pendant un an après la connexion.
+
+## Options [#options]
+
+L’éditeur propose ces options. **Nom dans l’API** est le nom de l’option par l’API.
+
+| Option                                                 | Nom dans l’API    | Ce qu’elle prend                                                                                                                                                                                                                                  |
+| ------------------------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Qui peut voir cette publication**                    | `visibility`      | Tout le monde, sauf choix contraire (`public`) ; relations uniquement (`connections`) vaut pour un profil ; membres LinkedIn connectés (`loggedIn`)                                                                                               |
+| **Empêcher les autres de republier cette publication** | `disableReshare`  | Oui ou non                                                                                                                                                                                                                                        |
+| **Pages à mentionner**                                 | `mentions`        | Écrivez `@` puis le nom complet de la page dans le texte, comme LinkedIn l’affiche, et indiquez chaque page ici sous la forme `Nom <urn:li:organization:numéro>`, séparées par des points-virgules. Les personnes ne peuvent pas être mentionnées |
+| **Lien à afficher sous forme de carte**                | `linkUrl`         | Un lien                                                                                                                                                                                                                                           |
+| **Titre du lien**                                      | `linkTitle`       | Obligatoire avec un lien                                                                                                                                                                                                                          |
+| **Description du lien**                                | `linkDescription` | Avec un lien                                                                                                                                                                                                                                      |
+| **Titre du document**                                  | `documentTitle`   | Pour un PDF                                                                                                                                                                                                                                       |
+
+## Commentaires [#comments]
+
+Peal lit les commentaires sous les publications des pages d’entreprise LinkedIn, et vous y répondez depuis Peal : voir [Boîte de réception](/guides/engage/inbox#linkedin).
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose LinkedIn une fois son application enregistrée, et les pages d’entreprise une fois la leur enregistrée aussi : voir [LinkedIn](/self-hosting/platforms#linkedin) et [Pages d’entreprise LinkedIn](/self-hosting/platforms#linkedin-pages). D’ici là, **Canaux** ne les propose pas.

@@ -1,0 +1,127 @@
+---
+title: Glossary
+description: The words Peal uses, in the app, the API and these docs, each with where to read more.
+sidebar:
+  icon: book-a
+  order: 4
+---
+
+The words Peal uses in the app, the API and these docs. Each entry links to the page that says more.
+
+## Workspaces and people [#people]
+
+### Workspace [#workspace]
+
+What a team shares: its channels, posts, media, members, API keys and webhooks. A person may belong to several. [Workspace settings](/guides/workspace).
+
+### Member and role [#member]
+
+A person in a workspace, with a role that says what they may do: owner, admin, editor, contributor or viewer. [Who can do what](/guides/posts#roles).
+
+### Billing account [#billing-account]
+
+Who pays for a workspace. The workspaces a person creates share their billing account. [Billing accounts](/guides/workspace/billing#accounts).
+
+### Staff [#staff]
+
+The people who run a Peal server, with a console of their own at `/admin`. [Staff console](/self-hosting/staff).
+
+## Channels [#channels]
+
+### Platform [#platform]
+
+A social network Peal posts to, such as Bluesky or Instagram. [Platforms](/platforms).
+
+### Channel [#channel]
+
+One account on a platform, connected to a workspace, that its posts go to. [Connect channels](/guides/channels).
+
+### Channel set [#channel-set]
+
+A saved selection of channels to start a post with. [Channel sets](/guides/posts/organise#sets).
+
+### Default options [#default-options]
+
+The options a channel gives each new post, such as a visibility. [Default options for a channel](/guides/posts/organise#defaults).
+
+## Posts [#posts]
+
+### Post [#post]
+
+One text, with its media and options, sent to one or more channels at one time. [Write a post](/guides/posts).
+
+### Target [#target]
+
+A post on one of its channels, with its own status, address and attempts. The API's `targets` list them.
+
+### Draft [#draft]
+
+A post with no time yet, which goes out nowhere. [Drafts](/guides/posts/drafts#drafts).
+
+### Part and thread [#thread]
+
+The parts after a post's first, sent as replies on the platforms that take threads. [Threads](/guides/posts#threads).
+
+### Platform options [#options]
+
+What a platform asks of a post beyond its text and media, such as a YouTube title. Each [platform's page](/platforms) lists its own.
+
+### Format [#format]
+
+The kind of post a channel receives on Instagram and Facebook: a feed post, a story or a reel. [Stories and reels](/guides/posts#formats).
+
+### Queue [#queue]
+
+A channel's time slots, which posts added to it fill in order. [Queues](/guides/posts/queues#queues).
+
+### Feed [#feed]
+
+A web feed (RSS, Atom or JSON Feed), such as a blog's, each new item of which becomes a post. [Post from a feed](/guides/posts/queues#feeds).
+
+### Tag and signature [#tag]
+
+A coloured label that files posts, and a text that ends them. [Tags, signatures and channel sets](/guides/posts/organise).
+
+### Approval [#approval]
+
+A post that waits for someone to approve it before it may go out. A **review link** shows it to people without a Peal account. [Review and approval](/guides/posts/review).
+
+### Media library [#media-library]
+
+A workspace's images and videos, ready to attach to posts, each with its alt text. [Images and videos](/guides/media).
+
+## After publishing [#after]
+
+### Inbox [#inbox]
+
+The comments people leave under your published posts, which you answer from Peal. [Inbox](/guides/engage/inbox).
+
+### Boost [#boost]
+
+A published post promoted on Facebook or Instagram with a connected ad account's money. [Boost a post](/guides/engage/boosts).
+
+## Building on Peal [#building]
+
+### API key [#api-key]
+
+A workspace's credential for programs, with the permissions it was given. It starts with `peal_`. [API keys](/guides/workspace#api-keys).
+
+### Partner account [#partner]
+
+An account that gives each of its own customers a workspace, through the API. [Embedding Peal](/developers/embedding).
+
+### Connect link [#connect-link]
+
+A hosted page where someone connects their accounts to a workspace without a Peal account. [Let someone else connect their account](/guides/channels#connect-links).
+
+### Webhook endpoint [#webhook]
+
+An address on your server that Peal sends events to, signed with its secret. Each send is a **delivery**. [Webhooks](/developers/webhooks).
+
+### Idempotency key [#idempotency]
+
+A key that makes a request safe to send again: within 24 hours, the same key and body answer what the first request made, and make nothing more. [Idempotency](/developers/conventions/idempotency).
+
+### MCP [#mcp]
+
+The protocol AI assistants use to call Peal's tools. [Connect an MCP client](/developers/mcp).
