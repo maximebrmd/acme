@@ -44,7 +44,48 @@ Elle affiche aussi la même politique pour le tableau de bord de Cloudflare R2 (
 
 ### Imports inachevés [#multipart]
 
-Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage : ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés après un jour, si votre stockage le permet.
+Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage jusqu’à ce que quelque chose l’abandonne. Le serveur nettoie le dossier des médias toutes les heures, sur un seul serveur à la fois :
+
+- un import jamais terminé est supprimé, son média et son fichier, un jour après son début (`PEAL_MEDIA_SWEEP_PENDING_AFTER`) ;
+- un envoi en plusieurs parties resté ouvert est abandonné un jour après son début (`PEAL_MEDIA_SWEEP_UPLOADS_AFTER`) ;
+- un fichier sous `media/` qu’aucun média ne détient, comme un fichier envoyé avec un lien signé avant la suppression de son média, est supprimé dès qu’il a un jour (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`) ;
+- les fichiers d’un espace de travail supprimé que le stockage n’a pas supprimés tout de suite le sont de nouveau, jusqu’au dernier.
+
+Chaque passage en supprime 500 de chaque sorte au plus (`PEAL_MEDIA_SWEEP_BATCH`) et laisse le reste au suivant. Ils ne touchent que les clés sous `media/` que Peal écrit, sous `PEAL_S3_KEY_PREFIX`, jamais le registre des suppressions ni le préfixe d’une autre instance. Un nettoyage qui échoue sans cesse déclenche l’alerte `peal-media-sweep-failing`.
+
+En seconde garde, ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés, sur le seul dossier des médias. Mettez le préfixe de la règle devant `media/` si vous définissez `PEAL_S3_KEY_PREFIX`, comme `staging/media/`. Avec Cloudflare R2, dont les buckets les abandonnent aussi après sept jours par défaut :
+
+```sh
+wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
+```
+
+Avec une API S3, celle de SeaweedFS comprise, enregistrez la règle dans `lifecycle.json` :
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-unfinished-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "media/" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 2 }
+    }
+  ]
+}
+```
+
+puis posez-la sur le bucket (ajoutez `--endpoint-url` pour un autre stockage qu’AWS) :
+
+```sh
+aws s3api put-bucket-lifecycle-configuration --bucket <bucket> --lifecycle-configuration file://lifecycle.json
+```
+
+<Callout type="warning" title="Une configuration par bucket">
+  Sur une API S3, cela remplace toutes les règles de cycle de vie du bucket,
+  celle du registre des suppressions comprise : mettez-les toutes dans le même
+  fichier. N’ajoutez jamais d’expiration à `media/`, qui supprimerait des médias
+  utilisés.
+</Callout>
 
 ### Lecture des fichiers [#probe]
 

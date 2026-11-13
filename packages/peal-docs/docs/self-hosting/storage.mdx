@@ -44,7 +44,47 @@ It also prints the same policy for Cloudflare R2's dashboard (R2 › the bucket 
 
 ### Unfinished uploads [#multipart]
 
-Large videos go up in parts. An upload left unfinished keeps its parts in the store, so add a lifecycle rule that aborts incomplete multipart uploads after a day, where your store supports one.
+Large videos go up in parts. An upload left unfinished keeps its parts in the store until something aborts it. The server sweeps the media folder every hour, on one server at a time:
+
+- an upload never completed is deleted, its media and its file, a day after it started (`PEAL_MEDIA_SWEEP_PENDING_AFTER`);
+- a multipart upload left open is aborted a day after it started (`PEAL_MEDIA_SWEEP_UPLOADS_AFTER`);
+- a file under `media/` that no media holds, such as one sent with a link signed before its media was deleted, is deleted once it is a day old (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`);
+- the files of a deleted workspace that the store did not delete at once are deleted again until none is left.
+
+Each run deletes 500 of each at most (`PEAL_MEDIA_SWEEP_BATCH`) and leaves the rest to the next. They touch only keys under `media/` that Peal writes, below `PEAL_S3_KEY_PREFIX`, never the erasure ledger or another instance's prefix. A sweep that keeps failing raises the `peal-media-sweep-failing` alert.
+
+As a second guard, add a lifecycle rule that aborts incomplete multipart uploads, on the media folder alone. Put the rule's prefix before `media/` when you set `PEAL_S3_KEY_PREFIX`, such as `staging/media/`. With Cloudflare R2, whose buckets also abort them after seven days by default:
+
+```sh
+wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
+```
+
+With an S3 API, SeaweedFS's included, save the rule as `lifecycle.json`:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-unfinished-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "media/" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 2 }
+    }
+  ]
+}
+```
+
+and put it on the bucket (add `--endpoint-url` for a store other than AWS):
+
+```sh
+aws s3api put-bucket-lifecycle-configuration --bucket <bucket> --lifecycle-configuration file://lifecycle.json
+```
+
+<Callout type="warning" title="One configuration per bucket">
+  On an S3 API, this replaces every lifecycle rule the bucket had, the erasure
+  ledger's included: put them all in the same file. Never add an expiration to
+  `media/`, which would delete media in use.
+</Callout>
 
 ### Reading the files [#probe]
 
