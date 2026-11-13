@@ -29,6 +29,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
+import { CalendarDayView } from "#components/posts/calendar-day-view.tsx";
 import { CalendarFilters } from "#components/posts/calendar-filters.tsx";
 import { ChipTags } from "#components/posts/chip-tags.tsx";
 import { useQueueName } from "#components/posts/queue-choice.tsx";
@@ -42,6 +43,7 @@ import {
 } from "#posts/api.ts";
 import { filtered, knownFilter, noFilter } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
+import { dayRows, queueSlotsOn } from "#posts/day-rows.ts";
 import { isRemovedEverywhere } from "#posts/live-post.ts";
 import { failureOf } from "#posts/outcome.ts";
 import { isAhead, startAtOf, startTimeOn } from "#posts/start-time.ts";
@@ -63,7 +65,7 @@ import { workspaceQueues } from "#queues/atoms.ts";
 import { workspaceTags } from "#tags/atoms.ts";
 import { tagsOf } from "#tags/post-tags.ts";
 
-const ViewSchema = Schema.Literals(["week", "month"]);
+const ViewSchema = Schema.Literals(["day", "week", "month"]);
 
 type View = typeof ViewSchema.Type;
 
@@ -471,13 +473,18 @@ const MonthGrid = ({
   anchor,
   days,
   movable,
+  onOpenDay,
   placed,
   startOf,
   tags,
   timeZone,
   today,
   workspaceId,
-}: GridProps & { readonly anchor: CalendarDate }) => {
+}: GridProps & {
+  readonly anchor: CalendarDate;
+  /** Shows a day in the day view, with every post it holds. */
+  readonly onOpenDay: (date: CalendarDate) => void;
+}) => {
   const t = useTranslations("Posts.Calendar");
   const format = useFormatter();
   const weekdays = days.slice(0, 7);
@@ -549,9 +556,21 @@ const MonthGrid = ({
                         />
                       ))}
                       {onDay.length > shownPerDay ? (
-                        <span className="text-muted-foreground text-xs">
+                        <button
+                          type="button"
+                          title={t("openDay", {
+                            date: format.dateTime(utcDate(day), {
+                              dateStyle: "full",
+                              timeZone: "UTC",
+                            }),
+                          })}
+                          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 w-fit rounded-sm text-left text-xs underline-offset-2 outline-none hover:underline focus-visible:ring-3"
+                          onClick={() => {
+                            onOpenDay(day);
+                          }}
+                        >
                           {t("more", { count: onDay.length - shownPerDay })}
-                        </span>
+                        </button>
                       ) : null}
                     </DropCell>
                   </td>
@@ -591,8 +610,15 @@ const CalendarView = ({
   const reschedule = useAtomSet(reschedulePost, { mode: "promiseExit" });
   const offerUpgrade = useOfferUpgrade();
 
-  const days =
-    view === "week" ? weekOf(anchor, firstDay) : monthOf(anchor, firstDay);
+  const days = (() => {
+    if (view === "day") {
+      return [anchor];
+    }
+
+    return view === "week"
+      ? weekOf(anchor, firstDay)
+      : monthOf(anchor, firstDay);
+  })();
 
   const movable = permissions.includes("post:schedule");
 
@@ -738,18 +764,40 @@ const CalendarView = ({
   };
 
   const step = (direction: -1 | 1) => {
-    setAnchor((current) =>
-      view === "week"
+    setAnchor((current) => {
+      if (view === "day") {
+        return addDays(current, direction);
+      }
+
+      return view === "week"
         ? addDays(current, 7 * direction)
-        : addMonths(current, direction)
-    );
+        : addMonths(current, direction);
+    });
   };
+
+  const openDay = (date: CalendarDate) => {
+    setAnchor(date);
+    setView("day");
+  };
+
+  const labels = {
+    day: { next: t("nextDay"), previous: t("previousDay") },
+    month: { next: t("nextMonth"), previous: t("previousMonth") },
+    week: { next: t("nextWeek"), previous: t("previousWeek") },
+  }[view];
 
   const first = days[0] ?? anchor;
   const last = days.at(-1) ?? anchor;
 
-  const title =
-    view === "week"
+  const title = (() => {
+    if (view === "day") {
+      return format.dateTime(utcDate(anchor), {
+        dateStyle: "full",
+        timeZone: "UTC",
+      });
+    }
+
+    return view === "week"
       ? format.dateTimeRange(utcDate(first), utcDate(last), {
           day: "numeric",
           month: "short",
@@ -761,6 +809,7 @@ const CalendarView = ({
           timeZone: "UTC",
           year: "numeric",
         });
+  })();
 
   const grid = (() => {
     if (AsyncResult.isInitial(result)) {
@@ -794,12 +843,55 @@ const CalendarView = ({
       workspaceId,
     };
 
+    if (view === "day") {
+      // The queues' free slots, of the queues chosen when some are.
+      const daySlots = queueSlotsOn(
+        filter.queueIds.length === 0
+          ? queues
+          : queues.filter(({ id }) => filter.queueIds.includes(id)),
+        anchor,
+        timeZone
+      );
+
+      return (
+        <CalendarDayView
+          date={anchor}
+          dayStart={startLink({ startOf, workspaceId }, anchor, undefined)}
+          renderPost={(item) => (
+            <PostChip
+              movable={false}
+              placed={item}
+              tags={tags}
+              timeZone={timeZone}
+              workspaceId={workspaceId}
+            />
+          )}
+          renderStart={(at) =>
+            mayCreate && DateTime.isGreaterThan(at, now)
+              ? Option.match(wallClockOf(at, timeZone), {
+                  onNone: () => null,
+                  onSome: (wall) => (
+                    <NewPostLink
+                      date={wall.date}
+                      time={wall.time}
+                      workspaceId={workspaceId}
+                    />
+                  ),
+                })
+              : null
+          }
+          rows={dayRows(placed, daySlots)}
+          timeZone={timeZone}
+        />
+      );
+    }
+
     return (
       <DragDropProvider onDragEnd={handleDragEnd}>
         {view === "week" ? (
           <WeekGrid {...props} />
         ) : (
-          <MonthGrid {...props} anchor={anchor} />
+          <MonthGrid {...props} anchor={anchor} onOpenDay={openDay} />
         )}
       </DragDropProvider>
     );
@@ -825,6 +917,7 @@ const CalendarView = ({
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TabsList aria-label={t("views")}>
+            <TabsTrigger value="day">{t("day")}</TabsTrigger>
             <TabsTrigger value="week">{t("week")}</TabsTrigger>
             <TabsTrigger value="month">{t("month")}</TabsTrigger>
           </TabsList>
@@ -832,9 +925,7 @@ const CalendarView = ({
             <Button
               variant="outline"
               size="icon"
-              aria-label={
-                view === "week" ? t("previousWeek") : t("previousMonth")
-              }
+              aria-label={labels.previous}
               onClick={() => {
                 step(-1);
               }}
@@ -852,7 +943,7 @@ const CalendarView = ({
             <Button
               variant="outline"
               size="icon"
-              aria-label={view === "week" ? t("nextWeek") : t("nextMonth")}
+              aria-label={labels.next}
               onClick={() => {
                 step(1);
               }}
@@ -872,6 +963,7 @@ const CalendarView = ({
           tags={tags}
           onChange={setChosen}
         />
+        <TabsContent value="day">{view === "day" ? grid : null}</TabsContent>
         <TabsContent value="week">{view === "week" ? grid : null}</TabsContent>
         <TabsContent value="month">
           {view === "month" ? grid : null}

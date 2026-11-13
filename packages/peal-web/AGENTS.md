@@ -378,6 +378,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`
   (`#posts/start-time.ts`), which the composer reads on the viewer's clock
   and ignores when malformed or past.
+- The calendar has a day, a week and a month view. The day view
+  (`CalendarDayView`, links passed in, rows from `#posts/day-rows.ts`,
+  tested) has a row per instant that holds a post or a queue's slot, each
+  queue's slots read on its own clock with `instantOf`'s daylight saving
+  policy, a slot held by a post of its queue not shown free; on a day the
+  clocks change, times carry their zone's name. A month cell's "more"
+  opens its day.
 - Times of day follow the browser's own preference (`#i18n/hour-cycle.ts`,
   in `localStorage`, chosen on the account page): `ViewerHourCycle`, in the
   locale layout, gives every message's `{at, time, short}` the clock

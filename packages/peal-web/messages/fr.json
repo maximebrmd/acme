@@ -1506,7 +1506,14 @@
       "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}",
       "queueMark": "File d’attente : {name}",
       "filterQueues": "{count, plural, =0 {Files} other {Files (#)}}",
-      "filterQueuesLabel": "Afficher les publications placées par ces files"
+      "filterQueuesLabel": "Afficher les publications placées par ces files",
+      "day": "Jour",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "dayRows": "Les publications et créneaux de file du jour, par heure",
+      "emptyDay": "Rien ce jour-là : aucune publication, et aucun créneau de file.",
+      "openSlot": "Créneau libre de {queue}",
+      "openDay": "Ouvrir le {date} dans la vue par jour"
     },
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
