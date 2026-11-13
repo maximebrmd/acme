@@ -27,3 +27,32 @@ export const removeImageProvider = PealApi.mutation(
   "assistant",
   "removeImageProvider"
 );
+
+// The workspace's own text provider, the same way: a change passes
+// `reactivityKeys: textProviderChanged(workspaceId)`, which reads it again
+// with the assistant's status, whose `source` it changes.
+
+/** What refreshes the text provider and the status once a change lands. */
+export const textProviderChanged = (workspaceId: string) => [
+  `text-provider:${workspaceId}`,
+];
+
+export const workspaceTextProvider = Atom.family((workspaceId: string) =>
+  PealApi.query("assistant", "textProvider", {
+    params: { workspaceId },
+    reactivityKeys: textProviderChanged(workspaceId),
+  })
+);
+
+export const setTextProvider = PealApi.mutation("assistant", "setTextProvider");
+
+export const removeTextProvider = PealApi.mutation(
+  "assistant",
+  "removeTextProvider"
+);
+
+/** Sends the workspace's text provider one short request; changes nothing. */
+export const testTextProvider = PealApi.mutation(
+  "assistant",
+  "testTextProvider"
+);

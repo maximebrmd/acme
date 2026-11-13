@@ -378,6 +378,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
+- While the status's `source` is `workspace`, the workspace's own text
+  provider writes: the menu says so instead of the requests left, and
+  never blocks on them (`assistantBlockedBy`). The assistant settings page
+  holds that provider (`TextProviderSettings`: kind, address, model, key,
+  a test of the saved one) above the image provider; a change passes
+  `textProviderChanged`, which refreshes the status too.
 - The assistant's first item, "Write a post…" (`AssistantWriteForm`),
   takes a subject, a tone and, among the post's platforms with a short
   limit (`writablePlatforms`), one to fit: offered with or without text,

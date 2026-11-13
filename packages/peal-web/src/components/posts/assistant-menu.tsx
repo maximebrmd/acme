@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { assistantStatus, suggestChange } from "#assistant/api.ts";
 import {
   acceptedText,
+  assistantBlockedBy,
   languageLabel,
   shortenablePlatforms,
   writablePlatforms,
@@ -66,25 +67,6 @@ interface Asked {
 }
 
 const unexpected = (): AssistantFailure => ({ _tag: "Unexpected" });
-
-/**
- * Why the person cannot ask now, if they cannot: no text, too much of it,
- * or no request left today (which the count of requests left says).
- */
-const blockedBy = (
-  status: AssistantStatus,
-  text: string
-): "needsText" | "noRequestsLeft" | "textTooLong" | null => {
-  if (status.remaining <= 0) {
-    return "noRequestsLeft";
-  }
-
-  if (text.trim() === "") {
-    return "needsText";
-  }
-
-  return text.length > status.maxTextLength ? "textTooLong" : null;
-};
 
 interface ActionsProps {
   readonly locale: string;
@@ -197,7 +179,7 @@ const Controls = ({
   const latest = useRef(0);
 
   const names = new Intl.DisplayNames([locale], { type: "language" });
-  const blocked = blockedBy(status, text);
+  const blocked = assistantBlockedBy(status, text);
 
   const ask = async (action: AssistantAction, from: string) => {
     latest.current += 1;
@@ -269,7 +251,9 @@ const Controls = ({
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuGroup>
             <DropdownMenuLabel>
-              {t("remaining", { remaining: status.remaining })}
+              {status.source === "workspace"
+                ? t("ownProvider")
+                : t("remaining", { remaining: status.remaining })}
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -367,7 +351,8 @@ const WhenAvailable = (props: Omit<AssistantMenuProps, "permissions">) => {
 /**
  * The writing assistant, in the composer: a menu of what it can do with the
  * text for all channels, and a preview of its suggestion, which the person
- * uses or discards. Hidden from members who may not use it, and while the
+ * uses or discards. Hidden from members who may not use it, and while
+ * nobody writes for the workspace: it brought no text provider, and the
  * server has no language model.
  */
 export const AssistantMenu = ({

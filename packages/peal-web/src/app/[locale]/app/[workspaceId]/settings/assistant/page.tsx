@@ -2,11 +2,12 @@ import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 
 import { ImageProviderSettings } from "#components/assistant/image-provider-settings.tsx";
+import { TextProviderSettings } from "#components/assistant/text-provider-settings.tsx";
 import { routing } from "#i18n/routing.ts";
 import { membershipOf } from "#posts/membership.ts";
 
-// The assistant's settings: the image provider the workspace brings, for
-// members with assistant:configure (owners and admins).
+// The assistant's settings: the text and image providers the workspace
+// brings, for members with assistant:configure (owners and admins).
 const AssistantSettingsPage = async ({
   params,
 }: PageProps<"/[locale]/app/[workspaceId]/settings/assistant">) => {
@@ -22,7 +23,12 @@ const AssistantSettingsPage = async ({
     notFound();
   }
 
-  return <ImageProviderSettings workspaceId={workspace.id} />;
+  return (
+    <div className="flex flex-col gap-10">
+      <TextProviderSettings workspaceId={workspace.id} />
+      <ImageProviderSettings workspaceId={workspace.id} />
+    </div>
+  );
 };
 
 export default AssistantSettingsPage;
