@@ -26,9 +26,11 @@ const meterOf = ({ lookupKey, name }: CataloguePrice): HeldMeter => ({
   formula: "sum",
   id: `mtr_${lookupKey}`,
   valueKey: "value",
+  window: Option.none(),
 });
 
 const productOf = ({ lookupKey, name }: CataloguePrice): HeldProduct => ({
+  active: true,
   id: `prod_${lookupKey}`,
   key: lookupKey,
   name,
@@ -40,8 +42,10 @@ const priceOf = (price: CataloguePrice): HeldPrice => ({
   currency: "usd",
   id: `price_${price.lookupKey}`,
   interval: Option.some("month"),
+  intervalCount: 1,
   lookupKey: price.lookupKey,
   meterId: Option.some(`mtr_${price.lookupKey}`),
+  productId: `prod_${price.lookupKey}`,
   taxBehavior: Option.some("exclusive"),
   tiers:
     price.amount._tag === "tiered"
@@ -179,6 +183,7 @@ describe(catalogueProblems, () => {
           ...price,
           currency: "eur",
           interval: Option.some("year"),
+          intervalCount: 3,
           meterId: Option.some("mtr_other"),
           taxBehavior: Option.some("inclusive"),
           transformed: true,
@@ -188,7 +193,7 @@ describe(catalogueProblems, () => {
       )
     ).toStrictEqual([
       "peal_assistant_images: Stripe charges it in eur, not usd",
-      "peal_assistant_images: Stripe bills it each year, not each month",
+      "peal_assistant_images: Stripe bills it every 3 years, not each month",
       "peal_assistant_images: Stripe bills it by licensed quantity, not by metered usage",
       "peal_assistant_images: Stripe reads its usage from meter mtr_other, not from the meter of event peal_assistant_images",
       "peal_assistant_images: its tax behavior at Stripe is inclusive, not exclusive, so the VAT would not be added to it",
@@ -261,6 +266,34 @@ describe(catalogueProblems, () => {
       "peal_accounts: its meter reads the value from quantity, not value",
     ]);
   });
+
+  // Stripe keeps only the last event of each window on such a meter: the
+  // increments the server sends would be lost.
+  it("names a meter that keeps only the last event of each day or hour", () => {
+    expect(
+      catalogueProblems(published, {
+        ...complete,
+        meters: complete.meters.map((meter) =>
+          meter.eventName === "peal_accounts"
+            ? { ...meter, window: Option.some("day") }
+            : meter
+        ),
+      })
+    ).toStrictEqual([
+      "peal_accounts: its meter is pre-aggregated by day, so Stripe keeps only the last event of each day",
+    ]);
+  });
+
+  it("names a price whose interval is not one month", () => {
+    expect(
+      catalogueProblems(
+        published,
+        changing("peal_x_api", (price) => ({ ...price, intervalCount: 3 }))
+      )
+    ).toStrictEqual([
+      "peal_x_api: Stripe bills it every 3 months, not each month",
+    ]);
+  });
 });
 
 describe(planCatalogue, () => {
@@ -282,6 +315,7 @@ describe(planCatalogue, () => {
   it("plans nothing for a catalogue as the rate card gives it", () => {
     expect(planCatalogue(published, complete)).toStrictEqual({
       blocked: [],
+      notes: [],
       steps: [],
     });
   });
@@ -322,22 +356,61 @@ describe(planCatalogue, () => {
     expect(plan.steps[1]).toMatchObject({ meterId: Option.none() });
   });
 
-  it("renames a product and sets its tax code, keeping its prices", () => {
+  // The operator may rename a product or give it another tax code: the
+  // command sets them when it makes the product, never after.
+  it("leaves a product's name and tax code as the operator set them, saying so", () => {
     const plan = planCatalogue(published, {
       ...complete,
       products: complete.products.map((product) =>
         product.key === "peal_accounts"
-          ? { ...product, name: "Accounts", taxCode: Option.none() }
+          ? {
+              ...product,
+              name: "Accounts",
+              taxCode: Option.some("txcd_10103000"),
+            }
           : product
       ),
     });
 
-    expect(plan.steps).toStrictEqual([
-      {
-        _tag: "updateProduct",
-        price: published[0],
-        productId: "prod_peal_accounts",
-      },
+    expect(plan.steps).toStrictEqual([]);
+    expect(plan.blocked).toStrictEqual([]);
+    expect(plan.notes).toStrictEqual([
+      "Connected accounts: product prod_peal_accounts is named Accounts at Stripe, with tax code txcd_10103000; left as they are (the command gives a product it makes txcd_10103001)",
+    ]);
+  });
+
+  it("changes nothing while a price's product is archived, and says which", () => {
+    const plan = planCatalogue(published, {
+      ...complete,
+      products: complete.products.map((product) =>
+        product.key === "peal_managed_ads"
+          ? { ...product, active: false }
+          : product
+      ),
+    });
+
+    expect(plan.blocked).toStrictEqual([
+      "peal_managed_ads: price price_peal_managed_ads is on product prod_peal_managed_ads, which is archived at Stripe, where checkout would refuse it. Restore the product at Stripe, then run this again.",
+    ]);
+  });
+
+  it("makes a new product for a new price when the line's product is archived", () => {
+    const plan = planCatalogue(published, {
+      ...complete,
+      prices: complete.prices.filter(
+        ({ lookupKey }) => lookupKey !== "peal_managed_ads"
+      ),
+      products: complete.products.map((product) =>
+        product.key === "peal_managed_ads"
+          ? { ...product, active: false }
+          : product
+      ),
+    });
+
+    expect(plan.blocked).toStrictEqual([]);
+    expect(plan.steps.map(({ _tag }) => _tag)).toStrictEqual([
+      "createProduct",
+      "createPrice",
     ]);
   });
 
@@ -352,7 +425,7 @@ describe(planCatalogue, () => {
     });
 
     expect(plan.blocked).toStrictEqual([
-      "peal_accounts: its meter aggregates by last, not sum. Stripe cannot change it: deactivate meter mtr_peal_accounts at Stripe, then run this again.",
+      `peal_accounts: its meter aggregates by last, not sum. Stripe cannot change a meter: deactivate meter mtr_peal_accounts at Stripe, then run this again. Subscriptions on a price that reads it stop counting from then until they move to the new price. If Stripe refuses the new meter its event name, set STRIPE_LOOKUP_KEY_PREFIX to a new prefix and give Stripe the catalogue and the plans' prices under it.`,
     ]);
   });
 });

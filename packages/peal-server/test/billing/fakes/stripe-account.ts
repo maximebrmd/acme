@@ -27,6 +27,8 @@ export interface FakeMeter {
   readonly mapping: string;
   readonly status: string;
   readonly valueKey: string;
+  /** `day` or `hour` for a pre-aggregated meter. */
+  readonly window: string | null;
 }
 
 /** A product the account holds. */
@@ -53,6 +55,7 @@ export interface FakePrice {
   readonly currency: string;
   readonly id: string;
   readonly interval: string;
+  readonly intervalCount: number;
   readonly lookupKey: string | null;
   readonly meter: string | null;
   readonly product: string;
@@ -80,6 +83,7 @@ export const meterFor = ({ lookupKey, name }: CataloguePrice): FakeMeter => ({
   mapping: "by_id",
   status: "active",
   valueKey: meterEvents.valueKey,
+  window: null,
 });
 
 /** A product for the catalogue's `price`, as it should be. */
@@ -105,6 +109,7 @@ export const priceFor = ({
   currency,
   id: `price_${lookupKey}`,
   interval: "month",
+  intervalCount: 1,
   lookupKey,
   meter: `mtr_${lookupKey}`,
   product: `prod_${lookupKey}`,
@@ -146,6 +151,7 @@ const meterJson = (meter: FakeMeter): JsonValue => ({
   default_aggregation: { formula: meter.formula },
   display_name: meter.displayName,
   event_name: meter.eventName,
+  event_time_window: meter.window,
   id: meter.id,
   object: "billing.meter",
   status: meter.status,
@@ -181,7 +187,7 @@ const priceJson = (price: FakePrice, withTiers: boolean): JsonValue => {
     product: price.product,
     recurring: {
       interval: price.interval,
-      interval_count: 1,
+      interval_count: price.intervalCount,
       meter: price.meter,
       usage_type: price.usageType,
     },
@@ -290,6 +296,7 @@ export const stripeAccount = (
         mapping: form.get("customer_mapping[type]") ?? "",
         status: "active",
         valueKey: form.get("value_settings[event_payload_key]") ?? "",
+        window: form.get("event_time_window"),
       };
 
       meters = [...meters, meter];
@@ -349,6 +356,7 @@ export const stripeAccount = (
         currency: form.get("currency") ?? "",
         id: nextId("price"),
         interval: form.get("recurring[interval]") ?? "",
+        intervalCount: Number(form.get("recurring[interval_count]") ?? "1"),
         lookupKey,
         meter: form.get("recurring[meter]"),
         product: form.get("product") ?? "",

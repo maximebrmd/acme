@@ -28,10 +28,13 @@ const PriceSchema = Schema.Struct({
   currency: Schema.String,
   id: Schema.String,
   lookup_key: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  // Its id: the field is not expanded.
+  product: Schema.optionalKey(Schema.String),
   recurring: Schema.optionalKey(
     Schema.NullOr(
       Schema.Struct({
         interval: Schema.String,
+        interval_count: Schema.optionalKey(Schema.Int),
         meter: Schema.optionalKey(Schema.NullOr(Schema.String)),
         usage_type: Schema.optionalKey(Schema.String),
       })
@@ -71,6 +74,7 @@ const MeterObjectSchema = Schema.Struct({
   default_aggregation: Schema.Struct({ formula: Schema.String }),
   display_name: Schema.String,
   event_name: Schema.String,
+  event_time_window: Schema.optionalKey(Schema.NullOr(Schema.String)),
   id: Schema.String,
   value_settings: Schema.optionalKey(
     Schema.NullOr(Schema.Struct({ event_payload_key: Schema.String }))
@@ -78,6 +82,7 @@ const MeterObjectSchema = Schema.Struct({
 });
 
 const ProductObjectSchema = Schema.Struct({
+  active: Schema.Boolean,
   id: Schema.String,
   metadata: Schema.optionalKey(
     Schema.NullOr(Schema.Record(Schema.String, Schema.String))
@@ -95,8 +100,9 @@ const IdSchema = Schema.Struct({ id: Schema.String });
 // Stripe refusing the request itself: the key, what it may do, or what was
 // asked. Asking again changes nothing, unlike a timeout or a 5xx.
 const RefusalSchema = Schema.Struct({
-  // Stripe's errors carry the key, undefined when there is no code.
-  code: Schema.optional(Schema.String),
+  // Stripe's errors carry the key, undefined when there is no code; a
+  // proxy or another version of its API may send null.
+  code: Schema.optional(Schema.NullOr(Schema.String)),
   type: Schema.Literals([
     "StripeAuthenticationError",
     "StripePermissionError",
@@ -131,7 +137,8 @@ const ask = <S extends Schema.Top & { readonly DecodingServices: never }, T>(
           new StripeCatalogueUnread({
             during,
             reason: "refused",
-            refusal: code === undefined ? type : `${type}, ${code}`,
+            refusal:
+              code === undefined || code === null ? type : `${type}, ${code}`,
           }),
       }),
     try: async () => JSON.stringify(await call()),
@@ -184,8 +191,10 @@ const heldPriceOf = (price: StripePriceObject): HeldPrice => ({
   currency: price.currency,
   id: price.id,
   interval: Option.fromNullishOr(price.recurring?.interval),
+  intervalCount: price.recurring?.interval_count ?? 1,
   lookupKey: price.lookup_key ?? "",
   meterId: Option.fromNullishOr(price.recurring?.meter),
+  productId: price.product ?? "",
   taxBehavior: Option.fromNullishOr(price.tax_behavior),
   tiers: (price.tiers ?? []).map((tier) => ({
     flatAmountDecimal: decimalOf(tier.flat_amount_decimal, tier.flat_amount),
@@ -267,11 +276,15 @@ export const readMeters = (
         formula: meter.default_aggregation.formula,
         id: meter.id,
         valueKey: meter.value_settings?.event_payload_key ?? "",
+        window: Option.fromNullishOr(meter.event_time_window),
       }))
     )
   );
 
-/** The active products the catalogue made, by their `metadata.peal`. */
+/**
+ * The products the catalogue made, by their `metadata.peal`, archived
+ * ones too: a price on one is reported.
+ */
 const readProducts = (
   client: Stripe
 ): Effect.Effect<readonly HeldProduct[], StripeCatalogueUnread> =>
@@ -281,7 +294,6 @@ const readProducts = (
       listOf(ProductObjectSchema),
       async () =>
         await client.products.list({
-          active: true,
           limit: pageSize,
           ...Option.match(after, {
             onNone: () => ({}),
@@ -294,6 +306,7 @@ const readProducts = (
       products.flatMap((product) =>
         Option.fromNullishOr(product.metadata?.["peal"]).pipe(
           Option.map((key) => ({
+            active: product.active,
             id: product.id,
             key,
             name: product.name,
@@ -441,23 +454,8 @@ const apply = (
           })
       ).pipe(
         Effect.map(({ id }) => ({
-          line: `Created product ${name} (${id})`,
+          line: `Created product ${name} (${id}), with tax code ${catalogueTaxCode}`,
           made: { ...made, products: withId(made.products, lookupKey, id) },
-        }))
-      ),
-    updateProduct: ({ productId }) =>
-      ask(
-        `updating the product for ${lookupKey}`,
-        IdSchema,
-        async () =>
-          await client.products.update(productId, {
-            name,
-            tax_code: catalogueTaxCode,
-          })
-      ).pipe(
-        Effect.map(({ id }) => ({
-          line: `Updated product ${name} (${id}): its name and tax code ${catalogueTaxCode}`,
-          made,
         }))
       ),
   });
@@ -479,8 +477,9 @@ export interface CatalogueRun {
  * it, meters and products before the prices that use them, saying each
  * change as it is made. A second run plans nothing. With `check`, it
  * changes nothing and fails with what it would change. A meter that
- * counts otherwise, which Stripe cannot change, stops it before any
- * change.
+ * counts otherwise, which Stripe cannot change, or a price on an archived
+ * product stops it before any change. A product's name and tax code are
+ * set when it is made, and said afterwards, never reset.
  */
 export const runCatalogue = ({
   check,
@@ -498,6 +497,9 @@ export const runCatalogue = ({
     if (plan.blocked.length > 0) {
       return yield* new StripeCatalogueDiffers({ problems: plan.blocked });
     }
+
+    // What the operator set, for information: never a difference.
+    yield* Effect.forEach(plan.notes, report, { discard: true });
 
     if (check && plan.steps.length > 0) {
       return yield* new StripeCatalogueDiffers({ problems: planLines(plan) });

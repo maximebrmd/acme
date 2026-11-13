@@ -19,6 +19,20 @@ export const CatalogueLineSchema = Schema.Literals([
 
 export type CatalogueLine = typeof CatalogueLineSchema.Type;
 
+/**
+ * What a server that bills does when it starts on a Stripe catalogue that
+ * is not the rate card's: `warn` while nothing sells per-account pricing,
+ * so an upgrade or a rollback never stops a server for a catalogue it does
+ * not use yet; `stop` once checkout sells it (T4 sets it, with its test),
+ * as it then would bill something else than it shows. The legacy plans'
+ * prices stop the server either way.
+ */
+export const CatalogueAtStartSchema = Schema.Literals(["warn", "stop"]);
+
+export type CatalogueAtStart = typeof CatalogueAtStartSchema.Type;
+
+export const catalogueAtStart: CatalogueAtStart = "warn";
+
 /** What each line is called on the invoice: its product's and meter's name. */
 const lineNames = {
   accounts: "Connected accounts",
@@ -106,9 +120,13 @@ export interface HeldPrice {
   readonly id: string;
   /** How often it is billed; none for a price paid once. */
   readonly interval: Option.Option<string>;
+  /** How many intervals between two invoices. */
+  readonly intervalCount: number;
   readonly lookupKey: string;
   /** The id of the meter it reads its usage from. */
   readonly meterId: Option.Option<string>;
+  /** The id of the product it belongs to. */
+  readonly productId: string;
   /** `exclusive`, `inclusive` or `unspecified`, as Stripe names them. */
   readonly taxBehavior: Option.Option<string>;
   readonly tiers: readonly HeldTier[];
@@ -130,10 +148,16 @@ export interface HeldMeter {
   readonly formula: string;
   readonly id: string;
   readonly valueKey: string;
+  /**
+   * The window its events are pre-aggregated for (`day`, `hour`), if any:
+   * Stripe then keeps only the last event of each window.
+   */
+  readonly window: Option.Option<string>;
 }
 
-/** What Stripe holds of an active product the catalogue made. */
+/** What Stripe holds of a product the catalogue made, archived or not. */
 export interface HeldProduct {
+  readonly active: boolean;
   readonly id: string;
   /** Its `metadata.peal`: the lookup key of the line it is for. */
   readonly key: string;
@@ -248,7 +272,13 @@ const priceDifferences = (
   meter: Option.Option<HeldMeter>
 ): readonly string[] => {
   const { currency, lookupKey } = price;
-  const billed = Option.getOrElse(held.interval, () => "once");
+  const interval = Option.getOrElse(held.interval, () => "once");
+
+  const billed =
+    held.intervalCount === 1
+      ? `each ${interval}`
+      : `every ${String(held.intervalCount)} ${interval}s`;
+
   const usage = Option.getOrElse(held.usageType, () => "none");
   const tax = Option.getOrElse(held.taxBehavior, () => "unspecified");
   const read = Option.getOrElse(held.meterId, () => "none");
@@ -265,10 +295,10 @@ const priceDifferences = (
       : [
           `${lookupKey}: Stripe charges it in ${held.currency}, not ${currency}`,
         ]),
-    ...(billed === catalogueInterval
+    ...(billed === `each ${catalogueInterval}`
       ? []
       : [
-          `${lookupKey}: Stripe bills it each ${billed}, not each ${catalogueInterval}`,
+          `${lookupKey}: Stripe bills it ${billed}, not each ${catalogueInterval}`,
         ]),
     ...(usage === "metered"
       ? []
@@ -316,6 +346,12 @@ const meterDifferences = (
     : [
         `${lookupKey}: its meter reads the value from ${meter.valueKey}, not ${meterEvents.valueKey}`,
       ]),
+  ...Option.match(meter.window, {
+    onNone: () => [],
+    onSome: (window) => [
+      `${lookupKey}: its meter is pre-aggregated by ${window}, so Stripe keeps only the last event of each ${window}`,
+    ],
+  }),
 ];
 
 const heldMeterOf = (
@@ -367,11 +403,6 @@ export type CatalogueStep =
   | { readonly _tag: "createMeter"; readonly price: CataloguePrice }
   | { readonly _tag: "createProduct"; readonly price: CataloguePrice }
   | {
-      readonly _tag: "updateProduct";
-      readonly price: CataloguePrice;
-      readonly productId: string;
-    }
-  | {
       readonly _tag: "createPrice";
       /** The meter it reads; none while the step before makes it. */
       readonly meterId: Option.Option<string>;
@@ -385,26 +416,41 @@ export type CatalogueStep =
     };
 
 /**
- * What the catalogue command does: its steps, in order, and what it
- * cannot fix, which stops it before any step.
+ * What the catalogue command does: its steps, in order; what it cannot
+ * fix, which stops it before any step; and what it leaves as the operator
+ * set it, said for information.
  */
 export interface CataloguePlan {
   readonly blocked: readonly string[];
+  readonly notes: readonly string[];
   readonly steps: readonly CatalogueStep[];
 }
 
-const productSteps = (
+// A product the operator renamed or gave another tax code: theirs to set.
+const productNotes = (
   price: CataloguePrice,
-  product: Option.Option<HeldProduct>,
-  needed: boolean
-): readonly CatalogueStep[] =>
+  product: Option.Option<HeldProduct>
+): readonly string[] =>
   Option.match(product, {
-    onNone: () => (needed ? [{ _tag: "createProduct", price } as const] : []),
-    onSome: ({ id, name, taxCode }) =>
-      name === price.name && Option.contains(taxCode, catalogueTaxCode)
+    onNone: () => [],
+    onSome: ({ id, name, taxCode }) => {
+      const code = Option.getOrElse(taxCode, () => "none");
+
+      return name === price.name && code === catalogueTaxCode
         ? []
-        : [{ _tag: "updateProduct", price, productId: id } as const],
+        : [
+            `${price.name}: product ${id} is named ${name} at Stripe, with tax code ${code}; left as they are (the command gives a product it makes ${catalogueTaxCode})`,
+          ];
+    },
   });
+
+/**
+ * Why a meter that counts otherwise stops the command, and the way out.
+ * Stripe's docs do not say whether a deactivated meter keeps its event
+ * name: the sandbox runbook checks it.
+ */
+const unchangeableMeter = (problem: string, meterId: string): string =>
+  `${problem}. Stripe cannot change a meter: deactivate meter ${meterId} at Stripe, then run this again. Subscriptions on a price that reads it stop counting from then until they move to the new price. If Stripe refuses the new meter its event name, set STRIPE_LOOKUP_KEY_PREFIX to a new prefix and give Stripe the catalogue and the plans' prices under it.`;
 
 const lineSteps = (
   price: CataloguePrice,
@@ -415,17 +461,27 @@ const lineSteps = (
   const unfixable = Option.match(meter, {
     onNone: () => [],
     onSome: (found) =>
-      meterDifferences(price, found).map(
-        (problem) =>
-          `${problem}. Stripe cannot change it: deactivate meter ${found.id} at Stripe, then run this again.`
+      meterDifferences(price, found).map((problem) =>
+        unchangeableMeter(problem, found.id)
       ),
   });
 
+  // Only an active product takes a new price.
   const product = Option.fromNullishOr(
-    held.products.find(({ key }) => key === price.lookupKey)
+    held.products.find(({ active, key }) => active && key === price.lookupKey)
   );
 
   const current = heldPriceOf(price, held);
+
+  const archived = Option.match(current, {
+    onNone: () => [],
+    onSome: ({ id, productId }) =>
+      held.products.some((found) => found.id === productId && !found.active)
+        ? [
+            `${price.lookupKey}: price ${id} is on product ${productId}, which is archived at Stripe, where checkout would refuse it. Restore the product at Stripe, then run this again.`,
+          ]
+        : [],
+  });
 
   const reasons = Option.match(current, {
     onNone: () => [],
@@ -440,12 +496,15 @@ const lineSteps = (
   const priced = Option.isSome(current) && reasons.length === 0;
 
   return {
-    blocked: unfixable,
+    blocked: [...unfixable, ...archived],
+    notes: productNotes(price, product),
     steps: [
       ...(Option.isNone(meter)
         ? [{ _tag: "createMeter", price } as const]
         : []),
-      ...productSteps(price, product, !priced),
+      ...(Option.isNone(product) && !priced
+        ? [{ _tag: "createProduct", price } as const]
+        : []),
       ...(priced
         ? []
         : [
@@ -464,11 +523,13 @@ const lineSteps = (
 
 /**
  * What to change at Stripe so it holds the catalogue: a meter, product or
- * price that is missing is made; a product with another name or tax code
- * is updated; a price that would bill otherwise is replaced by a new one,
+ * price that is missing is made, a product with its name and tax code,
+ * which the operator may change afterwards (said in `notes`, never
+ * reset); a price that would bill otherwise is replaced by a new one,
  * which takes its lookup key, the old one left active for the
  * subscriptions that still use it. A meter that counts otherwise cannot be
- * changed at Stripe: it blocks the plan. A catalogue as the rate card
+ * changed at Stripe, nor checkout use a price whose product is archived:
+ * either blocks the plan. A catalogue as the rate card
  * gives it plans nothing.
  */
 export const planCatalogue = (
@@ -479,6 +540,7 @@ export const planCatalogue = (
 
   return {
     blocked: lines.flatMap(({ blocked }) => blocked),
+    notes: lines.flatMap(({ notes }) => notes),
     steps: lines.flatMap(({ steps }) => steps),
   };
 };
@@ -496,9 +558,8 @@ const stepLine = (step: CatalogueStep): string => {
             .map((reason) => reason.slice(`${lookupKey}: `.length))
             .join("; ")}`,
       }),
-    createProduct: () => `${name}: a new product`,
-    updateProduct: ({ productId }) =>
-      `${name}: product ${productId} renamed, with tax code ${catalogueTaxCode}`,
+    createProduct: () =>
+      `${name}: a new product, with tax code ${catalogueTaxCode}`,
   });
 };
 

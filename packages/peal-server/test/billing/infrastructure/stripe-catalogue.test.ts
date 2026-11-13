@@ -7,6 +7,7 @@ import { Config, Effect, Layer, Option, Redacted, Ref } from "effect";
 
 import { catalogueOf } from "#billing/domain/catalogue.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
+import type { RateCard } from "#billing/domain/rate-card.ts";
 import { runCatalogue } from "#billing/infrastructure/stripe-catalogue.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
@@ -23,8 +24,22 @@ const secretKey = "sk_test_0123456789syntheticcatalogue";
 
 const published = catalogueOf(catalogueKeysOf("peal"), rateCard);
 
+// The rate card of a later release, managed ads at 2 cents.
+const laterCard: RateCard = {
+  ...rateCard,
+  prices: {
+    usd: {
+      ...rateCard.prices.usd,
+      meters: {
+        ...rateCard.prices.usd.meters,
+        managedAds: { cents: 2, per: 1 },
+      },
+    },
+  },
+};
+
 // The command run against `url`, with what it printed.
-const run = (url: string, check = false) =>
+const run = (url: string, check = false, catalogue = published) =>
   Effect.gen(function* command() {
     const printed = yield* Ref.make<readonly string[]>([]);
 
@@ -37,7 +52,7 @@ const run = (url: string, check = false) =>
         },
         { maxNetworkRetries: 0 }
       ),
-      published,
+      published: catalogue,
       report: (line) => Ref.update(printed, (lines) => [...lines, line]),
     }).pipe(Effect.result);
 
@@ -234,7 +249,7 @@ layer(Layer.empty)("the Stripe catalogue command", (it) => {
         if (outcome._tag === "Failure") {
           assert.include(
             outcome.failure.message,
-            "peal_accounts: its meter aggregates by count, not sum. Stripe cannot change it: deactivate meter mtr_peal_accounts at Stripe, then run this again."
+            "peal_accounts: its meter aggregates by count, not sum. Stripe cannot change a meter: deactivate meter mtr_peal_accounts at Stripe, then run this again."
           );
         }
 
@@ -298,6 +313,140 @@ layer(Layer.empty)("the Stripe catalogue command", (it) => {
       for (const line of made.lines) {
         assert.notInclude(line, secretKey);
         assert.notInclude(line, "sk_");
+      }
+    }).pipe(Effect.scoped)
+  );
+  it.effect(
+    "leaves a product the operator renamed as it is, saying so, and --check passes",
+    () =>
+      Effect.gen(function* renamed() {
+        const account = holding(published);
+
+        const stripe = yield* stripeAccount({
+          ...account,
+          products: account.products.map((product) =>
+            product.key === "peal_accounts"
+              ? { ...product, name: "Accounts", taxCode: "txcd_10103000" }
+              : product
+          ),
+        });
+
+        const note =
+          "Connected accounts: product prod_peal_accounts is named Accounts at Stripe, with tax code txcd_10103000; left as they are (the command gives a product it makes txcd_10103001)";
+
+        const checked = yield* run(stripe.url, true);
+
+        assert.isTrue(checked.outcome._tag === "Success");
+        assert.deepStrictEqual(checked.lines, [
+          note,
+          "Stripe holds the catalogue the rate card gives.",
+        ]);
+
+        const applied = yield* run(stripe.url);
+
+        assert.isTrue(applied.outcome._tag === "Success");
+        assert.include(applied.lines, note);
+        assert.lengthOf(writes(stripe.requests()), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "changes nothing while a price's product is archived, and says which",
+    () =>
+      Effect.gen(function* archived() {
+        const account = holding(published);
+
+        const stripe = yield* stripeAccount({
+          ...account,
+          meters: account.meters.filter(
+            ({ eventName }) => eventName !== "peal_x_api"
+          ),
+          products: account.products.map((product) =>
+            product.key === "peal_managed_ads"
+              ? { ...product, active: false }
+              : product
+          ),
+        });
+
+        const { outcome } = yield* run(stripe.url);
+
+        assert.isTrue(outcome._tag === "Failure");
+
+        if (outcome._tag === "Failure") {
+          assert.include(
+            outcome.failure.message,
+            "peal_managed_ads: price price_peal_managed_ads is on product prod_peal_managed_ads, which is archived at Stripe"
+          );
+        }
+
+        assert.lengthOf(writes(stripe.requests()), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  // What a rollback relies on: the previous release's catalogue, run again
+  // after a later one moved a lookup key, moves it back to a third price.
+  // Every price stays active for the subscriptions on it.
+  it.effect(
+    "moves a lookup key back when the previous rate card's catalogue is run again",
+    () =>
+      Effect.gen(function* rollback() {
+        const stripe = yield* stripeAccount(holding(published));
+        const later = catalogueOf(catalogueKeysOf("peal"), laterCard);
+
+        const upgraded = yield* run(stripe.url, false, later);
+        const rolledBack = yield* run(stripe.url);
+
+        assert.isTrue(upgraded.outcome._tag === "Success");
+        assert.isTrue(rolledBack.outcome._tag === "Success");
+        assert.deepStrictEqual(
+          stripe
+            .held()
+            .prices.flatMap((price) =>
+              price.product === "prod_peal_managed_ads"
+                ? [[price.active, price.lookupKey, price.unitAmountDecimal]]
+                : []
+            ),
+          [
+            [true, null, "1"],
+            [true, null, "2"],
+            [true, "peal_managed_ads", "1"],
+          ]
+        );
+
+        const checked = yield* run(stripe.url, true);
+
+        assert.isTrue(checked.outcome._tag === "Success");
+      }).pipe(Effect.scoped)
+  );
+
+  // Stripe's errors leave the code out when there is none; a proxy, or
+  // another version of its API, may send null: still a refusal.
+  it.effect("reads a refusal whose code is null as a refusal", () =>
+    Effect.gen(function* nullCode() {
+      const refusing = yield* stripeAccount(emptyAccount, () =>
+        Option.some(
+          json(
+            {
+              error: {
+                code: null,
+                message: "Invalid API Key provided",
+                type: "invalid_request_error",
+              },
+            },
+            401
+          )
+        )
+      );
+
+      const { outcome } = yield* run(refusing.url);
+
+      assert.isTrue(outcome._tag === "Failure");
+
+      if (outcome._tag === "Failure") {
+        assert.include(
+          outcome.failure.message,
+          "Stripe refused it (StripeAuthenticationError)"
+        );
       }
     }).pipe(Effect.scoped)
   );
