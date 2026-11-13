@@ -132,6 +132,52 @@ describe("taking a channel off a post behind an ApprovalGate", () => {
   );
 });
 
+describe("taking a channel off a post that waits for an approval", () => {
+  it.effect(
+    "keeps it waiting, its request following what it now is",
+    () =>
+      onGatedServer(
+        Effect.gen(function* dropsHeld() {
+          const scheduling = yield* PostScheduling;
+          const gate = yield* GateLog;
+          const workspaceId = yield* freshWorkspace;
+          const kept = yield* connect(workspaceId, "mastodon");
+          const removed = yield* connect(workspaceId, "bluesky");
+          const editor = actorIn(workspaceId);
+
+          const held = yield* scheduling.send(
+            editor,
+            at8(kept, "Waiting on two channels.", {
+              channelIds: [kept, removed],
+            })
+          );
+
+          const target = held.targets.find(
+            ({ channelId }) => channelId === removed
+          );
+
+          assert(target !== undefined);
+
+          const dropped = yield* scheduling.dropTarget(
+            editor,
+            held.post.id,
+            target.id
+          );
+
+          assert.strictEqual(dropped.post.status._tag, "awaitingApproval");
+          assert.deepStrictEqual(
+            (yield* storedPost(held.post.id)).execution,
+            Option.none()
+          );
+          assert.deepStrictEqual(yield* gate.withdrawn, []);
+
+          yield* scheduling.cancel(editor, held.post.id);
+        })
+      ),
+    timeout
+  );
+});
+
 describe("posting in one call behind an ApprovalGate", () => {
   it.effect(
     "holds a thread whole: every part kept, no job, and compared with the others that wait by all its parts",

@@ -643,22 +643,32 @@ export class PostScheduling extends Context.Service<
       // A held post moved by someone who does not ask for it again (a
       // reshuffle of its queue): it keeps waiting, and its request follows
       // its new time. It is never admitted this way, whoever moves it.
+      // The request of a held post follows it as it now is, still the
+      // requester's.
+      const followed = Effect.fn("PostScheduling.followed")(function* followed(
+        actor: Actor,
+        post: Post,
+        targets: readonly PostTarget[]
+      ) {
+        const { at, timeZone } = yield* scheduleOf(post);
+
+        yield* gate.follow(actor, {
+          authorId: post.authorId,
+          postId: post.id,
+          scheduledAt: at,
+          subject: approvalSubject(post.content, targets),
+          timeZone,
+          workspaceId: post.workspaceId,
+        });
+      });
+
       const keptWaiting = Effect.fn("PostScheduling.keptWaiting")(
         function* keptWaiting(
           actor: Actor,
           post: Post,
           targets: readonly PostTarget[]
         ) {
-          const { at, timeZone } = yield* scheduleOf(post);
-
-          yield* gate.follow(actor, {
-            authorId: post.authorId,
-            postId: post.id,
-            scheduledAt: at,
-            subject: approvalSubject(post.content, targets),
-            timeZone,
-            workspaceId: post.workspaceId,
-          });
+          yield* followed(actor, post, targets);
 
           return yield* Effect.fromResult(awaitApproval(post)).pipe(
             Effect.orDie
@@ -1959,7 +1969,9 @@ export class PostScheduling extends Context.Service<
               // does. One that waits keeps its request, which follows it.
               const asked =
                 current.post.status._tag === "awaitingApproval"
-                  ? yield* keptWaiting(actor, current.post, left)
+                  ? yield* followed(actor, current.post, left).pipe(
+                      Effect.as(current.post)
+                    )
                   : yield* throughGate(actor, current.post, left);
 
               if (asked.status._tag !== current.post.status._tag) {
