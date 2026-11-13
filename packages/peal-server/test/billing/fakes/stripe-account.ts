@@ -188,7 +188,11 @@ const priceJson = (price: FakePrice, withTiers: boolean): JsonValue => {
     tax_behavior: price.taxBehavior,
     tiers_mode: price.tiersMode,
     transform_quantity: null,
-    unit_amount: null,
+    // Stripe gives the amount in whole cents too when it is one.
+    unit_amount:
+      price.unitAmountDecimal !== null && /^\d+$/u.test(price.unitAmountDecimal)
+        ? Number(price.unitAmountDecimal)
+        : null,
     unit_amount_decimal: price.unitAmountDecimal,
   };
 
