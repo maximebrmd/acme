@@ -9,6 +9,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./tokens.css";
 
 /* Tailwind scans the app that imports this file; this adds the components'
    own classes. */
@@ -76,66 +77,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-:root {
-  color-scheme: light;
-  --background: #fafaf9;
-  --foreground: #0c0a09;
-  --card: #ffffff;
-  --card-foreground: #0c0a09;
-  --popover: #ffffff;
-  --popover-foreground: #0c0a09;
-  --primary: #0c0a09;
-  --primary-foreground: #fafaf9;
-  --secondary: #f5f5f4;
-  --secondary-foreground: #1c1917;
-  /* Muted text passes WCAG's 4.5:1 on every surface: 4.8:1 on muted. */
-  --muted: #f5f5f4;
-  --muted-foreground: #716b66;
-  --accent: #efeeec;
-  --accent-foreground: #0c0a09;
-  /* White on destructive is 4.8:1. */
-  --destructive: #d92d20;
-  /* Destructive text on a destructive tint, past WCAG's 4.5:1: 5.7:1 on
-     bg-destructive/10 and 4.8:1 on the /20 hover. */
-  --destructive-text: #b42318;
-  --border: #e7e5e4;
-  --input: #d6d3d1;
-  /* Focus rings in the mark's blue: 5:1 against the background. */
-  --ring: #415eee;
-  --chart-1: #415eee;
-  --chart-2: #b9a6ff;
-  --chart-3: #ffca00;
-  --chart-4: #22339a;
-  --chart-5: #716b66;
-  --radius: 0.375rem;
-  --sidebar: #fafaf9;
-  --sidebar-foreground: #292524;
-  --sidebar-primary: #0c0a09;
-  --sidebar-primary-foreground: #fafaf9;
-  --sidebar-accent: #efeeec;
-  --sidebar-accent-foreground: #0c0a09;
-  --sidebar-border: #e7e5e4;
-  --sidebar-ring: #415eee;
-  /* The mark's three colours. Only blue carries meaning; lavender and sun
-     fail contrast on white and are fills, never text. */
-  --brand: #415eee;
-  --brand-hover: #2f47c9;
-  --brand-tint: #e8ecfd;
-  --brand-text: #2f47c9;
-  --lavender: #b9a6ff;
-  --sun: #ffca00;
-  /* The palette tags take their colour from, by name. */
-  --tag-gray: oklch(0.556 0 0);
-  --tag-red: oklch(0.577 0.215 27);
-  --tag-orange: oklch(0.646 0.19 45);
-  --tag-amber: oklch(0.72 0.16 80);
-  --tag-green: oklch(0.6 0.16 150);
-  --tag-teal: oklch(0.6 0.11 190);
-  --tag-blue: oklch(0.56 0.19 255);
-  --tag-purple: oklch(0.56 0.21 300);
-  --tag-pink: oklch(0.62 0.21 355);
 }
 
 @layer base {

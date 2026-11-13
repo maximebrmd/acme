@@ -1,0 +1,25 @@
+---
+title: Email
+description: How a self-hosted Peal sends its emails, through Resend or any SMTP server.
+sidebar:
+  icon: mail
+---
+
+Peal sends its emails through Resend's API or any SMTP server. Set the sender and one way to send.
+
+## Email [#email]
+
+| Setting                           | Required       | What it does                                                                                                                                       |
+| --------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MAIL_FROM`                       | Yes            | The sender, as `Peal <noreply@example.com>` or an address your mail service may send from                                                          |
+| `RESEND_API_KEY`                  | One of the two | Sends through Resend's API                                                                                                                         |
+| `SMTP_URL`                        | One of the two | Used without `RESEND_API_KEY`: an SMTP server, such as `smtp://user:password@mail.example.com:587`, or `smtps://…:465` for TLS from the first byte |
+| `AUTH_REQUIRE_EMAIL_VERIFICATION` | No             | With `false`, people can sign in before they confirm their address                                                                                 |
+
+[Environment variables](/self-hosting/environment-variables#email) has their defaults; `AUTH_REQUIRE_EMAIL_VERIFICATION` is under [Sign-in](/self-hosting/environment-variables#sign-in).
+
+### What Peal sends [#sent]
+
+Peal sends the email that confirms an address, password resets, invitations to a workspace, and [notifications](/guides/workspace/notifications) about posts and channels, each in the reader's language. Members choose which notifications also reach them by email.
+
+When the mail service turns an email away for now, an account email is tried again for a few seconds, then dropped, as people can ask for another. A notification's email is tried again for about five hours.

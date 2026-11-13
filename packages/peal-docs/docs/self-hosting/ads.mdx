@@ -1,0 +1,53 @@
+---
+title: Ads
+description: Turn ads on for a self-hosted server, and what Meta asks of the operator of its app.
+sidebar:
+  icon: megaphone
+---
+
+Ads stay off on a server of your own until you turn them on. This page says how, and what Meta asks of whoever runs the server's app.
+
+## Turn ads on [#ads]
+
+Ads are off until the instance's operator sets [`PEAL_ADS`](/self-hosting/environment-variables#ads):
+
+| `PEAL_ADS`     | What workspaces may do                                        |
+| -------------- | ------------------------------------------------------------- |
+| `off` or unset | Nothing: ads are off                                          |
+| `read`         | Connect Meta ad accounts and read their campaigns and numbers |
+| `spend`        | Also boost published posts, which spends their money at Meta  |
+
+A self-hosted instance brings its own Meta app with ads access: Peal Cloud's app does not serve it. Ads use Meta's main app, the one [Facebook Pages](/self-hosting/platforms#meta) connect with (`META_APP_ID`, `META_APP_SECRET`), and [`PEAL_TOKEN_KEYS`](/self-hosting/environment-variables#channels) to encrypt the sign-ins' tokens. `PEAL_ADS` set to `read` or `spend` without that app stops the server at startup.
+
+<Steps>
+  <Step title="Get the ads permissions from Meta">
+    Apply for what [Meta asks of the operator](#operator) on the app in
+    `META_APP_ID`.
+  </Step>
+  <Step title="Register the redirect address">
+    Register on the app, as a valid OAuth redirect URI, the address [the
+    command](/self-hosting/platforms#platform-addresses) prints for ads.
+  </Step>
+  <Step title="Start on read">
+    Set `PEAL_ADS=read` until Meta granted the app `ads_management`. Members
+    connect ad accounts and read them, the sign-in asks for reading only, and
+    everything that spends answers `AdSpendingUnavailable`.
+  </Step>
+  <Step title="Move to spend">
+    Once Meta granted `ads_management`, set `PEAL_ADS=spend`. People who signed
+    in before then sign in again to allow running ads.
+  </Step>
+</Steps>
+
+The server calls Meta's Graph API for ads, as it does for Facebook Pages. Whatever the access tier, Peal stops reading an ad account at 75% of the rate limit Meta reports for it.
+
+## What Meta asks of the operator [#operator]
+
+These are what Meta's documentation asks for at the time of writing. Confirm each with Meta when you apply, as its rules change ([Authorization](https://developers.facebook.com/docs/marketing-api/get-started/authorization), [Rate limiting](https://developers.facebook.com/docs/marketing-api/overview/rate-limiting)).
+
+| Requirement                      | What it is                                                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Permissions                      | `ads_read` to read ad accounts and their reports. To boost: `ads_management`, `pages_show_list`, `pages_read_engagement` and `pages_manage_ads`.                                                                     |
+| App Review, with advanced access | For each permission, to act for other people's ad accounts. An app that only manages its own ad account can work with standard access.                                                                               |
+| Business verification            | Of the business that owns the app                                                                                                                                                                                    |
+| Marketing API access tier        | An app starts with limited access, whose rate limits per ad account are low, and gets full access after App Review and enough successful calls: Meta's page says 500 calls in 15 days, with an error rate under 15%. |

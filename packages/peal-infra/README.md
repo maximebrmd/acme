@@ -11,3 +11,5 @@ Ansible configures the servers behind it:
 
 Self-hosters need none of it: Caddy and Compose are enough (the docs'
 self-hosting page, and [`peal-docker`](../peal-docker)).
+[`DEPLOYMENT.md`](DEPLOYMENT.md) describes what runs where: the servers,
+releases, backups, alerts and the uptime server.

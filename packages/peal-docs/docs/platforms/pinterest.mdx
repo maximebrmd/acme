@@ -1,0 +1,62 @@
+---
+title: Pinterest
+description: "Connect Pinterest to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/pinterest.svg
+---
+
+How to connect a Pinterest account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                   |
+| ----------------- | --------------------------------- |
+| Text              | {{platform-pinterest-text-en}}    |
+| Images and videos | {{platform-pinterest-media-en}}   |
+| Parts             | {{platform-pinterest-parts-en}}   |
+| Formats           | {{platform-pinterest-formats-en}} |
+| Alt text          | {{platform-pinterest-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **Pinterest**, choose **Connect Pinterest**, sign in on Pinterest, and allow Peal to:
+
+- see your boards and Pins;
+- create Pins;
+- read your account's name and picture.
+
+Peal asks for nothing about secret boards, so it never lists them and cannot pin to them.
+
+**Channels** offers Pinterest once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+## Options [#options]
+
+The composer offers these options. **API name** is the option's name through the API.
+
+| Option                     | API name         | In the composer                                                       |
+| -------------------------- | ---------------- | --------------------------------------------------------------------- |
+| **Board**                  | `boardId`        | Required, one of the account's                                        |
+| **Board section**          | `boardSectionId` | A section of the chosen board                                         |
+| **Title**                  | `title`          | 100 characters at most                                                |
+| **Link**                   | `link`           | Where a click on the Pin leads, starting with `http://` or `https://` |
+| **Video cover, at second** | `coverSecond`    | The first frame unless you choose                                     |
+| **Dominant colour**        | `dominantColor`  | Such as `#6E7874`                                                     |
+
+### Boards [#boards]
+
+- On a Pinterest channel, the composer reads the account's boards on Pinterest, up to 500 of them, and, once you chose one, its sections.
+- A board deleted since, or past those read, stays chosen and shows as not in the list.
+- When Pinterest does not answer, **Try again** reads the list again.
+- Peal creates no board: make one on Pinterest first.
+
+A Pin has one alt text, the first file's, and a carousel's images share the Pin's title, description and link.
+
+## Comments [#comments]
+
+Peal does not read comments on Pinterest yet.
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Pinterest once its app is registered: see [Pinterest](/self-hosting/platforms#pinterest). Until then, **Channels** does not offer it.

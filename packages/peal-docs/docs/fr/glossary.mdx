@@ -1,0 +1,127 @@
+---
+title: Glossaire
+description: Les mots qu’emploie Peal, dans l’application, l’API et cette documentation, chacun avec où en lire plus.
+sidebar:
+  icon: book-a
+  order: 4
+---
+
+Les mots qu’emploie Peal dans l’application, l’API et cette documentation. Chaque entrée renvoie à la page qui en dit plus.
+
+## Espaces de travail et personnes [#people]
+
+### Espace de travail [#workspace]
+
+Ce qu’une équipe partage : ses canaux, publications, médias, membres, clés d’API et webhooks. Une personne peut appartenir à plusieurs. [Paramètres de l’espace de travail](/guides/workspace).
+
+### Membre et rôle [#member]
+
+Une personne dans un espace de travail, avec un rôle qui dit ce qu’elle peut faire : propriétaire, administrateur, éditeur, contributeur ou lecteur. [Qui peut faire quoi](/guides/posts#roles).
+
+### Compte de facturation [#billing-account]
+
+Qui paie un espace de travail. Les espaces de travail qu’une personne crée partagent son compte de facturation. [Comptes de facturation](/guides/workspace/billing#accounts).
+
+### Équipe [#staff]
+
+Les personnes qui font tourner un serveur Peal, avec une console à elles à `/admin`. [Console de l’équipe](/self-hosting/staff).
+
+## Canaux [#channels]
+
+### Plateforme [#platform]
+
+Un réseau social sur lequel Peal publie, comme Bluesky ou Instagram. [Plateformes](/platforms).
+
+### Canal [#channel]
+
+Un compte sur une plateforme, connecté à un espace de travail, où partent ses publications. [Connecter des canaux](/guides/channels).
+
+### Groupe de canaux [#channel-set]
+
+Une sélection de canaux enregistrée, pour commencer une publication. [Groupes de canaux](/guides/posts/organise#sets).
+
+### Options par défaut [#default-options]
+
+Les options qu’un canal donne à chaque nouvelle publication, comme une visibilité. [Options par défaut d’un canal](/guides/posts/organise#defaults).
+
+## Publications [#posts]
+
+### Publication [#post]
+
+Un texte, avec ses médias et ses options, envoyé sur un ou plusieurs canaux à un moment donné. [Écrire une publication](/guides/posts).
+
+### Cible [#target]
+
+Une publication sur l’un de ses canaux, avec son propre état, son adresse et ses tentatives. Les `targets` de l’API les listent.
+
+### Brouillon [#draft]
+
+Une publication sans heure, qui ne part nulle part. [Brouillons](/guides/posts/drafts#drafts).
+
+### Partie et fil [#thread]
+
+Les parties qui suivent la première d’une publication, envoyées en réponses sur les plateformes qui prennent les fils. [Fils](/guides/posts#threads).
+
+### Options des plateformes [#options]
+
+Ce qu’une plateforme demande à une publication en plus de son texte et de ses médias, comme un titre YouTube. La [page de chaque plateforme](/platforms) liste les siennes.
+
+### Format [#format]
+
+La sorte de publication qu’un canal reçoit sur Instagram et Facebook : une publication du fil, une story ou un reel. [Stories et reels](/guides/posts#formats).
+
+### File [#queue]
+
+Les créneaux d’un canal, que remplissent dans l’ordre les publications qu’on y ajoute. [Files](/guides/posts/queues#queues).
+
+### Flux [#feed]
+
+Un flux web (RSS, Atom ou JSON Feed), comme celui d’un blog, dont chaque nouvel élément devient une publication. [Publier depuis un flux](/guides/posts/queues#feeds).
+
+### Étiquette et signature [#tag]
+
+Un libellé coloré qui classe les publications, et un texte qui les termine. [Étiquettes, signatures et groupes de canaux](/guides/posts/organise).
+
+### Approbation [#approval]
+
+Une publication qui attend qu’on l’approuve avant de pouvoir partir. Un **lien de relecture** la montre à des personnes sans compte Peal. [Relecture et approbation](/guides/posts/review).
+
+### Médiathèque [#media-library]
+
+Les images et vidéos d’un espace de travail, prêtes à joindre aux publications, chacune avec son texte alternatif. [Images et vidéos](/guides/media).
+
+## Après la publication [#after]
+
+### Boîte de réception [#inbox]
+
+Les commentaires laissés sous vos publications en ligne, auxquels vous répondez depuis Peal. [Boîte de réception](/guides/engage/inbox).
+
+### Mise en avant [#boost]
+
+Une publication en ligne promue sur Facebook ou Instagram avec l’argent d’un compte publicitaire connecté. [Mettre en avant une publication](/guides/engage/boosts).
+
+## Construire sur Peal [#building]
+
+### Clé d’API [#api-key]
+
+L’identifiant d’un espace de travail pour les programmes, avec les permissions qu’on lui a données. Elle commence par `peal_`. [Clés d’API](/guides/workspace#api-keys).
+
+### Compte partenaire [#partner]
+
+Un compte qui donne à chacun de ses propres clients un espace de travail, par l’API. [Intégrer Peal](/developers/embedding).
+
+### Lien de connexion [#connect-link]
+
+Une page hébergée où quelqu’un connecte ses comptes à un espace de travail sans compte Peal. [Laisser quelqu’un d’autre connecter son compte](/guides/channels#connect-links).
+
+### Point de réception de webhooks [#webhook]
+
+Une adresse de votre serveur à laquelle Peal envoie des événements, signés avec son secret. Chaque envoi est une **livraison**. [Webhooks](/developers/webhooks).
+
+### Clé d’idempotence [#idempotency]
+
+Une clé qui permet de renvoyer une requête sans risque : pendant 24 heures, la même clé et le même corps répondent ce que la première requête a fait, et ne font rien de plus. [Idempotence](/developers/conventions/idempotency).
+
+### MCP [#mcp]
+
+Le protocole par lequel les assistants IA appellent les outils de Peal. [Connecter un client MCP](/developers/mcp).

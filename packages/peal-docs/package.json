@@ -11,11 +11,14 @@
   },
   "type": "module",
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.104",
     "blume": "2.2.7",
-    "peal-contract": "workspace:*"
+    "peal-contract": "workspace:*",
+    "peal-ui": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
+    "simple-icons": "16.37.0",
     "typescript": "7.0.2"
   }
 }

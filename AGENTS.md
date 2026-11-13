@@ -85,6 +85,8 @@ several:
 - [`packages/peal-sdk/AGENTS.md`](packages/peal-sdk/AGENTS.md): the SDKs.
 - [`packages/peal-e2e/AGENTS.md`](packages/peal-e2e/AGENTS.md): the end-to-end
   tests.
+- [`packages/peal-docs/AGENTS.md`](packages/peal-docs/AGENTS.md): how a docs
+  page is written.
 - [`packages/peal-docker/AGENTS.md`](packages/peal-docker/AGENTS.md): the
   compose files, telemetry and alerting.
 - [`packages/peal-infra/AGENTS.md`](packages/peal-infra/AGENTS.md): the
@@ -270,9 +272,19 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 - Docs pages live in `packages/peal-docs/docs/`: English at the root, French in
   `docs/fr/` under the same file names. Pin each heading's anchor with `[#id]`
-  so links work in both languages, and order pages with `sidebar.order`: a whole
-  number, each used once, the same in both languages (renumber the pages
-  after a new one rather than squeeze it in with a fraction).
+  so links work in both languages. Each tab is a folder (`guides/`,
+  `platforms/`, `developers/`, `self-hosting/`; the loose pages are Get
+  started, ordered by `sidebar.order`). A folder's `meta.$.ts` orders its
+  pages for both languages and gives its English label; `fr/<folder>/meta.ts`
+  spreads it and gives the French one, since a locale's meta replaces the
+  shared one. DESIGN.md's Docs section says what belongs where. One page is
+  one task for one reader, with a one-sentence `description` (its line in
+  `llms.txt`). A page that moves leaves a redirect in `blume.config.ts`.
+- What a post may hold on each platform comes from `peal-contract/post-text`
+  through `platform-variables.ts` (`{{platform-<slug>-<field>-<locale>}}`);
+  a new platform needs its entry there and its page in `platforms/`.
+- `theme.css` maps Blume's tokens onto peal-ui's `tokens.css`: give the docs
+  no colour of their own.
 - Every docs target depends on `peal-contract:openapi`, so the reference
   matches the contract. `nx run peal-docs:test` runs `blume validate --strict`.
 - Do not run `blume build` or `blume check` while `blume dev` runs in the same
@@ -280,7 +292,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   `--isolated` for that reason). Leave Blume's own TypeScript 6 alone.
 - The site's pricing page (`src/pages/[...locale]/pricing.astro`, its
   logic in `src/pricing.ts`) and the docs' **Plans and billing** page
-  (`docs/billing.mdx`, with the variables of `pricing-variables.ts`) show
+  (`docs/guides/workspace/billing.mdx`, with the variables of `pricing-variables.ts`) show
   the contract's catalogue; the legal pages' plans section follows it.
 - Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
@@ -294,8 +306,11 @@ self-hoster needs only Postgres and an S3-compatible store:
   kebab-case.
 - `nx run peal-docs:build` and `nx run peal-site:build` write each package's
   `dist/`, cached. Their settings are optional, and unset or empty turns the
-  feature off: docs `DOCS_SITE_URL`, `DOCS_PLAUSIBLE_DOMAIN`,
-  `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`, `SITE_APP_URL`
+  feature off: docs `DOCS_SITE_URL`, `DOCS_APP_URL` (the sidebar's button
+  to the app), `DOCS_PLAUSIBLE_DOMAIN`, `DOCS_PLAUSIBLE_HOST`,
+  `DOCS_ASSISTANT_MODEL` (the assistant, which makes `dist/` a Node server,
+  the `docs` image, instead of static files) and `DOCS_TURNSTILE_SITE_KEY`;
+  site `SITE_URL`, `SITE_DOCS_URL`, `SITE_APP_URL`
   (the footer's links to the app's contract functions),
   `SITE_PLAUSIBLE_DOMAIN`, `SITE_PLAUSIBLE_HOST`. Nx hashes them from the
   process environment only, not `.env` files: export them, or build with

@@ -43,7 +43,7 @@ export const apiCatalogue = ({ docs, origin }: Places) => ({
       "service-desc": [
         { href: `${origin}${openApiPath}`, type: "application/openapi+json" },
       ],
-      ...docLink(docs, "api-overview"),
+      ...docLink(docs, "developers"),
       "service-meta": [
         {
           href: `${origin}/.well-known/oauth-protected-resource/api`,
@@ -57,7 +57,7 @@ export const apiCatalogue = ({ docs, origin }: Places) => ({
       "service-desc": [
         { href: `${origin}/api/mcp/server-card`, type: serverCardType },
       ],
-      ...docLink(docs, "mcp"),
+      ...docLink(docs, "developers/mcp"),
       "service-meta": [
         {
           href: `${origin}/.well-known/oauth-protected-resource/api/mcp`,
@@ -189,25 +189,29 @@ export const llmsText = ({ docs, origin }: Places): string =>
         section("Documentation", [
           [
             "API conventions",
-            `${base}/api-conventions`,
+            `${base}/developers/conventions`,
             "errors and their codes, ids, paging, idempotency, rate limits, versioning",
           ],
           [
             "Posting from an AI agent",
-            `${base}/agents`,
+            `${base}/developers/agents`,
             "what an agent may do, how to let it publish or only draft, and how to read what it did",
           ],
           [
             "MCP",
-            `${base}/mcp`,
+            `${base}/developers/mcp`,
             "connecting a client, the tools and what each changes",
           ],
           [
             "Command line",
-            `${base}/cli`,
+            `${base}/developers/cli`,
             "the peal command, its sign-in and JSON output",
           ],
-          ["Webhooks", `${base}/webhooks`, "events, signatures and retries"],
+          [
+            "Webhooks",
+            `${base}/developers/webhooks`,
+            "events, signatures and retries",
+          ],
           [
             "Full documentation for language models",
             `${base}/llms.txt`,

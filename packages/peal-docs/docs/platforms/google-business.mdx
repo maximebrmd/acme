@@ -1,0 +1,79 @@
+---
+title: Google Business Profile
+description: "Connect Google Business Profile to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/google-business.svg
+---
+
+How to connect Google Business Profile locations, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                         |
+| ----------------- | --------------------------------------- |
+| Text              | {{platform-google-business-text-en}}    |
+| Images and videos | {{platform-google-business-media-en}}   |
+| Parts             | {{platform-google-business-parts-en}}   |
+| Formats           | {{platform-google-business-formats-en}} |
+| Alt text          | {{platform-google-business-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+<Steps>
+  <Step title="Sign in with Google">
+    Under **Google Business Profile**, choose **Connect Google Business
+    Profile**, sign in with Google, and allow Peal to manage your Business
+    Profile. Google has one permission for everything about a profile, and Peal
+    uses it to list your locations and to make their posts, nothing else.
+  </Step>
+  <Step title="Choose the locations">
+    A sign-in that reaches one location connects it. One that reaches several
+    lists them, each with its address, for you to choose those this workspace
+    posts to. Each location is a channel.
+  </Step>
+</Steps>
+
+- Only locations Google has verified are listed: Google takes no post for the others. Verify the business in your Business Profile first, then connect again.
+- One sign-in offers 200 locations at most.
+
+<Callout type="warning" title="When a location changes hands">
+  A channel keeps the account its location was reached through. If the location
+  moves to another account or location group, or the person who connected it no
+  longer manages it, its posts fail: disconnect it, and connect the location
+  again.
+</Callout>
+
+**Channels** offers Google Business Profile once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+## Options [#options]
+
+The composer offers these options. **API name** is the option's name through the API.
+
+| Option                       | API name          | In the composer                                          |
+| ---------------------------- | ----------------- | -------------------------------------------------------- |
+| **Post type**                | `postType`        | An update unless you choose an event or an offer         |
+| **Title**                    | `title`           | 58 characters at most; required for an event or an offer |
+| **Starts**                   | `startsAt`        | Required for an event or an offer                        |
+| **Ends**                     | `endsAt`          | Required for an event or an offer                        |
+| **Button**                   | `callToAction`    | On an update or an event                                 |
+| **Button link**              | `callToActionUrl` | On an update or an event                                 |
+| **Coupon code**              | `couponCode`      | On an offer                                              |
+| **Link to redeem the offer** | `redeemUrl`       | On an offer                                              |
+| **Terms and conditions**     | `terms`           | On an offer                                              |
+
+How Google Business Profile treats them:
+
+- The post's text is the post's description.
+- An event's or an offer's dates are on the location's own clock, whatever your time zone, and the end comes after the start.
+- Every button opens its link, which starts with `https://` or `http://`, except **Call now**, which rings the number on the profile and takes no link.
+- An offer shows Google's own button.
+
+## Comments [#comments]
+
+Peal does not read comments on Google Business Profile yet.
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Google Business Profile once its app is registered, with a Google project Google gave access to its Business Profile APIs: see [Google Business Profile](/self-hosting/platforms#google-business). Until then, **Channels** does not offer it.

@@ -1,0 +1,56 @@
+---
+title: Publicités
+description: Activer les publicités sur un serveur auto-hébergé, et ce que Meta demande à l’exploitant de son application.
+sidebar:
+  icon: megaphone
+---
+
+Les publicités restent désactivées sur votre propre serveur tant que vous ne les activez pas. Cette page dit comment, et ce que Meta demande à qui exploite l’application du serveur.
+
+## Activer les publicités [#ads]
+
+Les publicités sont désactivées tant que l’opérateur de l’instance n’a pas défini [`PEAL_ADS`](/self-hosting/environment-variables#ads) :
+
+| `PEAL_ADS`          | Ce que peuvent faire les espaces de travail                                         |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `off` ou non défini | Rien : les publicités sont désactivées                                              |
+| `read`              | Connecter des comptes publicitaires Meta et lire leurs campagnes et leurs chiffres  |
+| `spend`             | Mettre aussi en avant des publications parues, ce qui dépense leur argent chez Meta |
+
+Une instance auto-hébergée apporte sa propre application Meta avec l’accès aux publicités : celle de Peal Cloud ne la sert pas. Les publicités passent par l’application principale de Meta, celle qui connecte les [Pages Facebook](/self-hosting/platforms#meta) (`META_APP_ID`, `META_APP_SECRET`), et par [`PEAL_TOKEN_KEYS`](/self-hosting/environment-variables#channels) pour chiffrer les jetons des connexions. `PEAL_ADS` à `read` ou `spend` sans cette application arrête le serveur au démarrage.
+
+<Steps>
+  <Step title="Obtenir de Meta les autorisations publicitaires">
+    Demandez ce que [Meta demande à l’opérateur](#operator) sur l’application de
+    `META_APP_ID`.
+  </Step>
+  <Step title="Enregistrer l’adresse de redirection">
+    Enregistrez sur l’application, comme URI de redirection OAuth valide,
+    l’adresse que [la commande](/self-hosting/platforms#platform-addresses)
+    affiche pour les publicités.
+  </Step>
+  <Step title="Commencer avec read">
+    Mettez `PEAL_ADS=read` tant que Meta n’a pas accordé `ads_management` à
+    l’application. Les membres connectent des comptes publicitaires et les
+    lisent, la connexion ne demande que la lecture, et tout ce qui dépense
+    répond `AdSpendingUnavailable`.
+  </Step>
+  <Step title="Passer à spend">
+    Une fois `ads_management` accordé par Meta, mettez `PEAL_ADS=spend`. Les
+    personnes qui s’étaient connectées avant se connectent de nouveau pour
+    autoriser la diffusion de publicités.
+  </Step>
+</Steps>
+
+Le serveur appelle l’API Graph de Meta pour les publicités, comme pour les Pages Facebook. Quel que soit le niveau d’accès, Peal cesse de lire un compte publicitaire à 75 % de la limite de requêtes que Meta annonce pour lui.
+
+## Ce que Meta demande à l’opérateur [#operator]
+
+Voici ce que la documentation de Meta demande à l’heure où ces lignes sont écrites. Confirmez chaque point auprès de Meta lors de votre demande, car ses règles changent ([Authorization](https://developers.facebook.com/docs/marketing-api/get-started/authorization), [Rate limiting](https://developers.facebook.com/docs/marketing-api/overview/rate-limiting)).
+
+| Exigence                         | Ce que c’est                                                                                                                                                                                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Autorisations                    | `ads_read` pour lire les comptes publicitaires et leurs rapports. Pour mettre en avant : `ads_management`, `pages_show_list`, `pages_read_engagement` et `pages_manage_ads`.                                                                                                       |
+| App Review, avec l’accès avancé  | Pour chaque autorisation, afin d’agir pour les comptes publicitaires d’autres personnes. Une application qui ne gère que son propre compte publicitaire peut fonctionner avec l’accès standard.                                                                                    |
+| Vérification de l’entreprise     | De l’entreprise qui possède l’application                                                                                                                                                                                                                                          |
+| Niveau d’accès à l’API Marketing | Une application commence avec un accès limité, dont les limites de requêtes par compte publicitaire sont basses, et obtient l’accès complet après l’App Review et assez d’appels réussis : la page de Meta indique 500 appels en 15 jours, avec un taux d’erreur inférieur à 15 %. |

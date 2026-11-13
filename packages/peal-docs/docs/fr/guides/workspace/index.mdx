@@ -1,0 +1,324 @@
+---
+title: Paramètres de l’espace de travail
+description: Renommer un espace de travail, gérer ses membres, invitations, clés d’API et webhooks, choisir les fournisseurs de l’assistant, ou le supprimer.
+sidebar:
+  icon: settings
+---
+
+Gérez les membres, les invitations, les clés, les webhooks et les fournisseurs de l’assistant d’un espace de travail, ou supprimez-le. Les paramètres d’un espace de travail appartiennent à ses membres, selon leur rôle ; [ceux de votre compte](/guides/workspace/account) n’appartiennent qu’à vous.
+
+## Paramètres de l’espace de travail [#workspace]
+
+Choisissez **Paramètres** sur la carte d’un espace de travail. Les onglets que vous voyez dépendent de ce que vous pouvez faire :
+
+| Onglet          | Qui le voit                                |
+| --------------- | ------------------------------------------ |
+| **Général**     | Chaque membre                              |
+| **Membres**     | Chaque membre                              |
+| **Sécurité**    | Chaque membre                              |
+| **Invitations** | Les membres qui peuvent inviter            |
+| **Clés d’API**  | Les membres qui peuvent gérer les clés     |
+| **Webhooks**    | Les membres qui peuvent gérer les webhooks |
+| **Assistant**   | Les propriétaires et les administrateurs   |
+
+| Rôle           | Dans les paramètres                                                                                                                                                                                                                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Propriétaire   | Tout : renommer, les membres, propriétaires compris, les invitations, les clés d’API, les webhooks, les fournisseurs d’images et de texte de l’assistant, l’exigence de la validation en deux étapes, et la suppression                            |
+| Administrateur | Renommer, les membres autres que les propriétaires, les invitations, les clés d’API, les webhooks et les fournisseurs d’images et de texte de l’assistant ; jamais les propriétaires, l’exigence de la validation en deux étapes ni la suppression |
+| Éditeur        | Voit les membres                                                                                                                                                                                                                                   |
+| Contributeur   | Voit les membres                                                                                                                                                                                                                                   |
+| Lecteur        | Voit les membres                                                                                                                                                                                                                                   |
+
+Sous **Général**, les propriétaires et les administrateurs choisissent aussi **Approbations** : si les publications attendent une approbation avant d’être programmées. Voyez [Relecture et approbation](/guides/posts/review#policy).
+
+### Membres [#members]
+
+**Membres** liste toutes les personnes de l’espace de travail avec leur rôle.
+
+- Les propriétaires et les administrateurs changent le rôle d’un membre depuis la liste.
+- Ils retirent aussi un membre, ce qu’ils confirment : cette personne perd l’accès aussitôt.
+- Seuls les propriétaires nomment ou retirent un propriétaire.
+- Un espace de travail garde toujours au moins un propriétaire : le dernier ne peut ni quitter ce rôle ni être retiré.
+
+### Invitations [#invitations]
+
+<Steps>
+  <Step title="Inviter">
+    Sous **Invitations**, saisissez une adresse e-mail et un rôle, puis
+    **Envoyer l’invitation**. Seuls les propriétaires invitent des
+    propriétaires.
+  </Step>
+  <Step title="La personne rejoint l’espace">
+    La personne reçoit un lien pour rejoindre l’espace, valable 7 jours, dans sa
+    langue si elle a déjà un compte et dans la vôtre sinon. Elle le rejoint une
+    fois connectée avec cette adresse.
+  </Step>
+</Steps>
+
+Les invitations en attente sont listées avec leur date d’expiration :
+
+- **Renvoyer** envoie à nouveau le lien par e-mail, valable 7 jours de plus.
+- **Révoquer** rend le lien inutilisable.
+- **Copier le lien** copie ce même lien, dans votre langue, pour le transmettre autrement. Seule la personne invitée peut l’accepter, connectée avec l’adresse invitée une fois vérifiée, jusqu’à l’expiration de l’invitation.
+
+### Sécurité : exiger la validation en deux étapes [#require-two-step]
+
+Sous **Sécurité**, un propriétaire exige la [validation en deux étapes](/guides/workspace/account#two-step) de tous les membres. Seul un propriétaire le fait, connecté lui-même : jamais un administrateur, une clé d’API, une application ou l’équipe agissant à la place d’un propriétaire. Il ne peut le faire qu’une fois qu’il l’a activée pour son propre compte, pour que personne ne s’enferme dehors.
+
+<Callout
+  type="warning"
+  title="Les membres qui ne l’ont pas perdent l’accès aussitôt"
+>
+  Avant que l’exigence ne s’applique, Peal nomme les membres dont le compte ne
+  l’a pas activée : ils perdent l’accès aussitôt, jusqu’à ce qu’ils l’activent.
+</Callout>
+
+Chaque membre voit si elle est exigée. Ceux qui gèrent les membres voient qui l’a activée, dans **Membres**.
+
+Tant que son compte ne l’a pas activée, le membre d’un espace de travail qui l’exige se voit refuser l’espace partout où il l’atteint :
+
+- l’application web lui montre ce qu’exigent les propriétaires et le chemin vers les paramètres de son compte au lieu de toute page de l’espace ;
+- la [ligne de commande](/developers/cli#login) et les [clients MCP](/developers/mcp#sign-in) sont refusés avec `twoStepRequired` ;
+- tout comme les routes d’espace de travail du service de connexion pour cet espace.
+
+Ses sessions et applications ne sont pas déconnectées : tout fonctionne de nouveau dès qu’il l’active. Les invitations fonctionnent toujours : l’invité rejoint l’espace, puis on lui demande de l’activer. Les [clés d’API](#api-keys) de l’espace et les clés d’un partenaire ne sont pas concernées : elles appartiennent à l’espace, pas à une personne.
+
+Ne plus l’exiger s’applique aussitôt aussi. L’un et l’autre sont inscrits au [journal d’activité](#activity).
+
+### Clés d’API [#api-keys]
+
+<Steps>
+  <Step title="Créer la clé">
+    Sous **Clés d’API**, donnez à une nouvelle clé un nom, une durée de validité
+    (30, 90 ou 365 jours, ou jusqu’à révocation) et ce qu’elle peut faire, parmi
+    les permissions que votre rôle vous donne.
+  </Step>
+  <Step title="La copier">
+    La clé s’affiche une seule fois, juste après : copiez-la à ce moment-là, car
+    Peal n’en garde qu’une empreinte. [La présentation de
+    l’API](/developers#authentication) explique comment l’envoyer.
+  </Step>
+</Steps>
+
+**Révoquer** arrête une clé aussitôt. L’équipe qui agit à la place d’un membre ne voit ni ne gère les clés.
+
+La liste indique pour chaque clé si elle **peut programmer et publier des publications**. C’est le cas quand elle porte `post:schedule`, `post:publish` ou `post:approve` ; sans elles, elle écrit tout au plus des brouillons. Une publication créée ou programmée avec une clé le dit sur sa page, avec le nom de la clé.
+
+<Callout type="warning" title="Ce qu’une clé publie est public">
+  Ne donnez ces permissions à une clé que si ce qui l’utilise doit publier : ce
+  qu’elle envoie est public sur les plateformes ([Publier depuis un agent
+  IA](/developers/agents#api)).
+</Callout>
+
+### Webhooks [#webhooks]
+
+Sous **Webhooks**, les propriétaires et les administrateurs ajoutent les adresses que Peal appelle quand il se passe quelque chose dans l’espace de travail, 10 au plus.
+
+- Chacune a les événements qu’elle veut recevoir, une description, et un secret de signature qui s’affiche une seule fois, juste après sa création ou son renouvellement.
+- Chaque point de terminaison garde 30 jours un journal de ses livraisons, d’où une livraison peut être renvoyée, et accepte un événement de test.
+- L’équipe qui agit à la place d’un membre ne peut pas changer les webhooks.
+
+[Webhooks](/developers/webhooks) liste les événements, et dit comment vérifier une livraison.
+
+### Le fournisseur d’images de l’assistant [#image-provider]
+
+Sous **Assistant**, les propriétaires et les administrateurs utilisent le fournisseur d’images de l’espace de travail, pour que les [images que crée l’assistant](/guides/media#generate) viennent de votre compte chez lui plutôt que du modèle de l’instance. Il faut `assistant:configure`, qui peut aussi être donné à une [clé d’API](#api-keys) ou à une [clé partenaire](/developers/embedding#account).
+
+| Champ       | Ce qu’il faut saisir                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Adresse** | L’adresse de base d’un point d’accès qui parle l’API d’images d’OpenAI, celle à laquelle Peal ajoute `/images/generations`, par exemple `https://images.example.com/v1`. Beaucoup de fournisseurs en proposent une, dite « compatible OpenAI ». Peal lui envoie une seule forme de requête, `{ model, n, prompt, size }`, et lit une image en base64 ou à une adresse. Peal ne promet pas qu’un fournisseur donné l’accepte. L’adresse doit être en HTTPS sur le port par défaut, sur un hôte public, sans nom d’utilisateur, mot de passe, requête ni fragment. |
+| **Modèle**  | Le modèle de votre fournisseur, tel que sa documentation le nomme. Le modèle peut changer seul.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Clé**     | La clé de votre compte chez le fournisseur, envoyée comme jeton porteur. Peal la garde chiffrée, pour cet espace de travail et cette adresse exacte seulement, ne la montre plus jamais et ne l’écrit jamais dans ses journaux. Une clé enregistrée s’affiche comme enregistrée et est gardée tant que vous n’en saisissez pas une autre. Tout changement de l’adresse, de son hôte ou de son chemin, la redemande, car Peal n’envoie jamais une clé à une adresse pour laquelle elle n’a pas été donnée.                                                        |
+
+Une fois enregistré, les descriptions d’images de l’espace de travail partent à cette adresse avec cette clé, et le modèle de Peal ne leur est jamais demandé, même quand votre fournisseur refuse.
+
+- Ses images ne coûtent aucune des demandes à l’assistant de l’espace de travail, quel que soit l’abonnement, gratuit et essai compris, jusqu’à 50 par jour. Elles occupent toujours le stockage de l’abonnement.
+- Peal n’appelle pas le fournisseur à l’enregistrement : la première image dit si les réglages fonctionnent.
+- Quand le fournisseur refuse la clé, le compte, le modèle ou l’adresse, l’image n’est pas créée et la fenêtre le dit.
+- Quand les clés de l’instance changent et que la clé enregistrée ne peut plus être lue, la page la redemande.
+- **Retirer**, qui demande d’abord, supprime la clé : les images viennent de nouveau du modèle de l’instance, s’il en a un.
+
+La [ligne de commande](/developers/cli/posts#assistant) a `peal assistant image-provider`. Aucun outil MCP ne le lit ni ne le règle, car une clé saisie dans une conversation atteint un modèle.
+
+<Accordion>
+  <AccordionItem title="Les adresses que Peal refuse">
+    Peal refuse, en toutes lettres, une adresse qui :
+
+    | Code              | L’adresse                          |
+    | ----------------- | ---------------------------------- |
+    | `notHttps`        | n’est pas en HTTPS                 |
+    | `credentials`     | contient des identifiants          |
+    | `queryOrFragment` | contient une requête ou un fragment |
+    | `tooLong`         | est trop longue                    |
+    | `malformed`       | n’est pas une adresse              |
+    | `notPublic`       | a un hôte qui n’est pas public     |
+    | `unknownHost`     | a un hôte qui ne se résout pas     |
+
+    Un serveur dont l’opérateur n’a pas défini les clés qui chiffrent les
+    secrets ne garde aucune clé (`AssistantSecretsNotConfigured`).
+
+  </AccordionItem>
+</Accordion>
+
+### Le fournisseur de texte de l’assistant [#text-provider]
+
+Sous **Assistant**, les propriétaires et les administrateurs peuvent aussi utiliser le fournisseur de texte de l’espace de travail, pour que l’[assistant de rédaction](/guides/posts/assistant#assistant) écrive avec votre compte chez lui plutôt qu’avec le modèle de l’instance. C’est ainsi qu’un espace de travail utilise l’assistant sans l’allocation de l’instance : ses demandes en sont exclues, quel que soit l’abonnement.
+
+| Champ       | Ce qu’il faut saisir                                                                                                                                                                                                                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API**     | **Anthropic** (l’API Messages d’Anthropic : Peal ajoute `/v1/messages` à l’adresse et envoie la clé dans `x-api-key`) ou **Compatible OpenAI** (tout point d’accès qui sert l’API de complétions de conversation : Peal ajoute `/chat/completions` et envoie la clé comme jeton porteur).                                                                  |
+| **Adresse** | `https://api.anthropic.com` pour Anthropic, que la page remplit. Pour un point d’accès compatible OpenAI, l’adresse que suit `/chat/completions`, par exemple `https://text.example.com/v1`. Les règles sont celles du fournisseur d’images : HTTPS sur le port par défaut, sur un hôte public, sans nom d’utilisateur, mot de passe, requête ni fragment. |
+| **Modèle**  | Le modèle de votre fournisseur, tel que sa documentation le nomme. L’assistant lui demande une sortie structurée (une réponse qui suit un schéma JSON) : un modèle qui ne sait pas en donner échoue à chaque demande.                                                                                                                                      |
+| **Clé**     | La clé de votre compte chez le fournisseur. Elle est gardée et affichée comme celle du fournisseur d’images : chiffrée, pour cet espace de travail et cette adresse exacte seulement, jamais montrée de nouveau, jamais journalisée, et redemandée quand l’adresse change.                                                                                 |
+
+Une fois enregistré, les textes sur lesquels les membres sollicitent l’assistant, et les sujets des publications qu’il rédige, partent à cette adresse avec cette clé, selon les conditions de ce fournisseur. Le modèle de l’instance ne leur est jamais demandé, même quand votre fournisseur refuse.
+
+- Ces demandes ne coûtent aucune des demandes à l’assistant de l’espace de travail, jusqu’à 500 par jour, chacune comptée quelle que soit son issue.
+- Quatre au plus partent à la fois : une cinquième envoyée entre-temps est refusée (`TextProviderBusy`) et ne compte pas.
+- **Tester** envoie à votre fournisseur une courte demande, la réécriture d’une phrase fixe, et dit s’il a répondu par une suggestion que l’assistant peut utiliser, ou pourquoi non. Elle compte parmi ces 500.
+- Quand votre fournisseur refuse la clé, le compte, le modèle ou l’adresse, l’assistant le dit et rien de l’allocation de l’instance n’est dépensé.
+- **Retirer**, qui demande d’abord, supprime la clé : l’assistant utilise de nouveau le modèle de l’instance, s’il en a un, dans l’allocation de l’espace de travail.
+
+### Qui règle les fournisseurs [#providers-access]
+
+Les fournisseurs d’images et de texte ne sont réglés que par :
+
+- un membre dans sa propre session ;
+- la [ligne de commande](/developers/cli/posts#assistant) de Peal (`peal assistant text-provider`) ;
+- une [clé d’API](#api-keys) ou une [clé partenaire](/developers/embedding#account) à qui `assistant:configure` a été donné.
+
+Aucune autre application connectée par OAuth, un client [MCP](/developers/mcp) compris, ne détient cette permission, quoi qu’on lui ait accordé, si bien qu’aucune ne peut envoyer les brouillons de l’espace de travail à une adresse à elle. L’équipe qui agit en tant que membre ne les règle pas et ne leur demande rien : le compte de l’espace de travail chez le fournisseur paierait.
+
+### Le journal d’activité [#activity]
+
+Chaque espace de travail tient le journal de qui a changé quoi, et par quelle application :
+
+- chaque requête qui a demandé à y changer quelque chose, qu’elle ait abouti ou été refusée ;
+- chaque appel d’un outil [MCP](/developers/mcp) qui change quelque chose.
+
+Les requêtes qui ne font que lire n’y figurent pas, ni celles qui vérifient sans rien créer : valider une publication, ou importer un fichier à blanc. Une requête qui crée plusieurs publications d’un coup (`posts.bulk`, `posts.import`) est un seul événement, quoi qu’elle ait créé.
+
+Seuls les propriétaires le lisent : il demande la permission `activity:read`, que seul le rôle de propriétaire porte. Un propriétaire peut donner cette permission à une [clé d’API](#api-keys), et une application qu’un propriétaire a connectée le lit comme lui. Le journal n’a pas encore de page dans l’application web. Pour le lire :
+
+- par l’API, avec `GET /api/workspaces/{workspaceId}/activity`, les plus récents d’abord, page par page ([Pagination](/developers/conventions/paging#paging) montre une réponse) ;
+- depuis la [ligne de commande](/developers/cli/workspace#activity), avec `peal activity list` ;
+- depuis un client MCP, avec l’outil `list_activity`.
+
+`operation` ne garde que les événements d’une opération, comme `posts.schedule`, et `actor` ceux qu’a demandés un membre, désigné par son identifiant d’utilisateur, ou une clé d’API, désignée par le sien.
+
+| Champ          | Ce qu’il contient                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `occurredAt`   | Quand.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `operation`    | Le point d’accès, tel que la référence le nomme (`posts.schedule`, `channels.disconnect`), ou l’outil MCP : `mcp.` suivi de son nom (`mcp.create_draft`), ou, pour ce que les réglages de l’application web changent par le service de connexion (un rôle, un membre retiré, une invitation, l’abonnement), `auth:` suivi de son chemin (`auth:/organization/remove-member`).          |
+| `status`       | Le statut HTTP répondu ; `null` pour l’appel d’un outil MCP, qui n’en a pas.                                                                                                                                                                                                                                                                                                           |
+| `errorCode`    | Le [code d’erreur](/developers/conventions/errors#error-codes) quand la requête a été refusée ou a échoué ; `null` quand elle a abouti. Pour un outil MCP, `tool_refused` quand l’outil a répondu par une erreur, `tool_failed` quand l’appel s’est terminé sans réponse.                                                                                                              |
+| `actor`        | Qui a demandé : un membre (`user`, avec son `userId`) ou une clé (`apiKey`, avec son `apiKeyId`) : une clé d’API de l’espace de travail, une [clé partenaire](/developers/embedding), ou un [lien de connexion](/guides/channels#connect-links), noté `connect-link:` suivi de son identifiant. `via` dit laquelle. La personne qui a ouvert un lien de connexion n’est jamais nommée. |
+| `via`          | Le moyen d’authentification : `session` (l’application web), `apiKey`, `oauth` (une application passant par l’API, comme la ligne de commande), `mcp`, `partnerKey` (une clé partenaire, dans un espace de travail que possède son compte partenaire) ou `connectLink` (un compte connecté sur la page d’un lien de connexion).                                                        |
+| `application`  | La clé ou l’application par laquelle la requête est passée, avec son `id` et le nom (`name`) qu’elle portait alors ; `null` pour une personne dans l’application web.                                                                                                                                                                                                                  |
+| `impersonated` | Si c’est l’équipe, agissant à la place du membre, qui a demandé. Jamais qui.                                                                                                                                                                                                                                                                                                           |
+| `objectIds`    | Les identifiants que nommait le chemin de la requête, comme `postId` ou `channelId`.                                                                                                                                                                                                                                                                                                   |
+| `requestId`    | L’identifiant de la requête, tel que le donnait son en-tête `X-Request-Id` ([Requêtes et réponses](/developers/conventions#requests)).                                                                                                                                                                                                                                                 |
+
+Le journal ne contient rien de plus : jamais ce qu’une requête ou sa réponse contenait, ni le texte d’une publication, ni une adresse, ni un navigateur.
+
+Un événement est gardé {{keep-activity-fr}}, puis une tâche quotidienne le supprime. Supprimer l’espace de travail supprime son journal. Quand un membre ferme son compte, les événements qu’il a laissés dans les espaces de travail qui restent y demeurent, sans son identifiant. L’[export](/guides/workspace/account#export) de chaque membre contient les changements qu’il a lui-même demandés.
+
+### Partenaire [#partner]
+
+Sous **Partenaire**, les propriétaires et administrateurs gèrent le compte partenaire de l’espace de travail, qui laisse un de vos produits utiliser Peal pour ses propres clients. Ils règlent :
+
+- ce que ces clients lisent sur les pages hébergées (un nom et l’adresse d’un logo) ;
+- les origines vers lesquelles ces pages peuvent les renvoyer ;
+- les clés partenaires, chacune affichée une seule fois, juste après sa création.
+
+La page liste les espaces de travail les plus récents que possède le compte, avec leurs canaux. Pouvoir ouvrir un compte soi-même est le choix de l’instance ; sinon la page dit de le demander à ceux qui l’exploitent. Un compte ne se ferme qu’une fois qu’il ne possède plus aucun espace de travail. L’équipe agissant comme un membre ne peut pas le modifier. [Intégrer Peal](/developers/embedding) décrit tout le parcours.
+
+### Supprimer un espace de travail [#delete-workspace]
+
+Dans **Général**, les propriétaires choisissent **Supprimer cet espace de travail…**, puis saisissent son nom pour confirmer.
+
+<Callout
+  type="danger"
+  title="La suppression d’un espace de travail est définitive"
+>
+  Tout son contenu disparaît, définitivement : ses canaux et leurs
+  autorisations, ses publications, programmées ou non, et leurs statistiques, sa
+  médiathèque et ses fichiers, ses notifications, son utilisation de l’assistant
+  de rédaction, ce que Peal a enregistré de ses abonnements et de ses
+  publications sur X, ses membres et invitations, et ses clés d’API, qui cessent
+  aussitôt de fonctionner. Plus rien n’en est publié. Stripe garde les factures
+  qu’il a émises.
+</Callout>
+
+Tant qu’une de ses publications est en cours d’envoi, la suppression attend : réessayez quelques minutes plus tard.
+
+Quand l’espace de travail a un abonnement que Stripe peut encore facturer, actif, impayé ou suspendu, y compris un abonnement dont le paiement vient d’aboutir avant que Stripe n’en ait informé Peal, la fenêtre dit d’abord ce que la suppression en fait, et attend que vous cochiez **Résilier l’abonnement maintenant** :
+
+- l’abonnement est résilié immédiatement chez Stripe, et plus rien n’est facturé ;
+- la période déjà payée n’est pas remboursée : ni avoir au prorata, ni facture de clôture, sauf lorsque la loi prévoit un remboursement : un consommateur qui a souscrit il y a moins de 14 jours peut se rétracter et être remboursé de la part non utilisée : rétractez-vous d’abord, avec **Renoncer au contrat ici** sur la page de facturation de l’espace de travail (voir [Abonnements et facturation](/guides/workspace/billing)), ou, une fois l’espace de travail supprimé, en le demandant à la personne qui gère le serveur ;
+- la page **Facturation** de l’espace de travail disparaît avec lui : téléchargez d’abord vos factures depuis le portail de facturation. Stripe garde les factures qu’il a émises, comme le droit comptable l’exige (10 ans en France), et l’e-mail de confirmation dit à qui en demander une copie.
+
+Pour cesser de payer en gardant l’espace de travail, résiliez plutôt l’abonnement depuis sa page **Facturation** : il prend alors fin avec la période payée.
+
+<Accordion>
+  <AccordionItem title="Paiements ouverts, pannes et plusieurs espaces de travail">
+    - Un paiement de l’espace de travail encore ouvert, dans un autre onglet par exemple, est clos chez Stripe quand l’espace de travail disparaît, si bien qu’il ne peut plus être réglé ensuite.
+    - Quand Stripe ne peut pas être joint, rien n’est supprimé : réessayez quelques minutes plus tard. Un abonnement résilié avant l’échec le reste, et réessayer ne résilie rien de plus.
+    - Fermer un compte qui supprime plusieurs espaces de travail abonnés liste chaque abonnement résilié, avec la page de facturation de son espace de travail, avant que vous ne cochiez la case.
+
+  </AccordionItem>
+</Accordion>
+
+Une fois l’espace de travail supprimé, une confirmation part à votre adresse, dans votre langue.
+
+## Dans tous vos espaces de travail [#across-workspaces]
+
+Sur la page d’accueil, la carte de chaque espace de travail dit ce qui y demande votre attention, chaque ligne étant un lien vers la page qui le montre :
+
+- les publications qui ont échoué sur un canal ces 7 derniers jours ;
+- celles à vérifier parce qu’un canal les a peut-être en ligne ;
+- celles qui attendent une approbation (et si vous pouvez la donner) ;
+- les canaux à reconnecter ou désactivés ;
+- les commentaires qui attendent une réponse dans la boîte de réception ;
+- un espace au-delà de son offre, qui ne publie rien tant qu’il n’y est pas revenu.
+
+Un espace où rien ne demande votre attention le dit une fois. Les cartes qui demandent votre attention viennent en premier.
+
+Chaque espace ne montre que ce que votre rôle y permet de lire, comme ses propres pages : pas de ligne de boîte de réception là où vous ne pouvez pas lire les commentaires, par exemple, plutôt qu’un compte à zéro. Un espace qui exige la [validation en deux étapes](#require-two-step) alors que votre compte ne l’a pas activée affiche son badge et aucun chiffre, jusqu’à ce que vous l’activiez.
+
+### Agenda de tous les espaces [#agenda]
+
+**Agenda de tous les espaces**, sur la page d’accueil quand vous appartenez à plusieurs espaces, liste ce qui part ces 14 prochains jours dans chaque espace où vous pouvez lire les publications, jour par jour dans votre fuseau horaire. Chaque ligne donne l’heure de la publication, son espace, ses plateformes et le début de son texte, avec un lien vers la publication dans son espace. Choisissez un espace pour ne voir que celui-là. C’est une liste, pas la semaine du calendrier : une publication se déplace dans le calendrier de son propre espace.
+
+### Rapport de tous les espaces [#report]
+
+**Rapport de tous les espaces**, à côté, est un tableau de ce qui est parti dans chaque espace sur les 7, 30 ou 90 derniers jours et de comment cela s’est passé, chaque chiffre à côté des jours d’avant, comme la [page des statistiques](/guides/engage/analytics#page) de cet espace le compte : publications parues, engagement, j’aime, partages, réponses, citations, impressions, clics, portée et enregistrements, et abonnés.
+
+- Un tiret marque un compte qu’aucune plateforme de l’espace ne donne.
+- Aucun changement n’est affiché par rapport à des jours d’avant que les conditions d’une plateforme ne permettent plus à Peal de garder.
+- Un espace dont votre rôle ne permet pas de lire les statistiques le dit.
+- C’est un tableau, pas un graphique : les plateformes ne comptent pas de la même façon, comparez donc un espace avec lui-même, pas avec un autre.
+- **Télécharger le CSV** l’enregistre, une ligne par espace. Un texte qu’un tableur lirait comme une formule, comme un espace nommé `=SOMME(…)`, est écrit précédé d’une apostrophe, pour que le fichier n’exécute rien à l’ouverture.
+
+`GET /api/me/overview`, `GET /api/me/agenda` (`from`, `to`, à 31 jours d’écart au plus, et `workspaceIds`, séparés par des virgules), `GET /api/me/report` (`days`, `timeZone`) et `GET /api/me/report/export` répondent la même chose, et la ligne de commande les propose sous `peal overview`, `peal agenda` et `peal report` ([Ligne de commande](/developers/cli#across-workspaces)). Ils répondent à une personne : les clés d’API, qui appartiennent à un espace, et les jetons OAuth liés à un seul espace, comme celui d’un client MCP, reçoivent 403. Aucun outil MCP ne lit dans tous les espaces : une connexion agit dans l’espace que vous lui avez choisi.
+
+## Par l’API [#api]
+
+| Point d’accès                            | Ce qu’il fait                                                        |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `DELETE /api/workspaces/{workspaceId}`   | Supprime l’espace de travail, avec son nom en `name` (propriétaires) |
+| `GET /api/me/export`                     | Répond vos données sous forme de fichier JSON                        |
+| `DELETE /api/me`                         | Supprime votre compte, avec son mot de passe en `password`           |
+| `GET /api/me/connected-apps`             | Liste vos applications connectées                                    |
+| `DELETE /api/me/connected-apps/{client}` | En révoque une                                                       |
+
+Ils ne répondent qu’à vous, connecté à l’application web avec votre propre session : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403. Vos données et la liste de vos applications connectées répondent aussi à la [ligne de commande](/developers/cli/workspace#account) (`peal account`), que vous connectez depuis votre propre terminal ; jamais à un client MCP ni à un autre client OAuth.
+
+| Point d’accès                                                   | Ce qu’il fait                                                    |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/members`                     | Liste les membres, à chaque membre                               |
+| `GET /api/workspaces/{workspaceId}/invitations`                 | Liste les invitations en attente, à qui peut inviter             |
+| `POST /api/workspaces/{workspaceId}/invitations`                | Invite un `email` avec un `role`, comme **Envoyer l’invitation** |
+| `DELETE /api/workspaces/{workspaceId}/invitations/{invitation}` | Révoque une invitation en attente                                |
+
+Ils répondent aux membres en personne, par l’application web, la ligne de commande ou un client MCP autorisé, jamais à une clé d’API ni à l’équipe qui agit à votre place. Renommer un espace de travail, changer le rôle d’un membre et retirer un membre passent par les routes du service de connexion sous `/api/auth/organization/`, et les clés d’API par `/api/workspaces/{workspaceId}/api-keys`.

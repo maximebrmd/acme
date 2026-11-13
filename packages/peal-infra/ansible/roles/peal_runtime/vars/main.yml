@@ -27,6 +27,7 @@ peal_runtime_host_settings: >-
        'PEAL_WEB_PORT': peal_ports.web,
        'PEAL_SITE_PORT': peal_ports.site,
        'PEAL_DOCS_PORT': peal_ports.docs,
+       'PEAL_DOCS_SERVER_PORT': peal_ports.docs_server,
        'PEAL_GRAFANA_PORT': peal_ports.grafana,
        'PEAL_OTLP_HTTP_PORT': peal_ports.otlp_http,
      }
@@ -40,7 +41,10 @@ peal_runtime_host_settings: >-
        } if peal_heartbeat_url else {})
      | combine(peal_settings) }}
 
-# The credentials this server needs, by name: peal_required_credentials, and
-# the heartbeat's token when Grafana sends one.
+# The credentials this server needs, by name: peal_required_credentials, the
+# heartbeat's token when Grafana sends one, and the docs' assistant's key
+# when the docs run as a server.
 peal_runtime_required_credentials: >-
-  {{ peal_required_credentials + (['PEAL_HEARTBEAT_TOKEN'] if peal_heartbeat_url else []) }}
+  {{ peal_required_credentials
+     + (['PEAL_HEARTBEAT_TOKEN'] if peal_heartbeat_url else [])
+     + (['DOCS_ANTHROPIC_API_KEY'] if peal_docs_server | bool else []) }}

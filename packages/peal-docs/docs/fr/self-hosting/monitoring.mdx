@@ -1,0 +1,57 @@
+---
+title: Surveillance
+description: Surveiller un Peal auto-hébergé de l’extérieur, et exporter ses journaux, métriques et traces par OTLP.
+sidebar:
+  icon: activity
+---
+
+Surveillez votre instance depuis une seconde machine, pour être prévenu quand les alertes du serveur lui-même sont en panne, et exportez sa télémétrie vers un collecteur OpenTelemetry.
+
+## Surveiller de l’extérieur [#uptime]
+
+Les alertes de Grafana viennent du serveur qu’elles surveillent : quand ce serveur, son réseau ou Grafana s’arrête, elles s’arrêtent aussi. Surveillez aussi l’instance depuis une autre machine, qui ne partage rien avec elle, et qui alerte par un moyen à elle.
+
+Vérifiez ce que les gens atteignent, à travers votre frontal :
+
+| Vérification                                    | Réussit quand                                                           |
+| ----------------------------------------------- | ----------------------------------------------------------------------- |
+| `GET /api/ready`                                | Il répond `204 No Content` : le serveur et sa base de données répondent |
+| Une page de l’application web, comme `/sign-in` | Elle répond `200`                                                       |
+| Le certificat                                   | Il lui reste du temps                                                   |
+
+Comptez une redirection comme un échec, pour qu’une page de connexion placée devant l’instance ne passe jamais pour elle.
+
+### Le battement de Grafana [#heartbeat]
+
+Faites montrer à Grafana que ses alertes fonctionnent. Avec ces réglages définis, une règle qui se déclenche toujours envoie une requête à `PEAL_HEARTBEAT_URL` toutes les 5 minutes environ, avec le jeton comme jeton porteur :
+
+| Réglage                  | Valeur                                                |
+| ------------------------ | ----------------------------------------------------- |
+| `PEAL_GRAFANA_HEARTBEAT` | `./config/production/grafana/alerting/heartbeat.yaml` |
+| `PEAL_HEARTBEAT_URL`     | L’adresse d’envoi du service de surveillance          |
+| `PEAL_HEARTBEAT_TOKEN`   | Le jeton du service de surveillance                   |
+
+Quand les requêtes cessent, Grafana, Prometheus ou la sortie vers Internet est en panne, et les autres alertes risquent de ne plus vous parvenir non plus : le service de surveillance le signale. Avec [Gatus](https://github.com/TwiN/gatus), faites-en un point de terminaison externe avec un intervalle de battement de 15 minutes, et donnez à `PEAL_HEARTBEAT_URL` son adresse d’envoi, `https://<gatus>/api/v1/endpoints/<group>_<name>/external?success=true`. [Variables d’environnement](/self-hosting/environment-variables#compose) liste ces réglages.
+
+Les serveurs de Peal sont surveillés ainsi : [Déploiement](https://github.com/peal-social/peal/blob/main/packages/peal-infra/DEPLOYMENT.md#uptime) décrit le serveur de disponibilité, dont l’Ansible et la configuration de Gatus sont dans `packages/peal-infra/ansible`.
+
+## Télémétrie [#telemetry]
+
+Mettez dans `OTEL_EXPORTER_OTLP_ENDPOINT` l’adresse OTLP/HTTP d’un collecteur OpenTelemetry, comme `http://otel-collector:4318`, et le serveur y exporte ses journaux, métriques et traces, en JSON. [Variables d’environnement](/self-hosting/environment-variables#telemetry) liste les autres réglages OpenTelemetry qu’il lit.
+
+### Erreurs de l’application web [#web-errors]
+
+L’application web signale ses erreurs au serveur, à `POST /api/client-errors` : ce que rien n’a intercepté dans un navigateur, les promesses rejetées sans gestionnaire, les pages d’erreur que montrent ses limites d’erreur, et les pages que son propre serveur n’a pas su rendre. Un navigateur envoie chaque erreur une fois, et dix au plus par page.
+
+Un signalement ne nomme personne. Il n’envoie aucun cookie, et contient le message et la pile de l’erreur, le chemin de la page sans sa requête ni son fragment et avec ses identifiants remplacés, la route de la page, la version et l’agent utilisateur du navigateur. Le serveur remplace toute adresse e-mail, tout identifiant, toute clé d’API, tout jeton ou toute requête de lien que le signalement cite encore, et retire les caractères de contrôle.
+
+Le serveur accepte 30 signalements par minute de chaque adresse, qu’il lit dans l’en-tête que nomme `AUTH_IP_HEADERS`, et 16 Kio au plus chacun. Il les inscrit chacun au journal au niveau erreur, avec le nom d’événement `peal.client_error` et les noms d’attributs d’OpenTelemetry (`exception.message`, `exception.stacktrace`, `url.path`, `http.route`, `user_agent.original`, ainsi que `peal.client_error.kind` et `peal.web.release`). Vous les trouvez ici :
+
+| Où         | Quoi                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Métriques  | `peal.client_errors`, par type ; ceux qu’il écarte, dans `peal.client_errors.dropped`, par raison                                 |
+| Prometheus | `peal_client_errors_total` et `peal_client_errors_dropped_total`                                                                  |
+| Loki       | `{service_name="peal-server"} \| event_name="peal.client_error"`                                                                  |
+| Grafana    | Le tableau de bord **Web app errors** de la pile de production, qui prévient quand plus de 20 signalements arrivent en 10 minutes |
+
+L’alerte sur les journaux d’erreurs du serveur lui-même les laisse de côté. Définissez `PEAL_RELEASE` sur l’application web pour nommer la version d’où viennent ses signalements : la pile de production y met `PEAL_VERSION`.

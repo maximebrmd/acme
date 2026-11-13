@@ -1,0 +1,97 @@
+---
+title: List posts
+description: "List a workspace's posts, filtered by state, channel, tag or time."
+sidebar:
+  icon: list-filter
+---
+
+## List posts [#search]
+
+`GET …/posts/search` lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` says otherwise, 100 at most. Every filter given must hold. The [MCP tool](/developers/mcp/tools#tools) `list_posts` takes the same filters, and `peal posts list` lists the same posts ([Command line](/developers/cli/posts#posts)).
+
+| Parameter    | What it keeps                                                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`     | `draft`, `awaitingApproval` (it waits for an [approval](/guides/posts/review), and keeps its time), `scheduled`, `publishing`, `finished` or `cancelled` |
+| `outcome`    | How a finished post ended: `published`, `partiallyPublished`, `unconfirmed`, `failed` or `cancelled`                                                     |
+| `channelId`  | Posts with a target on that channel                                                                                                                      |
+| `platform`   | Posts with a target on a connected channel of that platform                                                                                              |
+| `from`, `to` | Posts scheduled from `from` (included) to `to` (excluded). Either leaves out posts without a time.                                                       |
+| `createdVia` | `web`, `apiKey` or `application`                                                                                                                         |
+| `authorId`   | Posts that user created                                                                                                                                  |
+| `sort`       | `createdDesc` (the default) or `createdAsc`, by creation; `scheduledDesc` or `scheduledAsc`, by scheduled instant, which list only posts with a time     |
+| `limit`      | How many posts a page holds, from 1 to 100                                                                                                               |
+| `cursor`     | The `nextCursor` of the page before                                                                                                                      |
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=finished&outcome=failed&platform=bluesky&sort=scheduledDesc&limit=50" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const page = await peal.posts.search({
+  workspaceId,
+  status: "finished",
+  outcome: "failed",
+  platform: "bluesky",
+  sort: "scheduledDesc",
+  limit: "50",
+});
+```
+
+```json MCP (list_posts)
+{
+  "status": "finished",
+  "outcome": "failed",
+  "platform": "bluesky",
+  "sort": "scheduledDesc",
+  "limit": 50
+}
+```
+
+</CodeGroup>
+
+```json
+{
+  "items": [
+    {
+      "id": "0190f3a0-0000-7000-8000-00000000b003",
+      "status": "finished",
+      "outcome": "failed",
+      "schedule": {
+        "at": "2026-11-12T08:00:00.000Z",
+        "timeZone": "Europe/Paris"
+      },
+      "targets": [
+        {
+          "id": "0190f3a0-0000-7000-8000-00000000d003",
+          "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+          "status": "failed",
+          "permalink": null,
+          "failureReason": "tokenExpired"
+        }
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "platform": "bluesky"
+    }
+  ],
+  "nextCursor": "eyJhZnRlciI6IjAxOTBmM2EwIn0"
+}
+```
+
+- Each post comes whole, with its targets, their status, address and failure reason.
+- `channels` gives the platform of each channel the page names that is still connected, so a client names each target without another request.
+- For the next page, pass `nextCursor` as `cursor`, with the same filters and sort. It is null on the last page.
+- A cursor marks where its page ended: posts created, moved or deleted meanwhile make no page repeat a post or skip one.
+- A cursor of another sort, or one no page gave, answers 400.
+
+<Callout type="info" title="For calendars">
+  `GET …/posts?from=…&to=…` stays: it lists the posts scheduled between two
+  instants, at most 62 days apart, by scheduled instant, in one answer. Drafts
+  are not among them.
+</Callout>

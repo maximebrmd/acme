@@ -1,0 +1,289 @@
+---
+title: Présentation de l’API
+description: L’organisation de l’API HTTP de Peal, comment s’y authentifier, et où trouver son document OpenAPI et sa référence.
+sidebar:
+  icon: code-xml
+---
+
+L’application web, la ligne de commande et le point d’accès MCP reposent sur la même API HTTP : votre propre code peut faire tout ce qu’ils font. Cette page dit où vont les requêtes, comment s’authentifier, et ce que contient chaque groupe de points d’accès.
+
+[Conventions de l’API](/developers/conventions) décrit ce que tous les points d’accès ont en commun : identifiants de requête, format des erreurs et liste de leurs codes, pagination, idempotence, limites de débit, et la façon dont l’API évolue.
+
+<Callout type="note" title="L’API ne fait que grandir">
+  Des champs, des opérations, des valeurs et des erreurs s’ajoutent ; rien n’est
+  renommé, retiré ni rendu plus strict. Écrivez des clients qui ignorent ce
+  qu’ils ne connaissent pas
+  ([Versions](/developers/conventions/versioning#versioning)).
+</Callout>
+
+## Un seul contrat [#contract]
+
+L’API est définie une seule fois, dans le paquet `peal-contract`. Le serveur implémente cette définition, les clients en tirent leurs types, et la [référence de l’API](/reference) de cette documentation en est générée : les trois ne peuvent pas diverger.
+
+## URL de base [#base-url]
+
+Les requêtes vont à l’adresse où vous ouvrez Peal, et le chemin de chaque point d’accès commence par `/api` : l’application web transmet `/api/*` au serveur. Dans cette documentation, `https://api.example.com` représente cette adresse ; remplacez-la par la vôtre.
+
+```bash
+curl -i https://api.example.com/api/health
+```
+
+## Authentification [#authentication]
+
+En dehors des sondes de santé et des documents que les plateformes lisent sur Peal, chaque point d’accès demande l’un de ces moyens d’authentification :
+
+| Moyen               | Envoyé en                              | Pour                                                                                                                     | Ce qu’il peut faire                                                                                                                                                                                                                                                                        |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Clé d’API           | `Authorization: Bearer peal_…`         | Les scripts et les intégrations                                                                                          | Elle appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus : une clé sans `post:schedule` ne programme ni ne publie. Elle peut envoyer 600 requêtes par minute ([Limites de débit](/developers/conventions/rate-limits#rate-limits)). |
+| Clé partenaire      | `Authorization: Bearer peal_partner_…` | Un produit qui utilise Peal pour ses propres clients                                                                     | Elle appartient à un compte partenaire, crée et lit sous `/api/partner` les espaces de travail que ce compte possède, et agit dans chacun d’eux, et dans aucun autre, avec les permissions qu’elle a reçues ([Intégrer Peal](/developers/embedding)).                                      |
+| Jeton d’accès OAuth | `Authorization: Bearer …`              | La [ligne de commande](/developers/cli) et les [clients MCP](/developers/mcp), qui l’obtiennent quand vous les connectez | Il agit en votre nom, dans la limite des scopes que vous avez acceptés (ci-dessous).                                                                                                                                                                                                       |
+| Cookie de session   | Le cookie de l’application web         | L’application web elle-même                                                                                              | Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.                                                                                                                                                                                           |
+
+Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse.
+
+Un jeton OAuth est limité à ses scopes ([Ce que permet chaque permission](/developers/agents#scopes)) :
+
+| Scope               | Ce qu’il permet                                                                                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace:read`    | Lire.                                                                                                                                                    |
+| `workspace:write`   | Ce que votre rôle permet, sauf ce qui fait partir des publications.                                                                                      |
+| `workspace:publish` | Programmer et publier. Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui.              |
+| `workspace:ads`     | Rien seul : avec `workspace:write` il gère les comptes publicitaires, et avec `workspace:publish` il dépense en [publicités](/guides/engage/ads#access). |
+
+### Savoir qui vous êtes [#whoami]
+
+Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste vos espaces de travail, avec votre rôle et vos permissions dans chacun. Une clé d’API appartient à un espace de travail, pas à une personne, et y reçoit 403.
+
+Tout identifiant, une clé ou une clé partenaire comprise, demande à `GET /api/credential` qui il est et ce qu’il peut faire : le nom, l’espace de travail, les permissions et l’expiration d’une clé d’API, le partenaire, les portées et les permissions d’une clé partenaire, jamais la clé elle-même ([SDK](/developers/sdks#credential)).
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/credential \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({ token: process.env.PEAL_API_KEY });
+
+const credential = await peal.credential.get();
+```
+
+</CodeGroup>
+
+## Espaces de travail [#workspaces]
+
+Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `usage`, `webhooks`, `activity` et `api-keys`. `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/guides/workspace#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
+
+| Code | Signification                                                                                |
+| ---- | -------------------------------------------------------------------------------------------- |
+| 401  | Pas d’identifiants, ou des identifiants qui ne fonctionnent plus.                            |
+| 403  | Les identifiants fonctionnent, mais ne permettent pas cette requête, ou le compte est banni. |
+| 404  | Aucune ressource de ce nom, ou un espace de travail auquel l’appelant n’appartient pas.      |
+
+Les requêtes qu’un script utilise le plus :
+
+| Requête                                           | Ce qu’elle fait                                                                                                                 | Montrée dans                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `POST /api/workspaces/{workspaceId}/posts/send`   | Crée une publication et l’envoie en une seule requête, maintenant ou à un instant                                               | [Publier depuis un agent IA](/developers/agents#api) |
+| `POST /api/workspaces/{workspaceId}/media/import` | Fait récupérer au serveur une image ou une vidéo à une adresse HTTPS publique, pour l’ajouter aux médias de l’espace de travail | [Publier depuis un agent IA](/developers/agents#api) |
+| `POST …/posts/validate`                           | Vérifie une publication sans la créer                                                                                           | [Publier par l’API](/developers/posting)             |
+| `send?wait=30`, `GET …/posts/{postId}/outcome`    | Attend le résultat d’une publication qui part maintenant                                                                        | [Publier par l’API](/developers/posting)             |
+| `POST …/posts/bulk`                               | Envoie jusqu’à 50 publications en une requête                                                                                   | [Publier par l’API](/developers/posting)             |
+| `POST …/posts/import`                             | Importe des publications depuis un fichier CSV                                                                                  | [Publier par l’API](/developers/posting)             |
+| `GET …/posts/search`                              | Liste les publications avec des filtres                                                                                         | [Publier par l’API](/developers/posting)             |
+
+Envoyée avec un en-tête `Idempotency-Key`, une requête `send` peut être renvoyée sans risque : dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, et un autre corps répond 409 `IdempotencyKeyReused`. Une publication créée en un seul appel dont le contenu part déjà sur l’un de ses canaux à moins de 23 heures de son heure répond 409 `DuplicatePost`, sauf si elle dit `allowDuplicate: true`.
+
+### Erreurs et limites de l’abonnement [#workspace-errors]
+
+Les erreurs répondent par un corps JSON d’un seul format : un `code` stable, comme `post_content_invalid` ou `connect_failed`, le même nom en `_tag` (`PostContentInvalid`) pour les clients générés depuis le contrat, un `message` pour les personnes, le `requestId`, et les détails que liste la référence. [Erreurs](/developers/conventions/errors#errors) le décrit, et [Codes d’erreur](/developers/conventions/errors#error-codes) liste tous les codes. Certaines réponses viennent d’une seule fonctionnalité :
+
+| Réponse                | Quand                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 429                    | Les points d’accès de l’assistant de rédaction, une fois que l’espace de travail a utilisé ses demandes du jour.                                                                                                                                                                                                                                                                                                   |
+| 503                    | Les points d’accès de l’assistant de rédaction, quand l’instance n’a pas de fournisseur d’IA.                                                                                                                                                                                                                                                                                                                      |
+| 502                    | Les points d’accès de l’assistant de rédaction, quand le fournisseur n’a donné aucune réponse que l’assistant puisse utiliser.                                                                                                                                                                                                                                                                                     |
+| 402 `PlanLimitReached` | Sur une instance qui facture, connecter un canal, programmer une publication ou commencer un envoi pour lesquels l’abonnement de l’espace de travail n’a plus de place. L’erreur nomme la limite (`limit` : `channels`, `members`, `scheduledPosts`, `assistantRequests` ou `mediaStorage`, en octets) et ce que l’abonnement permet (`allowed`) ([Abonnements et facturation](/guides/workspace/billing#limits)). |
+
+`GET /api/workspaces/:workspaceId/billing` montre l’abonnement, ce qu’il permet et ce que l’espace de travail en utilise, et `GET /api/workspaces/:workspaceId/usage` ce qu’il a utilisé jour par jour, en jours UTC ([Utilisation](/guides/workspace/billing#usage)).
+
+## Comptes partenaires [#partner]
+
+Un compte partenaire possède un espace de travail pour chaque client d’un produit construit sur Peal. [Intégrer Peal](/developers/embedding) déroule tout le parcours.
+
+- `/api/partner` ne répond qu’à ses clés partenaires : `GET /api/partner` lit le compte et ce qu’il détient, et `/api/partner/workspaces` crée, liste, retrouve par `externalId`, modifie et supprime ses espaces de travail.
+- Une clé partenaire appelle ensuite `/api/workspaces/{workspaceId}/…` pour un espace que son compte possède, et reçoit 404 pour tout autre.
+- `POST /api/workspaces/{workspaceId}/connect-links` répond un lien hébergé, à usage unique, où le propriétaire d’un compte social le connecte sans compte Peal.
+
+## Ce qu’un canal accepte [#capabilities]
+
+Chaque plateforme a ses règles : la longueur d’une publication et la façon de la compter, les images et les vidéos qu’elle accepte, et des options qui lui sont propres, comme le titre d’une vidéo YouTube. Peal répond les règles qu’il vérifie quand une publication est programmée : inutile de les apprendre dans la documentation de chaque plateforme.
+
+- `GET /api/workspaces/{workspaceId}/platforms/capabilities` décrit chaque plateforme, que l’espace de travail y ait un canal ou non.
+- `GET /api/workspaces/{workspaceId}/channels/{channelId}/capabilities` décrit un canal : ce qu’accepte sa plateforme, et sous `account` ce que le compte lui-même restreint, lu sur la plateforme à ce moment-là. Un compte TikTok n’offre que certaines audiences, peut avoir désactivé les commentaires, les Duos ou les Collages, et a une durée de vidéo maximale. Quand la plateforme ne peut pas être interrogée, `account` vaut `unread` avec la raison, et ce qu’accepte la plateforme est répondu seul.
+
+Les deux demandent `channel:read` : une clé d’API ou une application autorisée à lire seulement peut donc les appeler.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/channels/$CHANNEL_ID/capabilities \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const capabilities = await peal.capabilities.channel({
+  workspaceId,
+  channelId,
+});
+```
+
+```bash CLI
+peal channels capabilities <channel-id> --json
+```
+
+</CodeGroup>
+
+Une description contient :
+
+| Champ       | Ce qu’il dit                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`   | La version de la description, 1 aujourd’hui. Elle augmente quand un champ change de sens ou disparaît ; les champs, plateformes, recherches et restrictions s’ajoutent sous la même version : ignorez ce que vous ne connaissez pas.                                                                                                                                                   |
+| `text`      | Chaque limite du texte (`limits` : toutes s’appliquent, chaque `maximum` compté dans son unité `unit`, la dernière étant celle de Peal), le nombre maximal de hashtags, de mentions et de liens différents, et les caractères refusés. `peal-contract/post-text` compte chaque unité comme le serveur.                                                                                 |
+| `media`     | Si une publication a besoin d’une image ou d’une vidéo, combien elle en accepte, si images et vidéos vont ensemble, le texte alternatif, et pour chaque type de fichier sa taille, sa durée, ses pixels, ses côtés et son rapport largeur sur hauteur. `formats` vaut null quand Peal ne connaît encore aucune de ces règles.                                                          |
+| `options`   | Les champs que prennent les `options` d’un brouillon sur cette plateforme : le `type` de chacun, les valeurs (`values`) d’un choix, s’il est requis pour programmer (`required`), sa longueur maximale (`maxLength`), ce que fait la plateforme quand il est omis (`ifLeftOut`), et la recherche (`lookup`) qui répond ses valeurs ; puis `constraints`, les règles entre deux champs. |
+| `lookups`   | Ce que la plateforme dit d’un compte, pour les options qui s’y rapportent ([Recherches](#lookups)).                                                                                                                                                                                                                                                                                    |
+| `analytics` | Si Peal lit les compteurs de chaque publication parue sur cette plateforme (`perPost`), lesquels (`postCounts` : j’aime, partages, réponses, et citations, impressions, clics, portée et enregistrements quand la plateforme les donne), et quels chiffres du compte il relève jour par jour (`accountNumbers` : abonnés, abonnements, publications, vues, portée).                    |
+
+Une limite qui vaut null est une limite que Peal ne vérifie pas : la plateforme peut l’appliquer quand même, et refuser la publication à son départ.
+
+Dans `analytics`, un chiffre absent est un chiffre que la plateforme ne fournit pas : ce n’est jamais zéro. La description d’une plateforme le dit dès que l’un de ses canaux a des compteurs, et liste toutes ses recherches ; celle d’un canal le dit pour ce canal. Sur LinkedIn, une page d’entreprise a des compteurs et la recherche de pages à mentionner, un profil n’a ni l’un ni l’autre ; sur X, seulement si l’exploitant du serveur a activé ses lectures.
+
+### Recherches [#lookups]
+
+Certaines options prennent des valeurs que seul le compte connaît. Une recherche (`lookup`) les demande à la plateforme, avec le jeton du canal :
+
+- `GET /api/workspaces/{workspaceId}/channels/{channelId}/lookups` liste les recherches d’un canal, avec l’entrée que prend chacune et les options qu’elle renseigne.
+- `POST /api/workspaces/{workspaceId}/channels/{channelId}/lookups/{name}` en lance une, et répond une page d’éléments (`items`) marquée du nom de la recherche (`_tag`). Quand `nextCursor` n’est pas null, renvoyez-le comme `cursor` pour la page suivante.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/channels/$CHANNEL_ID/lookups/youtubeVideoCategories \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "regionCode": "FR" }'
+```
+
+```ts TypeScript
+const categories = await peal.lookups.run({
+  workspaceId,
+  channelId,
+  name: "youtubeVideoCategories",
+  regionCode: "FR",
+});
+```
+
+```bash CLI
+peal channels lookup <channel-id> youtubeVideoCategories --region FR
+```
+
+</CodeGroup>
+
+| Recherche                | Plateforme                             | Entrée                                                                | Éléments                                                                                                               |
+| ------------------------ | -------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `youtubeVideoCategories` | YouTube                                | `regionCode` (deux lettres capitales, `US` si omis), `language`       | Les catégories où une vidéo peut être classée dans ce pays : `id`, que prend l’option `categoryId`, et `title`         |
+| `youtubePlaylists`       | YouTube                                | `limit` (25 si omis, 50 au plus), `cursor`                            | Les playlists de la chaîne : `id`, `title` et `privacy`                                                                |
+| `tiktokCreator`          | TikTok                                 | aucune                                                                | Un seul élément : les réglages de publication du créateur, dont l’option `privacyLevel` prend l’un des `privacyLevels` |
+| `linkedinOrganizations`  | LinkedIn (canaux de page d’entreprise) | `vanityName` (obligatoire), le nom figurant dans l’adresse de la page | La page de ce nom, s’il y en a une : `name` et `urn`, que prend une entrée de l’option `mentions`, et `vanityName`     |
+| `pinterestBoards`        | Pinterest                              | `limit` (25 si omis, 50 au plus), `cursor`                            | Les tableaux du compte : `id`, que prend l’option `boardId`, `name` et `privacy`                                       |
+| `pinterestBoardSections` | Pinterest                              | `boardId` (obligatoire), `limit`, `cursor`                            | Les sections de ce tableau : `id`, que prend l’option `boardSectionId`, et `name`                                      |
+
+Une recherche ne change rien, et demande `channel:read`. Chacune est une requête à la plateforme, comptée dans ce qu’elle accorde à cette instance : lancez-en une quand une publication en a besoin plutôt qu’à intervalles réguliers. Une page peut arriver vide et nommer pourtant la suivante.
+
+<Accordion>
+  <AccordionItem title="Comment Peal espace les recherches">
+    - Les recherches d’un canal atteignent sa plateforme 30 fois par minute au
+    plus, après quoi une recherche répond 429 `PlatformRateLimited` avec
+    `retryAfterSeconds`. - La même recherche, avec la même entrée sur le même
+    canal, reçoit pendant une minute sa dernière réponse, sans que la plateforme
+    soit interrogée de nouveau. - Les recherches d’une instance atteignent
+    chaque plateforme un nombre fixé de fois par jour (UTC) pour tous ses
+    espaces de travail réunis, afin que les recherches ne dépensent jamais ce
+    dont la publication a besoin. Au-delà, une recherche répond 429
+    `PlatformRateLimited` avec `retryAfterSeconds` jusqu’au lendemain. - Ce
+    qu’une plateforme dit d’elle-même plutôt que d’un compte, comme les
+    catégories de vidéos de YouTube pour une région et une langue, est gardé un
+    jour.
+  </AccordionItem>
+  <AccordionItem title="Les erreurs d’une recherche">
+    | Statut | Erreur | Quand | | ------ | --------------------- |
+    ---------------------------------------------------------------------------------------------------------------------
+    | | 404 | `LookupNotFound` | Un nom que le canal n’a pas, parce que sa
+    plateforme ou son type de canal LinkedIn ne l’a pas. | | 422 |
+    `LookupInputInvalid` | Une entrée que la recherche ne prend pas, ou à
+    laquelle manque un champ dont elle a besoin. | | 409 | `ChannelCannotPost` |
+    Le canal est désactivé ou à reconnecter. | | 502 | `PlatformUnreachable` |
+    La plateforme ne répond pas. | | 429 | `PlatformRateLimited` | La plateforme
+    demande de ralentir, avec `retryAfterSeconds` quand elle a dit combien de
+    temps ; ou l’espacement de Peal, ci-dessus. |
+  </AccordionItem>
+</Accordion>
+
+## Webhooks [#webhooks]
+
+Peal peut appeler votre serveur quand il se passe quelque chose dans un espace de travail, ce qui vous évite d’interroger l’API sans cesse : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Les membres qui peuvent gérer les webhooks (propriétaires et administrateurs), et les clés d’API qui ont reçu cette permission, ajoutent des points de terminaison sous `/api/workspaces/{workspaceId}/webhooks`. [Webhooks](/developers/webhooks) liste chaque événement avec son schéma, et dit comment les livraisons sont signées, retentées et vérifiées.
+
+## Le journal d’activité [#activity]
+
+`GET /api/workspaces/{workspaceId}/activity` liste les requêtes qui ont demandé à changer quelque chose dans l’espace de travail : qui a demandé, par quelle clé ou quelle application, quelle opération, et ce qui a été répondu. Il demande `activity:read`, que portent les propriétaires ([Le journal d’activité](/guides/workspace#activity)).
+
+## Votre compte [#me]
+
+Ce qui vous appartient, plutôt qu’à un espace de travail, se trouve sous `/api/me` :
+
+| Requête                            | Ce qu’elle contient                                                  |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `GET /api/me`                      | Qui vous êtes                                                        |
+| `/api/me/notices`                  | Vos [notifications](/guides/workspace/notifications#api)             |
+| `/api/me/notification-preferences` | Les notifications qui partent par e-mail                             |
+| `GET /api/me/overview`             | Ce qui demande votre attention dans chacun de vos espaces de travail |
+| `GET /api/me/agenda`               | Ce qui part dans l’ensemble                                          |
+| `GET /api/me/report`               | Comment cela s’est passé                                             |
+
+Les trois dernières répondent dans la mesure où votre rôle dans chaque espace de travail permet de le lire ([Dans tous vos espaces de travail](/guides/workspace#across-workspaces)). Ces points d’accès répondent 403 aux clés d’API, qui appartiennent à un espace de travail, et aux jetons OAuth liés à un seul espace de travail, comme celui d’un client MCP.
+
+Une copie de vos données (`GET /api/me/export`), la suppression de votre compte (`DELETE /api/me`) et vos applications connectées (`/api/me/connected-apps`) ne répondent qu’à votre propre session dans l’application web : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403 ([Espaces de travail et compte](/guides/workspace#api)).
+
+## Document OpenAPI [#openapi]
+
+Le document OpenAPI 3.1 de l’API est public à `/api/openapi.json`, à l’adresse où vous ouvrez Peal, comme `https://api.example.com/api/openapi.json`. Servez-vous-en pour générer un client dans un autre langage ou pour importer l’API dans un outil HTTP. Le serveur le répond aussi à `/openapi.json` sur sa propre adresse, comme `http://localhost:3000/openapi.json` pour un serveur lancé depuis les sources, ce que l’application web ne transmet pas.
+
+Le catalogue d’API, à `/.well-known/api-catalog` (RFC 9727), indique aux programmes ce document, le [point d’accès MCP](/developers/mcp) et l’endroit où obtenir de quoi s’authentifier auprès de chacun ([Découverte](/developers/conventions/discovery#discovery)). `GET /api/changelog` liste ce que chaque version de l’API a ajouté ([Journal des modifications](/developers/conventions/versioning#changelog)).
+
+## Référence [#reference]
+
+La [référence de l’API](/reference) propose une page par point d’accès, regroupées par tag, avec ses paramètres, les schémas de requête et de réponse, et des exemples de code. Les [SDK](/developers/sdks) les appellent depuis huit langages.
+
+<CardGroup cols={2}>
+  <Card
+    title="Conventions de l’API"
+    href="/developers/conventions"
+    icon="book-open"
+  >
+    Identifiants de requête, erreurs, pagination, idempotence et limites de
+    débit.
+  </Card>
+  <Card title="Publier par l’API" href="/developers/posting" icon="square-pen">
+    Vérifier une publication, l’envoyer et attendre son résultat.
+  </Card>
+  <Card title="SDK" href="/developers/sdks" icon="package">
+    Des clients en huit langages, générés depuis le contrat.
+  </Card>
+  <Card title="Référence de l’API" href="/reference" icon="code-xml">
+    Chaque point d’accès, avec ses paramètres et ses réponses.
+  </Card>
+</CardGroup>

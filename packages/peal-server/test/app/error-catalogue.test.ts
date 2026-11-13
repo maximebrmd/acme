@@ -171,32 +171,32 @@ describe("the error catalogue", () => {
   // The docs' "API conventions" page lists every code, in each language,
   // in its section #error-codes: a row of the table starts with the code,
   // in backticks.
-  it.each(["docs/api-conventions.mdx", "docs/fr/api-conventions.mdx"])(
-    "is listed whole in %s",
-    (page) => {
-      const text = readFileSync(
-        new URL(`../../../peal-docs/${page}`, import.meta.url),
-        "utf-8"
-      );
+  it.each([
+    "docs/developers/conventions/errors.mdx",
+    "docs/fr/developers/conventions/errors.mdx",
+  ])("is listed whole in %s", (page) => {
+    const text = readFileSync(
+      new URL(`../../../peal-docs/${page}`, import.meta.url),
+      "utf-8"
+    );
 
-      // The section pinned as #error-codes, up to the next one.
-      const [, section = ""] =
-        /\[#error-codes\]\n(?<rows>[\s\S]*?)(?:\n## |$)/u.exec(text) ?? [];
+    // The section pinned as #error-codes, up to the next one.
+    const [, section = ""] =
+      /\[#error-codes\]\n(?<rows>[\s\S]*?)(?:\n## |$)/u.exec(text) ?? [];
 
-      const listed = new Set(
-        [...section.matchAll(/^\| `(?<code>[a-z\d_]+)`/gmu)].map(
-          (row) => row.groups?.["code"] ?? ""
-        )
-      );
+    const listed = new Set(
+      [...section.matchAll(/^\| `(?<code>[a-z\d_]+)`/gmu)].map(
+        (row) => row.groups?.["code"] ?? ""
+      )
+    );
 
-      expect(
-        catalogue.map(({ code }) => code).filter((code) => !listed.has(code))
-      ).toStrictEqual([]);
+    expect(
+      catalogue.map(({ code }) => code).filter((code) => !listed.has(code))
+    ).toStrictEqual([]);
 
-      // And nothing the API does not answer.
-      const known = new Set(catalogue.map(({ code }) => code));
+    // And nothing the API does not answer.
+    const known = new Set(catalogue.map(({ code }) => code));
 
-      expect([...listed].filter((code) => !known.has(code))).toStrictEqual([]);
-    }
-  );
+    expect([...listed].filter((code) => !known.has(code))).toStrictEqual([]);
+  });
 });

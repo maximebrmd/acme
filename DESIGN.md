@@ -1,8 +1,12 @@
 # Peal design
 
 How Peal looks and is laid out: the web app first, and the site and the docs
-after it. `packages/peal-ui/src/styles/globals.css` carries these values as
-tokens; change both together. Contributors and agents read this before
+after it. `packages/peal-ui/src/styles/tokens.css` carries these values as
+plain CSS variables. The web app reads them through peal-ui's
+`globals.css` and the docs through `packages/peal-docs/theme.css`; the
+site's redesign is to read them the same way. Change this file and the
+tokens together: `nx run peal-ui:test` fails when the colour tables or the
+radius here and the tokens differ. Contributors and agents read this before
 changing a screen.
 
 ## Light only
@@ -159,6 +163,28 @@ their workspaces under it.
   right, in cards grouped under a heading, with what cannot be undone last.
 - **The composer** writes one text with a tab per channel, counts each
   platform's limit, and shows a preview beside it.
+
+## Docs
+
+The docs are Blume, dressed in the same tokens: `theme.css` maps Blume's
+`--blume-*` variables onto peal-ui's, so the page, borders, muted text, code
+blocks and radius are the app's, and no colour is written there twice.
+
+- **Tabs**, across the top: Get started, Guides (running a workspace, the
+  app's Studio), Platforms, Developers (building on the API, the app's
+  Console), the API reference and Self-hosting. Each page belongs to one.
+- **Sidebar groups** take the names and the order of the app's own
+  navigation, so a page and the screen it explains are called the same:
+  Guides has Channels, Posts, Media, Engage and Settings as labelled groups
+  (Blume's `flat` display). Elsewhere a section with pages of its own drills
+  down, as the app's sidebar does (Blume's `page` display).
+- **Figures** a platform or a plan sets (text limits, prices) come from the
+  contract as Blume variables, never typed into a page.
+- **One page, one task**, for one reader. Where the app, the API, the
+  command line and MCP do the same thing, one block of tabbed samples and a
+  link to the Developers page replace a section for each.
+- **Platforms** are shown by their own marks, from the same files as the
+  app's, never redrawn.
 
 ## Writing
 

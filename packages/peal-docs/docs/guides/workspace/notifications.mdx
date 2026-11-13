@@ -1,0 +1,141 @@
+---
+title: Notifications
+description: What Peal tells you about posts and channels, who hears about what, the bell and the notifications page, and which notifications also come by email.
+sidebar:
+  icon: bell
+---
+
+Peal tells the members it concerns when something happens to a post or a channel. Every notification appears in Peal, under the bell in the header, and some also come by email.
+
+## What you hear about [#events]
+
+### Posts [#post-events]
+
+| Notification                | When                                                                                                                                                                                                                                                                                                                                                                                                   | Who hears it                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| A post went out             | The post is live on one of its channels.                                                                                                                                                                                                                                                                                                                                                               | The post's author, and members who follow every post, below                                                                           |
+| A post did not go out       | The post failed on one of its channels, for [the reason below](#failure-reasons).                                                                                                                                                                                                                                                                                                                      | The same                                                                                                                              |
+| A post may have gone out    | Peal could not tell whether a channel published it. Check the platform before you post it again.                                                                                                                                                                                                                                                                                                       | The same                                                                                                                              |
+| A post stopped repeating    | A [rule that repeats a post](/guides/posts/queues#recycling) ended for a reason someone can put right or must know: its post was deleted, whoever started it can no longer schedule, none of its channels is left, a platform refuses what the next post would say, the month has no room in the plan, or its queue was deleted or has no free slot. Told again each time it ends after being resumed. | Whoever started the rule, and members who follow every post; when they left, or a key started it, every member who may schedule posts |
+| A feed stopped making posts | A [feed](/guides/posts/queues#feeds) stopped: its site says it is gone, it could not be read or gave something that is not a feed for seven days, whoever added it can no longer make posts there, or its queue was deleted. Told again each time it stops after being resumed.                                                                                                                        | Whoever added the feed, and members who follow every post; when they left, or a key added it, every member who may schedule posts     |
+
+A post's notifications go to:
+
+- its author, the member who created it, whatever their role;
+- the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email).
+
+A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it, and their posts' notifications go to every member who may schedule posts, as for a post without an author.
+
+Each notification about a post names one channel, so a post on three channels can bring three, and a post sent again brings new ones. A cancelled post brings none. Once someone says whether a post to check went out, or sends it again, its notifications are marked read for everyone, and their emails not sent yet are dropped.
+
+### Review [#review-events]
+
+| Notification                     | When                                                                                                 | Who hears it                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| A post waits for an approval     | Someone asked for a post to go out, in a workspace that asks for [approvals](/guides/posts/review).  | Members who may approve posts: owners, admins and editors |
+| A post was approved              | Someone approved it, in Peal or through a review link. Approved after its time, it is a draft again. | Its author, whoever asked, and whoever commented on it    |
+| Changes were requested on a post | It is a draft again, with a comment that says what to change.                                        | The same                                                  |
+| A post was commented on          | A member, or a reviewer through a link, commented on it.                                             | The same                                                  |
+
+### Channels and webhooks [#channel-events]
+
+| Notification                       | When                                                                                                                                                                                                                                                                        | Who hears it                                        |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| A channel must be reconnected      | The platform no longer accepts Peal's access: nothing goes out on the channel until someone reconnects it.                                                                                                                                                                  | Members who may connect channels: owners and admins |
+| A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                                                                                                                                                                                        | The same                                            |
+| A webhook endpoint was turned off  | Every delivery to a [webhook](/developers/webhooks/delivery#delivery) endpoint failed for 5 days, or its receiver answered `410 Gone`: Peal sends it nothing more until someone turns it back on.                                                                           | Members who may manage webhooks: owners and admins  |
+| Webhook deliveries are failing     | A delivery to a [webhook](/developers/webhooks/delivery#delivery) endpoint that is still on failed for good, every attempt used up: send it again from the [delivery log](/developers/webhooks/delivery#log) once the receiver works. Once a day at most for each endpoint. | Members who may manage webhooks: owners and admins  |
+
+### Ads and comments [#other-events]
+
+| Notification                                                       | When                                                                                                                                                                                                                  | Who hears it                                                                              |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| A boost started, ended, used its whole budget or could not be made | What happened to a [boost](/guides/engage/boosts#notices) of a published post, with its budget and its end.                                                                                                           | The workspace's owners                                                                    |
+| A boost needs checking                                             | Peal told the ad network to run a boost and could not confirm that it runs: it may be spending. Check it, and stop it if it must not run.                                                                             | The same                                                                                  |
+| An ad network sign-in must be renewed                              | The ad network refused the sign-in that connects ad accounts: nothing is read of them, and no boost is made there, until its person signs in again.                                                                   | Members who may manage ad accounts: owners and admins                                     |
+| New comments on a published post                                   | People commented under a post where it went live, on a platform Peal reads comments on ([Inbox](/guides/engage/inbox)). One notification a post and a day at most, with how many comments were new, never their text. | The post's author, and the members who answer comments and chose to hear about every post |
+
+### Why a post did not go out [#failure-reasons]
+
+| Reason                                                                         | What to do                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The platform refused its text or its format                                    | Check the text against the platform's rules, then schedule it in a new post.                                                                                                                                                                                                    |
+| Its channel was disconnected from the workspace before it went out             | [Connect](/guides/channels) the account again, then schedule it in a new post.                                                                                                                                                                                                  |
+| Its channel was turned off before it went out                                  | [Turn the channel back on](/guides/channels#turn-off), then schedule it in a new post.                                                                                                                                                                                          |
+| One of its images or videos was deleted from the media library                 | Schedule it in a new post, with media from the library.                                                                                                                                                                                                                         |
+| The platform refused one of its images or videos                               | Check the media against [what the platform accepts](/guides/media#platforms).                                                                                                                                                                                                   |
+| Peal was unavailable at the scheduled time, and the post came too late to send | The server was down past the post's time. [Post it again](/guides/posts/schedule#follow-up), or schedule it in a new post.                                                                                                                                                      |
+| Someone checked the platform and did not find it                               | [Post it again](/guides/posts/schedule#follow-up).                                                                                                                                                                                                                              |
+| The platform kept turning requests away, and Peal stopped trying               | The platform limited how often Peal posts. [Post it again](/guides/posts/schedule#follow-up) later.                                                                                                                                                                             |
+| The platform's daily allowance of uploads stayed used up                       | YouTube's daily uploads, for the Peal server or for the channel, ran out, and stayed so for a day after the post's time. [Post it again](/guides/posts/schedule#follow-up) after midnight Pacific Time.                                                                         |
+| The account's authorization stopped working                                    | [Reconnect](/guides/channels#reconnect) the channel, then [post it again](/guides/posts/schedule#follow-up).                                                                                                                                                                    |
+| The platform could not be reached                                              | Peal tried for over two hours. [Post it again](/guides/posts/schedule#follow-up) once the platform answers.                                                                                                                                                                     |
+| The platform takes only private posts from this server's app                   | TikTok has not audited the server's app yet: make the account private and the post visible to **Only me**, or ask the server's operator. See [TikTok](/platforms/tiktok#connect).                                                                                               |
+| The platform refused this server's app until its operator pays for it          | Your post is not at fault: X stopped taking posts from the server's app, whose credits ran out or reached their spending cap, and Peal kept trying for a day after the post's time. Once the server's operator has fixed it, [post it again](/guides/posts/schedule#follow-up). |
+
+## The bell and the notifications page [#inbox]
+
+The bell in the header shows how many notifications you have not read, across all your workspaces. It checks every 30 seconds while the tab is open, and as soon as you come back to it. Screen readers hear when new ones arrive.
+
+Choose the bell to open **Notifications**, newest first. Each one says what happened, in which workspace and on which channel, and links to the post or to the workspace's channels.
+
+- Choose **Mark as read** on one, or **Mark all as read**.
+- Choose **Show more** for older ones.
+- Read notifications stay in the list.
+- Times are in your browser's time zone.
+- You see the notifications of workspaces you have left too, under "a workspace you left".
+
+## By email [#email]
+
+From **Notifications**, choose **Email preferences**. There you pick:
+
+- which notifications also reach you by email;
+- under **Tell me about**, whether you hear about every post of your workspaces, not only the ones you wrote (off until you turn it on).
+
+Each choice is saved as you change it, and applies in all your workspaces.
+
+| Email me when                                                                           | Until you change it |
+| --------------------------------------------------------------------------------------- | ------------------- |
+| A post did not go out                                                                   | On                  |
+| A post may have gone out, and needs checking on the platform                            | On                  |
+| A post stops repeating                                                                  | On                  |
+| A feed stops making posts                                                               | On                  |
+| A post waits for my approval, or a post I follow is commented on, approved or sent back | On                  |
+| A channel must be reconnected, now or soon                                              | On                  |
+| Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint    | On                  |
+| A post went out                                                                         | Off                 |
+| A published post received new comments                                                  | Off                 |
+| A week starts: what went out last week and what is planned, each Monday                 | Off                 |
+
+Some emails are always sent:
+
+- a webhook endpoint turned off, to the members who manage webhooks: the systems that listened on it hear nothing more until someone acts;
+- what happens to a boost, and an ad network sign-in to renew: an owner answers for what is spent.
+
+Emails are written in your language. When the mail server turns an email away for now, Peal tries again for about five hours. An email waiting to go out is dropped if you leave the workspace, or turn that email off, in the meantime.
+
+## The weekly digest [#digest]
+
+Turn on **A week starts** in your email preferences, and each Monday morning Peal emails you the week that ended at midnight UTC and the one it begins, for every workspace whose posts you may read:
+
+- how many posts went out, failed or need checking, and how many are scheduled or wait for an approval;
+- the first few of each week, by the start of their text;
+- where you may read analytics, the engagement of the week's posts.
+
+Days and times are in UTC. A workspace with nothing in those two weeks is left out, and with nothing anywhere no email is sent. The digest holds the workspace's own posts only, never a comment or who wrote one.
+
+Each digest ends with a link to your notification preferences, where you turn it off. It goes once a week: an email the mail server turns away for good is not sent again until the next Monday.
+
+## From the API [#api]
+
+Your notifications and preferences belong to you, not to a workspace, so they live under `/api/me`:
+
+| Endpoint                                           | What it does                                                                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/me/notices`                              | Lists them, newest first, 20 a page                                                                                                            |
+| `GET /api/me/notices/unread`                       | Counts the unread ones                                                                                                                         |
+| `POST /api/me/notices/read`                        | Marks up to 100 of them read                                                                                                                   |
+| `POST /api/me/notices/read-all`                    | Marks them all                                                                                                                                 |
+| `GET` and `PATCH /api/me/notification-preferences` | Read and change which ones are emailed, `email.weeklyDigest`, the [weekly digest](#digest), and `everyPost`, whether you hear about every post |
+
+Each notification is data, such as a post's id, a channel and a reason, for the client to write in its reader's language. These endpoints take a session or an OAuth token that is not bound to one workspace, such as the command line's. API keys, which belong to a workspace, and MCP clients, which act in one workspace, get 403. The [API reference](/reference) lists their parameters.

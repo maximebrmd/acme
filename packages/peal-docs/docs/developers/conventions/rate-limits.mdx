@@ -1,0 +1,78 @@
+---
+title: Rate limits
+description: How many requests a key and an application may send, and what the API answers past that.
+sidebar:
+  icon: gauge
+---
+
+## Rate limits [#rate-limits]
+
+A credential may send 600 requests a minute:
+
+| Credential                             | Counted                                                              |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| An API key                             | On its own                                                           |
+| A [partner key](/developers/embedding) | Across every workspace it acts in                                    |
+| An application                         | For each member it acts for, whichever of its access tokens it sends |
+| A session of the web app               | Not counted                                                          |
+
+- The count is shared between the API and the [MCP endpoint](/developers/mcp).
+- It is kept in fixed windows of one minute that start on the minute.
+- On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets another number ([Environment variables](/self-hosting/environment-variables#core)).
+
+Every answer to a counted credential says where it stands, in the headers of the IETF draft "RateLimit header fields for HTTP":
+
+| Header             | Example                | What it says                                                                          |
+| ------------------ | ---------------------- | ------------------------------------------------------------------------------------- |
+| `RateLimit-Policy` | `"default";q=600;w=60` | The policy: `q` requests every `w` seconds.                                           |
+| `RateLimit`        | `"default";r=412;t=23` | What is left: `r` requests, for `t` more seconds, after which the count starts again. |
+| `Retry-After`      | `23`                   | On a 429 only: how many seconds to wait.                                              |
+
+<Callout type="info">
+  A 429 `platform_rate_limited` is another thing: a platform asked Peal to slow
+  down, as a [lookup](/developers) can find, and this count is untouched. The
+  hosted pages of connect links and review links, which take no key, have limits
+  of their own by address.
+</Callout>
+
+### Past the limit [#too-many-requests]
+
+Past the limit, the request answers 429 `too_many_requests`, and nothing was done:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=0;t=17
+Retry-After: 17
+X-Request-Id: 019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a
+```
+
+```json
+{
+  "_tag": "TooManyRequests",
+  "code": "too_many_requests",
+  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.",
+  "requestId": "019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a",
+  "limit": 600,
+  "windowSeconds": 60,
+  "retryAfterSeconds": 17
+}
+```
+
+Wait `retryAfterSeconds`, then send the request again. A client that reads `RateLimit` slows down before it is refused.
+
+- The MCP endpoint answers the same status and headers, with a JSON-RPC error.
+- When the server cannot keep the count, it lets the request through.
+
+### Limits of one feature [#feature-limits]
+
+Some features have a limit of their own, which this one does not replace:
+
+| Limit                                                  | Error                      | See                                                            |
+| ------------------------------------------------------ | -------------------------- | -------------------------------------------------------------- |
+| The writing assistant's requests per workspace and day | `assistant_quota_exceeded` | [Ask the writing assistant](/guides/posts/assistant#assistant) |
+| Imports running at once                                | `media_import_busy`        | [Media](/guides/media)                                         |
+| Test events and resends of webhooks per hour           | `too_many_webhook_sends`   | [The delivery log](/developers/webhooks/delivery#log)          |
+| Pending invitations of a workspace                     | `too_many_invitations`     | [Invitations](/guides/workspace#invitations)                   |
+| What a plan allows, on a server that bills             | `plan_limit_reached`       | [Plans and billing](/guides/workspace/billing#limits)          |

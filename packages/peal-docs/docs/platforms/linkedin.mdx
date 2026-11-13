@@ -1,0 +1,75 @@
+---
+title: LinkedIn
+description: "Connect LinkedIn to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/linkedin.svg
+---
+
+How to connect a LinkedIn profile or company pages, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                  |
+| ----------------- | -------------------------------- |
+| Text              | {{platform-linkedin-text-en}}    |
+| Images and videos | {{platform-linkedin-media-en}}   |
+| Parts             | {{platform-linkedin-parts-en}}   |
+| Formats           | {{platform-linkedin-formats-en}} |
+| Alt text          | {{platform-linkedin-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **LinkedIn**, the button is **Connect LinkedIn**. On a server set up for company pages, there are two buttons instead: **Connect your profile** and **Connect company pages**.
+
+<Tabs>
+  <Tab title="Your profile">
+    Choose **Connect LinkedIn** (or **Connect your profile**), sign in on
+    LinkedIn and allow Peal. Peal connects your own LinkedIn profile, and posts
+    as you. It asks LinkedIn for your name and picture, and to publish posts.
+  </Tab>
+  <Tab title="Company pages">
+    **Connect company pages** signs you in to a second LinkedIn app, then lists
+    the pages you may post to, where you are an administrator or a content
+    administrator. Choose one or several: each becomes a channel that posts as
+    the page.
+
+    Peal asks LinkedIn to post as your pages, to read their posts, and to list
+    the pages you administer and read their statistics; nothing about your own
+    profile. A page keeps working while you keep your role on it: when you lose
+    it, or leave the company, reconnect the page with another administrator's
+    sign-in.
+
+  </Tab>
+</Tabs>
+
+**Channels** offers LinkedIn, and company pages, once the Peal server is set up for each (see [On your own server](#self-hosting)).
+
+### Stay connected [#expiry]
+
+- LinkedIn lets Peal post for 60 days, then asks you to sign in again. The channel shows the date, and its workspace's owners and admins are told a week before.
+- Reconnect before then: when you are signed in on LinkedIn, it does not ask again.
+- A page's access lasts 60 days too, unless LinkedIn gave the server's app refresh tokens, which it reserves for approved partners. Peal then renews it a week ahead, for a year after the sign-in.
+
+## Options [#options]
+
+The composer offers these options. **API name** is the option's name through the API.
+
+| Option                                   | API name          | What it takes                                                                                                                                                                             |
+| ---------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Who can see this post**                | `visibility`      | Anyone unless you choose otherwise (`public`); connections only (`connections`) is for a profile; signed-in LinkedIn members (`loggedIn`)                                                 |
+| **Keep others from resharing this post** | `disableReshare`  | Yes or no                                                                                                                                                                                 |
+| **Pages to mention**                     | `mentions`        | Write `@` and the page's full name in the text, as LinkedIn shows it, and list each page here as `Name <urn:li:organization:number>`, separated by semicolons. People cannot be mentioned |
+| **Link to show as a card**               | `linkUrl`         | A link                                                                                                                                                                                    |
+| **Link title**                           | `linkTitle`       | Required with a link                                                                                                                                                                      |
+| **Link description**                     | `linkDescription` | With a link                                                                                                                                                                               |
+| **Document title**                       | `documentTitle`   | For a PDF                                                                                                                                                                                 |
+
+## Comments [#comments]
+
+Peal reads the comments under the posts of LinkedIn company pages, and you answer them from Peal: see [Inbox](/guides/engage/inbox#linkedin).
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers LinkedIn once its app is registered, and company pages once their app is too: see [LinkedIn](/self-hosting/platforms#linkedin) and [LinkedIn company pages](/self-hosting/platforms#linkedin-pages). Until then, **Channels** does not offer them.

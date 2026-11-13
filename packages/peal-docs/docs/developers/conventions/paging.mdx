@@ -1,0 +1,117 @@
+---
+title: Paging
+description: How a list answers one page at a time, and how to ask for the next.
+sidebar:
+  icon: list
+---
+
+## Paging [#paging]
+
+Lists that can grow without end are read a page at a time, newest first:
+
+1. Send `limit`, the size of a page, in the query.
+2. The answer is an object with the page's `items` and a `nextCursor`.
+3. Pass `nextCursor` as `cursor` to read the next page, and stop when it is `null`.
+
+A cursor is an opaque string, good for the list it came from, with the same filters: elsewhere it answers 400 `bad_request`.
+
+| List                                     | A page holds | At most |
+| ---------------------------------------- | ------------ | ------- |
+| `GET …/posts/drafts`                     | 20           | 50      |
+| `GET …/media`                            | 30           | 100     |
+| `GET …/webhooks/{endpointId}/deliveries` | 30           | 100     |
+| `GET …/activity`                         | 30           | 100     |
+| `GET /api/me/notices`                    | 20           | 100     |
+
+Paths starting with `…` are under `/api/workspaces/{workspaceId}`.
+
+The first page:
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const page = await peal.activity.list({ workspaceId, limit: "2" });
+```
+
+</CodeGroup>
+
+```json
+{
+  "items": [
+    {
+      "id": "019a7b31-0d4e-7c22-b8a1-3f5e6d7c8b90",
+      "occurredAt": "2026-11-16T08:00:02.412Z",
+      "operation": "posts.send",
+      "status": 201,
+      "errorCode": null,
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": {},
+      "requestId": "nightly-sync:2026-11-16:0042"
+    },
+    {
+      "id": "019a7b30-6f18-7a95-9d07-1c2b3a4d5e6f",
+      "occurredAt": "2026-11-16T07:58:47.036Z",
+      "operation": "posts.discard",
+      "status": 404,
+      "errorCode": "post_not_found",
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" },
+      "requestId": "019a7b30-6f17-7e02-b6a4-9f8e7d6c5b4a"
+    }
+  ],
+  "nextCursor": "MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm"
+}
+```
+
+The next page, with the `nextCursor` above, and a loop that reads them all (the SDKs have no helper that does it for you):
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2&cursor=MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+let cursor: string | undefined;
+
+do {
+  const page = await peal.activity.list({ workspaceId, limit: "100", cursor });
+
+  for (const entry of page.items) {
+    console.log(entry.operation, entry.status);
+  }
+
+  cursor = page.nextCursor ?? undefined;
+} while (cursor !== undefined);
+```
+
+</CodeGroup>
+
+### Lists that take a range [#ranges]
+
+Two lists take a range instead, and answer everything in it at once:
+
+| List                                             | What it answers                                                             | Range                 | Otherwise            |
+| ------------------------------------------------ | --------------------------------------------------------------------------- | --------------------- | -------------------- |
+| `GET …/posts?from=…&to=…`                        | The posts scheduled between two instants, `from` included and `to` excluded | At most 62 days apart | `invalid_time_range` |
+| `GET …/analytics/summary?from=…&to=…&timeZone=…` | A sum of the posts published over a range of days, both included            | 366 days at most      | `invalid_date_range` |
+
+The lists a workspace keeps short answer whole, as an array: its channels, members, pending invitations, API keys and webhook endpoints.
