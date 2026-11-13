@@ -15,8 +15,12 @@ import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import { mediaNamedBy } from "./named-media.ts";
 import type { OptionProblem } from "./option-problem.ts";
-import { followUpsOn, rulesFor } from "./platform-rules.ts";
-import type { FormatLimits, MediaRules } from "./platform-rules.ts";
+import { followUpsThrough, partRulesFor, rulesFor } from "./platform-rules.ts";
+import type {
+  FormatLimits,
+  MediaRules,
+  PlatformRules,
+} from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import {
   emptyContent,
@@ -438,9 +442,9 @@ const atMost = (
 export const violationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  options: Option.Option<TargetOptions> = Option.none()
+  options: Option.Option<TargetOptions> = Option.none(),
+  rules: PlatformRules = rulesFor(channel.platform, options)
 ): readonly ContentViolation[] => {
-  const rules = rulesFor(channel.platform, options);
   const sent = textOn(content, channel.channelId);
   const media = content.media.length;
 
@@ -739,13 +743,19 @@ export const partViolationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
   files: readonly MediaFile[],
-  options: Option.Option<TargetOptions> = Option.none()
+  options: Option.Option<TargetOptions> = Option.none(),
+  // The way in the channel came through, which violations never name.
+  connection: Option.Option<ChannelConnection> = Option.fromUndefinedOr(
+    channel.connection
+  )
 ): readonly ContentViolation[] => {
   if (content.followUps.length === 0) {
     return [];
   }
 
-  const taken = followUpsOn(channel.platform, options)?.maximum ?? 0;
+  const followUps = followUpsThrough(channel.platform, connection, options);
+
+  const taken = followUps?.maximum ?? 0;
 
   if (content.followUps.length > taken) {
     return [
@@ -758,13 +768,19 @@ export const partViolationsOn = (
     ];
   }
 
+  // A comment holds text alone, within a comment's limits: its files are
+  // refused by their count, and checked no further.
+  const rules = partRulesFor(channel.platform, options);
+
   return content.followUps.flatMap((_part, position) => {
     const alone = partAlone(content, position + 1);
 
     return inPart(
       [
-        ...violationsOn(alone, channel, options),
-        ...mediaViolationsOn(alone, channel, filesOf(alone, files), options),
+        ...violationsOn(alone, channel, options, rules),
+        ...(followUps?.kind === "comment"
+          ? []
+          : mediaViolationsOn(alone, channel, filesOf(alone, files), options)),
       ],
       position + 1
     );
@@ -800,7 +816,13 @@ export const checkPublishable = (
       return [
         ...violationsOn(sent, channel, chosen),
         ...mediaViolationsOn(sent, channel, filesOf(sent, files), chosen),
-        ...partViolationsOn(sent, channel, files, chosen),
+        ...partViolationsOn(
+          sent,
+          channel,
+          files,
+          chosen,
+          Option.fromUndefinedOr(connected.connection)
+        ),
         ...optionViolationsOn(channel, chosen),
         ...mediaOptionViolationsOn(sent, channel, chosen, files),
         ...connectionViolationsOn(connected, chosen),

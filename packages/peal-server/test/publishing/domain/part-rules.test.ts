@@ -27,6 +27,16 @@ const bluesky = channel("1", "bluesky");
 const x = channel("2", "x");
 const mastodon = channel("4", "mastodon");
 const youtube = channel("7", "youtube");
+const pinterest = channel("8", "pinterest");
+
+const commenting: readonly Platform[] = [
+  "facebook",
+  "instagram",
+  "linkedin",
+  "youtube",
+];
+
+const facebook = channel("9", "facebook");
 
 const part = (
   text: string,
@@ -53,7 +63,7 @@ const violationsOf = (
   });
 
 describe("the platforms that take the parts after a post's first", () => {
-  it("are those with threads Peal can post with what it is granted", () => {
+  it("are those with threads, and those where the account comments under its post", () => {
     expect(
       platforms.flatMap((platform) => {
         const rules = followUpsOn(platform);
@@ -62,9 +72,19 @@ describe("the platforms that take the parts after a post's first", () => {
       })
     ).toStrictEqual([
       ["x", "thread"],
+      ["linkedin", "comment"],
       ["bluesky", "thread"],
       ["mastodon", "thread"],
+      ["instagram", "comment"],
+      ["facebook", "comment"],
+      ["youtube", "comment"],
     ]);
+  });
+
+  it("take one first comment where parts are comments", () => {
+    expect(
+      commenting.map((platform) => followUpsOn(platform)?.maximum)
+    ).toStrictEqual([1, 1, 1, 1]);
   });
 
   it("take as many parts as a post holds", () => {
@@ -85,12 +105,23 @@ describe("a post of several parts", () => {
 
   it("is refused where the platform takes one part only", () => {
     expect(
-      violationsOf(thread("A video's description", part("And a reply")), [
-        youtube,
+      violationsOf(thread("A pin's description", part("And a reply")), [
+        pinterest,
         x,
       ]).filter(({ _tag }) => _tag === "tooManyParts")
     ).toStrictEqual([
-      { _tag: "tooManyParts", ...youtube, count: 2, maximum: 1 },
+      { _tag: "tooManyParts", ...pinterest, count: 2, maximum: 1 },
+    ]);
+  });
+
+  it("is refused past the one comment a platform with comments takes", () => {
+    expect(
+      violationsOf(
+        thread("A video's description", part("A comment"), part("Another")),
+        [youtube]
+      ).filter(({ _tag }) => _tag === "tooManyParts")
+    ).toStrictEqual([
+      { _tag: "tooManyParts", ...youtube, count: 3, maximum: 2 },
     ]);
   });
 
@@ -173,5 +204,75 @@ describe("a post of several parts", () => {
 
   it("lists nothing about parts for a post of one part", () => {
     expect(partViolationsOn(thread("Alone"), youtube, [])).toStrictEqual([]);
+  });
+});
+
+describe("a first comment", () => {
+  const mediaId = MediaAssetIdSchema.make(
+    "00000000-0000-7000-8000-000000000102"
+  );
+
+  it("goes under a post on a platform with comments, held to text", () => {
+    expect(
+      violationsOf(thread("A page's post", part("The first comment")), [
+        facebook,
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("is refused with a file, which Peal never sends with a comment", () => {
+    expect(
+      violationsOf(
+        thread(
+          "A page's post",
+          part("With a picture", {
+            media: [new MediaAttachment({ altText: "", mediaId })],
+          })
+        ),
+        [facebook],
+        [mediaFile(mediaId)]
+      )
+    ).toStrictEqual([
+      { _tag: "tooManyMedia", ...facebook, count: 1, maximum: 0, part: 1 },
+    ]);
+  });
+
+  it("needs a text", () => {
+    expect(
+      violationsOf(thread("A page's post", part(" ")), [facebook])
+    ).toStrictEqual([{ _tag: "empty", ...facebook, part: 1 }]);
+  });
+
+  it("is held to the comment's limits, not to a post's media rules", () => {
+    // Instagram publishes no post without a file: a comment needs none.
+    const instagram = channel("6", "instagram");
+
+    expect(
+      violationsOf(
+        new PostContent({
+          followUps: [part("The first comment")],
+          media: [new MediaAttachment({ altText: "", mediaId })],
+          overrides: [],
+          text: "A caption",
+        }),
+        [instagram],
+        [mediaFile(mediaId)]
+      )
+    ).toStrictEqual([]);
+  });
+
+  it("goes under a LinkedIn page's post, never a profile's", () => {
+    const page: ChannelOnPlatform = {
+      ...channel("3", "linkedin"),
+      connection: "linkedinPage",
+    };
+
+    const profile = channel("5", "linkedin");
+    const content = thread("A post", part("The first comment"));
+
+    expect(violationsOf(content, [page])).toStrictEqual([]);
+    expect(violationsOf(content, [profile])).toStrictEqual([
+      { _tag: "tooManyParts", ...profile, count: 2, maximum: 1 },
+    ]);
   });
 });

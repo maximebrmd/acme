@@ -46,6 +46,20 @@ const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
   values: field.values,
 });
 
+// The parts after the first, with a comment's own text limits where they
+// are comments.
+const followUpsView = ({ followUps }: PlatformRules) => {
+  if (followUps === undefined) {
+    return null;
+  }
+
+  const described = { kind: followUps.kind, maxCount: followUps.maximum };
+
+  return followUps.comment === undefined
+    ? described
+    : { ...described, commentTextLimits: followUps.comment.textLimits };
+};
+
 /**
  * A lookup as the contract describes it, to the API and the MCP tools
  * alike.
@@ -137,10 +151,7 @@ export const platformCapabilitiesView = (
       perPost: capabilities.countsPosts,
       postCounts: capabilities.counted.post.filter(isPostCount),
     },
-    followUps:
-      rules.followUps === undefined
-        ? null
-        : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
+    followUps: followUpsView(rules),
     livePost: livePostView(capabilities.livePost),
     lookups: capabilities.lookups.map(lookupDescriptionView),
     media: mediaView(rules, capabilities),

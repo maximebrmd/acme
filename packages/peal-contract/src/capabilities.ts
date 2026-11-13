@@ -191,11 +191,16 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
   }),
   // The parts a post may have there after its first (`content.followUps`):
   // replies in a `thread`, each to the part before it, or `comment`s under
-  // the post, `maxCount` at most. Each follows the rules of a post there,
-  // text and media. Null: the platform takes a post alone, and a post with
-  // more parts is refused there when it is scheduled (`tooManyParts`).
+  // the post, `maxCount` at most (a first comment, which the account posts
+  // under its post once it is live). A reply in a thread follows the rules
+  // of a post there, text and media; a comment holds text alone, within
+  // `commentTextLimits`. Null: the platform, or this server (a first
+  // comment is offered where it reads the platform's comments in the
+  // inbox), takes a post alone, and a post with more parts is refused there
+  // when it is scheduled (`tooManyParts`).
   followUps: Schema.NullOr(
     Schema.Struct({
+      commentTextLimits: Schema.optionalKey(Schema.Array(TextLimitSchema)),
       kind: Schema.Literals(["thread", "comment"]),
       maxCount: Schema.Int,
     }).annotate({ identifier: "FollowUpCapabilities" })
@@ -241,7 +246,8 @@ export type PlatformCapabilities = typeof PlatformCapabilitiesSchema.Type;
  * that must have one value (`optionFixed`), the longest video
  * (`videoDuration`), file types refused on the channel
  * (`mediaTypesRefused`), an option refused until the channel is connected
- * again, to grant what it needs (`optionNeedsReconnect`).
+ * again, to grant what it needs (`optionNeedsReconnect`), a first comment
+ * refused until then (`partsNeedReconnect`).
  */
 export const AccountRestrictionSchema = Schema.Union([
   Schema.TaggedStruct("optionValues", {
@@ -257,6 +263,7 @@ export const AccountRestrictionSchema = Schema.Union([
     contentTypes: Schema.Array(MediaContentTypeSchema),
   }),
   Schema.TaggedStruct("optionNeedsReconnect", { field: Schema.String }),
+  Schema.TaggedStruct("partsNeedReconnect", {}),
 ]).annotate({ identifier: "AccountRestriction" });
 
 export type AccountRestriction = typeof AccountRestrictionSchema.Type;

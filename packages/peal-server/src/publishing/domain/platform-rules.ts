@@ -1,5 +1,7 @@
 import { Option } from "effect";
 
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import type { MediaContentType } from "./media-file.ts";
@@ -62,10 +64,23 @@ export interface MediaRules {
 export type FollowUpKind = "comment" | "thread";
 
 /**
- * The parts a platform takes after a post's first. Each follows the rules
- * of a post there: its text, its media, their limits.
+ * What a comment under a post holds, where the parts after the first are
+ * comments: a comment is no post, so it follows these rules in place of
+ * the platform's. Text alone, within every limit: Peal sends no file with
+ * a comment.
+ */
+export interface CommentRules {
+  readonly textLimits: readonly TextLimit[];
+}
+
+/**
+ * The parts a platform takes after a post's first. In a thread each
+ * follows the rules of a post there: its text, its media, their limits; a
+ * comment follows `comment`'s.
  */
 export interface FollowUpRules {
+  /** What each part holds, where they are comments; left out on a thread. */
+  readonly comment?: CommentRules;
   readonly kind: FollowUpKind;
   /** The most parts after the first. */
   readonly maximum: number;
@@ -380,6 +395,27 @@ const facebookReel: PostFormatRules = {
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
+// The platforms where the account comments under its own post once it is
+// live, a first comment, with the call the inbox answers comments with
+// (read 2026-11-14): Facebook Pages' `POST /{object-id}/comments`
+// (developers.facebook.com/docs/graph-api/reference/object/comments/),
+// Instagram's `POST /{ig-media-id}/comments` (…/instagram-graph-api/
+// reference/ig-media/comments), LinkedIn's `POST /rest/socialActions/
+// {postUrn}/comments` as the page (learn.microsoft.com/…/shares/
+// comments-api) and YouTube's `commentThreads.insert`
+// (developers.google.com/youtube/v3/docs/commentThreads/insert). None of
+// those pages states a length for a comment (YouTube names only its
+// `commentTextTooLong` error), so a comment is held to the platform's
+// limits on a post's text, which never makes a comment the platform would
+// refuse for its length shorter than what Peal lets through, as the inbox
+// holds its replies. Text alone: Instagram and YouTube document no file
+// on a comment, LinkedIn's page contradicts itself on images.
+const firstComment = (textLimits: readonly TextLimit[]): FollowUpRules => ({
+  comment: { textLimits },
+  kind: "comment",
+  maximum: 1,
+});
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     followUps: thread,
@@ -403,6 +439,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     ],
   },
   facebook: {
+    followUps: firstComment([{ maximum: 63_206, unit: "codePoints" }]),
     media: {
       formats: {
         "image/gif": facebookImage,
@@ -432,6 +469,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 1500, unit: "codePoints" }],
   },
   instagram: {
+    followUps: firstComment([{ maximum: 2200, unit: "codePoints" }]),
     maxHashtags: 30,
     maxMedia: 20,
     maxMentions: 20,
@@ -456,6 +494,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
+    followUps: firstComment([{ maximum: 3000, unit: "codePoints" }]),
     maxMedia: 20,
     media: {
       formats: {
@@ -570,6 +609,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
   youtube: {
+    followUps: firstComment([{ maximum: 5000, unit: "utf8Bytes" }]),
     forbiddenCharacters: ["<", ">"],
     maxMedia: 1,
     media: {
@@ -635,3 +675,37 @@ export const followUpsOn = (
   platform: Platform,
   options: Option.Option<TargetOptions> = Option.none()
 ): FollowUpRules | undefined => rulesFor(platform, options).followUps;
+
+/**
+ * The parts the platform takes after a post's first on a channel that
+ * came in through `connection`: a LinkedIn profile takes none, as its
+ * comments would need a member's permission Peal does not ask for (a
+ * company page comments as the page). A channel stored without a
+ * connection came the platform's first way in (`connectionOf`).
+ */
+export const followUpsThrough = (
+  platform: Platform,
+  connection: Option.Option<ChannelConnection>,
+  options: Option.Option<TargetOptions> = Option.none()
+): FollowUpRules | undefined =>
+  platform === "linkedin" &&
+  !Option.contains(connectionOf(platform, connection), "linkedinPage")
+    ? undefined
+    : followUpsOn(platform, options);
+
+/**
+ * The rules a part after the first follows on the platform, with the
+ * options the post has there: a post's (`rulesFor`) in a thread, and a
+ * comment's where the parts are comments: its text's limits, no file.
+ */
+export const partRulesFor = (
+  platform: Platform,
+  options: Option.Option<TargetOptions> = Option.none()
+): PlatformRules => {
+  const rules = rulesFor(platform, options);
+  const comment = rules.followUps?.comment;
+
+  return comment === undefined
+    ? rules
+    : { maxMedia: 0, mediaRequired: false, textLimits: comment.textLimits };
+};

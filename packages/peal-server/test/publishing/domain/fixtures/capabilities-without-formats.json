@@ -214,6 +214,18 @@
     ],
     "platform": "linkedin",
     "rules": {
+      "followUps": {
+        "comment": {
+          "textLimits": [
+            {
+              "maximum": 3000,
+              "unit": "codePoints"
+            }
+          ]
+        },
+        "kind": "comment",
+        "maximum": 1
+      },
       "maxMedia": 20,
       "media": {
         "formats": {
@@ -1000,6 +1012,18 @@
     ],
     "platform": "youtube",
     "rules": {
+      "followUps": {
+        "comment": {
+          "textLimits": [
+            {
+              "maximum": 5000,
+              "unit": "utf8Bytes"
+            }
+          ]
+        },
+        "kind": "comment",
+        "maximum": 1
+      },
       "forbiddenCharacters": ["<", ">"],
       "maxMedia": 1,
       "media": {

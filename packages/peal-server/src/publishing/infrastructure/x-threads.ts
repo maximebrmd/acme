@@ -1,6 +1,11 @@
 import { Config, Effect, Layer } from "effect";
 
-import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
+import {
+  CurrentThreadedPlatforms,
+  threadedPlatformsWith,
+} from "#publishing/application/threaded-platforms.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
+import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 
 /**
  * `X_THREADS`: whether the server sends a post's later parts to X, as
@@ -15,12 +20,16 @@ export const xThreadsConfig = Config.Boolean("X_THREADS").pipe(
   Config.withDefault(true)
 );
 
-/** The platforms that take parts, as the operator set X's. */
+/**
+ * The platforms that take parts, as the operator set X's threads and the
+ * inbox's platforms (`PEAL_INBOX_PLATFORMS`), where a first comment goes.
+ */
 export const XThreadsLive = Layer.effect(
   CurrentThreadedPlatforms,
-  xThreadsConfig.pipe(
-    Effect.map((xThreads) => ({
-      takesParts: (platform: string) => platform !== "x" || xThreads,
-    }))
-  )
-);
+  Effect.gen(function* ThreadedPlatformsLive() {
+    const xThreads = yield* xThreadsConfig;
+    const inbox = yield* CurrentInboxPlatforms;
+
+    return threadedPlatformsWith(xThreads, inbox);
+  })
+).pipe(Layer.provide(InboxPlatformsLive));

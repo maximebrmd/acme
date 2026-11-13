@@ -243,6 +243,12 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     maximum: 20,
     platform: "instagram",
   },
+  partsNeedReconnect: {
+    _tag: "partsNeedReconnect",
+    channelId,
+    part: 1,
+    platform: "facebook",
+  },
   tooManyParts: {
     _tag: "tooManyParts",
     channelId,
@@ -307,6 +313,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   tooManyLinks: true,
   tooManyMedia: true,
   tooManyMentions: true,
+  partsNeedReconnect: true,
   tooManyParts: true,
   tooManyPixels: true,
   tooManyVideos: true,

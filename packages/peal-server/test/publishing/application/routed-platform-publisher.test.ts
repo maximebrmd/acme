@@ -8,7 +8,10 @@ import { PlatformPublisher } from "#publishing/application/platform-publisher.ts
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
-import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
+import {
+  CurrentThreadedPlatforms,
+  threadedPlatformsWith,
+} from "#publishing/application/threaded-platforms.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -24,6 +27,7 @@ import type { Allowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
@@ -101,7 +105,10 @@ const PlanTest = Layer.succeed(
 // operator set of later parts.
 const publisherFor = (
   account: Parameters<typeof credentialsOf>[0],
-  threaded: (platform: string) => boolean = () => true
+  threaded: (platform: Platform) => boolean = threadedPlatformsWith(
+    true,
+    new Set()
+  ).takesParts
 ) =>
   RoutedPlatformPublisher.pipe(
     Layer.provide(

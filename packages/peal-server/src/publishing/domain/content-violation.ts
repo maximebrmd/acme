@@ -78,6 +78,9 @@ export const ContentViolationSchema = Schema.Union([
   // The post has more parts than the platform takes: `maximum` is 1 where
   // it takes a post alone, with no thread and no comment after it.
   Schema.TaggedStruct("tooManyParts", tooMany),
+  // The part is a comment the channel's account has not let Peal post:
+  // the channel must be connected again to grant the comment scope.
+  Schema.TaggedStruct("partsNeedReconnect", onChannel),
   // The platform publishes nothing without an image or a video.
   Schema.TaggedStruct("mediaRequired", onChannel),
   Schema.TaggedStruct("tooManyHashtags", tooMany),

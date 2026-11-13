@@ -2,7 +2,7 @@ import { Effect, Layer, Option, Result } from "effect";
 
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
-import { followUpsOn } from "#publishing/domain/platform-rules.ts";
+import { followUpsThrough } from "#publishing/domain/platform-rules.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -214,12 +214,17 @@ export const RoutedPlatformPublisher = Layer.effect(
         );
       }
 
-      // Scheduling refuses parts where the platform, or the format the
-      // options choose there, takes a post alone; a part that came this
+      // Scheduling refuses parts where the platform, the format the
+      // options choose there, or the channel's way in (a LinkedIn
+      // profile) takes a post alone; a part that came this
       // far all the same must never go out as a post of its own.
       if (
         part.index > 0 &&
-        (followUpsOn(account.platform, target.value.options) === undefined ||
+        (followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        ) === undefined ||
           !threaded.takesParts(account.platform))
       ) {
         return yield* new BadRequest({
