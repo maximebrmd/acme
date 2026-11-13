@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { ResetPasswordForm } from "#components/auth/reset-password-form.tsx";
@@ -20,9 +20,9 @@ const ResetPasswordPage = async ({
   if (error !== undefined || valid._tag === "None") {
     return (
       <AuthCard title={t("invalidTitle")} description={t("invalidDescription")}>
-        <Button render={<Link href="/forgot-password" />}>
+        <Link href="/forgot-password" className={buttonVariants()}>
           {t("requestAgain")}
-        </Button>
+        </Link>
       </AuthCard>
     );
   }

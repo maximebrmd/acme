@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { ResendVerificationForm } from "#components/auth/resend-verification-form.tsx";
@@ -24,7 +24,9 @@ const VerifyEmailPage = async ({
 
   return (
     <AuthCard title={t("title")} description={t("description")}>
-      <Button render={<Link href="/app" />}>{t("continue")}</Button>
+      <Link href="/app" className={buttonVariants()}>
+        {t("continue")}
+      </Link>
     </AuthCard>
   );
 };

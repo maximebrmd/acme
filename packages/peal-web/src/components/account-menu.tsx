@@ -1,6 +1,6 @@
 import { Option } from "effect";
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUserOrNone } from "#auth/session.ts";
 import { AccountMenuView } from "#components/account-menu-view.tsx";
@@ -16,9 +16,12 @@ export const AccountMenu = async () => {
 
   return Option.match(me, {
     onNone: () => (
-      <Button variant="ghost" size="sm" render={<Link href="/sign-in" />}>
+      <Link
+        href="/sign-in"
+        className={buttonVariants({ size: "sm", variant: "ghost" })}
+      >
         {t("signIn")}
-      </Button>
+      </Link>
     ),
     onSome: ({ user }) => (
       <>

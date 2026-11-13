@@ -2,7 +2,7 @@ import { DateTime, Effect } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 import {
   Table,
   TableBody,
@@ -52,13 +52,12 @@ const UserPage = async ({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div>
-          <Button
-            variant="link"
-            size="sm"
-            render={<Link href="/admin/users" />}
+          <Link
+            href="/admin/users"
+            className={buttonVariants({ size: "sm", variant: "link" })}
           >
             {t("back")}
-          </Button>
+          </Link>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight">{user.name}</h1>
         <p className="text-muted-foreground">{t("minimisation")}</p>

@@ -2,7 +2,7 @@ import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { NoticeList } from "#components/notices/notice-list.tsx";
@@ -39,13 +39,12 @@ const NoticesPage = async ({ params }: PageProps<"/[locale]/app/notices">) => {
           </h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href="/app/notices/preferences" />}
+        <Link
+          href="/app/notices/preferences"
+          className={buttonVariants({ size: "sm", variant: "outline" })}
         >
           {t("preferences")}
-        </Button>
+        </Link>
       </div>
       <NoticeList workspaces={workspaces} />
     </div>

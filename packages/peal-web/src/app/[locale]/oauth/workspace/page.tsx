@@ -1,6 +1,6 @@
 import { Option } from "effect";
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { AuthCard } from "#components/auth/auth-card.tsx";
@@ -29,7 +29,9 @@ const OAuthWorkspacePage = async ({
       {workspaces.length === 0 ? (
         <div className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
-          <Button render={<Link href="/app" />}>{t("create")}</Button>
+          <Link href="/app" className={buttonVariants()}>
+            {t("create")}
+          </Link>
         </div>
       ) : (
         <WorkspacePicker

@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -23,9 +23,9 @@ export const SignInToContinue = async ({
 
   return (
     <AuthCard title={title} description={description ?? t("signedOut")}>
-      <Button render={<Link href={{ pathname: "/sign-in", query }} />}>
+      <Link href={{ pathname: "/sign-in", query }} className={buttonVariants()}>
         {t("signIn")}
-      </Button>
+      </Link>
     </AuthCard>
   );
 };

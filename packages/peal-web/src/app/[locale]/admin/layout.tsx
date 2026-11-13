@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { StaffNav } from "#components/staff/staff-nav.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -51,9 +51,9 @@ const StaffLayout = async ({
         <p className="font-semibold tracking-tight">{t("title")}</p>
         <p>{twoStep("staffConsoleRequires")}</p>
         <div>
-          <Button render={<Link href="/app/account" />}>
+          <Link href="/app/account" className={buttonVariants()}>
             {twoStep("goToAccount")}
-          </Button>
+          </Link>
         </div>
       </div>
     );

@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect";
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 import { Suspense } from "react";
 
 import { currentUserOrNone } from "#auth/session.ts";
@@ -50,9 +50,9 @@ const WorkspaceLayout = async ({
       <PlainFrame>
         <TwoStepRequiredNotice
           action={
-            <Button render={<Link href="/app/account" />}>
+            <Link href="/app/account" className={buttonVariants()}>
               {t("goToAccount")}
-            </Button>
+            </Link>
           }
         />
       </PlainFrame>
