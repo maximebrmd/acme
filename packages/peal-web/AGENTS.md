@@ -484,14 +484,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `UpgradeView`): the limit reached with what the billing account holds
   and its plan (the free tier's accounts or storage, the ceiling before a
   first paid invoice, a legacy plan's own words), then what a payment
-  method changes, from the contract's rate card (`nextAccountOf`,
-  `#billing/ladder.ts`: the next account's monthly price excluding tax
-  with the VAT beside it, or storage), the two currency sentences
-  (`CurrencyNote`), the consent box and the order button of the billing
-  page (`Consent`, `OrderButton`), then checkout (`useCheckout`:
+  method changes, from the rate card the server answered (`card`, the
+  app's own for a member who cannot read billing): for accounts, what the
+  order bills for those held (`accountsMonthly`), then the next one
+  (`nextAccountOf`, `#billing/ladder.ts`; "free" while it is), or storage,
+  every price excluding VAT with France's VAT beside it; the VAT line
+  (`VatNote`) and the two currency sentences (`CurrencyNote`), the
+  consent box and the order button of the billing page (`Consent`,
+  `OrderButton`), then checkout (`useCheckout`:
   `payAsYouGo`, monthly, the one plan sold), back to the page the person
-  was on. Where another workspace bills the account (`account` of `GET
-  …/billing`), the dialog names and links it and orders nothing; to a
+  was on. Where another workspace bills the account (`billedElsewhereOf`
+  on the `account` of `GET …/billing/standing`, which every member
+  reads), the dialog names and links it and orders nothing; to a
   member who cannot order, who can; past what any plan holds, how to ask
   for more (`PEAL_CONTACT_URL`). No plan, period or trial is ever
   offered. `UpgradePrompts` puts it around a workspace's pages
@@ -505,6 +509,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`standingOfWorkspace`, read with the visitor's cookies): on the free
   tier it says the account holds more than its free accounts without a
   payment method; a grace shows `GraceBanner` above every page instead.
+- Dialogs fit the window (`DialogContent`: at most the viewport's height,
+  scrolling): check a new one at 320 and 375 px wide, in English and
+  French, as `upgrade-prompt.e2e.ts` does.
 - The billing page shows `GET …/billing` (`BillingView` renders each
   state, `BillingStep` the cancellation and withdrawal steps): the plan
   (the free tier, per-account pricing with its next invoice, or a legacy
@@ -514,9 +521,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (connected accounts, account-days so far, `estimate` excluding tax,
   the next account's price, Stripe's `upcomingInvoice` tax included,
   "the invoice is the one that counts"), any other workspace of the
-  account, a partner's customer included, its own accounts and never the
-  account's money or pool; adding a payment method, on the free tier
-  only, behind the unticked box, and **Order with obligation to pay**;
+  account, a partner's customer included, its own accounts and media and
+  never the account's plan card, contract, money or pool (the server
+  answers none of them there); an unpaid contract (`paymentFailed`), or
+  an order refused as `AlreadySubscribed`, sends to the portal; the free
+  tier's accounts are the answer's `allowances.channels` (none once staff
+  required a payment method, `freeWithoutCard`); a legacy plan shows its
+  channels against its allowance and no per-account figures; adding a
+  payment method, on the free tier only, behind the unticked box, and
+  **Order with obligation to pay**, its refusal beside it;
   the ladder (`ladderOf`, from the answer's `rateCard`) with the day rule
   and the two currency sentences; and the other limits. Every price comes
   from the rate card, in US dollars, excluding tax with the amount with

@@ -135,6 +135,21 @@ describe(OverPlanView, () => {
     );
   });
 
+  it("says when staff took the free tier away, never that 2 accounts are free", async () => {
+    const html = await render("en", {
+      standing: {
+        ...standing,
+        over: [{ allowed: 0, limit: "channels", used: 1 }],
+        plan: "free",
+      },
+    });
+
+    expect(html).toContain(
+      "Its billing account connects no account without a payment method."
+    );
+    expect(html).not.toContain("more than 2");
+  });
+
   it("says what happens to the posts already scheduled", async () => {
     const html = await render("en");
 

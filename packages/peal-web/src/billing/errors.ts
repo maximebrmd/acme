@@ -13,14 +13,17 @@ const reasons: ReadonlyMap<string, BillingError> = new Map([
   ["BilledElsewhere", "billedElsewhere"],
   ["ConsentChanged", "consentChanged"],
   ["Forbidden", "forbidden"],
+  ["BillingNotEnabled", "notEnabled"],
   ["NothingToCancel", "nothingToCancel"],
+  ["PlanNotSold", "planNotSold"],
   ["PlanTooSmall", "planTooSmall"],
   ["TrialUnavailable", "trialUsed"],
 ]);
 
 /**
  * Why a billing request failed, for the page to say; none when it worked.
- * A withdrawal refused says why, an unknown failure is generic.
+ * A withdrawal refused says why; a failure without words of its own says
+ * that it did not work.
  */
 export const billingErrorOf = <A, E extends { readonly _tag: string }>(
   exit: Exit.Exit<A, E>
@@ -42,7 +45,7 @@ export const billingErrorOf = <A, E extends { readonly _tag: string }>(
 
         return Option.fromUndefinedOr(reasons.get(failure._tag));
       }),
-      Option.getOrElse((): BillingError => "generic")
+      Option.getOrElse((): BillingError => "unknown")
     )
   );
 };

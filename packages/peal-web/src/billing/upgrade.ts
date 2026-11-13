@@ -1,4 +1,5 @@
 import { Cause, Exit, Option, Schema } from "effect";
+import type { BillingAccount } from "peal-contract";
 import {
   AssistantQuotaExceeded,
   PaidPlanSchema,
@@ -120,3 +121,26 @@ export const priced = (cents: number): OfferPrice => ({
   excluded: cents,
   included: withDisplayVat(cents),
 });
+
+/** The workspace that bills an account, when it is another. */
+export interface BillingWorkspace {
+  /** Its name, for a member of it; null for anyone else. */
+  readonly name: string | null;
+  readonly workspaceId: string;
+}
+
+/**
+ * The workspace that bills the account `workspaceId` is on, when it is
+ * another, from the account the standing tells every member: none where
+ * the workspace bills its account, or a server says nothing of it.
+ */
+export const billedElsewhereOf = (
+  account: BillingAccount | undefined,
+  workspaceId: string
+): Option.Option<BillingWorkspace> =>
+  account === undefined || account.billingWorkspaceId === workspaceId
+    ? Option.none()
+    : Option.some({
+        name: account.billingWorkspaceName,
+        workspaceId: account.billingWorkspaceId,
+      });

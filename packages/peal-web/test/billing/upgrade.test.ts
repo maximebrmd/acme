@@ -7,7 +7,11 @@ import {
 } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
-import { limitIn, limitOfAuthError } from "#billing/upgrade.ts";
+import {
+  billedElsewhereOf,
+  limitIn,
+  limitOfAuthError,
+} from "#billing/upgrade.ts";
 
 const billingUrl = "https://peal.example/app/w/billing";
 
@@ -116,5 +120,35 @@ describe(limitOfAuthError, () => {
     expect(
       limitOfAuthError(answered({ code: "INVALID_EMAIL", status: 400 }))
     ).toStrictEqual(Option.none());
+  });
+});
+
+describe(billedElsewhereOf, () => {
+  const account = {
+    billingWorkspaceId: "home",
+    billingWorkspaceName: null,
+    id: "0190f3a0-0000-7000-8000-00000000b001",
+    otherWorkspaces: [],
+    partner: true,
+    payer: false,
+    transfer: null,
+    workspaces: 9,
+  };
+
+  it("names the workspace that bills the account, from the standing every member reads", () => {
+    expect(billedElsewhereOf(account, "customer")).toStrictEqual(
+      Option.some({ name: null, workspaceId: "home" })
+    );
+    expect(
+      billedElsewhereOf(
+        { ...account, billingWorkspaceName: "Home" },
+        "customer"
+      )
+    ).toStrictEqual(Option.some({ name: "Home", workspaceId: "home" }));
+  });
+
+  it("names none where the workspace bills its account, or the server says nothing", () => {
+    expect(billedElsewhereOf(account, "home")).toStrictEqual(Option.none());
+    expect(billedElsewhereOf(undefined, "home")).toStrictEqual(Option.none());
   });
 });

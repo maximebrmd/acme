@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { displayVatRate, freeAccountsOf, rateCard } from "peal-contract";
+import {
+  accountsMonthly,
+  displayVatRate,
+  freeAccountsOf,
+  withDisplayVat,
+} from "peal-contract";
+import type { RateCard } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import type { ReactElement } from "react";
 
@@ -12,6 +18,7 @@ import {
   Consent,
   CurrencyNote,
   OrderButton,
+  VatNote,
 } from "#components/billing/billing-view.tsx";
 import type { BillingError } from "#components/billing/billing-view.tsx";
 
@@ -24,6 +31,8 @@ export interface BilledElsewhere {
 export interface UpgradeViewProps {
   /** Whether the member may add a payment method (billing:manage). */
   readonly canManage: boolean;
+  /** The rate card the server answered; the app's own when none was read. */
+  readonly card: RateCard;
   /** Whether the box asking to start at once is ticked. */
   readonly consented: boolean;
   /** Where to write for more than any plan holds, if the operator says. */
@@ -59,6 +68,10 @@ const Reached = ({
   const storage = limit === "mediaStorage";
   const workspace = workspaceName;
 
+  if (plan === "free" && limit === "channels" && allowed === 0) {
+    return <p>{t("reachedFreeRevoked", { workspace })}</p>;
+  }
+
   if (plan === "free" && (limit === "channels" || storage)) {
     return (
       <p>
@@ -93,8 +106,10 @@ const Reached = ({
   );
 };
 
-// What a payment method changes for the limit reached, from the rate card.
-const Gives = ({ reason }: Pick<UpgradeViewProps, "reason">) => {
+// What a payment method changes for the limit reached, from the rate card:
+// for accounts, what the order bills for those held, then the next one,
+// each excluding VAT and with France's VAT beside it.
+const Gives = ({ card, reason }: Pick<UpgradeViewProps, "card" | "reason">) => {
   const t = useTranslations("Upgrade");
   const dollars = useMoney("usd");
   const size = useSize();
@@ -103,8 +118,8 @@ const Gives = ({ reason }: Pick<UpgradeViewProps, "reason">) => {
     return (
       <p>
         {t("givesStorage", {
-          minimum: size(rateCard.storage.minimum),
-          perAccount: size(rateCard.storage.perAccount),
+          minimum: size(card.storage.minimum),
+          perAccount: size(card.storage.perAccount),
         })}
       </p>
     );
@@ -114,25 +129,41 @@ const Gives = ({ reason }: Pick<UpgradeViewProps, "reason">) => {
     return <p>{t("gives")}</p>;
   }
 
-  const { position, price } = nextAccountOf(reason.used);
+  const { position, price } = nextAccountOf(reason.used, card);
+  const held = accountsMonthly(position - 1, "usd", card);
+  const free = freeAccountsOf(card);
+
+  const priced = (cents: number) => ({
+    included: dollars(withDisplayVat(cents)),
+    price: dollars(cents),
+    rate: displayVatRate,
+  });
+
+  const next = () => {
+    if (price.excluded === 0) {
+      return t("nextAccountFree", { free, position });
+    }
+
+    return held > 0
+      ? t("nextAccountAdds", { ...priced(price.excluded), position })
+      : t("nextAccount", { ...priced(price.excluded), free, position });
+  };
 
   return (
     <div className="flex flex-col gap-1">
       <p>{t("givesAccounts")}</p>
-      <p className="font-medium tabular-nums">
-        {t("nextAccount", {
-          free: freeAccountsOf(),
-          included: dollars(price.included),
-          position,
-          price: dollars(price.excluded),
-          rate: displayVatRate,
-        })}
-      </p>
+      {held > 0 ? (
+        <p className="font-medium tabular-nums">
+          {t("held", { ...priced(held), used: position - 1 })}
+        </p>
+      ) : null}
+      <p className="font-medium tabular-nums">{next()}</p>
     </div>
   );
 };
 
 const Offer = ({
+  card,
   consented,
   onConsent,
   onOrder,
@@ -141,11 +172,18 @@ const Offer = ({
   termsUrl,
 }: Pick<
   UpgradeViewProps,
-  "consented" | "onConsent" | "onOrder" | "ordering" | "reason" | "termsUrl"
+  | "card"
+  | "consented"
+  | "onConsent"
+  | "onOrder"
+  | "ordering"
+  | "reason"
+  | "termsUrl"
 >) => (
   <div className="flex flex-col gap-4">
     <div className="flex flex-col gap-2">
-      <Gives reason={reason} />
+      <Gives card={card} reason={reason} />
+      <VatNote />
       <CurrencyNote />
     </div>
     <Consent consented={consented} onConsent={onConsent} termsUrl={termsUrl} />
@@ -183,11 +221,15 @@ export const UpgradeView = (props: UpgradeViewProps) => {
 
   const wayOut = () => {
     if (planWithRoom === null) {
+      // Only the ceiling before a first paid invoice has a "then".
+      const ceiling =
+        reason.plan === "payAsYouGo" && reason.limit === "channels";
+
       return contactUrl === null ? (
-        <p>{t("noRoomOperator")}</p>
+        <p>{t(ceiling ? "noRoomCeilingOperator" : "noRoomOperator")}</p>
       ) : (
         <p>
-          {t("noRoom")}{" "}
+          {t(ceiling ? "noRoomCeiling" : "noRoom")}{" "}
           <a className="underline underline-offset-4" href={contactUrl}>
             {t("contact")}
           </a>

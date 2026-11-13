@@ -11,6 +11,17 @@ export const billingOf = Atom.family((workspaceId: string) =>
   })
 );
 
+/**
+ * Where the workspace stands, with its billing account, for every member:
+ * what the upgrade dialog reads to name the workspace that bills.
+ */
+export const standingOf = Atom.family((workspaceId: string) =>
+  PealApi.query("billing", "standing", {
+    params: { workspaceId },
+    reactivityKeys: [`billing:${workspaceId}`],
+  })
+);
+
 // What a member does on the billing page, each sent from the browser with
 // its session cookie, so the API checks the page's origin: an order before
 // checkout, a cancellation, a withdrawal and what it would do.

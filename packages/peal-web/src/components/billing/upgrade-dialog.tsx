@@ -4,6 +4,8 @@ import { useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
+import { rateCard } from "peal-contract";
+import type { RateCard } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -14,8 +16,9 @@ import {
 } from "peal-ui/components/dialog";
 import { useState, useTransition } from "react";
 
-import { billingOf } from "#billing/api.ts";
+import { billingOf, standingOf } from "#billing/api.ts";
 import { managesBilling, membersOf } from "#billing/members.ts";
+import { billedElsewhereOf } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
 import { useCheckout } from "#billing/use-checkout.ts";
 import type { BillingError } from "#components/billing/billing-view.tsx";
@@ -41,43 +44,45 @@ export interface UpgradeDialogProps {
   readonly workspace: UpgradeWorkspace;
 }
 
-// What the billing page says of the workspace, for a member who reads
-// billing: whether it is in a legacy plan's trial, and the workspace that
-// bills its account when that is another, linked for its members.
 interface WorkspaceBilling {
+  /**
+   * The rate card the server answered, for a member who reads billing; the
+   * app's own otherwise.
+   */
+  readonly card: RateCard;
   readonly elsewhere: BilledElsewhere | null;
   readonly trialing: boolean;
 }
 
+// The workspace that bills the account, from the standing every member
+// reads, linked for its members; and, for a member who reads billing,
+// whether the workspace is in a legacy trial and the server's rate card.
 const useBillingOf = (workspaceId: string): WorkspaceBilling => {
+  const standing = useAtomValue(standingOf(workspaceId));
   const billing = useAtomValue(billingOf(workspaceId));
+  const read = AsyncResult.isSuccess(billing) ? billing.value : null;
 
-  if (!AsyncResult.isSuccess(billing)) {
-    return { elsewhere: null, trialing: false };
-  }
-
-  const { account, subscription } = billing.value;
-  const trialing = subscription?.status === "trialing";
-
-  if (account === undefined || account.billingWorkspaceId === workspaceId) {
-    return { elsewhere: null, trialing };
-  }
-
-  const { billingWorkspaceId, billingWorkspaceName } = account;
+  const elsewhere = AsyncResult.isSuccess(standing)
+    ? billedElsewhereOf(standing.value.account, workspaceId).pipe(
+        Option.map(({ name, workspaceId: id }): BilledElsewhere => ({
+          link:
+            name === null ? null : (
+              <Link
+                href={`/app/${id}/billing`}
+                className="underline underline-offset-4"
+              >
+                {name}
+              </Link>
+            ),
+        })),
+        Option.getOrNull
+      )
+    : null;
 
   return {
-    elsewhere: {
-      link:
-        billingWorkspaceName === null ? null : (
-          <Link
-            href={`/app/${billingWorkspaceId}/billing`}
-            className="underline underline-offset-4"
-          >
-            {billingWorkspaceName}
-          </Link>
-        ),
-    },
-    trialing,
+    card: read?.rateCard ?? rateCard,
+    elsewhere,
+    trialing: read?.subscription?.status === "trialing",
   };
 };
 
@@ -88,7 +93,7 @@ const ManagedOffer = ({
   workspace,
 }: Omit<UpgradeDialogProps, "onClose">) => {
   const checkout = useCheckout(workspace.id);
-  const { elsewhere, trialing } = useBillingOf(workspace.id);
+  const { card, elsewhere, trialing } = useBillingOf(workspace.id);
   const [consented, setConsented] = useState(false);
   const [error, setError] = useState<BillingError | null>(null);
   const [ordering, startOrder] = useTransition();
@@ -115,6 +120,7 @@ const ManagedOffer = ({
   return (
     <UpgradeView
       canManage
+      card={card}
       consented={consented}
       contactUrl={contactUrl}
       elsewhere={elsewhere}
@@ -143,7 +149,7 @@ const AskManagers = ({
   workspace,
 }: Omit<UpgradeDialogProps, "onClose">) => {
   const members = useAtomValue(membersOf(workspace.id));
-  const { elsewhere } = useBillingOf(workspace.id);
+  const { card, elsewhere } = useBillingOf(workspace.id);
 
   const managers = AsyncResult.isSuccess(members)
     ? members.value
@@ -154,6 +160,7 @@ const AskManagers = ({
   return (
     <UpgradeView
       canManage={false}
+      card={card}
       consented={false}
       contactUrl={contactUrl}
       elsewhere={elsewhere}

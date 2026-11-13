@@ -46,6 +46,7 @@ import {
   TableRow,
 } from "peal-ui/components/table";
 import { useId } from "react";
+import type { ReactElement } from "react";
 
 import { ladderOf, nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
@@ -65,9 +66,12 @@ export type BillingError =
   | "forbidden"
   | "generic"
   | "noInvoices"
+  | "notEnabled"
   | "nothingToCancel"
+  | "planNotSold"
   | "planTooSmall"
   | "trialUsed"
+  | "unknown"
   | "withdrawalBusiness"
   | "withdrawalExpired";
 
@@ -136,6 +140,22 @@ const useDate = () => {
 // The rate card the server answers, else the one this app was built with.
 const cardOf = (billing: Billing): RateCard =>
   billing.rateCard ?? publishedCard;
+
+/**
+ * The accounts the billing account connects without a payment method: the
+ * answer's allowance on the free tier (none once staff required a payment
+ * method), else the rate card's free accounts.
+ */
+export const freeWithoutCard = (billing: Billing): number =>
+  billing.plan === "free"
+    ? (billing.allowances.channels ?? freeAccountsOf(cardOf(billing)))
+    : freeAccountsOf(cardOf(billing));
+
+// A plan priced by tiers of channels, no longer sold.
+const isLegacy = (billing: Billing): boolean =>
+  billing.plan !== null &&
+  billing.plan !== "free" &&
+  billing.plan !== "payAsYouGo";
 
 const SubscriptionLines = ({
   subscription,
@@ -365,15 +385,26 @@ const StepPanel = (
 // What the plan the workspace is on gives, in a line.
 const PlanSummary = ({ billing }: { readonly billing: Billing }) => {
   const t = useTranslations("Billing");
-  const free = freeAccountsOf(cardOf(billing));
   const plan = billing.plan ?? "free";
 
   if (plan === "free") {
-    return <p className="text-sm">{t("current.freeTier", { free })}</p>;
+    const free = freeWithoutCard(billing);
+
+    return (
+      <p className="text-sm">
+        {free === 0
+          ? t("current.freeTierRevoked")
+          : t("current.freeTier", { free })}
+      </p>
+    );
   }
 
   if (plan === "payAsYouGo") {
-    return <p className="text-sm">{t("current.perAccount", { free })}</p>;
+    return (
+      <p className="text-sm">
+        {t("current.perAccount", { free: freeAccountsOf(cardOf(billing)) })}
+      </p>
+    );
   }
 
   return (
@@ -396,7 +427,11 @@ const PastInvoices = ({
 }) => {
   const t = useTranslations("Billing.current");
 
-  if (!canManage || billing.subscription !== null) {
+  if (
+    !canManage ||
+    billing.subscription !== null ||
+    billing.paymentFailed === true
+  ) {
     return null;
   }
 
@@ -414,6 +449,28 @@ const PastInvoices = ({
         <p className="text-muted-foreground text-xs">{t("invoicesHint")}</p>
       </div>
     </CardFooter>
+  );
+};
+
+/** The way to the portal, where a failed payment method is replaced. */
+const UpdatePaymentMethod = ({
+  busy,
+  onManage,
+  pending,
+}: Pick<BillingViewProps, "onManage" | "pending"> & {
+  readonly busy: boolean;
+}) => {
+  const t = useTranslations("Billing.current");
+
+  return (
+    <Button
+      variant="outline"
+      disabled={busy}
+      focusableWhenDisabled
+      onClick={onManage}
+    >
+      {pending?._tag === "portal" ? t("managing") : t("updatePaymentMethod")}
+    </Button>
   );
 };
 
@@ -539,13 +596,22 @@ const CurrentPlan = ({
               <AlertDescription>{t("current.pastDue")}</AlertDescription>
             </Alert>
           ) : null}
-          {subscription?.status === "unpaid" ? (
+          {billing.paymentFailed === true ? (
             <Alert variant="destructive">
               <AlertDescription>{t("current.unpaid")}</AlertDescription>
             </Alert>
           ) : null}
         </div>
       </CardContent>
+      {canManage && billing.paymentFailed === true ? (
+        <CardFooter>
+          <UpdatePaymentMethod
+            busy={busy}
+            pending={pending}
+            onManage={onManage}
+          />
+        </CardFooter>
+      ) : null}
       <PastInvoices
         billing={billing}
         busy={busy}
@@ -587,6 +653,7 @@ const MonthFigures = ({
   const upcoming = useMoney(billing.upcomingInvoice?.currency ?? "usd");
   const card = cardOf(billing);
   const free = freeAccountsOf(card);
+  const allowed = freeWithoutCard(billing);
   const workspaces = billing.account?.workspaces ?? 1;
   const next = nextAccountOf(accounts.pooled, card);
   const paying = billing.plan === "payAsYouGo";
@@ -600,44 +667,84 @@ const MonthFigures = ({
     rate: displayVatRate,
   };
 
+  const pooledLine = (
+    <p className="text-sm">
+      {workspaces > 1
+        ? t("pooledAcross", {
+            connected: accounts.connected,
+            pooled: accounts.pooled,
+            workspaces,
+          })
+        : t("pooledHere", { pooled: accounts.pooled })}
+    </p>
+  );
+
+  // A legacy plan holds its channels and is not priced by the day.
+  if (isLegacy(billing)) {
+    const { channels } = billing.allowances;
+
+    return (
+      <div className="flex flex-col gap-4">
+        {channels === null ? null : (
+          <Progress
+            value={Math.min(accounts.pooled, channels)}
+            max={Math.max(channels, 1)}
+          >
+            <ProgressLabel>
+              {usage("limit", { limit: "channels" })}
+            </ProgressLabel>
+            <ProgressValue>
+              {() => usage("of", { allowed: channels, used: accounts.pooled })}
+            </ProgressValue>
+          </Progress>
+        )}
+        {pooledLine}
+      </div>
+    );
+  }
+
+  // The next account's price; nothing to say of a free one where staff
+  // required a payment method, as nothing is free without one.
+  const nextLine = () => {
+    if (next.price.excluded > 0) {
+      return t("nextAccount", {
+        included: dollars(next.price.included),
+        position: next.position,
+        price: dollars(next.price.excluded),
+        rate: displayVatRate,
+      });
+    }
+
+    return billing.plan === "free" && allowed === 0
+      ? null
+      : t("nextAccountFree", { free, position: next.position });
+  };
+
+  const nextText = nextLine();
+
   return (
     <div className="flex flex-col gap-4">
-      {billing.plan === "free" ? (
+      {billing.plan === "free" && allowed > 0 ? (
         <Progress
-          value={Math.min(accounts.pooled, free)}
-          max={Math.max(free, 1)}
+          value={Math.min(accounts.pooled, allowed)}
+          max={Math.max(allowed, 1)}
         >
           <ProgressLabel>{t("accounts")}</ProgressLabel>
           <ProgressValue>
-            {() => usage("of", { allowed: free, used: accounts.pooled })}
+            {() => usage("of", { allowed, used: accounts.pooled })}
           </ProgressValue>
         </Progress>
       ) : null}
-      <p className="text-sm">
-        {workspaces > 1
-          ? t("pooledAcross", {
-              connected: accounts.connected,
-              pooled: accounts.pooled,
-              workspaces,
-            })
-          : t("pooledHere", { pooled: accounts.pooled })}
-      </p>
+      {pooledLine}
       <p className="text-2xl font-semibold tabular-nums">
         {t("accountDays", { days: accountDays })}
       </p>
       <p className="text-sm tabular-nums">
         {paying ? t("estimatePaying", estimate) : t("estimateFree", estimate)}
       </p>
-      <p className="text-muted-foreground text-sm tabular-nums">
-        {next.price.excluded === 0
-          ? t("nextAccountFree", { free, position: next.position })
-          : t("nextAccount", {
-              included: dollars(next.price.included),
-              position: next.position,
-              price: dollars(next.price.excluded),
-              rate: displayVatRate,
-            })}
-      </p>
+      {nextText === null ? null : (
+        <p className="text-muted-foreground text-sm tabular-nums">{nextText}</p>
+      )}
       {billing.upcomingInvoice === null ? null : (
         <p className="text-sm tabular-nums">
           {t("upcoming", { amount: upcoming(billing.upcomingInvoice.amount) })}
@@ -677,6 +784,20 @@ const ThisMonth = ({ billing }: { readonly billing: Billing }) => {
         )}
       </CardContent>
     </Card>
+  );
+};
+
+/**
+ * The rule every price with VAT follows: France's rate, named, as the
+ * server knows no customer's own; what is paid depends on the country.
+ */
+export const VatNote = () => {
+  const t = useTranslations("Billing.ladder");
+
+  return (
+    <p className="text-muted-foreground text-xs">
+      {t("vatNote", { rate: displayVatRate })}
+    </p>
   );
 };
 
@@ -744,9 +865,7 @@ const Ladder = ({ billing }: { readonly billing: Billing }) => {
           days: card.daysPerMonth,
         })}
       </p>
-      <p className="text-muted-foreground text-xs">
-        {t("vatNote", { rate: displayVatRate })}
-      </p>
+      <VatNote />
       <CurrencyNote />
     </section>
   );
@@ -800,11 +919,13 @@ export const OrderButton = ({
   return (
     <div className="flex flex-col items-start gap-2">
       <Button
+        className="h-auto min-h-8 whitespace-normal"
         disabled={!consented || ordering}
         focusableWhenDisabled
         onClick={onOrder}
       >
-        {ordering ? t("ordering") : t("order")}
+        {/* Wraps in a narrow dialog rather than overflow it. */}
+        <span className="py-1.5">{ordering ? t("ordering") : t("order")}</span>
       </Button>
       {consented ? null : (
         <p className="text-muted-foreground text-xs">{t("needed")}</p>
@@ -821,6 +942,7 @@ const AddPaymentMethod = ({
   onConsent,
   onOrder,
   pending,
+  refusal,
   termsUrl,
 }: Pick<
   BillingViewProps,
@@ -831,7 +953,10 @@ const AddPaymentMethod = ({
   | "onOrder"
   | "pending"
   | "termsUrl"
->) => {
+> & {
+  /** Why the last order failed, beside the button that sent it. */
+  readonly refusal: ReactElement | null;
+}) => {
   const t = useTranslations("Billing.payment");
   const card = cardOf(billing);
 
@@ -862,11 +987,14 @@ const AddPaymentMethod = ({
         </CardContent>
         {canManage ? (
           <CardFooter>
-            <OrderButton
-              consented={consented}
-              ordering={pending?._tag === "order"}
-              onOrder={onOrder}
-            />
+            <div className="flex flex-col items-start gap-3">
+              {refusal}
+              <OrderButton
+                consented={consented}
+                ordering={pending?._tag === "order"}
+                onOrder={onOrder}
+              />
+            </div>
           </CardFooter>
         ) : null}
       </Card>
@@ -932,12 +1060,35 @@ const UsageMeter = ({
   );
 };
 
+// The media a workspace that does not bill its account stores itself.
+const OwnStorage = ({ used }: { readonly used: number }) => {
+  const t = useTranslations("Billing.usage");
+  const size = useSize();
+
+  return (
+    <li className="flex flex-wrap justify-between gap-3 text-sm">
+      <span className="font-medium">
+        {t("limit", { limit: "mediaStorage" })}
+      </span>
+      <span className="text-muted-foreground tabular-nums">
+        {t("ownStorage", { used: size(used) })}
+      </span>
+    </li>
+  );
+};
+
 const Usage = ({
   billing,
   limits,
+  own = false,
 }: {
   readonly billing: Billing;
   readonly limits: readonly PlanLimit[];
+  /**
+   * Whether the workspace does not bill its account: its media are its
+   * own, without the pool's allowance.
+   */
+  readonly own?: boolean;
 }) => {
   const t = useTranslations("Billing.usage");
   const { allowances, usage } = billing;
@@ -967,15 +1118,19 @@ const Usage = ({
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col gap-5">
-          {limits.map((limit) => (
-            <UsageMeter
-              key={limit}
-              allowed={allowances[limit]}
-              limit={limit}
-              resetsAt={resetsAt[limit]}
-              used={used[limit]}
-            />
-          ))}
+          {limits.map((limit) =>
+            own && limit === "mediaStorage" ? (
+              <OwnStorage key={limit} used={used[limit]} />
+            ) : (
+              <UsageMeter
+                key={limit}
+                allowed={allowances[limit]}
+                limit={limit}
+                resetsAt={resetsAt[limit]}
+                used={used[limit]}
+              />
+            )
+          )}
         </ul>
       </CardContent>
     </Card>
@@ -1007,11 +1162,37 @@ export const BillingView = (props: BillingViewProps) => {
     );
   }
 
-  // The workspace that bills the account reads its month; only it orders.
+  // The workspace that bills the account reads its month and contract;
+  // only it orders. Another reads its own accounts, and who pays above.
   const billsHere = billing.accounts.accountDays !== null;
 
   const offersPaymentMethod =
-    billsHere && billing.plan === "free" && billing.subscription === null;
+    billsHere &&
+    billing.plan === "free" &&
+    billing.subscription === null &&
+    billing.paymentFailed !== true;
+
+  const busy = props.pending !== null || props.step._tag !== "idle";
+
+  // A refusal says why, with the way out where there is one: a contract
+  // that already exists is paid for in the portal.
+  const refusal =
+    error === null ? null : (
+      <Alert variant="destructive" aria-live="assertive">
+        <AlertDescription>
+          <div className="flex flex-col items-start gap-3">
+            {t(`errors.${error}`)}
+            {error === "alreadySubscribed" && canManage && billsHere ? (
+              <UpdatePaymentMethod
+                busy={busy}
+                pending={props.pending}
+                onManage={props.onManage}
+              />
+            ) : null}
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
 
   return (
     <div className="flex flex-col gap-8">
@@ -1027,19 +1208,21 @@ export const BillingView = (props: BillingViewProps) => {
           </AlertDescription>
         </Alert>
       ) : null}
-      {error === null ? null : (
-        <Alert variant="destructive" aria-live="assertive">
-          <AlertDescription>{t(`errors.${error}`)}</AlertDescription>
-        </Alert>
-      )}
+      {offersPaymentMethod ? null : refusal}
       <StepPanel {...props} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <CurrentPlan {...props} canManage={canManage && billsHere} />
+      {billsHere ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          <CurrentPlan {...props} canManage={canManage} />
+          <ThisMonth billing={billing} />
+        </div>
+      ) : (
         <ThisMonth billing={billing} />
-      </div>
-      {offersPaymentMethod ? <AddPaymentMethod {...props} /> : null}
+      )}
+      {offersPaymentMethod ? (
+        <AddPaymentMethod {...props} refusal={refusal} />
+      ) : null}
       <Ladder billing={billing} />
-      <Usage billing={billing} limits={usageLimits} />
+      <Usage billing={billing} limits={usageLimits} own={!billsHere} />
     </div>
   );
 };

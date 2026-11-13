@@ -255,6 +255,21 @@ export const OverPlanView = (props: OverPlanViewProps) => {
   const shared = standing.account?.otherWorkspaces ?? [];
   // The free tier, over its accounts: a payment method or fewer accounts.
   const free = (standing.plan ?? "free") === "free";
+  // What the free tier allows this account: none once staff required a
+  // payment method.
+  const freeAllowed = allowedOf(standing, "channels") ?? freeAccountsOf();
+
+  const description = () => {
+    if (!free) {
+      return t("description", {
+        plan: billing("plan", { plan: standing.plan ?? "free" }),
+      });
+    }
+
+    return freeAllowed === 0
+      ? t("descriptionRevoked")
+      : t("descriptionFree", { free: freeAllowed });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -264,13 +279,7 @@ export const OverPlanView = (props: OverPlanViewProps) => {
             ? t("titleFree", { workspace: workspaceName })
             : t("title", { workspace: workspaceName })}
         </h1>
-        <p className="text-muted-foreground">
-          {free
-            ? t("descriptionFree", { free: freeAccountsOf() })
-            : t("description", {
-                plan: billing("plan", { plan: standing.plan ?? "free" }),
-              })}
-        </p>
+        <p className="text-muted-foreground">{description()}</p>
       </div>
       <ExcessList excesses={standing.over} namespace="OverPlan" />
       {shared.length === 0 ? null : (

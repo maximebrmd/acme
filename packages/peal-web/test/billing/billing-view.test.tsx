@@ -3,7 +3,7 @@ import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import type { Billing, PlanAllowances } from "peal-contract";
-import { rateCard } from "peal-contract/rate-card";
+import { accountsCharge, rateCard } from "peal-contract/rate-card";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { BillingView } from "#components/billing/billing-view.tsx";
@@ -88,12 +88,12 @@ const onPerAccount: Billing = {
   accounts: {
     accountDays: 91,
     connected: 4,
-    estimate: { amount: 1517, currency: "usd" },
+    estimate: { amount: accountsCharge(91), currency: "usd" },
     nextAccount: { amount: 500, currency: "usd" },
     pooled: 7,
   },
   allowances: perAccount,
-  estimate: { amount: 1517, currency: "usd" },
+  estimate: { amount: accountsCharge(91), currency: "usd" },
   paymentMethod: true,
   plan: "payAsYouGo",
   subscription: {
@@ -128,12 +128,16 @@ const customer: Billing = {
     connected: 3,
     estimate: null,
     nextAccount: null,
-    pooled: 41,
+    pooled: 3,
   },
+  // As the server answers a workspace that does not bill its account:
+  // its own accounts and media, no contract and no pooled media allowance.
+  allowances: { ...perAccount, mediaStorage: null },
   estimate: null,
+  paymentFailed: false,
   subscription: null,
   upcomingInvoice: null,
-  usage: { ...usage, channels: 41 },
+  usage: { ...usage, channels: 3, mediaStorage: 300_000_000 },
   withdrawableUntil: null,
 };
 
@@ -307,13 +311,13 @@ describe(BillingView, () => {
       ])
     ).toStrictEqual([]);
     expect(html).toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation to pay/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation to pay/u
     );
 
     const ticked = await render("en", { billing: onFree, consented: true });
 
     expect(ticked).not.toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation to pay/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation to pay/u
     );
   });
 
@@ -336,7 +340,7 @@ describe(BillingView, () => {
         "Active",
         "7 accounts across the account’s 3 workspaces, 4 of them on this one.",
         "91 account-days so far",
-        "So far this month: $15.17 excluding tax, $18.20 with France’s 20% VAT.",
+        "So far this month: $5.17 excluding tax, $6.20 with France’s 20% VAT.",
         "Stripe’s next invoice: $25.20, tax included. The invoice is the one that counts.",
         "Manage billing",
         "Cancel your contract",
@@ -355,12 +359,69 @@ describe(BillingView, () => {
       missing(html, [
         "3 accounts connected on this workspace.",
         "The workspace that bills the account shows the month’s account-days and their cost to its members.",
+        "300 MB stored by this workspace",
       ])
     ).toStrictEqual([]);
-    expect(html).not.toContain("41");
-    expect(html).not.toContain("account-days so far");
-    expect(html).not.toContain("So far this month");
+    // Who pays and where is the account card's; this one names no plan,
+    // no contract and no pooled limit.
+    expect(
+      [
+        "Your plan",
+        "MB, no limit",
+        "Cancel your contract",
+        "account-days so far",
+        "So far this month",
+        "Order with obligation to pay",
+      ].filter((text) => html.includes(text))
+    ).toStrictEqual([]);
+  });
+
+  it("sends an unpaid contract to the portal, never to an order", async () => {
+    const html = await render("en", {
+      billing: { ...onFree, paymentFailed: true },
+    });
+
+    expect(
+      missing(html, [
+        "The last payments for per-account pricing did not go through",
+        "Update the payment method",
+      ])
+    ).toStrictEqual([]);
     expect(html).not.toContain("Order with obligation to pay");
+  });
+
+  it("offers the portal beside a refusal that says a contract already exists", async () => {
+    const html = await render("en", {
+      billing: onFree,
+      error: "alreadySubscribed",
+    });
+
+    expect(html).toContain(">Update the payment method</button>");
+  });
+
+  it("says when staff took the free tier away, never that 2 accounts are free", async () => {
+    const html = await render("en", {
+      billing: {
+        ...onFree,
+        accounts: { ...onFree.accounts, connected: 0, pooled: 0 },
+        allowances: { ...freeTier, channels: 0 },
+      },
+    });
+
+    expect(html).toContain(
+      "This billing account connects no account without a payment method."
+    );
+    expect(html).not.toContain("Up to 2 connected accounts");
+    expect(html).not.toContain("is free: the first");
+  });
+
+  it("names the error it was refused with, not a payment provider that never answered", async () => {
+    await expect(
+      render("en", { billing: onFree, error: "unknown" })
+    ).resolves.toContain("That did not work. Try again in a moment.");
+    await expect(
+      render("fr", { billing: onFree, error: "planNotSold" })
+    ).resolves.toContain("Cette offre n’est plus vendue");
   });
 
   it("reads a legacy plan as it is, with its period's end, and sells nothing more on it", async () => {
@@ -372,9 +433,14 @@ describe(BillingView, () => {
         "priced by tiers of channels, no longer sold",
         "Renews on December 9, 2026, each year until cancelled",
         "Cancel your contract",
+        "Connected channels",
+        "2 of 5",
       ])
     ).toStrictEqual([]);
     expect(html).not.toContain("Order with obligation to pay");
+    // It has a payment method, and its plan is not priced by the day.
+    expect(html).not.toContain("With a payment method, the month so far");
+    expect(html).not.toContain("account-days so far");
   });
 
   it("asks to confirm a cancellation in the law's words, then says when it ends", async () => {
@@ -452,7 +518,7 @@ describe(BillingView, () => {
         "Renoncer au contrat ici",
         "Jusqu’au 23 novembre 2026",
         "Prochaine facture le 1 décembre 2026",
-        "15,17 $US HT, 18,20 $US avec la TVA française de 20 %",
+        "5,17 $US HT, 6,20 $US avec la TVA française de 20 %",
         "Les prix TTC appliquent le taux français de 20 %.",
       ])
     ).toStrictEqual([]);

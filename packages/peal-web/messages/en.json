@@ -2102,7 +2102,9 @@
       "perAccount": "Each connected account past the first {free, number}, counted by the day, is billed each month for the month past, at the rates below.",
       "legacy": "{plan} is priced by tiers of channels, no longer sold: the workspace keeps it, with its allowances, until it ends.",
       "nextInvoice": "Next invoice on {date}, for the month’s use, until cancelled",
-      "unpaid": "Stripe could not take the last payments, so the billing account is back on the free tier. Update the payment method in the billing portal."
+      "unpaid": "The last payments for per-account pricing did not go through, so the billing account is back on the free tier. Its contract still runs: update the payment method in the billing portal rather than ordering again.",
+      "freeTierRevoked": "This billing account connects no account without a payment method.",
+      "updatePaymentMethod": "Update the payment method"
     },
     "usage": {
       "title": "Usage",
@@ -2138,7 +2140,8 @@
         "media": "Media stored",
         "assistant": "Assistant requests",
         "note": "Counts only, kept {days, number} days: nothing here is priced. A dash is a day without a snapshot."
-      }
+      },
+      "ownStorage": "{used} stored by this workspace"
     },
     "checkout": {
       "done": "Thank you: per-account pricing starts as soon as Stripe confirms the payment method, usually within seconds.",
@@ -2155,7 +2158,10 @@
       "planTooSmall": "This plan does not hold what the workspace has.",
       "alreadySubscribed": "This billing account already has per-account pricing. If a payment failed, update the payment method from the billing page instead.",
       "consentChanged": "The words of the order box changed since this page was loaded. Load the page again, read the box, and order again.",
-      "billedElsewhere": "Another workspace bills this billing account: its payment method is added there."
+      "billedElsewhere": "Another workspace bills this billing account: its payment method is added there.",
+      "unknown": "That did not work. Try again in a moment.",
+      "planNotSold": "This plan is no longer sold: per-account pricing is the one on offer.",
+      "notEnabled": "This server does not bill: there is nothing to order."
     },
     "limitReached": "{limit, select, channels {The workspace’s billing account connects no more accounts for now: see its billing page, or disconnect an account first.} members {The workspace’s plan allows no more members. An owner or an admin can see its billing page.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, or cancel a post.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s billing account has no room for this file. Delete media, or see its billing page.} other {The workspace’s plan allows no more of this.}}",
     "prices": {
@@ -2355,13 +2361,19 @@
     "reachedFreeStorage": "The billing account of {workspace} stores {used} of media, uploads in progress included, and the free tier holds {allowed}.",
     "reachedCeiling": "Until its first invoice is paid, the billing account of {workspace} connects up to {allowed, plural, one {# account} other {# accounts}}, and it has {used, number}. Once an invoice is paid, there is no limit.",
     "givesAccounts": "With a payment method, the billing account connects more accounts.",
-    "nextAccount": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} costs {price} a month, excluding tax ({included} with {rate}% VAT), counted by the day; the first {free, number} stay free.",
+    "nextAccount": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} costs {price} a month excluding tax, {included} with France’s {rate}% VAT, counted by the day; the first {free, number} stay free.",
     "givesStorage": "With a payment method, media storage is {perAccount} per connected account, {minimum} at least.",
     "gives": "With a payment method, the billing account moves to per-account pricing.",
-    "noRoom": "For more before then, write to us.",
-    "noRoomOperator": "For more before then, write to the people who run this server.",
+    "noRoom": "For more, write to us.",
+    "noRoomOperator": "For more, write to the people who run this server.",
     "billedElsewhere": "The billing account of {workspace} is billed on <billing></billing>: its owners and admins add the payment method there.",
-    "billedElsewhereUnnamed": "The billing account of {workspace} is billed on another of its workspaces: its owners and admins add the payment method there."
+    "billedElsewhereUnnamed": "The billing account of {workspace} is billed on another of its workspaces: its owners and admins add the payment method there.",
+    "reachedFreeRevoked": "The billing account of {workspace} connects no account without a payment method.",
+    "held": "{used, plural, one {The account connected costs} other {The # accounts connected cost}} {price} a month excluding tax, {included} with France’s {rate}% VAT, counted by the day.",
+    "nextAccountAdds": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} adds {price} a month excluding tax, {included} with France’s {rate}% VAT.",
+    "nextAccountFree": "The {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} is free: the first {free, number} are.",
+    "noRoomCeiling": "For more before then, write to us.",
+    "noRoomCeilingOperator": "For more before then, write to the people who run this server."
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
@@ -2402,7 +2414,8 @@
       "generic": "That did not work. Try again in a moment."
     },
     "titleFree": "{workspace} holds more than the free tier allows",
-    "descriptionFree": "Its billing account holds more than {free, number} connected accounts without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or {free, number} accounts are kept."
+    "descriptionFree": "Its billing account holds more than {free, number} connected accounts without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or {free, number} accounts are kept.",
+    "descriptionRevoked": "Its billing account connects no account without a payment method. Nothing was deleted, but nothing is scheduled or published until a payment method is added or its accounts are disconnected."
   },
   "Captcha": {
     "label": "Check that you are a person"

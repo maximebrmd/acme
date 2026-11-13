@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
+import { rateCard } from "peal-contract/rate-card";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { UpgradeReason } from "#billing/upgrade.ts";
@@ -39,6 +40,7 @@ const render = async (
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <UpgradeView
         canManage
+        card={rateCard}
         consented={false}
         contactUrl={null}
         elsewhere={null}
@@ -79,7 +81,8 @@ describe(UpgradeView, () => {
     expect(
       missing(english, [
         "With a payment method, the billing account connects more accounts.",
-        "The 3rd costs $5.00 a month, excluding tax ($6.00 with 20% VAT), counted by the day; the first 2 stay free.",
+        "The 3rd costs $5.00 a month excluding tax, $6.00 with France’s 20% VAT, counted by the day; the first 2 stay free.",
+        "Prices with VAT use France’s 20% rate. The VAT you pay depends on your country, and a business with a valid VAT number pays the price excluding VAT.",
         "VAT is added at checkout for customers in the EU",
         "At checkout you can pay in your own currency",
       ])
@@ -92,16 +95,85 @@ describe(UpgradeView, () => {
       reason: { ...third, allowed: 10, used: 10 },
     });
 
-    expect(eleventh).toContain("The 11th costs $3.00 a month");
+    expect(eleventh).toContain("The 11th adds $3.00 a month");
 
     const french = await render("fr");
 
     expect(
       missing(french, [
-        "Le 3e coûte 5,00 $US HT par mois (6,00 $US avec la TVA de 20 %)",
+        "Le 3e coûte 5,00 $US HT par mois, 6,00 $US avec la TVA française de 20 %",
         "Au paiement, vous pouvez payer dans votre devise",
       ])
     ).toStrictEqual([]);
+  });
+
+  it("quotes what the order bills for the accounts held, then the next one, from the ladder", async () => {
+    const html = await render("en", {
+      reason: { ...third, used: 8 },
+    });
+
+    expect(
+      missing(html, [
+        "The 8 accounts connected cost $30.00 a month excluding tax, $36.00 with France’s 20% VAT, counted by the day.",
+        "The 9th adds $5.00 a month excluding tax, $6.00 with France’s 20% VAT.",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("The 9th costs");
+  });
+
+  it("says a free next account is free, never $0.00", async () => {
+    const html = await render("en", { reason: { ...third, used: 1 } });
+
+    expect(html).toContain("The 2nd is free: the first 2 are.");
+    expect(html).not.toContain("$0.00");
+  });
+
+  it("prices from the rate card the server answered", async () => {
+    const card = {
+      ...rateCard,
+      prices: {
+        usd: {
+          ...rateCard.prices.usd,
+          accounts: {
+            bands: [
+              { monthly: 0, upTo: 2 },
+              { monthly: 700, upTo: null },
+            ],
+          },
+        },
+      },
+    };
+
+    await expect(render("en", { card })).resolves.toContain(
+      "The 3rd costs $7.00 a month"
+    );
+  });
+
+  it("says when staff took the free tier away", async () => {
+    const html = await render("en", {
+      reason: { ...third, allowed: 0, used: 0 },
+    });
+
+    expect(html).toContain(
+      "The billing account of Studio Nord connects no account without a payment method."
+    );
+  });
+
+  it("asks for more without a deadline where none applies", async () => {
+    const html = await render("en", {
+      reason: {
+        allowed: 35_000_000_000,
+        limit: "mediaStorage",
+        plan: "payAsYouGo",
+        planWithRoom: null,
+        used: 35_000_000_000,
+      },
+    });
+
+    expect(html).toContain(
+      "For more, write to the people who run this server."
+    );
+    expect(html).not.toContain("before then");
   });
 
   it("asks for a card behind the unticked box, with the button the law words", async () => {
@@ -115,14 +187,14 @@ describe(UpgradeView, () => {
       ])
     ).toStrictEqual([]);
     expect(unticked).toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation/u
     );
     expect(unticked).not.toContain('aria-checked="true"');
 
     const ticked = await render("en", { consented: true });
 
     expect(ticked).not.toMatch(
-      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation/u
+      /<button[^>]*aria-disabled="true"[^>]*>(?:<span[^>]*>)?Order with obligation/u
     );
     await expect(render("fr")).resolves.toContain(
       "Commander avec obligation de paiement"
