@@ -213,10 +213,12 @@ export type SpendGroup = typeof SpendGroupSchema.Type;
 export const BillingMeterSchema = Schema.Struct({
   allowance: Schema.Int,
   // The units past the allowance billed this month: none without a
-  // payment method, which never passes it.
-  billable: Schema.Int,
+  // payment method, which never passes it. Null for a workspace that does
+  // not bill the account, which reads no money of it.
+  billable: Schema.NullOr(Schema.Int),
   // The most the account spends past the allowance a month, for a meter
-  // whose group has a ceiling (`group`); null for none.
+  // whose group has a ceiling (`group`); null for none, and for a
+  // workspace that does not bill the account.
   ceiling: Schema.NullOr(MoneySchema),
   // What `billable` costs so far, excluding tax; null for a workspace
   // that does not bill the account.

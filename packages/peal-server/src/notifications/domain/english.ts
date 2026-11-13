@@ -397,7 +397,7 @@ export const english: EmailCatalog = {
   },
   allowanceReached: {
     action: "Add a payment method",
-    body: "{workspaceName} used the {allowed} {meter} its billing account includes this month without a payment method. Until {resetsAt}, no more can be sent; reading, publishing and everything else go on. Add a payment method on the billing page to go on now: what is used past the allowance is then billed at the rate card's price.",
+    body: "{workspaceName} used the {allowed} {meter} its billing account includes this month without a payment method. Until {resetsAt}, the meter pauses: no more messages are sent and no new ads are recorded; reading, publishing and everything else go on. Add a payment method on the billing page to go on now: what is used past the allowance is then billed at the rate card's price.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "{workspaceName} used this month's {meter}",

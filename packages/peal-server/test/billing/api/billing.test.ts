@@ -431,6 +431,20 @@ layer(
         });
         assert.isNull(billing.estimate);
         assert.isNull(billing.upcomingInvoice);
+        // Its meters' counts and allowances, never what they bill.
+        assert.isAbove(billing.meters?.length ?? 0, 0);
+        assert.deepStrictEqual(
+          billing.meters?.map(({ billable, ceiling, estimate }) => ({
+            billable,
+            ceiling,
+            estimate,
+          })),
+          billing.meters?.map(() => ({
+            billable: null,
+            ceiling: null,
+            estimate: null,
+          }))
+        );
       })
   );
 

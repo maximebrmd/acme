@@ -427,7 +427,8 @@
         "generic": "Something went wrong. Try again.",
         "paymentMethod": "Peal's images need a payment method on the billing account. An image provider of your own makes them without one.",
         "allowance": "Your billing account used the images it may make this month. Raise its ceiling on the billing page, or ask again next month."
-      }
+      },
+      "costMonth": "{remaining, plural, =0 {No images left this month.} one {# image left this month.} other {# images left this month.}}"
     },
     "provider": {
       "title": "Image provider",
@@ -550,7 +551,8 @@
       "generic": "Something went wrong. Try again.",
       "paymentMethod": "Peal's writing assistant needs a payment method on the billing account. A text provider of your own works without one.",
       "monthUsed": "Your billing account used the {allowed, number} assistant requests it may send this month. Raise its ceiling on the billing page, or ask again from {resetsAt}."
-    }
+    },
+    "remainingMonth": "{remaining, plural, =0 {No requests left this month} one {# request left this month} other {# requests left this month}}"
   },
   "AppShell": {
     "productName": "Peal",
@@ -2270,7 +2272,7 @@
       "coming": "Coming",
       "estimate": "{estimate} excl. VAT, {included} with France’s {rate}% VAT",
       "billedThere": "Told on the billing workspace",
-      "withCard": "With a payment method, what passes the included units is billed each month for the month past. The writing assistant stops at what is included unless its ceiling is raised.",
+      "withCard": "With a payment method, what passes the included units is billed each month for the month past.",
       "withoutCard": "Peal’s writing assistant needs a payment method; a provider of the workspace’s own works without one.",
       "ceiling": {
         "assistant": "The writing assistant’s monthly ceiling past what is included, in US dollars excl. VAT",
@@ -2278,7 +2280,8 @@
         "now": "Now {ceiling} excl. VAT, {included} with France’s {rate}% VAT.",
         "save": "Save the ceiling",
         "failed": "The ceiling was not saved. Try again."
-      }
+      },
+      "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed."
     }
   },
   "BillingAccount": {

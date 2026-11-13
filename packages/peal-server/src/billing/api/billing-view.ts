@@ -22,16 +22,19 @@ import {
 const usd = (amount: number) => ({ amount, currency: "usd" });
 
 /**
- * What clients see of a meter this month: its money only for the
- * workspace that bills the account.
+ * What clients see of a meter this month: its money (what is billed, the
+ * ceiling, the estimate) only for the workspace that bills the account;
+ * every workspace reads the counts and the allowance.
  */
 export const meterView = (
   month: MeterMonth,
   billing: boolean
 ): BillingMeter => ({
   allowance: month.allowance,
-  billable: month.billable,
-  ceiling: month.ceiling.pipe(Option.map(usd), Option.getOrNull),
+  billable: billing ? month.billable : null,
+  ceiling: billing
+    ? month.ceiling.pipe(Option.map(usd), Option.getOrNull)
+    : null,
   estimate: billing ? usd(month.charge) : null,
   group: Option.getOrNull(month.group),
   meter: month.meter,

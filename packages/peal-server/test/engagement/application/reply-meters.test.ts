@@ -87,6 +87,32 @@ describe("replies on a server that bills", () => {
     }
   );
 
+  it.effect(
+    "answers a reply sent again under its key once the month's messages are used",
+    () => {
+      const { layer } = worldWith(1);
+
+      return at(
+        Effect.gen(function* again() {
+          const sent = (text: string) =>
+            EngagementReplies.use((replies) =>
+              replies.reply(
+                editor,
+                commentId(101),
+                text,
+                Option.some("synthetic-key-1")
+              )
+            );
+
+          const first = yield* sent("Thank you!");
+          const replayed = yield* sent("Thank you!");
+
+          assert.strictEqual(replayed.id, first.id);
+        })
+      ).pipe(Effect.provide(layer));
+    }
+  );
+
   it.effect("gives the message back when the reply never went out", () => {
     const { layer, world } = worldWith(1);
 

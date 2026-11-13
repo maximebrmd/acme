@@ -619,14 +619,19 @@ describe(BillingView, () => {
         "$1.20 per 10,000",
         "$1.50 excl. VAT, $1.80 with France’s 20% VAT",
         "Coming",
-        "7 of 100",
+        "monthly allowance and price are coming",
       ])
     ).toStrictEqual([]);
 
     const elsewhere = await render("en", {
       billing: {
         ...customer,
-        meters: meters.map((meter) => ({ ...meter, estimate: null })),
+        meters: meters.map((meter) => ({
+          ...meter,
+          billable: null,
+          ceiling: null,
+          estimate: null,
+        })),
       },
     });
 
@@ -634,5 +639,6 @@ describe(BillingView, () => {
       missing(elsewhere, ["25,000", "Told on the billing workspace"])
     ).toStrictEqual([]);
     expect(elsewhere).not.toContain("$1.50");
+    expect(paying).not.toContain("Save the ceiling");
   });
 });

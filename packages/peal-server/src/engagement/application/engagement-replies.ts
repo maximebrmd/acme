@@ -292,11 +292,14 @@ export class EngagementReplies extends Context.Service<
         }
 
         // A paused meter refuses before anything is journalled; the claim
-        // in the journal's transaction holds requests sent together.
-        const paused = (yield* meters.state(
-          actor.workspaceId,
-          "outboundMessages"
-        )).pipe(Option.flatMap(pausedOf));
+        // in the journal's transaction holds requests sent together. A
+        // request with a key goes to the journal first, which answers the
+        // reply the key made, however the meter stands now.
+        const paused = Option.isSome(key)
+          ? Option.none()
+          : (yield* meters.state(actor.workspaceId, "outboundMessages")).pipe(
+              Option.flatMap(pausedOf)
+            );
 
         if (Option.isSome(paused)) {
           return yield* paused.value;

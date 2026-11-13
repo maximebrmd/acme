@@ -72,7 +72,7 @@ const MeterRow = ({
     <TableRow>
       <TableHead scope="row">{t(`names.${meter.meter}`)}</TableHead>
       <TableCell variant="numeric">
-        {meter.most === null
+        {meter.most === null || !meter.priceConfirmed
           ? t("usedOpen", { used: meter.used })
           : t("usedOf", { most: meter.most, used: meter.used })}
       </TableCell>
@@ -195,7 +195,14 @@ export const MeterTable = ({
   // The workspace that bills the account reads its money.
   const billsHere = billing.accounts.accountDays !== null;
 
-  const assistant = meters.find(({ group }) => group === "assistant")?.ceiling;
+  const assistantMeters = meters.filter(({ group }) => group === "assistant");
+  const assistant = assistantMeters[0]?.ceiling;
+
+  // A price not confirmed bills nothing past the allowance: no ceiling to
+  // set until it is.
+  const assistantPriced =
+    assistantMeters.length > 0 &&
+    assistantMeters.every(({ priceConfirmed }) => priceConfirmed);
 
   return (
     <section className="flex flex-col gap-4" aria-labelledby="billing-meters">
@@ -244,9 +251,13 @@ export const MeterTable = ({
       <p className="text-sm">
         {billing.paymentMethod ? t("withCard") : t("withoutCard")}
       </p>
+      {assistantPriced ? null : (
+        <p className="text-muted-foreground text-sm">{t("assistantComing")}</p>
+      )}
       {billsHere &&
       canManage &&
       billing.paymentMethod &&
+      assistantPriced &&
       billing.account !== undefined &&
       assistant !== null &&
       assistant !== undefined ? (

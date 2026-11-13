@@ -194,7 +194,14 @@ const GenerateDialog = ({
           <p className="text-muted-foreground text-sm">
             {own
               ? t("ownProvider")
-              : t("cost", { cost: images.requestCost, remaining })}
+              : images.month === null
+                ? t("cost", { cost: images.requestCost, remaining })
+                : t("costMonth", {
+                    remaining: Math.max(
+                      0,
+                      images.month.most - images.month.used
+                    ),
+                  })}
           </p>
           <div aria-live="polite" className="flex flex-col gap-2">
             {hint === null ? null : (

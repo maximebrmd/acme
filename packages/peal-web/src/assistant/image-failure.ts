@@ -124,12 +124,21 @@ export const imageAllowanceHint = ({
 }: {
   readonly images: Pick<
     AssistantImagesStatus,
-    "dailyLimit" | "requestCost" | "source"
+    "dailyLimit" | "month" | "requestCost" | "source"
   >;
   readonly remaining: number;
 }): "noImagesOnPlan" | "notEnoughToday" | null => {
   if (images.source === "workspace") {
     return null;
+  }
+
+  // On a server that bills, images have a month of their own.
+  if (images.month !== null) {
+    if (images.month.most === 0) {
+      return "noImagesOnPlan";
+    }
+
+    return images.month.used >= images.month.most ? "notEnoughToday" : null;
   }
 
   if (images.dailyLimit < images.requestCost) {

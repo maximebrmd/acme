@@ -427,7 +427,8 @@
         "generic": "Une erreur est survenue. Réessayez.",
         "paymentMethod": "Les images de Peal demandent un moyen de paiement sur le compte de facturation. Un fournisseur d’images à vous les crée sans.",
         "allowance": "Votre compte de facturation a utilisé les images qu’il peut créer ce mois-ci. Relevez son plafond sur la page de facturation, ou demandez à nouveau le mois prochain."
-      }
+      },
+      "costMonth": "{remaining, plural, =0 {Plus aucune image ce mois-ci.} one {# image restante ce mois-ci.} other {# images restantes ce mois-ci.}}"
     },
     "provider": {
       "title": "Fournisseur d’images",
@@ -550,7 +551,8 @@
       "generic": "Une erreur est survenue. Réessayez.",
       "paymentMethod": "L’assistant de rédaction de Peal demande un moyen de paiement sur le compte de facturation. Un fournisseur de texte à vous fonctionne sans.",
       "monthUsed": "Votre compte de facturation a utilisé les {allowed, number} demandes à l’assistant qu’il peut envoyer ce mois-ci. Relevez son plafond sur la page de facturation, ou demandez à nouveau à partir du {resetsAt}."
-    }
+    },
+    "remainingMonth": "{remaining, plural, =0 {Plus aucune demande ce mois-ci} one {# demande restante ce mois-ci} other {# demandes restantes ce mois-ci}}"
   },
   "AppShell": {
     "productName": "Peal",
@@ -2270,7 +2272,7 @@
       "coming": "À venir",
       "estimate": "{estimate} HT, {included} avec la TVA française de {rate} %",
       "billedThere": "Indiqué sur l’espace de facturation",
-      "withCard": "Avec un moyen de paiement, ce qui dépasse l’inclus est facturé chaque mois pour le mois écoulé. L’assistant de rédaction s’arrête à l’inclus sauf si son plafond est relevé.",
+      "withCard": "Avec un moyen de paiement, ce qui dépasse l’inclus est facturé chaque mois pour le mois écoulé.",
       "withoutCard": "L’assistant de rédaction de Peal demande un moyen de paiement ; un fournisseur propre à l’espace de travail fonctionne sans.",
       "ceiling": {
         "assistant": "Le plafond mensuel de l’assistant de rédaction au-delà de l’inclus, en dollars américains HT",
@@ -2278,7 +2280,8 @@
         "now": "Actuellement {ceiling} HT, {included} avec la TVA française de {rate} %.",
         "save": "Enregistrer le plafond",
         "failed": "Le plafond n’a pas été enregistré. Réessayez."
-      }
+      },
+      "assistantComing": "La quantité incluse et le prix de l’assistant de rédaction sont à venir : d’ici là, rien n’est facturé au-delà de l’inclus."
     }
   },
   "BillingAccount": {

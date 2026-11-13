@@ -407,7 +407,7 @@ export const french: EmailCatalog = {
   },
   allowanceReached: {
     action: "Ajouter un moyen de paiement",
-    body: "{workspaceName} a utilisé les {allowed} {meter} que son compte de facturation inclut ce mois-ci sans moyen de paiement. Jusqu’au {resetsAt}, plus aucun ne peut être envoyé ; la lecture, la publication et tout le reste continuent. Ajoutez un moyen de paiement sur la page de facturation pour continuer dès maintenant : ce qui est utilisé au-delà de l’inclus est alors facturé au prix de la grille tarifaire.",
+    body: "{workspaceName} a utilisé les {allowed} {meter} que son compte de facturation inclut ce mois-ci sans moyen de paiement. Jusqu’au {resetsAt}, le compteur s’arrête : plus aucun message n’est envoyé et aucune nouvelle publicité n’est suivie ; la lecture, la publication et tout le reste continuent. Ajoutez un moyen de paiement sur la page de facturation pour continuer dès maintenant : ce qui est utilisé au-delà de l’inclus est alors facturé au prix de la grille tarifaire.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "{workspaceName} a utilisé ses {meter} du mois",
