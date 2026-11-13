@@ -176,12 +176,12 @@ describe(InboxEmptyView, () => {
     await expect(
       render("en", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal reads comments on Mastodon and Bluesky, and on Facebook, Instagram, and YouTube where whoever runs Peal turned them on, for 30 days after a post went live unless whoever runs Peal set another window, and keeps them 30 days after that."
+      "Peal reads comments on Mastodon and Bluesky, and on Facebook, Instagram, YouTube, and LinkedIn where whoever runs Peal turned them on, for 30 days after a post went live unless whoever runs Peal set another window, and keeps them 30 days after that."
     );
     await expect(
       render("fr", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal lit les commentaires sur Mastodon et Bluesky, et sur Facebook, Instagram et YouTube là où la personne qui exploite Peal les a activés, pendant 30 jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve 30 jours de plus."
+      "Peal lit les commentaires sur Mastodon et Bluesky, et sur Facebook, Instagram, YouTube et LinkedIn là où la personne qui exploite Peal les a activés, pendant 30 jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve 30 jours de plus."
     );
   });
 
@@ -192,6 +192,19 @@ describe(InboxEmptyView, () => {
     expect(html).not.toContain("No comment has been read yet.");
   });
 });
+
+// A LinkedIn comment by `platformId`, which Peal keeps without a name.
+const linkedinComment = (platformId: string) => (
+  <ul>
+    <CommentView
+      comment={{
+        ...comment,
+        author: { displayName: null, handle: "", platformId },
+      }}
+      platform="linkedin"
+    />
+  </ul>
+);
 
 describe(CommentView, () => {
   it("shows who wrote, when, the state and the way to the platform", async () => {
@@ -343,6 +356,15 @@ describe(CommentView, () => {
     await expect(render("fr", view)).resolves.toContain(
       "Ce commentaire n’est plus sur la plateforme"
     );
+  });
+
+  it("names a LinkedIn commenter a member or a page, as Peal keeps no name", async () => {
+    await expect(
+      render("en", linkedinComment("urn:li:person:syntheticMember1"))
+    ).resolves.toContain("A LinkedIn member");
+    await expect(
+      render("fr", linkedinComment("urn:li:organization:9000000002"))
+    ).resolves.toContain("Une page LinkedIn");
   });
 
   it("says a comment forgotten for its age is no longer kept, naming its platform", async () => {

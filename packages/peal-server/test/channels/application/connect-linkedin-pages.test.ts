@@ -1,9 +1,11 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { decryptTokens } from "#channels/application/channel-tokens.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type {
   AuthorizationCallback,
@@ -12,8 +14,11 @@ import type {
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
@@ -71,14 +76,16 @@ const administrator = (page: { readonly id: number }) => ({
 
 // LinkedIn with both of Peal's apps, and the use case over the two.
 const onLinkedIn = Effect.fn("test.onLinkedIn")(function* onLinkedIn(
-  version?: string
+  version?: string,
+  inbox: InboxPlatforms = new Set()
 ) {
   const linkedin = yield* fakeLinkedIn();
   const profiles = yield* linkedinAuthorizerOn(linkedin.endpoints);
 
   const authorizer = yield* linkedinPagesAuthorizerOn(
     linkedin.endpoints,
-    version
+    version,
+    inbox
   );
 
   const connect = yield* connectChannelOver(profiles, authorizer);
@@ -132,6 +139,34 @@ const storedTokens = (channel: Channel) =>
     }))
   );
 
+// The member the stored token is theirs, if kept.
+const storedOwner = (channel: Channel) =>
+  ChannelRepository.use((channels) => channels.credentials(channel.id)).pipe(
+    Effect.map(Option.getOrThrow),
+    Effect.map(({ tokenOwner }) => tokenOwner)
+  );
+
+// A server whose inbox reads LinkedIn pages' comments.
+const readsLinkedIn: InboxPlatforms = new Set(["linkedin"]);
+
+// The daily run that forgets owners, on a server whose inbox reads `inbox`.
+const forgetOwners = (
+  inbox: InboxPlatforms,
+  repository: Layer.Layer<ChannelRepository, never, ChannelRepository>
+) =>
+  ForgetTokenOwners.use((forget) => forget.run).pipe(
+    Effect.provide(
+      ForgetTokenOwners.layer.pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            Layer.succeed(CurrentInboxPlatforms, inbox),
+            repository
+          )
+        )
+      )
+    )
+  );
+
 // Makes the channel's token due for the sweep: five minutes left.
 const makeDue = (channel: Channel) =>
   Effect.gen(function* due() {
@@ -183,6 +218,219 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
           url.searchParams.get("redirect_uri"),
           "https://peal.test/connect/linkedin/callback"
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keeps who the page's token belongs to where the inbox reads LinkedIn, and hands it with the token",
+    () =>
+      Effect.gen(function* owner() {
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connectedPage(on, workspaceId);
+
+        assert.strictEqual(
+          yield* storedOwner(channel),
+          `urn:li:person:${linkedinMember.sub}`
+        );
+
+        const token = yield* ChannelAccess.use((access) =>
+          access.withToken(channel.id, (given) => Effect.succeed(given))
+        ).pipe(Effect.provide(tokenJobs(workspaceId, on.authorizer)));
+
+        assert.strictEqual(
+          token.tokenOwner,
+          `urn:li:person:${linkedinMember.sub}`
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keeps the owner through a renewal, by the sweep or on a refused token",
+    () =>
+      Effect.gen(function* renewal() {
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const workspaceId = yield* freshWorkspace;
+
+        on.linkedin.issueRefreshTokens();
+
+        const channel = yield* connectedPage(on, workspaceId);
+        const jobs = tokenJobs(workspaceId, on.authorizer);
+        const owner = `urn:li:person:${linkedinMember.sub}`;
+
+        yield* makeDue(channel);
+        assert.strictEqual(
+          yield* RefreshChannelTokens.use((tokens) =>
+            tokens.refresh(channel.id)
+          ).pipe(Effect.provide(jobs)),
+          "refreshed"
+        );
+        assert.strictEqual(yield* storedOwner(channel), owner);
+
+        // LinkedIn refuses the token once: renewed, it still names the
+        // member, and so does the one stored.
+        let refused = false;
+
+        const token = yield* ChannelAccess.use((access) =>
+          access.withToken(channel.id, (given) => {
+            if (refused) {
+              return Effect.succeed(given);
+            }
+
+            refused = true;
+
+            return Effect.fail(new TokenRejected());
+          })
+        ).pipe(Effect.provide(jobs));
+
+        assert.strictEqual(
+          Redacted.value(token.accessToken),
+          "linkedin-token-3"
+        );
+        assert.strictEqual(token.tokenOwner, owner);
+        assert.strictEqual(yield* storedOwner(channel), owner);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("takes the member who reconnects a page for its owner", () =>
+    Effect.gen(function* replaced() {
+      const on = yield* onLinkedIn(undefined, readsLinkedIn);
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connectedPage(on, workspaceId);
+      const other = { ...linkedinMember, sub: "zY9xW8vU7t" };
+
+      on.linkedin.addMember(other);
+      on.linkedin.grantRoles(other.sub, [administrator(linkedinPage)]);
+
+      const url = yield* on.connect.reconnect(manager(workspaceId), channel.id);
+
+      const again = yield* on.connect.complete(
+        manager(workspaceId),
+        "linkedin",
+        callbackOf(on.linkedin.approve(url, other.sub))
+      );
+
+      assert(again._tag === "connected");
+      assert.strictEqual(
+        yield* storedOwner(channel),
+        `urn:li:person:${other.sub}`
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keeps no owner where the inbox does not read LinkedIn, and forgets one kept at the next sign-in or renewal",
+    () =>
+      Effect.gen(function* inboxOff() {
+        const off = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connectedPage(off, workspaceId);
+
+        assert.isUndefined(yield* storedOwner(channel));
+
+        // Kept while the inbox read LinkedIn, then turned off: a
+        // reconnection forgets it.
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const kept = yield* connectedPage(on, yield* freshWorkspace);
+
+        assert.isDefined(yield* storedOwner(kept));
+
+        const turnedOff = yield* linkedinPagesAuthorizerOn(
+          on.linkedin.endpoints
+        );
+
+        const connect = yield* connectChannelOver(on.profiles, turnedOff);
+
+        const url = yield* connect.reconnect(
+          manager(kept.workspaceId),
+          kept.id
+        );
+
+        yield* connect.complete(
+          manager(kept.workspaceId),
+          "linkedin",
+          callbackOf(on.linkedin.approve(url))
+        );
+
+        assert.isUndefined(yield* storedOwner(kept));
+
+        // So does a renewal.
+        on.linkedin.issueRefreshTokens();
+
+        const renewed = yield* connectedPage(on, yield* freshWorkspace);
+
+        assert.isDefined(yield* storedOwner(renewed));
+
+        yield* makeDue(renewed);
+        assert.strictEqual(
+          yield* RefreshChannelTokens.use((tokens) =>
+            tokens.refresh(renewed.id)
+          ).pipe(Effect.provide(tokenJobs(renewed.workspaceId, turnedOff))),
+          "refreshed"
+        );
+        assert.isUndefined(yield* storedOwner(renewed));
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "forgets the owners kept, daily, only once the inbox no longer reads LinkedIn",
+    () =>
+      Effect.gen(function* gate() {
+        let asked = 0;
+
+        // The repository's statement counted, never run: the daily run
+        // asks it only where the inbox does not read LinkedIn.
+        const counting = Layer.effect(
+          ChannelRepository,
+          Effect.gen(function* countingRepository() {
+            const channels = yield* ChannelRepository;
+
+            return ChannelRepository.of({
+              ...channels,
+              forgetTokenOwners: Effect.sync(() => {
+                asked += 1;
+
+                return 0;
+              }),
+            });
+          })
+        );
+
+        yield* forgetOwners(readsLinkedIn, counting);
+        assert.strictEqual(asked, 0);
+
+        yield* forgetOwners(new Set(), counting);
+        assert.strictEqual(asked, 1);
+      })
+  );
+
+  it.effect(
+    "forgets every owner kept in one statement, which a rolled back transaction keeps from other tests",
+    () =>
+      Effect.gen(function* statement() {
+        const sql = yield* SqlClient.SqlClient;
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const channel = yield* connectedPage(on, yield* freshWorkspace);
+
+        // Every row of the shared database would lose its owner: the
+        // statement runs in a transaction this test rolls back.
+        const ended = yield* sql
+          .withTransaction(
+            Effect.gen(function* forgetting() {
+              const forgot = yield* ChannelRepository.use(
+                (channels) => channels.forgetTokenOwners
+              );
+
+              assert.isAtLeast(forgot, 1);
+              assert.isUndefined(yield* storedOwner(channel));
+
+              return yield* Effect.fail("rolledBack" as const);
+            })
+          )
+          .pipe(Effect.flip);
+
+        assert.strictEqual(ended, "rolledBack");
+        assert.isDefined(yield* storedOwner(channel));
       }).pipe(Effect.scoped)
   );
 
@@ -271,6 +519,35 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
         );
 
         assert.strictEqual(stored.length, 2);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads the member's roles past a page LinkedIn gives shorter than asked, to an empty one",
+    () =>
+      Effect.gen(function* cappedRoles() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+
+        on.linkedin.capRolePages(2);
+        on.linkedin.grantRoles(linkedinMember.sub, [
+          { organization: 31, role: "ANALYST", state: "APPROVED" },
+          { organization: 32, role: "ANALYST", state: "APPROVED" },
+          administrator(linkedinPage),
+        ]);
+
+        const outcome = yield* signIn(on, workspaceId);
+
+        assert(outcome._tag === "connected");
+        assert.strictEqual(outcome.channel.accountId, urnOf(linkedinPage));
+        // Two roles, one, then the empty page that ends them.
+        assert.deepStrictEqual(
+          on.linkedin
+            .requests()
+            .filter(({ path }) => path === "/rest/organizationAcls")
+            .map(({ query }) => query.get("start")),
+          ["0", "2", "3"]
+        );
       }).pipe(Effect.scoped)
   );
 

@@ -405,7 +405,7 @@ const kept = {
   "notifications.sent_notices":
     "the keys of events already told, ids and instants only",
   "publishing.quota_usage":
-    "the units of a platform's daily quota the server spent, by day",
+    "the units of a platform's daily quota the server spent, by day, a week: a bucket by LinkedIn member is a keyed digest of the member (HMAC under the server's secret), never their identifier, so a row names nobody without that secret",
 } satisfies Readonly<Record<string, string>>;
 
 const TablesSchema = Schema.Array(Schema.Struct({ name: Schema.String }));
@@ -444,6 +444,16 @@ const join = Effect.fn("join")(function* join(
   });
 });
 
+// The synthetic member a workspace's channel's token is theirs.
+const ownerIn = (workspaceId: string) =>
+  `urn:li:person:synthetic${workspaceId.replaceAll("-", "")}`;
+
+// How many channels name `owner` as their token's.
+const ownedBy = (sql: SqlClient.SqlClient, owner: string) =>
+  count(
+    sql`SELECT count(*)::int AS count FROM channels.channels WHERE token_owner = ${owner}`
+  );
+
 /**
  * A row in every table a workspace's content and its people's records go
  * to, written as each context writes them: what a workspace holds besides
@@ -456,6 +466,10 @@ const fill = Effect.fn("fill")(function* fill(
   const app = yield* TestApp;
   const sql = yield* SqlClient.SqlClient;
   const channelId = yield* seedChannel(workspaceId, "@erasure@social.example");
+
+  // The member a channel's token is theirs, as a LinkedIn page's is kept
+  // where the inbox reads LinkedIn.
+  yield* sql`UPDATE channels.channels SET token_owner = ${ownerIn(workspaceId)} WHERE id = ${channelId}`;
 
   const postId = yield* seedPost(
     workspaceId,
@@ -876,6 +890,8 @@ layer(RetainingLive, {
           yield* countsOf(workspaceRows, own),
           none(workspaceRows)
         );
+        // The member who connected its channel went with it.
+        assert.strictEqual(yield* ownedBy(sql, ownerIn(own)), 0);
 
         // Ana still has her records in Together: closing the account takes
         // them, and leaves the workspace and its content to Ben.
@@ -907,6 +923,11 @@ layer(RetainingLive, {
           yield* countsOf(userRows, ana.id),
           none(userRows)
         );
+
+        // The channel she connected in Together stays its workspace's, with
+        // the member its token is theirs, as with whom a Page's token rests
+        // on: it goes when the channel is disconnected or Together deleted.
+        assert.strictEqual(yield* ownedBy(sql, ownerIn(shared)), 1);
 
         // The key she created in the workspace she shared is still in its
         // log, as a change someone made.
@@ -1013,6 +1034,7 @@ layer(RetainingLive, {
         });
 
         assert.strictEqual(together.status, 204);
+        assert.strictEqual(yield* ownedBy(sql, ownerIn(shared)), 0);
       })
   );
 

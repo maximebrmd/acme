@@ -31,5 +31,10 @@ export class PlatformQuota extends Context.Service<
     readonly exhaust: (
       spending: QuotaSpending
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Deletes every bucket's days before `before`, and says how many:
+     * each bucket counts one day at a time, so a past day counts nothing.
+     */
+    readonly purge: (before: LocalDate) => Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/publishing/application/PlatformQuota") {}

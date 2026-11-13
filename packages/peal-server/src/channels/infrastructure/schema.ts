@@ -68,6 +68,10 @@ export const channels = channelsSchema.table(
     tokenIssuedAt: instant("token_issued_at"),
     tokenKeyId: text("token_key_id").notNull(),
     tokenKind: text("token_kind").notNull(),
+    // The platform member whose token it is, when the account is not
+    // theirs (a LinkedIn page's administrator), for the platform's limits
+    // per member; never what a data deletion request matches (`granted_by`).
+    tokenOwner: text("token_owner"),
     updatedAt: instant("updated_at").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
   },

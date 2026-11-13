@@ -43,16 +43,17 @@ import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { isOrganization } from "#shared/infrastructure/platforms/linkedin-rest.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
+import { authorUrnOf } from "./linkedin-author.ts";
 import { pageLookUp } from "./linkedin-confirmation.ts";
 import { linkedinDocuments } from "./linkedin-documents.ts";
 import { documentTitleOf, linkOf, postBodyOf } from "./linkedin-post-body.ts";
 import type { LinkedInLink } from "./linkedin-post-body.ts";
 import { mediaRefusal, postRefusal } from "./linkedin-refusal.ts";
 import type { LinkedInRefusal } from "./linkedin-refusal.ts";
-import { authorUrnOf, isOrganization } from "./linkedin-rest.ts";
 
 /** The HTTP client the adapter sends through: the public one. */
 export type LinkedInHttp = HttpClient.HttpClient.With<

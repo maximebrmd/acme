@@ -15,7 +15,7 @@
     "@types/node": "26.6.6",
     "@types/pg": "8.23.1",
     "e2e": "0.23.0",
-    "effect": "4.1.2",
+    "effect": "4.1.4",
     "peal-contract": "workspace:*",
     "pg": "8.23.1",
     "typescript": "7.0.2"

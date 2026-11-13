@@ -22,6 +22,11 @@ const youtubeApp = {
   YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
 };
 
+const linkedinPagesApp = {
+  LINKEDIN_PAGES_CLIENT_ID: "88synthetic-pages",
+  LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
+};
+
 const read = (env: Record<string, string>) =>
   inboxPlatformsConfig.pipe(
     Effect.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
@@ -52,6 +57,10 @@ describe("the inbox's optional platforms", () => {
       assert.deepStrictEqual(
         yield* read({ ...youtubeApp, PEAL_INBOX_PLATFORMS: "youtube" }),
         Result.succeed(["youtube"])
+      );
+      assert.deepStrictEqual(
+        yield* read({ ...linkedinPagesApp, PEAL_INBOX_PLATFORMS: "linkedin" }),
+        Result.succeed(["linkedin"])
       );
       // Instagram's own app is a way in of its own.
       assert.deepStrictEqual(
@@ -87,6 +96,16 @@ describe("the inbox's optional platforms", () => {
       assert.isTrue(
         Result.isFailure(yield* read({ PEAL_INBOX_PLATFORMS: "instagram" }))
       );
+      // LinkedIn's comments are a page's: the profile app is not enough.
+      assert.isTrue(
+        Result.isFailure(
+          yield* read({
+            LINKEDIN_CLIENT_ID: "88synthetic-profile",
+            LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+            PEAL_INBOX_PLATFORMS: "linkedin",
+          })
+        )
+      );
       // YouTube's comments need YouTube's own client, its secret included.
       assert.isTrue(
         Result.isFailure(
@@ -110,7 +129,7 @@ describe("the inbox's optional platforms", () => {
         Effect.map(Result.match({ onFailure: String, onSuccess: String }))
       );
 
-      assert.include(refused, "facebook, instagram and youtube");
+      assert.include(refused, "facebook, instagram, youtube and linkedin");
     })
   );
 });

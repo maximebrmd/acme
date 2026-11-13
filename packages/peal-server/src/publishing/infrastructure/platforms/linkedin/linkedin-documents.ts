@@ -13,11 +13,15 @@ import { unanswered } from "#publishing/infrastructure/platforms/platform-exchan
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  encodedUrn,
+  restCall,
+} from "#shared/infrastructure/platforms/linkedin-rest.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
+import { authorUrnOf } from "./linkedin-author.ts";
 import { mediaRefusal } from "./linkedin-refusal.ts";
-import { authorUrnOf, encodedUrn, restCall } from "./linkedin-rest.ts";
 
 type Http = HttpClient.HttpClient.With<
   HttpClientError.HttpClientError | OutboundRequestRefused

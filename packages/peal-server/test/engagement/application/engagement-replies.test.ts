@@ -43,6 +43,7 @@ const editor = actorWith(["engagement:read", "engagement:reply"]);
 const viewer = actorWith(["engagement:read"]);
 
 const mastodon = {
+  connection: Option.none(),
   platform: "mastodon" as const,
   scopes: ["read:statuses", "write:statuses", "write:favourites"],
 };
@@ -81,6 +82,7 @@ const hideOnFacebook = (inbox: InboxPlatforms) => {
   const world = worldWith();
 
   world.state.channels.set(channelId(1), {
+    connection: Option.none(),
     platform: "facebook",
     scopes: ["pages_read_user_content", "pages_manage_engagement"],
   });
@@ -150,6 +152,7 @@ describe("answering a comment", () => {
     const world = worldWith();
 
     world.state.channels.set(channelId(1), {
+      connection: Option.none(),
       platform: "bluesky",
       scopes: [
         "atproto",
@@ -222,7 +225,11 @@ describe("answering a comment", () => {
     () => {
       const world = worldWith();
 
-      world.state.channels.set(channelId(1), { platform: "x", scopes: [] });
+      world.state.channels.set(channelId(1), {
+        connection: Option.none(),
+        platform: "x",
+        scopes: [],
+      });
 
       return at(
         Effect.gen(function* answering() {
@@ -834,6 +841,7 @@ describe("moderating a comment", () => {
 
       // Connected before Peal asked to post statuses.
       world.state.channels.set(channelId(1), {
+        connection: Option.none(),
         platform: "mastodon",
         scopes: ["read:statuses"],
       });

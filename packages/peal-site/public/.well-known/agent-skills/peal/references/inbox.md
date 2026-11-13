@@ -14,8 +14,9 @@ peal inbox thread <thread-id> --json
 peal inbox abilities <channel-id> --json
 ```
 
-Mastodon and Bluesky are always read; Facebook Pages, Instagram and
-YouTube only where the server's operator turned them on. What a channel
+Mastodon and Bluesky are always read; Facebook Pages, Instagram, YouTube
+and LinkedIn company pages only where the server's operator turned them
+on. A LinkedIn commenter has no name, only an id (`urn:li:person:…`). What a channel
 can do depends on that and on what its account allowed at sign-in:
 `peal inbox abilities` says it (`reconnect` means connecting the account
 again, never disconnecting it, gives it). A comment whose `forgotten` is

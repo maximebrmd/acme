@@ -1,0 +1,1 @@
+ALTER TABLE "channels"."channels" ADD COLUMN "token_owner" text;

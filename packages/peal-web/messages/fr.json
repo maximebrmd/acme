@@ -3530,6 +3530,8 @@
     },
     "comment": {
       "unknownAuthor": "Quelqu’un",
+      "linkedinMember": "Un membre de LinkedIn",
+      "linkedinPage": "Une page LinkedIn",
       "writtenAt": "Écrit le {at}",
       "state": "{state, select, new {Nouveau} answered {Répondu} hidden {Masqué} deleted {Supprimé} other {{state}}}",
       "deleted": "Ce commentaire n’est plus sur la plateforme",

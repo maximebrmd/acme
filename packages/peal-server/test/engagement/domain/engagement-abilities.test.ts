@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Option } from "effect";
 
 import {
   abilitiesOf,
@@ -222,6 +223,83 @@ describe("what a channel can do about comments", () => {
       "withdraw",
       "hide",
     ]);
+  });
+
+  it("reads, answers and withdraws on a LinkedIn page with each comment scope, where the server reads LinkedIn", () => {
+    const linkedin: InboxPlatforms = new Set(["linkedin"]);
+    const page = Option.some("linkedinPage" as const);
+
+    const posting = [
+      "r_organization_social",
+      "rw_organization_admin",
+      "w_organization_social",
+    ];
+
+    expect(
+      abilitiesOf(
+        "linkedin",
+        [
+          ...posting,
+          "r_organization_social_feed",
+          "w_organization_social_feed",
+        ],
+        linkedin,
+        page
+      )
+    ).toStrictEqual({
+      delete: "unsupported",
+      hide: "unsupported",
+      like: "unsupported",
+      read: "available",
+      reply: "available",
+      withdraw: "available",
+    });
+    // A page connected before the server read LinkedIn's comments.
+    expect(abilitiesOf("linkedin", posting, linkedin, page)).toStrictEqual({
+      delete: "unsupported",
+      hide: "unsupported",
+      like: "unsupported",
+      read: "reconnect",
+      reply: "reconnect",
+      withdraw: "reconnect",
+    });
+    expect(askedAtSignIn("linkedin", linkedin, page)).toStrictEqual([
+      "read",
+      "reply",
+      "withdraw",
+    ]);
+  });
+
+  it("does nothing on a LinkedIn profile, which reconnecting would not change", () => {
+    const linkedin: InboxPlatforms = new Set(["linkedin"]);
+
+    for (const connection of [
+      Option.some("linkedinProfile" as const),
+      Option.none(),
+    ]) {
+      expect(
+        Object.values(
+          abilitiesOf(
+            "linkedin",
+            ["openid", "profile", "w_member_social"],
+            linkedin,
+            connection
+          )
+        ).every((standing) => standing === "unsupported")
+      ).toBeTruthy();
+      expect(askedAtSignIn("linkedin", linkedin, connection)).toStrictEqual([]);
+    }
+  });
+
+  it("does nothing on LinkedIn pages where the server does not read them", () => {
+    expect(
+      abilitiesOf(
+        "linkedin",
+        ["r_organization_social_feed", "w_organization_social_feed"],
+        both,
+        Option.some("linkedinPage")
+      ).read
+    ).toBe("unsupported");
   });
 
   it("does nothing on YouTube where the server does not read it", () => {

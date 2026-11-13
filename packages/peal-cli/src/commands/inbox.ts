@@ -19,6 +19,7 @@ import type {
   InboxComment,
   InboxReply,
   InboxReplyReason,
+  Platform,
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
@@ -61,8 +62,20 @@ const onOneLine = (text: string): string =>
 // Who wrote a comment: their name and handle, a name alone where the
 // platform gives no handle (Facebook), and none where the platform does
 // not show them, or no longer shows the comment.
-const authorOf = (comment: InboxComment): string => {
+const authorOf = (comment: InboxComment, platform: Platform | null): string => {
   const { author } = comment;
+
+  // LinkedIn's commenters are kept by URN, never by name.
+  if (
+    platform === "linkedin" &&
+    author !== null &&
+    (author.displayName ?? "") === "" &&
+    author.handle === ""
+  ) {
+    return author.platformId.startsWith("urn:li:organization:")
+      ? "(a LinkedIn page)"
+      : "(a LinkedIn member)";
+  }
 
   if (author === null) {
     if (comment.state !== "deleted") {
@@ -229,7 +242,7 @@ const thread = Command.make(
 
     for (const comment of detail.comments) {
       yield* Console.log(
-        `  ${comment.id}  ${comment.state}  ${instant(comment.writtenAt)}  ${authorOf(comment)}`
+        `  ${comment.id}  ${comment.state}  ${instant(comment.writtenAt)}  ${authorOf(comment, detail.platform)}`
       );
 
       for (const line of comment.text.split("\n")) {
