@@ -9,6 +9,7 @@ import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ContractRecords } from "#billing/application/ports/contract-records.ts";
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
@@ -56,10 +57,10 @@ const entitlementsOn = (plan: Plan) =>
 
 /**
  * Every workspace on `plan`, without a subscription, each alone in its
- * pool.
+ * pool, on a server that bills, without a grace.
  */
 export const everyWorkspaceOn = (plan: Plan) =>
-  Layer.merge(
+  Layer.mergeAll(
     Layer.succeed(
       WorkspaceEntitlements,
       WorkspaceEntitlements.of({
@@ -70,11 +71,15 @@ export const everyWorkspaceOn = (plan: Plan) =>
           ),
       })
     ),
-    PlanPools.layerAlone
+    PlanPools.layerAlone,
+    Layer.succeed(
+      BillingMode,
+      BillingMode.of({ enabled: true, graceUntil: Option.none() })
+    )
   );
 
 /** A server that does not bill: nothing is limited, nothing pooled. */
-export const UnmeteredTest = Layer.merge(
+export const UnmeteredTest = Layer.mergeAll(
   Layer.succeed(
     WorkspaceEntitlements,
     WorkspaceEntitlements.of({
@@ -83,7 +88,11 @@ export const UnmeteredTest = Layer.merge(
         Effect.succeed(new Map(workspaceIds.map((id) => [id, unmetered]))),
     })
   ),
-  PlanPools.layerAlone
+  PlanPools.layerAlone,
+  Layer.succeed(
+    BillingMode,
+    BillingMode.of({ enabled: false, graceUntil: Option.none() })
+  )
 );
 
 /**

@@ -65,7 +65,8 @@ interface Held {
 const run = <A, E>(
   plan: Option.Option<Plan>,
   held: Held,
-  test: Effect.Effect<A, E, ReduceWorkspace | WorkspaceStanding>
+  test: Effect.Effect<A, E, ReduceWorkspace | WorkspaceStanding>,
+  graceUntil: Option.Option<DateTime.Utc> = Option.none()
 ) =>
   Effect.gen(function* withFakes() {
     const state = yield* Ref.make(held);
@@ -143,7 +144,7 @@ const run = <A, E>(
               entitlements,
               Layer.succeed(
                 BillingMode,
-                BillingMode.of({ enabled: Option.isSome(plan) })
+                BillingMode.of({ enabled: Option.isSome(plan), graceUntil })
               ),
               Layer.mock(BillingAccounts, {
                 of: (id) =>
@@ -199,6 +200,7 @@ describe("a workspace over its plan", () => {
       const { result } = yield* run(on("starter"), afterTrial, standing);
 
       assert.deepStrictEqual(result, {
+        graceUntil: Option.none(),
         mustReduce: true,
         over: [
           { allowed: 5, limit: "channels", used: 7 },
@@ -222,6 +224,7 @@ describe("a workspace over its plan", () => {
         );
 
         assert.deepStrictEqual(result, {
+          graceUntil: Option.none(),
           mustReduce: true,
           over: [{ allowed: 2, limit: "channels", used: 3 }],
           plan: on("free"),
@@ -247,6 +250,7 @@ describe("a workspace over its plan", () => {
         const unmetered = yield* run(Option.none(), afterTrial, standing);
 
         assert.deepStrictEqual(onPro.result, {
+          graceUntil: Option.none(),
           mustReduce: false,
           over: [],
           plan: on("pro"),
@@ -254,12 +258,64 @@ describe("a workspace over its plan", () => {
           scheduledPosts: 7,
         });
         assert.deepStrictEqual(unmetered.result, {
+          graceUntil: Option.none(),
           mustReduce: false,
           over: [],
           plan: Option.none(),
           planWithRoom: Option.none(),
           scheduledPosts: 7,
         });
+      })
+  );
+
+  it.effect(
+    "keeps scheduling on the free tier over its accounts while the grace runs, and not after",
+    () =>
+      Effect.gen(function* grace() {
+        const overFree: Held = {
+          channels: ["c1", "c2", "c3"],
+          members: [userId],
+        };
+
+        // The tests' clock starts in 1970.
+        const until = DateTime.makeUnsafe("2027-01-31T00:00:00Z");
+
+        const during = yield* run(
+          on("free"),
+          overFree,
+          standing,
+          Option.some(until)
+        );
+
+        assert.deepStrictEqual(during.result, {
+          graceUntil: Option.some(until),
+          mustReduce: false,
+          over: [{ allowed: 2, limit: "channels", used: 3 }],
+          plan: on("free"),
+          planWithRoom: Option.some<PaidPlan>("payAsYouGo"),
+          scheduledPosts: 7,
+        });
+
+        const after = yield* run(
+          on("free"),
+          overFree,
+          standing,
+          Option.some(DateTime.makeUnsafe("1969-12-31T00:00:00Z"))
+        );
+
+        assert.isTrue(after.result.mustReduce);
+        assert.isTrue(Option.isNone(after.result.graceUntil));
+
+        // A legacy plan over its own limits is no grace's.
+        const legacy = yield* run(
+          on("starter"),
+          afterTrial,
+          standing,
+          Option.some(until)
+        );
+
+        assert.isTrue(legacy.result.mustReduce);
+        assert.isTrue(Option.isNone(legacy.result.graceUntil));
       })
   );
 
@@ -289,6 +345,7 @@ describe("a workspace over its plan", () => {
         removedMembers: 1,
         revokedInvitations: 1,
         standing: {
+          graceUntil: Option.none(),
           mustReduce: false,
           over: [],
           plan: on("starter"),

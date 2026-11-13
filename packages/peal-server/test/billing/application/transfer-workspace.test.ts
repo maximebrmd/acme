@@ -61,7 +61,10 @@ const TransferTest = TransferWorkspace.layer.pipe(
       ),
       DrizzleSubscriptionsLive,
       ChannelsCountedTest,
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: true, graceUntil: Option.none() })
+      )
     )
   ),
   Layer.provideMerge(accountsTest)

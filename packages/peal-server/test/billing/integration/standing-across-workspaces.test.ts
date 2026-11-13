@@ -50,7 +50,10 @@ const heavy = new Set<string>();
 // home workspace, the channels counted across its pool, the members as
 // the roster has them. The counts that never decide the standing (posts
 // this month, the assistant's requests) are given.
-const standingOn = (billing: boolean) =>
+const standingOn = (
+  billing: boolean,
+  graceUntil: Option.Option<DateTime.Utc> = Option.none()
+) =>
   WorkspaceStanding.layer.pipe(
     Layer.provide(ContextWorkspaceUsageLive),
     Layer.provide(
@@ -76,7 +79,10 @@ const standingOn = (billing: boolean) =>
     Layer.provideMerge(DrizzleChannelRepository),
     Layer.provideMerge(PartnerOwnershipLive),
     Layer.provide(
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: billing }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: billing, graceUntil })
+      )
     ),
     Layer.provideMerge(TokenCipherTest),
     Layer.provideMerge(DatabaseTest)
@@ -450,3 +456,33 @@ layer(standingOn(false))(
     );
   }
 );
+
+// The tests' clock starts in 1970: the grace runs.
+layer(
+  standingOn(true, Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z")))
+)("the standing of several workspaces during the billing grace", (it) => {
+  it.effect("names a legacy plan's over, never the free tier's", () =>
+    Effect.gen(function* graced() {
+      const overFree = yield* workspaceWith({ channels: 3, members: 1 });
+
+      const overLegacy = yield* workspaceWith({
+        channels: 6,
+        members: 1,
+        subscription: { plan: "starter", status: "active" },
+      });
+
+      yield* Effect.gen(function* compared() {
+        const listed = [overFree, overLegacy];
+
+        assert.deepStrictEqual(
+          [...(yield* (yield* WorkspaceStanding).overPlanIn(listed))],
+          [overLegacy]
+        );
+        assert.deepStrictEqual(
+          [...(yield* mustReduceOneByOne(listed))],
+          [overLegacy]
+        );
+      }).pipe(Effect.ensuring(cleanUp([overFree, overLegacy])));
+    })
+  );
+});

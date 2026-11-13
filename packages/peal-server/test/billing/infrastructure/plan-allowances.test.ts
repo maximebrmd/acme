@@ -1,10 +1,11 @@
 // Each context reads its limit from the workspace's plan, through its own
 // port: channels, posts per month and the assistant's daily requests.
 import { assert, describe, it } from "@effect/vitest";
-import { ConfigProvider, Effect, Layer, Option } from "effect";
+import { ConfigProvider, DateTime, Effect, Layer, Option } from "effect";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { PlanAssistantAllowanceLive } from "#assistant/infrastructure/plan-assistant-allowance.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { Entitlements } from "#billing/domain/entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
@@ -27,13 +28,18 @@ const workspaceId = WorkspaceIdSchema.make(
 
 const allowancesWith = (
   entitlements: Layer.Layer<WorkspaceEntitlements>,
-  env: Record<string, string> = {}
+  env: Record<string, string> = {},
+  graceUntil: Option.Option<DateTime.Utc> = Option.none()
 ) =>
   Layer.mergeAll(
     PlanAssistantAllowanceLive,
     PlanChannelAllowanceLive,
     PlanPostAllowanceLive
   ).pipe(
+    // The grace given, over any the entitlements' layer brings.
+    Layer.provide(
+      Layer.succeed(BillingMode, BillingMode.of({ enabled: true, graceUntil }))
+    ),
     Layer.provide(entitlements),
     Layer.provide(
       Layer.succeed(
@@ -106,6 +112,60 @@ describe("the plan allowances", () => {
         seats: { allowed: Option.none(), taken: 3 },
       });
     })
+  );
+
+  it.effect(
+    "let the free tier over its accounts schedule until the grace's day, and connect nothing more",
+    () =>
+      Effect.gen(function* grace() {
+        // The tests' clock starts in 1970.
+        const during = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(during.scheduling, {
+          allowed: Option.none(),
+          connected: 4,
+        });
+        assert.deepStrictEqual(during.channels, Option.some(2));
+
+        const after = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("1969-12-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(after.scheduling, {
+          allowed: Option.some(2),
+          connected: 4,
+        });
+
+        // A paid plan's own limit is no grace's.
+        const legacy = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("starter"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(legacy.scheduling, {
+          allowed: Option.some(5),
+          connected: 4,
+        });
+      })
   );
 
   it.effect(

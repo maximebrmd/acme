@@ -1,7 +1,7 @@
 // Whose plan each workspace is on: on a server that does not bill, only a
 // partner's pool says, and no billing account is read or made.
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -38,7 +38,10 @@ const UnbilledTest = AccountPlanHoldersLive.pipe(
       }),
       // Any read of an account dies.
       Layer.mock(BillingAccounts, {}),
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: false }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: false, graceUntil: Option.none() })
+      )
     )
   )
 );

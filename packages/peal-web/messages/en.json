@@ -1971,6 +1971,7 @@
       "CommentsReceived": "{count, plural, one {# new comment} other {# new comments}} under a post of {workspace}.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
+      "PaymentMethodNeeded": "{workspace} holds {accounts, number} connected accounts, more than the {allowed, number} the free tier includes. It still schedules and publishes until {graceUntil, date, long}; after that, nothing goes out until a payment method is added or {allowed, number} accounts are kept.",
       "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
       "SubscriptionRenewing": "The yearly {plan} plan of {workspace} renews on {renewsAt, date, long} for {price}, VAT included. Cancel it before then to stop it.",
       "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
@@ -2137,15 +2138,17 @@
       "excluded": "{price} excl. VAT",
       "yearlyMonth": "That is {price} a month",
       "perChannel": "{price} per channel a month",
+      "perAccount": "{price} a month for each account past the first {free}, excl. tax ({included} with {rate}% VAT), counted by the day; less each from account {from} on",
+      "perAccountNote": "Prices are in US dollars, excluding tax. VAT is added at checkout for customers in the EU, at their country’s rate. At checkout you can pay in your own currency, converted by our payment provider at the day’s rate; otherwise your card is charged in US dollars.",
       "free": "Free",
       "interval": "{interval, select, month {Monthly} other {Yearly}}",
       "intervalLabel": "Billing period"
     },
     "consent": {
-      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days, with “Withdraw from contract here”, at the foot of every page and on this one, and then pay only for the days used.",
+      "startNow": "I ask Peal to start per-account pricing now: each connected account past the free ones, counted by the day, and each use past its monthly allowance are billed at the rate card’s prices, excluding tax, each month for the month past. I know that, as a consumer, I may withdraw within 14 days, with “Withdraw from contract here”, at the foot of every page and on this one, and then pay only for what was used.",
       "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
       "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
-      "needed": "Tick the box above to order a plan or start the trial."
+      "needed": "Tick the box above to add a payment method."
     },
     "trial": {
       "title": "Try {plan} free for {days} days",

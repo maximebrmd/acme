@@ -228,7 +228,7 @@ export const french: EmailCatalog = {
     years: { one: "{count} an", other: "{count} ans" },
   },
   overFreePlan:
-    "Aujourd’hui, il dépasse ce que permet l’offre gratuite : {over}. À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Commandez un abonnement, ou choisissez les canaux et les membres qui restent, sur la page de facturation.",
+    "Aujourd’hui, il dépasse ce que permet l’offre gratuite : {over}. À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Ajoutez un moyen de paiement, ou choisissez les comptes qui restent, sur la page de facturation.",
   plans: {
     agency: "Agency",
     business: "Business",
@@ -379,11 +379,31 @@ export const french: EmailCatalog = {
     subject: "Rétractation reçue : votre abonnement {plan} a pris fin",
   },
   trialEnding: {
-    action: "Choisir un abonnement",
+    action: "Ajouter un moyen de paiement",
     body: "L’essai {plan} de {workspaceName} prend fin le {endsAt}. Rien n’est facturé : sauf si quelqu’un commande un abonnement d’ici là, l’espace de travail passe à l’offre gratuite. {standing}",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre essai {plan} prend fin le {endsAt}",
+  },
+  perAccountStarted: {
+    action: "Ouvrir la facturation",
+    body: "Merci : {workspaceName} est au tarif par compte depuis le {startedAt} : {rates}, hors taxes, comptés au jour pour chaque compte connecté ; chaque usage au-delà de son allocation mensuelle est facturé au prix de la grille tarifaire. Rien n’est prélevé maintenant : une facture suit chaque mois, pour le mois écoulé, renouvelée jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, avec Renoncer au contrat ici, au pied de chaque page et sur la page de facturation, et ne payer alors que ce qui a été utilisé. Vous pouvez résilier à tout moment avec Résilier votre contrat, aux mêmes endroits. Les conditions d’utilisation s’appliquent ; elles contiennent le modèle de formulaire de rétractation.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Le tarif par compte a commencé",
+  },
+  rates: {
+    band: "comptes {from} à {to} à {price} par mois chacun",
+    free: "comptes 1 à {count} gratuits",
+    lastBand: "comptes à partir du {from} à {price} par mois chacun",
+  },
+  paymentMethodNeeded: {
+    action: "Ajouter un moyen de paiement",
+    body: "{workspaceName} compte {accounts} comptes connectés, plus que les {allowed} de l’offre gratuite, car il les a connectés avant que Peal ne facture. Jusqu’au {graceUntil}, il continue de programmer et de publier, et n’en connecte pas d’autre. Après ce jour, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation, ou que {allowed} comptes seulement sont gardés : les publications programmées échouent alors à leur échéance, et peuvent être republiées ensuite.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject:
+      "Ajoutez un moyen de paiement à {workspaceName} avant le {graceUntil}",
   },
   trialStarted: {
     action: "Ouvrir la facturation",

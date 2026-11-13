@@ -118,7 +118,12 @@ const billingWith = (enabled: boolean) =>
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled, graceUntil: Option.none() })
+      )
+    )
   );
 
 const event = (status: string): SubscriptionEvent => ({
@@ -382,7 +387,12 @@ const recordsWith = (enabled: boolean) =>
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled, graceUntil: Option.none() })
+      )
+    )
   );
 
 const periodEnd = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
@@ -741,7 +751,10 @@ const UnreadTest = Layer.mergeAll(
       NoContractsTest,
       AloneInAccountsTest,
       PlainPseudonymsTest,
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: false, graceUntil: Option.none() })
+      ),
       Layer.succeed(
         Checkouts,
         Checkouts.of({
@@ -811,7 +824,10 @@ const RememberedTest = BillingRecords.layer.pipe(
         transfersFor: () => Effect.succeed([]),
         workspacesOfEach: () => Effect.succeed(new Map()),
       }),
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: true, graceUntil: Option.none() })
+      )
     )
   ),
   Layer.provide(TransactionsTest)

@@ -662,6 +662,7 @@ const account: BillingAccount = {
 
 const within: Standing = {
   account,
+  graceUntil: null,
   mustReduce: false,
   over: [],
   plan: "free",

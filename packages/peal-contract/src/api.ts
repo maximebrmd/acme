@@ -761,6 +761,7 @@ export {
   AccountBandSchema,
   accountsCharge,
   accountsMonthly,
+  freeAccountsOf,
   meterCharge,
   MeterSchema,
   MeterTermsSchema,

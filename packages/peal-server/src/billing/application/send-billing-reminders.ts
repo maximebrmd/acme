@@ -1,8 +1,14 @@
 import { Context, DateTime, Effect, Layer, Match, Option } from "effect";
 
-import type { BillingNotice, Money } from "#billing/domain/billing-notice.ts";
+import type { BillingAccountId } from "#billing/domain/billing-account.ts";
+import type {
+  BillingNotice,
+  Money,
+  NoticeRates,
+} from "#billing/domain/billing-notice.ts";
 import { allowancesOf } from "#billing/domain/plans.ts";
 import { currency, listedPriceOf } from "#billing/domain/prices.ts";
+import { freeAccountsOf, rateCard } from "#billing/domain/rate-card.ts";
 import {
   confirmationOf,
   reminderKey,
@@ -13,12 +19,25 @@ import { excessesOf } from "#billing/domain/standing.ts";
 import type { Excess } from "#billing/domain/standing.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
-import { BillingMode } from "./ports/billing-mode.ts";
+import { BillingAccountStore } from "./ports/billing-account-store.ts";
+import { BillingMode, inGrace } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { ContractReferences } from "./ports/contract-references.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
+import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
+
+// Per-account pricing's rates, as its confirmation states them: the rate
+// card's, in US dollars.
+const perAccountRates: NoticeRates = {
+  bands: rateCard.prices.usd.accounts.bands,
+  currency: "usd",
+  freeAccounts: freeAccountsOf(rateCard),
+};
+
+// Billing accounts read at a time when the grace's notices are sent.
+const gracePage = 200;
 
 // What Stripe charges, taxes included: the next invoice's total for a
 // renewal, the first paid invoice's for a confirmation. None when Stripe
@@ -31,10 +50,18 @@ const chargedFor = (reminder: Reminder) =>
 
     return Match.valueTags(reminder, {
       renewal: () => stripe.upcomingTotal(workspaceId, id),
-      started: () =>
-        // A trial charges nothing: it shows the plan's price, excluding
-        // VAT, which an order would cost.
-        subscription.status === "trialing"
+      started: () => {
+        // Per-account pricing charges nothing at the start: its rates
+        // stand for the price.
+        if (subscription.plan === "payAsYouGo") {
+          return Effect.succeed(
+            Option.some<Money>({ amount: 0, currency: "usd" })
+          );
+        }
+
+        // A trial charges nothing either: it shows the plan's price,
+        // excluding VAT, which an order would cost.
+        return subscription.status === "trialing"
           ? Effect.succeed(
               listedPriceOf(subscription.plan, subscription.interval).pipe(
                 Option.map((amount): Money => ({ amount, currency }))
@@ -48,7 +75,8 @@ const chargedFor = (reminder: Reminder) =>
                     Option.map(({ paid }) => paid)
                   )
                 )
-              ),
+              );
+      },
       // The notice names no price.
       trialEnding: () =>
         Effect.succeed(Option.some<Money>({ amount: 0, currency })),
@@ -87,18 +115,25 @@ const noticeOf = (
       reference,
       renewsAt,
     }),
-    started: ({ startedAt }): BillingNotice => ({
-      _tag: "SubscriptionStarted",
-      interval: subscription.interval,
-      plan: subscription.plan,
-      price,
-      reference,
-      startedAt,
-      trialEnd:
-        subscription.status === "trialing"
-          ? subscription.trialEnd
-          : Option.none(),
-    }),
+    started: ({ startedAt }): BillingNotice => {
+      const confirmed: BillingNotice = {
+        _tag: "SubscriptionStarted",
+        interval: subscription.interval,
+        plan: subscription.plan,
+        price,
+        reference,
+        startedAt,
+        trialEnd:
+          subscription.status === "trialing"
+            ? subscription.trialEnd
+            : Option.none(),
+      };
+
+      // Per-account pricing states its rates, which stand for a price.
+      return subscription.plan === "payAsYouGo"
+        ? { ...confirmed, rates: perAccountRates }
+        : confirmed;
+    },
     trialEnding: ({ endsAt }): BillingNotice => ({
       _tag: "TrialEnding",
       endsAt,
@@ -121,7 +156,11 @@ const noticeOf = (
  * confirmation, the next invoice's for a renewal; a notice Stripe cannot
  * price yet, or cannot be asked for, waits for the next run. Runs hourly,
  * on the `billing.reminders` cron; says how many it told. A server that
- * does not bill tells nothing.
+ * does not bill tells nothing. While the billing grace runs
+ * (PEAL_BILLING_GRACE_UNTIL), each billing account on the free tier that
+ * holds more accounts than it includes is told once, on its billing
+ * workspace (`PaymentMethodNeeded`, with the grace's day), its accounts
+ * read a page at a time.
  */
 export class SendBillingReminders extends Context.Service<
   SendBillingReminders,
@@ -130,11 +169,64 @@ export class SendBillingReminders extends Context.Service<
   static readonly layer = Layer.effect(
     SendBillingReminders,
     Effect.gen(function* SendBillingRemindersLive() {
-      const { enabled } = yield* BillingMode;
+      const { enabled, graceUntil } = yield* BillingMode;
       const subscriptions = yield* Subscriptions;
+      const accounts = yield* BillingAccountStore;
+      const entitlements = yield* WorkspaceEntitlements;
       const notices = yield* BillingNotices;
       const references = yield* ContractReferences;
       const context = yield* Effect.context<StripeContracts | WorkspaceUsage>();
+
+      // The billing workspaces on the free tier over its accounts, told
+      // once each for the grace's day.
+      const askForPaymentMethods = Effect.fn(
+        "SendBillingReminders.askForPaymentMethods"
+      )(function* askForPaymentMethods(until: DateTime.Utc) {
+        let after = Option.none<BillingAccountId>();
+        let told = 0;
+        let more = true;
+
+        while (more) {
+          const page = yield* accounts.page(after, gracePage);
+          const holders = [...new Set(page.map(({ holder }) => holder))];
+
+          const [plans, held] = yield* Effect.all([
+            entitlements.ofEach(holders),
+            WorkspaceUsage.use((usage) => usage.heldIn(holders)).pipe(
+              Effect.provide(context)
+            ),
+          ]);
+
+          for (const holder of holders) {
+            const plan = plans.get(holder);
+            const accountsHeld = held.get(holder)?.channels ?? 0;
+
+            const allowed =
+              plan !== undefined && Option.contains(plan.plan, "free")
+                ? Option.getOrUndefined(plan.allowanceOf("channels"))
+                : undefined;
+
+            if (allowed !== undefined && accountsHeld > allowed) {
+              yield* notices.tell({
+                key: `billing:${holder}:payment-method-needed:${until.epochMilliseconds}`,
+                notice: {
+                  _tag: "PaymentMethodNeeded",
+                  accounts: accountsHeld,
+                  allowed,
+                  graceUntil: until,
+                },
+                workspaceId: holder,
+              });
+              told += 1;
+            }
+          }
+
+          more = page.length === gracePage;
+          after = Option.fromUndefinedOr(page.at(-1)?.id);
+        }
+
+        return told;
+      });
 
       const run = Effect.gen(function* run() {
         if (!enabled) {
@@ -142,6 +234,15 @@ export class SendBillingReminders extends Context.Service<
         }
 
         const now = yield* DateTime.now;
+
+        const asked = yield* Option.match(graceUntil, {
+          onNone: () => Effect.succeed(0),
+          onSome: (until) =>
+            inGrace(graceUntil, now)
+              ? askForPaymentMethods(until)
+              : Effect.succeed(0),
+        });
+
         const candidates = yield* subscriptions.remindable(now);
 
         const due = candidates.flatMap((subscription) => [
@@ -191,7 +292,7 @@ export class SendBillingReminders extends Context.Service<
           { concurrency: 1 }
         );
 
-        return told.reduce((sum, one) => sum + one, 0);
+        return told.reduce((sum, one) => sum + one, asked);
       }).pipe(Effect.withSpan("SendBillingReminders.run"));
 
       return SendBillingReminders.of({ run });

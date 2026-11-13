@@ -43,6 +43,7 @@ import type {
 } from "#billing/domain/contract-request.ts";
 import { consentVersion, Order, OrderIdSchema } from "#billing/domain/order.ts";
 import { PlanNotSold } from "#billing/domain/plan-not-sold.ts";
+import { rateCard } from "#billing/domain/rate-card.ts";
 import type { Holdings } from "#billing/domain/standing.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -359,7 +360,7 @@ const ActionsTest = Layer.mergeAll(
   CheckoutOrders.layer,
   CancelSubscription.layer,
   Withdraw.layer,
-  SendBillingReminders.layer
+  SendBillingReminders.layer.pipe(Layer.provide(WorkspaceEntitlements.layer))
 ).pipe(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),
@@ -379,7 +380,12 @@ const ActionsTest = Layer.mergeAll(
   ),
   Layer.provide(UsageTest),
   Layer.provide(AddressesTest),
-  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
+  Layer.provide(
+    Layer.succeed(
+      BillingMode,
+      BillingMode.of({ enabled: true, graceUntil: Option.none() })
+    )
+  ),
   Layer.provide(AloneInAccountsTest),
   Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
@@ -1121,6 +1127,44 @@ layer(ActionsTest)("billing's actions", (it) => {
             },
           },
         ]);
+      })
+  );
+
+  it.effect(
+    "confirms per-account pricing with its rates, before any invoice",
+    () =>
+      Effect.gen(function* confirmsRates() {
+        yield* setNow("2026-11-09T11:00:00Z");
+        yield* holding(
+          paid({
+            plan: "payAsYouGo",
+            startedAt: Option.some(at("2026-11-09T10:30:00Z")),
+            stripeSubscriptionId: "sub_accounts",
+          })
+        );
+
+        assert.strictEqual(yield* (yield* SendBillingReminders).run, 1);
+        assert.deepStrictEqual(yield* told, [
+          {
+            key: "subscription:sub_accounts:started",
+            notice: {
+              _tag: "SubscriptionStarted",
+              interval: "month",
+              plan: "payAsYouGo",
+              price: { amount: 0, currency: "usd" },
+              rates: {
+                bands: rateCard.prices.usd.accounts.bands,
+                currency: "usd",
+                freeAccounts: 2,
+              },
+              reference: "number-of-sub_accounts",
+              startedAt: at("2026-11-09T10:30:00Z"),
+              trialEnd: Option.none(),
+            },
+          },
+        ]);
+        // Nothing was asked of Stripe: no invoice says a price.
+        assert.deepStrictEqual(yield* askedOfStripe, []);
       })
   );
 

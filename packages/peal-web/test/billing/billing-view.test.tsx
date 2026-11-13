@@ -167,7 +167,7 @@ describe(BillingView, () => {
         "€7.50 excl. VAT",
         "€1.80 per channel a month",
         "Prices include 20% VAT",
-        "I ask Peal to start my subscription now.",
+        "I ask Peal to start per-account pricing now",
         'href="https://site.example.test/terms"',
         "Order with obligation to pay",
         "Try Pro free for 14 days",
@@ -182,6 +182,30 @@ describe(BillingView, () => {
     expect(html).toMatch(
       /<button[^>]*aria-disabled="true"[^>]*>Order with obligation to pay/u
     );
+  });
+
+  it("offers per-account pricing from the rate card, monthly, with no period to choose", async () => {
+    const html = await render("en", {
+      billing: {
+        ...onFree,
+        plans: [
+          { allowances: free, plan: "free", price: null },
+          { allowances: free, plan: "payAsYouGo", price: null },
+        ],
+        trial: { available: false, days: 14, plan: "pro" },
+      },
+    });
+
+    expect(
+      missing(html, [
+        "Per-account pricing",
+        "$5.00 a month for each account past the first 2",
+        "Order with obligation to pay",
+        "Renews each month until cancelled.",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("Billing period");
+    expect(html).not.toContain("Start the free trial");
   });
 
   it("prices a year as its own, with what it comes to a month", async () => {

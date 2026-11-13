@@ -60,7 +60,10 @@ const AccountFreePlanTest = Layer.mergeAll(
           AccountPlanPoolsLive.pipe(
             Layer.provide(PartnerOwnershipLive),
             Layer.provide(
-              Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+              Layer.succeed(
+                BillingMode,
+                BillingMode.of({ enabled: true, graceUntil: Option.none() })
+              )
             )
           )
         ),
@@ -265,7 +268,10 @@ const UnbilledTest = ChannelUsage.layer.pipe(
               Layer.mergeAll(
                 PartnerOwnershipLive,
                 Layer.mock(BillingAccounts, {}),
-                Layer.succeed(BillingMode, BillingMode.of({ enabled: false }))
+                Layer.succeed(
+                  BillingMode,
+                  BillingMode.of({ enabled: false, graceUntil: Option.none() })
+                )
               )
             )
           )

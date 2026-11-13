@@ -59,6 +59,7 @@ export const standingView = (
     onNone: () => ({}),
     onSome: (view) => ({ account: accountView(view) }),
   }),
+  graceUntil: Option.getOrNull(standing.graceUntil),
   mustReduce: standing.mustReduce,
   over: standing.over,
   plan: Option.getOrNull(standing.plan),

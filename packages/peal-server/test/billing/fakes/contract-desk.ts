@@ -389,5 +389,10 @@ export const deskPorts = (enabled = true) =>
   PortsInMemory.pipe(
     Layer.provideMerge(DeskLive),
     Layer.provideMerge(Ids.layerTest),
-    Layer.provideMerge(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provideMerge(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled, graceUntil: Option.none() })
+      )
+    )
   );

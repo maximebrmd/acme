@@ -40,7 +40,12 @@ const SharedTest = WorkspaceEntitlements.layerShared.pipe(
       subscriptionOf({ plan: "business", status: "active", workspaceId: home }),
     ])
   ),
-  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true })))
+  Layer.provide(
+    Layer.succeed(
+      BillingMode,
+      BillingMode.of({ enabled: true, graceUntil: Option.none() })
+    )
+  )
 );
 
 layer(SharedTest)("entitlements on a server with partners", (it) => {

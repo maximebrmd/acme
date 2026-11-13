@@ -57,7 +57,34 @@ const render = async (
   );
 };
 
+const perAccount: UpgradeReason = {
+  allowed: 2,
+  limit: "channels",
+  plan: "free",
+  planWithRoom: "payAsYouGo",
+  used: 2,
+};
+
 describe(UpgradeView, () => {
+  it("offers per-account pricing at the rate card's price, monthly, in both languages", async () => {
+    const english = await render("en", { reason: perAccount });
+
+    expect(english).toContain(
+      "$5.00 a month for each account past the first 2, excl. tax ($6.00 with 20% VAT), counted by the day; less each from account 11 on"
+    );
+    expect(english).toContain("At checkout you can pay in your own currency");
+    expect(english).not.toContain("Billing period");
+
+    const french = await render("fr", { reason: perAccount });
+
+    expect(french).toContain(
+      "par mois pour chaque compte au-delà des 2 premiers"
+    );
+    expect(french).toContain(
+      "Au paiement, vous pouvez payer dans votre devise"
+    );
+  });
+
   it("says which limit was reached, with the usage and the plan", async () => {
     const html = await render("en");
 
@@ -89,7 +116,7 @@ describe(UpgradeView, () => {
     const unticked = await render("en");
 
     expect(unticked).toContain("Order with obligation to pay");
-    expect(unticked).toContain("I ask Peal to start my subscription now.");
+    expect(unticked).toContain("I ask Peal to start per-account pricing now");
     expect(unticked).toMatch(
       /<button[^>]*aria-disabled="true"[^>]*>Order with obligation/u
     );

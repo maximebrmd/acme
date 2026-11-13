@@ -221,7 +221,7 @@ export const english: EmailCatalog = {
     years: { one: "{count} year", other: "{count} years" },
   },
   overFreePlan:
-    "Today it holds more than the free plan allows: {over}. From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page.",
+    "Today it holds more than the free plan allows: {over}. From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Add a payment method, or choose which accounts stay, on the billing page.",
   plans: {
     agency: "Agency",
     business: "Business",
@@ -370,11 +370,30 @@ export const english: EmailCatalog = {
     subject: "Withdrawal received: your {plan} subscription has ended",
   },
   trialEnding: {
-    action: "Choose a plan",
+    action: "Add a payment method",
     body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. {standing}",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial ends on {endsAt}",
+  },
+  perAccountStarted: {
+    action: "Open billing",
+    body: "Thank you: {workspaceName} is on per-account pricing since {startedAt}: {rates}, excluding tax, counted by the day each account is connected; each use past its monthly allowance is billed at the rate card's price. Nothing is charged now: an invoice follows each month, for the month past, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, with Withdraw from contract here, at the foot of every page and on the billing page, and then pay only for what was used. You can cancel at any time with Cancel your contract, in the same places. The terms of service apply; they hold the model withdrawal form.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Per-account pricing has started",
+  },
+  rates: {
+    band: "accounts {from} to {to} at {price} a month each",
+    free: "accounts 1 to {count} free",
+    lastBand: "accounts {from} and up at {price} a month each",
+  },
+  paymentMethodNeeded: {
+    action: "Add a payment method",
+    body: "{workspaceName} holds {accounts} connected accounts, more than the {allowed} the free tier includes, as it connected them before Peal billed. Until {graceUntil} it still schedules and publishes, and connects no more. After that day nothing is published until a payment method is added on the billing page, or {allowed} accounts are kept: posts scheduled then fail when due, and can be posted again afterwards.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Add a payment method to {workspaceName} before {graceUntil}",
   },
   trialStarted: {
     action: "Open billing",

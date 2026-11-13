@@ -1869,6 +1869,7 @@ layer(BillingIntegration, {
           standingWithAccount(cookies).pipe(Effect.map(withoutAccount));
 
         const within: Omit<Standing, "account"> = {
+          graceUntil: null,
           mustReduce: false,
           over: [],
           plan: "pro",
@@ -1903,6 +1904,7 @@ layer(BillingIntegration, {
 
         // Members never make the free tier over: its 2 accounts do.
         const over: Omit<Standing, "account"> = {
+          graceUntil: null,
           mustReduce: true,
           over: [{ allowed: 2, limit: "channels", used: 5 }],
           plan: "free",

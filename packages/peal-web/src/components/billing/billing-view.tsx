@@ -38,6 +38,7 @@ import { useId } from "react";
 
 import { useMoney, useSize } from "#billing/size.ts";
 import { ExcessList } from "#components/billing/excess-list.tsx";
+import { PerAccountPrice } from "#components/billing/per-account-price.tsx";
 
 /** What the person asked for, while it is under way. */
 export type BillingAction =
@@ -759,7 +760,9 @@ const Plans = ({
               {t("prices.vat", { rate: billing.vatRate })}
             </p>
           </div>
-          <IntervalSwitch interval={interval} onInterval={onInterval} />
+          {billing.plans.some(({ price }) => price !== null) ? (
+            <IntervalSwitch interval={interval} onInterval={onInterval} />
+          ) : null}
         </div>
         {canManage ? (
           <Consent
@@ -790,7 +793,7 @@ const Plans = ({
           const orderable =
             canManage &&
             isPaidPlan(plan) &&
-            price !== null &&
+            (price !== null || plan === "payAsYouGo") &&
             (!subscribed || index !== current);
 
           return (
@@ -808,11 +811,13 @@ const Plans = ({
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col gap-4">
-                    {price === null ? (
+                    {plan === "payAsYouGo" ? <PerAccountPrice /> : null}
+                    {plan !== "payAsYouGo" && price === null ? (
                       <p className="text-2xl font-semibold">
                         {t("prices.free")}
                       </p>
-                    ) : (
+                    ) : null}
+                    {price === null ? null : (
                       <PriceLines
                         allowances={allowances}
                         billing={billing}
@@ -836,7 +841,9 @@ const Plans = ({
                         {ordering ? t("plans.ordering") : t("plans.order")}
                       </Button>
                       <p className="text-muted-foreground text-xs">
-                        {t("plans.renewal", { interval })}
+                        {t("plans.renewal", {
+                          interval: plan === "payAsYouGo" ? "month" : interval,
+                        })}
                       </p>
                     </div>
                   </CardFooter>

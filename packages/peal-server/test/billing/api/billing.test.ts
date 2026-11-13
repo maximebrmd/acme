@@ -79,7 +79,12 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
     Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled }))),
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled, graceUntil: Option.none() })
+      )
+    ),
     Layer.provide(AloneInAccountsTest)
   );
 
@@ -189,6 +194,7 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
           transfer: null,
           workspaces: 1,
         },
+        graceUntil: null,
         mustReduce: false,
         over: [],
         plan: "pro",
