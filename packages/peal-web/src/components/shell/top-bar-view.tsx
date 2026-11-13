@@ -3,12 +3,10 @@ import { useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import type { ReactNode } from "react";
 
-import type { Navigation } from "#shell/navigation.ts";
-
 /**
- * The bar above a workspace's pages (DESIGN.md, "The frame"): the open
- * section and page, then the documentation and support, when the server
- * names them, and the account's corner.
+ * The bar above the signed-in app's pages (DESIGN.md, "The frame"): the
+ * open section and page, then the documentation and support, when the
+ * server names them, and the account's corner.
  */
 export const TopBarView = ({
   actions,
@@ -19,7 +17,11 @@ export const TopBarView = ({
 }: {
   /** The notifications and the account menu. */
   readonly actions: ReactNode;
-  readonly breadcrumb: Navigation["breadcrumb"];
+  /** The open section's and page's names, either missing on some pages. */
+  readonly breadcrumb: {
+    readonly section: string | null;
+    readonly page: string | null;
+  };
   readonly docsUrl: string | null;
   /** The button that opens the sidebar on a narrow screen. */
   readonly menu: ReactNode;
@@ -34,7 +36,7 @@ export const TopBarView = ({
         <ol className="flex items-center gap-1.5 text-sm">
           {breadcrumb.section === null ? null : (
             <li className="text-muted-foreground flex items-center gap-1.5">
-              {t(`sections.${breadcrumb.section}`)}
+              {breadcrumb.section}
               <span aria-hidden className="text-muted-foreground/60">
                 /
               </span>
@@ -42,7 +44,7 @@ export const TopBarView = ({
           )}
           {breadcrumb.page === null ? null : (
             <li aria-current="page" className="truncate font-medium">
-              {t(`pages.${breadcrumb.page}`)}
+              {breadcrumb.page}
             </li>
           )}
         </ol>

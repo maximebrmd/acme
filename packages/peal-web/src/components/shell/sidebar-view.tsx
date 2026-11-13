@@ -13,10 +13,12 @@ import {
   CreditCardIcon,
   FileTextIcon,
   FileUpIcon,
+  HouseIcon,
   ImageIcon,
   InboxIcon,
   KeyRoundIcon,
   LayersIcon,
+  LayoutGridIcon,
   ListOrderedIcon,
   MailIcon,
   MegaphoneIcon,
@@ -45,6 +47,7 @@ import { cn } from "peal-ui/lib/utils";
 import { useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 
+import { useCloseMenu } from "#components/shell/frame-view.tsx";
 import { PealMark } from "#components/shell/peal-mark.tsx";
 import type { Link, Mode, Navigation, Page } from "#shell/navigation.ts";
 
@@ -70,12 +73,14 @@ const icons: Readonly<Record<Page, LucideIcon>> = {
   drafts: FileTextIcon,
   feeds: RssIcon,
   general: SettingsIcon,
+  home: HouseIcon,
   import: FileUpIcon,
   inbox: InboxIcon,
   invitations: MailIcon,
   media: ImageIcon,
   members: UsersIcon,
   partner: UsersIcon,
+  platforms: LayoutGridIcon,
   posts: SquarePenIcon,
   queues: ListOrderedIcon,
   recycling: RecycleIcon,
@@ -96,7 +101,7 @@ const currentModeClass: Readonly<Record<Mode, string>> = {
   studio: "bg-card ring-border font-medium shadow-xs ring-1",
 };
 
-const itemClass =
+export const itemClass =
   "flex h-8.5 items-center gap-2.5 rounded-md px-2.5 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0";
 
 const ModeSwitch = ({
@@ -235,6 +240,8 @@ export const SidebarView = ({
     readonly name: string;
   }[];
 }) => {
+  const closeMenu = useCloseMenu();
+  const navigated = onNavigate ?? closeMenu;
   const t = useTranslations("WorkspaceShell");
   // Back closes the section on the page it was chosen on; following a link
   // that opens a section, or moving to another page, opens it again.
@@ -250,7 +257,7 @@ export const SidebarView = ({
       setClosedOn(null);
     }
 
-    onNavigate?.();
+    navigated();
   };
 
   const LinkTo = link;
@@ -274,7 +281,7 @@ export const SidebarView = ({
           link={link}
           mode={navigation.mode}
           modes={navigation.modes}
-          {...(onNavigate === undefined ? {} : { onNavigate })}
+          onNavigate={navigated}
         />
       </div>
 
@@ -370,14 +377,22 @@ export const SidebarView = ({
               {others.map(({ id, name }) => (
                 <DropdownMenuItem
                   key={id}
-                  render={<LinkTo href={`/app/${id}/calendar`}>{name}</LinkTo>}
+                  render={
+                    <LinkTo href={`/app/${id}`} onClick={navigated}>
+                      {name}
+                    </LinkTo>
+                  }
                 />
               ))}
               <DropdownMenuSeparator />
             </>
           )}
           <DropdownMenuItem
-            render={<LinkTo href="/app">{t("workspaces.all")}</LinkTo>}
+            render={
+              <LinkTo href="/app" onClick={navigated}>
+                {t("workspaces.all")}
+              </LinkTo>
+            }
           />
         </DropdownMenuContent>
       </DropdownMenu>

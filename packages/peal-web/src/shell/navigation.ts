@@ -13,6 +13,8 @@ export type Section = "posts" | "settings";
 /** The workspace pages the sidebar links to. */
 export type Page =
   | "ads"
+  | "home"
+  | "platforms"
   | "analytics"
   | "apiKeys"
   | "approvals"
@@ -116,6 +118,7 @@ const pages: Readonly<Record<Page, PageRule>> = {
     path: "/settings",
     section: "settings",
   },
+  home: { may: anyone, mode: "studio", path: "" },
   import: {
     may: needs("post:read", "post:schedule", "channel:read"),
     mode: "studio",
@@ -140,6 +143,11 @@ const pages: Readonly<Record<Page, PageRule>> = {
     may: needs("partner:read"),
     mode: "console",
     path: "/settings/partner",
+  },
+  platforms: {
+    may: needs("channel:read"),
+    mode: "console",
+    path: "/platforms",
   },
   posts: {
     may: needs("post:read", "channel:read"),
@@ -193,11 +201,12 @@ const layout: Readonly<
   >
 > = {
   console: [
+    { group: null, pages: ["platforms"] },
     { group: "build", pages: ["apiKeys", "webhooks"] },
     { group: "partners", pages: ["partner"] },
   ],
   studio: [
-    { group: null, pages: ["calendar", "posts", "channels", "media"] },
+    { group: null, pages: ["home", "calendar", "posts", "channels", "media"] },
     { group: "engage", pages: ["inbox", "analytics", "ads"] },
   ],
 };
@@ -311,8 +320,12 @@ export const navigationOf = ({
 }): Navigation => {
   const may = new Set(permissions);
   const base = `/app/${workspaceId}`;
-  const path = pathname.startsWith(base) ? pathname.slice(base.length) : "";
-  const { detail, page: current } = pageAt(path);
+  const inside = pathname === base || pathname.startsWith(`${base}/`);
+  const path = inside ? pathname.slice(base.length) : null;
+
+  const { detail, page: current } =
+    path === null ? { detail: null, page: null } : pageAt(path);
+
   const mode = current === null ? "studio" : pages[current].mode;
   const section = current === null ? null : (pages[current].section ?? null);
   const allowed = (page: Page): boolean => pages[page].may(may);

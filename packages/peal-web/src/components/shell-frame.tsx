@@ -41,8 +41,8 @@ export const ShellFrame = ({
     () => (isCallbackPage(pathname) ? "unknown" : frameOf(pathname, false))
   );
 
-  // A workspace's layout draws its own frame around its pages.
-  if (frame === "workspace") {
+  // The signed-in app's layouts draw their own frame around its pages.
+  if (frame === "own") {
     return children;
   }
 

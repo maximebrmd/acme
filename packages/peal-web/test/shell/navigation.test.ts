@@ -36,6 +36,7 @@ describe(navigationOf, () => {
     expect(navigation.mode).toBe("studio");
     expect(navigation.current).toBe("calendar");
     expect(pagesOf(navigation)).toStrictEqual([
+      "home",
       "calendar",
       "posts",
       "channels",
@@ -62,12 +63,13 @@ describe(navigationOf, () => {
     });
 
     expect(pagesOf(navigation)).toStrictEqual([
+      "home",
       "calendar",
       "channels",
       "media",
     ]);
     expect(navigation.modes.console).toBeNull();
-    expect(navigation.modes.studio).toBe(`${base}/calendar`);
+    expect(navigation.modes.studio).toBe(base);
   });
 
   it("puts the API's pages in Console, and starts Console at its first", () => {
@@ -80,11 +82,12 @@ describe(navigationOf, () => {
     expect(navigation.mode).toBe("console");
     expect(navigation.section).toBeNull();
     expect(pagesOf(navigation)).toStrictEqual([
+      "platforms",
       "apiKeys",
       "webhooks",
       "partner",
     ]);
-    expect(navigation.modes.console).toBe(`${base}/settings/api-keys`);
+    expect(navigation.modes.console).toBe(`${base}/platforms`);
   });
 
   it("opens the Posts section on its pages", () => {
