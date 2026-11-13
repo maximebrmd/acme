@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option, Result } from "effect";
-import { FetchHttpClient } from "effect/http";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { Dns } from "effect/net";
 
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -106,6 +106,25 @@ layer(ClientTest)("the public HTTP client", (it) => {
       assert.strictEqual(failure._tag, "OutboundRequestRefused");
       assert.lengthOf(local.requests(), 0);
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "checks the address a library prepends on top of it, as it is sent",
+    () =>
+      Effect.gen(function* prepended() {
+        const local = yield* fakeHttpServer(() => ({ status: 200 }));
+
+        // A provider package's client: relative paths, its base prepended
+        // by a mapping of its own over the client it is given.
+        const client = (yield* publicHttpClient).pipe(
+          HttpClient.mapRequest(HttpClientRequest.prependUrl(local.url))
+        );
+
+        const failure = yield* client.get("/v1/messages").pipe(Effect.flip);
+
+        assert.strictEqual(failure._tag, "OutboundRequestRefused");
+        assert.lengthOf(local.requests(), 0);
+      }).pipe(Effect.scoped)
   );
 
   it.effect("rejects the fetch it gives libraries, the way fetch fails", () =>
