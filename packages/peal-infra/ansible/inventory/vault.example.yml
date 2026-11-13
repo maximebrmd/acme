@@ -50,6 +50,8 @@ peal_credentials:
   # either: PEAL_INBOX_PLATFORMS goes in peal_settings, beside
   # META_APP_ID, INSTAGRAM_APP_ID, YOUTUBE_CLIENT_ID or
   # LINKEDIN_PAGES_CLIENT_ID.
+  # A Stripe key needs write access to meters, products and prices
+  # for the catalogue command (README.md, "Stripe catalogue").
   # PEAL_AI_API_KEY: REPLACE
   # PEAL_AI_IMAGE_API_KEY: REPLACE
   # STRIPE_SECRET_KEY: REPLACE

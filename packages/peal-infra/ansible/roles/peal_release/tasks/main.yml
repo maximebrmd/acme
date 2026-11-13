@@ -230,6 +230,33 @@
   register: peal_release_bluesky_key
   changed_when: peal_release_bluesky_key.stdout == 'created'
 
+# On a server that bills, Stripe's catalogue for per-account pricing is
+# compared with the one the new release's image gives, before that image
+# replaces the server: read-only at Stripe, with the key that stays in
+# credentials.env. Until per-account pricing is sold, the new server starts
+# on a catalogue that differs and warns, so a difference is reported here,
+# never a failure; giving Stripe the catalogue is the operator's step
+# (README.md, "Stripe catalogue"). Names only: the key is never read.
+- name: Compare Stripe's catalogue with the release's
+  ansible.builtin.shell: |
+    set -u
+    if ! grep -Eq "^STRIPE_SECRET_KEY=['\"]?[^'\"[:space:]]" {{ peal_root }}/credentials.env; then
+      echo 'billing off'
+      exit 0
+    fi
+    {{ peal_compose_bin }} run --rm --no-deps -T server packages/peal-server/scripts/stripe-catalogue.ts --check
+  register: peal_release_catalogue
+  changed_when: false
+  failed_when: false
+
+- name: Report a Stripe catalogue that differs
+  ansible.builtin.debug:
+    msg:
+      - "Stripe's catalogue is not the one this release gives. The new server starts and warns; give Stripe the catalogue with:"
+      - sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
+      - "{{ peal_release_catalogue.stdout_lines + peal_release_catalogue.stderr_lines }}"
+  when: (peal_release_catalogue.rc | default(0)) != 0
+
 # Compose recreates Postgres when its image or its settings changed: the old
 # server then stops first, with 75 seconds to finish its platform calls, so
 # it never runs against a Postgres that restarts. Pages stay up meanwhile.
