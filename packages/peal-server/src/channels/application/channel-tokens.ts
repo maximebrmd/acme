@@ -17,13 +17,18 @@ export const encryptTokens = Effect.fn("ChannelTokens.encrypt")(
       ? Option.some(yield* cipher.encrypt(tokens.refreshToken.value, channelId))
       : Option.none();
 
-    return tokens.grantedBy === undefined
-      ? new ChannelCredentials({ accessToken, refreshToken })
-      : new ChannelCredentials({
-          accessToken,
-          grantedBy: tokens.grantedBy,
-          refreshToken,
-        });
+    return new ChannelCredentials({
+      accessToken,
+      refreshToken,
+      ...Option.match(Option.fromUndefinedOr(tokens.grantedBy), {
+        onNone: () => ({}),
+        onSome: (grantedBy) => ({ grantedBy }),
+      }),
+      ...Option.match(Option.fromUndefinedOr(tokens.tokenOwner), {
+        onNone: () => ({}),
+        onSome: (tokenOwner) => ({ tokenOwner }),
+      }),
+    });
   }
 );
 
@@ -46,7 +51,14 @@ export const decryptTokens = Effect.fn("ChannelTokens.decrypt")(
         )
       : Option.none();
 
-    const tokens: StoredTokens = { accessToken, refreshToken };
+    const tokens: StoredTokens = {
+      accessToken,
+      refreshToken,
+      ...Option.match(Option.fromUndefinedOr(credentials.tokenOwner), {
+        onNone: () => ({}),
+        onSome: (tokenOwner) => ({ tokenOwner }),
+      }),
+    };
 
     return tokens;
   }

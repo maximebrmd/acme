@@ -30,6 +30,11 @@ import type {
   EngagementPlatform,
   OutgoingReply,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import {
+  linkedinEngagement,
+  linkedinReadCallsConfig,
+} from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
+import type { LinkedInReadCalls } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
@@ -43,6 +48,8 @@ import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platfor
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -65,6 +72,11 @@ export interface EngagementSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's Graph hosts are. */
   readonly metaHosts: MetaHosts;
+  /** LinkedIn's REST API's origin, and the version every call names. */
+  readonly linkedinApi: URL;
+  readonly linkedinVersion: string;
+  /** What LinkedIn comment reads may call a day (`linkedinReadCallsConfig`). */
+  readonly linkedinReadCalls: LinkedInReadCalls;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
   /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
@@ -94,7 +106,8 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
- * Mac, SecureRandom and publishing's PlatformQuota, the server's ledger
+ * Mac, SecureRandom, Pseudonyms (LinkedIn's members, counted under a keyed
+ * digest) and publishing's PlatformQuota, the server's ledger
  * of YouTube's day; Facebook Pages, Instagram and YouTube are read where
  * CurrentInboxPlatforms names them.
  *
@@ -116,8 +129,8 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         timeout: "20 seconds",
       });
 
-      // Facebook Pages, Instagram and YouTube are read only where the
-      // operator turned them on: a channel of a platform that is off is
+      // Facebook Pages, Instagram, YouTube and LinkedIn pages are read
+      // only where the operator turned them on: a channel of a platform that is off is
       // never called, as one Peal reads no comments on.
       const inbox = yield* CurrentInboxPlatforms;
 
@@ -136,6 +149,13 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         }),
         facebook: yield* facebookEngagement(meta),
         instagram: yield* instagramEngagement(meta),
+        linkedin: yield* linkedinEngagement({
+          api: settings.linkedinApi,
+          dailyCalls: settings.linkedinReadCalls,
+          http,
+          reader,
+          version: settings.linkedinVersion,
+        }),
         mastodon: yield* mastodonEngagement({
           http,
           reader,
@@ -386,21 +406,28 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
 export const PlatformEngagementLive = Layer.unwrap(
   Effect.all({
     app: metaAppConfig,
+    linkedinReadCalls: linkedinReadCallsConfig,
+    linkedinVersion: linkedinVersionConfig,
     youtubeCommentUnits: youtubeCommentUnitsConfig,
   }).pipe(
-    Effect.map(({ app, youtubeCommentUnits }) =>
-      platformEngagementWith({
-        blueskyAppView: new URL("https://public.api.bsky.app"),
-        mastodonScheme: "https:",
-        metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
-        metaHosts,
-        youtubeApi: new URL("https://www.googleapis.com"),
-        youtubeCommentUnits,
-      })
+    Effect.map(
+      ({ app, linkedinReadCalls, linkedinVersion, youtubeCommentUnits }) =>
+        platformEngagementWith({
+          blueskyAppView: new URL("https://public.api.bsky.app"),
+          linkedinApi: new URL("https://api.linkedin.com"),
+          linkedinReadCalls,
+          linkedinVersion,
+          mastodonScheme: "https:",
+          metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
+          metaHosts,
+          youtubeApi: new URL("https://www.googleapis.com"),
+          youtubeCommentUnits,
+        })
     )
   )
 ).pipe(
   Layer.provide(InboxPlatformsLive),
+  Layer.provide(KeyedPseudonymsLive),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(

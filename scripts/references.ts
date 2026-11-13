@@ -52,6 +52,21 @@ const references: readonly Reference[] = [
     tag: (version) => `v${version}`,
   },
   {
+    // Effect's language service for TypeScript 7: the editor plugin and the
+    // diagnostics the checks run on Effect code.
+    name: "effect-tsgo",
+    packageName: "@effect/tsgo",
+    repository: "Effect-TS/tsgo",
+    tag: (version) => `@effect/tsgo@${version}`,
+  },
+  {
+    // The components peal-ui's shadcn/ui layer is built on.
+    name: "base-ui",
+    packageName: "@base-ui/react",
+    repository: "mui/base-ui",
+    tag: (version) => `v${version}`,
+  },
+  {
     name: "tiptap",
     packageName: "@tiptap/react",
     repository: "ueberdosis/tiptap",
@@ -68,6 +83,20 @@ const references: readonly Reference[] = [
     packageName: "astro",
     repository: "withastro/astro",
     tag: (version) => `astro@${version}`,
+  },
+  {
+    // The end-to-end runner, its web engine included.
+    name: "e2e",
+    packageName: "e2e",
+    repository: "tester-army/e2e",
+    tag: (version) => `e2e@${version}`,
+  },
+  {
+    // The lint presets: which oxlint rules each one turns on.
+    name: "ultracite",
+    packageName: "ultracite",
+    repository: "haydenbleasel/ultracite",
+    tag: (version) => `ultracite@${version}`,
   },
 ];
 

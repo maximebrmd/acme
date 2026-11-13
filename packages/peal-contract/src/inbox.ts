@@ -59,6 +59,7 @@ export const inboxOptionalPlatforms = [
   "facebook",
   "instagram",
   "youtube",
+  "linkedin",
 ] as const;
 
 // Names as a sentence lists them: "a", "a and b", "a, b and c".
@@ -166,7 +167,9 @@ export type InboxAuthor = typeof InboxAuthorSchema.Type;
 export const InboxCommentSchema = Schema.Struct({
   // Null once the platform no longer shows the comment (`deleted`), or
   // when it does not show who wrote it (Facebook may not). Its `handle` is
-  // empty where the platform gives none (Facebook).
+  // empty where the platform gives none (Facebook), and on LinkedIn its
+  // `displayName` is null too: Peal keeps a commenter's URN
+  // (`urn:li:person:…`, or `urn:li:organization:…` for a page) and no name.
   author: Schema.NullOr(InboxAuthorSchema),
   // Present on a `deleted` comment Peal forgot for its age
   // (`InboxCommentForgotten`), absent otherwise.

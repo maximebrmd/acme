@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Option } from "effect";
 
 import { blueskyScope } from "#channels/infrastructure/platforms/bluesky/bluesky-client.ts";
+import { linkedinPagesScopesFor } from "#channels/infrastructure/platforms/linkedin/linkedin-pages-authorizer.ts";
 import {
   legacyScopes,
   profileScopes,
@@ -14,6 +16,7 @@ import {
   askedAtSignIn,
   engagedPlatforms,
 } from "#engagement/domain/engagement-abilities.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 
@@ -24,7 +27,12 @@ import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 // inbox would tell everyone to reconnect for ever. Facebook's and
 // Instagram's and YouTube's are asked where the server reads them.
 
-const inbox: InboxPlatforms = new Set(["facebook", "instagram", "youtube"]);
+const inbox: InboxPlatforms = new Set([
+  "facebook",
+  "instagram",
+  "youtube",
+  "linkedin",
+]);
 
 // Everything a Facebook Login product asks for, granted.
 const facebookLogin = (product: typeof facebookPages) => [
@@ -37,9 +45,15 @@ const grants = {
   bluesky: [blueskyScope.split(" ")],
   facebook: [facebookLogin(facebookPages)],
   instagram: [facebookLogin(instagramAccounts), instagramLoginScopes(inbox)],
+  linkedin: [linkedinPagesScopesFor(inbox)],
   mastodon: [profileScopes.split(" "), legacyScopes.split(" ")],
   youtube: [[...youtubeScopes, youtubeCommentScope]],
 } as const;
+
+// The connection each platform's grants above come through.
+const connections: Partial<
+  Record<keyof typeof grants, Option.Option<ChannelConnection>>
+> = { linkedin: Option.some("linkedinPage") };
 
 describe("the inbox abilities of an account connected today", () => {
   it("covers every platform Peal reads comments on", () => {
@@ -52,9 +66,10 @@ describe("the inbox abilities of an account connected today", () => {
     "are available on %s for whatever its sign-in asks for",
     (platform) => {
       for (const scopes of grants[platform]) {
-        const abilities = abilitiesOf(platform, scopes, inbox);
+        const connection = connections[platform] ?? Option.none();
+        const abilities = abilitiesOf(platform, scopes, inbox, connection);
 
-        for (const ability of askedAtSignIn(platform, inbox)) {
+        for (const ability of askedAtSignIn(platform, inbox, connection)) {
           expect([ability, abilities[ability]]).toStrictEqual([
             ability,
             "available",

@@ -141,6 +141,8 @@ export class ChannelRepository extends Context.Service<
     readonly credentials: (
       channelId: ChannelId
     ) => Effect.Effect<Option.Option<ChannelCredentials>, DatabaseError>;
+    /** Forgets every channel's token owner: how many it forgot. */
+    readonly forgetTokenOwners: Effect.Effect<number, DatabaseError>;
     /**
      * A page of the active channels whose token renews itself and expires
      * before the cutoff given for their platform, soonest first, at most

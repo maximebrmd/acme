@@ -93,6 +93,8 @@ interface PendingCode {
   readonly client: string;
   readonly member: string;
   readonly redirectUri: string;
+  /** What the authorization page asked, which LinkedIn grants whole. */
+  readonly scope: string;
 }
 
 interface IssuedToken {
@@ -161,6 +163,10 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
   ]);
 
   let refreshable = false;
+  // Whether the token answer lists the scopes granted.
+  let listsScopes = true;
+  // The longest page of roles the fake gives, whatever `count` asks.
+  let rolesCap = Number.POSITIVE_INFINITY;
 
   const members = new Map<string, LinkedInMember>([
     [linkedinMember.sub, linkedinMember],
@@ -241,11 +247,16 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
         refreshTokens.set(refreshToken, { member: code.member, pages });
       }
 
-      const answer = {
-        access_token: token,
-        expires_in: sixtyDays,
-        scope: pagesScopes,
-      };
+      // LinkedIn's consent is all or nothing: what was asked is granted.
+      const granted = code.scope.split(/[\s,]+/u).filter((s) => s !== "");
+
+      const answer = listsScopes
+        ? {
+            access_token: token,
+            expires_in: sixtyDays,
+            scope: granted.length === 0 ? pagesScopes : granted.join(","),
+          }
+        : { access_token: token, expires_in: sixtyDays };
 
       return json(
         refreshable
@@ -353,7 +364,11 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
     ) {
       const state = request.query.get("state");
       const start = Number(request.query.get("start") ?? "0");
-      const count = Number(request.query.get("count") ?? "10");
+
+      const count = Math.min(
+        Number(request.query.get("count") ?? "10"),
+        rolesCap
+      );
 
       const listed = held.filter(
         (role) => state === null || role.state === state
@@ -426,6 +441,7 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
       client: url.searchParams.get("client_id") ?? "",
       member,
       redirectUri: url.searchParams.get("redirect_uri") ?? "",
+      scope: url.searchParams.get("scope") ?? "",
     });
 
     return { code, state };
@@ -439,6 +455,10 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
     },
     approve,
     cancel,
+    /** Gives pages of roles no longer than `count`, whatever is asked. */
+    capRolePages: (count: number) => {
+      rolesCap = count;
+    },
     endpoints,
     /** Makes the next answers to `route` these failures, in order. */
     failNext: (route: string, answers: readonly FakeResponse[]) => {
@@ -454,6 +474,10 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
      */
     issueRefreshTokens: () => {
       refreshable = true;
+    },
+    /** Answers tokens without the scopes they grant, as LinkedIn may. */
+    omitScopes: () => {
+      listsScopes = false;
     },
   };
 });

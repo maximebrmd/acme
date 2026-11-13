@@ -58,6 +58,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   partner's workspace (`workspace/domain/idempotency.ts`);
  * - `connectLinks`: a connect link, once it is over
  *   (`channels/domain/connect-link.ts`);
+ * - `quotaLedger`: each day of the server's counts of a platform's daily
+ *   quota, LinkedIn's calls by member among them
+ *   (`publishing/domain/quota-retention.ts`);
  * - `erasureLedger`: the record of deletions kept outside the database
  *   (`workspace/domain/erasure-ledger.ts`), a little longer than `backups`;
  * - `exportLinks`: the links an export gives to media files;
@@ -92,6 +95,7 @@ export const retentionPeriods = {
   legalIdentity: { years: 5 },
   metrics: { days: 30 },
   partnerUsageDays: { days: 400 },
+  quotaLedger: { days: 7 },
   requirementMemory: { years: 2 },
   reviewVisitorNames: { months: 24 },
   serverLogs: { days: 31 },
@@ -208,8 +212,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The social media accounts you connect, their identifiers on each platform, the way each was connected where a platform has several (a LinkedIn profile or company page, either of Instagram’s logins), and the access tokens the platforms issue, stored encrypted; the connect links a workspace hands out so that an account’s owner connects it without an account on the service: who created each, when it expires, whether it was used and what it connected, how its last sign-in failed, and digests of its address and of the browser that started its sign-in, never either",
-      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, la façon dont chacun a été connecté quand une plateforme en a plusieurs (un profil ou une page d’entreprise LinkedIn, l’une ou l’autre des connexions Instagram), et les jetons d’accès que les plateformes délivrent, stockés chiffrés ; les liens de connexion qu’un espace de travail remet pour que le titulaire d’un compte le connecte sans compte sur le service : qui a créé chacun, quand il expire, s’il a servi et ce qu’il a connecté, comment sa dernière connexion a échoué, et des empreintes de son adresse et du navigateur qui a commencé sa connexion, jamais l’une ni l’autre",
+      en: "The social media accounts you connect, their identifiers on each platform, the way each was connected where a platform has several (a LinkedIn profile or company page, either of Instagram’s logins), and the access tokens the platforms issue, stored encrypted; for a LinkedIn company page, on a server whose inbox reads LinkedIn’s comments, the identifier on LinkedIn of the member who connected it, whose calls LinkedIn counts by member each day, and, for each day, how many calls the service made for that member, kept under a keyed digest of the identifier, never the identifier itself; the connect links a workspace hands out so that an account’s owner connects it without an account on the service: who created each, when it expires, whether it was used and what it connected, how its last sign-in failed, and digests of its address and of the browser that started its sign-in, never either",
+      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, la façon dont chacun a été connecté quand une plateforme en a plusieurs (un profil ou une page d’entreprise LinkedIn, l’une ou l’autre des connexions Instagram), et les jetons d’accès que les plateformes délivrent, stockés chiffrés ; pour une page d’entreprise LinkedIn, sur un serveur dont la boîte de réception lit les commentaires LinkedIn, l’identifiant sur LinkedIn du membre qui l’a connectée, dont LinkedIn compte les appels par membre chaque jour, et, pour chaque jour, le nombre d’appels que le service a faits pour ce membre, conservé sous une empreinte à clé de l’identifiant, jamais l’identifiant lui-même ; les liens de connexion qu’un espace de travail remet pour que le titulaire d’un compte le connecte sans compte sur le service : qui a créé chacun, quand il expire, s’il a servi et ce qu’il a connecté, comment sa dernière connexion a échoué, et des empreintes de son adresse et du navigateur qui a commencé sa connexion, jamais l’une ni l’autre",
     },
     id: "channels",
     legalBasis: contract,
@@ -219,12 +223,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Publish to the accounts you connect, and read the figures of your posts there",
-      fr: "Publier sur les comptes que vous connectez, et y lire les chiffres de vos publications",
+      en: "Publish to the accounts you connect, and read the figures of your posts there; for LinkedIn pages, stay within the calls LinkedIn allows each member a day",
+      fr: "Publier sur les comptes que vous connectez, et y lire les chiffres de vos publications ; pour les pages LinkedIn, rester dans les appels que LinkedIn permet à chaque membre par jour",
     },
     retention: {
-      en: `Until the account is disconnected or its workspace is deleted. A connect link: ${p.connectLinks.days} days after it was used, revoked or expired, then deleted within a day, or until its workspace is deleted`,
-      fr: `Jusqu’à la déconnexion du compte ou la suppression de son espace de travail. Un lien de connexion : ${p.connectLinks.days} jours après avoir été utilisé, révoqué ou expiré, puis supprimé dans la journée, ou jusqu’à la suppression de son espace de travail`,
+      en: `Until the account is disconnected or its workspace is deleted. The member who connected a LinkedIn page: as long as the page stays connected with that member’s token, until another member reconnects it, and no longer than a day once the operator stops reading LinkedIn’s comments; the daily counts of their calls: ${p.quotaLedger.days} days after each day, then deleted within a day. A connect link: ${p.connectLinks.days} days after it was used, revoked or expired, then deleted within a day, or until its workspace is deleted`,
+      fr: `Jusqu’à la déconnexion du compte ou la suppression de son espace de travail. Le membre qui a connecté une page LinkedIn : tant que la page reste connectée avec le jeton de ce membre, jusqu’à ce qu’un autre membre la reconnecte, et pas plus d’un jour après que l’exploitant cesse de lire les commentaires LinkedIn ; les décomptes quotidiens de ses appels : ${p.quotaLedger.days} jours après chaque jour, puis supprimés dans la journée. Un lien de connexion : ${p.connectLinks.days} jours après avoir été utilisé, révoqué ou expiré, puis supprimé dans la journée, ou jusqu’à la suppression de son espace de travail`,
     },
     source: {
       en: "The platform, when you connect the account, or when its owner connects it through a connect link; the members and the keys that create connect links",
@@ -330,12 +334,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Montrer aux membres d’un espace de travail les commentaires que reçoivent ses publications et leur permettre d’y répondre en public, au nom du compte connecté. Les commentaires ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles",
     },
     retention: {
-      en: `Comments are read for ${p.inboxWindow.days} days after a post went live, unless the operator set another period (90 days at most). A post’s comments and the replies sent to them: ${p.inboxAfterCollection.days} days after that, then deleted within a day; earlier with the workspace. A comment its platform no longer shows loses its text and its author at the next read. On a platform that bounds how long a comment may be kept without being read again, less: on YouTube, a post’s comments lose their text and their author 29 days after the last read that found all of them, until a read finds them again, and all of a channel’s lose them when it is disconnected. Closing an account removes it as the author of the replies it sent, which stay with their workspace`,
-      fr: `Les commentaires sont lus pendant ${p.inboxWindow.days} jours après la mise en ligne d’une publication, sauf autre durée fixée par l’exploitant (90 jours au plus). Les commentaires d’une publication et les réponses envoyées : ${p.inboxAfterCollection.days} jours de plus, puis supprimés dans la journée ; plus tôt avec l’espace de travail. Un commentaire que sa plateforme ne montre plus perd son texte et son auteur à la lecture suivante. Sur une plateforme qui limite la durée de conservation d’un commentaire qui n’est pas relu, moins : sur YouTube, les commentaires d’une publication perdent leur texte et leur auteur 29 jours après la dernière lecture qui les a tous trouvés, jusqu’à ce qu’une lecture les retrouve, et tous ceux d’une chaîne les perdent quand elle est déconnectée. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur espace de travail`,
+      en: `Comments are read for ${p.inboxWindow.days} days after a post went live, unless the operator set another period (90 days at most). A post’s comments and the replies sent to them: ${p.inboxAfterCollection.days} days after that, then deleted within a day; earlier with the workspace. A comment its platform no longer shows loses its text and its author at the next read. On a platform that bounds how long a comment may be kept without being read again, less: on YouTube, a post’s comments lose their text and their author 29 days after the last read that found all of them (on LinkedIn, 24 hours after it), until a read finds them again, and all of a channel’s lose them when it is disconnected. Closing an account removes it as the author of the replies it sent, which stay with their workspace`,
+      fr: `Les commentaires sont lus pendant ${p.inboxWindow.days} jours après la mise en ligne d’une publication, sauf autre durée fixée par l’exploitant (90 jours au plus). Les commentaires d’une publication et les réponses envoyées : ${p.inboxAfterCollection.days} jours de plus, puis supprimés dans la journée ; plus tôt avec l’espace de travail. Un commentaire que sa plateforme ne montre plus perd son texte et son auteur à la lecture suivante. Sur une plateforme qui limite la durée de conservation d’un commentaire qui n’est pas relu, moins : sur YouTube, les commentaires d’une publication perdent leur texte et leur auteur 29 jours après la dernière lecture qui les a tous trouvés (sur LinkedIn, 24 heures après celle-ci), jusqu’à ce qu’une lecture les retrouve, et tous ceux d’une chaîne les perdent quand elle est déconnectée. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur espace de travail`,
     },
     source: {
-      en: "The platforms, for the comments, which their authors published there (on Facebook Pages, Instagram and YouTube, where the operator turned them on, through the permissions the connected account granted); the members of your workspaces, for the replies",
-      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés (sur les Pages Facebook, Instagram et YouTube, là où l’exploitant les a activés, grâce aux autorisations accordées par le compte connecté) ; les membres de vos espaces de travail, pour les réponses",
+      en: "The platforms, for the comments, which their authors published there (on Facebook Pages, Instagram, YouTube and LinkedIn company pages, where the operator turned them on, through the permissions the connected account granted); the members of your workspaces, for the replies",
+      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés (sur les Pages Facebook, Instagram, YouTube et les pages d’entreprise LinkedIn, là où l’exploitant les a activés, grâce aux autorisations accordées par le compte connecté) ; les membres de vos espaces de travail, pour les réponses",
     },
   },
   {

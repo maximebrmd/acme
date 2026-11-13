@@ -1,4 +1,15 @@
-import { and, asc, count, eq, gt, ilike, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  ilike,
+  isNotNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -112,15 +123,19 @@ const channelColumns = (channel: Channel) => {
   };
 };
 
+// Tokens without an owner forget the one kept: the authorizer hands a
+// renewal the owner it keeps.
 const credentialColumns = ({
   accessToken,
   grantedBy,
   refreshToken,
+  tokenOwner,
 }: ChannelCredentials) => ({
   accessToken,
   grantedBy: grantedBy ?? null,
   refreshToken: Option.getOrNull(refreshToken),
   tokenKeyId: tokenKeyIdOf(accessToken),
+  tokenOwner: tokenOwner ?? null,
 });
 
 // Whether the channel already asks for a reconnect.
@@ -264,6 +279,7 @@ export const DrizzleChannelRepository = Layer.effect(
           .select({
             accessToken: channels.accessToken,
             refreshToken: channels.refreshToken,
+            tokenOwner: channels.tokenOwner,
           })
           .from(channels)
           .where(eq(channels.id, channelId))
@@ -275,6 +291,10 @@ export const DrizzleChannelRepository = Layer.effect(
                 : decodeCredentials({
                     accessToken: row.accessToken,
                     refreshToken: Option.fromNullOr(row.refreshToken),
+                    ...Option.match(Option.fromNullOr(row.tokenOwner), {
+                      onNone: () => ({}),
+                      onSome: (tokenOwner) => ({ tokenOwner }),
+                    }),
                   }).pipe(Effect.orDie, Effect.map(Option.some))
             )
           ),
@@ -320,6 +340,15 @@ export const DrizzleChannelRepository = Layer.effect(
           .from(channels)
           .where(byId(workspaceId, channelId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstChannel)),
+      forgetTokenOwners: db
+        .update(channels)
+        .set({ tokenOwner: null })
+        .where(isNotNull(channels.tokenOwner))
+        .returning({ id: channels.id })
+        .pipe(
+          Effect.mapError(failed),
+          Effect.map((rows) => rows.length)
+        ),
       get: (channelId) =>
         db
           .select()
