@@ -45,23 +45,35 @@
   `workspace:read` to read and `workspace:write` to change; staff
   impersonating the user only read.
 - The weekly digest (`SendWeeklyDigests`, `notifications.weekly-digest`,
-  Mondays 06:19 UTC) is an email, never a notice: notices hold no
-  content, and the digest names posts by the start of their text. It
-  goes to those who turned `email.weeklyDigest` on (off by default)
-  and only to them, paged by user id on the partial index
-  `notification_preferences_weekly_digest`, so a server where nobody
-  did reads one page of nobody. `DigestSources`
+  every hour of Monday at 19 past, UTC) is an email, never a notice:
+  notices hold no content, and the digest names posts by the start of
+  their text. It goes to those who turned `email.weeklyDigest` on (off by
+  default) and still lack the week's, paged by user id on the partial
+  index `notification_preferences_weekly_digest`, so a server where
+  nobody did reads one page of nobody. `DigestSources`
   (`ContextDigestSources`) reads each one's workspaces through the
   workspace context's `ActorsNow` (as a request of theirs would be
   decided now), publishing's `PostAttention.week` where they hold
   post:read, analytics' totals where they hold analytics:read: the
   workspace's own posts, counted and the first five of each week
   (`digestListed`), never a comment or its author. Weeks and days are
-  UTC (`digestWeekOf`), as readers' zones are not known. The week is
-  claimed in `notification_preferences.weekly_digest_week` before the
-  email goes (`claimDigest`, which also reads they still want it), never
-  as a notice key, as `sent_notices` keeps keys forever and the
-  preferences row goes with the account: a run again sends no second,
-  and one refused for good is not sent again that week. Emails go one
-  at a time, a refusal for now tried again (`DigestPaceRef`). It ends
-  with the link to the notification preferences, which turn it off.
+  UTC (`digestWeekOf`), as readers' zones are not known.
+- A reader is taken before being read (`claimDigest`: a lease in
+  `weekly_digest_lease`, stale after `DigestPaceRef.lease`, refused once
+  they no longer want it), and the week is marked
+  (`weekly_digest_week`, never a notice key, as `sent_notices` keeps keys
+  forever and the preferences row goes with the account) only once the
+  email was accepted, or refused for good. One refused for now, after a
+  few seconds of retries and a timeout per send, is given back
+  (`releaseDigest`) and the run stops there: the next hour's goes on.
+  Each reader is isolated: any failure or defect is logged, counted in
+  `peal.notifications.weekly_digest.failures` (an alert rule watches it)
+  and skipped; a page read is retried.
+- Each digest carries `List-Unsubscribe` and `List-Unsubscribe-Post`
+  (RFC 8058) to `/api/notifications/weekly-digest/unsubscribe/<token>`
+  (`src/app/weekly-digest/`, outside the contract): a POST turns that
+  digest off and nothing else, a GET only redirects to the preferences.
+  Tokens (`DigestLinks`, `HmacDigestLinks`) are the HMAC of the user and
+  `weekly_digest_links` with BETTER_AUTH_SECRET, never expire, and are
+  revoked when the digest is turned on again, which moves the
+  generation. Its footer links the notification preferences too.

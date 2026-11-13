@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "e1228986-6297-492a-b0a3-d035e31d98a9",
+  "id": "684960d0-69dd-4518-9b08-1e95b5682e6a",
   "prevIds": [
     "1bbf8248-b8c6-4fbd-9b23-4acbf4a5d306"
   ],
@@ -37,6 +37,42 @@
         "s|col|notifications.notification_preferences.weekly_digest_week",
         "n|col|notifications.notification_preferences.weekly_digest_week",
         "e|col|notifications.notification_preferences.weekly_digest_week"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_lease"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_lease",
+        "n|col|notifications.notification_preferences.weekly_digest_lease",
+        "e|col|notifications.notification_preferences.weekly_digest_lease"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_links"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_links",
+        "n|col|notifications.notification_preferences.weekly_digest_links",
+        "e|col|notifications.notification_preferences.weekly_digest_links"
       ],
       "reads": [
         "n|tbl|notifications.notification_preferences",
@@ -92,6 +128,38 @@
         "notNull": false,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_lease",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_links",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
         "generated": null,
         "identity": null,
         "entityType": "columns"

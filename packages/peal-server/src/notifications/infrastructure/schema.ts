@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   index,
+  integer,
   jsonb,
   pgSchema,
   text,
@@ -66,9 +67,10 @@ export const notices = notificationsSchema.table(
  * The preferences of the users who changed them; the others have the
  * defaults (`defaultPreferences` in the domain). `every_post`: they hear
  * about every post of their workspaces, not only those they wrote.
- * `weekly_digest_week` is the week of the last weekly digest claimed, by
- * its first day: kept here, not as a notice key, so it goes with the
- * account.
+ * `weekly_digest_week` is the week of the last weekly digest sent, by
+ * its first day, `weekly_digest_lease` a send under way and
+ * `weekly_digest_links` its unsubscribe links' generation: kept here, not
+ * as a notice key, so they go with the account.
  */
 export const notificationPreferences = notificationsSchema.table(
   "notification_preferences",
@@ -96,6 +98,13 @@ export const notificationPreferences = notificationsSchema.table(
     // The first day (UTC) of the last week a digest went out for, so a
     // week's goes once; null before the first. Gone with the row.
     weeklyDigestWeek: date("weekly_digest_week", { mode: "string" }),
+    // When a send of the digest took it, while it is under way: another
+    // run leaves it until the lease is stale. Null otherwise.
+    weeklyDigestLease: instant("weekly_digest_lease"),
+    // The generation of the digest's unsubscribe links: each is signed
+    // with it, and turning the digest on again moves it, so the links
+    // sent before stop working.
+    weeklyDigestLinks: integer("weekly_digest_links").notNull().default(0),
     everyPost: boolean("every_post").notNull().default(false),
     updatedAt: instant("updated_at").notNull(),
     userId: uuid("user_id").primaryKey(),

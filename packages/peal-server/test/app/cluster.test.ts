@@ -278,6 +278,7 @@ const ChannelJobsTest = Layer.mergeAll(
     SendWeeklyDigests.of({
       run: () =>
         Effect.succeed({
+          deferred: false,
           failed: 0,
           nothingToTell: 0,
           readers: 0,

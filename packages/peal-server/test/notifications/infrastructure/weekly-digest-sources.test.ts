@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { AnalyticsLive } from "#analytics/container.ts";
@@ -20,7 +20,10 @@ import { ActorsNow } from "#workspace/application/actors-now.ts";
 import type { ActorStanding } from "#workspace/application/actors-now.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { Account } from "#workspace/domain/account.ts";
+import { actorFor } from "#workspace/domain/membership.ts";
+import type { Membership as WorkspaceMembership } from "#workspace/domain/membership.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
+import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 // What the weekly digest reads, on Postgres: the posts publishing keeps and
 // analytics' engagement, for the workspaces a member stands in as the
@@ -97,6 +100,29 @@ const acting =
     }),
   });
 
+// How the workspace context decides a member in their own session now
+// (`actorFor`), from their membership: a ban and two-step verification the
+// workspace requires and the account lacks shut them out, as `ActorsNow`
+// tells them.
+const decided =
+  (membership: WorkspaceMembership) =>
+  (userId: UserId, workspaceId: WorkspaceId): ActorStanding =>
+    Result.match(
+      actorFor(
+        new UserPrincipal({ impersonatedBy: Option.none(), userId }),
+        workspaceId,
+        Option.some(membership),
+        DateTime.makeUnsafe("2054-10-13T06:19:00Z")
+      ),
+      {
+        onFailure: (refusal): ActorStanding =>
+          refusal._tag === "TwoStepRequired"
+            ? { _tag: "lockedOut" }
+            : { _tag: "gone" },
+        onSuccess: (actor): ActorStanding => ({ _tag: "acting", actor }),
+      }
+    );
+
 const SourcesTest = Layer.mergeAll(
   ContextDigestSources,
   DrizzlePreferenceStore
@@ -144,6 +170,8 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
         const viewing = yield* freshWorkspace;
         const left = yield* freshWorkspace;
         const unread = yield* freshWorkspace;
+        const banned = yield* freshWorkspace;
+        const strict = yield* freshWorkspace;
 
         memberships.set(userId, [
           {
@@ -166,9 +194,29 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
             standing: acting(["channel:read"]),
             workspaceId: unread,
           },
+          {
+            name: "Banned",
+            standing: decided({
+              ban: Option.some({ expiresAt: Option.none() }),
+              role: "editor",
+              twoStep: { enabled: false, required: false },
+            }),
+            workspaceId: banned,
+          },
+          {
+            name: "Strict",
+            standing: decided({
+              ban: Option.none(),
+              role: "editor",
+              twoStep: { enabled: false, required: true },
+            }),
+            workspaceId: strict,
+          },
         ]);
 
-        for (const workspaceId of [editing, viewing, left, unread]) {
+        const all = [editing, viewing, left, unread, banned, strict];
+
+        for (const workspaceId of all) {
           yield* insertPost(
             workspaceId,
             "finished",
@@ -181,7 +229,7 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
 
         const found = yield* DigestSources.use((digest) =>
           digest.readerOf(userId, week)
-        ).pipe(Effect.ensuring(deletePosts([editing, viewing, left, unread])));
+        ).pipe(Effect.ensuring(deletePosts(all)));
 
         assert.isTrue(Option.isSome(found));
 
@@ -231,53 +279,127 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
   );
 
   it.effect(
-    "list those who asked for it, and claim each one's week once while they want it",
+    "list those who asked for it and are still to have the week's, and mark a week sent only once it went",
     () =>
       Effect.gen(function* claims() {
         const store = yield* PreferenceStore;
         const at = DateTime.makeUnsafe("2054-10-13T06:19:00Z");
+
+        const lease = {
+          at,
+          staleBefore: DateTime.subtract(at, { minutes: 10 }),
+        };
+
         const asking = yield* freshUser;
         const never = yield* freshUser;
 
         yield* store.change(asking, { email: { weeklyDigest: true } }, at);
         yield* store.change(never, { email: { postPublished: true } }, at);
 
-        const readers = yield* store.digestReaders({
-          after: Option.none(),
-          limit: 100_000,
-        });
+        const readersOf = (
+          forWeek: DateTime.Utc,
+          after = Option.none<UserId>()
+        ) => store.digestReaders({ after, limit: 100_000, week: forWeek });
+
+        const readers = yield* readersOf(week.from);
 
         assert.include(readers, asking);
         assert.notInclude(readers, never);
-        assert.deepStrictEqual(
-          readers,
-          readers.toSorted(),
-          "by id, the order pages follow"
-        );
-
-        // After the asking one, by id: never it again.
+        assert.deepStrictEqual(readers, readers.toSorted(), "by id");
         assert.notInclude(
-          yield* store.digestReaders({
-            after: Option.some(asking),
-            limit: 100_000,
-          }),
+          yield* readersOf(week.from, Option.some(asking)),
           asking
         );
 
-        assert.isTrue(yield* store.claimDigest(asking, week.from));
-        assert.isFalse(yield* store.claimDigest(asking, week.from));
-        assert.isFalse(yield* store.claimDigest(never, week.from));
-        // The week after, once more.
-        assert.isTrue(yield* store.claimDigest(asking, week.to));
+        // Claimed: no second send meanwhile, until the lease is stale.
+        const links = yield* store.claimDigest(asking, week.from, lease);
+
+        assert.isTrue(Option.isSome(links));
+        assert.isTrue(
+          Option.isNone(yield* store.claimDigest(asking, week.from, lease))
+        );
+        assert.isTrue(
+          Option.isNone(yield* store.claimDigest(never, week.from, lease))
+        );
+
+        // Refused for now: given back, and claimed again.
+        yield* store.releaseDigest(asking);
+
+        assert.isTrue(
+          Option.isSome(yield* store.claimDigest(asking, week.from, lease))
+        );
+
+        // A lease older than the stale bound is taken over.
+        assert.isTrue(
+          Option.isSome(
+            yield* store.claimDigest(asking, week.from, {
+              at: DateTime.add(at, { minutes: 11 }),
+              staleBefore: DateTime.add(at, { minutes: 1 }),
+            })
+          )
+        );
+
+        // Sent: no claim and no listing that week, the week after again.
+        yield* store.digestSent(asking, week.from);
+
+        assert.isTrue(
+          Option.isNone(yield* store.claimDigest(asking, week.from, lease))
+        );
+        assert.notInclude(yield* readersOf(week.from), asking);
+        assert.include(yield* readersOf(week.to), asking);
 
         // Turned off: no claim, and no longer listed.
         yield* store.change(asking, { email: { weeklyDigest: false } }, at);
 
-        assert.isFalse(yield* store.claimDigest(asking, week.until));
-        assert.notInclude(
-          yield* store.digestReaders({ after: Option.none(), limit: 100_000 }),
-          asking
+        assert.isTrue(
+          Option.isNone(yield* store.claimDigest(asking, week.to, lease))
         );
+        assert.notInclude(yield* readersOf(week.to), asking);
+      })
+  );
+
+  it.effect(
+    "turn the digest off from a link of the current generation only, which turning it on again renews",
+    () =>
+      Effect.gen(function* links() {
+        const store = yield* PreferenceStore;
+        const at = DateTime.makeUnsafe("2054-10-13T06:19:00Z");
+
+        const lease = {
+          at,
+          staleBefore: DateTime.subtract(at, { minutes: 10 }),
+        };
+
+        const userId = yield* freshUser;
+
+        yield* store.change(
+          userId,
+          { email: { postPublished: true, weeklyDigest: true } },
+          at
+        );
+
+        const first = Option.getOrThrow(
+          yield* store.claimDigest(userId, week.from, lease)
+        );
+
+        yield* store.releaseDigest(userId);
+        // Turned on again: the links sent before stop working.
+        yield* store.change(userId, { email: { weeklyDigest: true } }, at);
+
+        const second = Option.getOrThrow(
+          yield* store.claimDigest(userId, week.from, lease)
+        );
+
+        assert.notStrictEqual(second, first);
+        assert.isFalse(yield* store.unsubscribeDigest(userId, first, at));
+        assert.isTrue(yield* store.unsubscribeDigest(userId, second, at));
+
+        const chosen = (yield* store.forUsers([userId])).get(userId);
+
+        assert.isDefined(chosen);
+        assert.isFalse(chosen.email.weeklyDigest);
+        // Only the digest: the rest stays as chosen.
+        assert.isTrue(chosen.email.postPublished);
       })
   );
 });

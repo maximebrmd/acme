@@ -111,16 +111,21 @@ describe("the crons' schedules", () => {
       })
   );
 
-  it.effect("send the weekly digest on Mondays only, at 06:19", () =>
-    Effect.gen(function* weekly() {
-      const cron = (yield* everyCron).find(
-        ({ name }) => name === "notifications.weekly-digest"
-      );
+  it.effect(
+    "send the weekly digest on Mondays only, at 19 past each hour",
+    () =>
+      Effect.gen(function* weekly() {
+        const cron = (yield* everyCron).find(
+          ({ name }) => name === "notifications.weekly-digest"
+        );
 
-      assert.isDefined(cron);
-      assert.deepStrictEqual(minutesOf(cron), [6 * 60 + 19]);
-      assert.deepStrictEqual(daysOf(cron), [0]);
-    })
+        assert.isDefined(cron);
+        assert.deepStrictEqual(
+          minutesOf(cron),
+          Array.from({ length: 24 }, (_, hour) => hour * 60 + 19)
+        );
+        assert.deepStrictEqual(daysOf(cron), [0]);
+      })
   );
 
   it.effect("read the feeds every ten minutes from minute 6", () =>

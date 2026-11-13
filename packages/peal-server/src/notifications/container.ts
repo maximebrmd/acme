@@ -7,11 +7,13 @@ import { NotificationSettings } from "#notifications/application/notification-se
 import { Notify } from "#notifications/application/notify.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
+import { UnsubscribeWeeklyDigest } from "#notifications/application/unsubscribe-weekly-digest.ts";
 import { ContextDigestSources } from "#notifications/infrastructure/context-digest-sources.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
 import { DrizzleNoticeRecords } from "#notifications/infrastructure/drizzle-notice-records.ts";
 import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
 import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
+import { HmacDigestLinks } from "#notifications/infrastructure/hmac-digest-links.ts";
 import { mailSettingsConfig } from "#notifications/infrastructure/mail-settings.ts";
 import type { MailSettings } from "#notifications/infrastructure/mail-settings.ts";
 import { PublicAppLinks } from "#notifications/infrastructure/public-app-links.ts";
@@ -49,6 +51,7 @@ export const NotificationsLive = SendAuthEmail.layer.pipe(
 // The adapters behind the notices' ports.
 const NoticeAdaptersLive = Layer.mergeAll(
   DrizzleNoticeLog,
+  HmacDigestLinks,
   DrizzleNoticeStore,
   DrizzlePreferenceStore,
   PublicAppLinks,
@@ -73,6 +76,7 @@ export const NoticesLive = Layer.mergeAll(
   DeliverNoticeEmails.layer,
   NoticeInbox.layer,
   NotificationSettings.layer,
+  UnsubscribeWeeklyDigest.layer,
   DrizzleNoticeRecords
 ).pipe(Layer.provide(NoticeAdaptersLive));
 
@@ -85,7 +89,12 @@ export const NoticesLive = Layer.mergeAll(
  */
 export const WeeklyDigestsLive = SendWeeklyDigests.layer.pipe(
   Layer.provide(
-    Layer.mergeAll(DrizzlePreferenceStore, PublicAppLinks, ContextDigestSources)
+    Layer.mergeAll(
+      DrizzlePreferenceStore,
+      PublicAppLinks,
+      ContextDigestSources,
+      HmacDigestLinks
+    )
   )
 );
 

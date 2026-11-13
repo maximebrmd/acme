@@ -39,6 +39,7 @@ import {
 } from "#app/short-links/redirects.ts";
 import { httpShutdownTimeout } from "#app/shutdown.ts";
 import { SystemHandlers } from "#app/system.ts";
+import { DigestUnsubscribeLive } from "#app/weekly-digest/unsubscribe.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
@@ -220,6 +221,7 @@ export const RoutesLive = Layer.mergeAll(
   DiscoveryLive,
   ShortLinkRedirectsLive,
   ShortLinkRedirectsUntraced,
+  DigestUnsubscribeLive,
   ApiAnswersLive
 );
 

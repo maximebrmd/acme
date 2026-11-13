@@ -47,6 +47,10 @@ describe("the SMTP mailer", () => {
 
       yield* Mailer.use((mailer) =>
         mailer.send({
+          headers: {
+            "List-Unsubscribe": "<https://app.example.test/api/u/x>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
           html: "<p>Bonjour</p>",
           idempotencyKey: "00000000-0000-7000-8000-000000000001",
           subject: "Bonjour",
@@ -86,6 +90,18 @@ describe("the SMTP mailer", () => {
 
       assert.strictEqual(message.HTML, "<p>Bonjour</p>");
       assert.strictEqual(message.Text.trim(), "Bonjour");
+
+      const headers = yield* getJson(
+        `${mailpit}/api/v1/message/${found?.ID ?? ""}/headers`,
+        Schema.Record(Schema.String, Schema.Array(Schema.String))
+      );
+
+      assert.deepStrictEqual(headers["List-Unsubscribe"], [
+        "<https://app.example.test/api/u/x>",
+      ]);
+      assert.deepStrictEqual(headers["List-Unsubscribe-Post"], [
+        "List-Unsubscribe=One-Click",
+      ]);
     })
   );
 

@@ -10,6 +10,7 @@ import {
 } from "effect";
 
 import { AppLinks } from "#notifications/application/app-links.ts";
+import { DigestLinks } from "#notifications/application/digest-links.ts";
 import { DigestSources } from "#notifications/application/digest-sources.ts";
 import type { DigestReader } from "#notifications/application/digest-sources.ts";
 import { PreferenceStore } from "#notifications/application/preference-store.ts";
@@ -24,6 +25,7 @@ import {
 } from "#notifications/domain/notification-preferences.ts";
 import type { NotificationPreferences } from "#notifications/domain/notification-preferences.ts";
 import type { DigestWorkspace } from "#notifications/domain/weekly-digest.ts";
+import { HmacDigestLinks } from "#notifications/infrastructure/hmac-digest-links.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
@@ -72,12 +74,16 @@ const quiet: DigestWorkspace = {
   wentOut: [],
 };
 
-// Monday 16 November 2026, 06:23 UTC: the week of 9 November.
-const runAt = DateTime.makeUnsafe("2026-11-16T06:23:00Z");
+// Monday 16 November 2026, 06:19 UTC: the week of 9 November.
+const runAt = DateTime.makeUnsafe("2026-11-16T06:19:00Z");
+
+type Failing = "database" | "defect" | "directory";
 
 interface World {
-  /** Readers the directory cannot read, or the database. */
-  readonly failing: ReadonlyMap<UserId, "database" | "directory">;
+  /** Readers that cannot be read: by the directory, the database, or a bug. */
+  readonly failing: ReadonlyMap<UserId, Failing>;
+  /** How many reads of a page fail before one answers. */
+  readonly pageFailures?: number;
   readonly preferences: ReadonlyMap<UserId, NotificationPreferences>;
   readonly readers: ReadonlyMap<UserId, DigestReader>;
 }
@@ -86,12 +92,51 @@ const wanting = changePreferences(defaultPreferences, {
   email: { weeklyDigest: true },
 });
 
+interface Held {
+  readonly leased: boolean;
+  readonly sent?: string;
+}
+
+/** Whose workspaces the world was asked to read, in order. */
+class WorldLog extends Context.Service<
+  WorldLog,
+  { readonly sources: Effect.Effect<readonly UserId[]> }
+>()("peal-server/test/notifications/WorldLog") {}
+
+const failureOf = (failing: Failing) => {
+  if (failing === "defect") {
+    return Effect.die(new Error("synthetic defect"));
+  }
+
+  return failing === "directory"
+    ? Effect.fail(new RecipientsUnavailable({ cause: new Error("synthetic") }))
+    : Effect.fail(new DatabaseError({ cause: new Error("synthetic") }));
+};
+
 // The world's ports. Claims are kept by user, as the store keeps them.
 const worldLayer = (world: World) =>
   Layer.effectContext(
     Effect.gen(function* worldLive() {
-      const claimed = yield* Ref.make(new Map<UserId, string>());
+      const held = yield* Ref.make(new Map<UserId, Held>());
       const preferences = yield* Ref.make(world.preferences);
+      const pageFailures = yield* Ref.make(world.pageFailures ?? 0);
+      const read = yield* Ref.make<readonly UserId[]>([]);
+
+      const isSent = (
+        all: ReadonlyMap<UserId, Held>,
+        userId: UserId,
+        day: string
+      ) => (all.get(userId)?.sent ?? "") >= day;
+
+      const setHeld = (userId: UserId, change: (was: Held) => Held) =>
+        Ref.update(
+          held,
+          (all) =>
+            new Map([
+              ...all,
+              [userId, change(all.get(userId) ?? { leased: false })],
+            ])
+        );
 
       const store = PreferenceStore.of({
         change: (userId, change) =>
@@ -105,36 +150,60 @@ const worldLayer = (world: World) =>
           }),
         claimDigest: (userId, week) =>
           Effect.gen(function* claim() {
+            const day = DateTime.formatIsoDate(week);
+            const all = yield* Ref.get(held);
+
             const wants =
               (yield* Ref.get(preferences)).get(userId)?.email.weeklyDigest ??
               false;
 
-            const day = DateTime.formatIsoDate(week);
+            if (
+              !wants ||
+              isSent(all, userId, day) ||
+              all.get(userId)?.leased === true
+            ) {
+              return Option.none();
+            }
 
-            return yield* Ref.modify(claimed, (all) => {
-              const last = all.get(userId);
-              const may = wants && (last === undefined || last < day);
+            yield* setHeld(userId, (before) => ({ ...before, leased: true }));
 
-              return [may, may ? new Map([...all, [userId, day]]) : all];
-            });
+            return Option.some(1);
           }),
-        digestReaders: ({ after, limit }) =>
-          Ref.get(preferences).pipe(
-            Effect.map((all) =>
-              [...all.entries()]
-                .flatMap(([userId, chosen]) =>
-                  chosen.email.weeklyDigest &&
-                  Option.match(after, {
-                    onNone: () => true,
-                    onSome: (last) => userId > last,
-                  })
-                    ? [userId]
-                    : []
-                )
-                .toSorted()
-                .slice(0, limit)
-            )
-          ),
+        digestReaders: ({ after, limit, week }) =>
+          Effect.gen(function* page() {
+            const failures = yield* Ref.getAndUpdate(pageFailures, (left) =>
+              Math.max(0, left - 1)
+            );
+
+            if (failures > 0) {
+              return yield* new DatabaseError({
+                cause: new Error("synthetic"),
+              });
+            }
+
+            const day = DateTime.formatIsoDate(week);
+            const all = yield* Ref.get(preferences);
+            const sent = yield* Ref.get(held);
+
+            return [...all.entries()]
+              .flatMap(([userId, chosen]) =>
+                chosen.email.weeklyDigest &&
+                !isSent(sent, userId, day) &&
+                Option.match(after, {
+                  onNone: () => true,
+                  onSome: (last) => userId > last,
+                })
+                  ? [userId]
+                  : []
+              )
+              .toSorted()
+              .slice(0, limit);
+          }),
+        digestSent: (userId, week) =>
+          setHeld(userId, () => ({
+            leased: false,
+            sent: DateTime.formatIsoDate(week),
+          })),
         forUsers: (userIds) =>
           Ref.get(preferences).pipe(
             Effect.map(
@@ -148,59 +217,82 @@ const worldLayer = (world: World) =>
                 )
             )
           ),
+        releaseDigest: (userId) =>
+          setHeld(userId, (before) => ({ ...before, leased: false })),
+        unsubscribeDigest: () => Effect.die("not used by the run"),
       });
 
       const sources = DigestSources.of({
-        readerOf: (userId) => {
-          const failing = world.failing.get(userId);
+        readerOf: (userId) =>
+          Effect.gen(function* readerOf() {
+            yield* Ref.update(read, (all) => [...all, userId]);
 
-          if (failing === undefined) {
-            return Effect.succeed(
-              Option.fromUndefinedOr(world.readers.get(userId))
-            );
-          }
+            const failing = world.failing.get(userId);
 
-          return failing === "directory"
-            ? Effect.fail(
-                new RecipientsUnavailable({ cause: new Error("synthetic") })
-              )
-            : Effect.fail(new DatabaseError({ cause: new Error("synthetic") }));
-        },
+            if (failing !== undefined) {
+              return yield* failureOf(failing);
+            }
+
+            return Option.fromUndefinedOr(world.readers.get(userId));
+          }),
       });
 
       const links = AppLinks.of({
+        api: (path) => `https://app.example.test${path}`,
         url: (path, locale) =>
           `https://app.example.test${locale === "en" ? "" : `/${locale}`}${path}`,
       });
 
       return Context.make(PreferenceStore, store).pipe(
         Context.add(DigestSources, sources),
-        Context.add(AppLinks, links)
+        Context.add(AppLinks, links),
+        Context.add(WorldLog, WorldLog.of({ sources: Ref.get(read) }))
       );
     })
   );
 
 const pace = Layer.succeed(DigestPaceRef, {
+  lease: Duration.minutes(10),
   pageSize: 2,
   retries: 2,
   retryBase: Duration.millis(1),
+  sendTimeout: Duration.seconds(5),
 });
 
-const run = (world: World, mode: MailerMode = "accept") =>
+// Runs the digest twice for the same week, an hour apart, the mailer
+// answering `modes` in turn, one a run.
+const runs = (
+  world: World,
+  modes: readonly [MailerMode, MailerMode] = ["accept", "accept"]
+) =>
   Effect.gen(function* running() {
-    yield* TestMailer.use((mailer) => mailer.setMode(mode));
-
     const digests = yield* SendWeeklyDigests;
-    const first = yield* digests.run(runAt);
-    const again = yield* digests.run(runAt);
-    const sent = yield* TestMailer.use((mailer) => mailer.sent);
+    const mailer = yield* TestMailer;
 
-    return { again, first, sent };
+    yield* mailer.setMode(modes[0]);
+    const first = yield* digests.run(runAt);
+    const readFirst = yield* WorldLog.use((log) => log.sources);
+
+    yield* mailer.setMode(modes[1]);
+    const again = yield* digests.run(DateTime.add(runAt, { hours: 1 }));
+
+    const readAgain = (yield* WorldLog.use((log) => log.sources)).slice(
+      readFirst.length
+    );
+
+    const sent = yield* mailer.sent;
+
+    return { again, first, readAgain, sent };
   }).pipe(
     Effect.provide(
       SendWeeklyDigests.layer.pipe(
         Layer.provideMerge(
-          Layer.mergeAll(worldLayer(world), TestMailer.layer, pace)
+          Layer.mergeAll(
+            worldLayer(world),
+            TestMailer.layer,
+            HmacDigestLinks,
+            pace
+          )
         )
       )
     )
@@ -215,26 +307,25 @@ const reader = (
   { email: `reader${n}@example.test`, locale, workspaces },
 ];
 
+const wantingAll = (...ns: readonly number[]) =>
+  new Map(ns.map((n) => [userOf(n), wanting] as const));
+
 describe(SendWeeklyDigests, () => {
   it.effect(
     "emails each reader who asked for it once a week, page after page, in their language",
     () =>
       Effect.gen(function* weekly() {
-        const readers = new Map([
-          reader(1, [busy]),
-          reader(2, [busy, quiet], "fr"),
-          reader(3, [busy]),
-          reader(4, [busy]),
-          reader(5, [busy]),
-        ]);
-
-        const { again, first, sent } = yield* run({
+        const { again, first, readAgain, sent } = yield* runs({
           failing: new Map(),
           // The fifth never asked.
-          preferences: new Map(
-            [1, 2, 3, 4].map((n) => [userOf(n), wanting] as const)
-          ),
-          readers,
+          preferences: wantingAll(1, 2, 3, 4),
+          readers: new Map([
+            reader(1, [busy]),
+            reader(2, [busy, quiet], "fr"),
+            reader(3, [busy]),
+            reader(4, [busy]),
+            reader(5, [busy]),
+          ]),
         });
 
         assert.deepStrictEqual(
@@ -242,20 +333,16 @@ describe(SendWeeklyDigests, () => {
           [1, 2, 3, 4].map((n) => `reader${n}@example.test`)
         );
         assert.deepStrictEqual(first, {
+          deferred: false,
           failed: 0,
           nothingToTell: 0,
           readers: 4,
           sent: 4,
           skipped: 0,
         });
-        // The same week again: nothing more.
-        assert.deepStrictEqual(again, {
-          failed: 0,
-          nothingToTell: 0,
-          readers: 4,
-          sent: 0,
-          skipped: 4,
-        });
+        // The same week again: nobody read, nothing more.
+        assert.strictEqual(again.readers, 0);
+        assert.deepStrictEqual(readAgain, []);
 
         const french = sent.find(({ to }) => to === "reader2@example.test");
 
@@ -279,59 +366,136 @@ describe(SendWeeklyDigests, () => {
   );
 
   it.effect(
-    "sends nothing to a reader with nothing to tell, or who is gone, and goes on past one it cannot read",
+    "gives every digest a one-click unsubscribe link that names its reader",
+    () =>
+      Effect.gen(function* unsubscribe() {
+        const { sent } = yield* runs({
+          failing: new Map(),
+          preferences: wantingAll(1),
+          readers: new Map([reader(1, [busy])]),
+        });
+
+        const [email] = sent;
+
+        const prefix =
+          "<https://app.example.test/api/notifications/weekly-digest/unsubscribe/";
+
+        assert.isDefined(email);
+        assert.strictEqual(
+          email.headers?.["List-Unsubscribe-Post"],
+          "List-Unsubscribe=One-Click"
+        );
+
+        const header = email.headers?.["List-Unsubscribe"] ?? "";
+
+        assert.isTrue(header.startsWith(prefix) && header.endsWith(">"));
+
+        const holder = yield* DigestLinks.use((links) =>
+          links.read(header.slice(prefix.length, -1))
+        ).pipe(Effect.provide(HmacDigestLinks));
+
+        assert.deepStrictEqual(
+          holder,
+          Option.some({ links: 1, userId: userOf(1) })
+        );
+      })
+  );
+
+  it.effect(
+    "sends nothing to a reader with nothing to tell, or who is gone, and goes on past one that cannot be read, a bug included",
     () =>
       Effect.gen(function* quietWeek() {
-        const { first, sent } = yield* run({
-          failing: new Map([
+        const { first, sent } = yield* runs({
+          failing: new Map<UserId, Failing>([
             [userOf(3), "directory"],
             [userOf(5), "database"],
+            [userOf(6), "defect"],
           ]),
-          preferences: new Map(
-            [1, 2, 3, 4, 5].map((n) => [userOf(n), wanting] as const)
-          ),
+          preferences: wantingAll(1, 2, 3, 4, 5, 6, 7),
           // The second is gone.
           readers: new Map([
             reader(1, [quiet]),
             reader(3, [busy]),
             reader(4, [busy]),
+            reader(7, [busy]),
           ]),
         });
 
         assert.deepStrictEqual(
           sent.map(({ to }) => to),
-          ["reader4@example.test"]
+          ["reader4@example.test", "reader7@example.test"]
         );
         assert.deepStrictEqual(first, {
-          failed: 2,
+          deferred: false,
+          failed: 3,
           nothingToTell: 2,
-          readers: 5,
-          sent: 1,
+          readers: 7,
+          sent: 2,
           skipped: 0,
         });
       })
   );
 
+  // On the real clock: a page read is tried again a second, then two
+  // seconds, later.
+  it.live("reads a page again when its read fails, and goes on", () =>
+    Effect.gen(function* pageRetried() {
+      const { first } = yield* runs({
+        failing: new Map(),
+        pageFailures: 2,
+        preferences: wantingAll(1),
+        readers: new Map([reader(1, [busy])]),
+      });
+
+      assert.strictEqual(first.sent, 1);
+    })
+  );
+
   // On the real clock: the retries wait a millisecond each.
   it.live(
-    "tries again an email refused for now, then counts it as failed, as one refused for good",
+    "leaves a digest refused for now to a later run, and stops there, then sends it once",
     () =>
-      Effect.gen(function* refused() {
-        for (const mode of ["refuseForNow", "refuse"] as const) {
-          const { again, first, sent } = yield* run(
-            {
-              failing: new Map(),
-              preferences: new Map([[userOf(1), wanting]]),
-              readers: new Map([reader(1, [busy])]),
-            },
-            mode
-          );
+      Effect.gen(function* deferred() {
+        const { again, first, sent } = yield* runs(
+          {
+            failing: new Map(),
+            preferences: wantingAll(1, 2),
+            readers: new Map([reader(1, [busy]), reader(2, [busy])]),
+          },
+          ["refuseForNow", "accept"]
+        );
 
-          assert.deepStrictEqual(sent, []);
-          assert.strictEqual(first.failed, 1);
-          // The week was claimed before the email went: never two.
-          assert.strictEqual(again.skipped, 1);
-        }
+        // Stopped at the first: the transport refuses for now.
+        assert.deepStrictEqual(first, {
+          deferred: true,
+          failed: 0,
+          nothingToTell: 0,
+          readers: 1,
+          sent: 0,
+          skipped: 0,
+        });
+        assert.strictEqual(again.sent, 2);
+        assert.deepStrictEqual(
+          sent.map(({ to }) => to),
+          ["reader1@example.test", "reader2@example.test"]
+        );
       })
+  );
+
+  it.live("never sends again that week a digest refused for good", () =>
+    Effect.gen(function* refused() {
+      const { again, first, sent } = yield* runs(
+        {
+          failing: new Map(),
+          preferences: wantingAll(1),
+          readers: new Map([reader(1, [busy])]),
+        },
+        ["refuse", "accept"]
+      );
+
+      assert.strictEqual(first.failed, 1);
+      assert.strictEqual(again.readers, 0);
+      assert.deepStrictEqual(sent, []);
+    })
   );
 });

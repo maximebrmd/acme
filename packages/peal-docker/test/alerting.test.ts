@@ -31,6 +31,7 @@ const watched = [
   "peal_publishing_feeds_overdue",
   "peal_billing_stripe_catalogue_problems",
   "peal_billing_duplicate_subscriptions_total",
+  "peal_notifications_weekly_digest_failures_total",
 ];
 
 const RuleSchema = Schema.Struct({
