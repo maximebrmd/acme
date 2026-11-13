@@ -37,6 +37,7 @@ import {
   ShortLinkRedirectsLive,
   ShortLinkRedirectsUntraced,
 } from "#app/short-links/redirects.ts";
+import { httpShutdownTimeout } from "#app/shutdown.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
@@ -548,7 +549,10 @@ const HttpServerLive = Layer.unwrap(
   Effect.gen(function* HttpServerLive() {
     const port = yield* Config.Port("PORT").pipe(Config.withDefault(3000));
 
-    return BunHttpServer.layer({ port });
+    return BunHttpServer.layer({
+      gracefulShutdownTimeout: httpShutdownTimeout,
+      port,
+    });
   })
 );
 
