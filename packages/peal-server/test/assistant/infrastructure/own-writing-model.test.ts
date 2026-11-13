@@ -11,6 +11,7 @@ import {
   Logger,
   Option,
   Redacted,
+  Ref,
   Result,
   Schema,
   Tracer,
@@ -30,6 +31,7 @@ import type { TextProviderKind } from "#assistant/domain/text-provider.ts";
 import { planFor } from "#assistant/domain/writing-prompt.ts";
 import { ownWritingModel } from "#assistant/infrastructure/own-writing-model.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
+import { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { fakeHttpServer, json } from "#test/channels/fakes/fake-http-server.ts";
 import type { FakeResponse } from "#test/channels/fakes/fake-http-server.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -372,6 +374,48 @@ describe("a workspace's own text provider", () => {
 
       assert.strictEqual(failureOf(silent.outcome), "timedOut");
     })
+  );
+
+  it.effect(
+    "checks the request as the provider package sends it, after the address passed",
+    () =>
+      Effect.gen(function* twice() {
+        const server = yield* fakeHttpServer(() =>
+          json(chatCompletion('{"text":"A synthetic post."}'))
+        );
+
+        // A name whose answer changed between the adapter's check and the
+        // request: the first check passes, every later one refuses.
+        const checks = yield* Ref.make(0);
+
+        const changing = Layer.succeed(
+          OutboundGuard,
+          OutboundGuard.of({
+            check: (url) =>
+              Ref.getAndUpdate(checks, (count) => count + 1).pipe(
+                Effect.flatMap((count) =>
+                  count === 0
+                    ? Effect.void
+                    : Effect.fail(
+                        new OutboundRequestRefused({
+                          host: url.host,
+                          reason: "notPublic",
+                        })
+                      )
+                )
+              ),
+          })
+        );
+
+        const written = yield* write(
+          endpointAt("openai-compatible", `${server.url}/v1`),
+          modelWith({ guard: changing })
+        );
+
+        assert.strictEqual(failureOf(written.outcome), "unreachable");
+        assert.isAtLeast(yield* Ref.get(checks), 2);
+        assert.lengthOf(server.requests(), 0);
+      })
   );
 
   it.effect(

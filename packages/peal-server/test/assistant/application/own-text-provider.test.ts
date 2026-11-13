@@ -529,6 +529,7 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
           const [provider] = yield* sql<{
             readonly count: number;
           }>`SELECT count(*)::int AS count FROM assistant.text_providers WHERE workspace_id = ${workspaceId}`;
+
           const [counted] = yield* sql<{
             readonly requests: number;
           }>`SELECT requests FROM assistant.own_text_days WHERE workspace_id = ${workspaceId}`;

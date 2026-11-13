@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Result } from "effect";
+import { Effect, Layer, Option, Predicate, Result } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { Dns } from "effect/net";
 
@@ -7,6 +7,7 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 import {
   publicFetch,
   publicHttpClient,
+  publicLibraryHttpClientWith,
 } from "#shared/infrastructure/platforms/public-http.ts";
 import { fakeHttpServer, json } from "#test/channels/fakes/fake-http-server.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -123,6 +124,30 @@ layer(ClientTest)("the public HTTP client", (it) => {
         const failure = yield* client.get("/v1/messages").pipe(Effect.flip);
 
         assert.strictEqual(failure._tag, "OutboundRequestRefused");
+        assert.lengthOf(local.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "gives libraries a client whose refusal is a transport error, caused by the guard",
+    () =>
+      Effect.gen(function* library() {
+        const local = yield* fakeHttpServer(() => ({ status: 200 }));
+
+        const client = (yield* publicLibraryHttpClientWith({
+          timeout: "5 seconds",
+        })).pipe(
+          HttpClient.mapRequest(HttpClientRequest.prependUrl(local.url))
+        );
+
+        const failure = yield* client.get("/v1/messages").pipe(Effect.flip);
+
+        assert.strictEqual(failure.reason._tag, "TransportError");
+        assert.strictEqual(
+          failure.reason._tag === "TransportError" &&
+            Predicate.isTagged(failure.reason.cause, "OutboundRequestRefused"),
+          true
+        );
         assert.lengthOf(local.requests(), 0);
       }).pipe(Effect.scoped)
   );
