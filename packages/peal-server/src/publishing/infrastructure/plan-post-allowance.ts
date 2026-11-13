@@ -8,6 +8,7 @@ import { WorkspaceEntitlements } from "#billing/application/workspace-entitlemen
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 
 /**
@@ -15,8 +16,9 @@ import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
  * allowance, as its plan gives them, with the channels the channels
  * context counts and the members the workspace context counts. While the
  * billing grace runs (PEAL_BILLING_GRACE_UNTIL), a workspace on the free
- * tier schedules and publishes whatever accounts it holds: connecting one
- * more is still refused (`ChannelAllowance`).
+ * tier schedules and publishes on the accounts it had connected before the
+ * grace started: connecting one more is still refused
+ * (`ChannelAllowance`), and one connected since is never graced.
  */
 export const PlanPostAllowanceLive = Layer.effect(
   PostAllowance,
@@ -24,28 +26,48 @@ export const PlanPostAllowanceLive = Layer.effect(
     const entitlements = yield* WorkspaceEntitlements;
     const usage = yield* ChannelUsage;
     const seats = yield* WorkspaceSeats;
-    const { graceUntil } = yield* BillingMode;
+    const { graceSince, graceUntil } = yield* BillingMode;
 
+    // What a workspace may schedule on: its plan's channels, or, while the
+    // grace runs on a free tier staff did not take away, those it had
+    // connected before the grace started when they are more (never one
+    // connected since). Read only for a workspace over its free accounts.
     const scheduling = (
-      plan: Effect.Success<ReturnType<typeof entitlements.of>>
+      workspaceId: WorkspaceId,
+      plan: Effect.Success<ReturnType<typeof entitlements.of>>,
+      connected: number
     ) =>
-      Option.contains(plan.plan, "free")
-        ? DateTime.now.pipe(
-            Effect.map((now) =>
-              inGrace(graceUntil, now)
-                ? Option.none()
-                : plan.allowanceOf("channels")
-            )
-          )
-        : Effect.succeed(plan.allowanceOf("channels"));
+      Effect.gen(function* schedulingOn() {
+        const allowed = plan.allowanceOf("channels");
+        const free = Option.getOrElse(allowed, () => 0);
+
+        if (
+          !Option.contains(plan.plan, "free") ||
+          !plan.freeTier ||
+          Option.isNone(graceSince) ||
+          connected <= free ||
+          !inGrace(graceUntil, yield* DateTime.now)
+        ) {
+          return allowed;
+        }
+
+        const before = yield* usage.connected(workspaceId, graceSince.value);
+
+        return Option.some(Math.max(free, before));
+      });
 
     return PostAllowance.of({
       channels: (workspaceId) =>
-        Effect.all({
-          allowed: entitlements
-            .of(workspaceId)
-            .pipe(Effect.flatMap(scheduling)),
-          connected: usage.connected(workspaceId),
+        Effect.gen(function* channels() {
+          const [plan, connected] = yield* Effect.all([
+            entitlements.of(workspaceId),
+            usage.connected(workspaceId),
+          ]);
+
+          return {
+            allowed: yield* scheduling(workspaceId, plan, connected),
+            connected,
+          };
         }),
       members: (workspaceId) =>
         Effect.all({

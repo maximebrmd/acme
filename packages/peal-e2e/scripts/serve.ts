@@ -54,10 +54,6 @@ const server = spawn(process.execPath, ["src/main.ts"], {
   cwd: path.join(packages, "peal-server"),
   env: {
     ...process.env,
-    // A grace, as when billing is turned on: a journey that needs three
-    // channels (the composer's "Select all") holds one more than the free
-    // tier's two and still schedules; connecting one more is refused.
-    PEAL_BILLING_GRACE_UNTIL: "2099-01-01",
     PORT: String(serverPort),
     STRIPE_API_URL: stripe.url,
     STRIPE_SECRET_KEY: "sk_test_0123456789syntheticendtoend",

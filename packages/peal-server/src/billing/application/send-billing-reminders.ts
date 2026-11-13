@@ -15,7 +15,7 @@ import {
   reminderOf,
 } from "#billing/domain/reminders.ts";
 import type { Reminder } from "#billing/domain/reminders.ts";
-import { excessesOf } from "#billing/domain/standing.ts";
+import { excessesOf, gracedHolds } from "#billing/domain/standing.ts";
 import type { Excess } from "#billing/domain/standing.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
@@ -169,7 +169,7 @@ export class SendBillingReminders extends Context.Service<
   static readonly layer = Layer.effect(
     SendBillingReminders,
     Effect.gen(function* SendBillingRemindersLive() {
-      const { enabled, graceUntil } = yield* BillingMode;
+      const { enabled, graceSince, graceUntil } = yield* BillingMode;
       const subscriptions = yield* Subscriptions;
       const accounts = yield* BillingAccountStore;
       const entitlements = yield* WorkspaceEntitlements;
@@ -181,18 +181,24 @@ export class SendBillingReminders extends Context.Service<
       // once each for the grace's day.
       const askForPaymentMethods = Effect.fn(
         "SendBillingReminders.askForPaymentMethods"
-      )(function* askForPaymentMethods(until: DateTime.Utc) {
+      )(function* askForPaymentMethods(
+        until: DateTime.Utc,
+        since: DateTime.Utc
+      ) {
         let after = Option.none<BillingAccountId>();
-        let told = 0;
+        let over = 0;
         let more = true;
 
         while (more) {
           const page = yield* accounts.page(after, gracePage);
           const holders = [...new Set(page.map(({ holder }) => holder))];
 
-          const [plans, held] = yield* Effect.all([
+          const [plans, held, before] = yield* Effect.all([
             entitlements.ofEach(holders),
             WorkspaceUsage.use((usage) => usage.heldIn(holders)).pipe(
+              Effect.provide(context)
+            ),
+            WorkspaceUsage.use((usage) => usage.heldIn(holders, since)).pipe(
               Effect.provide(context)
             ),
           ]);
@@ -201,12 +207,25 @@ export class SendBillingReminders extends Context.Service<
             const plan = plans.get(holder);
             const accountsHeld = held.get(holder)?.channels ?? 0;
 
+            // The free tier staff did not take away, over its accounts,
+            // on accounts connected before the grace started: what the
+            // grace keeps publishing.
             const allowed =
-              plan !== undefined && Option.contains(plan.plan, "free")
+              plan !== undefined &&
+              Option.contains(plan.plan, "free") &&
+              plan.freeTier
                 ? Option.getOrUndefined(plan.allowanceOf("channels"))
                 : undefined;
 
-            if (allowed !== undefined && accountsHeld > allowed) {
+            if (
+              allowed !== undefined &&
+              accountsHeld > allowed &&
+              gracedHolds(
+                allowed,
+                accountsHeld,
+                before.get(holder)?.channels ?? 0
+              )
+            ) {
               yield* notices.tell({
                 key: `billing:${holder}:payment-method-needed:${until.epochMilliseconds}`,
                 notice: {
@@ -217,7 +236,7 @@ export class SendBillingReminders extends Context.Service<
                 },
                 workspaceId: holder,
               });
-              told += 1;
+              over += 1;
             }
           }
 
@@ -225,7 +244,10 @@ export class SendBillingReminders extends Context.Service<
           after = Option.fromUndefinedOr(page.at(-1)?.id);
         }
 
-        return told;
+        // Each is told once, by its key: the count is of those graced.
+        yield* Effect.logInfo(
+          "Billing accounts the grace keeps publishing"
+        ).pipe(Effect.annotateLogs({ over }));
       });
 
       const run = Effect.gen(function* run() {
@@ -235,13 +257,22 @@ export class SendBillingReminders extends Context.Service<
 
         const now = yield* DateTime.now;
 
-        const asked = yield* Option.match(graceUntil, {
-          onNone: () => Effect.succeed(0),
-          onSome: (until) =>
-            inGrace(graceUntil, now)
-              ? askForPaymentMethods(until)
-              : Effect.succeed(0),
-        });
+        // A failure here never holds back the reminders below, which the
+        // law asks for.
+        if (
+          Option.isSome(graceUntil) &&
+          Option.isSome(graceSince) &&
+          inGrace(graceUntil, now)
+        ) {
+          yield* askForPaymentMethods(graceUntil.value, graceSince.value).pipe(
+            Effect.catchCause((cause) =>
+              Effect.logError(
+                "The billing grace's notices could not be sent: the next run tries again",
+                cause
+              )
+            )
+          );
+        }
 
         const candidates = yield* subscriptions.remindable(now);
 
@@ -292,7 +323,7 @@ export class SendBillingReminders extends Context.Service<
           { concurrency: 1 }
         );
 
-        return told.reduce((sum, one) => sum + one, asked);
+        return told.reduce((sum, one) => sum + one, 0);
       }).pipe(Effect.withSpan("SendBillingReminders.run"));
 
       return SendBillingReminders.of({ run });

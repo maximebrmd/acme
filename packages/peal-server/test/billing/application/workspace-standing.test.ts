@@ -54,6 +54,10 @@ const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 interface Held {
   readonly channels: readonly string[];
   readonly members: readonly string[];
+  /** Of the channels, those connected before the grace started: all by default. */
+  readonly connectedBefore?: number;
+  /** False once staff required a payment method. */
+  readonly freeTier?: boolean;
   /** The channels of the account's other workspaces, counted with these. */
   readonly sharedChannels?: number;
   /** The owner who pays for the workspace, if not nobody. */
@@ -75,7 +79,25 @@ const run = <A, E>(
     const usage = Layer.succeed(
       WorkspaceUsage,
       WorkspaceUsage.of({
-        heldIn: () => Effect.die("not read here"),
+        heldIn: (ids, before) =>
+          Ref.get(state).pipe(
+            Effect.map(
+              ({ channels, connectedBefore, members, sharedChannels = 0 }) =>
+                new Map(
+                  ids.map((id) => [
+                    id,
+                    {
+                      channels:
+                        before === undefined
+                          ? channels.length + sharedChannels
+                          : (connectedBefore ??
+                            channels.length + sharedChannels),
+                      members: members.length,
+                    },
+                  ])
+                )
+            )
+          ),
         of: () =>
           Ref.get(state).pipe(
             Effect.map(({ channels, members, sharedChannels = 0 }) => ({
@@ -130,7 +152,7 @@ const run = <A, E>(
 
     const entitlements = Option.match(plan, {
       onNone: () => UnmeteredTest,
-      onSome: everyWorkspaceOn,
+      onSome: (current) => everyWorkspaceOn(current, held.freeTier ?? true),
     });
 
     const result = yield* test.pipe(
@@ -144,7 +166,11 @@ const run = <A, E>(
               entitlements,
               Layer.succeed(
                 BillingMode,
-                BillingMode.of({ enabled: Option.isSome(plan), graceUntil })
+                BillingMode.of({
+                  enabled: Option.isSome(plan),
+                  graceSince: graceUntil,
+                  graceUntil,
+                })
               ),
               Layer.mock(BillingAccounts, {
                 of: (id) =>
@@ -305,6 +331,27 @@ describe("a workspace over its plan", () => {
 
         assert.isTrue(after.result.mustReduce);
         assert.isTrue(Option.isNone(after.result.graceUntil));
+
+        // A channel connected since the grace started is no grace's.
+        const connectedSince = yield* run(
+          on("free"),
+          { ...overFree, connectedBefore: 2 },
+          standing,
+          Option.some(until)
+        );
+
+        assert.isTrue(connectedSince.result.mustReduce);
+
+        // Nor is an account staff required a payment method of.
+        const required = yield* run(
+          on("free"),
+          { ...overFree, freeTier: false },
+          standing,
+          Option.some(until)
+        );
+
+        assert.isTrue(required.result.mustReduce);
+        assert.isTrue(Option.isNone(required.result.graceUntil));
 
         // A legacy plan over its own limits is no grace's.
         const legacy = yield* run(

@@ -29,7 +29,8 @@ const workspaceId = WorkspaceIdSchema.make(
 const allowancesWith = (
   entitlements: Layer.Layer<WorkspaceEntitlements>,
   env: Record<string, string> = {},
-  graceUntil: Option.Option<DateTime.Utc> = Option.none()
+  graceUntil: Option.Option<DateTime.Utc> = Option.none(),
+  connectedBefore = 4
 ) =>
   Layer.mergeAll(
     PlanAssistantAllowanceLive,
@@ -38,14 +39,18 @@ const allowancesWith = (
   ).pipe(
     // The grace given, over any the entitlements' layer brings.
     Layer.provide(
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: true, graceUntil }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: true, graceSince: graceUntil, graceUntil })
+      )
     ),
     Layer.provide(entitlements),
     Layer.provide(
       Layer.succeed(
         ChannelUsage,
         ChannelUsage.of({
-          connected: () => Effect.succeed(4),
+          connected: (_workspaceId, before) =>
+            Effect.succeed(before === undefined ? 4 : connectedBefore),
           connectedAcross: () => Effect.die("not read here"),
           connectedIn: () => Effect.succeed(new Map()),
         })
@@ -129,11 +134,45 @@ describe("the plan allowances", () => {
           )
         );
 
+        // Its four were connected before the grace started.
         assert.deepStrictEqual(during.scheduling, {
-          allowed: Option.none(),
+          allowed: Option.some(4),
           connected: 4,
         });
         assert.deepStrictEqual(during.channels, Option.some(2));
+
+        // One connected since is no grace's: the four are over.
+        const since = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z")),
+              3
+            )
+          )
+        );
+
+        assert.deepStrictEqual(since.scheduling, {
+          allowed: Option.some(3),
+          connected: 4,
+        });
+
+        // Nor does it lift staff's requirement of a payment method.
+        const required = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free", false),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(required.scheduling, {
+          allowed: Option.some(0),
+          connected: 4,
+        });
 
         const after = yield* readAll.pipe(
           Effect.provide(

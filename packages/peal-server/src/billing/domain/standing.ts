@@ -69,3 +69,16 @@ export const planHolding = (held: Holdings): Option.Option<PaidPlan> =>
   ).length === 0
     ? Option.some("payAsYouGo")
     : Option.none();
+
+/**
+ * Whether the billing grace keeps a workspace over its plan scheduling: on
+ * the free tier, which it keeps (staff did not require a payment method),
+ * its `held` accounts are within the free ones or within those it had
+ * connected before the grace started (`connectedBefore`). A channel
+ * connected since is never graced.
+ */
+export const gracedHolds = (
+  allowed: number,
+  held: number,
+  connectedBefore: number
+): boolean => held <= Math.max(allowed, connectedBefore);

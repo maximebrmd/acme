@@ -40,7 +40,11 @@ const UnbilledTest = AccountPlanHoldersLive.pipe(
       Layer.mock(BillingAccounts, {}),
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled: false, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled: false,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     )
   )

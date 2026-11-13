@@ -82,7 +82,11 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     ),
     Layer.provide(AloneInAccountsTest)

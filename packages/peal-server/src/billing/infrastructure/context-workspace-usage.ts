@@ -1,4 +1,5 @@
 import { Effect, Layer } from "effect";
+import type { DateTime } from "effect";
 
 import { AssistantRequests } from "#assistant/application/assistant-requests.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -78,11 +79,12 @@ export const ContextWorkspaceUsageLive = Layer.effect(
     });
 
     const heldIn = Effect.fn("WorkspaceUsage.heldIn")(function* heldIn(
-      workspaceIds: readonly WorkspaceId[]
+      workspaceIds: readonly WorkspaceId[],
+      before?: DateTime.Utc
     ) {
       const counted = yield* Effect.all(
         {
-          channels: channels.connectedAcross(workspaceIds),
+          channels: channels.connectedAcross(workspaceIds, before),
           members: seats
             .takenIn(workspaceIds)
             .pipe(Effect.mapError(({ cause }) => new DatabaseError({ cause }))),

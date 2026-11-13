@@ -26,11 +26,12 @@
   meters and prices, the rate card's and the legacy plans', from the
   contract (`scripts/stripe.ts`), as the server checks them when it
   starts: a new workspace is on the free tier, two channels across the
-  account's workspaces, and the run's billing grace
-  (`PEAL_BILLING_GRACE_UNTIL`, far ahead) lets a journey that seeds a third
-  (`composer-comforts.e2e.ts`) still schedule; connecting one more is
-  refused (`upgrade-prompt.e2e.ts`, which reads per-account pricing's
-  offer). No test pays.
+  account's workspaces, so a journey stays within them, or puts its
+  workspace on per-account pricing in the database
+  (`seedPerAccountSubscription`, `tests/support/billing.ts`, as
+  `composer-comforts.e2e.ts` does for its three), or tests the refusal
+  (`upgrade-prompt.e2e.ts`, which reads per-account pricing's offer). The
+  run has no billing grace. No test pays.
   So the functions to cancel and withdraw are on
   (`contract-functions.e2e.ts`): a journey there sends requests no
   contract answers, and reads their acknowledgement in Mailpit.

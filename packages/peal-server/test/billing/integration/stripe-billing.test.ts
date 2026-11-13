@@ -2094,6 +2094,39 @@ layer(BillingIntegration, {
 
         // Every member is told, whatever their role.
         assert.deepStrictEqual(yield* standing(owner.cookies), over);
+
+        // Nothing is scheduled meanwhile: no grace runs on this server.
+        const validated = yield* app.request(
+          `/api/workspaces/${workspaceId}/posts/validate`,
+          {
+            body: {
+              channelIds: [channelIds[0] ?? ""],
+              content: { media: [], overrides: [], text: "A synthetic post." },
+              when: {
+                _tag: "at",
+                at: "2031-03-04T09:00:00Z",
+                timeZone: "UTC",
+              },
+            },
+            headers: { cookie: owner.cookies },
+          }
+        );
+
+        const shortfall = yield* bodyOf(
+          Schema.Struct({
+            planLimit: Schema.Struct({
+              allowed: Schema.Number,
+              limit: Schema.String,
+            }),
+            valid: Schema.Boolean,
+          }),
+          validated
+        );
+
+        assert.deepStrictEqual(shortfall, {
+          planLimit: { allowed: 2, limit: "channels" },
+          valid: false,
+        });
         assert.deepStrictEqual(yield* standing(guests[0]?.cookies ?? ""), over);
 
         const reduce = (

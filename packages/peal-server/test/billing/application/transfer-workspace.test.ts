@@ -63,7 +63,11 @@ const TransferTest = TransferWorkspace.layer.pipe(
       ChannelsCountedTest,
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled: true, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled: true,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     )
   ),

@@ -53,7 +53,8 @@ const heavy = new Set<string>();
 // this month, the assistant's requests) are given.
 const standingOn = (
   billing: boolean,
-  graceUntil: Option.Option<DateTime.Utc> = Option.none()
+  graceUntil: Option.Option<DateTime.Utc> = Option.none(),
+  graceSince: Option.Option<DateTime.Utc> = graceUntil
 ) =>
   WorkspaceStanding.layer.pipe(
     Layer.provide(ContextWorkspaceUsageLive),
@@ -93,7 +94,7 @@ const standingOn = (
     Layer.provide(
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled: billing, graceUntil })
+        BillingMode.of({ enabled: billing, graceSince, graceUntil })
       )
     ),
     Layer.provideMerge(TokenCipherTest),
@@ -498,3 +499,35 @@ layer(
     })
   );
 });
+
+// The grace started before this test's channels were connected: none of
+// them is graced.
+layer(
+  standingOn(
+    true,
+    Option.some(DateTime.makeUnsafe("2099-01-01T00:00:00Z")),
+    Option.some(DateTime.makeUnsafe("1969-12-31T00:00:00Z"))
+  )
+)(
+  "the standing of workspaces whose channels came after the grace started",
+  (it) => {
+    it.effect(
+      "names a free workspace over its accounts, at once and one by one",
+      () =>
+        Effect.gen(function* after() {
+          const overFree = yield* workspaceWith({ channels: 3, members: 1 });
+
+          yield* Effect.gen(function* compared() {
+            assert.deepStrictEqual(
+              [...(yield* (yield* WorkspaceStanding).overPlanIn([overFree]))],
+              [overFree]
+            );
+            assert.deepStrictEqual(
+              [...(yield* mustReduceOneByOne([overFree]))],
+              [overFree]
+            );
+          }).pipe(Effect.ensuring(cleanUp([overFree])));
+        })
+    );
+  }
+);

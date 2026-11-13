@@ -43,7 +43,11 @@ const SharedTest = WorkspaceEntitlements.layerShared.pipe(
   Layer.provide(
     Layer.succeed(
       BillingMode,
-      BillingMode.of({ enabled: true, graceUntil: Option.none() })
+      BillingMode.of({
+        enabled: true,
+        graceSince: Option.none(),
+        graceUntil: Option.none(),
+      })
     )
   )
 );

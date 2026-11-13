@@ -48,9 +48,9 @@ import {
   WorkspaceOwnersLive,
 } from "#workspace/container.ts";
 
-const entitlementsOn = (plan: Plan) =>
+const entitlementsOn = (plan: Plan, freeTier = true) =>
   new Entitlements({
-    freeTier: true,
+    freeTier,
     plan: Option.some(plan),
     subscription: Option.none(),
   });
@@ -59,22 +59,28 @@ const entitlementsOn = (plan: Plan) =>
  * Every workspace on `plan`, without a subscription, each alone in its
  * pool, on a server that bills, without a grace.
  */
-export const everyWorkspaceOn = (plan: Plan) =>
+export const everyWorkspaceOn = (plan: Plan, freeTier = true) =>
   Layer.mergeAll(
     Layer.succeed(
       WorkspaceEntitlements,
       WorkspaceEntitlements.of({
-        of: () => Effect.succeed(entitlementsOn(plan)),
+        of: () => Effect.succeed(entitlementsOn(plan, freeTier)),
         ofEach: (workspaceIds) =>
           Effect.succeed(
-            new Map(workspaceIds.map((id) => [id, entitlementsOn(plan)]))
+            new Map(
+              workspaceIds.map((id) => [id, entitlementsOn(plan, freeTier)])
+            )
           ),
       })
     ),
     PlanPools.layerAlone,
     Layer.succeed(
       BillingMode,
-      BillingMode.of({ enabled: true, graceUntil: Option.none() })
+      BillingMode.of({
+        enabled: true,
+        graceSince: Option.none(),
+        graceUntil: Option.none(),
+      })
     )
   );
 
@@ -91,7 +97,11 @@ export const UnmeteredTest = Layer.mergeAll(
   PlanPools.layerAlone,
   Layer.succeed(
     BillingMode,
-    BillingMode.of({ enabled: false, graceUntil: Option.none() })
+    BillingMode.of({
+      enabled: false,
+      graceSince: Option.none(),
+      graceUntil: Option.none(),
+    })
   )
 );
 

@@ -48,7 +48,11 @@ const Neighbours = Layer.mergeAll(
   AloneInAccountsTest,
   Layer.succeed(
     BillingMode,
-    BillingMode.of({ enabled: false, graceUntil: Option.none() })
+    BillingMode.of({
+      enabled: false,
+      graceSince: Option.none(),
+      graceUntil: Option.none(),
+    })
   ),
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,

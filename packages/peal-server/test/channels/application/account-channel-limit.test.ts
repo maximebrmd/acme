@@ -62,7 +62,11 @@ const AccountFreePlanTest = Layer.mergeAll(
             Layer.provide(
               Layer.succeed(
                 BillingMode,
-                BillingMode.of({ enabled: true, graceUntil: Option.none() })
+                BillingMode.of({
+                  enabled: true,
+                  graceSince: Option.none(),
+                  graceUntil: Option.none(),
+                })
               )
             )
           )
@@ -270,7 +274,11 @@ const UnbilledTest = ChannelUsage.layer.pipe(
                 Layer.mock(BillingAccounts, {}),
                 Layer.succeed(
                   BillingMode,
-                  BillingMode.of({ enabled: false, graceUntil: Option.none() })
+                  BillingMode.of({
+                    enabled: false,
+                    graceSince: Option.none(),
+                    graceUntil: Option.none(),
+                  })
                 )
               )
             )

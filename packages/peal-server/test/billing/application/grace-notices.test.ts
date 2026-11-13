@@ -23,9 +23,20 @@ const within = WorkspaceIdSchema.make("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e");
 
 const until = DateTime.makeUnsafe("2027-01-31T00:00:00Z");
 
+// Connected since the grace started: its third account is no grace's.
+const grown = WorkspaceIdSchema.make("3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f");
+
 const accountsHeld = new Map<WorkspaceId, number>([
   [crowded, 3],
   [within, 2],
+  [grown, 3],
+]);
+
+// What each had connected before the grace started.
+const heldBefore = new Map<WorkspaceId, number>([
+  [crowded, 3],
+  [within, 2],
+  [grown, 2],
 ]);
 
 const remindersOn = (
@@ -39,14 +50,18 @@ const remindersOn = (
       Layer.mergeAll(
         Layer.succeed(
           BillingMode,
-          BillingMode.of({ enabled: true, graceUntil })
+          BillingMode.of({ enabled: true, graceSince: graceUntil, graceUntil })
         ),
         Layer.mock(Subscriptions, { remindable: () => Effect.succeed([]) }),
         Layer.mock(BillingAccountStore, {
           page: (after) =>
             Effect.succeed(
               Option.isNone(after)
-                ? [aloneAccountOf(crowded), aloneAccountOf(within)]
+                ? [
+                    aloneAccountOf(crowded),
+                    aloneAccountOf(within),
+                    aloneAccountOf(grown),
+                  ]
                 : []
             ),
         }),
@@ -60,12 +75,18 @@ const remindersOn = (
         Layer.mock(ContractReferences, {}),
         Layer.mock(StripeContracts, {}),
         Layer.mock(WorkspaceUsage, {
-          heldIn: (ids) =>
+          heldIn: (ids, before) =>
             Effect.succeed(
               new Map(
                 ids.map((id) => [
                   id,
-                  { channels: accountsHeld.get(id) ?? 0, members: 1 },
+                  {
+                    channels:
+                      (before === undefined ? accountsHeld : heldBefore).get(
+                        id
+                      ) ?? 0,
+                    members: 1,
+                  },
                 ])
               )
             ),
@@ -97,7 +118,9 @@ describe("the billing grace's notices", () => {
       Effect.gen(function* during() {
         const { count, told } = yield* runWith(Option.some(until));
 
-        assert.strictEqual(count, 1);
+        // No reminder was due: the grace's notices are not reminders. The
+        // account whose third came since the grace started is not told.
+        assert.strictEqual(count, 0);
         assert.deepStrictEqual(told, [
           {
             key: `billing:${crowded}:payment-method-needed:${until.epochMilliseconds}`,

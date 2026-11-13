@@ -23,7 +23,11 @@ const allowanceWith = (entitlements: typeof UnmeteredTest, enabled: boolean) =>
       Layer.mergeAll(
         Layer.succeed(
           BillingMode,
-          BillingMode.of({ enabled, graceUntil: Option.none() })
+          BillingMode.of({
+            enabled,
+            graceSince: Option.none(),
+            graceUntil: Option.none(),
+          })
         ),
         Layer.succeed(
           PlanPools,

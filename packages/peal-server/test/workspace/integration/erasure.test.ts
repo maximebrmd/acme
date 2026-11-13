@@ -417,6 +417,8 @@ const kept = {
     "request counts by address and path, which no account names, kept a minute",
   "auth.verification":
     "codes and tokens that expire within minutes (a password reset names its user, above)",
+  "billing.grace_starts":
+    "the day each billing grace first ran on this server, which names nobody",
   "billing.stripe_events":
     "the ids of Stripe events already recorded, so none is recorded twice",
   "channels.data_deletions":

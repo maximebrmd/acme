@@ -121,7 +121,11 @@ const billingWith = (enabled: boolean) =>
     Layer.provide(
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     )
   );
@@ -390,7 +394,11 @@ const recordsWith = (enabled: boolean) =>
     Layer.provide(
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     )
   );
@@ -753,7 +761,11 @@ const UnreadTest = Layer.mergeAll(
       PlainPseudonymsTest,
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled: false, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled: false,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       ),
       Layer.succeed(
         Checkouts,
@@ -826,7 +838,11 @@ const RememberedTest = BillingRecords.layer.pipe(
       }),
       Layer.succeed(
         BillingMode,
-        BillingMode.of({ enabled: true, graceUntil: Option.none() })
+        BillingMode.of({
+          enabled: true,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
       )
     )
   ),
