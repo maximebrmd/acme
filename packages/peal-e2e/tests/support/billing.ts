@@ -1,9 +1,12 @@
 import { createHmac, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 
+import { Schema } from "effect";
 import { catalogueLookupKeysOf } from "peal-contract/rate-card";
 import { Client } from "pg";
 
-import { webhookSecret } from "../../scripts/stripe.ts";
+import { checkoutsFile, webhookSecret } from "../../scripts/stripe.ts";
+import type { RecordedCheckout } from "../../scripts/stripe.ts";
 
 /**
  * Puts the workspace on per-account pricing, straight in the database the
@@ -73,18 +76,75 @@ const signed = (payload: string, at: number): string =>
     .update(`${at}.${payload}`)
     .digest("hex")}`;
 
+// The last checkout the server asked the stand-in for, for this customer.
+const checkoutOf = (customer: string): RecordedCheckout => {
+  const found = readFileSync(checkoutsFile, "utf-8")
+    .split("\n")
+    .filter((line) => line !== "")
+    .map((line) => decodeCheckout(JSON.parse(line)))
+    .findLast((checkout) => checkout.customer === customer);
+
+  if (found === undefined) {
+    throw new Error("The server opened no checkout for the workspace");
+  }
+
+  return found;
+};
+
+const decodeCheckout = Schema.decodeUnknownSync(
+  Schema.Struct({
+    customer: Schema.String,
+    id: Schema.String,
+    metadata: Schema.Record(Schema.String, Schema.String),
+    prices: Schema.Array(Schema.String),
+    subscriptionMetadata: Schema.Record(Schema.String, Schema.String),
+  })
+);
+
+// The catalogue's lookup keys, by the stand-in's price ids.
+const lookupKeyOf = new Map(
+  Object.values(catalogueLookupKeysOf("peal")).map((key) => [
+    `price_e2e_${key}`,
+    key,
+  ])
+);
+
 /**
  * Posts to the run's server the event Stripe sends once a per-account
- * checkout is paid: a subscription created on the workspace's customer,
- * with one item per line of the catalogue (the contract's lookup keys),
- * active, its period ending on the first of next month (UTC). Signed with
- * the run's webhook secret, as Stripe signs them. Nothing is charged.
+ * checkout is paid, built from the checkout the server opened at the
+ * stand-in: a subscription created on its customer with one item per
+ * price it asked for, and the metadata it gave the subscription, active,
+ * its period ending on the first of next month (UTC). It refuses a
+ * checkout that left out a line of the catalogue or the order. Signed
+ * with the run's webhook secret, as Stripe signs them. Nothing is charged.
  */
 export const postPerAccountSubscription = async (
   baseUrl: string,
   workspaceId: string
 ): Promise<void> => {
   const customer = await customerOf(workspaceId);
+  const checkout = checkoutOf(customer);
+  const keys = checkout.prices.map((price) => lookupKeyOf.get(price));
+
+  if (keys.length !== lookupKeyOf.size || keys.includes(undefined)) {
+    throw new Error(
+      `The checkout asked for other prices than the catalogue's: ${checkout.prices.join(", ")}`
+    );
+  }
+
+  const metadata = {
+    ...checkout.metadata,
+    ...checkout.subscriptionMetadata,
+  };
+
+  if (
+    metadata["orderId"] === undefined ||
+    metadata["referenceId"] !== workspaceId ||
+    metadata["userId"] === undefined
+  ) {
+    throw new Error("The checkout carries no order, workspace or member");
+  }
+
   const run = randomUUID().replaceAll("-", "");
   const now = Math.floor(Date.now() / 1000);
   const today = new Date();
@@ -95,14 +155,14 @@ export const postPerAccountSubscription = async (
 
   const subscription = `sub_e2e_${run}`;
 
-  const items = Object.values(catalogueLookupKeysOf("peal")).map((key) => ({
+  const items = checkout.prices.map((price) => ({
     current_period_end: periodEnd,
     current_period_start: now,
-    id: `si_e2e_${run}_${key}`,
+    id: `si_e2e_${run}_${price}`,
     object: "subscription_item",
     price: {
-      id: `price_e2e_${key}`,
-      lookup_key: key,
+      id: price,
+      lookup_key: lookupKeyOf.get(price),
       object: "price",
       recurring: { interval: "month", usage_type: "metered" },
     },
@@ -125,7 +185,7 @@ export const postPerAccountSubscription = async (
         id: subscription,
         items: { data: items, has_more: false, object: "list" },
         livemode: false,
-        metadata: { referenceId: workspaceId },
+        metadata,
         object: "subscription",
         start_date: now,
         status: "active",

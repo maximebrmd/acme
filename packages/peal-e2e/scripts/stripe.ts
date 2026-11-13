@@ -11,8 +11,10 @@
 // `webhookSecret`. Nothing leaves the machine.
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
+import path from "node:path";
 
 import { Schema } from "effect";
 import { billingCurrency, PaidPlanSchema, planCatalogue } from "peal-contract";
@@ -142,6 +144,57 @@ const retrieved = (pathname: string) => {
       };
 };
 
+/**
+ * Where the stand-in writes each checkout the server asks for, one JSON
+ * object a line: what a test then builds Stripe's webhook event from, so
+ * a checkout that lost a line or its metadata fails the journey.
+ */
+export const checkoutsFile = path.join(
+  import.meta.dirname,
+  "..",
+  ".e2e",
+  "stripe-checkouts.jsonl"
+);
+
+/** A checkout the server asked the stand-in for. */
+export interface RecordedCheckout {
+  readonly customer: string;
+  readonly id: string;
+  readonly metadata: Readonly<Record<string, string>>;
+  readonly prices: readonly string[];
+  readonly subscriptionMetadata: Readonly<Record<string, string>>;
+}
+
+// The fields of a form under `prefix[…]`, by the name in the brackets.
+const fieldsUnder = (
+  form: URLSearchParams,
+  prefix: string
+): Readonly<Record<string, string>> =>
+  Object.fromEntries(
+    [...form.entries()].flatMap(([name, value]) => {
+      const key = name.startsWith(`${prefix}[`)
+        ? /^\[(?<key>[^\]]+)\]$/u.exec(name.slice(prefix.length))?.groups?.[
+            "key"
+          ]
+        : undefined;
+
+      return key === undefined ? [] : [[key, value]];
+    })
+  );
+
+const recorded = (
+  session: string,
+  form: URLSearchParams
+): RecordedCheckout => ({
+  customer: form.get("customer") ?? "",
+  id: session,
+  metadata: fieldsUnder(form, "metadata"),
+  prices: [...form.entries()].flatMap(([name, value]) =>
+    /^line_items\[\d+\]\[price\]$/u.test(name) ? [value] : []
+  ),
+  subscriptionMetadata: fieldsUnder(form, "subscription_data[metadata]"),
+});
+
 // What a POST makes: a customer of its own, or a checkout whose page is
 // its way back once paid, with the session's id where Stripe puts it.
 const made = (pathname: string, form: URLSearchParams) => {
@@ -153,6 +206,11 @@ const made = (pathname: string, form: URLSearchParams) => {
 
   if (pathname === "/v1/checkout/sessions") {
     const session = `cs_e2e_${id}`;
+
+    appendFileSync(
+      checkoutsFile,
+      `${JSON.stringify(recorded(session, form))}\n`
+    );
 
     return {
       id: session,
@@ -181,6 +239,9 @@ export const startStripe = async (): Promise<{
   readonly server: Server;
   readonly url: string;
 }> => {
+  mkdirSync(path.dirname(checkoutsFile), { recursive: true });
+  writeFileSync(checkoutsFile, "");
+
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     const chunks: Buffer[] = [];
