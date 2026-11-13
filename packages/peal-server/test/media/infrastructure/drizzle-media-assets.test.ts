@@ -178,9 +178,16 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         const secondId = MediaAssetIdSchema.make(yield* ids.next);
 
         const second = new MediaAsset({
-          ...first,
+          aiGenerated: first.aiGenerated,
+          altText: first.altText,
+          byteSize: first.byteSize,
+          contentType: first.contentType,
+          createdAt: first.createdAt,
           id: secondId,
+          metadata: first.metadata,
+          status: first.status,
           storageKey: storageKeyFor(other, secondId, first.contentType),
+          updatedAt: first.updatedAt,
           workspaceId: other,
         });
 
