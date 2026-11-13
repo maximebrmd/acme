@@ -46,6 +46,10 @@
   which would otherwise call a platform for them. Update them when
   `analytics.tracked_posts` or `engagement.threads` change. Mark a comment
   answered rather than reply: a reply's job would call the platform.
+- A part of a page that loads after it moves what is below it, and an
+  open list follows its field off the screen ("element is outside of the
+  viewport"): wait for that part (the post's review shows "Your comment")
+  before opening a list beneath it.
 - `tests/tags.e2e.ts` signs up a member of its own, adds a tag in the
   settings, schedules a tagged post and another, filters the calendar by
   the tag and clears the filter, then cancels both. The calendar names a
