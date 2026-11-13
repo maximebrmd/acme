@@ -19,6 +19,7 @@ import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { ImportUnreadable } from "./import-unreadable.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
+import { LastTargetLeft } from "./last-target-left.ts";
 import {
   LivePostChangeSchema,
   LivePostChangesSchema,
@@ -92,14 +93,6 @@ export const MediaAttachmentSchema = Schema.Struct({
 
 export type MediaAttachment = typeof MediaAttachmentSchema.Type;
 
-/** The text a post has on one of its channels instead of its own. */
-export const TextOverrideSchema = Schema.Struct({
-  channelId: Schema.String,
-  text: PostTextSchema.check(Schema.isNonEmpty()),
-}).annotate({ identifier: "TextOverride" });
-
-export type TextOverride = typeof TextOverrideSchema.Type;
-
 // The media one part shows, in order: each file once.
 const PartMediaSchema = Schema.Array(MediaAttachmentSchema).check(
   Schema.isMaxLength(maxMediaPerPost),
@@ -108,6 +101,22 @@ const PartMediaSchema = Schema.Array(MediaAttachmentSchema).check(
     "each media attached once"
   )
 );
+
+/**
+ * What a part of a post has on one of its channels instead of its own: its
+ * text there, and, when `media` is given, the images and videos it shows
+ * there instead of the part's, in order (an empty list shows none there).
+ * Left out, the channel shows the part's own media; Peal answers `media`
+ * only on an override that gives some. Each channel is checked on the
+ * media it receives.
+ */
+export const TextOverrideSchema = Schema.Struct({
+  channelId: Schema.String,
+  media: Schema.optionalKey(PartMediaSchema),
+  text: PostTextSchema.check(Schema.isNonEmpty()),
+}).annotate({ identifier: "TextOverride" });
+
+export type TextOverride = typeof TextOverrideSchema.Type;
 
 // The text one part has instead on some channels.
 const PartOverridesSchema = Schema.Array(TextOverrideSchema).check(
@@ -256,6 +265,10 @@ export type TargetParts = typeof TargetPartsSchema.Type;
 /** A post on one of its channels. */
 export const PostTargetSchema = Schema.Struct({
   channelId: Schema.String,
+  // True when someone took the channel off the post before it went out
+  // (`removeTarget`): it is `cancelled`, and the post goes out on its
+  // other channels. Left out otherwise.
+  dropped: Schema.optionalKey(Schema.Boolean),
   // When Peal last replaced the text of a part of it on the channel's
   // platform, at someone's request; null until then.
   editedAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -1135,6 +1148,17 @@ export class PostsApi extends HttpApiGroup.make("posts")
         description:
           "Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. A post of several parts goes on from the part after the last that is live; one failed as `partsNotSent` is refused (TargetStatusConflict), as Peal has no post to send the rest under: a part found by hand has no id, or the part to reply to is gone. Needs post:schedule.",
         summary: "Repost on a channel",
+      })
+    ),
+    HttpApiEndpoint.delete("removeTarget", "/:postId/targets/:targetId", {
+      error: [...followUp, LastTargetLeft],
+      params: target,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.",
+        summary: "Remove a channel from a post",
       })
     ),
     HttpApiEndpoint.post("confirm", "/:postId/targets/:targetId/confirm", {

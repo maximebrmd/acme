@@ -194,7 +194,8 @@ export const WebhookEventSchema = Schema.Union([
     type: Schema.Literal("post.unconfirmed"),
   }),
   // The post was cancelled: `targets` are the channels it will not go out
-  // on. Those it had already reached keep their own events.
+  // on. Those it had already reached keep their own events. A channel
+  // taken off a post that still goes out on its others is told alone.
   Schema.Struct({
     data: Schema.Struct({
       ...post,

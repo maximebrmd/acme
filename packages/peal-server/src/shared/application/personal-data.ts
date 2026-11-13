@@ -52,6 +52,11 @@ export interface PostRecord {
     readonly text: string;
     readonly textOverrides: readonly {
       readonly channelId: string;
+      /** The media it shows on that channel instead, when it gives some. */
+      readonly media?: readonly {
+        readonly altText: string | null;
+        readonly mediaId: string;
+      }[];
       readonly text: string;
     }[];
   }[];
@@ -81,6 +86,8 @@ export interface PostRecord {
   readonly tagIds: readonly string[];
   readonly targets: readonly {
     readonly channelId: string;
+    /** Someone took the channel off the post before it went out. */
+    readonly dropped: boolean;
     /** When Peal last replaced a part's text on that channel's platform. */
     readonly editedAt: DateTime.Utc | null;
     readonly finishedAt: DateTime.Utc | null;
@@ -100,6 +107,11 @@ export interface PostRecord {
   readonly text: string;
   readonly textOverrides: readonly {
     readonly channelId: string;
+    /** The media it shows on that channel instead, when it gives some. */
+    readonly media?: readonly {
+      readonly altText: string | null;
+      readonly mediaId: string;
+    }[];
     readonly text: string;
   }[];
   readonly timeZone: string | null;

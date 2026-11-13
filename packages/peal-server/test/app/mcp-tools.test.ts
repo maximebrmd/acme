@@ -493,6 +493,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // Peal calls receivers outside it again.
           redeliver_webhooks: [false, false, false, true],
           rename_channel: [false, true, true, false],
+          remove_post_target: [false, true, true, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
           repost_target: [false, false, false, true],
@@ -797,6 +798,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             publish_post: { postId },
             queue_post: { postId },
             recycle_post: { every: { count: 1, unit: "weeks" }, postId },
+            remove_post_target: { postId, targetId: postId },
             reply_to_comment: { commentId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
             request_changes: { ...decision, comment: "Never read." },

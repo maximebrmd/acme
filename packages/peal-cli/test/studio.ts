@@ -44,6 +44,7 @@ import {
   MediaTooLarge,
   PostContentInvalid,
   PostNotFound,
+  LastTargetLeft,
   PostStatusConflict,
   PartnerNotFound,
   QueueHasNoRoom,
@@ -3619,6 +3620,51 @@ export const studioGroupsLive = (studio: Studio) =>
             Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
             Effect.flatMap((post) => afterWaiting(studio, post, query.wait))
           ),
+        removeTarget: ({ params }) =>
+          Effect.gen(function* removeTarget() {
+            yield* publishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            if (
+              post.status !== "scheduled" &&
+              post.status !== "awaitingApproval"
+            ) {
+              return yield* new PostStatusConflict({ status: post.status });
+            }
+
+            const others = post.targets.filter(
+              ({ id, status }) => id !== params.targetId && status === "pending"
+            );
+
+            if (
+              others.length === 0 &&
+              post.targets.some(
+                ({ id, status }) =>
+                  id === params.targetId && status === "pending"
+              )
+            ) {
+              return yield* new LastTargetLeft();
+            }
+
+            const removed = yield* changingTarget(studio, params, (target) =>
+              target.status === "pending"
+                ? Option.some({
+                    ...target,
+                    dropped: true,
+                    status: "cancelled" as const,
+                  })
+                : Option.none()
+            );
+
+            yield* record(studio, `remove-target:${params.targetId}`);
+
+            return removed;
+          }),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(
