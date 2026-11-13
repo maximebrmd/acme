@@ -24,14 +24,22 @@
   self-hosters do; it signs in again afterwards.
 - The run's server bills, against a stand-in for Stripe that lists Peal's
   meters and prices, the rate card's and the legacy plans', from the
-  contract (`scripts/stripe.ts`), as the server checks them when it
-  starts: a new workspace is on the free tier, two channels across the
-  account's workspaces, so a journey stays within them, or puts its
-  workspace on per-account pricing in the database
+  contract, by lookup key when asked (`scripts/stripe.ts`), as the server
+  checks them when it starts: a new workspace is on the free tier, two
+  channels across the account's workspaces, so a journey stays within
+  them, or puts its workspace on per-account pricing in the database
   (`seedPerAccountSubscription`, `tests/support/billing.ts`, as
-  `composer-comforts.e2e.ts` does for its three), or tests the refusal
-  (`upgrade-prompt.e2e.ts`, which reads per-account pricing's offer). The
-  run has no billing grace. No test pays.
+  `composer-comforts.e2e.ts` does for its three). The stand-in makes each
+  customer an id of its own and opens a checkout whose page is the way
+  back it was given, as if the card were taken: `upgrade-prompt.e2e.ts`
+  reads the billing page on the free tier, is refused a third account,
+  orders from the upgrade dialog, comes back, posts the webhook event
+  Stripe would send (`postPerAccountSubscription`, signed with the
+  stand-in's `webhookSecret`, the customer read from
+  `auth.organization`), then reads per-account pricing on the billing
+  page, and the third account goes past the plan to the Mastodon server
+  it names, which does not exist. The run has no billing grace. No test
+  pays.
   So the functions to cancel and withdraw are on
   (`contract-functions.e2e.ts`): a journey there sends requests no
   contract answers, and reads their acknowledgement in Mailpit.

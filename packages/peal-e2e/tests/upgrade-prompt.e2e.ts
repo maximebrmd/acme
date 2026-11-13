@@ -4,12 +4,17 @@ import { describe, test } from "@e2e-dev/web";
 import { credentials, expect } from "e2e";
 
 import { confirmedAccount } from "./support/accounts.ts";
+import { postPerAccountSubscription } from "./support/billing.ts";
 import { seedChannel } from "./support/channels.ts";
 
 // The run's server bills (scripts/serve.ts): a new workspace is on the free
-// tier, which allows two accounts. Connecting a third is refused, and the
-// upgrade dialog offers per-account pricing at the rate card's price.
-// Nothing is ordered: the test stops before checkout.
+// tier, which connects two accounts across its billing account. The billing
+// page shows the tier, the month and the ladder; connecting a third account
+// opens the upgrade dialog, which asks for a payment method. The member
+// orders, Stripe's stand-in sends them straight back as if the card were
+// taken, and the test posts the webhook Stripe would then send: the
+// workspace is on per-account pricing, and the third account is no longer
+// refused. Nothing is charged.
 const run = randomUUID();
 const name = "Robin Example";
 const workspace = "Tide Tables";
@@ -23,7 +28,7 @@ const password = "synthetic upgrade dialog password";
 
 let workspaceId = "";
 
-describe("the upgrade dialog", { serial: true }, () => {
+describe("per-account pricing", { serial: true }, () => {
   test("a member fills the free tier's accounts", async ({
     app,
     browser,
@@ -62,7 +67,36 @@ describe("the upgrade dialog", { serial: true }, () => {
     );
   });
 
-  test("a third account opens the upgrade dialog, with per-account pricing", async ({
+  test("the billing page shows the free tier, the month and the ladder", async ({
+    app,
+    screen,
+  }) => {
+    await app.open(`/app/${workspaceId}/billing`);
+
+    const main = screen.getByRole("main");
+
+    await expect(main.getByText("Free tier")).toBeVisible();
+    await expect(
+      main.getByText(
+        "Up to 2 connected accounts across the billing account, without a payment method."
+      )
+    ).toBeVisible();
+    await expect(main.getByText("2 accounts connected.")).toBeVisible();
+    await expect(
+      main.getByText(
+        "One more account, the 3rd, costs $5.00 a month, excluding tax."
+      )
+    ).toBeVisible();
+    await expect(main.getByRole("rowheader", "Accounts 3 to 10")).toBeVisible();
+    await expect(
+      main.getByRole("heading", "Add a payment method")
+    ).toBeVisible();
+    await expect(
+      main.getByRole("button", "Order with obligation to pay")
+    ).toBeDisabled();
+  });
+
+  test("a third account opens the upgrade dialog, which asks for a payment method", async ({
     app,
     screen,
   }) => {
@@ -73,26 +107,27 @@ describe("the upgrade dialog", { serial: true }, () => {
     const dialog = screen.getByRole("dialog");
 
     await expect(
-      dialog.getByRole("heading", "This plan has no room for another channel")
-    ).toBeVisible();
-    await expect(
-      dialog.getByText(
-        `The Free plan of ${workspace} allows 2 channels, and it has 2.`
+      dialog.getByRole(
+        "heading",
+        "Add a payment method to connect another account"
       )
     ).toBeVisible();
     await expect(
       dialog.getByText(
-        "The Per-account pricing plan has room: Unlimited channels"
+        `The billing account of ${workspace} is on the free tier, which connects 2 accounts across its workspaces, and it has 2.`
       )
     ).toBeVisible();
     await expect(
       dialog.getByText(
-        "$5.00 a month for each account past the first 2, excl. tax ($6.00 with 20% VAT), counted by the day; less each from account 11 on"
+        "The 3rd costs $5.00 a month, excluding tax ($6.00 with 20% VAT), counted by the day; the first 2 stay free."
       )
     ).toBeVisible();
+
+    // Monthly only: no period to choose.
+    await expect(dialog.getByRole("button", "Yearly")).toBeHidden();
   });
 
-  test("the order waits for the request to start at once, and is worded as an obligation to pay", async ({
+  test("the order waits for the request to start at once, then goes through checkout and back", async ({
     screen,
   }) => {
     const dialog = screen.getByRole("dialog");
@@ -103,11 +138,46 @@ describe("the upgrade dialog", { serial: true }, () => {
       .getByRole("checkbox", /^I ask Peal to start per-account pricing now/u)
       .check();
     await expect(order).toBeEnabled();
+    await order.tap();
 
-    // Monthly only: no period to choose.
-    await expect(dialog.getByRole("button", "Yearly")).toBeHidden();
+    // The stand-in's checkout takes the card at once and sends the browser
+    // back to the page the member was on.
+    await expect(screen.getByRole("button", "Connect Mastodon")).toBeVisible();
+    await expect(screen.getByRole("dialog")).toBeHidden();
+  });
 
-    await dialog.getByRole("button", "Not now").tap();
+  test("once Stripe's event is recorded, the workspace is on per-account pricing and connects a third account", async ({
+    app,
+    screen,
+  }) => {
+    await postPerAccountSubscription(app.baseUrl, workspaceId);
+
+    await app.open(`/app/${workspaceId}/billing`);
+
+    const main = screen.getByRole("main");
+
+    await expect(main.getByText("Per-account pricing")).toBeVisible();
+    await expect(main.getByText("Active")).toBeVisible();
+    await expect(
+      main.getByRole("button", "Cancel your contract")
+    ).toBeVisible();
+    await expect(
+      main.getByRole("button", "Order with obligation to pay")
+    ).toBeHidden();
+
+    // No platform is reached in a run: the connection now goes past the
+    // plan and stops at the server it names, which does not exist.
+    await app.open(`/app/${workspaceId}/channels`);
+    await screen.getByLabel("Server").fill("social.example");
+    await screen.getByRole("button", "Connect Mastodon").tap();
+    await expect(
+      screen
+        .getByRole("main")
+        .getByRole("alert")
+        .getByText(
+          "This is not the address of a server. Check it, for example mastodon.social."
+        )
+    ).toBeVisible();
     await expect(screen.getByRole("dialog")).toBeHidden();
   });
 });

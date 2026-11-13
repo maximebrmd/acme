@@ -2,9 +2,14 @@
 // billing is on there, so plans limit workspaces as on Peal Cloud, and the
 // server checks Stripe's catalogue and prices when it starts. It lists the
 // meters and prices Peal publishes, as the contract holds them (the rate
-// card's, and the legacy plans'), and answers anything else as an empty
-// list or an object with a synthetic id: no test pays for anything.
-// Nothing leaves the machine.
+// card's, and the legacy plans'), by lookup key when asked; makes each
+// customer with an id of its own; opens a checkout whose page is the way
+// back it was given, as if the card were taken at once; and answers
+// anything else as an empty list or an object with a synthetic id. No test
+// pays for anything: a test that needs the subscription a checkout makes
+// posts its webhook event itself (tests/support/billing.ts), signed with
+// `webhookSecret`. Nothing leaves the machine.
+import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
@@ -90,12 +95,76 @@ const catalogue = lines.map(({ key, meter }) => ({
     meter === null ? null : stripeUnitAmountOf(meter, rateCard),
 }));
 
-const listed = (pathname: string): readonly unknown[] => {
-  if (pathname === "/v1/prices") {
-    return [...catalogue, ...prices];
+/** The webhook signing secret the run's server checks events with. */
+export const webhookSecret = "whsec_synthetic_end_to_end";
+
+// The lookup keys a request filters prices by, as Stripe's client sends
+// them: `lookup_keys[0]=…`.
+const lookupKeysOf = (query: URLSearchParams): readonly string[] =>
+  [...query.entries()].flatMap(([name, value]) =>
+    name.startsWith("lookup_keys") ? [value] : []
+  );
+
+const LookedUpSchema = Schema.Struct({ lookup_key: Schema.String });
+
+const isLookedUp = Schema.is(LookedUpSchema);
+
+const listed = (url: URL): readonly unknown[] => {
+  if (url.pathname === "/v1/prices") {
+    const asked = lookupKeysOf(url.searchParams);
+    const all: readonly unknown[] = [...catalogue, ...prices];
+
+    return asked.length === 0
+      ? all
+      : all.filter(
+          (price) => isLookedUp(price) && asked.includes(price.lookup_key)
+        );
   }
 
-  return pathname === "/v1/billing/meters" ? meters : [];
+  return url.pathname === "/v1/billing/meters" ? meters : [];
+};
+
+// A checkout read back after its way back: one that took no payment and
+// names no subscription, so the way back goes straight to its page.
+const retrieved = (pathname: string) => {
+  const session = /^\/v1\/checkout\/sessions\/(?<id>cs_e2e_\w+)$/u.exec(
+    pathname
+  )?.groups?.["id"];
+
+  return session === undefined
+    ? undefined
+    : {
+        id: session,
+        metadata: {},
+        mode: "subscription",
+        object: "checkout.session",
+        payment_status: "unpaid",
+      };
+};
+
+// What a POST makes: a customer of its own, or a checkout whose page is
+// its way back once paid, with the session's id where Stripe puts it.
+const made = (pathname: string, form: URLSearchParams) => {
+  const id = randomUUID().replaceAll("-", "");
+
+  if (pathname === "/v1/customers") {
+    return { id: `cus_e2e_${id}`, metadata: {}, object: "customer" };
+  }
+
+  if (pathname === "/v1/checkout/sessions") {
+    const session = `cs_e2e_${id}`;
+
+    return {
+      id: session,
+      object: "checkout.session",
+      url: (form.get("success_url") ?? "").replaceAll(
+        "{CHECKOUT_SESSION_ID}",
+        session
+      ),
+    };
+  }
+
+  return { id: "e2e_synthetic", object: "synthetic" };
 };
 
 const list = (data: readonly unknown[], url: string) => ({
@@ -113,16 +182,25 @@ export const startStripe = async (): Promise<{
   readonly url: string;
 }> => {
   const server = createServer((request, response) => {
-    const { pathname } = new URL(request.url ?? "/", "http://127.0.0.1");
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const chunks: Buffer[] = [];
 
-    const answer =
-      request.method === "GET"
-        ? list(listed(pathname), pathname)
-        : { id: "e2e_synthetic", object: "synthetic" };
+    request.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
 
-    request.resume();
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify(answer));
+    request.on("end", () => {
+      const answer =
+        request.method === "GET"
+          ? (retrieved(url.pathname) ?? list(listed(url), url.pathname))
+          : made(
+              url.pathname,
+              new URLSearchParams(Buffer.concat(chunks).toString("utf-8"))
+            );
+
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(answer));
+    });
   });
 
   server.listen(0, "127.0.0.1");
