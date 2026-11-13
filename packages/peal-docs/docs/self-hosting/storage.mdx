@@ -51,15 +51,31 @@ Large videos go up in parts. An upload left unfinished keeps its parts in the st
 - a file under `media/` that no media holds, such as one sent with a link signed before its media was deleted, is deleted once it is a day old (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`);
 - the files of a deleted workspace that the store did not delete at once are deleted again until none is left.
 
-Each run deletes 500 of each at most (`PEAL_MEDIA_SWEEP_BATCH`) and leaves the rest to the next. They touch only keys under `media/` that Peal writes, below `PEAL_S3_KEY_PREFIX`, never the erasure ledger or another instance's prefix. A sweep that keeps failing raises the `peal-media-sweep-failing` alert.
+Each run deletes 500 of each at most (`PEAL_MEDIA_SWEEP_BATCH`) and leaves the rest to the next; a file the store refuses to delete is counted and left. They touch only keys under `media/` that Peal writes, below `PEAL_S3_KEY_PREFIX`, never the erasure ledger or another instance's prefix. A sweep that keeps failing raises the `peal-media-sweep-failing` alert.
 
-As a second guard, add a lifecycle rule that aborts incomplete multipart uploads, on the media folder alone. Put the rule's prefix before `media/` when you set `PEAL_S3_KEY_PREFIX`, such as `staging/media/`. With Cloudflare R2, whose buckets also abort them after seven days by default:
+The sweeps run in production only, unless `PEAL_MEDIA_SWEEPS` says otherwise. `off` stops them all.
+
+#### Which database the folder belongs to [#media-owner]
+
+The pending and orphan sweeps delete what the database does not know of, so they need the database to be the bucket's newest truth:
+
+- The first run writes `media/.owner`, naming the database by a random id it keeps. From then on, those two sweeps run only while the marker names this database. They stop, deleting nothing, when it names another, or when it is gone. A second server pointed at the same bucket and prefix with a database of its own is stopped this way.
+- A restore keeps the database's id, so the marker cannot tell a restored database from the one it was. Turn the sweeps off (`PEAL_MEDIA_SWEEPS=off`) before starting a server on a restored database, and keep them off until the restore is final. As a last guard, the orphan sweep stops without deleting when a page of the listing holds more files the database does not know of than `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), or than a fifth of 50 old files or more.
+- Each stop raises the `peal-media-sweep-refused` alert. When the database is meant to own the folder (a new server's database restored from backups, once the restore is final), hand the folder over once:
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+```
+
+It writes the marker naming this database, whatever it named, and changes nothing else.
+
+As a second guard, add a lifecycle rule that aborts incomplete multipart uploads, on the media folder alone. Put the rule's prefix before `media/` when you set `PEAL_S3_KEY_PREFIX`, such as `staging/media/`. With Cloudflare R2, whose buckets also abort them after seven days by default (add `--jurisdiction eu` for a bucket in the EU jurisdiction):
 
 ```sh
 wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
 ```
 
-With an S3 API, SeaweedFS's included, save the rule as `lifecycle.json`:
+With an S3 API, where the store supports lifecycle rules, save the rule as `lifecycle.json`:
 
 ```json
 {

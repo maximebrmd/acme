@@ -51,15 +51,31 @@ Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé g
 - un fichier sous `media/` qu’aucun média ne détient, comme un fichier envoyé avec un lien signé avant la suppression de son média, est supprimé dès qu’il a un jour (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`) ;
 - les fichiers d’un espace de travail supprimé que le stockage n’a pas supprimés tout de suite le sont de nouveau, jusqu’au dernier.
 
-Chaque passage en supprime 500 de chaque sorte au plus (`PEAL_MEDIA_SWEEP_BATCH`) et laisse le reste au suivant. Ils ne touchent que les clés sous `media/` que Peal écrit, sous `PEAL_S3_KEY_PREFIX`, jamais le registre des suppressions ni le préfixe d’une autre instance. Un nettoyage qui échoue sans cesse déclenche l’alerte `peal-media-sweep-failing`.
+Chaque passage en supprime 500 de chaque sorte au plus (`PEAL_MEDIA_SWEEP_BATCH`) et laisse le reste au suivant ; un fichier que le stockage refuse de supprimer est compté et laissé. Ils ne touchent que les clés sous `media/` que Peal écrit, sous `PEAL_S3_KEY_PREFIX`, jamais le registre des suppressions ni le préfixe d’une autre instance. Un nettoyage qui échoue sans cesse déclenche l’alerte `peal-media-sweep-failing`.
 
-En seconde garde, ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés, sur le seul dossier des médias. Mettez le préfixe de la règle devant `media/` si vous définissez `PEAL_S3_KEY_PREFIX`, comme `staging/media/`. Avec Cloudflare R2, dont les buckets les abandonnent aussi après sept jours par défaut :
+Les nettoyages ne tournent qu’en production, sauf si `PEAL_MEDIA_SWEEPS` en dit autrement. `off` les arrête tous.
+
+#### À quelle base appartient le dossier [#media-owner]
+
+Les nettoyages des imports jamais terminés et des fichiers orphelins suppriment ce que la base ne connaît pas : il leur faut une base qui soit la vérité la plus récente du bucket.
+
+- Le premier passage écrit `media/.owner`, qui nomme la base par un identifiant aléatoire qu’elle garde. Dès lors, ces deux nettoyages ne tournent que tant que le marqueur nomme cette base. Ils s’arrêtent sans rien supprimer quand il en nomme une autre, ou quand il a disparu. Un second serveur pointé sur le même bucket et le même préfixe avec une base à lui est arrêté ainsi.
+- Une restauration garde l’identifiant de la base : le marqueur ne distingue pas une base restaurée de celle qu’elle était. Arrêtez les nettoyages (`PEAL_MEDIA_SWEEPS=off`) avant de démarrer un serveur sur une base restaurée, et laissez-les arrêtés tant que la restauration n’est pas définitive. En dernière garde, le nettoyage des orphelins s’arrête sans rien supprimer quand une page de la liste contient plus de fichiers inconnus de la base que `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), ou plus d’un cinquième de 50 fichiers anciens ou plus.
+- Chaque arrêt déclenche l’alerte `peal-media-sweep-refused`. Quand la base doit bien posséder le dossier (la base d’un nouveau serveur restaurée depuis les sauvegardes, une fois la restauration définitive), remettez-lui le dossier une fois :
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+```
+
+La commande écrit le marqueur au nom de cette base, quoi qu’il nommait, et ne change rien d’autre.
+
+En seconde garde, ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés, sur le seul dossier des médias. Mettez le préfixe de la règle devant `media/` si vous définissez `PEAL_S3_KEY_PREFIX`, comme `staging/media/`. Avec Cloudflare R2, dont les buckets les abandonnent aussi après sept jours par défaut (ajoutez `--jurisdiction eu` pour un bucket de la juridiction UE) :
 
 ```sh
 wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
 ```
 
-Avec une API S3, celle de SeaweedFS comprise, enregistrez la règle dans `lifecycle.json` :
+Avec une API S3, si le stockage prend en charge les règles de cycle de vie, enregistrez la règle dans `lifecycle.json` :
 
 ```json
 {

@@ -71,14 +71,42 @@ sandbox). Times are UTC.
       WHERE status IN ('scheduled', 'publishing') AND scheduled_at <= now() ORDER BY scheduled_at"
    ```
 
-7. **Start the stack**, and check it answers:
+7. **Turn the media sweeps off** before the server starts. A restored
+   database does not know the files uploaded after its restore point, and
+   the hourly sweeps would delete them for good: the orphan sweep takes
+   them for files nothing holds, and the pending sweep deletes the files
+   of uploads that were completed after it. Add to the host's
+   `peal_settings` in the inventory, then apply `site.yml` (`--check
+   --diff` first), which writes it to `host.env`:
+
+   ```yaml
+   peal_settings:
+     PEAL_MEDIA_SWEEPS: "off"
+   ```
+
+   Keep them off until the restore is confirmed final: nothing is going
+   back to `/srv/peal/before-restore` or to a later restore point, and the
+   files uploaded since the restore point have been dealt with (their
+   media is gone with the rows; download what someone wants back from the
+   bucket first). Then remove the line, apply `site.yml` again, and watch
+   the `peal-media-sweep-refused` alert for a run: the orphan sweep stops
+   by itself on a page mostly made of files the database does not know,
+   and says so. If the restored database should own a media folder whose
+   marker names another database (a new server's database, or one
+   restored from another), hand it over once:
+
+   ```sh
+   sudo peal-compose run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+   ```
+
+8. **Start the stack**, and check it answers:
 
    ```sh
    sudo peal-compose up --detach --wait
    curl --fail --silent http://127.0.0.1:3000/api/ready && echo ready
    ```
 
-8. **Take a full backup.** A restore to a time starts a new timeline, which
+9. **Take a full backup.** A restore to a time starts a new timeline, which
    the next backups build on:
 
    ```sh
@@ -111,13 +139,15 @@ the backup passphrase, which you kept outside the server.
      --command 'DELETE FROM auth.jwks' --command 'DELETE FROM channels.mastodon_apps'
    ```
 
-5. Run `release.yml` again. It sets the restored database's password to the
-   new one, then starts the stack.
+5. Turn the media sweeps off first, as [On the same server](#on-the-same-server)
+   step 7 says (`PEAL_MEDIA_SWEEPS: "off"` in `peal_settings`), with the
+   same steps to turn them back on. Then run `release.yml` again. It sets
+   the restored database's password to the new one, then starts the stack.
    On a server that bills, when its play reports that Stripe's catalogue
    differs from this release's, as after a later release moved a price's
    lookup key, give Stripe this release's catalogue (`README.md`, "Stripe
    catalogue").
-6. Take a full backup (step 8).
+6. Take a full backup (step 9).
 
 What the new secrets cost: everyone signs in again, the command line and MCP
 clients too, and the channels' tokens can no longer be read, so members
@@ -190,7 +220,7 @@ nothing else, for 42 days, which is longer than any backup holds deleted
 data. A restore does not touch that ledger, on the same server or a new one.
 
 After every restore, to the latest state or to a time, once Postgres
-answers (step 5) and before the stack starts (step 7):
+answers (step 5) and before the stack starts (step 8):
 
 1. Keep the server and the web app stopped.
 2. Apply the ledger again. The command migrates the database as the server
@@ -231,7 +261,7 @@ answers (step 5) and before the stack starts (step 7):
 
 3. Copy its output into the incident's record: it is the proof that the
    deletions were applied again.
-4. Start the stack (step 7) only once the command exits without error.
+4. Start the stack (step 8) only once the command exits without error.
 
 On a new server, the command needs the media bucket's credentials, which
 `site.yml` put back from the vault: nothing else. What the ledger cannot
@@ -345,7 +375,7 @@ signed up for the drill, while no customer uses the server), in two passes:
 1. **To a time, on the same server.** Sign up a test account and note the
    time; wait for the next archive, 5 minutes at most; delete the account
    in the app. Then [On the same server](#on-the-same-server), steps 1 to
-   8, restoring to the noted time: the account is back after step 5, and
+   9, restoring to the noted time: the account is back after step 5, and
    [Deletions since the restore point](#deletions-since-the-restore-point)
    prints `erased again` for it, and it is gone again. That proves the
    archive, the passphrase, point-in-time recovery and the ledger at once.
