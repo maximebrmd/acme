@@ -364,7 +364,8 @@ export const accountsTest = BillingAccounts.layer.pipe(
       WorkspaceAccountPayersLive.pipe(
         Layer.provide(Layer.merge(PartnerOwnershipLive, WorkspaceOwnersLive))
       ),
-      DrizzleSubscriptionsLive
+      DrizzleSubscriptionsLive,
+      PlainPseudonymsTest
     )
   ),
   Layer.provideMerge(TransactionsTest),

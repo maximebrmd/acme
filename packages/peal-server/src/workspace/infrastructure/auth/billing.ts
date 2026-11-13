@@ -65,6 +65,12 @@ export interface BillingHooks {
    * on one that does not, where nobody's leaving is refused for it.
    */
   readonly payerOf: (workspaceId: WorkspaceId) => Promise<UserId | null>;
+  /**
+   * The workspace's owners changed (one left, was removed or changed
+   * role): its billing account follows, its oldest owner paying when its
+   * payer is no longer one. Never throws: the next read repairs it.
+   */
+  readonly ownersChanged: (workspaceId: string) => Promise<void>;
   /** The workspace's member allowance, from its plan. */
   readonly memberAllowance: (workspaceId: WorkspaceId) => Promise<Allowance>;
   /** The way out for a workspace whose members have no room for `needed`. */
@@ -991,4 +997,23 @@ export const keepPayerLeaving = async (
     role: Option.none(),
     userId: session.user.id,
   });
+};
+
+/**
+ * After Better Auth's `/organization/leave`, which calls no hook of its
+ * own: the workspace's billing account follows its owners.
+ */
+export const followOwnersAfterLeaving = async (
+  ctx: GenericEndpointContext,
+  hooks: BillingHooks
+): Promise<void> => {
+  if (ctx.path !== "/organization/leave") {
+    return;
+  }
+
+  const body = decodeLeaveBody(ctx.body);
+
+  if (Option.isSome(body)) {
+    await hooks.ownersChanged(body.value.organizationId);
+  }
 };

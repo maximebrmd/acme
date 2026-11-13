@@ -320,9 +320,35 @@ export const accountWorkspaces = billing.table(
       .notNull()
       .references(() => accounts.id),
     attachedAt: instant("attached_at").notNull(),
+    // Put there by staff merging accounts: kept whoever owns it, until
+    // staff detach it.
+    merged: boolean("merged").notNull().default(false),
     workspaceId: uuid("workspace_id").primaryKey(),
   },
   (table) => [index("account_workspaces_account").on(table.accountId)]
+);
+
+/**
+ * A payment method staff required of a person, whatever billing accounts
+ * they pay for, made or deleted: by their user id while the account is
+ * open, then by a keyed pseudonym of its email address once it is closed
+ * (`user_id` null), so signing up again with the address keeps it, until
+ * `forgotten_at` is past `requirementMemory`. Giving the free tier back
+ * deletes it.
+ */
+export const paymentRequirements = billing.table(
+  "payment_requirements",
+  {
+    forgottenAt: instant("forgotten_at"),
+    id: uuid("id").primaryKey(),
+    requiredAt: instant("required_at").notNull(),
+    userId: text("user_id"),
+    userPseudonym: text("user_pseudonym"),
+  },
+  (table) => [
+    uniqueIndex("payment_requirements_user").on(table.userId),
+    index("payment_requirements_pseudonym").on(table.userPseudonym),
+  ]
 );
 
 /**

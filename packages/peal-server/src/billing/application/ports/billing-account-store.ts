@@ -71,12 +71,60 @@ export class BillingAccountStore extends Context.Service<
       accountId: BillingAccountId,
       freeTier: boolean
     ) => Effect.Effect<void, DatabaseError>;
-    /** Puts the workspace in the account, out of any other. */
+    /**
+     * Puts the workspace in the account, out of any other; `merged` when
+     * staff put it there, which keeps it whoever owns it.
+     */
     readonly attach: (
       workspaceId: WorkspaceId,
       accountId: BillingAccountId,
+      at: DateTime.Utc,
+      merged?: boolean
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Those of these workspaces staff merged into their account. */
+    readonly mergedIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlySet<WorkspaceId>, DatabaseError>;
+    /** Accounts by id after `after`, `limit` at most. */
+    readonly page: (
+      after: Option.Option<BillingAccountId>,
+      limit: number
+    ) => Effect.Effect<readonly BillingAccount[], DatabaseError>;
+    /** Deletes the offers that lapsed by `now`; how many. */
+    readonly purgeLapsedTransfers: (
+      now: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * Whether staff required a payment method of the person: by their id,
+     * or by the pseudonym of their address, from an account closed before.
+     */
+    readonly requiresPayment: (
+      userId: UserId,
+      pseudonym: Option.Option<string>
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /** Keeps the requirement, by the person's id. */
+    readonly requirePayment: (
+      userId: UserId,
       at: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
+    /** Gives the free tier back: forgets the requirement, by id and address. */
+    readonly releasePayment: (
+      userId: UserId,
+      pseudonym: Option.Option<string>
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Closing the account: the requirement is kept by the pseudonym of its
+     * address alone, without the user, from `at`.
+     */
+    readonly rememberPayment: (
+      userId: UserId,
+      pseudonym: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Deletes requirements forgotten before `before`; how many. */
+    readonly purgePayments: (
+      before: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     readonly detach: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;

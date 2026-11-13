@@ -269,7 +269,7 @@ export class BillingAccountDesk extends Context.Service<
 
             yield* Effect.forEach(
               moving,
-              (workspaceId) => store.attach(workspaceId, target.id, now),
+              (workspaceId) => store.attach(workspaceId, target.id, now, true),
               { discard: true }
             );
 

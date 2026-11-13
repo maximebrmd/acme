@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, asc, eq, gt, lt, lte, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -10,12 +10,18 @@ import {
 } from "#billing/domain/billing-account.ts";
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { accounts, accountTransfers, accountWorkspaces } from "./schema.ts";
+import {
+  accounts,
+  accountTransfers,
+  accountWorkspaces,
+  paymentRequirements,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -63,6 +69,7 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
   Effect.gen(function* DrizzleBillingAccountStoreLive() {
     const db = yield* Drizzle;
     const client = yield* SqlClient.SqlClient;
+    const ids = yield* Ids;
 
     const hold = (what: string, id: string) =>
       client`SELECT pg_advisory_xact_lock(hashtext(${holdKey(what)}), hashtext(${id}))`.pipe(
@@ -112,12 +119,12 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
                 ),
                 Effect.map((pairs) => new Map(pairs))
               ),
-      attach: (workspaceId, accountId, at) =>
+      attach: (workspaceId, accountId, at, merged = false) =>
         db
           .insert(accountWorkspaces)
-          .values({ accountId, attachedAt: date(at), workspaceId })
+          .values({ accountId, attachedAt: date(at), merged, workspaceId })
           .onConflictDoUpdate({
-            set: { accountId, attachedAt: date(at) },
+            set: { accountId, attachedAt: date(at), merged },
             target: accountWorkspaces.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
@@ -184,6 +191,29 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
       holdAccount: (accountId) => hold("account", accountId),
       holdPartner: (partnerId) => hold("partner-account", partnerId),
       holdPayer: (userId) => hold("payer", userId),
+      mergedIn: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Set())
+          : db
+              .select({ workspaceId: accountWorkspaces.workspaceId })
+              .from(accountWorkspaces)
+              .where(
+                and(
+                  anyUuid(accountWorkspaces.workspaceId, workspaceIds),
+                  eq(accountWorkspaces.merged, true)
+                )
+              )
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map(
+                  (rows) =>
+                    new Set(
+                      rows.map(({ workspaceId }) =>
+                        WorkspaceIdSchema.make(workspaceId)
+                      )
+                    )
+                )
+              ),
       ofPartner: (partnerId) =>
         db
           .select()
@@ -215,6 +245,16 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
             target: accountTransfers.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      page: (after, limit) =>
+        db
+          .select()
+          .from(accounts)
+          .where(
+            Option.isSome(after) ? gt(accounts.id, after.value) : sql`true`
+          )
+          .orderBy(asc(accounts.id))
+          .limit(limit)
+          .pipe(Effect.mapError(failed), Effect.flatMap(toAccounts)),
       paidBy: (userId) =>
         db
           .select()
@@ -233,6 +273,77 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
           )
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(first)),
+      purgeLapsedTransfers: (now) =>
+        db
+          .delete(accountTransfers)
+          .where(lte(accountTransfers.expiresAt, date(now)))
+          .returning({ id: accountTransfers.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
+      purgePayments: (before) =>
+        db
+          .delete(paymentRequirements)
+          .where(lt(paymentRequirements.forgottenAt, date(before)))
+          .returning({ id: paymentRequirements.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
+      releasePayment: (userId, pseudonym) =>
+        db
+          .delete(paymentRequirements)
+          .where(
+            Option.match(pseudonym, {
+              onNone: () => eq(paymentRequirements.userId, userId),
+              onSome: (keyed) =>
+                or(
+                  eq(paymentRequirements.userId, userId),
+                  eq(paymentRequirements.userPseudonym, keyed)
+                ),
+            })
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      rememberPayment: (userId, pseudonym, at) =>
+        db
+          .update(paymentRequirements)
+          .set({
+            forgottenAt: date(at),
+            userId: null,
+            userPseudonym: pseudonym,
+          })
+          .where(eq(paymentRequirements.userId, userId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      requirePayment: (userId, at) =>
+        ids.next.pipe(
+          Effect.flatMap((id) =>
+            db
+              .insert(paymentRequirements)
+              .values({ id, requiredAt: date(at), userId })
+              .onConflictDoNothing({ target: paymentRequirements.userId })
+              .pipe(Effect.mapError(failed), Effect.asVoid)
+          )
+        ),
+      requiresPayment: (userId, pseudonym) =>
+        db
+          .select({ id: paymentRequirements.id })
+          .from(paymentRequirements)
+          .where(
+            Option.match(pseudonym, {
+              onNone: () => eq(paymentRequirements.userId, userId),
+              onSome: (keyed) =>
+                or(
+                  eq(paymentRequirements.userId, userId),
+                  eq(paymentRequirements.userPseudonym, keyed)
+                ),
+            })
+          )
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
+          ),
       setFreeTier: (accountId, freeTier) =>
         db
           .update(accounts)

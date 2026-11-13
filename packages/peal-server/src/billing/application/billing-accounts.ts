@@ -9,6 +9,7 @@ import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { newId } from "#shared/application/ids.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, Uuid7, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -38,7 +39,21 @@ const make = Effect.gen(function* BillingAccountsLive() {
   const payers = yield* AccountPayers;
   const subscriptions = yield* Subscriptions;
   const { transaction } = yield* TransactionRunner;
+  const pseudonyms = yield* Pseudonyms;
   const context = yield* Effect.context<Ids>();
+
+  // Whether staff required a payment method of the person: by their id,
+  // or by their address's pseudonym from an account they closed before.
+  const paymentRequired = (payer: UserId) =>
+    Effect.gen(function* requiredOfPayer() {
+      const email = yield* payers.emailOf(payer);
+
+      const pseudonym = Option.isSome(email)
+        ? Option.some(yield* pseudonyms.ofEmail(email.value))
+        : Option.none<string>();
+
+      return yield* store.requiresPayment(payer, pseudonym);
+    });
 
   const newAccount = (fields: {
     readonly holder: WorkspaceId;
@@ -47,9 +62,15 @@ const make = Effect.gen(function* BillingAccountsLive() {
     readonly standalone: boolean;
   }) =>
     Effect.gen(function* made() {
+      // A payment method staff required of the payer outlives every
+      // account they had.
+      const required = Option.isSome(fields.payer)
+        ? yield* paymentRequired(fields.payer.value)
+        : false;
+
       const account = new BillingAccount({
         createdAt: yield* DateTime.now,
-        freeTier: true,
+        freeTier: !required,
         id: yield* newId(BillingAccountIdSchema),
         ...fields,
       });
@@ -90,12 +111,17 @@ const make = Effect.gen(function* BillingAccountsLive() {
       return;
     }
 
-    const made = yield* payers.madeIn(remaining);
+    // The oldest workspace left that still exists bills; one whose
+    // workspaces are all gone goes.
+    const [oldest] = yield* payers.madeIn(remaining);
 
-    yield* store.setHolder(
-      account.id,
-      made[0]?.workspaceId ?? remaining[0] ?? workspaceId
-    );
+    if (oldest === undefined) {
+      yield* store.delete(account.id);
+
+      return;
+    }
+
+    yield* store.setHolder(account.id, oldest.workspaceId);
   });
 
   // A partner's home and the workspaces it owns are the partner's
@@ -172,16 +198,26 @@ const make = Effect.gen(function* BillingAccountsLive() {
         const now = yield* store.accountOf(workspaceId);
 
         if (Option.isSome(now)) {
-          return now.value;
+          return Option.some(now.value);
+        }
+
+        // Read again under the hold: the person may have left, or closed
+        // their account, since the owners were read.
+        const [oldest] = yield* payers.ownersOf(workspaceId);
+
+        if (oldest !== payer) {
+          return Option.none<BillingAccount>();
         }
 
         if (yield* entitledAlone(workspaceId)) {
-          return yield* newAccount({
-            holder: workspaceId,
-            partnerId: Option.none(),
-            payer: Option.some(payer),
-            standalone: true,
-          });
+          return Option.some(
+            yield* newAccount({
+              holder: workspaceId,
+              partnerId: Option.none(),
+              payer: Option.some(payer),
+              standalone: true,
+            })
+          );
         }
 
         const personal = yield* store.personalOf(payer);
@@ -194,7 +230,7 @@ const make = Effect.gen(function* BillingAccountsLive() {
             yield* DateTime.now
           );
 
-          return personal.value;
+          return Option.some(personal.value);
         }
 
         const owned = (yield* payers.firstOwnedBy(payer)).map(
@@ -236,46 +272,85 @@ const make = Effect.gen(function* BillingAccountsLive() {
           { discard: true }
         );
 
-        return account;
+        return Option.some(account);
       })
     );
+
+  const ofAttempt = (
+    workspaceId: WorkspaceId,
+    attempt: number
+  ): Effect.Effect<BillingAccount, DatabaseError> =>
+    Effect.gen(function* ofAttempted() {
+      const [pool, current] = yield* Effect.all([
+        payers.partnerOf(workspaceId),
+        store.accountOf(workspaceId),
+      ]);
+
+      if (Option.isSome(pool)) {
+        const { partnerId } = pool.value;
+
+        if (
+          Option.isSome(current) &&
+          Option.contains(current.value.partnerId, partnerId)
+        ) {
+          return current.value;
+        }
+
+        return yield* resolvePartner(workspaceId, pool.value);
+      }
+
+      const owners = yield* payers.ownersOf(workspaceId);
+
+      if (Option.isSome(current)) {
+        const account = current.value;
+
+        // A person's account whose payer still owns the workspace, or one
+        // staff merged it into, holds it.
+        if (
+          Option.isNone(account.partnerId) &&
+          (Option.isNone(account.payer) ||
+            owners.includes(account.payer.value) ||
+            (yield* store.mergedIn([workspaceId])).has(workspaceId))
+        ) {
+          return account;
+        }
+
+        // A partner's account no partner holds now (its partner account was
+        // closed), or a payer who left the workspace, was removed or stopped
+        // being an owner: it goes to its oldest owner.
+        yield* transaction(
+          Effect.gen(function* leaving() {
+            yield* Option.match(account.payer, {
+              onNone: () => Effect.void,
+              onSome: (payer) => store.holdPayer(payer),
+            });
+            yield* leave(workspaceId, account);
+          })
+        );
+      }
+
+      const [payer] = owners;
+
+      if (payer === undefined) {
+        return yield* alone(workspaceId);
+      }
+
+      const resolved = yield* resolvePerson(workspaceId, payer);
+
+      // Its owners changed meanwhile: read them again.
+      return yield* Option.match(resolved, {
+        onNone: () =>
+          attempt >= poolAttempts
+            ? alone(workspaceId)
+            : ofAttempt(workspaceId, attempt + 1),
+        onSome: Effect.succeed,
+      });
+    });
 
   const of = Effect.fn("BillingAccounts.of")(function* of(
     workspaceId: WorkspaceId
   ) {
-    const [pool, current] = yield* Effect.all([
-      payers.partnerOf(workspaceId),
-      store.accountOf(workspaceId),
-    ]);
-
-    if (Option.isSome(pool)) {
-      const { partnerId } = pool.value;
-
-      if (
-        Option.isSome(current) &&
-        Option.contains(current.value.partnerId, partnerId)
-      ) {
-        return current.value;
-      }
-
-      return yield* resolvePartner(workspaceId, pool.value);
-    }
-
-    if (Option.isSome(current)) {
-      // Still a partner's account, though no partner holds it now (its
-      // partner account was closed): it goes to its owners.
-      if (Option.isNone(current.value.partnerId)) {
-        return current.value;
-      }
-
-      yield* transaction(leave(workspaceId, current.value));
-    }
-
-    const [payer] = yield* payers.ownersOf(workspaceId);
-
-    return payer === undefined
-      ? yield* alone(workspaceId)
-      : yield* resolvePerson(workspaceId, payer);
+    return yield* ofAttempt(workspaceId, 1);
   });
 
   // The workspace's account, held, then read again: a workspace moved to
@@ -316,10 +391,32 @@ const make = Effect.gen(function* BillingAccountsLive() {
     function* accountsIn(workspaceIds: readonly WorkspaceId[]) {
       const held = new Map(yield* store.accountsIn(workspaceIds));
 
-      for (const workspaceId of workspaceIds) {
-        if (!held.has(workspaceId)) {
-          held.set(workspaceId, yield* of(workspaceId));
-        }
+      const [owners, merged, partnered] = yield* Effect.all([
+        payers.ownersIn(workspaceIds),
+        store.mergedIn(workspaceIds),
+        payers.partnersIn(workspaceIds),
+      ]);
+
+      // Those with no account yet, and those whose payer no longer owns
+      // them (and no staff merge holds), are resolved as `of` resolves one.
+      const stale = (workspaceId: WorkspaceId) => {
+        const account = held.get(workspaceId);
+
+        const partner = partnered.get(workspaceId);
+
+        return (
+          account === undefined ||
+          (partner === undefined
+            ? Option.isSome(account.partnerId)
+            : !Option.contains(account.partnerId, partner.partnerId)) ||
+          (Option.isSome(account.payer) &&
+            !merged.has(workspaceId) &&
+            !(owners.get(workspaceId) ?? []).includes(account.payer.value))
+        );
+      };
+
+      for (const workspaceId of workspaceIds.filter(stale)) {
+        held.set(workspaceId, yield* of(workspaceId));
       }
 
       return held;

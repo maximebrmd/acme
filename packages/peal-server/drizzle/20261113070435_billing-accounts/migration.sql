@@ -11,6 +11,7 @@ CREATE TABLE "billing"."account_transfers" (
 CREATE TABLE "billing"."account_workspaces" (
 	"account_id" uuid NOT NULL,
 	"attached_at" timestamp with time zone NOT NULL,
+	"merged" boolean DEFAULT false NOT NULL,
 	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
@@ -24,6 +25,14 @@ CREATE TABLE "billing"."accounts" (
 	"standalone" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."payment_requirements" (
+	"forgotten_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"required_at" timestamp with time zone NOT NULL,
+	"user_id" text,
+	"user_pseudonym" text
+);
+--> statement-breakpoint
 CREATE INDEX "account_transfers_from" ON "billing"."account_transfers" ("from_account_id");--> statement-breakpoint
 CREATE INDEX "account_transfers_to" ON "billing"."account_transfers" ("to_user_id");--> statement-breakpoint
 CREATE INDEX "account_transfers_by" ON "billing"."account_transfers" ("offered_by");--> statement-breakpoint
@@ -31,5 +40,7 @@ CREATE INDEX "account_workspaces_account" ON "billing"."account_workspaces" ("ac
 CREATE UNIQUE INDEX "accounts_payer" ON "billing"."accounts" ("payer_user_id") WHERE "payer_user_id" IS NOT NULL AND "standalone" = false;--> statement-breakpoint
 CREATE INDEX "accounts_payer_user" ON "billing"."accounts" ("payer_user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "accounts_partner" ON "billing"."accounts" ("partner_id") WHERE "partner_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "payment_requirements_user" ON "billing"."payment_requirements" ("user_id");--> statement-breakpoint
+CREATE INDEX "payment_requirements_pseudonym" ON "billing"."payment_requirements" ("user_pseudonym");--> statement-breakpoint
 ALTER TABLE "billing"."account_transfers" ADD CONSTRAINT "account_transfers_from_account_id_accounts_id_fkey" FOREIGN KEY ("from_account_id") REFERENCES "billing"."accounts"("id");--> statement-breakpoint
 ALTER TABLE "billing"."account_workspaces" ADD CONSTRAINT "account_workspaces_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "billing"."accounts"("id");

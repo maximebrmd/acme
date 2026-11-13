@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -22,6 +22,20 @@ export class WorkspaceOwners extends Context.Service<
     readonly ownersOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly UserId[], DatabaseError>;
+    /**
+     * The owners of each of these workspaces, the oldest first, in one
+     * read; one without an owner is left out.
+     */
+    readonly ownersIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<WorkspaceId, readonly UserId[]>,
+      DatabaseError
+    >;
+    /** The address the user signs in with, while the account is there. */
+    readonly emailOf: (
+      userId: UserId
+    ) => Effect.Effect<Option.Option<string>, DatabaseError>;
     /**
      * The oldest owner of each of these workspaces, in one read; one
      * without an owner is left out.

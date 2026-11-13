@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "a466f0e5-2dc6-4a3f-84eb-a327b1142452",
+  "id": "0c8e6341-4997-41e0-81a2-49583cdf9dad",
   "prevIds": [
     "03e73592-0b1f-4335-8e88-b821ea219d53"
   ],
@@ -61,6 +61,25 @@
         "n|type|billing.accounts",
         "n|rel|billing.accounts_pkey",
         "n|rel|billing.accounts_holder_workspace_id_key"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "payment_requirements"
+      ],
+      "writes": [
+        "s|tbl|billing.payment_requirements",
+        "n|tbl|billing.payment_requirements",
+        "e|tbl|billing.payment_requirements",
+        "n|rel|billing.payment_requirements",
+        "n|type|billing.payment_requirements",
+        "n|rel|billing.payment_requirements_pkey"
       ],
       "reads": [
         "n|sch|billing"
@@ -207,6 +226,46 @@
       ]
     },
     {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "payment_requirements",
+        "payment_requirements_user"
+      ],
+      "writes": [
+        "s|idx|billing.payment_requirements_user",
+        "n|idx|billing.payment_requirements_user",
+        "e|idx|billing.payment_requirements_user",
+        "n|rel|billing.payment_requirements_user"
+      ],
+      "reads": [
+        "n|tbl|billing.payment_requirements",
+        "n|sch|billing",
+        "n|col|billing.payment_requirements.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "payment_requirements",
+        "payment_requirements_pseudonym"
+      ],
+      "writes": [
+        "s|idx|billing.payment_requirements_pseudonym",
+        "n|idx|billing.payment_requirements_pseudonym",
+        "e|idx|billing.payment_requirements_pseudonym",
+        "n|rel|billing.payment_requirements_pseudonym"
+      ],
+      "reads": [
+        "n|tbl|billing.payment_requirements",
+        "n|sch|billing",
+        "n|col|billing.payment_requirements.user_pseudonym"
+      ]
+    },
+    {
       "statementType": "create_fk",
       "statementTarget": [
         "table",
@@ -277,6 +336,15 @@
       "row": {
         "schema": "billing",
         "name": "accounts",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "payment_requirements",
         "isRlsEnabled": false,
         "entityType": "tables"
       }
@@ -430,6 +498,22 @@
       "row": {
         "schema": "billing",
         "table": "account_workspaces",
+        "name": "merged",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
         "name": "workspace_id",
         "type": "uuid",
         "typeSchema": null,
@@ -548,6 +632,86 @@
         "notNull": true,
         "dimensions": 0,
         "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "forgotten_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "required_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "user_pseudonym",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
         "generated": null,
         "identity": null,
         "entityType": "columns"
@@ -725,6 +889,54 @@
       "op": "create",
       "row": {
         "schema": "billing",
+        "table": "payment_requirements",
+        "name": "payment_requirements_user",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "payment_requirements_pseudonym",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_pseudonym",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
         "table": "account_transfers",
         "name": "account_transfers_from_account_id_accounts_id_fkey",
         "nameExplicit": false,
@@ -793,6 +1005,19 @@
         "schema": "billing",
         "table": "accounts",
         "name": "accounts_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "payment_requirements",
+        "name": "payment_requirements_pkey",
         "columns": [
           "id"
         ],

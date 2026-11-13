@@ -39,6 +39,17 @@ export class AccountPayers extends Context.Service<
     readonly partnersIn: (
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, PartnerPool>, DatabaseError>;
+    /** The owners of each of these workspaces, the oldest first. */
+    readonly ownersIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<WorkspaceId, readonly UserId[]>,
+      DatabaseError
+    >;
+    /** The address the person signs in with, while their account is there. */
+    readonly emailOf: (
+      userId: UserId
+    ) => Effect.Effect<Option.Option<string>, DatabaseError>;
     /** The workspace's owners, the oldest first. */
     readonly ownersOf: (
       workspaceId: WorkspaceId

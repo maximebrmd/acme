@@ -80,7 +80,7 @@ const AccountStoresLive = Layer.mergeAll(
 );
 
 const AccountsLive = BillingAccounts.layer.pipe(
-  Layer.provide(AccountStoresLive)
+  Layer.provide(Layer.merge(AccountStoresLive, KeyedPseudonymsLive))
 );
 
 // What a workspace's billing page and standing say of its account, and

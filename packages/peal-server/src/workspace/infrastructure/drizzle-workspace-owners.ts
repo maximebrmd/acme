@@ -1,6 +1,6 @@
 import { and, asc, eq, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { DateTime, Effect, Layer } from "effect";
+import { DateTime, Effect, Layer, Option } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -10,7 +10,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import { WorkspaceOwners } from "#workspace/application/workspace-owners.ts";
 import type { MadeWorkspace } from "#workspace/application/workspace-owners.ts";
 
-import { member, organization } from "./auth-schema.generated.ts";
+import { member, organization, user } from "./auth-schema.generated.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -33,6 +33,17 @@ export const DrizzleWorkspaceOwnersLive = Layer.effect(
     const db = yield* Drizzle;
 
     return WorkspaceOwners.of({
+      emailOf: (userId) =>
+        db
+          .select({ email: user.email })
+          .from(user)
+          .where(eq(user.id, userId))
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) => Option.fromUndefinedOr(row?.email)),
+            Effect.withSpan("WorkspaceOwners.emailOf")
+          ),
       firstOwnedBy: (userId) =>
         db
           .select({ createdAt: organization.createdAt, id: organization.id })
@@ -147,6 +158,43 @@ export const DrizzleWorkspaceOwnersLive = Layer.effect(
                     )
                 ),
                 Effect.withSpan("WorkspaceOwners.oldestIn")
+              ),
+      ownersIn: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map())
+          : db
+              .select({
+                userId: member.userId,
+                workspaceId: member.organizationId,
+              })
+              .from(member)
+              .where(
+                and(
+                  anyUuid(member.organizationId, workspaceIds),
+                  eq(member.role, ownerRole)
+                )
+              )
+              .orderBy(
+                asc(member.organizationId),
+                asc(member.createdAt),
+                asc(member.userId)
+              )
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map((rows) => {
+                  const found = new Map<WorkspaceId, UserId[]>();
+
+                  for (const row of rows) {
+                    const id = WorkspaceIdSchema.make(row.workspaceId);
+                    const owners = found.get(id) ?? [];
+
+                    owners.push(UserIdSchema.make(row.userId));
+                    found.set(id, owners);
+                  }
+
+                  return found;
+                }),
+                Effect.withSpan("WorkspaceOwners.ownersIn")
               ),
       ownersOf: (workspaceId) =>
         db

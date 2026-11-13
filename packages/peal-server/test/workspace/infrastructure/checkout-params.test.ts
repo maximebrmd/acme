@@ -23,6 +23,9 @@ const answering = (answer: CheckoutAnswer): BillingHooks => ({
       plan: "free" as const,
       planWithRoom: null,
     }),
+  ownersChanged: async () => {
+    await Promise.resolve();
+  },
   payerOf: async () => await Promise.resolve(null),
   subscriptionChanged: async () => {
     await Promise.resolve();

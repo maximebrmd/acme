@@ -26,6 +26,7 @@ import { RoleSchema } from "#workspace/domain/roles.ts";
 import { accessControl, roles } from "./access-control.ts";
 import {
   checkMemberRoom,
+  followOwnersAfterLeaving,
   keepPayer,
   keepPayerLeaving,
   refusePersonalSubscriptions,
@@ -452,6 +453,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await recordWorkspaceChange(ctx, hooks.workspaceChange);
         await forgetTrustedBrowsers(ctx);
         await tellTwoStepChange(ctx, hooks.twoStepChanged);
+        await followOwnersAfterLeaving(ctx, hooks);
       }),
       before: beforeEveryRoute(hooks),
     },
@@ -475,6 +477,15 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
           // Its creator pays for it: it joins their billing account.
           afterCreateOrganization: async ({ organization: workspace }) => {
             await hooks.workspaceCreated(workspace.id);
+          },
+          // Its billing account follows its owners, on a server that
+          // bills or not: a payer who is no longer an owner pays for it no
+          // more.
+          afterRemoveMember: async ({ member }) => {
+            await hooks.ownersChanged(member.organizationId);
+          },
+          afterUpdateMemberRole: async ({ member }) => {
+            await hooks.ownersChanged(member.organizationId);
           },
           // An invitation is accepted, or a member added, only while the
           // workspace's plan has room for one more.

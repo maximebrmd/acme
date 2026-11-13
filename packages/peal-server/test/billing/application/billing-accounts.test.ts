@@ -268,4 +268,83 @@ layer(accountsTest)("billing accounts", (it) => {
         yield* cleanUpAccounts([first, second, third]);
       })
   );
+  it.effect(
+    "move a workspace whose payer left it, was removed or stopped owning it to its oldest owner",
+    () =>
+      Effect.gen(function* repaired() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const first = yield* person;
+        const second = yield* person;
+        const own = yield* workspaceOwnedBy([first]);
+        const left = yield* workspaceOwnedBy([first, second]);
+        const demoted = yield* workspaceOwnedBy([first, second]);
+
+        const before = yield* accounts.of(own);
+
+        assert.strictEqual((yield* accounts.of(left)).id, before.id);
+        assert.strictEqual((yield* accounts.of(demoted)).id, before.id);
+
+        // Left, as Better Auth deletes the member row; demoted to admin.
+        yield* sql`DELETE FROM auth.member WHERE organization_id = ${left} AND user_id = ${first}`.pipe(
+          Effect.orDie
+        );
+        yield* sql`UPDATE auth.member SET role = 'admin' WHERE organization_id = ${demoted} AND user_id = ${first}`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(
+          (yield* accounts.of(left)).payer,
+          Option.some(second)
+        );
+
+        // The sweep repairs the rows nobody read since.
+        const swept = yield* accounts.accountsIn([demoted]);
+
+        assert.deepStrictEqual(swept.get(demoted)?.payer, Option.some(second));
+        assert.deepStrictEqual((yield* accounts.poolOf(own)).others, []);
+        assert.strictEqual(
+          (yield* accounts.of(left)).id,
+          (yield* accounts.of(demoted)).id
+        );
+
+        yield* cleanUpAccounts([own, left, demoted]);
+      })
+  );
+
+  it.effect(
+    "never give a workspace to a payer who left before the hold was taken",
+    () =>
+      Effect.gen(function* raced() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const leaving = yield* person;
+        const staying = yield* person;
+        const workspace = yield* workspaceOwnedBy([leaving, staying]);
+
+        // The payer's hold is taken while the read is on its way: by then
+        // the payer has gone.
+        const read = yield* Effect.all(
+          [
+            sql`DELETE FROM auth.member WHERE organization_id = ${workspace} AND user_id = ${leaving}`.pipe(
+              Effect.orDie
+            ),
+            accounts.of(workspace),
+          ],
+          { concurrency: 2 }
+        );
+
+        const [, account] = read;
+        const now = yield* accounts.of(workspace);
+
+        assert.deepStrictEqual(now.payer, Option.some(staying));
+        assert.isTrue(
+          Option.contains(account.payer, staying) ||
+            Option.contains(account.payer, leaving)
+        );
+        assert.lengthOf(yield* accountsPaidBy(leaving), 0);
+
+        yield* cleanUpAccounts([workspace]);
+      })
+  );
 });

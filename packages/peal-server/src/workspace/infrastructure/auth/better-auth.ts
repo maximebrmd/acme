@@ -353,6 +353,23 @@ export const BetterAuthLive = Layer.effect(
             .from(workspaceId, "members", needed)
             .pipe(Effect.map(upgradeOf))
         ),
+      // Awaited after a member left, was removed or changed role. A failure
+      // is logged: the next read of the workspace repairs it.
+      ownersChanged: async (workspaceId) => {
+        await runPromise(
+          decodeWorkspaceIdEffect(workspaceId).pipe(
+            Effect.flatMap((id) => accounts.of(id)),
+            Effect.asVoid,
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Following a workspace's owners in its billing account failed",
+                cause
+              )
+            ),
+            Effect.withSpan("BetterAuth.ownersChanged")
+          )
+        );
+      },
       // Read when a member leaves, is removed or changes role. A database
       // failure refuses it.
       payerOf: async (workspaceId) =>

@@ -15,10 +15,12 @@ export const WorkspaceAccountPayersLive = Layer.effect(
     const owners = yield* WorkspaceOwners;
 
     return AccountPayers.of({
+      emailOf: (userId) => owners.emailOf(userId),
       firstOwnedBy: (userId) => owners.firstOwnedBy(userId),
       madeIn: (workspaceIds) => owners.madeIn(workspaceIds),
       namesShownTo: (userId, workspaceIds) =>
         owners.namesShownTo(userId, workspaceIds),
+      ownersIn: (workspaceIds) => owners.ownersIn(workspaceIds),
       ownersOf: (workspaceId) => owners.ownersOf(workspaceId),
       partnerOf: (workspaceId) =>
         ownership
