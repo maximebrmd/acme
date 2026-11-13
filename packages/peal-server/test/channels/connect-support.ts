@@ -181,7 +181,8 @@ export const linkedinAuthorizerOn = (endpoints: LinkedInEndpoints) =>
  */
 export const linkedinPagesAuthorizerOn = (
   endpoints: LinkedInEndpoints,
-  version: string = linkedinFakeVersion
+  version: string = linkedinFakeVersion,
+  inbox: InboxPlatforms = new Set()
 ) =>
   publicHttpClient.pipe(
     Effect.flatMap((http) =>
@@ -192,6 +193,7 @@ export const linkedinPagesAuthorizerOn = (
         },
         endpoints,
         http,
+        inbox,
         publicUrl: testPublicUrl,
         version,
       })

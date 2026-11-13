@@ -29,6 +29,7 @@ import { ReceiveContractRequest } from "#billing/application/receive-contract-re
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
@@ -63,6 +64,7 @@ import type { PostId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { purgeFinishedClusterRows } from "#shared/infrastructure/cluster-retention.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
+import type { Drizzle } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
@@ -145,6 +147,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeConnectLinks,
     PurgeConnectLinks.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    ForgetTokenOwners,
+    ForgetTokenOwners.of({ run: Effect.succeed(0) })
   ),
   Layer.succeed(
     MeterPartnerUsage,
@@ -371,6 +377,7 @@ const serverWith = <E, R>(
     | Feeds
     | PostScheduling
     | Recycling
+    | Drizzle
     | Sharding.Sharding
     | SqlClient.SqlClient
   > = CronsTest

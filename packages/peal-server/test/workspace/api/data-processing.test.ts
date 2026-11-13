@@ -33,6 +33,7 @@ import { keptAfterCollection } from "#engagement/domain/engagement-retention.ts"
 import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
+import { quotaLedgerKeptDays } from "#publishing/domain/quota-retention.ts";
 import { visitorNameRetention } from "#review/domain/review-retention.ts";
 import { clickRetentionDays } from "#shortlinks/domain/click-retention.ts";
 import { auditRetention } from "#staff/domain/audit-retention.ts";
@@ -239,6 +240,27 @@ describe("the data processing registry", () => {
     expect(contracts?.kept).toStrictEqual([
       expect.stringContaining("5 years from its receipt"),
       expect.stringContaining("5 ans à compter de sa réception"),
+    ]);
+  });
+
+  it("keeps the quota ledger's days as long as its purge does, and names the member who connected a LinkedIn page", () => {
+    expect(retentionPeriods.quotaLedger.days).toBe(quotaLedgerKeptDays);
+
+    const channels = categoryOf("channels");
+
+    expect([channels?.data.en, channels?.data.fr]).toStrictEqual([
+      expect.stringContaining(
+        "the identifier on LinkedIn of the member who connected it"
+      ),
+      expect.stringContaining(
+        "l’identifiant sur LinkedIn du membre qui l’a connectée"
+      ),
+    ]);
+    expect([channels?.retention.en, channels?.retention.fr]).toStrictEqual([
+      expect.stringContaining("the daily counts of their calls: 7 days"),
+      expect.stringContaining(
+        "les décomptes quotidiens de ses appels : 7 jours"
+      ),
     ]);
   });
 

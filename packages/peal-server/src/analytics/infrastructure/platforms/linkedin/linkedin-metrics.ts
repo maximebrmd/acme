@@ -19,6 +19,10 @@ import type { PlatformHttp } from "#analytics/infrastructure/platforms/platform-
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  encodedUrn,
+  restCall,
+} from "#shared/infrastructure/platforms/linkedin-rest.ts";
 
 export interface LinkedInMetricsOptions {
   /** LinkedIn's API origin: `https://api.linkedin.com`. */
@@ -164,19 +168,16 @@ export const linkedinMetrics = Effect.fn("LinkedInMetrics.make")(
         // parameters set one by one would have their parentheses encoded.
         const query = [
           "q=organizationalEntity",
-          `organizationalEntity=${encodeURIComponent(account.accountId)}`,
+          `organizationalEntity=${encodedUrn(account.accountId)}`,
           ...(shares.length === 0 ? [] : [`shares=${listOf(shares)}`]),
           ...(ugcPosts.length === 0 ? [] : [`ugcPosts=${listOf(ugcPosts)}`]),
         ].join("&");
 
-        const request = HttpClientRequest.get(
-          `${new URL("/rest/organizationalEntityShareStatistics", api).href}?${query}`
-        ).pipe(
-          HttpClientRequest.bearerToken(token),
-          HttpClientRequest.setHeaders({
-            "Linkedin-Version": version,
-            "X-Restli-Protocol-Version": "2.0.0",
-          })
+        const request = restCall(version)(
+          HttpClientRequest.get(
+            `${new URL("/rest/organizationalEntityShareStatistics", api).href}?${query}`
+          ),
+          token
         );
 
         const sent = yield* http.execute(request).pipe(Effect.result);

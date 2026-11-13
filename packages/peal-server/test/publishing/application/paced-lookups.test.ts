@@ -43,6 +43,7 @@ const paced = Effect.fn("test.paced")(function* paced(failure?: LookupFailure) {
     PlatformQuota,
     PlatformQuota.of({
       exhaust: () => Effect.void,
+      purge: () => Effect.succeed(0),
       spend: ({ allowance, bucket, day, units }) =>
         Ref.modify(spent, (before) => {
           const key = `${bucket}:${String(day.year)}-${String(day.month)}-${String(day.day)}`;

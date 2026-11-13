@@ -23,6 +23,8 @@ import type {
   AuthorizerHttp,
   TokenAnswer,
 } from "#channels/infrastructure/platforms/oauth-exchange.ts";
+import { linkedinCommentScopes } from "#shared/domain/inbox-platform.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 
@@ -46,6 +48,25 @@ export const linkedinPagesScopes: readonly string[] = [
 const postingScope = "w_organization_social";
 
 /**
+ * What the pages' sign-in asks for on a server whose inbox reads `inbox`:
+ * `linkedinPagesScopes`, and, where it reads LinkedIn, the two comment
+ * scopes after them. LinkedIn's consent is all or nothing, so they are
+ * never needed to connect; an app LinkedIn did not grant them is refused
+ * the whole sign-in (`unauthorized_scope_error`), which is why the
+ * operator turns the inbox on only once the app holds them.
+ */
+export const linkedinPagesScopesFor = (
+  inbox: InboxPlatforms
+): readonly string[] =>
+  inbox.has("linkedin")
+    ? [
+        ...linkedinPagesScopes,
+        linkedinCommentScopes.read,
+        linkedinCommentScopes.write,
+      ]
+    : linkedinPagesScopes;
+
+/**
  * The roles that post a page's own updates, from LinkedIn's access control
  * reference: an administrator "can post updates", a content administrator
  * creates and manages the page's content. The other roles sponsor content,
@@ -56,10 +77,13 @@ export const postingRoles: ReadonlySet<string> = new Set([
   "CONTENT_ADMINISTRATOR",
 ]);
 
-// How many roles one call lists, and how many calls a sign-in makes at
-// most: a member with more pages than that picks among the first.
+// How many roles one call asks, and how many calls and roles a sign-in
+// reads at most: a member with more pages than that picks among the first.
+// LinkedIn may give pages shorter than asked: at 10 a page, the calls
+// read 100 roles.
 const rolesPerPage = 100;
-const rolePages = 3;
+const rolePages = 10;
+const mostRoles = 300;
 
 // How many pages a sign-in offers: each costs a call to read its name, out
 // of the hundred a day the Development tier gives a member.
@@ -73,10 +97,18 @@ const AclSchema = Schema.Struct({
   organization: Schema.optionalKey(Schema.String),
   organizationTarget: Schema.optionalKey(Schema.String),
   role: Schema.String,
+  // The member the role is theirs: the one signed in, as `q=roleAssignee`
+  // lists the signed-in member's roles.
+  roleAssignee: Schema.optionalKey(Schema.String),
   state: Schema.String,
 });
 
-const AclsSchema = Schema.Struct({ elements: Schema.Array(AclSchema) });
+const AclsSchema = Schema.Struct({
+  elements: Schema.Array(AclSchema),
+  paging: Schema.optionalKey(
+    Schema.Struct({ total: Schema.optionalKey(Schema.Number) })
+  ),
+});
 
 // What anyone may read of a page: its name, and the name in its address.
 const OrganizationSchema = Schema.Struct({
@@ -144,7 +176,9 @@ const refusedRefresh = (
  * Access tokens last 60 days. An app LinkedIn approved for programmatic
  * refresh tokens gets one with them, which renews the access token for a
  * year from the sign-in; without one, the member reconnects, as for a
- * profile. Every call to the versioned API names `version`.
+ * profile. Every call to the versioned API names `version`. Where the
+ * inbox reads LinkedIn (`inbox`), the sign-in also asks the comment scopes
+ * (`linkedinPagesScopesFor`); off, it asks what it asked before.
  */
 export const linkedinPagesAuthorizer = Effect.fn(
   "LinkedInPagesAuthorizer.make"
@@ -152,10 +186,23 @@ export const linkedinPagesAuthorizer = Effect.fn(
   readonly client: OAuthClient;
   readonly endpoints: LinkedInEndpoints;
   readonly http: AuthorizerHttp;
+  readonly inbox: InboxPlatforms;
   readonly publicUrl: string;
   readonly version: string;
 }) {
   const { client, endpoints, http, version } = options;
+  const asked = linkedinPagesScopesFor(options.inbox);
+
+  // The tokens with their owner, where the inbox reads LinkedIn; without
+  // one elsewhere, so that saving them forgets any kept.
+  const ownedBy = (
+    issued: IssuedTokens,
+    owner: string | undefined
+  ): IssuedTokens =>
+    owner === undefined || !options.inbox.has("linkedin")
+      ? issued
+      : { ...issued, tokenOwner: owner };
+
   const redirectUri = new URL(linkedinCallbackPath, options.publicUrl).href;
   const randomText = yield* randomTexts;
 
@@ -187,7 +234,7 @@ export const linkedinPagesAuthorizer = Effect.fn(
         client_id: client.clientId,
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: linkedinPagesScopes.join(" "),
+        scope: asked.join(" "),
         state,
       }).toString();
 
@@ -200,20 +247,22 @@ export const linkedinPagesAuthorizer = Effect.fn(
       };
     });
 
-  // The member's approved roles, a page of them at a time.
+  // The member's approved roles, a page of them at a time, to
+  // `paging.total`, or without one to an empty page: a page shorter than
+  // asked may be one LinkedIn caps, which proves no end.
   const rolesOf = Effect.fn("LinkedInPagesAuthorizer.rolesOf")(
     function* rolesOf(accessToken: string) {
       const roles: (typeof AclSchema.Type)[] = [];
 
       for (let page = 0; page < rolePages; page += 1) {
-        const { elements } = yield* rest(
+        const { elements, paging } = yield* rest(
           "/rest/organizationAcls",
           accessToken
         ).pipe(
           HttpClientRequest.setUrlParams({
             count: String(rolesPerPage),
             q: "roleAssignee",
-            start: String(page * rolesPerPage),
+            start: String(roles.length),
             state: "APPROVED",
           }),
           http.execute,
@@ -223,7 +272,10 @@ export const linkedinPagesAuthorizer = Effect.fn(
 
         roles.push(...elements);
 
-        if (elements.length < rolesPerPage) {
+        if (
+          elements.length === 0 ||
+          roles.length >= (paging?.total ?? mostRoles)
+        ) {
           break;
         }
       }
@@ -287,7 +339,9 @@ export const linkedinPagesAuthorizer = Effect.fn(
         exchanged
       );
 
-      const scopes = scopesOf(token, linkedinPagesScopes);
+      // When LinkedIn's answer lists none, what was asked, all of which
+      // its consent granted.
+      const scopes = scopesOf(token, asked);
 
       // An app without the Community Management API gets a token that
       // posts to no page.
@@ -297,7 +351,7 @@ export const linkedinPagesAuthorizer = Effect.fn(
 
       const roles = yield* rolesOf(token.access_token);
 
-      const tokens: IssuedTokens = {
+      const issued: IssuedTokens = {
         accessToken: Redacted.make(token.access_token),
         expiresAt: expiryOf(token, issuedAt),
         refreshToken: Option.fromUndefinedOr(token.refresh_token).pipe(
@@ -306,6 +360,15 @@ export const linkedinPagesAuthorizer = Effect.fn(
         renewable: token.refresh_token !== undefined,
         scopes,
       };
+
+      // The member the token is theirs, whose calls LinkedIn counts: the
+      // roles' assignee, a `urn:li:person:…`; kept only where the inbox
+      // reads LinkedIn, which is all it is for.
+      const owner = roles.find(({ roleAssignee }) =>
+        (roleAssignee ?? "").startsWith("urn:li:person:")
+      )?.roleAssignee;
+
+      const tokens: IssuedTokens = ownedBy(issued, owner);
 
       const administered = [
         ...new Set(
@@ -416,7 +479,9 @@ export const linkedinPagesAuthorizer = Effect.fn(
         scopes: scopesOf(answer, channel.scopes),
       };
 
-      return renewed;
+      // The same member's token: the owner kept stays, where the inbox
+      // still reads LinkedIn.
+      return ownedBy(renewed, tokens.tokenOwner);
     });
 
   const authorizer: PlatformAuthorizer = {

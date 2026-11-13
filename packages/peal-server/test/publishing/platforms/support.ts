@@ -654,6 +654,7 @@ export const uploadLedgerOf = (ledger: UploadLedger) =>
           Effect.sync(() => {
             ledger.spent.set(dayKey(bucket, day), allowance);
           }),
+        purge: () => Effect.succeed(0),
         spend: ({ allowance, bucket, day, units }) =>
           Effect.sync(() => {
             const key = dayKey(bucket, day);

@@ -1,9 +1,12 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   facebookCommentScopes,
   instagramLoginCommentScope,
   instagramPageCommentScope,
+  linkedinCommentScopes,
   OptionalInboxPlatformSchema,
   youtubeCommentScope,
 } from "#shared/domain/inbox-platform.ts";
@@ -99,6 +102,7 @@ export const engagedPlatforms = [
   "facebook",
   "instagram",
   "youtube",
+  "linkedin",
 ] as const satisfies readonly Platform[];
 
 export type EngagedPlatform = (typeof engagedPlatforms)[number];
@@ -121,19 +125,31 @@ export const readsCommentsOn = (
 ): platform is EngagedPlatform =>
   isEngaged(platform) && (!isOptional(platform) || inbox.has(platform));
 
+// Whether a channel is a LinkedIn company page: a profile's comments are
+// not read (LinkedIn closes the permission that reads a member's own
+// posts), and no sign-in of a profile asks for them.
+const isLinkedInPage = (connection: Option.Option<ChannelConnection>) =>
+  Option.contains(connectionOf("linkedin", connection), "linkedinPage");
+
 /**
- * The abilities whose scopes this server's sign-in for `platform` asks
- * for: a channel without them was connected before, and gets them by
- * connecting again. None on a platform the server reads no comments on.
+ * The abilities whose scopes this server's sign-in for `platform` (by
+ * `connection`, LinkedIn's page or profile) asks for: a channel without
+ * them was connected before, and gets them by connecting again. None on a
+ * platform the server reads no comments on, nor on a LinkedIn profile.
  * An ability joins a platform's list in the change that adds its scope to
  * the platform's authorizer.
  */
 export const askedAtSignIn = (
   platform: Platform,
-  inbox: InboxPlatforms
+  inbox: InboxPlatforms,
+  connection: Option.Option<ChannelConnection> = Option.none()
 ): readonly EngagementAbility[] => {
   if (!readsCommentsOn(platform, inbox)) {
     return [];
+  }
+
+  if (platform === "linkedin") {
+    return isLinkedInPage(connection) ? postingAbilities : [];
   }
 
   return isOptional(platform) ? optionalAbilities : postingAbilities;
@@ -191,17 +207,40 @@ const repo = (collection: string) => (scope: string) =>
  *   comment (rejecting it) take `youtube.force-ssl`, the one scope the
  *   discovery document lists for every comment method. The API has no
  *   like, and only a comment's author deletes it.
+ * - LinkedIn: a company page's comments are read with
+ *   `r_organization_social_feed`, answered and withdrawn with
+ *   `w_organization_social_feed`; the pages read give no hide, a like is
+ *   not done yet, and nobody deletes another member's comment. A profile
+ *   (`connection`) has none of them, and reconnecting would not change it.
  */
 export const abilitiesOf = (
   platform: Platform,
   scopes: readonly string[],
-  inbox: InboxPlatforms
+  inbox: InboxPlatforms,
+  connection: Option.Option<ChannelConnection> = Option.none()
 ): EngagementAbilities => {
   if (!readsCommentsOn(platform, inbox)) {
     return none;
   }
 
-  const granted = grantedOn(askedAtSignIn(platform, inbox));
+  const granted = grantedOn(askedAtSignIn(platform, inbox, connection));
+
+  if (platform === "linkedin") {
+    if (!isLinkedInPage(connection)) {
+      return none;
+    }
+
+    const writing = oneOf(linkedinCommentScopes.write);
+
+    return {
+      delete: "unsupported",
+      hide: "unsupported",
+      like: "unsupported",
+      read: granted("read", scopes, oneOf(linkedinCommentScopes.read)),
+      reply: granted("reply", scopes, writing),
+      withdraw: granted("withdraw", scopes, writing),
+    };
+  }
 
   if (platform === "mastodon") {
     const posting = oneOf("write", "write:statuses");

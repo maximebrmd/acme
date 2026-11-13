@@ -27,25 +27,29 @@ const nonBlank = (name: string) =>
     Config.map(Option.filter((value) => value.trim() !== ""))
   );
 
-// Whether YouTube's OAuth client is set, its secret with it: the channels
-// context reads it (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`), and
+// Whether an OAuth client is set, its secret with it: the channels
+// context reads it (`<prefix>_CLIENT_ID`, `<prefix>_CLIENT_SECRET`), and
 // refuses one without the other.
-const youtubeClientSet = Effect.gen(function* youtubeClient() {
-  const id = yield* nonBlank("YOUTUBE_CLIENT_ID");
-  const secret = yield* nonBlank("YOUTUBE_CLIENT_SECRET");
+const clientSet = (prefix: string) =>
+  Effect.gen(function* client() {
+    const id = yield* nonBlank(`${prefix}_CLIENT_ID`);
+    const secret = yield* nonBlank(`${prefix}_CLIENT_SECRET`);
 
-  return Option.isSome(id) && Option.isSome(secret);
-});
+    return Option.isSome(id) && Option.isSome(secret);
+  });
 
 /**
  * `PEAL_INBOX_PLATFORMS`: the optional platforms the inbox reads comments
- * on, comma-separated among `facebook`, `instagram` and `youtube`; none
+ * on, comma-separated among `facebook`, `instagram`, `youtube` and
+ * `linkedin`; none
  * when unset or blank. Any other name stops the server, as does a
  * platform without the app it signs in with: Facebook Pages need Meta's
  * main app (`META_APP_ID`, `META_APP_SECRET`), Instagram either of its
  * ways in (Meta's main app, or `INSTAGRAM_APP_ID` and
  * `INSTAGRAM_APP_SECRET`), YouTube its OAuth client (`YOUTUBE_CLIENT_ID`,
- * `YOUTUBE_CLIENT_SECRET`).
+ * `YOUTUBE_CLIENT_SECRET`), LinkedIn the pages app
+ * (`LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`): comments
+ * are read on company pages only.
  */
 export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
   const written = yield* Config.option(Config.String("PEAL_INBOX_PLATFORMS"));
@@ -89,10 +93,17 @@ export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
     });
   }
 
-  if (platforms.has("youtube") && !(yield* youtubeClientSet)) {
+  if (platforms.has("youtube") && !(yield* clientSet("YOUTUBE"))) {
     return yield* new InvalidInboxSettings({
       reason:
         "youtube in PEAL_INBOX_PLATFORMS needs YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET",
+    });
+  }
+
+  if (platforms.has("linkedin") && !(yield* clientSet("LINKEDIN_PAGES"))) {
+    return yield* new InvalidInboxSettings({
+      reason:
+        "linkedin in PEAL_INBOX_PLATFORMS needs LINKEDIN_PAGES_CLIENT_ID and LINKEDIN_PAGES_CLIENT_SECRET",
     });
   }
 

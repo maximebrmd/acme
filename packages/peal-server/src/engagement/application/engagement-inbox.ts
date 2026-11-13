@@ -158,8 +158,8 @@ export class EngagementInbox extends Context.Service<
         const detail: ThreadDetail = {
           abilities: Option.match(channel, {
             onNone: () => nothing,
-            onSome: ({ platform, scopes }) =>
-              abilitiesOf(platform, scopes, inbox),
+            onSome: ({ connection, platform, scopes }) =>
+              abilitiesOf(platform, scopes, inbox, connection),
           }),
           comments: yield* store.commentsOf(threadId),
           platform: channel.pipe(Option.map(({ platform }) => platform)),
@@ -181,8 +181,8 @@ export class EngagementInbox extends Context.Service<
 
           return Option.match(yield* described(channelId), {
             onNone: () => nothing,
-            onSome: ({ platform, scopes }) =>
-              abilitiesOf(platform, scopes, inbox),
+            onSome: ({ connection, platform, scopes }) =>
+              abilitiesOf(platform, scopes, inbox, connection),
           });
         }
       );

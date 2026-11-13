@@ -12,6 +12,7 @@ import { ConnectLinks } from "#channels/application/connect-links.ts";
 import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
@@ -115,7 +116,9 @@ const UseCasesLive = Layer.mergeAll(
   DeletePlatformUserData.layer,
   DeauthorizePlatformUser.layer,
   RefreshChannelTokens.layer,
-  WarnChannelsNeedingReconnect.layer
+  WarnChannelsNeedingReconnect.layer,
+  // Where the inbox no longer reads LinkedIn, PEAL_INBOX_PLATFORMS says.
+  ForgetTokenOwners.layer.pipe(Layer.provide(InboxPlatformsLive))
 );
 
 /**
@@ -169,7 +172,10 @@ export { DataDeletionHandlers as DataDeletionApiLive } from "#channels/api/data-
  */
 export { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 
-/** The token refresh sweep and the daily reconnect warnings. */
+/**
+ * The token refresh sweep, the daily reconnect warnings, connect links'
+ * retention and the daily forgetting of LinkedIn pages' token owners.
+ */
 export { ChannelsCronsLive } from "#channels/infrastructure/crons.ts";
 
 /**

@@ -2,6 +2,7 @@ import { Cron, Duration, Effect, Layer } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
@@ -71,9 +72,33 @@ export const ConnectLinkRetentionCron = ClusterCron.make({
   skipIfOlderThan: Duration.hours(12),
 });
 
+/**
+ * Every day at 04:29 UTC: where the inbox does not read LinkedIn, forgets
+ * the members LinkedIn pages' tokens are theirs (`ForgetTokenOwners`). A
+ * failed run is logged and the next day's catches up.
+ */
+export const TokenOwnersCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("29 4 * * *", "UTC"),
+  execute: ForgetTokenOwners.use((forget) => forget.run).pipe(
+    Effect.tap((channels) =>
+      channels > 0
+        ? Effect.logInfo(
+            "Forgot the members LinkedIn pages' tokens are theirs"
+          ).pipe(Effect.annotateLogs({ channels }))
+        : Effect.void
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning("Forgetting LinkedIn pages' token owners failed", cause)
+    )
+  ),
+  name: "channels.token-owners",
+  skipIfOlderThan: Duration.hours(12),
+});
+
 /** The channels context's crons. */
 export const ChannelsCronsLive = Layer.mergeAll(
   TokenRefreshCron,
   ReconnectWarningsCron,
-  ConnectLinkRetentionCron
+  ConnectLinkRetentionCron,
+  TokenOwnersCron
 );

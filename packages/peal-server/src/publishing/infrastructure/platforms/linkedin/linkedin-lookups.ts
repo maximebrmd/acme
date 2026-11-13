@@ -13,10 +13,12 @@ import { unanswered } from "#publishing/infrastructure/platforms/platform-exchan
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  isLinkedInError,
+  restCall,
+} from "#shared/infrastructure/platforms/linkedin-rest.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
-
-import { isLinkedInError, restCall } from "./linkedin-rest.ts";
 
 /** The HTTP client LinkedIn's lookups send through: the public one. */
 export type LinkedInLookupHttp = HttpClient.HttpClient.With<

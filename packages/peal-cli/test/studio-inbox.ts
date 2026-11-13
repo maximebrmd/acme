@@ -20,6 +20,7 @@ import type {
   InboxReply,
   InboxThread,
   Permission,
+  Platform,
 } from "peal-contract";
 
 // The synthetic studio's inbox: one thread on a Mastodon channel, with two
@@ -116,6 +117,8 @@ export interface InboxState {
     string,
     { readonly id: string; readonly text: string }
   >;
+  /** The thread's platform: Mastodon unless a test says otherwise. */
+  readonly platform?: Platform;
   readonly replies: readonly InboxReply[];
 }
 
@@ -215,7 +218,7 @@ export const studioInboxLive = (state: Ref.Ref<InboxState>) => {
           return {
             abilities,
             comments: current.comments,
-            platform: "mastodon" as const,
+            platform: current.platform ?? "mastodon",
             replies: current.replies,
             thread,
           };

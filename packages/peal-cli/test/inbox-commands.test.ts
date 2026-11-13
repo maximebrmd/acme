@@ -138,6 +138,40 @@ describe("peal inbox", () => {
   );
 
   it.effect(
+    "names a LinkedIn commenter a member or a page, as Peal keeps no name",
+    () =>
+      Effect.gen(function* linkedinNames() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.inbox, (inbox) => ({
+          ...inbox,
+          comments: inbox.comments.map((comment) =>
+            comment.id === waitingCommentId
+              ? {
+                  ...comment,
+                  author: {
+                    displayName: null,
+                    handle: "",
+                    platformId: "urn:li:person:syntheticMember1",
+                  },
+                }
+              : comment
+          ),
+          platform: "linkedin" as const,
+        }));
+
+        const shown = yield* session.printed([
+          "inbox",
+          "thread",
+          inboxThreadId,
+          ...inStudio,
+        ]);
+
+        assert.include(shown, "(a LinkedIn member)");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "tells a comment forgotten for its age from one gone from the platform",
     () =>
       Effect.gen(function* forgottenComments() {

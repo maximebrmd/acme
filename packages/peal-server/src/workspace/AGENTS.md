@@ -223,8 +223,10 @@ The staff context follows these rules too. What the law has a host keep is in
   connections and account choices they had in progress
   (`ChannelRecords.eraseUser`), and the sessions they opened as staff to act
   as someone else. The channels they connected, with the Facebook user a
-  Page's token rests on (`granted_by`), stay with their workspaces, which
-  erasing deletes. `data_deletions` names nobody, and stays. In the staff
+  Page's token rests on (`granted_by`) and the LinkedIn member a page's
+  token is theirs (`token_owner`, kept only where the inbox reads
+  LinkedIn, in the registry's `channels` category), stay with their
+  workspaces, which erasing deletes, as disconnecting does. `data_deletions` names nobody, and stays. In the staff
   audit log (`StaffRecords.forgetUser`), the events about the account lose
   its id, the reason given (a ban's or unban's keeps it, with a keyed
   pseudonym of the account's email instead of its id, `target_pseudonym`,
@@ -239,7 +241,8 @@ The staff context follows these rules too. What the law has a host keep is in
   (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
   `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
-  units, names nobody.
+  units, names nobody: a bucket by LinkedIn member is a keyed digest
+  (`Pseudonyms.ofPlatformMember`), and a day goes after a week.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and

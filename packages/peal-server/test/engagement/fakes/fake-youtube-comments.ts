@@ -385,6 +385,7 @@ export const memoryQuota = () => {
             Math.max(spent.get(key(bucket, day)) ?? 0, allowance)
           );
         }),
+      purge: () => Effect.succeed(0),
       spend: ({ allowance, bucket, day, units }) =>
         Effect.sync(() => {
           const before = spent.get(key(bucket, day)) ?? 0;
