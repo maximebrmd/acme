@@ -22,6 +22,12 @@ describe(queryOf, () => {
     ).toStrictEqual({ cursor: "c1", kind: "video", q: "launch day" });
   });
 
+  it("asks for the text composed, as the server keeps names", () => {
+    expect(
+      queryOf({ kind: null, text: "e\u0301te\u0301" }, Option.none()).q
+    ).toBe("\u00E9t\u00E9");
+  });
+
   it("cuts a text longer than the API takes, never inside a character", () => {
     const query = queryOf(
       { kind: null, text: "👍".repeat(maxMediaQueryLength + 5) },

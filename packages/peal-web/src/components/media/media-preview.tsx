@@ -9,6 +9,12 @@ import {
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import type { Media } from "peal-contract";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "peal-ui/components/dialog";
 
 import { useMediaFacts } from "./use-media-facts.ts";
 
@@ -75,13 +81,13 @@ const LargeFile = ({ media }: { readonly media: Media }) => {
         playsInline
         preload="metadata"
         aria-label={media.altText ?? undefined}
-        className="max-h-[70vh] w-full rounded-md bg-black"
+        className="max-h-[50dvh] w-full rounded-md bg-black sm:max-h-[60dvh]"
       />
     );
   }
 
   return dimensions === null ? (
-    <div className="relative h-[60vh]">
+    <div className="relative h-[50dvh] sm:h-[60dvh]">
       <Image
         src={url}
         alt={media.altText ?? ""}
@@ -98,7 +104,7 @@ const LargeFile = ({ media }: { readonly media: Media }) => {
       width={dimensions.width}
       height={dimensions.height}
       unoptimized
-      className="mx-auto h-auto max-h-[70vh] w-auto max-w-full rounded-md object-contain"
+      className="mx-auto h-auto max-h-[50dvh] w-auto max-w-full rounded-md object-contain sm:max-h-[60dvh]"
     />
   );
 };
@@ -128,5 +134,46 @@ export const MediaPreviewBody = ({ media }: { readonly media: Media }) => {
         </p>
       </div>
     </div>
+  );
+};
+
+/**
+ * The file at full size, in a dialog no taller than the window: its name
+ * and the close button stay at the top, and the file, its facts and its
+ * description scroll below them, at any width and zoom.
+ */
+export const MediaPreviewDialog = ({
+  media,
+  onOpenChange,
+  open,
+  returnFocusTo,
+}: {
+  readonly media: Media;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly open: boolean;
+  /** What has the focus once the dialog closes: what opened it. */
+  readonly returnFocusTo: () => HTMLElement | null;
+}) => {
+  const t = useTranslations("Media.library");
+  const nameOf = useMediaName();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-h-[90dvh] grid-rows-[auto_minmax(0,1fr)] sm:max-w-4xl"
+        closeLabel={t("previewClose")}
+        finalFocus={returnFocusTo}
+      >
+        <DialogHeader>
+          {/* Clear of the close button; a long name breaks anywhere. */}
+          <div className="pr-8 break-all">
+            <DialogTitle>{nameOf(media)}</DialogTitle>
+          </div>
+        </DialogHeader>
+        <div data-preview-body="" className="min-h-0 overflow-y-auto">
+          <MediaPreviewBody media={media} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

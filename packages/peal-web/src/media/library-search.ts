@@ -15,10 +15,11 @@ export const everything: LibrarySearch = { kind: null, text: "" };
 /** How long the search waits after the last key before it asks the API. */
 export const searchDelayMs = 300;
 
-// The text the API takes: trimmed, and no longer than it searches, cut
-// between characters, never inside one.
+// The text the API takes: composed (NFC, as the server keeps names),
+// trimmed, and no longer than it searches, cut between characters, never
+// inside one.
 const textOf = (text: string): string => {
-  const trimmed = text.trim();
+  const trimmed = text.toWellFormed().normalize("NFC").trim();
   const characters = trimmed.match(/./gsu) ?? [];
   let kept = "";
 

@@ -1827,7 +1827,8 @@
       "preview": "Show {name} large",
       "previewClose": "Close",
       "previewMissing": "The file is not stored, so there is nothing to show.",
-      "openDocument": "Open the document in a new tab"
+      "openDocument": "Open the document in a new tab",
+      "resultsShown": "{count, plural, one {# file shown} other {# files shown}}{more, select, true {, and more} other {}}."
     }
   },
   "PostMedia": {

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "peal-ui/components/select";
 import { useId } from "react";
+import type { Ref } from "react";
 
 import type { LibrarySearch } from "#media/library-search.ts";
 
@@ -29,9 +30,12 @@ const kindOf = (value: string | null): MediaKind | null =>
  * chose; the list asks the API once they pause.
  */
 export const LibraryToolbarView = ({
+  inputRef,
   onSearch,
   search,
 }: {
+  /** The search field, which clearing the search gives the focus back to. */
+  readonly inputRef?: Ref<HTMLInputElement> | undefined;
   readonly onSearch: (search: LibrarySearch) => void;
   readonly search: LibrarySearch;
 }) => {
@@ -40,13 +44,14 @@ export const LibraryToolbarView = ({
   const kindId = useId();
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <search className="flex flex-wrap items-center gap-2">
       <div className="flex min-w-48 flex-1 items-center gap-2">
         <SearchIcon aria-hidden className="text-muted-foreground size-4" />
         <label htmlFor={searchId} className="sr-only">
           {t("search")}
         </label>
         <Input
+          ref={inputRef}
           id={searchId}
           type="search"
           value={search.text}
@@ -82,6 +87,6 @@ export const LibraryToolbarView = ({
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </search>
   );
 };

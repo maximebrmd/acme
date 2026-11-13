@@ -20,15 +20,8 @@ import {
 } from "peal-ui/components/alert-dialog";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "peal-ui/components/dialog";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Link } from "#i18n/navigation.ts";
@@ -42,8 +35,9 @@ import type { LibrarySearch } from "#media/library-search.ts";
 import { failureOf } from "#posts/outcome.ts";
 
 import { GenerateImage } from "./generate-image.tsx";
+import { SearchStatus } from "./library-status.tsx";
 import { LibraryToolbarView } from "./library-toolbar.tsx";
-import { MediaPreviewBody, useMediaName } from "./media-preview.tsx";
+import { MediaPreviewDialog, useMediaName } from "./media-preview.tsx";
 import { MediaThumbnail } from "./media-thumbnail.tsx";
 import { MediaUploader } from "./media-uploader.tsx";
 import { MediaUsageNotice } from "./media-usage-notice.tsx";
@@ -211,35 +205,36 @@ const DeleteMedia = ({
   );
 };
 
-// The file at full size, in a dialog the thumbnail opens.
+// The thumbnail, a button that opens the file at full size, and gives the
+// focus back to it when the dialog closes. Its focus ring is drawn inside
+// it, as the card clips what overflows it.
 const MediaPreview = ({ media }: { readonly media: Media }) => {
   const t = useTranslations("Media.library");
   const nameOf = useMediaName();
-  const name = nameOf(media);
+  const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
 
   return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <button
-            type="button"
-            aria-label={t("preview", { name })}
-            className="relative block aspect-square w-full cursor-zoom-in"
-          />
-        }
+    <>
+      <button
+        ref={opener}
+        type="button"
+        aria-label={t("preview", { name: nameOf(media) })}
+        aria-haspopup="dialog"
+        className="focus-visible:ring-ring relative block aspect-square w-full cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset"
+        onClick={() => {
+          setOpen(true);
+        }}
       >
         <MediaThumbnail media={media} sizes="(min-width: 768px) 16rem, 50vw" />
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl" closeLabel={t("previewClose")}>
-        <DialogHeader>
-          {/* Clear of the close button; a long name breaks anywhere. */}
-          <div className="pr-8 break-all">
-            <DialogTitle>{name}</DialogTitle>
-          </div>
-        </DialogHeader>
-        <MediaPreviewBody media={media} />
-      </DialogContent>
-    </Dialog>
+      </button>
+      <MediaPreviewDialog
+        media={media}
+        open={open}
+        returnFocusTo={() => opener.current}
+        onOpenChange={setOpen}
+      />
+    </>
   );
 };
 
@@ -293,6 +288,28 @@ const MediaCard = ({
         </p>
       </div>
     </li>
+  );
+};
+
+// What the search found, in a status region that stays mounted while the
+// search changes, so screen readers hear each answer.
+const LibraryStatus = ({
+  search,
+  workspaceId,
+}: {
+  readonly search: LibrarySearch;
+  readonly workspaceId: string;
+}) => {
+  const result = useAtomValue(mediaPage(workspaceId, Option.none(), search));
+
+  return AsyncResult.isSuccess(result) ? (
+    <SearchStatus
+      count={result.value.items.length}
+      more={result.value.nextCursor !== null}
+      narrowed={isNarrowed(search)}
+    />
+  ) : (
+    <SearchStatus count={0} more={false} narrowed={false} />
   );
 };
 
@@ -442,8 +459,13 @@ export const MediaLibrary = ({
     setMore(0);
   };
 
+  const searchField = useRef<HTMLInputElement>(null);
+
+  // The button that cleared the search goes with the message it stood
+  // in: the focus goes back to the search field.
   const handleClear = () => {
     handleSearch(everything);
+    searchField.current?.focus();
   };
 
   return (
@@ -461,7 +483,14 @@ export const MediaLibrary = ({
         <h2 id="media-library" className="text-xl font-semibold">
           {t("title")}
         </h2>
-        <LibraryToolbarView search={search} onSearch={handleSearch} />
+        <LibraryToolbarView
+          inputRef={searchField}
+          search={search}
+          onSearch={handleSearch}
+        />
+        {hydrated ? (
+          <LibraryStatus search={asked} workspaceId={workspaceId} />
+        ) : null}
         {hydrated ? (
           <MediaPages
             canDelete={canDelete}

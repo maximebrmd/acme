@@ -389,9 +389,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `queryOf`, and the atoms' `pageKeyOf`), asking once the person pauses
   (`useDebounced`, `searchDelayMs`): never a request per key. A file's name
   is the member's text, rendered as text; one without a name is called by
-  its kind (`useMediaName`). A thumbnail opens `MediaPreviewBody` in a
-  dialog: an image whole, a video muted with controls, a document as a
-  link to a tab of its own, never embedded.
+  its kind (`useMediaName`). A thumbnail, a button of the card's own
+  with an inset focus ring, opens `MediaPreviewDialog`: no taller than
+  the window (`max-h-[90dvh]`), its title and close button fixed, the
+  file and its text scrolling below them, the focus back on the
+  thumbnail once closed; an image whole, a video muted with controls, a
+  document as a link to a tab of its own, never embedded. The toolbar is
+  a `search` landmark, `SearchStatus` (an `output` that stays mounted)
+  says what a search found, and clearing a search focuses the field.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

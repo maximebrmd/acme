@@ -5,9 +5,11 @@ import type { Media } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { SearchStatus } from "#components/media/library-status.tsx";
 import { LibraryToolbarView } from "#components/media/library-toolbar.tsx";
 import {
   MediaPreviewBody,
+  MediaPreviewDialog,
   useMediaName,
 } from "#components/media/media-preview.tsx";
 import { loadMessages } from "#i18n/messages.ts";
@@ -62,7 +64,7 @@ describe(LibraryToolbarView, () => {
       <LibraryToolbarView search={search} onSearch={ignore} />
     );
 
-    expect(english).toContain('type="search"');
+    expect(english).toMatch(/<search[^>]*>.*type="search"/u);
     expect(english).toContain('value="launch"');
     expect(english).toContain('maxLength="100"');
     expect(english).toContain("Search by file name or description");
@@ -181,5 +183,50 @@ describe(useMediaName, () => {
         />
       )
     ).resolves.toBe("<span>Document PDF</span>");
+  });
+});
+
+describe(MediaPreviewDialog, () => {
+  it("fits the window: the title and the close button stay, the file and its text scroll", async () => {
+    const html = await render(
+      "en",
+      <MediaPreviewDialog
+        media={{ ...photo, altText: "A long description. ".repeat(100) }}
+        open
+        returnFocusTo={() => null}
+        onOpenChange={() => {
+          // Shown open.
+        }}
+      />
+    );
+
+    const [header = "", body = ""] = html.split('data-preview-body=""');
+
+    // The box is no taller than the window, and does not scroll itself.
+    expect(html).toMatch(/max-h-\[90dvh\]/u);
+    // The name comes before the region that scrolls, never in it.
+    expect(header).toContain("Harbour.png");
+    expect(body).toMatch(/^ class="[^"]*overflow-y-auto/u);
+    // The close button is pinned to the box, out of the scrolling region.
+    expect(body).toMatch(
+      /<\/div><\/div><button[^>]*absolute top-2 right-2[^>]*>.*Close/u
+    );
+  });
+});
+
+describe(SearchStatus, () => {
+  it("says what a search found, for those who do not see the list change", async () => {
+    await expect(
+      render("en", <SearchStatus count={3} more narrowed />)
+    ).resolves.toContain("<output");
+    await expect(
+      render("en", <SearchStatus count={3} more narrowed />)
+    ).resolves.toContain("3 files shown, and more");
+    await expect(
+      render("fr", <SearchStatus count={0} more={false} narrowed />)
+    ).resolves.toContain("Aucun média ne correspond");
+    await expect(
+      render("en", <SearchStatus count={3} more={false} narrowed={false} />)
+    ).resolves.not.toContain("files shown");
   });
 });

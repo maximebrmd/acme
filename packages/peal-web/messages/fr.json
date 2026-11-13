@@ -1827,7 +1827,8 @@
       "preview": "Afficher {name} en grand",
       "previewClose": "Fermer",
       "previewMissing": "Le fichier n’est pas stocké : il n’y a rien à afficher.",
-      "openDocument": "Ouvrir le document dans un nouvel onglet"
+      "openDocument": "Ouvrir le document dans un nouvel onglet",
+      "resultsShown": "{count, plural, one {# fichier affiché} other {# fichiers affichés}}{more, select, true {, et d’autres} other {}}."
     }
   },
   "PostMedia": {
