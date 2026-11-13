@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
@@ -36,7 +37,7 @@ import {
   setTime,
   storedPost,
 } from "#test/publishing/infrastructure/harness.ts";
-import { connect } from "#test/publishing/posts-server.ts";
+import { attachableImage, connect } from "#test/publishing/posts-server.ts";
 import { actorAs, contentOf } from "#test/publishing/support.ts";
 import {
   impersonating,
@@ -125,6 +126,7 @@ describe("a review link", () => {
               channelId,
               followUps: [],
               handle: page.post.channels[0]?.handle ?? Option.none(),
+              media: Option.none(),
               options: Option.none(),
               platform: Option.some("mastodon" as const),
               text: `${text} #launch`,
@@ -444,6 +446,64 @@ describe("a review link", () => {
               },
             ]
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "shows the media a channel shows instead of the post's",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* showsChannelMedia() {
+          const visitors = yield* VisitorReview;
+          const workspaceId = yield* freshWorkspace;
+          const own = yield* connect(workspaceId, "mastodon");
+          const other = yield* connect(workspaceId, "bluesky");
+          const editor = actorAs(yield* freshUser, workspaceId);
+
+          const { post } = yield* PostDrafts.use((drafts) =>
+            drafts.create(editor, {
+              channelIds: [own, other],
+              content: new PostContent({
+                media: [],
+                overrides: [
+                  new TextOverride({
+                    channelId: own,
+                    media: [
+                      new MediaAttachment({
+                        altText: "A synthetic picture",
+                        mediaId: attachableImage,
+                      }),
+                    ],
+                    text: "First",
+                  }),
+                ],
+                text: "First",
+              }),
+            })
+          );
+
+          const { token } = yield* linkTo(editor, post.id, "view");
+          const page = yield* visitors.open(token);
+
+          assert.deepStrictEqual(
+            Object.fromEntries(
+              page.post.channels.map(({ channelId, media }) => [
+                channelId,
+                media,
+              ])
+            ),
+            {
+              [other]: Option.none(),
+              [own]: Option.some([
+                { altText: "A synthetic picture", mediaId: attachableImage },
+              ]),
+            }
+          );
+          // Its reviewers are shown the file, as any the post shows.
+          assert.isTrue(page.previews.has(attachableImage));
         })
       ),
     timeout

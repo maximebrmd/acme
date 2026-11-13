@@ -1,4 +1,4 @@
-import { Duration } from "effect";
+import { Duration, Option } from "effect";
 
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
@@ -16,6 +16,11 @@ export interface FollowUpOnChannel {
 /** A post as one channel will receive it: its text there, then its parts. */
 export interface PostOnChannel {
   readonly followUps: readonly FollowUpOnChannel[];
+  /**
+   * The media its first part shows there instead of the post's, when its
+   * override gives some; none when the channel shows the post's.
+   */
+  readonly ownMedia: Option.Option<readonly MediaAttachment[]>;
   readonly text: string;
 }
 
@@ -36,6 +41,10 @@ export const postOnChannel = (
       media,
       text,
     })),
+    ownMedia: Option.fromUndefinedOr(
+      content.overrides.find((override) => override.channelId === channelId)
+        ?.media
+    ),
     text: first?.text ?? content.text,
   };
 };

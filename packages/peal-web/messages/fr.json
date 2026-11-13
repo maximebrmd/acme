@@ -3499,6 +3499,8 @@
       "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
       "noText": "Pas de texte sur ce canal.",
       "mediaLabel": "Images, vidéos et documents",
+      "channelMediaLabel": "Images, vidéos et documents sur {handle}",
+      "noChannelMedia": "Aucune image, vidéo ni aucun document sur ce canal.",
       "mediaUnavailable": "Ce fichier ne peut pas être affiché.",
       "video": "Vidéo",
       "document": "Un document PDF, affiché page par page sur LinkedIn.",

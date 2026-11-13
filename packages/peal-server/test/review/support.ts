@@ -33,10 +33,14 @@ import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { setTime } from "#test/publishing/infrastructure/harness.ts";
-import { postsServerBehind } from "#test/publishing/posts-server.ts";
+import {
+  attachableImage,
+  postsServerBehind,
+} from "#test/publishing/posts-server.ts";
 import {
   actorAs,
   attachableMedia,
+  mediaFile,
   postAllowance,
 } from "#test/publishing/support.ts";
 import { Heard } from "#test/review/heard.ts";
@@ -165,7 +169,12 @@ export const reviewServerWith = <E, R>(
       )
     ),
     Layer.provideMerge(
-      postsServerBehind(Gate, attachableMedia(), allowance, Hearing)
+      postsServerBehind(
+        Gate,
+        attachableMedia([mediaFile(attachableImage)]),
+        allowance,
+        Hearing
+      )
     )
   );
 

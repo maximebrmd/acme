@@ -33,7 +33,7 @@ const scheduleOf = (status: PostStatus): ReviewedPost["schedule"] =>
 // The post on a channel, as it will receive it: its text there, then the
 // parts that follow, each with its files.
 const partsFor = (post: PostWithTargets["post"], channelId: ChannelId) => {
-  const { followUps, text } = postOnChannel(post, channelId);
+  const { followUps, ownMedia, text } = postOnChannel(post, channelId);
 
   return {
     followUps: followUps.map((part) => ({
@@ -41,6 +41,11 @@ const partsFor = (post: PostWithTargets["post"], channelId: ChannelId) => {
       media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
       text: part.text,
     })),
+    media: ownMedia.pipe(
+      Option.map((files) =>
+        files.map(({ altText, mediaId }) => ({ altText, mediaId }))
+      )
+    ),
     text,
   };
 };
