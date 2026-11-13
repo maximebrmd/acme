@@ -208,13 +208,23 @@
   run, until the last one ended.
 - `PEAL_BILLING_GRACE_UNTIL` (`BillingMode.graceUntil`, a day, read in
   `configured-billing-mode.ts`): while `inGrace`, a `free` workspace over
-  its accounts still schedules and publishes (`PostAllowance.channels`
-  answers no limit, `WorkspaceStanding` no `mustReduce`, with
-  `graceUntil`, equal in `overPlanIn`) and connects nothing more
-  (`ChannelAllowance` is untouched); `SendBillingReminders` pages the
-  billing accounts (`BillingAccountStore.page`) and tells each holder
-  over its free accounts once (`PaymentMethodNeeded`, keyed by the day).
-  Only the free tier is graced, never a legacy plan.
+  its accounts still schedules and publishes on the accounts connected
+  before the grace started (`BillingMode.graceSince`: the first start of
+  this server's database with any grace, whatever the day, kept in
+  `billing.grace_starts`, so a day moved later never graces the accounts
+  connected in between; `gracedHolds`, in `WorkspaceStanding`,
+  `PostAllowance.channels` and the reminders), never where staff required
+  a payment method (`freeTier` false), and connects nothing more
+  (`ChannelAllowance` is untouched). The standing answers `graceUntil`.
+  `SendBillingReminders` pages the billing accounts
+  (`BillingAccountStore.page`) and tells each graced holder once
+  (`PaymentMethodNeeded`, keyed by the day), a failure there logged and
+  the trial and renewal reminders sent all the same. Only the free tier is
+  graced, never a legacy plan; by design, an account whose subscription
+  ends during the grace (a legacy subscriber who cancels) keeps the
+  accounts it had connected before the grace until its day, whoever paid
+  for them. A server that bills without a grace warns at start when a free
+  workspace is over its accounts (`GraceWarningLive`).
 - A server that bills checks Stripe when it starts
   (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
   against stripe-mock, whose one price is none of Peal's): the catalogue
