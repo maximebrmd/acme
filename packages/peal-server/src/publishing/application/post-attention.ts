@@ -9,6 +9,10 @@ import type {
   AgendaPageRequest,
   AgendaPost,
   AttentionCounts,
+  StoredWeekPost,
+  WeekPost,
+  WeekWindow,
+  WorkspaceWeek,
 } from "./post-attention-reads.ts";
 
 export type {
@@ -16,7 +20,16 @@ export type {
   AgendaPost,
   AgendaStatus,
   AttentionCounts,
+  WeekCounts,
+  WeekPost,
+  WeekWindow,
+  WorkspaceWeek,
 } from "./post-attention-reads.ts";
+
+const weekPostOf = ({ textStart, ...post }: StoredWeekPost): WeekPost => ({
+  ...post,
+  excerpt: excerptOf(textStart),
+});
 
 /**
  * The posts of several workspaces at once, for the view across a person's
@@ -40,6 +53,14 @@ export class PostAttention extends Context.Service<
     readonly agenda: (
       request: AgendaPageRequest
     ) => Effect.Effect<readonly AgendaPost[], DatabaseError>;
+    /**
+     * One workspace's week and the week after it, by the time each post
+     * had: counted, and the first `listed` of each, for a digest.
+     */
+    readonly week: (
+      workspaceId: WorkspaceId,
+      window: WeekWindow
+    ) => Effect.Effect<WorkspaceWeek<WeekPost>, DatabaseError>;
   }
 >()("peal-server/publishing/application/PostAttention") {
   static readonly layer = Layer.effect(
@@ -70,6 +91,15 @@ export class PostAttention extends Context.Service<
                 scheduledTo: DateTime.add(now, { days: 7 }),
               })
           ).pipe(Effect.withSpan("PostAttention.countsIn")),
+        week: (workspaceId, window) =>
+          reads.week(workspaceId, window).pipe(
+            Effect.map(({ counts, planned, wentOut }) => ({
+              counts,
+              planned: planned.map(weekPostOf),
+              wentOut: wentOut.map(weekPostOf),
+            })),
+            Effect.withSpan("PostAttention.week")
+          ),
       });
     })
   );

@@ -16,5 +16,6 @@ export namespace NotificationPreferences {
         postUnconfirmed: boolean;
         recyclingEnded: boolean;
         webhookFailing: boolean;
+        weeklyDigest: boolean;
     }
 }

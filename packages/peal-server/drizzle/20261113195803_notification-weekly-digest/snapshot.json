@@ -1,0 +1,193 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "1fe047f3-a815-4169-8951-4bdf74787699",
+  "prevIds": [
+    "d53cb080-438c-430c-843b-6e9b825f1011"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "email_weekly_digest"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.email_weekly_digest",
+        "n|col|notifications.notification_preferences.email_weekly_digest",
+        "e|col|notifications.notification_preferences.email_weekly_digest"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_week"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_week",
+        "n|col|notifications.notification_preferences.weekly_digest_week",
+        "e|col|notifications.notification_preferences.weekly_digest_week"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_lease"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_lease",
+        "n|col|notifications.notification_preferences.weekly_digest_lease",
+        "e|col|notifications.notification_preferences.weekly_digest_lease"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_links"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_links",
+        "n|col|notifications.notification_preferences.weekly_digest_links",
+        "e|col|notifications.notification_preferences.weekly_digest_links"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "notifications",
+        "notification_preferences",
+        "notification_preferences_weekly_digest"
+      ],
+      "writes": [
+        "s|idx|notifications.notification_preferences_weekly_digest",
+        "n|idx|notifications.notification_preferences_weekly_digest",
+        "e|idx|notifications.notification_preferences_weekly_digest",
+        "n|rel|notifications.notification_preferences_weekly_digest"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications",
+        "n|col|notifications.notification_preferences.user_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "email_weekly_digest",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_week",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_lease",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_links",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "notification_preferences_weekly_digest",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"email_weekly_digest\"",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

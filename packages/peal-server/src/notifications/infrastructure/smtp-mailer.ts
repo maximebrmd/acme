@@ -46,6 +46,7 @@ export const smtpMailer = (options: {
             try: async () =>
               await transport.sendMail({
                 from: options.from,
+                headers: { ...message.headers },
                 html: message.html,
                 subject: message.subject,
                 text: message.text,

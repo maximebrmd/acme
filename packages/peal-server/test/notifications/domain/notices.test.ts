@@ -458,10 +458,19 @@ describe("notification preferences", () => {
       postUnconfirmed: true,
       recyclingEnded: true,
       webhookFailing: true,
+      weeklyDigest: false,
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();
     expect(wantsEmail(changed, events.PostFailed)).toBeFalsy();
     expect(changed.everyPost).toBeFalsy();
+  });
+
+  it("send the weekly digest only to those who asked for it", () => {
+    expect(defaultPreferences.email.weeklyDigest).toBeFalsy();
+    expect(
+      changePreferences(defaultPreferences, { email: { weeklyDigest: true } })
+        .email
+    ).toStrictEqual({ ...defaultPreferences.email, weeklyDigest: true });
   });
 
   it("follow only one's own posts until asked for every post", () => {

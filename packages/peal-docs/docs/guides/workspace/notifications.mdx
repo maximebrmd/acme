@@ -105,6 +105,7 @@ Each choice is saved as you change it, and applies in all your workspaces.
 | Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint    | On                  |
 | A post went out                                                                         | Off                 |
 | A published post received new comments                                                  | Off                 |
+| A week starts: what went out last week and what is planned, each Monday                 | Off                 |
 
 Some emails are always sent:
 
@@ -113,16 +114,28 @@ Some emails are always sent:
 
 Emails are written in your language. When the mail server turns an email away for now, Peal tries again for about five hours. An email waiting to go out is dropped if you leave the workspace, or turn that email off, in the meantime.
 
+## The weekly digest [#digest]
+
+Turn on **A week starts** in your email preferences, and each Monday from 06:19 UTC Peal emails you the week that ended at midnight UTC and the one it begins, for every workspace whose posts you may read:
+
+- how many posts went out, failed or need checking, and how many are scheduled or wait for an approval;
+- the first few of each week, by the start of their text;
+- where you may read analytics, the engagement of the week's posts.
+
+Days and times are in UTC. A workspace with nothing in those two weeks is left out, and with nothing anywhere no email is sent. The digest holds the workspace's own posts only, never a comment or who wrote one.
+
+To stop it, use your mail app's unsubscribe button, which turns the digest off and nothing else, or the link at its foot to your notification preferences. It goes once a week. When the mail server turns it away for now, Peal tries again in the next hours of the same Monday; one turned away for good is not sent again until the next Monday.
+
 ## From the API [#api]
 
 Your notifications and preferences belong to you, not to a workspace, so they live under `/api/me`:
 
-| Endpoint                                           | What it does                                                                               |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `GET /api/me/notices`                              | Lists them, newest first, 20 a page                                                        |
-| `GET /api/me/notices/unread`                       | Counts the unread ones                                                                     |
-| `POST /api/me/notices/read`                        | Marks up to 100 of them read                                                               |
-| `POST /api/me/notices/read-all`                    | Marks them all                                                                             |
-| `GET` and `PATCH /api/me/notification-preferences` | Read and change which ones are emailed, and `everyPost`, whether you hear about every post |
+| Endpoint                                           | What it does                                                                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/me/notices`                              | Lists them, newest first, 20 a page                                                                                                            |
+| `GET /api/me/notices/unread`                       | Counts the unread ones                                                                                                                         |
+| `POST /api/me/notices/read`                        | Marks up to 100 of them read                                                                                                                   |
+| `POST /api/me/notices/read-all`                    | Marks them all                                                                                                                                 |
+| `GET` and `PATCH /api/me/notification-preferences` | Read and change which ones are emailed, `email.weeklyDigest`, the [weekly digest](#digest), and `everyPost`, whether you hear about every post |
 
 Each notification is data, such as a post's id, a channel and a reason, for the client to write in its reader's language. These endpoints take a session or an OAuth token that is not bound to one workspace, such as the command line's. API keys, which belong to a workspace, and MCP clients, which act in one workspace, get 403. The [API reference](/reference) lists their parameters.

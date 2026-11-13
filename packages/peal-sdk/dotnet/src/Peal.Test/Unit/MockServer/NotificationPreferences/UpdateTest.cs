@@ -27,7 +27,8 @@ public class UpdateTest : BaseMockServerTest
                 "postReview": true,
                 "postUnconfirmed": true,
                 "recyclingEnded": true,
-                "webhookFailing": true
+                "webhookFailing": true,
+                "weeklyDigest": true
               },
               "everyPost": true
             }
@@ -73,7 +74,8 @@ public class UpdateTest : BaseMockServerTest
                 "postReview": true,
                 "postUnconfirmed": true,
                 "recyclingEnded": true,
-                "webhookFailing": true
+                "webhookFailing": true,
+                "weeklyDigest": true
               },
               "everyPost": true
             }

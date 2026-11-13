@@ -789,8 +789,11 @@ export interface PreferencesRecord {
     readonly postUnconfirmed: boolean;
     readonly recyclingEnded: boolean;
     readonly webhookFailing: boolean;
+    readonly weeklyDigest: boolean;
   };
   readonly everyPost: boolean;
+  /** The first day (UTC) of the week of the last weekly digest sent. */
+  readonly lastWeeklyDigest: string | null;
 }
 
 /**

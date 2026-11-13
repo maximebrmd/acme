@@ -40,6 +40,7 @@ import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
+import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -285,6 +286,21 @@ const ChannelJobsTest = Layer.mergeAll(
           reconnectRequired: 0,
           refreshed: 0,
           unavailable: 0,
+        }),
+    })
+  ),
+  Layer.succeed(
+    SendWeeklyDigests,
+    SendWeeklyDigests.of({
+      run: () =>
+        Effect.succeed({
+          deferred: 0,
+          failed: 0,
+          nothingToTell: 0,
+          readers: 0,
+          sent: 0,
+          skipped: 0,
+          stopped: false,
         }),
     })
   ),
