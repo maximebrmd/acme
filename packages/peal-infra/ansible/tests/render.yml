@@ -30,6 +30,12 @@
         dest: "{{ render_dir }}/{{ inventory_hostname }}/host.env"
         mode: "0600"
 
+    - name: Render peal-compose
+      ansible.builtin.template:
+        src: ../roles/peal_runtime/templates/peal-compose.j2
+        dest: "{{ render_dir }}/{{ inventory_hostname }}/peal-compose"
+        mode: "0600"
+
 - name: Render the templates of the uptime server
   hosts: uptime
   gather_facts: false

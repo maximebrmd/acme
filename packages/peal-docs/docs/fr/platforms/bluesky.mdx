@@ -1,0 +1,66 @@
+---
+title: Bluesky
+description: "Connecter Bluesky à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/bluesky.svg
+---
+
+Comment connecter un compte Bluesky, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                 |
+| ---------------- | ------------------------------- |
+| Texte            | {{platform-bluesky-text-fr}}    |
+| Images et vidéos | {{platform-bluesky-media-fr}}   |
+| Parties          | {{platform-bluesky-parts-fr}}   |
+| Formats          | {{platform-bluesky-formats-fr}} |
+| Texte alternatif | {{platform-bluesky-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **Bluesky**, indiquez votre identifiant, comme `vous.bsky.social`, pour aller directement sur la page de connexion de votre serveur, ou laissez-le vide pour choisir le compte sur Bluesky. Choisissez ensuite **Connecter Bluesky**.
+
+**Canaux** propose Bluesky une fois le serveur Peal configuré pour lui (voir [Sur votre propre serveur](#self-hosting)).
+
+## Options [#options]
+
+Aucune option n’est obligatoire, et chacune n’est envoyée que si vous la choisissez. **Nom dans l’API** est le nom de l’option par l’API. **Parties** dit à quoi elle s’applique dans un [fil](/guides/posts#threads).
+
+| Option                                                                                           | Nom dans l’API                                       | Valeurs                                                                                                              | Si omise      | Parties                                    |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------ |
+| **Langues**                                                                                      | `languages`                                          | Jusqu’à trois étiquettes de langue, comme `fr` ou `pt-BR`                                                            | Aucune        | Chaque partie                              |
+| **Étiquette de contenu**                                                                         | `contentLabel`                                       | `sexual`, `nudity`, `porn`, `graphic-media`                                                                          | Aucune        | Chaque partie avec des images ou une vidéo |
+| **Qui peut répondre**                                                                            | `replies`                                            | `everyone`, `nobody`, ou `limited` à ceux de `replyFollowers`, `replyFollowing` et `replyMentioned` qui sont activés | Tout le monde | Le fil                                     |
+| **Vos abonnés**, **Les comptes que vous suivez**, **Les comptes mentionnés dans la publication** | `replyFollowers`, `replyFollowing`, `replyMentioned` | Oui ou non, chacun ; avec `replies` limité, l’un au moins                                                            | Non           | Le fil                                     |
+| **Empêcher les autres de citer cette publication**                                               | `disableQuotes`                                      | Oui ou non                                                                                                           | Non           | Chaque partie                              |
+
+- Une étiquette décrit les images ou la vidéo : une partie sans média part sans elle.
+- Qui peut répondre et les citations s’écrivent avec la publication, en une seule requête, donc une publication ne part jamais sans eux.
+
+<Accordion>
+  <AccordionItem title="Un canal connecté avant que Peal demande les réglages de réponse et de citation">
+    Qui peut répondre et les citations demandent que le compte ait été connecté
+    depuis que Peal les demande. Sur un canal connecté avant, la programmation
+    les refuse, et ses [capacités](/developers#capabilities) le disent
+    (`optionNeedsReconnect`). Dans l’éditeur, un tel canal ne propose ni l’un ni
+    l’autre, et le dit. Reconnectez le compte sur la page **Canaux** pour les
+    utiliser ; rien d’autre ne change.
+  </AccordionItem>
+  <AccordionItem title="Le serveur du compte refuse ces réglages">
+    Quand Peal n’a pas pu lire les autorisations du canal et que le serveur du
+    compte refuse alors ces réglages, la publication n’est pas envoyée : le
+    canal indique **Échec**, avec le code `optionRefused`, et Peal ne la renvoie
+    pas. Reconnectez le compte, ou retirez ces réglages, et republiez-la.
+  </AccordionItem>
+</Accordion>
+
+## Commentaires [#comments]
+
+Peal lit les commentaires sous vos publications en ligne, et vous y répondez depuis Peal : voir [Boîte de réception](/guides/engage/inbox#other-platforms).
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Bluesky une fois son application enregistrée : voir [Bluesky](/self-hosting/platforms#bluesky). D’ici là, **Canaux** ne le propose pas.

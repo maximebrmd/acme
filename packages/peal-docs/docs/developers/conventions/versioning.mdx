@@ -1,0 +1,86 @@
+---
+title: Versions and changes
+description: How the API changes without breaking clients, how a deprecation is announced, and where the changelog is.
+sidebar:
+  icon: git-branch
+---
+
+## Versioning [#versioning]
+
+The API has no version in its path, and one version: it only grows. Fields, operations, values of an enumeration and errors are added; none is renamed, removed or made stricter. A client written today keeps working, provided that it ignores what it does not know:
+
+| What the client meets                                                                                | What it does                                                 |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| A field it does not read, in any answer or webhook payload                                           | Ignores it.                                                  |
+| A value it does not know where a field lists its values, such as a new post status or failure reason | Treats it as "something else", never as a failure to decode. |
+| An error code it does not know                                                                       | Falls back on the HTTP status, and shows `message`.          |
+
+<Callout type="info" title="How the API is held to this">
+  Every change to the contract is compared with the last released OpenAPI
+  document, the one the SDKs were generated from (their release 0.3.0 today),
+  and the project's tests fail on any change that could break a client: an
+  operation, a field or a value removed or renamed, a parameter that became
+  required, a type that changed.
+</Callout>
+
+A break is made only when decided on. It is then recorded with its reason, listed in the [changelog](#changelog) under `breaking`, and announced by a [deprecation](#deprecations) first wherever an endpoint goes away.
+
+Webhook payloads follow the same rule, with a `version` of their own ([Versions](/developers/webhooks/requests#versions)).
+
+## Deprecations [#deprecations]
+
+An endpoint that is deprecated keeps answering as it always did. It says so in three places:
+
+- the OpenAPI document marks its operation `deprecated`, which generated clients and editors show;
+- every answer from it carries the headers below;
+- the [changelog](#changelog) lists it, by operation, in the release that deprecated it.
+
+| Header        | What it says                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `Deprecation` | Since when the endpoint is deprecated, as RFC 9745 writes it: `@` followed by seconds since 1970, such as `@1803859200`. |
+| `Sunset`      | When it stops answering, once that is decided, as an HTTP date (RFC 8594), such as `Wed, 01 Sep 2027 00:00:00 GMT`.      |
+| `Link`        | Where the deprecation is explained, with what to call instead, when there is such a page: `rel="deprecation"`.           |
+
+`Sunset` and `Link` are there only when there is something to say: a deprecated endpoint without `Sunset` has no end decided. Have your client log any answer that carries `Deprecation`.
+
+No endpoint is deprecated today.
+
+## Changelog [#changelog]
+
+`GET /api/changelog` lists the releases of the API, newest first, and needs no credential: a client reads it to learn what the server it found can do.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/changelog
+```
+
+```ts TypeScript
+const changelog = await peal.system.changelog();
+```
+
+</CodeGroup>
+
+```json
+{
+  "entries": [
+    {
+      "date": "2026-11-09",
+      "title": "The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it.",
+      "operations": [],
+      "deprecations": [],
+      "breaking": [],
+      "additions": 0
+    }
+  ]
+}
+```
+
+| Field          | What it holds                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| `date`         | The day of the release.                                                                              |
+| `title`        | What the release is, in a sentence.                                                                  |
+| `operations`   | The operations it added, by operation id, such as `activity.list`.                                   |
+| `deprecations` | The operations it deprecated, by operation id.                                                       |
+| `breaking`     | The changes that could break a client, each with the `change` and its `reason`. Almost always empty. |
+| `additions`    | How many additions it made in all: operations, fields, values and errors.                            |

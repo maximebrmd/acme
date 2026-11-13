@@ -1,0 +1,117 @@
+---
+title: Pagination
+description: Comment une liste répond une page à la fois, et comment demander la suivante.
+sidebar:
+  icon: list
+---
+
+## Pagination [#paging]
+
+Les listes qui peuvent grandir sans fin se lisent page par page, les plus récents d’abord :
+
+1. Envoyez `limit`, la taille d’une page, dans la requête.
+2. La réponse est un objet qui porte les éléments de la page (`items`) et un `nextCursor`.
+3. Passez `nextCursor` en `cursor` pour lire la page suivante, et arrêtez-vous quand il vaut `null`.
+
+Un curseur est une chaîne opaque, valable pour la liste dont il vient, avec les mêmes filtres : ailleurs, il répond 400 `bad_request`.
+
+| Liste                                    | Une page contient | Au plus |
+| ---------------------------------------- | ----------------- | ------- |
+| `GET …/posts/drafts`                     | 20                | 50      |
+| `GET …/media`                            | 30                | 100     |
+| `GET …/webhooks/{endpointId}/deliveries` | 30                | 100     |
+| `GET …/activity`                         | 30                | 100     |
+| `GET /api/me/notices`                    | 20                | 100     |
+
+Les chemins qui commencent par `…` sont sous `/api/workspaces/{workspaceId}`.
+
+La première page :
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const page = await peal.activity.list({ workspaceId, limit: "2" });
+```
+
+</CodeGroup>
+
+```json
+{
+  "items": [
+    {
+      "id": "019a7b31-0d4e-7c22-b8a1-3f5e6d7c8b90",
+      "occurredAt": "2026-11-16T08:00:02.412Z",
+      "operation": "posts.send",
+      "status": 201,
+      "errorCode": null,
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": {},
+      "requestId": "nightly-sync:2026-11-16:0042"
+    },
+    {
+      "id": "019a7b30-6f18-7a95-9d07-1c2b3a4d5e6f",
+      "occurredAt": "2026-11-16T07:58:47.036Z",
+      "operation": "posts.discard",
+      "status": 404,
+      "errorCode": "post_not_found",
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" },
+      "requestId": "019a7b30-6f17-7e02-b6a4-9f8e7d6c5b4a"
+    }
+  ],
+  "nextCursor": "MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm"
+}
+```
+
+La page suivante, avec le `nextCursor` ci-dessus, et une boucle qui les lit toutes (les SDK n’ont pas d’aide qui le fasse pour vous) :
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2&cursor=MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+let cursor: string | undefined;
+
+do {
+  const page = await peal.activity.list({ workspaceId, limit: "100", cursor });
+
+  for (const entry of page.items) {
+    console.log(entry.operation, entry.status);
+  }
+
+  cursor = page.nextCursor ?? undefined;
+} while (cursor !== undefined);
+```
+
+</CodeGroup>
+
+### Les listes qui prennent une plage [#ranges]
+
+Deux listes prennent plutôt une plage, et répondent d’un coup tout ce qu’elle contient :
+
+| Liste                                            | Ce qu’elle répond                                                              | Plage                       | Sinon                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ | --------------------------- | -------------------- |
+| `GET …/posts?from=…&to=…`                        | Les publications programmées entre deux instants, `from` compris et `to` exclu | Séparés de 62 jours au plus | `invalid_time_range` |
+| `GET …/analytics/summary?from=…&to=…&timeZone=…` | Le résumé des publications parties sur une plage de jours, bornes comprises    | 366 jours au plus           | `invalid_date_range` |
+
+Les listes qu’un espace de travail garde courtes répondent en entier, sous forme de tableau : ses canaux, ses membres, ses invitations en attente, ses clés d’API et ses points de terminaison de webhook.

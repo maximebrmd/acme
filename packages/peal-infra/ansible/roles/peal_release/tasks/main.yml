@@ -64,6 +64,12 @@
       web: peal-web:{{ peal_release_tag }}
       static: peal-static:{{ peal_release_tag }}
 
+# The docs server's image, when the docs have their assistant.
+- name: Name the docs server's image
+  ansible.builtin.set_fact:
+    peal_release_built: "{{ peal_release_built | combine({'docs': 'peal-docs:' ~ peal_release_tag}) }}"
+  when: peal_docs_server | bool
+
 # Its id only: an image's full description is long, and the release needs
 # nothing else from it.
 - name: Check for each image on the server
@@ -126,7 +132,7 @@
           - --load
           - .
         chdir: "{{ peal_release_local_dir }}/checkout"
-      loop: "{{ peal_release_missing | difference(['static']) }}"
+      loop: "{{ peal_release_missing | difference(['static', 'docs']) }}"
       delegate_to: localhost
       become: false
       changed_when: true
@@ -141,14 +147,37 @@
           {{ ['docker', 'buildx', 'build', '--platform', peal_release_platform,
               '--file', 'packages/peal-docker/static.Dockerfile',
               '--tag', peal_release_built.static, '--load']
-             + (['--build-arg'] | product(peal_static_build_args.keys()) | flatten)
+             + (['--build-arg'] | product(peal_release_static_args) | flatten)
              + ['.'] }}
         chdir: "{{ peal_release_local_dir }}/checkout"
       environment: "{{ peal_static_build_args }}"
+      vars:
+        # The docs server's own, which static.Dockerfile does not read.
+        peal_release_static_args: >-
+          {{ peal_static_build_args.keys()
+             | difference(['DOCS_ASSISTANT_MODEL', 'DOCS_TURNSTILE_SITE_KEY']) }}
       delegate_to: localhost
       become: false
       changed_when: true
       when: not peal_release_local_archive.stat.exists and 'static' in peal_release_missing
+
+    # The docs server reads the DOCS_* settings at build time too.
+    - name: Build the docs server's image
+      ansible.builtin.command:
+        argv: >-
+          {{ ['docker', 'buildx', 'build', '--platform', peal_release_platform,
+              '--file', 'packages/peal-docker/docs.Dockerfile',
+              '--tag', peal_release_built.docs, '--load']
+             + (['--build-arg'] | product(peal_release_docs_args) | flatten)
+             + ['.'] }}
+        chdir: "{{ peal_release_local_dir }}/checkout"
+      environment: "{{ peal_static_build_args }}"
+      vars:
+        peal_release_docs_args: "{{ peal_static_build_args.keys() | select('match', 'DOCS_') | list }}"
+      delegate_to: localhost
+      become: false
+      changed_when: true
+      when: not peal_release_local_archive.stat.exists and 'docs' in peal_release_missing
 
     - name: Save the images
       ansible.builtin.shell: |
@@ -383,13 +412,13 @@
     peal_release_stack.stderr_lines | reject('search', 'collector-wget-[0-9]+ +Started')
     | select('search', '(Started|Recreated|Removed)') | list | length > 0
 
-- name: Check the server and the web app on the server
+- name: Check the server, the web app and the docs server on the server
   ansible.builtin.uri:
     url: http://127.0.0.1:{{ item.port }}{{ item.path }}
     status_code: [200, 204]
-  loop:
-    - { port: "{{ peal_ports.server }}", path: /api/ready }
-    - { port: "{{ peal_ports.web }}", path: /sign-in }
+  loop: >-
+    {{ [{'port': peal_ports.server, 'path': '/api/ready'}, {'port': peal_ports.web, 'path': '/sign-in'}]
+       + ([{'port': peal_ports.docs_server, 'path': '/'}] if peal_docs_server | bool else []) }}
   register: peal_release_local
   until: peal_release_local.status in [200, 204]
   retries: 10

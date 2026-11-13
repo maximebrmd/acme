@@ -1,0 +1,136 @@
+---
+title: Événements des médias et des commentaires
+description: "Les événements d’un fichier de la médiathèque, et des commentaires sous une publication en ligne."
+sidebar:
+  icon: message-square
+  label: "Médias et commentaires"
+---
+
+Les événements d’un fichier de la médiathèque et des commentaires sous une publication en ligne, chacun avec ses champs et un exemple de contenu. Les événements des médias ne concernent aucun canal : ils parviennent à un point de terminaison [quels que soient les canaux qu’il liste](/developers/webhooks#filters).
+
+## media.ready [#media-ready]
+
+Peal [a lu le fichier](/guides/media#library) une fois stocké, et il peut aller dans des publications.
+
+| Champ         | Type   | Ce qu’il contient                                |
+| ------------- | ------ | ------------------------------------------------ |
+| `workspaceId` | chaîne | L’espace de travail                              |
+| `mediaId`     | chaîne | Le média                                         |
+| `contentType` | chaîne | Le type de contenu du fichier, comme `image/png` |
+
+```json title="media.ready"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0a",
+  "type": "media.ready",
+  "version": 1,
+  "timestamp": "2026-11-09T16:30:55.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
+    "contentType": "image/png"
+  }
+}
+```
+
+## media.failed [#media-failed]
+
+Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a pas pu être lu reste dans la médiathèque, et n’est pas prêt pour des publications.
+
+| Champ         | Type   | Ce qu’il contient                   |
+| ------------- | ------ | ----------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                 |
+| `mediaId`     | chaîne | Le média                            |
+| `reason`      | chaîne | Pourquoi, l’un des codes ci-dessous |
+
+| `reason`       | Ce qui s’est passé                                                                      |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `sizeMismatch` | Le fichier stocké n’a pas la taille que l’import avait déclarée. Il a été refusé.       |
+| `typeMismatch` | Le fichier stocké n’est pas du type que l’import avait déclaré. Il a été refusé.        |
+| `unreadable`   | Le fichier est abîmé, ou dans un format que Peal ne lit pas.                            |
+| `timedOut`     | Lire le fichier a pris plus de temps que Peal n’en laisse.                              |
+| `tooLarge`     | Le stockage a servi plus d’octets que Peal n’en garde pour ce type de fichier.          |
+| `toolFailed`   | Le programme qui lit les fichiers n’a pas pu tourner, ou n’a rien affiché d’utilisable. |
+| `tooManyPages` | Un document PDF compte plus de 300 pages, ce qu’aucune plateforme n’affiche.            |
+| `unavailable`  | L’instance n’a rien pour lire ce type de fichier.                                       |
+
+```json title="media.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "media.failed",
+  "version": 1,
+  "timestamp": "2026-11-09T16:31:20.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
+    "reason": "typeMismatch"
+  }
+}
+```
+
+## comment.received [#comment-received]
+
+Peal a lu pour la première fois un commentaire sous une publication mise en ligne sur un canal (voir [Boîte de réception](/guides/engage/inbox)). L’événement ne porte que des identifiants : ce que dit le commentaire et qui l’a écrit se lisent par l’API, avec `engagement:read`.
+
+| Champ         | Type   | Ce qu’il contient                                |
+| ------------- | ------ | ------------------------------------------------ |
+| `workspaceId` | chaîne | L’espace de travail                              |
+| `postId`      | chaîne | La publication                                   |
+| `channelId`   | chaîne | Le canal où la publication est en ligne          |
+| `threadId`    | chaîne | Le fil : les commentaires sous cette publication |
+| `commentId`   | chaîne | Le commentaire                                   |
+| `receivedAt`  | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC   |
+
+```json title="comment.received"
+{
+  "id": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1b",
+  "type": "comment.received",
+  "version": 1,
+  "timestamp": "2026-11-10T09:13:02.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "receivedAt": "2026-11-10T09:13:02.000Z"
+  }
+}
+```
+
+## comment.replied [#comment-replied]
+
+Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal. Une réponse qui a échoué, ou dont l’issue n’est pas connue, n’envoie rien : lisez-la par l’API.
+
+| Champ         | Type           | Ce qu’il contient                                              |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                            |
+| `postId`      | chaîne         | La publication                                                 |
+| `channelId`   | chaîne         | Le canal                                                       |
+| `threadId`    | chaîne         | Le fil                                                         |
+| `commentId`   | chaîne         | Le commentaire auquel il a été répondu                         |
+| `replyId`     | chaîne         | La réponse                                                     |
+| `permalink`   | chaîne ou null | L’adresse de la réponse sur la plateforme, quand elle en donne |
+| `repliedAt`   | chaîne         | Quand elle est partie, sous forme d’instant en UTC             |
+
+```json title="comment.replied"
+{
+  "id": "019a6f58-2d4e-7f5a-9b6c-7d8e9f0a1b2c",
+  "type": "comment.replied",
+  "version": 1,
+  "timestamp": "2026-11-10T09:20:41.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
+    "permalink": "https://mastodon.example/@peal_example/113000000000000002",
+    "repliedAt": "2026-11-10T09:20:41.000Z"
+  }
+}
+```

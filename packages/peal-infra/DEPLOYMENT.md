@@ -1,0 +1,53 @@
+# Deployment
+
+How Peal's own servers run: production and the sandbox behind Cloudflare,
+their releases, backups and alerts, and the uptime server that watches them
+from outside. Self-hosters need none of it.
+
+Peal's own instance runs the stack a [self-hosted](https://docs.peal.social/self-hosting) one runs, on servers that the Ansible in `packages/peal-infra/ansible` sets up and changes: nothing else does. [Its README](ansible/README.md) is the runbook, with every command.
+
+> **Before the first release.** These servers are being prepared, and nothing runs on them yet: their inventory holds placeholders, and every playbook refuses to run until they are replaced.
+
+## Servers
+
+| Server     | What it runs                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| Production | The stack (`compose.production.yaml`): Postgres, the server, the web app, the site, the docs, telemetry and alerts |
+| Sandbox    | The same, before production, with its own database, buckets, Stripe account and platform apps                      |
+| Uptime     | [Gatus](#uptime), which checks the other two from outside, and Caddy, its one public entry                         |
+
+Each is a server at a European provider, on Ubuntu LTS, with security updates every day, an admin account that signs in with a key, and a firewall that refuses every connection it does not need. Production and the sandbox are reached only through a Cloudflare Tunnel, which they dial out to, SSH included, and Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox. The staff Access lets into Grafana are its admins, with full access. The uptime server has no tunnel, no private network and no secret of theirs, and is at another provider and in another city than production, so an outage at one company, or in one data centre, never takes both.
+
+The platforms' apps, one set for production and one for the sandbox, are given the addresses each server prints for its own name, with [the command](https://docs.peal.social/self-hosting/platforms#platform-addresses) that lists them from the server's routes, on the server itself: `sudo peal-compose exec server bun packages/peal-server/scripts/platform-addresses.ts`. None is written by hand. The sandbox, behind Access, lets through the ones that the platforms' servers call.
+
+Secrets are generated on the server that uses them and stay there. What outside services issue, such as storage keys or a Telegram bot's token, comes from an encrypted vault or is written on the server, and Ansible checks it by name only.
+
+## Releases
+
+A release builds the images of one commit on the machine running Ansible, uploads them over SSH, and starts them: the server applies its migrations before it listens. The sandbox gets a release first. To roll one back, release the commit before it: migrations do not run backwards, so each one keeps the release before it working.
+
+## Backups
+
+Postgres archives its write-ahead log to Cloudflare R2 with pgBackRest at least every 5 minutes, and takes a full backup on Sundays and a differential one on the other days. The database can be restored to any moment of the last three weeks. Backups are encrypted before they leave the server. Media live in R2 and are not copied again.
+
+## Alerts
+
+The Grafana of production and of the sandbox sends its alerts to a Telegram chat: when the server answers no requests, fails them or logs errors, when a platform refuses the server's app until it is paid for, when no backup has finished for 30 hours, when the disk is 85% full, when a RAID array is degraded, and when a disk reports that it is failing.
+
+## Uptime
+
+The uptime server watches production and the sandbox as people reach them, through Cloudflare, so its alerts still go out when Cloudflare, a tunnel or a server is down. They go to a Telegram bot of its own. Its configuration is generated from the same inventory as theirs:
+
+| Check                 | Passes when                                                                |
+| --------------------- | -------------------------------------------------------------------------- |
+| The site and the docs | `/` answers `200` within a second, every minute                            |
+| The web app           | `/sign-in` answers `200` within two seconds, every minute                  |
+| The API               | `/api/ready` answers `204` within a second, every minute                   |
+| Each host name        | Its certificate is valid for two more weeks, and it resolves through Quad9 |
+| Production's Grafana  | Its heartbeat arrived in the last 15 minutes                               |
+
+A redirect fails a check. The sandbox, behind Cloudflare Access, is checked with a service token that Access lets in.
+
+Production's Grafana posts a heartbeat to the uptime server every 5 minutes or so, as [Watching it from outside](https://docs.peal.social/self-hosting/monitoring#uptime) describes: when production's own alerting stops, the uptime server alerts instead. The token the heartbeat carries is generated on the uptime server, and given to production as one of its credentials.
+
+The same dashboard is Peal's public status page, at [status.peal.social](https://status.peal.social): read-only, it shows every check and when it failed. It has a name of its own, a DNS record that points at the uptime server without going through Cloudflare, so it answers when Cloudflare does not; the uptime server's own name takes the heartbeats and nothing else.

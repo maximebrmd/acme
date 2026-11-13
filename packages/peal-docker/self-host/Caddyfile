@@ -50,6 +50,19 @@
 # 	encode zstd gzip
 # 	reverse_proxy static:8081
 # }
+#
+# Or, with the docs' assistant (DOCS_ASSISTANT_MODEL set, and the stack
+# started with `--profile docs` too), the docs server instead of the block
+# above. Caddy passes the host name through and replaces X-Forwarded-For
+# with the reader's address, which the assistant's rate limit counts by
+# (AUTH_IP_HEADERS=x-forwarded-for), and sends the answer as it streams.
+#
+# {$PEAL_DOCS_DOMAIN} {
+# 	encode zstd gzip
+# 	reverse_proxy docs:4323 {
+# 		flush_interval -1
+# 	}
+# }
 
 # Short links on a domain of their own (PEAL_SHORT_LINK_BASE set to
 # https://{$PEAL_SHORT_LINK_DOMAIN}/): Caddy sends each /<code> to the

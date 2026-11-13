@@ -3,5 +3,12 @@
   "compilerOptions": {
     "types": ["bun"]
   },
-  "include": ["blume.config.ts", "pricing-variables.ts"]
+  "include": [
+    "blume.config.ts",
+    "components.ts",
+    "platform-variables.ts",
+    "pricing-variables.ts",
+    "retention-variables.ts",
+    "scripts/*.ts"
+  ]
 }

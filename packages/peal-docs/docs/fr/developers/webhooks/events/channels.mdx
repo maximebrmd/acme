@@ -1,0 +1,165 @@
+---
+title: Événements des canaux
+description: "Les événements d’un canal : connecté, déconnecté, à reconnecter, désactivé ou réactivé, et bientôt expiré."
+sidebar:
+  icon: cable
+  label: "Canaux"
+---
+
+Les événements d’un canal, chacun avec ses champs et un exemple de contenu. Un point de terminaison [filtré par canaux](/developers/webhooks#filters) les reçoit quand le canal est listé.
+
+## channel.connected [#channel-connected]
+
+Un compte a été connecté à l’espace de travail, ou un canal que l’espace de travail avait a été de nouveau autorisé.
+
+| Champ         | Type    | Ce qu’il contient                                                                                  |
+| ------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                |
+| `channelId`   | chaîne  | Le canal                                                                                           |
+| `platform`    | chaîne  | La plateforme du canal                                                                             |
+| `reconnected` | booléen | Vrai quand un canal que l’espace de travail avait a été de nouveau autorisé ; faux pour un nouveau |
+
+```json title="channel.connected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-08T10:15:30.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "reconnected": false
+  }
+}
+```
+
+## channel.disconnected [#channel-disconnected]
+
+Un canal a été déconnecté de l’espace de travail.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.disconnected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e08",
+  "type": "channel.disconnected",
+  "version": 1,
+  "timestamp": "2026-11-12T14:02:09.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.reconnect_needed [#channel-reconnect-needed]
+
+L’autorisation du canal ne fonctionne plus : rien n’y est publié tant que personne ne l’a [reconnecté](/guides/channels#reconnect).
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.reconnect_needed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e09",
+  "type": "channel.reconnect_needed",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.disabled [#channel-disabled]
+
+Un membre a désactivé le canal : rien n’y est publié tant que personne ne le réactive. Une publication qui arrive à son heure sur ce canal y échoue (`channelDisabled`). Le canal garde son autorisation, ses publications et ses statistiques.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.disabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "channel.disabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.enabled [#channel-enabled]
+
+Un membre a réactivé le canal : il publie de nouveau. Quand son autorisation a cessé de fonctionner ou a expiré entre-temps, `channel.reconnect_needed` suit.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.enabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "channel.enabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.expiring [#channel-expiring]
+
+L’autorisation du canal ne peut pas être renouvelée, et prend fin à `expiresAt`, comme celle d’un profil LinkedIn après 60 jours : quelqu’un le [reconnecte](/guides/channels#reconnect) avant, ou rien n’y est publié ensuite.
+
+Il est envoyé une fois pour chaque expiration, une semaine avant au plus : programmez vos propres rappels à partir d’`expiresAt`.
+
+| Champ         | Type   | Ce qu’il contient                                             |
+| ------------- | ------ | ------------------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                                           |
+| `channelId`   | chaîne | Le canal                                                      |
+| `platform`    | chaîne | La plateforme du canal                                        |
+| `expiresAt`   | chaîne | Quand son autorisation prend fin, sous forme d’instant en UTC |
+
+```json title="channel.expiring"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "channel.expiring",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "linkedin",
+    "expiresAt": "2026-11-18T06:00:00.000Z"
+  }
+}
+```

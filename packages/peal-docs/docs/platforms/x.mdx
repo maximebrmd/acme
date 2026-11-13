@@ -1,0 +1,66 @@
+---
+title: X
+description: "Connect X to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/x.svg
+---
+
+How to connect an X account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                           |
+| ----------------- | ------------------------- |
+| Text              | {{platform-x-text-en}}    |
+| Images and videos | {{platform-x-media-en}}   |
+| Parts             | {{platform-x-parts-en}}   |
+| Formats           | {{platform-x-formats-en}} |
+| Alt text          | {{platform-x-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **X**, choose **Connect X**, sign in on X and allow Peal. It asks to:
+
+- read and write posts;
+- upload media;
+- stay connected, so it can renew its access without you.
+
+**Channels** offers X once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+### How X counts length [#length]
+
+X counts a post's length its own way, and Peal counts the same, so a post it accepts fits on X (see [Length on each channel](/guides/posts#write)):
+
+- A link counts 23 characters whatever its length, written with `https://` or without, as `peal.social` (a domain X knows, so not `localhost`).
+- An emoji, or a character outside the Latin, Greek and Cyrillic scripts, counts 2.
+
+## Options [#options]
+
+No option is required, and each is sent only when you choose it. **API name** is the option's name through the API. **Parts** says what it applies to in a [thread](/guides/posts#threads).
+
+| Option                        | API name             | Values                                                   | Left out                | Parts                             |
+| ----------------------------- | -------------------- | -------------------------------------------------------- | ----------------------- | --------------------------------- |
+| **Who can reply**             | `replySettings`      | `following`, `mentionedUsers`, `subscribers`, `verified` | Everyone                | The first part                    |
+| **Community**                 | `communityId`        | The community's number, digits only                      | The account's followers | The first part                    |
+| **Also share with followers** | `shareWithFollowers` | Yes or no; only with a community                         | No                      | The first part                    |
+| **Paid partnership**          | `paidPartnership`    | Yes or no                                                | No                      | Every part                        |
+| **Made with AI**              | `madeWithAi`         | Yes or no                                                | No                      | Every part with images or a video |
+
+X does not document which accounts may use each of these. When X refuses a post that carries them:
+
+| X's answer                                                 | The channel reads                                                                                        | What to do                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Names one of the options (the field, or the community)     | **Failed**, with the code `optionRefused`                                                                | Change the options and post it again |
+| Refuses it for anything else, such as a restricted account | X's own problem type, as for a post without options (`client-forbidden`, or `http403` when X names none) | Changing the options will not help   |
+
+With `optionRefused`, Peal does not send the post again. X's message is not kept, so the channel does not say which option X refused.
+
+## Comments [#comments]
+
+Peal does not read comments on X yet.
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers X once its app is registered: see [X](/self-hosting/platforms#x). Until then, **Channels** does not offer it.

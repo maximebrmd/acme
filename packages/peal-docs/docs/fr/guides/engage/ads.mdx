@@ -1,0 +1,136 @@
+---
+title: Publicités
+description: Connecter des comptes publicitaires Meta à un espace de travail et lire leurs campagnes et leurs chiffres du jour à côté des résultats organiques de vos publications.
+sidebar:
+  icon: megaphone
+---
+
+Reliez un espace de travail à ses comptes publicitaires chez Meta, voyez ce que leurs publicités ont donné à côté de ce que vos publications ont fait d’elles-mêmes, et mettez en avant une publication parue avec Peal sous la forme d’une publicité sur Facebook ou Instagram.
+
+<Callout type="note" title="Nouveau">
+  Cette fonctionnalité est nouvelle : son API peut encore s’étendre. Elle est
+  désactivée tant que l’opérateur de l’instance ne l’a pas activée, et une
+  instance peut proposer la lecture sans la dépense. Rien ne dépense tant qu’un
+  propriétaire n’y a pas autorisé un compte publicitaire, avec un plafond
+  mensuel.
+</Callout>
+
+## Ce qui fonctionne aujourd’hui [#what-works]
+
+- Connecter des comptes publicitaires Meta, par une connexion qui leur est propre, distincte de celle qui relie les Pages Facebook et les comptes Instagram comme [canaux](/guides/channels).
+- Lire les campagnes, ensembles de publicités et publicités de chaque compte publicitaire connecté, y compris ceux créés hors de Peal, et ce que chaque publicité a donné chaque jour.
+- Voir l’organique et le payant côte à côte : les chiffres propres d’une publication parue sur chaque canal, à côté de ce qu’ont donné les publicités qui la mettent en avant.
+- [Mettre en avant une publication parue](/guides/engage/boosts), sur une Page Facebook, ou sur un compte Instagram connecté par sa Page, avec un budget, une date de fin et une audience.
+- Mettre en pause, relancer et arrêter une mise en avant.
+- Des notifications aux propriétaires de l’espace de travail pour chaque mise en avant, des [événements de webhook](/developers/ads#webhooks) pour vos propres systèmes, et un [journal d’audit](/guides/engage/boosts#audit) de chaque décision qui touche à l’argent.
+
+L’[API](/developers/ads#api), les SDK, la [ligne de commande et les outils MCP](/developers/ads#clients) font la même chose. [Ce qui n’est pas fait](#not-built) liste le reste.
+
+## Qui peut faire quoi [#access]
+
+Les publicités ont quatre permissions. Un membre a celles de son [rôle](/guides/posts#roles) :
+
+| Permission      | Ce qu’elle permet                                                                                                                               | Qui l’a                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `ads:read`      | Voir les comptes publicitaires, leurs campagnes et leurs chiffres, les résultats payants d’une publication, et les mises en avant               | Propriétaires, administrateurs et éditeurs |
+| `ads:manage`    | Se connecter à un réseau publicitaire, connecter et déconnecter des comptes publicitaires, et mettre en pause ou arrêter une mise en avant      | Propriétaires et administrateurs           |
+| `ads:spend`     | Mettre en avant une publication, relancer une mise en avant en pause, et en mettre une en pause ou l’arrêter                                    | Propriétaires et administrateurs           |
+| `ads:authorize` | Décider si un compte publicitaire peut dépenser avec Peal, fixer son plafond mensuel, et lire le [journal d’audit](/guides/engage/boosts#audit) | Propriétaires seulement                    |
+
+Une partie n’est faite que par une personne, connectée à Peal dans sa propre session, jamais par une clé d’API, une application ou l’équipe qui agit à la place d’un membre :
+
+- se connecter au réseau publicitaire et choisir les comptes publicitaires à connecter (`ads:manage`), et seule la personne qui s’est connectée choisit des comptes dans sa connexion ;
+- autoriser un compte publicitaire à dépenser, et fixer ou changer son plafond (`ads:authorize`).
+
+Une [clé d’API](/guides/workspace#api-keys) fait ce que permettent les permissions publicitaires qu’elle a reçues, jamais `ads:authorize`. Une application OAuth doit aussi porter le scope `workspace:ads`, qui n’ouvre rien seul : avec `workspace:write` pour ce que `ads:manage` permet à une application, avec `workspace:publish` pour `ads:spend` ([Ce que permet chaque permission](/developers/agents#scopes)). L’équipe qui agit à la place d’un membre ne fait que lire.
+
+## Connecter des comptes publicitaires [#connect]
+
+Dans l’application web, ouvrez un espace de travail, puis **Publicités**.
+
+<Steps>
+  <Step title="Se connecter à Meta">
+    Un propriétaire ou un administrateur choisit de connecter Meta, et se
+    connecte sur la page de Meta. Peal demande à lire les publicités. Sur une
+    instance qui propose la dépense, il demande aussi ce que créer et diffuser
+    des publicités exige, que la personne peut refuser : les comptes sont alors
+    lus, et ne peuvent rien mettre en avant.
+  </Step>
+  <Step title="Passer en revue les comptes publicitaires">
+    De retour dans Peal, la connexion liste les comptes publicitaires qu’elle
+    atteint, chacun avec sa devise, son fuseau horaire, son état et son plafond
+    de dépenses. Rien n’est encore connecté.
+  </Step>
+  <Step title="Choisir les comptes">
+    La personne coche les comptes que l’espace de travail utilise. Jusqu’à 25
+    sont connectés à la fois.
+  </Step>
+</Steps>
+
+Une connexion est terminée une seule fois, dans les 15 minutes, par la personne qui l’a commencée. Une connexion qui n’a relié aucun compte est retirée au bout d’un jour. Peal stocke le jeton d’accès de la connexion chiffré, et ne l’affiche jamais.
+
+Les dépenses sont désactivées sur tout compte nouvellement connecté. Un compte dont Peal ne connaît pas le fuseau horaire ne peut pas être connecté.
+
+Lorsque le réseau refuse le jeton d’une connexion, ses comptes indiquent qu’ils sont à reconnecter, et les membres qui gèrent les comptes publicitaires sont [prévenus](/guides/engage/boosts#notices). Rien n’est lu de ces comptes, ni mis en avant sur eux, tant que la personne qui s’était connectée ne l’a pas refait.
+
+### Déconnecter [#disconnect]
+
+- Déconnecter un compte publicitaire retire ce que Peal en a lu.
+- Retirer une connexion retire son jeton et tous les comptes qu’elle relie.
+- Les traces de leurs mises en avant restent avec l’espace de travail, et ce qu’elles engagent sur un mois compte encore dans le plafond quand le même compte est reconnecté.
+- Ce qui est diffusé sur le réseau sans avoir été créé par Peal reste tel quel.
+
+<Callout type="warning" title="Arrêtez d’abord les mises en avant en cours">
+  Les deux sont refusés tant qu’une de leurs mises en avant est diffusée, peut
+  l’être, est en pause ou en cours de création (`AdAccountBusy`), car une
+  campagne en pause peut reprendre : arrêtez-la d’abord.
+</Callout>
+
+## Ce que Peal lit [#reading]
+
+Toutes les heures, Peal lit chaque compte publicitaire connecté sur son réseau : ses campagnes, ses ensembles de publicités et ses publicités, et les chiffres de chaque publicité pour chaque jour du calendrier du compte.
+
+| Chiffre     | Ce que c’est                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Dépense     | Ce que la publicité a coûté, en [unités mineures](/guides/engage/boosts#money) du compte                                                |
+| Impressions | Combien de fois elle a été affichée                                                                                                     |
+| Couverture  | Combien de personnes l’ont vue ce jour-là. Additionnée sur plusieurs jours, une personne vue plusieurs jours compte pour chaque jour    |
+| Clics       | Les clics sur la publicité                                                                                                              |
+| Résultats   | Les réactions, commentaires et partages que le réseau compte sur la publication. Absents, et non zéro, quand il n’en a communiqué aucun |
+
+- La première lecture d’un compte prend les 90 derniers jours. Les suivantes relisent les 7 derniers jours, car les réseaux corrigent les jours récents pendant un temps.
+- Une lecture s’arrête dès que le compte atteint 75 % de la limite de requêtes que son réseau lui donne, et reprend à une heure suivante : Peal n’utilise jamais toute l’allocation d’un compte publicitaire.
+- Un jour de chiffres est conservé 396 jours (13 mois), pour qu’un mois puisse être comparé au même mois de l’année précédente.
+- Les chiffres sont ceux du réseau, lus avec un retard d’une heure ou plus. Ils ne sont pas une facture : ce que le réseau facture figure dans le compte publicitaire.
+
+Peal conserve des décomptes et des montants. Il ne lit jamais qui a vu une publicité.
+
+### Organique et payant pour une publication [#post-performance]
+
+La page d’une publication parue montre deux côtés :
+
+- ses chiffres organiques sur chaque canal, tels que les [Statistiques](/guides/engage/analytics) les ont lus en dernier ;
+- ce qu’ont donné les publicités qui la mettent en avant, par compte publicitaire, avec ses mises en avant. Une publicité créée hors de Peal qui met en avant la même publication est comptée aussi.
+
+Les deux ne sont jamais additionnés : ce qu’une plateforme compte sur une publication comprend déjà ce que ses publicités ont apporté. Des montants dans des devises différentes ne s’additionnent pas non plus : les totaux payants viennent donc un par compte publicitaire.
+
+Le côté organique est vide pour quelqu’un qui ne peut pas lire les statistiques, et pour une plateforme dont Peal [ne lit pas](/guides/engage/analytics#schedule) les chiffres, comme les Pages Facebook.
+
+## Vos données [#data]
+
+- Supprimer un espace de travail supprime ses connexions avec leurs jetons, ses comptes publicitaires, ce qui en a été lu, ses mises en avant, leur journal et son journal d’audit. C’est refusé tant qu’une mise en avant est diffusée, peut l’être ou est en cours de création : arrêtez-la d’abord.
+- Fermer votre compte retire votre identifiant de ce qui reste dans les espaces de travail que vous partagiez. Les connexions que vous avez faites y restent avec leurs comptes publicitaires, sans lui, jusqu’à la déconnexion du compte ou la suppression de l’espace de travail.
+- La [copie de vos données](/guides/workspace/account#export) contient, pour chaque espace de travail dont vous êtes le seul membre, un objet `ads` : ses connexions sans leurs jetons, ses comptes publicitaires, ses mises en avant et son journal d’audit.
+- Lorsque quelqu’un demande à Meta la suppression de ce qu’une instance détient à son sujet, Peal retire les connexions qu’il a faites et les comptes publicitaires qu’elles relient. Lorsqu’il retire l’application de son compte Meta, ses connexions sont marquées à renouveler.
+
+Ce qu’une publicité demande part au réseau publicitaire : l’identifiant de la publication, le budget, les dates, l’audience, et le bénéficiaire et le payeur.
+
+## Ce qui n’est pas fait [#not-built]
+
+- D’autres réseaux publicitaires que celui de Meta.
+- Créer des campagnes, des ensembles de publicités ou des publicités avec leurs propres visuels : Peal met en avant une publication déjà parue.
+- Mettre en avant une publication qui n’est pas parue avec Peal, ou sur un compte Instagram connecté avec Instagram Login.
+- Modifier le budget ou l’audience d’une mise en avant en cours : arrêtez-la, et créez-en une autre.
+- Les centres d’intérêt, les audiences personnalisées, le genre, ou des lieux plus fins que les pays.
+- Les catégories spéciales de publicité : logement, emploi, produits et services financiers, enjeux sociaux, élections ou politique.
+- Les conversions, les formulaires de prospects et les règles automatiques.

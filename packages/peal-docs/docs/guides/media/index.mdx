@@ -1,0 +1,296 @@
+---
+title: Images and videos
+description: "Upload images and videos to the media library, attach them to posts with alt text, and what each platform accepts."
+sidebar:
+  icon: image
+---
+
+A post can show images and videos from its workspace's media library, in the order you choose, each with alt text for people who cannot see it. Peal checks them against each channel's platform when you schedule the post, and sends them with it at its time.
+
+## The media library [#library]
+
+From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them. Large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
+
+| Kind      | Formats               | Largest file |
+| --------- | --------------------- | ------------ |
+| Images    | JPEG, PNG, GIF, WebP  | 16 MiB       |
+| Videos    | MP4, QuickTime (.mov) | 1 GiB        |
+| Documents | PDF, up to 300 pages  | 100 MiB      |
+
+Contributors and above upload; editors and above delete.
+
+Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec, a PDF's number of pages.
+
+- A PDF is a document, which only LinkedIn shows, page by page. Peal stores it and hands it over, and never opens it.
+- A PDF of more than 300 pages, the most LinkedIn takes, is not ready for posts. One whose pages cannot be counted, such as an encrypted file, is kept, and LinkedIn judges it.
+- An image whose content is not of the type it was uploaded as is refused, and deleted.
+
+On an instance that bills, each plan holds a number of bytes of media ([Plans and billing](/guides/workspace/billing#limits)), uploads in progress included. An upload the workspace has no room for is refused before anything is sent, and deleting media makes room.
+
+## Import from an address [#import]
+
+A file that is already online can come into the library without passing through your computer: the Peal server fetches it itself. All three ways need the right to upload.
+
+<Tabs>
+  <Tab title="CLI">
+
+```sh
+peal media import https://files.example/spring/cover.jpg --alt "A paper catalogue open on a wooden table"
+```
+
+See [`peal media import`](/developers/cli/posts#media).
+
+  </Tab>
+  <Tab title="MCP">
+    The `import_media` tool, from an [MCP client](/developers/mcp/tools#tools).
+  </Tab>
+  <Tab title="API">
+    `POST /api/workspaces/{workspaceId}/media/import`, with the file's `url` and, if you like, its `altText`.
+  </Tab>
+</Tabs>
+
+- The address must be an `https://` URL on the default port, without a user name or password, whose host is public: not `localhost`, nor a private network. The server sends no credentials or cookies, and follows at most three redirects, each checked the same way.
+- The file's type is read from the file itself, whatever its name or what its host says: the formats and sizes above. A link to a page that shows a picture is not the picture.
+- The file must arrive within 90 seconds. Upload larger or slower files instead.
+- A workspace imports two files at once, and a server eight: one more is refused (`MediaImportBusy`, 429) until one has finished. Ask again a moment later.
+- Each import adds a new file, read as an upload is. On an instance that bills, it must fit the plan's media storage.
+
+## Generate an image [#generate]
+
+When the workspace has its own [image provider](/guides/workspace#image-provider), or the instance has an image model, the assistant makes an image from a description into the library. It needs the right to use the assistant and the right to upload: contributors and above.
+
+<Tabs>
+  <Tab title="Web app">
+    **Generate an image** on the **Media** page, and in the composer's **Choose from the library** dialog, where the new image is then picked.
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal media generate --prompt "A paper catalogue open on a wooden table, morning light" --aspect landscape
+```
+
+See [`peal media generate`](/developers/cli/posts#media).
+
+  </Tab>
+  <Tab title="MCP">
+    The `generate_image` tool, from an [MCP client](/developers/mcp/tools#tools).
+  </Tab>
+  <Tab title="API">
+    `POST /api/workspaces/{workspaceId}/assistant/images`, with the `prompt` and the `aspect` (`square`, `landscape` or `portrait`).
+  </Tab>
+</Tabs>
+
+The description, 1 to 1,000 characters, goes as it is to the workspace's own image provider, with its key, when it set one, and otherwise to the image provider the instance's administrator chose. Peal never writes it, nor the image, to its logs.
+
+<Callout type="warning">
+  Write nothing in the description you would not send to that provider.
+</Callout>
+
+### What an image costs [#generate-cost]
+
+| Made by                      | What it costs                                                                                                                                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The workspace's own provider | None of the day's assistant requests, on any plan, the free plan and a trial included. A workspace asks it for 50 images a day at most, each counted whatever it ends with, and for two at once (`OwnImageLimitReached`, 429, past the day's). |
+| The instance's model         | 5 of the workspace's [assistant requests](/guides/posts/assistant#assistant) of the day, given back whenever no image came of it. On the free plan's 3 a day, and during a trial, none is made.                                                |
+
+- The workspace's own provider has slots of its own, so its images never hold those of the instance's model.
+- If that provider refuses (its key, its account, its model or its address), the image is not made, and Peal's own model is never asked instead. The answer is `ImageProviderRefused`, and an owner or an admin fixes the settings.
+- The 5 requests of the instance's model are given back when the provider could not be reached, refused the description or the instance's settings, or the plan's storage filled meanwhile. A timeout or an unusable answer counts, as the provider may have made the image.
+- On an instance that bills, the plan's media storage must have room for the largest image, 16 MiB, before anything is spent.
+- A workspace makes two images at once, and a server eight: one more is refused (`MediaImportBusy`, 429) until one has finished. The provider has 90 seconds to answer.
+
+### The image in the library [#generated-image]
+
+- The image is stored exactly as the provider made it, never re-encoded, so whatever the provider wrote in the file stays in it.
+- It gets no description: say what it shows in its alt text when you attach it.
+- The library marks it **Made by AI**, and the API's media answers `aiGenerated: true`.
+- When you attach it in the web app, the composer turns on the AI label of the channels whose platform has one (YouTube's synthetic content, TikTok's AI-generated content, X's made with AI), once, and says so. You can turn it off in the channel's options.
+- Peal does not set these labels for posts made through the API, the command line or MCP: set the [platform options](/guides/posts#options) yourself.
+
+Images are off unless the workspace sets its own provider, or the instance sets an image model: [Self-hosting](/self-hosting/assistant#ai).
+
+## Attach media to a post [#attach]
+
+In the composer, under **Images and videos**:
+
+- **Choose from the library** opens the workspace's media. Pick files in the order the post shows them, each numbered as you go, then choose **Attach**. Files still being processed are marked **Not ready yet**, and cannot be picked.
+- Or drop files on the uploader below, or click it to choose them. Each file joins the post once it is uploaded and read. One that is uploaded but cannot be read yet, such as a video on a server without ffprobe, stays in the library and is not attached.
+- Move a file earlier or later in the post with its arrows, or remove it from the post. Removing it leaves it in the library.
+
+A post holds up to 20 images and videos, and each platform takes fewer, as below. Saving the draft keeps them.
+
+## Alt text [#alt-text]
+
+Each image or video of a post has its own alt text, which starts as its description in the library. Changing it in the composer changes it for this post only. A post's alt text can be up to 5,000 characters, but platforms keep less, as below.
+
+Write alt text for every file. When one has none, the composer names the platforms among the post's channels that show alt text, and each of those channels shows how many files lack it.
+
+<Callout type="info">
+  This is a reminder: it does not stop you from scheduling.
+</Callout>
+
+## What each platform accepts [#platforms]
+
+When you schedule a post, Peal checks its images and videos against these limits.
+
+### Bluesky and Mastodon [#platforms-bluesky-mastodon]
+
+| Limit                         | Bluesky                                             | Mastodon                                                                  |
+| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
+| Images and videos in one post | 4                                                   | 4                                                                         |
+| Images                        | JPEG, PNG, GIF and WebP, up to 2,000,000 bytes each | JPEG, PNG, GIF and WebP, up to 16 MiB and 33,177,600 pixels (7680 × 4320) |
+| Videos                        | One MP4, up to 300,000,000 bytes and 3 minutes      | One MP4 or QuickTime, up to 99 MiB and 8,294,400 pixels (3840 × 2160)     |
+| Images and a video together   | No                                                  | No                                                                        |
+| Alt text                      | Shown to people who need it                         | Shown to people who need it, up to 1,500 characters                       |
+
+The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Peal also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
+
+### LinkedIn and X [#platforms-linkedin-x]
+
+| Limit                         | LinkedIn                                                       | X                                                          |
+| ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
+| Images and videos in one post | 20                                                             | 4, or one GIF alone                                        |
+| Images                        | JPEG, PNG and GIF, up to 36,152,320 pixels                     | JPEG, PNG and WebP up to 5 MiB; GIF up to 15 MiB           |
+| Videos                        | One MP4, of 3 seconds to 30 minutes, from 75 KB to 500 MiB     | One MP4 or QuickTime, of 0.5 to 140 seconds, up to 512 MiB |
+| Images and a video together   | No                                                             | No                                                         |
+| Alt text                      | On images, shown to people who need it, up to 4,086 characters | Shown to people who need it, up to 1,000 characters        |
+
+- X lets some accounts post longer videos; Peal checks the length every account may post.
+- A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled.
+- On LinkedIn, a post can show one PDF of up to 100 MiB instead, alone, without alt text, under the title its options give or its file's name. Every other platform refuses a PDF when the post is scheduled.
+
+### Threads, Instagram and Facebook Pages [#platforms-meta]
+
+| Limit                         | Threads                                             | Instagram                                                | Facebook Pages                  |
+| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------- | ------------------------------- |
+| Images and videos in one post | 20, as a carousel                                   | 20, as a carousel; at least one                          | Several photos, or one video    |
+| Images                        | JPEG and PNG, up to 8 MiB, at most 10:1 either way  | JPEG only, up to 8 MiB, from 4:5 to 1.91:1               | JPEG, PNG and GIF, up to 10 MiB |
+| Videos                        | MP4 or QuickTime, up to 1 GiB and 5 minutes         | MP4 or QuickTime, 3 seconds to 15 minutes, up to 300 MiB | One MP4 or QuickTime            |
+| Images and a video together   | Yes                                                 | Yes                                                      | No                              |
+| Alt text                      | Shown to people who need it, up to 1,000 characters | Not sent                                                 | Shown to people who need it     |
+
+### TikTok [#platforms-tiktok]
+
+| Limit                         | TikTok                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Images and videos in one post | One video, or up to 35 photos; at least one                                                                   |
+| Images                        | JPEG and WebP, up to 20 MiB and 1080p (2,073,600 pixels)                                                      |
+| Videos                        | MP4 or QuickTime, up to 4 GiB and 10 minutes, each side from 360 to 4,096 pixels, at 23 to 60 frames a second |
+| Images and a video together   | No                                                                                                            |
+| Alt text                      | Not sent                                                                                                      |
+
+- A TikTok account may post shorter videos only, as its settings on TikTok say: Peal checks its longest when you schedule the post, and again when it goes out.
+- Peal does not read a video's frame rate: TikTok refuses one outside its range when it processes the post.
+- Photos need a server set up to let TikTok fetch them (see [TikTok](/self-hosting/platforms#tiktok)). Elsewhere, a TikTok post with photos is refused when you schedule it.
+
+### YouTube [#platforms-youtube]
+
+| Limit                         | YouTube                                      |
+| ----------------------------- | -------------------------------------------- |
+| Images and videos in one post | One video, required                          |
+| Images                        | Not taken                                    |
+| Videos                        | MP4 or QuickTime, up to 256 GiB and 12 hours |
+| Alt text                      | Not sent: the post's text is the description |
+
+A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
+
+### Pinterest [#platforms-pinterest]
+
+| Limit                         | Pinterest                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| Images and videos in one post | One video, or up to 5 images, which make a carousel; at least one                        |
+| Images                        | JPEG and PNG, up to 20 MiB                                                               |
+| Videos                        | MP4 or QuickTime, up to 2 GiB, 4 seconds to 15 minutes, from 1:2 (tall) to 1.91:1 (wide) |
+| Images and a video together   | No                                                                                       |
+| Alt text                      | One for the Pin, the first file's, up to 500 characters                                  |
+
+Pinterest recommends images of 2:3, such as 1,000 by 1,500 pixels, and asks a carousel's images to be square or 2:3, which it checks itself.
+
+### Google Business Profile [#platforms-google-business]
+
+| Limit                         | Google Business Profile                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Images and videos in one post | Photos only                                                                                          |
+| Images                        | JPEG and PNG, from 10,240 bytes to 5 MiB; a shorter side of 250 pixels at least, which Google checks |
+| Videos                        | Not taken                                                                                            |
+| Alt text                      | Not sent                                                                                             |
+
+Peal checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
+
+## When you schedule [#schedule]
+
+Beside each channel's counter, the composer lists what its platform would refuse:
+
+- too many videos, or images with a video;
+- a file type it does not take;
+- a file too large, a video too long or too short, or too many pixels;
+- a shape it does not take;
+- alt text too long.
+
+**Schedule** stays off until each one is fixed, and the composer names the channel and the image or video concerned.
+
+A draft may hold any ready media of its workspace: the platforms' limits wait until you schedule it. Moving a scheduled post does not check its media again. On the calendar, posts with images or videos carry a mark.
+
+## When the post goes out [#publishing]
+
+At the post's time, Peal sends each file from the library to the platform, then publishes the post. Peal waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
+
+<Accordion>
+  <AccordionItem title="Mastodon">
+    Each file goes to the account's server, which may process it before the post
+    can show it.
+  </AccordionItem>
+  <AccordionItem title="Bluesky">
+    Images go to the server that holds the account, and a video to Bluesky's
+    video service, which processes it.
+  </AccordionItem>
+  <AccordionItem title="Threads, Instagram and Facebook Pages">
+    Peal gives Meta a link to each file in the media store, valid for two hours,
+    and Meta fetches it. On Threads and Instagram, Meta then processes the files
+    before the post goes out.
+  </AccordionItem>
+  <AccordionItem title="TikTok">
+    A video goes up in parts of 10 MB, read one at a time from the media store,
+    unless the server lets TikTok fetch it from the store's public address.
+    TikTok always fetches photos. TikTok then processes the post before it goes
+    live.
+  </AccordionItem>
+  <AccordionItem title="YouTube">
+    Peal uploads the video in parts of 8 MiB, picking up where YouTube stands if
+    an upload is cut off, even after the server restarts, then waits while
+    YouTube processes it.
+  </AccordionItem>
+  <AccordionItem title="Pinterest">
+    Peal gives Pinterest a link to each image in the media store, valid for two
+    hours, and Pinterest fetches it when it creates the Pin. A video goes up in
+    one request, read from the media store as it is sent and never held whole in
+    memory, to the address Pinterest gives for it. Pinterest then processes it,
+    usually within seconds.
+  </AccordionItem>
+  <AccordionItem title="Google Business Profile">
+    Peal gives Google a link to each photo in the media store, valid for two
+    hours, and Google fetches it.
+  </AccordionItem>
+</Accordion>
+
+## Delete media [#delete]
+
+<Steps>
+  <Step title="Choose the bin">
+    Choose the bin on a file in the library. The dialog says which posts show
+    it.
+  </Step>
+  <Step title="Confirm">Confirm to delete the file.</Step>
+</Steps>
+
+- While a post that is scheduled, or going out, shows it, it cannot be deleted: the dialog links to those posts. Take each one back to draft and remove the file, or wait until it has gone out.
+- Drafts that show it lose it when it is deleted, and the dialog says how many.
+- A file a post's [options](/platforms) name, as a YouTube video's thumbnail or an Instagram reel's cover, counts as one the post shows: it cannot be deleted while such a post is scheduled or going out, and a draft that names it loses it.
+- A file a post shows on one channel only, as [images and videos of its own](/guides/posts#write) there, counts as one the post shows too. A draft's channel whose only file it was shows the post's images and videos again.
+
+Posts that went out keep the file on their platforms.
+
+<Callout type="warning">
+  Should a file still be deleted from under a post at its time, the post fails
+  on its channels, saying an image or video was deleted.
+</Callout>

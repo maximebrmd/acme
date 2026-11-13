@@ -1,0 +1,315 @@
+---
+title: Workspace settings
+description: "Rename a workspace, manage its members, invitations, API keys and webhooks, choose the assistant's providers, or delete it."
+sidebar:
+  icon: settings
+---
+
+Manage a workspace's members, invitations, keys, webhooks and assistant providers, or delete it. A workspace's settings belong to its members, as their roles allow; [your account's settings](/guides/workspace/account) belong to you alone.
+
+## Workspace settings [#workspace]
+
+Choose **Settings** on a workspace's card. Which tabs you see depends on what you may do:
+
+| Tab             | Who sees it                     |
+| --------------- | ------------------------------- |
+| **General**     | Every member                    |
+| **Members**     | Every member                    |
+| **Security**    | Every member                    |
+| **Invitations** | Members who may invite people   |
+| **API keys**    | Members who may handle keys     |
+| **Webhooks**    | Members who may manage webhooks |
+| **Assistant**   | Owners and admins               |
+
+| Role        | In the settings                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, the assistant's image and text providers, requiring two-step verification, and deleting it        |
+| Admin       | Rename, members other than owners, invitations, API keys, webhooks and the assistant's image and text providers; never owners, nor requiring two-step verification, nor deleting |
+| Editor      | Sees the members                                                                                                                                                                 |
+| Contributor | Sees the members                                                                                                                                                                 |
+| Viewer      | Sees the members                                                                                                                                                                 |
+
+Under **General**, owners and admins also choose **Approvals**: whether posts wait for an approval before they are scheduled. See [Review and approval](/guides/posts/review#policy).
+
+### Members [#members]
+
+**Members** lists everyone in the workspace with their role.
+
+- Owners and admins change a member's role from the list.
+- They also remove a member, which they confirm: that person loses access at once.
+- Only owners make someone an owner or remove one.
+- A workspace always keeps at least one owner, so the last owner can neither leave that role nor be removed.
+
+### Invitations [#invitations]
+
+<Steps>
+  <Step title="Invite">
+    Under **Invitations**, enter an email address and a role, then **Send the
+    invitation**. Only owners invite owners.
+  </Step>
+  <Step title="The invitee joins">
+    The invitee receives a link to join, valid for 7 days, in their language
+    when they already have an account and in yours otherwise. They join once
+    signed in with that address.
+  </Step>
+</Steps>
+
+Pending invitations are listed with their expiry:
+
+- **Send again** emails the link again, valid 7 days more.
+- **Revoke** stops the link working.
+- **Copy link** copies the same link, in your language, to hand over another way. Only the person invited can accept it, signed in with the invited address once verified, until the invitation expires.
+
+### Security: require two-step verification [#require-two-step]
+
+Under **Security**, an owner requires [two-step verification](/guides/workspace/account#two-step) of every member. Only an owner does it, signed in themselves: never an admin, an API key, an application or staff acting as an owner. They can do it only once their own account has it on, so nobody locks themselves out.
+
+<Callout type="warning" title="Members without it lose access at once">
+  Before it takes effect, Peal names the members whose account does not have it
+  on: they lose access at once, until they turn it on.
+</Callout>
+
+Every member sees whether it is required. Those who manage members see who has it on, in **Members**.
+
+While their account does not have it on, a member of a workspace that requires it is refused the workspace everywhere they reach it:
+
+- the web app shows them what the owners require and the way to their account settings instead of any page of it;
+- the [command line](/developers/cli#login) and [MCP clients](/developers/mcp#sign-in) are refused with `twoStepRequired`;
+- so are the sign-in service's own workspace routes for that workspace.
+
+Their sessions and applications are not signed out: everything works again as soon as they turn it on. Invitations still work: the invitee joins, then is asked to turn it on. The workspace's [API keys](#api-keys) and a partner's keys are not concerned: they belong to the workspace, not to a person.
+
+Turning the requirement off takes effect at once too. Both are kept in the [activity log](#activity).
+
+### API keys [#api-keys]
+
+<Steps>
+  <Step title="Create the key">
+    Under **API keys**, give a new key a name, how long it works (30, 90 or 365
+    days, or until revoked) and what it may do, out of the permissions your role
+    gives you.
+  </Step>
+  <Step title="Copy it">
+    The key appears once, right after: copy it then, as Peal keeps only a hash
+    of it. [The API overview](/developers#authentication) tells how to send it.
+  </Step>
+</Steps>
+
+**Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
+
+The list says of each key whether it **can schedule and publish posts**. It can when it holds `post:schedule`, `post:publish` or `post:approve`, and writes drafts at most without them. A post created or scheduled with a key says so on its page, with the key's name.
+
+<Callout type="warning" title="What a key publishes is public">
+  Give a key those permissions only when what uses it must publish: what it
+  sends is public on the platforms ([Posting from an AI
+  agent](/developers/agents#api)).
+</Callout>
+
+### Webhooks [#webhooks]
+
+Under **Webhooks**, owners and admins add the addresses Peal calls when something happens in the workspace, 10 at most.
+
+- Each has the events it wants, a description, and a signing secret that appears once, right after it is created or rotated.
+- Each endpoint keeps a log of its deliveries for 30 days, from which a delivery can be sent again, and takes a test event.
+- Staff acting as a member cannot change webhooks.
+
+[Webhooks](/developers/webhooks) lists the events, and tells how to verify a delivery.
+
+### The assistant's image provider [#image-provider]
+
+Under **Assistant**, owners and admins bring the workspace's own image provider, so the [images the assistant makes](/guides/media#generate) come from your account there rather than from the instance's model. It takes `assistant:configure`, which an [API key](#api-keys) or a [partner key](/developers/embedding#account) may also be given.
+
+| Field       | What to enter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Address** | The base address of an endpoint that speaks the OpenAI images API, the one Peal adds `/images/generations` to, such as `https://images.example.com/v1`. Many providers offer one under an "OpenAI-compatible" address. Peal sends it one request shape, `{ model, n, prompt, size }`, and reads an image in base64 or at an address. Peal does not promise that a given provider takes it. The address must be HTTPS on the default port, on a public host, without a user, a password, a query or a fragment. |
+| **Model**   | Your provider's model, as its documentation names it. The model can change alone.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Key**     | Your account's key at the provider, sent as a bearer token. Peal keeps it encrypted, for this workspace and this exact address alone, never shows it again and never writes it to its logs. A saved key shows as saved and is kept until you type another. Any change to the address, its host or its path, asks for it again, as Peal never sends a key to an address it was not given for.                                                                                                                   |
+
+Once saved, the workspace's image descriptions go to that address with that key, and Peal's own model is never asked for them, even when your provider refuses.
+
+- Its images cost none of the workspace's assistant requests, on any plan, the free plan and a trial included, up to 50 a day. They still take room in the plan's storage.
+- Peal does not call the provider when you save it: the first image tells whether the settings work.
+- When the provider refuses the key, the account, the model or the address, the image is not made and the dialog says so.
+- When the instance's keys change and the saved key can no longer be read, the page asks for it again.
+- **Remove**, which asks first, deletes the key: images come from the instance's model again, if it has one.
+
+The [command line](/developers/cli/posts#assistant) has `peal assistant image-provider`. No MCP tool reads or sets it, as a key typed into a chat reaches a model.
+
+<Accordion>
+  <AccordionItem title="Addresses Peal refuses">
+    Peal refuses, in words, an address that:
+
+    | Code              | The address                     |
+    | ----------------- | ------------------------------- |
+    | `notHttps`        | is not HTTPS                    |
+    | `credentials`     | carries credentials             |
+    | `queryOrFragment` | carries a query or a fragment   |
+    | `tooLong`         | is too long                     |
+    | `malformed`       | is not an address               |
+    | `notPublic`       | has a host that is not public   |
+    | `unknownHost`     | has a host that does not resolve |
+
+    A server whose operator set no keys that encrypt secrets keeps no key
+    (`AssistantSecretsNotConfigured`).
+
+  </AccordionItem>
+</Accordion>
+
+### The assistant's text provider [#text-provider]
+
+Under **Assistant**, owners and admins can also bring the workspace's own text provider, so the [writing assistant](/guides/posts/assistant#assistant) writes with your account there rather than with the instance's model. It is the way a workspace uses the assistant without the instance's allowance: its requests are outside it, on any plan.
+
+| Field       | What to enter                                                                                                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **API**     | **Anthropic** (Anthropic's Messages API: Peal adds `/v1/messages` to the address and sends the key as `x-api-key`) or **OpenAI-compatible** (any endpoint that serves the chat completions API: Peal adds `/chat/completions` and sends the key as a bearer token).                                                                  |
+| **Address** | `https://api.anthropic.com` for Anthropic, which the page fills in. For an OpenAI-compatible endpoint, the address `/chat/completions` follows, such as `https://text.example.com/v1`. The same rules as the image provider's apply: HTTPS on the default port, on a public host, without a user, a password, a query or a fragment. |
+| **Model**   | Your provider's model, as its documentation names it. The assistant asks it for structured output (an answer that follows a JSON schema): a model that cannot give one fails every request.                                                                                                                                          |
+| **Key**     | Your account's key at the provider. It is kept and shown as the image provider's is: encrypted, for this workspace and this exact address alone, never shown again, never logged, and asked again when the address changes.                                                                                                          |
+
+Once saved, the texts members ask the assistant about, and the subjects of the posts it writes, go to that address with that key, under that provider's terms. The instance's model is never asked for them, even when your provider refuses.
+
+- Those requests cost none of the workspace's assistant requests, up to 500 a day, each counted whatever it ends with.
+- At most four run at once: a fifth sent meanwhile is refused (`TextProviderBusy`) and counts nothing.
+- **Test** sends your provider one short request, the rewrite of a fixed sentence, and says whether it answered with a suggestion the assistant can use, or why not. It counts as one of those 500.
+- When your provider refuses the key, the account, the model or the address, the assistant says so and nothing of the instance's allowance is spent.
+- **Remove**, which asks first, deletes the key: the assistant uses the instance's model again, if it has one, within the workspace's allowance.
+
+### Who sets the providers [#providers-access]
+
+The image and text providers are set only by:
+
+- a member in their own session;
+- Peal's [command line](/developers/cli/posts#assistant) (`peal assistant text-provider`);
+- an [API key](#api-keys) or a [partner key](/developers/embedding#account) given `assistant:configure`.
+
+No other application connected over OAuth, an [MCP](/developers/mcp) client included, holds that permission, whatever it was granted, so none can send the workspace's drafts to an address of its own. Staff acting as a member neither set them nor ask them anything: the workspace's account at the provider would pay.
+
+### The activity log [#activity]
+
+Each workspace keeps a log of who changed what, and through which application:
+
+- every request that asked to change something in it, whether it was done or refused;
+- every call of an [MCP](/developers/mcp) tool that changes something.
+
+Requests that only read are not kept, nor those that check and make nothing: validating a post, or importing a file as a dry run. A request that makes several posts at once (`posts.bulk`, `posts.import`) is one event, whatever it made.
+
+Owners read it, and nobody else: it needs the permission `activity:read`, which only the owner role holds. An owner may give that permission to an [API key](#api-keys), and an application an owner connected reads it as they do. The log has no page in the web app yet. Read it:
+
+- through the API, with `GET /api/workspaces/{workspaceId}/activity`, newest first, a page at a time ([Paging](/developers/conventions/paging#paging) shows an answer);
+- from the [command line](/developers/cli/workspace#activity), with `peal activity list`;
+- from an MCP client, with the tool `list_activity`.
+
+`operation` keeps the events of one operation, such as `posts.schedule`, and `actor` those one member, by their user id, or one API key, by its id, asked for.
+
+| Field          | What it holds                                                                                                                                                                                                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `occurredAt`   | When.                                                                                                                                                                                                                                                                                                                                                           |
+| `operation`    | The endpoint, as the reference names it (`posts.schedule`, `channels.disconnect`), or the MCP tool, as `mcp.` followed by its name (`mcp.create_draft`), or, for what the web app's settings change through the sign-in service (a role, a member removed, an invitation, the subscription), `auth:` followed by its path (`auth:/organization/remove-member`). |
+| `status`       | The HTTP status answered; `null` for an MCP tool call, which has none.                                                                                                                                                                                                                                                                                          |
+| `errorCode`    | The [error code](/developers/conventions/errors#error-codes) when the request was refused or failed; `null` when it was done. For an MCP tool, `tool_refused` when the tool answered an error, `tool_failed` when the call ended without an answer.                                                                                                             |
+| `actor`        | Who asked: a member (`user`, with their `userId`) or a key (`apiKey`, with its `apiKeyId`): an API key of the workspace, a [partner key](/developers/embedding), or a [connect link](/guides/channels#connect-links), as `connect-link:` followed by its id. `via` tells which. Whoever opened a connect link is never named.                                   |
+| `via`          | How they authenticated: `session` (the web app), `apiKey`, `oauth` (an application through the API, such as the command line), `mcp`, `partnerKey` (a partner key, in a workspace its partner account owns) or `connectLink` (an account connected on a connect link's page).                                                                                   |
+| `application`  | The key or the application it came through, with its `id` and the `name` it had then; `null` for a person in the web app.                                                                                                                                                                                                                                       |
+| `impersonated` | Whether staff acting as the member asked. Never who.                                                                                                                                                                                                                                                                                                            |
+| `objectIds`    | The ids the request's path named, such as `postId` or `channelId`.                                                                                                                                                                                                                                                                                              |
+| `requestId`    | The request's id, as its `X-Request-Id` header gave it ([Requests and answers](/developers/conventions#requests)).                                                                                                                                                                                                                                              |
+
+The log holds no more than that: never what a request or its answer carried, a post's text, an address or a browser.
+
+An event is kept {{keep-activity-en}}, then a daily job deletes it. Deleting the workspace deletes its log. When a member closes their account, the events they left in the workspaces that remain stay, without their id. Each member's [export](/guides/workspace/account#export) holds the changes they asked for themselves.
+
+### Partner [#partner]
+
+Under **Partner**, owners and admins manage the workspace's partner account, which lets a product of yours use Peal for its own customers. They set:
+
+- what those customers read on hosted pages (a name and a logo address);
+- the origins those pages may send them back to;
+- the partner keys, each shown once, right after it is created.
+
+The page lists the newest workspaces the account owns, with their channels. Whether you can open an account yourself is the instance's choice; otherwise the page says to ask the people who run it. An account closes only once it owns no workspace. Staff acting as a member cannot change it. [Embedding Peal](/developers/embedding) tells the whole flow.
+
+### Delete a workspace [#delete-workspace]
+
+On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm.
+
+<Callout type="danger" title="Deleting a workspace cannot be undone">
+  Everything in it goes, for good: its channels and their authorizations, its
+  posts, scheduled or not, and their analytics, its media library and the files
+  in it, its notifications, its writing assistant usage, what Peal recorded of
+  its subscriptions and of its posts on X, its members and invitations, and its
+  API keys, which stop working at once. Nothing more is posted from it. Stripe
+  keeps the invoices it issued.
+</Callout>
+
+While one of the workspace's posts is going out, deleting it waits: try again a few minutes later.
+
+When the workspace has a subscription Stripe may still bill, active, unpaid or paused, including one whose checkout has just completed before Stripe told Peal about it, the dialog first says what deleting does to it, and waits until you tick **Cancel the subscription now**:
+
+- the subscription is cancelled at Stripe at once, and nothing more is charged;
+- the period already paid for is not refunded: there is no proration credit and no final invoice, except where the law gives a refund: a consumer who subscribed less than 14 days ago may withdraw and be refunded the unused part: withdraw first, with **Withdraw from contract here** on the workspace's billing page (see [Plans and billing](/guides/workspace/billing)), or, once the workspace is deleted, by asking whoever runs the server;
+- the workspace's **Billing** page goes with it, so download your invoices from the billing portal first. Stripe keeps the invoices it issued, as accounting law requires (10 years in France), and the confirmation email says whom to ask for a copy.
+
+To stop paying and keep the workspace, cancel the subscription from its **Billing** page instead: it then ends with the period paid for.
+
+<Accordion>
+  <AccordionItem title="Open checkouts, outages and several workspaces">
+    - A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards.
+    - When Stripe cannot be reached, nothing is deleted: try again a few minutes later. A subscription cancelled before the failure stays cancelled, and trying again cancels nothing more.
+    - Closing an account that deletes several subscribed workspaces lists every subscription it cancels, each with its workspace's billing page, before you tick the box.
+
+  </AccordionItem>
+</Accordion>
+
+Once the workspace is deleted, a confirmation goes to your address, in your language.
+
+## Across your workspaces [#across-workspaces]
+
+On the home page, each workspace's card says what needs attention there, each line a link to the page that shows it:
+
+- posts that failed on a channel in the last 7 days;
+- posts to check because a channel may have them live;
+- posts waiting for an approval (and whether you may give it);
+- channels to reconnect or turned off;
+- comments waiting for an answer in the inbox;
+- a workspace over its plan, which publishes nothing until it is back within it.
+
+A workspace with nothing to attend says so once. Cards with something to attend come first.
+
+Each workspace shows only what your role there may read, as its own pages would: no inbox line where you may not read comments, for example, rather than a count of zero. A workspace that requires [two-step verification](#require-two-step) while your account does not have it on shows its badge and no figure at all, until you turn it on.
+
+### Agenda across workspaces [#agenda]
+
+**Agenda across workspaces**, on the home page when you belong to more than one, lists what goes out in the next 14 days in every workspace where you may read posts, by day in your time zone. Each line gives the post's time, workspace, platforms and how its text starts, linked to the post in its workspace. Choose a workspace to see that one alone. It is a list, not the calendar's week: posts are moved within their own workspace's calendar.
+
+### Report across workspaces [#report]
+
+**Report across workspaces**, beside it, is a table of what went out in each workspace over the last 7, 30 or 90 days and how it did, each figure beside the days before, as that workspace's own [analytics page](/guides/engage/analytics#page) counts it: posts published, engagement, likes, reposts, replies, quotes, impressions, clicks, reach and saves, and followers.
+
+- A dash marks a count no platform of the workspace gives.
+- No change is shown against days before that a platform's terms no longer let Peal keep.
+- A workspace whose analytics your role may not read says so.
+- It is a table, not a chart: platforms count differently, so compare a workspace with itself, not with another.
+- **Download CSV** saves it, one line a workspace. A text a spreadsheet would read as a formula, such as a workspace named `=SUM(…)`, is written with an apostrophe first, so the file runs nothing when opened.
+
+`GET /api/me/overview`, `GET /api/me/agenda` (`from`, `to`, at most 31 days apart, and `workspaceIds`, comma-separated), `GET /api/me/report` (`days`, `timeZone`) and `GET /api/me/report/export` answer the same, and the command line has them as `peal overview`, `peal agenda` and `peal report` ([Command line](/developers/cli#across-workspaces)). They answer a person: API keys, which belong to a workspace, and OAuth tokens bound to one workspace, such as an MCP client's, get 403. No MCP tool reads across workspaces: a connection acts in the one workspace you chose for it.
+
+## Through the API [#api]
+
+| Endpoint                                 | What it does                                     |
+| ---------------------------------------- | ------------------------------------------------ |
+| `DELETE /api/workspaces/{workspaceId}`   | Deletes the workspace, given its `name` (owners) |
+| `GET /api/me/export`                     | Answers your data as a JSON file                 |
+| `DELETE /api/me`                         | Deletes your account, given its `password`       |
+| `GET /api/me/connected-apps`             | Lists your connected applications                |
+| `DELETE /api/me/connected-apps/{client}` | Revokes one                                      |
+
+They answer only you, signed in to the web app with your own session: API keys, OAuth tokens and staff acting as you get 403. Your data and the list of your connected applications also answer the [command line](/developers/cli/workspace#account) (`peal account`), which you sign in at your own terminal; never an MCP client or another OAuth client.
+
+| Endpoint                                                        | What it does                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/members`                     | Lists the members, to every member                                |
+| `GET /api/workspaces/{workspaceId}/invitations`                 | Lists the pending invitations, to those who may invite            |
+| `POST /api/workspaces/{workspaceId}/invitations`                | Invites an `email` with a `role`, as **Send the invitation** does |
+| `DELETE /api/workspaces/{workspaceId}/invitations/{invitation}` | Revokes a pending invitation                                      |
+
+They answer members in person, through the web app, the command line or an MCP client allowed to, never an API key or staff acting as you. Renaming a workspace, changing a member's role and removing a member go through the sign-in service's routes under `/api/auth/organization/`, and API keys through `/api/workspaces/{workspaceId}/api-keys`.

@@ -1,0 +1,66 @@
+---
+title: Bluesky
+description: "Connect Bluesky to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/bluesky.svg
+---
+
+How to connect a Bluesky account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                 |
+| ----------------- | ------------------------------- |
+| Text              | {{platform-bluesky-text-en}}    |
+| Images and videos | {{platform-bluesky-media-en}}   |
+| Parts             | {{platform-bluesky-parts-en}}   |
+| Formats           | {{platform-bluesky-formats-en}} |
+| Alt text          | {{platform-bluesky-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **Bluesky**, give your handle, such as `you.bsky.social`, to go straight to your server's sign-in page, or leave it empty to pick the account on Bluesky. Then choose **Connect Bluesky**.
+
+**Channels** offers Bluesky once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+## Options [#options]
+
+No option is required, and each is sent only when you choose it. **API name** is the option's name through the API. **Parts** says what it applies to in a [thread](/guides/posts#threads).
+
+| Option                                                                          | API name                                             | Values                                                                                                             | Left out   | Parts                             |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------------------- |
+| **Languages**                                                                   | `languages`                                          | Up to three language tags, such as `en` or `pt-BR`                                                                 | None named | Every part                        |
+| **Content label**                                                               | `contentLabel`                                       | `sexual`, `nudity`, `porn`, `graphic-media`                                                                        | No label   | Every part with images or a video |
+| **Who can reply**                                                               | `replies`                                            | `everyone`, `nobody`, or `limited` to those of `replyFollowers`, `replyFollowing` and `replyMentioned` that are on | Everyone   | The thread                        |
+| **Your followers**, **Accounts you follow**, **Accounts mentioned in the post** | `replyFollowers`, `replyFollowing`, `replyMentioned` | Yes or no, each; with `replies` limited, one at least                                                              | No         | The thread                        |
+| **Keep others from quoting this post**                                          | `disableQuotes`                                      | Yes or no                                                                                                          | No         | Every part                        |
+
+- A label describes the images or video: a part without media is sent without it.
+- Who can reply and quoting are written with the post, in one request, so a post never goes out without them.
+
+<Accordion>
+  <AccordionItem title="A channel connected before Peal asked for reply and quote settings">
+    Who can reply and quoting need the account to have been connected since Peal
+    asks for them. On a channel connected before, scheduling refuses them, and
+    its [capabilities](/developers#capabilities) say so
+    (`optionNeedsReconnect`). In the composer, such a channel offers neither and
+    says so. Reconnect the account on the **Channels** page to use them; nothing
+    else changes.
+  </AccordionItem>
+  <AccordionItem title="The account's server refuses the settings">
+    When Peal could not read the channel's scopes and the account's server then
+    refuses these settings, the post is not sent: the channel reads **Failed**,
+    with the code `optionRefused`, and Peal does not send it again. Reconnect
+    the account, or leave the settings out, and post it again.
+  </AccordionItem>
+</Accordion>
+
+## Comments [#comments]
+
+Peal reads the comments under your published posts there, and you answer them from Peal: see [Inbox](/guides/engage/inbox#other-platforms).
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Bluesky once its app is registered: see [Bluesky](/self-hosting/platforms#bluesky). Until then, **Channels** does not offer it.

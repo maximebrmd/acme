@@ -1,0 +1,191 @@
+---
+title: Relecture et approbation
+description: "Montrer une publication à un client sans compte Peal, recueillir ses commentaires, et obtenir une approbation avant qu’elle parte."
+sidebar:
+  icon: circle-check
+---
+
+Une agence montre une publication à son client avant sa parution ; une équipe fait relire par un responsable ce qu’un contributeur a écrit. Peal fait les deux :
+
+- un **lien de relecture** montre une publication à une personne sans compte, qui peut la commenter et l’approuver ;
+- un espace de travail peut demander que les publications attendent une **approbation** avant d’être programmées.
+
+## En bref, pour une agence [#agency]
+
+<Steps>
+  <Step title="Activez les approbations">
+    Dans **Paramètres**, un propriétaire ou un administrateur règle
+    **Approbations** sur **Toujours**, ou sur **Quand un contributeur ou une
+    application le demande**.
+  </Step>
+  <Step title="Demandez l’approbation">
+    Écrivez la publication et choisissez **Demander l’approbation** (le bouton
+    qui dit sinon **Programmer**). La publication a son heure, apparaît dans le
+    calendrier comme **En attente d’approbation**, et ne part pas.
+  </Step>
+  <Step title="Envoyez un lien de relecture">
+    Sur la page de la publication, sous **Liens de relecture**, créez un lien
+    qui permet à la personne qui l’ouvre de **Voir, commenter et approuver**, et
+    envoyez-le à votre client. Le lien n’est affiché qu’une fois : copiez-le à
+    ce moment.
+  </Step>
+  <Step title="Votre client décide">
+    Votre client l’ouvre, sans compte, voit la publication telle que chaque
+    canal la recevra, commente, et choisit **Approuver cette publication** ou
+    **Demander des modifications**.
+  </Step>
+  <Step title="La publication part, ou revient">
+    Approuvée, la publication est programmée pour son heure. Si des
+    modifications sont demandées, elle redevient un brouillon, avec le
+    commentaire du client : corrigez-la et demandez de nouveau.
+  </Step>
+</Steps>
+
+Les membres qui peuvent approuver des publications peuvent aussi approuver dans Peal, sur la page de la publication ou depuis **Approbations**, la liste des publications qui attendent.
+
+## Quelles publications attendent [#policy]
+
+Chaque espace de travail a une politique d’approbation, dans **Paramètres**, sous **Approbations**. Les propriétaires et les administrateurs la choisissent.
+
+| Politique                                               | Ce qui attend une approbation                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Jamais** (tant que vous ne changez rien)              | Rien. Qui peut programmer des publications le fait ; les contributeurs écrivent des brouillons.                                                                                                                                                                                                                                                      |
+| **Quand un contributeur ou une application le demande** | Ce qu’un contributeur demande d’envoyer, et ce qui est programmé avec une [clé d’API](/guides/workspace#api-keys) ou depuis une application connectée pour un membre : la [ligne de commande](/developers/cli) ou un [assistant IA](/developers/mcp). Les propriétaires, administrateurs et éditeurs programment directement dans l’application web. |
+| **Toujours**                                            | Toutes les publications, qui que ce soit qui demande.                                                                                                                                                                                                                                                                                                |
+
+- Avec une politique autre que **Jamais**, les contributeurs peuvent demander l’envoi d’une publication, ce qu’ils ne peuvent pas faire sinon. Les lecteurs ne le peuvent toujours pas.
+- La politique s’applique aux publications programmées à partir de ce moment. Une publication déjà programmée le reste, et une publication qui attend attend toujours.
+- Toutes les façons de programmer passent par la même vérification : l’application web, l’[API](/developers), une clé d’API, la ligne de commande et les assistants IA. Aucune ne la contourne.
+
+## Une publication qui attend [#waiting]
+
+Une publication qui attend une approbation a le statut **En attente d’approbation**. Elle a son heure et ses canaux, apparaît dans le [calendrier](/guides/posts/schedule#calendar) à cette heure, et compte dans les publications du mois de votre [offre](/guides/workspace/billing). Rien ne la publie tant qu’elle n’est pas approuvée.
+
+Comme une publication programmée, elle garde son texte : remettez-la **en brouillon** pour la modifier, ce qui retire la demande.
+
+La personne qui a demandé, et toute personne qui peut programmer, peut la déplacer à une autre heure, la remettre en brouillon ou l’annuler. Un membre qui peut programmer peut aussi la programmer lui-même quand la politique le laisse programmer sans approbation, ce qui retire la demande.
+
+### Approuver [#approve]
+
+Les propriétaires, administrateurs et éditeurs peuvent approuver, sur la page de la publication (**Approuver**) ou avec l’API, la ligne de commande ou un assistant IA. Une personne sans compte peut approuver depuis un lien de relecture qui le permet.
+
+Peal enregistre chaque décision : qui a décidé (pour un lien, le nom donné et le lien utilisé), quoi, et quand. La page de la publication montre cet historique.
+
+Une approbation vaut pour ce que la personne a lu. Si la publication a été modifiée et redemandée pendant que sa page était ouverte, son clic n’approuve rien : Peal dit que la publication a changé et la montre à nouveau, et la personne décide de ce qu’elle dit maintenant. Il en va de même pour une demande de modifications.
+
+Qui peut approuver peut approuver une publication qu’il a écrite ou demandé d’envoyer : une approbation dit qu’une personne habilitée a regardé, et ne dit pas que deux personnes l’ont fait. S’il vous faut une seconde personne, faites écrire les contributeurs et approuver les éditeurs.
+
+Les applications suivent ces règles :
+
+- Une application n’approuve pas ce qu’une application a demandé. Ce qu’une clé d’API, la ligne de commande ou un assistant IA a programmé attend une personne : un membre dans l’application web, ou une personne invitée depuis un lien qu’un membre y a créé.
+- Pour la même raison, un lien qui permet d’approuver se crée dans l’application web seulement, jamais avec une clé d’API, la ligne de commande ou un assistant IA.
+- Une application peut approuver ce qu’un membre a demandé dans l’application web, si vous l’avez autorisée à programmer et publier (`workspace:publish`). Approuver une publication, c’est la faire partir : une application qui ne fait qu’écrire des brouillons n’approuve donc rien.
+
+<Accordion>
+  <AccordionItem title="Quand l’espace de travail dépasse son offre">
+    Approuver une publication, c’est la programmer. Si l’espace de travail en est venu à avoir plus de canaux ou de membres que son [offre](/guides/workspace/billing) ne le permet pendant que la publication attendait, comme à la fin d’un essai, il ne programme rien.
+
+    L’approbation est refusée, la personne qui approuve en est informée (une personne venue par un lien apprend seulement que l’équipe ne peut pas programmer de publications pour le moment), et la publication continue d’attendre. Son auteur n’est pas prévenu de nouveau : la page de la publication la montre toujours en attente d’approbation, et la page de facturation montre ce que l’offre permet.
+
+    Une fois l’espace de travail revenu dans ses limites, la publication s’approuve comme d’habitude.
+
+  </AccordionItem>
+</Accordion>
+
+### Demander des modifications [#changes]
+
+**Demander des modifications** renvoie la publication en brouillon avec un commentaire qui dit quoi changer. Son auteur et la personne qui a demandé sont prévenus. Une fois corrigée, demandez de nouveau : une nouvelle demande commence.
+
+### Quand l’approbation arrive en retard [#late]
+
+Une approbation qui arrive après l’heure de la publication ne publie rien en retard. La publication redevient un brouillon, toujours approuvé, et son auteur est invité à lui donner une nouvelle heure. La programmer de nouveau ne demande pas de nouvelle approbation tant qu’elle dit la même chose. Une heure passée depuis une minute au plus compte encore comme maintenant.
+
+### Ce que couvre une approbation [#covers]
+
+Une approbation vaut pour ce que dit la publication et où elle va. Ces changements l’annulent, et la publication attend de nouveau la prochaine fois qu’elle est programmée :
+
+- son texte, ou le texte qu’elle a sur un canal ;
+- ses images et vidéos : lesquelles, leur ordre, et leur texte alternatif, et celles qu’elle montre sur un canal à la place des siennes ;
+- les canaux où elle va ;
+- ses [options de plateforme](/guides/posts#options) sur un canal, comme un titre YouTube.
+
+Son heure n’en fait pas partie : une publication approuvée peut être déplacée, par qui peut programmer, sans nouvelle approbation.
+
+## Liens de relecture [#links]
+
+Un lien de relecture montre une publication à qui le détient. Il n’y a pas besoin de compte, ni de se connecter.
+
+Sur la page de la publication, sous **Liens de relecture**, les membres qui peuvent approuver des publications créent un lien et choisissent :
+
+| Choix                          | Valeurs                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| Ce qu’il permet                | **Voir seulement**, **Voir et commenter**, ou **Voir, commenter et approuver** |
+| Combien de temps il fonctionne | 14 jours si vous ne choisissez pas autre chose, 90 jours au plus               |
+
+Peal affiche le lien une fois, à sa création, et n’en garde pas de copie : seulement une empreinte qui le reconnaît. Si vous le perdez, créez-en un autre. Une publication a 20 liens actifs au plus.
+
+<Callout type="warning">
+  Toute personne qui a le lien peut l’ouvrir. Envoyez-le aux personnes qui
+  doivent voir la publication, et révoquez-le s’il est parti au mauvais endroit.
+</Callout>
+
+La page derrière un lien montre la publication telle que chaque canal la recevra :
+
+- le nom et la plateforme du canal ;
+- le texte que la publication y a ;
+- ce qu’elle y a en plus de son texte (où mène une épingle et son tableau, le titre d’une vidéo et qui la voit, l’adresse d’un appel à l’action) ;
+- ses images et vidéos avec leur texte alternatif écrit en clair (sur un canal qui montre les siennes, celles-là, sous le canal) ;
+- son heure dans le fuseau horaire de la personne qui lit.
+
+C’est un aperçu fidèle, qui n’imite pas la mise en page de chaque plateforme. Elle ne montre rien d’autre de votre espace de travail : ni son nom, ni les adresses de ses membres, ni ses autres publications, ni ses canaux.
+
+Un lien cesse de fonctionner à son expiration ou quand vous le révoquez, et dès que la publication est publiée, annulée ou supprimée. La page dit alors pourquoi. Tant qu’une publication est de nouveau un brouillon après une demande de modifications, son lien la montre encore.
+
+Les liens se créent pour les brouillons, les publications qui attendent et les publications programmées. Le personnel qui agit à la place d’un membre ne peut pas en créer.
+
+## Commentaires [#comments]
+
+Chaque publication a des commentaires, sur sa page dans Peal et sur la page de son lien de relecture quand le lien permet de commenter. Un commentaire ouvre un fil, d’autres y répondent, et les membres résolvent un fil une fois traité, ou le rouvrent.
+
+Un commentaire peut porter sur toute la publication, ou sur quelques mots du texte sur un canal : sélectionnez les mots dans l’aperçu, puis écrivez. Le commentaire garde les mots qu’il cite. Si le texte change ensuite, le commentaire désigne toujours ces mots, où qu’ils se soient déplacés. Quand le texte ne les contient plus, le commentaire garde la citation et dit que le texte a changé.
+
+- Les membres commentent sous leur nom. Les propriétaires, administrateurs, éditeurs et contributeurs peuvent commenter et résoudre ; les lecteurs lisent.
+- Une personne venue par un lien donne un nom, affiché avec ses commentaires et décisions. Les membres de l’espace de travail sont prévenus de ses commentaires une fois par heure au plus pour un lien.
+- Les commentaires sont du texte brut, 2000 caractères au plus. Rien de ce qui est tapé n’est lu comme une mise en forme ou du code, et les caractères de contrôle sont retirés.
+
+Les membres qui suivent une publication sont tenus au courant de sa relecture par les [notifications](/guides/workspace/notifications) : son auteur, la personne qui a demandé son approbation, et celles qui l’ont commentée. Les membres qui peuvent approuver sont prévenus quand une publication commence à attendre.
+
+## Pour les personnes invitées à relire, sans compte [#reviewers]
+
+Si vous avez reçu un lien de relecture :
+
+- Ouvrez le lien entier. Sa fin, après le `#`, est ce qui ouvre la publication ; votre navigateur n’envoie cette partie à aucun autre site.
+- Donnez votre nom avant de commenter ou de décider. Il est affiché, avec ce que vous écrivez, à l’équipe qui vous a envoyé le lien.
+- Peal ne demande aucune adresse e-mail et ne vous envoie rien : rouvrez le lien que vous avez reçu pour lire les réponses.
+- Une vérification que vous n’êtes pas un robot peut vous être demandée avant un envoi.
+
+Ce que Peal conserve de vous : le nom que vous avez donné, avec vos commentaires et décisions, pendant 24 mois, après quoi ils restent sans nom. Tout est supprimé plus tôt si la publication ou l’espace de travail est supprimé. Pour un retrait plus rapide, demandez à l’équipe qui vous a envoyé le lien, ou à l’opérateur de l’instance Peal.
+
+## Avec l’API [#api]
+
+L’[API](/developers) a les mêmes opérations, sous `/api/workspaces/{workspaceId}` :
+
+| Chemin                                                             | À quoi il sert                 |
+| ------------------------------------------------------------------ | ------------------------------ |
+| `review/settings`                                                  | La politique                   |
+| `approvals`                                                        | Les publications qui attendent |
+| `review`, `comments`, `approve`, `request-changes`, `review-links` | La relecture d’une publication |
+
+Une publication qui attend répond `"status": "awaitingApproval"` partout où des publications sont listées. Programmer une publication qui a besoin d’une approbation répond la publication, en attente, au lieu d’une erreur : vérifiez son `status`.
+
+`review` répond la publication telle que chaque canal la recevra, avec l’approbation qui attend. `approve` et `request-changes` prennent l’`id` de cette approbation (`approvalId`) et son `subjectHash`, l’empreinte de ce que la publication disait alors. Si la publication a été redemandée ou dit autre chose depuis, ils répondent `ApprovalChanged` (409) et ne décident rien : relisez `review`, puis décidez.
+
+La [ligne de commande](/developers/cli/posts#review) a `peal approvals` et `peal review`, et les [assistants IA](/developers/mcp/tools#tools) ont `list_approvals`, `get_post_review`, `approve_post` et `request_changes`.
+
+## Sur votre propre serveur [#self-hosting]
+
+Rien à régler : les relectures fonctionnent sur toute instance.
+
+- Les commentaires et décisions des personnes invitées sont limités à 20 par 10 minutes et par adresse et à 60 par heure et par lien, et les requêtes à 16 Kio.
+- Quand l’instance a des [clés Turnstile](/self-hosting/environment-variables), les personnes invitées passent sa vérification avant d’écrire. La vérification n’est chargée que lorsqu’une personne invitée commence à écrire : lire une publication par un lien ne contacte personne d’autre que votre instance et son stockage de médias.
+- L’adresse d’un lien est `PUBLIC_URL/review#<jeton>`.

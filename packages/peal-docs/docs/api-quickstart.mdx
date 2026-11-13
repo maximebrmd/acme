@@ -1,0 +1,255 @@
+---
+title: API quickstart
+description: Create an API key, find your channels, check a post, send it and hear how it went, in five requests.
+sidebar:
+  icon: terminal
+  order: 3
+---
+
+Go from an API key to a published post, and a webhook that tells you how it went. Each step shows the request with `curl`, the `peal` command line and the TypeScript SDK.
+
+## Before you start [#before]
+
+- A workspace with at least one channel connected in the app ([Quickstart](/quickstart), [Connect channels](/guides/channels)).
+- `curl`, the [command line](/developers/cli) or an [SDK](/developers/sdks) (`npm install peal-sdk` for TypeScript).
+- Your instance's address. The examples use `https://api.example.com`; Peal Cloud is `https://app.peal.social` ([Base URL](/developers#base-url)).
+
+Ids in the examples are made up, and answers are abridged.
+
+<Prompt description="Using a coding agent? Give it this prompt." actions={["copy"]}>
+
+Add the Peal API to this project, following Peal's API quickstart.
+
+1. Read the API key from the `PEAL_API_KEY` environment variable. Never hardcode it or commit it.
+2. Call `GET /api/credential` and keep `workspace.id`.
+3. List the channels with `GET /api/workspaces/{workspaceId}/channels` and ask me which ones to post to.
+4. Check the post with `POST /api/workspaces/{workspaceId}/posts/validate`. If `valid` is false, show me every violation and stop.
+5. Send the same body to `POST /api/workspaces/{workspaceId}/posts/send`, with an `Idempotency-Key` header holding a new UUID.
+6. Create a webhook endpoint with `POST /api/workspaces/{workspaceId}/webhooks` for `post.published` and `post.failed`, and store its signing secret, which is shown once.
+
+What goes out reaches the platforms' public and cannot be taken back from Peal: show me the post and wait for my OK before sending it. Stop to ask if any call returns an error.
+
+</Prompt>
+
+## 1. Create an API key [#key]
+
+<Steps>
+  <Step title="Open the API keys">
+    In the app, open the workspace's **Settings**, then **API keys**.
+  </Step>
+  <Step title="Give it what this page needs">
+    Name the key and say how long it works. For this page it needs
+    `channel:read`, `post:read` and `post:schedule`, and `webhook:manage` for
+    the last step.
+  </Step>
+  <Step title="Copy it">
+    Choose **Create the key** and copy it: it is shown once ([API
+    keys](/guides/workspace#api-keys)).
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash curl
+export PEAL_API_KEY="peal_…"
+```
+
+```sh CLI
+export PEAL_API_URL="https://api.example.com"
+export PEAL_API_KEY="peal_…"
+```
+
+```ts TypeScript
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({
+  token: process.env.PEAL_API_KEY,
+  baseUrl: "https://api.example.com",
+});
+```
+
+</CodeGroup>
+
+## 2. Check the key [#credential]
+
+`GET /api/credential` says who the key is and what it may do, and reads no data. Its `workspace.id` is the workspace every other request names.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/credential \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+
+export WORKSPACE_ID="7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90"
+```
+
+```sh CLI
+peal whoami
+
+export PEAL_WORKSPACE="7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90"
+```
+
+```ts TypeScript
+const credential = await peal.credential.get();
+
+if (credential._tag === "apiKey") {
+  console.log(credential.workspace.id, credential.permissions);
+}
+
+const workspaceId = "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90";
+```
+
+</CodeGroup>
+
+## 3. Find your channels [#channels]
+
+A channel is an account the workspace posts to. Connect one in the app first ([Connect channels](/guides/channels)), then list them: each has an `id` and its `platform`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/channels \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```sh CLI
+peal channels list
+```
+
+```ts TypeScript
+const channels = await peal.channels.list({ workspaceId });
+```
+
+</CodeGroup>
+
+## 4. Check the post, then send it [#post]
+
+`POST …/posts/validate` answers whether a post would go through, with everything that would refuse it, and makes nothing ([Check a post](/developers/posting#validate)).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+    "content": { "text": "Hello from the API", "media": [], "overrides": [] },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```sh CLI
+peal post "Hello from the API" --channel 0190f3a0-0000-7000-8000-00000000c001 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris --dry-run
+```
+
+```ts TypeScript
+const post = {
+  workspaceId,
+  channelIds: ["0190f3a0-0000-7000-8000-00000000c001"],
+  content: { text: "Hello from the API", media: [], overrides: [] },
+  when: {
+    _tag: "at" as const,
+    at: "2026-11-16T08:00:00Z",
+    timeZone: "Europe/Paris",
+  },
+};
+
+const check = await peal.posts.validate(post);
+```
+
+</CodeGroup>
+
+When it answers `"valid": true`, send the same body to `POST …/posts/send`. An `Idempotency-Key` makes it safe to send again after a timeout ([Idempotency](/developers/conventions/idempotency)).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90" \
+  -d '{
+    "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+    "content": { "text": "Hello from the API", "media": [], "overrides": [] },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```sh CLI
+peal post "Hello from the API" --channel 0190f3a0-0000-7000-8000-00000000c001 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris \
+  --idempotency-key 5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90
+```
+
+```ts TypeScript
+const sent = await peal.posts.send({
+  ...post,
+  "idempotency-key": "5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90",
+});
+```
+
+</CodeGroup>
+
+The post is now scheduled: it shows on the workspace's calendar and goes out at its time.
+
+<Callout type="info" title="Publish at once">
+  With `"when": { "_tag": "now" }` the post goes out at once, and `?wait=30`
+  answers once each channel has its result ([Publish
+  now](/developers/posting#wait)).
+</Callout>
+
+## 5. Hear how it went [#webhook]
+
+Rather than asking, have Peal tell your server: create a webhook endpoint for the events you want. The answer holds its signing secret, shown once: keep it to [verify each delivery](/developers/webhooks/requests).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/peal-events",
+    "eventTypes": ["post.published", "post.failed"]
+  }'
+```
+
+```sh CLI
+peal webhooks create --url https://example.com/peal-events \
+  --events post.published,post.failed
+```
+
+```ts TypeScript
+const endpoint = await peal.webhooks.create({
+  workspaceId,
+  url: "https://example.com/peal-events",
+  eventTypes: ["post.published", "post.failed"],
+});
+```
+
+</CodeGroup>
+
+When the post goes out, your server receives [`post.published`](/developers/webhooks/events/posts#post-published) for each channel it reached, or [`post.failed`](/developers/webhooks/events/posts#post-failed) with the reason.
+
+## Next [#next]
+
+<CardGroup cols={2}>
+  <Card title="SDKs" href="/developers/sdks" icon="package">
+    The same requests in eight languages.
+  </Card>
+  <Card
+    title="Errors"
+    href="/developers/conventions/errors"
+    icon="circle-alert"
+  >
+    Every error code, and what to do with each.
+  </Card>
+  <Card title="Posting API" href="/developers/posting" icon="send">
+    Check, send, bulk and import posts, and read their outcome.
+  </Card>
+  <Card title="API reference" href="/reference" icon="book-open">
+    Every endpoint and field.
+  </Card>
+</CardGroup>

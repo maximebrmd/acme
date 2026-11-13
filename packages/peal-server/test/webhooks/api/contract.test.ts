@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { describe, expect, it } from "@effect/vitest";
@@ -102,6 +102,22 @@ const docs = path.join(
   "peal-docs",
   "docs"
 );
+
+// The events pages, one per family, read as one text.
+const eventsPages = async (folder: string) => {
+  const files = await readdir(path.join(docs, folder));
+
+  const texts = await Promise.all(
+    files
+      .filter((file) => file.endsWith(".mdx"))
+      .toSorted()
+      .map(
+        async (file) => await readFile(path.join(docs, folder, file), "utf-8")
+      )
+  );
+
+  return texts.join("\n");
+};
 
 const example =
   /^```json title="(?!sample )(?<type>[^"]+)"\n(?<body>[\s\S]*?)\n```$/gmu;
@@ -297,11 +313,11 @@ describe("the contract", () => {
   });
 });
 
-describe.each(["webhooks.mdx", "fr/webhooks.mdx"])(
+describe.each(["developers/webhooks/events", "fr/developers/webhooks/events"])(
   "the examples of the docs' %s",
   (page) => {
     it("are payloads the server sends, one for every event type", async () => {
-      const text = await readFile(path.join(docs, page), "utf-8");
+      const text = await eventsPages(page);
 
       const examples = [...text.matchAll(example)].map(({ groups }) => ({
         body: groups?.["body"] ?? "",
@@ -330,11 +346,11 @@ describe.each(["webhooks.mdx", "fr/webhooks.mdx"])(
   }
 );
 
-describe.each(["webhooks.mdx", "fr/webhooks.mdx"])(
+describe.each(["developers/webhooks/events", "fr/developers/webhooks/events"])(
   "the sample of the docs' %s",
   (page) => {
     it("is a payload marked as a sample", async () => {
-      const text = await readFile(path.join(docs, page), "utf-8");
+      const text = await eventsPages(page);
       const samples = [...text.matchAll(sampleExample)];
 
       expect(samples).toHaveLength(1);

@@ -1,0 +1,169 @@
+---
+title: Webhooks
+description: "Faire dire par Peal à votre serveur ce qui se passe dans un espace de travail, sans interroger : qui gère les points de réception et comment en ajouter un."
+sidebar:
+  icon: webhook
+---
+
+Un webhook est une requête que Peal envoie à une adresse à vous quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Un produit qui publie par l’[API](/developers), ou une automatisation, l’apprend aussitôt, sans redemander sans cesse.
+
+Peal signe chaque requête comme le dit la spécification [Standard Webhooks](https://www.standardwebhooks.com) ([son texte](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)) : les bibliothèques écrites pour elle vérifient les livraisons de Peal telles quelles.
+
+## Qui les gère [#access]
+
+| Où                   | Comment                                                                                                                                                                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L’application web    | **Paramètres**, puis **Webhooks**                                                                                                                                                                                                                                           |
+| L’API                | Le groupe `webhooks`, [plus bas](#api)                                                                                                                                                                                                                                      |
+| La ligne de commande | `peal webhooks` ([ligne de commande](/developers/cli))                                                                                                                                                                                                                      |
+| MCP                  | Les outils [MCP](/developers/mcp) `list_webhooks` et `list_webhook_deliveries`, qui lisent ; `create_webhook` et `update_webhook`, qui ajoutent et modifient un point de terminaison ; `send_test_webhook` et `redeliver_webhooks`, qui font appeler votre serveur par Peal |
+
+| Permission       | Ce qu’elle permet                                                                                                 | Qui l’a                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `webhook:read`   | Lister les points de terminaison et lire leurs livraisons                                                         | Propriétaires et administrateurs |
+| `webhook:manage` | Ajouter, modifier, désactiver et supprimer des points de terminaison, renouveler les secrets, envoyer et renvoyer | Propriétaires et administrateurs |
+
+Une clé d’API fait ce que permettent ses permissions, et un client OAuth ce que vous lui avez permis : un client autorisé à lire seulement liste les points de terminaison et les livraisons, et ne change rien. L’équipe qui agit à la place d’un membre ne peut pas changer les webhooks d’un espace de travail.
+
+Tous les abonnements comprennent les webhooks, et une instance qui ne facture pas les a aussi.
+
+## Points de terminaison [#endpoints]
+
+Un point de terminaison, c’est une adresse, les événements qu’il veut recevoir, une description, s’il est activé et, si vous le choisissez, les chaînes et les espaces de travail qu’il écoute. Un espace de travail en a 10 au plus, quel que soit son abonnement.
+
+| Réglage                                           | Règles                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adresse                                           | Une URL HTTPS sur le port par défaut (443), sur un hôte public, sans nom d’utilisateur ni mot de passe, de 2048 caractères au plus.                                                                                                                                                                                                                 |
+| Événements                                        | Les [types d’événements](/developers/webhooks/events#events) auxquels le point de terminaison est abonné, un au moins. Il reçoit ceux-là, et rien d’autre.                                                                                                                                                                                          |
+| Description                                       | À quoi sert le point de terminaison, en 200 caractères au plus.                                                                                                                                                                                                                                                                                     |
+| Activé ou désactivé                               | Tant qu’un point de terminaison est désactivé, Peal ne lui envoie rien, ses livraisons encore en attente échouent, et ce qui se passe entre-temps n’est pas gardé pour lui : le réactiver ne le rejoue pas.                                                                                                                                         |
+| Portée, par l’API                                 | `workspace`, par défaut, entend cet espace de travail. `partner`, sur l’espace de travail principal d’un [compte partenaire](/developers/embedding/operate#webhooks) seulement, entend aussi chaque espace de travail que le compte possède ; ailleurs, elle répond 404 `PartnerNotFound`. Fixée à la création du point de terminaison, elle reste. |
+| Seulement ces chaînes (`channelIds`)              | 50 au plus. Sans liste, toutes les chaînes ([Filtres](#filters)).                                                                                                                                                                                                                                                                                   |
+| Seulement ces espaces de travail (`workspaceIds`) | 200 au plus, sur un point de terminaison `partner` seulement. Sans liste, tous les espaces de travail qu’il entend ([Filtres](#filters)).                                                                                                                                                                                                           |
+
+<Callout type="warning" title="L’adresse doit rester publique">
+  Peal vérifie que l’hôte mène à des adresses publiques quand vous
+  l’enregistrez, et de nouveau avant chaque requête : une adresse qui, plus
+  tard, mène dans un réseau privé ne reçoit rien. Peal ne suit aucune
+  redirection : une réponse 3xx est un échec, donnez l’adresse finale.
+</Callout>
+
+### Filtres [#filters]
+
+Avec `channelIds`, le point de terminaison ne reçoit que les événements de ces chaînes. Les événements qui passent dépendent de ce qu’ils concernent :
+
+| L’événement concerne    | Événements                                                                                                                 | Envoyé quand                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Une chaîne              | `post.published`, `post.failed`, `post.unconfirmed`, `post.unpublished`, `post.unpublish_failed`, `channel.*`, `comment.*` | Sa chaîne est listée                                                                                           |
+| Une publication entière | `post.scheduled`, `post.unscheduled`, `post.cancelled`, les événements d’approbation                                       | L’une des chaînes de la publication est listée. Le corps est inchangé.                                         |
+| Aucune chaîne           | `media.*`, `boost.*`                                                                                                       | Toujours, quoi que liste le point de terminaison : retirez ces types de ses événements si vous n’en voulez pas |
+
+Avec `workspaceIds`, un point de terminaison `partner` n’entend que ces espaces de travail, et son espace de travail principal seulement s’il est listé. Un point de terminaison de portée `workspace` refuse le champ (`WebhookFilterRefused`, ou `InvalidRequest` à sa création).
+
+Les filtres s’appliquent au moment où chaque événement se produit, avec le point de terminaison tel qu’il est alors. [Renvoyer une livraison](/developers/webhooks/delivery#log) l’envoie à son point de terminaison quoi que disent ses filtres aujourd’hui.
+
+Les filtres ne vérifient que la forme de leurs identifiants : un identifiant qui ne désigne rien ne correspond à rien. Un filtre reste tel que vous l’avez enregistré quand une chaîne est déconnectée ou qu’un espace de travail quitte le compte partenaire. Le formulaire du point de terminaison liste une telle chaîne à part, cochée, comme **Une chaîne qui n’est plus connectée** : décochez-la pour la retirer.
+
+### Des en-têtes à vous [#headers]
+
+Un point de terminaison peut porter jusqu’à 5 en-têtes de votre choix, envoyés avec chaque livraison à côté de ceux de Peal : un jeton que demande une passerelle devant votre serveur, par exemple, ou un en-tête pour router. Ils sont fixes : les mêmes à chaque livraison et à chaque tentative.
+
+- Un nom est un jeton HTTP (lettres, chiffres et ``!#$%&'*+.^_`|~-``), de 64 caractères au plus, une seule fois par point de terminaison quelle que soit sa casse. `Authorization` est permis.
+- Une valeur est en ASCII visible sur une seule ligne, des espaces à l’intérieur mais à aucune extrémité, de 1 024 caractères au plus.
+
+Peal refuse les noms qu’il pose, ou qui décrivent le corps ou changent la façon dont la requête est livrée ou sa réponse encodée : tout nom qui commence par `webhook-` ou `Content-`, `Host`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding`, `Upgrade`, `Expect` et `Accept-Encoding`. Aucun des vôtres ne remplace jamais un de ceux de Peal.
+
+Les valeurs ne se relisent pas. Peal les garde chiffrées, comme le secret, et ne les montre plus jamais : le point de terminaison liste leurs noms (`headerNames`). Peal ne les écrit jamais dans ses journaux, ni dans le journal des livraisons. Pour les changer, envoyez toute la liste du point de terminaison avec `headers` :
+
+| Dans `headers`                 | Résultat                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Un en-tête avec sa `value`     | La fixe                                                                                                 |
+| Un en-tête par son seul `name` | Garde la valeur que le point de terminaison a sous ce nom (422 `WebhookHeadersRefused` s’il n’en a pas) |
+| Un en-tête qui manque          | S’en va                                                                                                 |
+| `[]`                           | Les retire tous                                                                                         |
+| Pas de champ `headers`         | Les garde                                                                                               |
+
+Les valeurs restent attachées à leur origine. Peal n’envoie une valeur qu’à l’origine (schéma, hôte et port) de l’adresse avec laquelle elle a été donnée, et la garde scellée pour cette origine. Changer l’`url` pour un autre chemin du même hôte garde les valeurs. La changer pour un autre hôte demande `headers` dans la même requête, chaque en-tête avec sa `value`, ou `[]` pour les retirer (422 `WebhookHeaderValuesRequired` sinon, et rien n’est enregistré). Qui déplace le point de terminaison doit connaître de nouveau les valeurs : l’adresse seule ne les emporte jamais ailleurs.
+
+<Callout type="warning" title="Les en-têtes ne sont pas signés">
+  La [signature](/developers/webhooks/requests#verify) couvre l’identifiant,
+  l’horodatage et le corps de l’événement, comme le dit la spécification :
+  vérifiez-la quels que soient les en-têtes reçus.
+</Callout>
+
+## Par l’API [#api]
+
+| Point d’accès                                                                                | Ce qu’il fait                                                                                                       |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Liste les points de terminaison, du plus ancien au plus récent                                                      |
+| `POST /api/workspaces/{workspaceId}/webhooks`                                                | Ajoute un point de terminaison, et répond son `secret` une seule fois                                               |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | En montre un                                                                                                        |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description, ses événements, ses filtres ou ses en-têtes, ou l’active ou le désactive        |
+| `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Le supprime, avec son secret et son journal                                                                         |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Renouvelle son secret, et répond le nouveau une seule fois                                                          |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Lui envoie un événement de test, ou un exemple de `eventType`                                                       |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Liste ses livraisons, les plus récentes d’abord, 30 par page, par `status` et `eventType`                           |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Renvoie l’événement d’une livraison                                                                                 |
+| `GET /api/workspaces/{workspaceId}/webhooks/deliveries`                                      | Liste les livraisons de tous les points de terminaison, par `status`, `endpointId`, `eventType`, `since` et `until` |
+| `POST /api/workspaces/{workspaceId}/webhooks/deliveries/redeliver`                           | Renvoie plusieurs livraisons : `deliveryIds`, ou `endpointId` avec `since`, `until` et `eventType`                  |
+
+Les listes en `GET` et le point de terminaison lui-même demandent `webhook:read` ; tout le reste demande `webhook:manage`.
+
+Ajouter un point de terminaison :
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://hooks.example.com/peal",
+    "description": "Système de commandes",
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <le jeton de votre passerelle>" }]
+  }'
+```
+
+La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret, ni la valeur d’un en-tête : le point de terminaison nomme ses [en-têtes](#headers) dans `headerNames`.
+
+Renvoyer les livraisons d’un point de terminaison depuis un instant :
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks/deliveries/redeliver \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f", "since": "2026-11-10T00:00:00Z" }'
+```
+
+### Erreurs [#errors]
+
+Les erreurs suivent le format de l’API, chacune avec un `code` en snake case à côté de son nom, comme `webhook_url_refused` pour `WebhookUrlRefused` ([Erreurs](/developers/conventions/errors#errors)). Les requêtes d’une clé d’API comptent dans sa [limite de débit](/developers/conventions/rate-limits#rate-limits).
+
+| Code | Erreur                        | Quand                                                                                                                         |
+| ---- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 404  | `WebhookEndpointNotFound`     | L’espace de travail n’a pas de point de terminaison de cet identifiant.                                                       |
+| 404  | `WebhookDeliveryNotFound`     | Le point de terminaison n’a pas de livraison de cet identifiant, ou son journal ne la garde plus.                             |
+| 409  | `TooManyWebhookEndpoints`     | L’espace de travail a déjà 10 points de terminaison.                                                                          |
+| 409  | `WebhookEndpointDisabled`     | Un test ou un renvoi a été demandé à un point de terminaison désactivé.                                                       |
+| 422  | `WebhookFilterRefused`        | `workspaceIds` sur un point de terminaison de portée `workspace` ; `field` le nomme.                                          |
+| 422  | `WebhookHeadersRefused`       | Un en-tête donné sans `value` que le point de terminaison n’a pas.                                                            |
+| 422  | `WebhookHeaderValuesRequired` | Une nouvelle `url` sur une autre origine, pour un point de terminaison qui a des en-têtes, sans la `value` de chacun ni `[]`. |
+| 422  | `WebhookUrlRefused`           | Peal ne livre pas à cette adresse. `reason` dit pourquoi, ci-dessous.                                                         |
+| 429  | `TooManyWebhookSends`         | Les tests et renvois de l’heure sont épuisés : voir [le journal des livraisons](/developers/webhooks/delivery#log).           |
+| 503  | `WebhooksNotConfigured`       | L’instance ne peut pas garder de secret de signature : voir [Auto-hébergement](#self-hosting).                                |
+
+| `reason`      | L’adresse                                                             |
+| ------------- | --------------------------------------------------------------------- |
+| `malformed`   | n’est pas une URL.                                                    |
+| `notHttps`    | n’est pas en HTTPS, ou nomme un autre port que 443.                   |
+| `credentials` | porte un nom d’utilisateur ou un mot de passe.                        |
+| `tooLong`     | fait plus de 2048 caractères.                                         |
+| `notPublic`   | a un hôte qui est, ou qui mène à, une adresse qui n’est pas publique. |
+| `unknownHost` | a un nom d’hôte qui ne mène nulle part.                               |
+
+La [référence de l’API](/reference) liste les paramètres et les réponses de chaque point d’accès.
+
+## Auto-hébergement [#self-hosting]
+
+Les webhooks ne demandent aucun réglage propre. Les secrets de signature sont chiffrés avec les clés de [`PEAL_TOKEN_KEYS`](/self-hosting/environment-variables#channels), comme les jetons des canaux connectés. Sans elle, l’instance démarre, et ajouter un point de terminaison ou renouveler un secret répond 503 `WebhooksNotConfigured`.
+
+Les livraisons partent du serveur : il doit pouvoir joindre vos récepteurs en HTTPS. Elles ne vont qu’à des adresses publiques : un point de terminaison sur `localhost` ou dans votre réseau privé est refusé, sur votre propre instance aussi.

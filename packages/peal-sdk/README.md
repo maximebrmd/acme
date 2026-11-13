@@ -17,7 +17,7 @@ published to each language's registry.
 | Rust                  | [`rust`](rust)     | [crates.io](https://crates.io/crates/peal-sdk)                                    | `cargo add peal-sdk`                                      |
 
 Each folder's README shows how to use it, and its `reference.md` lists every
-operation. The docs' [SDKs page](https://docs.peal.social/sdks) starts you:
+operation. The docs' [SDKs page](https://docs.peal.social/developers/sdks) starts you:
 checking the credential, a post from start to finish, errors, pages, and
 verifying a webhook in each language. In TypeScript:
 

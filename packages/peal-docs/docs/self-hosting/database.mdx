@@ -1,0 +1,28 @@
+---
+title: Database
+description: The Postgres database a self-hosted Peal needs, and how its schema is kept up to date.
+sidebar:
+  icon: database
+---
+
+Peal keeps its data and its durable jobs in one Postgres database, which `DATABASE_URL` names. The server keeps its schema up to date by itself.
+
+## Database [#database]
+
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+
+The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs.
+
+<Callout type="warning" title="No pooler in transaction mode">
+  Connect the server to Postgres directly, or through a pooler in session mode.
+  A pooler in transaction mode gives each statement another connection, which
+  loses those locks.
+</Callout>
+
+| Setting                  | Default   | What it does                                                                                                        |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | none      | The Postgres database. Each server process opens up to 10 connections to it.                                        |
+| `AUTH_DB_POOL_MAX`       | `5`       | The connections each server process opens on top of those, for sign-in.                                             |
+| `PEAL_CLUSTER_RETENTION` | `30 days` | A daily cleanup deletes the records of jobs that finished longer ago than this. Jobs still waiting are always kept. |
+
+[Environment variables](/self-hosting/environment-variables#core) has the details of each, `AUTH_DB_POOL_MAX` under [Sign-in](/self-hosting/environment-variables#sign-in).

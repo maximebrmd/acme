@@ -225,8 +225,8 @@ describe("peal feeds update and pause", () => {
 describe("the feeds' examples", () => {
   it("never write a line break a shell would pass as \\n", () => {
     const files = [
-      "../peal-docs/docs/cli.mdx",
-      "../peal-docs/docs/fr/cli.mdx",
+      "../peal-docs/docs/developers/cli/posts.mdx",
+      "../peal-docs/docs/fr/developers/cli/posts.mdx",
       "../peal-skills/skills/peal/references/saved.md",
     ].map((file) =>
       readFileSync(path.join(import.meta.dirname, "..", file), "utf-8")

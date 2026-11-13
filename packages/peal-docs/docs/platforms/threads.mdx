@@ -1,0 +1,44 @@
+---
+title: Threads
+description: "Connect Threads to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/threads.svg
+---
+
+How to connect a Threads account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                 |
+| ----------------- | ------------------------------- |
+| Text              | {{platform-threads-text-en}}    |
+| Images and videos | {{platform-threads-media-en}}   |
+| Parts             | {{platform-threads-parts-en}}   |
+| Formats           | {{platform-threads-formats-en}} |
+| Alt text          | {{platform-threads-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **Threads**, choose **Connect Threads**, sign in with your Threads account, and allow Peal to read your profile and publish.
+
+## Options [#options]
+
+No option is required, and each is sent only when you choose it. **API name** is the option's name through the API. Threads takes a post alone, with no [thread](/guides/posts#threads), so each option is the post's.
+
+| Option            | API name         | Values                                                                                           | Left out                                                |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| **Who can reply** | `replyControl`   | `everyone`, `accounts_you_follow`, `followers_only`, `mentioned_only`, `parent_post_author_only` | Everyone                                                |
+| **Topic**         | `topicTag`       | One topic on one line, 50 characters at most, without `.` or `&`                                 | None                                                    |
+| **Link preview**  | `linkAttachment` | An address starting with `https://`, on a post without images or video                           | Threads previews the first link of a post of text alone |
+
+A link preview on a post with media is refused when you schedule it.
+
+## Comments [#comments]
+
+Peal does not read comments on Threads yet.
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Threads once its Meta app is registered: see [Threads, Instagram and Facebook Pages](/self-hosting/platforms#meta).
