@@ -27,7 +27,7 @@ export const SearchForm = async ({
             id="staff-search"
             name="query"
             type="search"
-            defaultValue={query}
+            defaultValue={query ?? ""}
             maxLength={200}
             autoComplete="off"
           />
