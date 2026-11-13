@@ -340,7 +340,9 @@ and no socket, for tests.
   past it. Per-channel posts did: an override's `media` (the release before
   sends the post's media there, unchecked) and `post_targets.dropped` (it
   counts the target, and fails a missed post's claim on it): roll back
-  only once no post still to go out has either.
+  only once no post still to go out has either, with the recycling rules
+  whose source gives a channel media of its own paused and the drafts
+  that do left alone (the runbook's third check).
 
 ### Metrics and alerts
 

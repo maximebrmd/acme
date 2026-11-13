@@ -735,7 +735,8 @@ runs against it. Before rolling back past a release that stores what the
 one before misreads, run its checks in [Roll back a
 release](runbooks/roll-back.md): past per-channel posts (a channel's own
 media, a channel taken off a post), roll back only once no post still to
-go out has either.
+go out has either, and with the recycling rules and drafts the third
+check lists dealt with.
 
 Every container of the stack runs on a read-only file system, writing only
 to its volumes and to small tmpfs mounts, and none gains privileges it was
