@@ -359,7 +359,7 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
   );
 
   it.effect(
-    "turn the digest off from a link of the current generation only, which turning it on again renews",
+    "turn the digest off from a link of the current generation only, which turning it from off to on renews",
     () =>
       Effect.gen(function* links() {
         const store = yield* PreferenceStore;
@@ -383,7 +383,19 @@ layer(SourcesTest)("the weekly digest's sources on Postgres", (it) => {
         );
 
         yield* store.releaseDigest(userId);
-        // Turned on again: the links sent before stop working.
+        // Said on again while on, as a client writing every field back
+        // does: the links already sent still work.
+        yield* store.change(userId, { email: { weeklyDigest: true } }, at);
+
+        const same = Option.getOrThrow(
+          yield* store.claimDigest(userId, week.from, lease)
+        );
+
+        assert.strictEqual(same, first);
+
+        yield* store.releaseDigest(userId);
+        // Turned off, then on again: the links sent before stop working.
+        yield* store.change(userId, { email: { weeklyDigest: false } }, at);
         yield* store.change(userId, { email: { weeklyDigest: true } }, at);
 
         const second = Option.getOrThrow(

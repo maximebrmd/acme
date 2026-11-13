@@ -45,7 +45,7 @@
   `workspace:read` to read and `workspace:write` to change; staff
   impersonating the user only read.
 - The weekly digest (`SendWeeklyDigests`, `notifications.weekly-digest`,
-  every hour of Monday at 19 past, UTC) is an email, never a notice:
+  every hour of Monday from 06:19 to 23:19 UTC) is an email, never a notice:
   notices hold no content, and the digest names posts by the start of
   their text. It goes to those who turned `email.weeklyDigest` on (off by
   default) and still lack the week's, paged by user id on the partial
@@ -65,15 +65,26 @@
   forever and the preferences row goes with the account) only once the
   email was accepted, or refused for good. One refused for now, after a
   few seconds of retries and a timeout per send, is given back
-  (`releaseDigest`) and the run stops there: the next hour's goes on.
-  Each reader is isolated: any failure or defect is logged, counted in
-  `peal.notifications.weekly_digest.failures` (an alert rule watches it)
-  and skipped; a page read is retried.
+  (`releaseDigest`) for the next hour's run, and this one goes on; three
+  in a row stop it, as the transport is down. Each reader is isolated:
+  any failure or defect is logged, counted in
+  `peal.notifications.weekly_digest.failures` by `reason` and skipped; a
+  page read is retried. `peal-weekly-digest-deferred` alerts on two
+  deferrals in three hours, `peal-weekly-digest-failing` on ten other
+  failures in two (both run in promtool).
+- Delivery is at least once in one window: a server that dies after the
+  transport accepted an email and before `digestSent` leaves the lease,
+  and a later run sends the digest again. Resend drops the second by its
+  idempotency key (`weekly-digest:<user>:<week>`, kept a day); SMTP
+  delivers both.
 - Each digest carries `List-Unsubscribe` and `List-Unsubscribe-Post`
   (RFC 8058) to `/api/notifications/weekly-digest/unsubscribe/<token>`
   (`src/app/weekly-digest/`, outside the contract): a POST turns that
   digest off and nothing else, a GET only redirects to the preferences.
   Tokens (`DigestLinks`, `HmacDigestLinks`) are the HMAC of the user and
-  `weekly_digest_links` with BETTER_AUTH_SECRET, never expire, and are
-  revoked when the digest is turned on again, which moves the
-  generation. Its footer links the notification preferences too.
+  `weekly_digest_links` with a key derived from BETTER_AUTH_SECRET (a
+  fixed label), have no lifetime, and are revoked when the digest goes
+  from off to on, which moves the generation (said on while on, it does
+  not). The path is never traced (`src/app/untraced-paths.ts`), as
+  `url.full` would keep the token. Its footer links the notification
+  preferences too.

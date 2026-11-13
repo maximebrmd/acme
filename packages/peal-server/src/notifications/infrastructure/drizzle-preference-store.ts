@@ -102,9 +102,10 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailWeeklyDigest = email.weeklyDigest;
           }
 
-          // Turned on again: the unsubscribe links sent before stop working.
+          // Turned from off to on: the unsubscribe links sent before stop
+          // working. Said on while on, they keep working.
           if (email.weeklyDigest === true) {
-            set.weeklyDigestLinks = sql`${notificationPreferences.weeklyDigestLinks} + 1`;
+            set.weeklyDigestLinks = sql`CASE WHEN ${notificationPreferences.emailWeeklyDigest} THEN ${notificationPreferences.weeklyDigestLinks} ELSE ${notificationPreferences.weeklyDigestLinks} + 1 END`;
           }
 
           if (requested.everyPost !== undefined) {

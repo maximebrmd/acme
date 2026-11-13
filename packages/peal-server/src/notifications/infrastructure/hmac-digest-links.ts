@@ -9,7 +9,9 @@ import { authSecretConfig } from "#shared/infrastructure/auth-secret.ts";
 
 const encoder = new TextEncoder();
 
-// Apart from anything else the secret keys.
+// The label the tokens' key is derived with, apart from any other use of
+// the secret, and what each tag signs, apart from anything else.
+const keyLabel = "peal-weekly-digest-unsubscribe-key-v1";
 const purpose = "peal-weekly-digest-unsubscribe-v1:";
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
@@ -26,8 +28,9 @@ const signed = (userId: UserId, links: number) =>
 
 /**
  * Tokens written `<user>.<generation>.<tag>`, the tag the HMAC-SHA256 of
- * both with the server's secret (BETTER_AUTH_SECRET), in base64url: safe in
- * a path segment. Changing the secret revokes every token.
+ * both with a key derived from the server's secret (BETTER_AUTH_SECRET),
+ * in base64url: safe in a path segment. They have no lifetime; moving the
+ * generation revokes a user's, and changing the secret every one.
  */
 export const HmacDigestLinks = Layer.effect(
   DigestLinks,
@@ -35,10 +38,17 @@ export const HmacDigestLinks = Layer.effect(
     const secret = yield* authSecretConfig;
     const mac = yield* Mac.Mac;
 
+    // A key of its own, derived from the secret with a fixed label (the
+    // HMAC of the label with the secret), so no other use of the secret can
+    // yield a token's tag, whatever it signs.
     const key = yield* Mac.key(
       Mac.hmacSha256,
       encoder.encode(Redacted.value(secret))
-    ).pipe(Effect.orDie);
+    ).pipe(
+      Effect.flatMap((root) => mac.sign(root, encoder.encode(keyLabel))),
+      Effect.flatMap((derived) => Mac.key(Mac.hmacSha256, derived)),
+      Effect.orDie
+    );
 
     const tokenOf = (userId: UserId, links: number) =>
       mac.sign(key, signed(userId, links)).pipe(

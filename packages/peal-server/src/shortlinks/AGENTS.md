@@ -67,5 +67,5 @@
   so written (`destinationOf`, the same rule in publishing's domain and
   the contract's `post-text`); a value no header can carry answers 404,
   never a redirect that throws. The redirect has no server span
-  (`ShortLinkRedirectsUntraced`): the HTTP tracer would keep the
+  (`UntracedPathsLive`, `src/app/untraced-paths.ts`): the HTTP tracer would keep the
   visitor's browser and address.
