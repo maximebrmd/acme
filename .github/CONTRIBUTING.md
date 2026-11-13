@@ -420,11 +420,13 @@ Billing and the captcha are off until the server has their keys. To try
 billing, use a Stripe account in test mode, with a monthly and a yearly
 EUR price for each paid plan, tax-exclusive, whose lookup keys are
 `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`,
-`peal_pro_yearly`…), and forward its webhooks with the Stripe CLI:
+`peal_pro_yearly`…), give it per-account pricing's catalogue with
+`stripe-catalogue`, and forward its webhooks with the Stripe CLI:
 
 ```sh
 stripe listen --forward-to localhost:3001/api/auth/stripe/webhook   # prints the signing secret
 export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_...
+bun nx run peal-server:stripe-catalogue   # its meters, products and prices; --check compares only
 ```
 
 On each workspace's **Billing** page, linked from its card, owners and

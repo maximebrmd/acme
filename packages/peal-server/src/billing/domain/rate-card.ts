@@ -372,3 +372,17 @@ export const stripeTiersOf = (
     unitAmountDecimal: decimalOf(monthly, card.daysPerMonth),
     upTo: upTo === null ? null : upTo * card.daysPerMonth,
   }));
+
+/**
+ * The price at Stripe of one unit of `meter` past its allowance, in cents,
+ * as a decimal of at most 12 places: $1 per 10,000 messages is `0.01`.
+ */
+export const stripeUnitAmountOf = (
+  meter: Meter,
+  card: RateCard,
+  currency: PriceCurrency = "usd"
+): string => {
+  const { cents, per } = card.prices[currency].meters[meter];
+
+  return decimalOf(cents, per);
+};

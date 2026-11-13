@@ -701,16 +701,25 @@ changes, and Postgres restarts, only when its Dockerfile does. The servers
 hold no repository or registry credentials, and only pushed commits can be
 released. Then, on the server:
 
-1. when Postgres is to restart, because its image or its settings changed,
+1. on a server that bills (`STRIPE_SECRET_KEY` in `credentials.env`), the
+   new image compares Stripe's catalogue with the one it gives
+   (`stripe-catalogue --check`, read-only at Stripe), and the play prints
+   what differs, without failing: until per-account pricing is sold, the
+   new server starts on a catalogue that differs, warns and alerts
+   ([Stripe catalogue](#stripe-catalogue));
+2. when Postgres is to restart, because its image or its settings changed,
    the old server stops first, with 75 seconds to finish its calls to the
    platforms;
-2. Postgres starts, and keeps the database password in step with
+3. Postgres starts, and keeps the database password in step with
    `secrets.env`;
-3. the new server starts and applies its migrations before it listens;
-4. the rest of the stack starts, and the release is checked on the server and,
+4. the new server starts and applies its migrations before it listens;
+5. the rest of the stack starts, and the release is checked on the server and,
    for production, through the tunnel.
 
-Release the sandbox first. To roll back, release the previous commit. Images
+Release the sandbox first. To roll back, release the previous commit; on
+a server that bills, after a release whose catalogue moved a lookup key,
+then give Stripe the previous release's catalogue too
+([Stripe catalogue](#stripe-catalogue)). Images
 no container uses are removed once they are a week old, counted from when
 they were built: an older release's are built and uploaded again. Migrations
 do not run backwards, so write each one so that the release before it still
@@ -719,6 +728,37 @@ runs against it.
 Every container of the stack runs on a read-only file system, writing only
 to its volumes and to small tmpfs mounts, and none gains privileges it was
 not started with.
+
+### Stripe catalogue
+
+A server that bills reads per-account pricing's meters and prices at
+Stripe when it starts. The release's image makes them: it is the one write
+at Stripe run on a server, with the key that stays in `credentials.env`,
+so nothing is copied off the server. Once a release is out, and whenever
+its play reports a catalogue that differs:
+
+```sh
+sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
+```
+
+It prints what it makes, and nothing on a second run; `--check` only
+compares. The key needs write access to meters, products and prices.
+Until per-account pricing is sold, a server whose catalogue differs starts
+all the same, logs what differs and the command, and
+`peal-stripe-catalogue` alerts; once it is sold, the server stops instead,
+so run the command before the release that sells it.
+
+- Turning billing on: put `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+  in the vault, run `site.yml` so `credentials.env` holds them, run the
+  command above, then release (or restart the server).
+- A release whose rate card changes a price: the command makes a new price
+  that takes the lookup key, and leaves the old one active. The release
+  before it then no longer finds its own price under that key. To roll
+  back, release the previous commit, then run the command above, which now
+  runs the previous image and moves the key back to a third price. Until
+  per-account pricing is sold, the previous server starts meanwhile and
+  only warns; the change that sells it says how to roll back across a
+  price change, as the previous server would then stop.
 
 ## Backups
 

@@ -1,7 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Option, Redacted } from "effect";
 
-import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  stripeCatalogueConfig,
+  stripeSettingsConfig,
+} from "#shared/infrastructure/stripe-settings.ts";
 
 const settingsFrom = (env: Record<string, string>) =>
   stripeSettingsConfig.parse(ConfigProvider.fromUnknown(env));
@@ -58,6 +61,26 @@ describe("the Stripe settings", () => {
     })
   );
 
+  it.effect(
+    "read the lookup keys of per-account pricing's six prices, which are also its meters' event names",
+    () =>
+      Effect.gen(function* catalogue() {
+        const settings = yield* settingsFrom(billing);
+
+        assert.deepStrictEqual(
+          settings.pipe(Option.map(({ catalogue: keys }) => keys)),
+          Option.some({
+            accounts: "peal_accounts",
+            assistantImages: "peal_assistant_images",
+            assistantRequests: "peal_assistant_requests",
+            managedAds: "peal_managed_ads",
+            outboundMessages: "peal_outbound_messages",
+            xApi: "peal_x_api",
+          })
+        );
+      })
+  );
+
   it.effect("call another API when asked", () =>
     Effect.gen(function* api() {
       const settings = yield* settingsFrom({
@@ -90,6 +113,11 @@ describe("the Stripe settings", () => {
         })
       );
 
+      assert.deepStrictEqual(
+        settings.pipe(Option.map(({ catalogue }) => catalogue.accounts)),
+        Option.some("peal_sandbox_accounts")
+      );
+
       const malformed = yield* settingsFrom({
         ...billing,
         STRIPE_LOOKUP_KEY_PREFIX: "Not a key!",
@@ -118,6 +146,66 @@ describe("the Stripe settings", () => {
       }).pipe(Effect.flip);
 
       assert.include(String(failure), "STRIPE_SECRET_KEY");
+    })
+  );
+});
+
+const commandFrom = (env: Record<string, string>) =>
+  stripeCatalogueConfig.parse(ConfigProvider.fromUnknown(env));
+
+describe("the Stripe catalogue command's settings", () => {
+  it.effect("need the key, and no webhook secret", () =>
+    Effect.gen(function* command() {
+      const settings = yield* commandFrom({
+        STRIPE_API_URL: "http://127.0.0.1:12111",
+        STRIPE_LOOKUP_KEY_PREFIX: "peal_sandbox",
+        STRIPE_SECRET_KEY: "sk_test_synthetic",
+      });
+
+      assert.strictEqual(
+        Redacted.value(settings.secretKey),
+        "sk_test_synthetic"
+      );
+      assert.strictEqual(settings.prefix, "peal_sandbox");
+      assert.deepStrictEqual(
+        settings.apiUrl.pipe(Option.map((url) => url.href)),
+        Option.some("http://127.0.0.1:12111/")
+      );
+
+      const missing = yield* commandFrom({
+        STRIPE_WEBHOOK_SECRET: "whsec_synthetic",
+      }).pipe(Effect.flip);
+
+      assert.include(String(missing), "STRIPE_SECRET_KEY");
+    })
+  );
+});
+
+// Stripe takes a meter's event name of 100 characters at most, and the
+// longest is the prefix and "_assistant_requests".
+describe("the lookup key prefix", () => {
+  it.effect("keeps every meter's event name within 100 characters", () =>
+    Effect.gen(function* prefix() {
+      const longest = "p".repeat(81);
+
+      const settings = yield* settingsFrom({
+        ...billing,
+        STRIPE_LOOKUP_KEY_PREFIX: longest,
+      });
+
+      assert.deepStrictEqual(
+        settings.pipe(
+          Option.map(({ catalogue }) => catalogue.assistantRequests.length)
+        ),
+        Option.some(100)
+      );
+
+      const tooLong = yield* settingsFrom({
+        ...billing,
+        STRIPE_LOOKUP_KEY_PREFIX: `${longest}p`,
+      }).pipe(Effect.flip);
+
+      assert.include(String(tooLong), "STRIPE_LOOKUP_KEY_PREFIX");
     })
   );
 });
