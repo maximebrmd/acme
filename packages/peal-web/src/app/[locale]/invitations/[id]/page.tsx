@@ -26,9 +26,7 @@ const InvitationPage = async ({
         <div className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">{t("signedOut")}</p>
           <div className="flex gap-2">
-            <Button render={<Link href="/sign-in" />} nativeButton={false}>
-              {t("signIn")}
-            </Button>
+            <Button render={<Link href="/sign-in" />}>{t("signIn")}</Button>
             <Button
               variant="outline"
               render={
@@ -36,7 +34,6 @@ const InvitationPage = async ({
                   href={{ pathname: "/sign-up", query: { invitation: id } }}
                 />
               }
-              nativeButton={false}
             >
               {t("signUp")}
             </Button>

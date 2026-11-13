@@ -34,11 +34,7 @@ export const SearchForm = async ({
         </div>
         <Button type="submit">{t("submit")}</Button>
         {query === undefined ? null : (
-          <Button
-            variant="ghost"
-            render={<Link href={pathname} />}
-            nativeButton={false}
-          >
+          <Button variant="ghost" render={<Link href={pathname} />}>
             {t("clear")}
           </Button>
         )}

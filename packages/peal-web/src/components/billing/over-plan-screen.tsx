@@ -142,7 +142,6 @@ export const OverPlanScreen = ({
           variant="link"
           size="sm"
           render={<Link href={`/app/${workspace.id}/billing`} />}
-          nativeButton={false}
         >
           {t("billing")}
         </Button>

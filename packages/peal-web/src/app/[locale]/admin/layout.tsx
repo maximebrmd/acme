@@ -51,7 +51,7 @@ const StaffLayout = async ({
         <p className="font-semibold tracking-tight">{t("title")}</p>
         <p>{twoStep("staffConsoleRequires")}</p>
         <div>
-          <Button render={<Link href="/app/account" />} nativeButton={false}>
+          <Button render={<Link href="/app/account" />}>
             {twoStep("goToAccount")}
           </Button>
         </div>

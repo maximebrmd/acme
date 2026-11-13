@@ -16,12 +16,7 @@ export const AccountMenu = async () => {
 
   return Option.match(me, {
     onNone: () => (
-      <Button
-        variant="ghost"
-        size="sm"
-        render={<Link href="/sign-in" />}
-        nativeButton={false}
-      >
+      <Button variant="ghost" size="sm" render={<Link href="/sign-in" />}>
         {t("signIn")}
       </Button>
     ),

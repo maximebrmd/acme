@@ -181,18 +181,13 @@ export const CompleteAdSignIn = ({
       step={step}
       back={
         known === null ? (
-          <Button
-            variant="outline"
-            render={<Link href="/app" />}
-            nativeButton={false}
-          >
+          <Button variant="outline" render={<Link href="/app" />}>
             {t("toWorkspaces")}
           </Button>
         ) : (
           <Button
             variant="outline"
             render={<Link href={`/app/${known}/ads`} />}
-            nativeButton={false}
           >
             {t("toAds")}
           </Button>

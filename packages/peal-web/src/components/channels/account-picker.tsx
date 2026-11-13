@@ -78,7 +78,6 @@ export const AccountPicker = ({
         <Button
           variant="outline"
           render={<Link href={`/app/${workspaceId}/channels`} />}
-          nativeButton={false}
         >
           {t("cancel")}
         </Button>

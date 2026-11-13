@@ -1,6 +1,7 @@
 import { BookOpenIcon, LifeBuoyIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
+import { cn } from "peal-ui/lib/utils";
 import type { ReactNode } from "react";
 
 /**
@@ -50,40 +51,32 @@ export const TopBarView = ({
         </ol>
       </nav>
       {docsUrl === null ? null : (
-        <Button
-          variant="outline"
-          className="hidden sm:inline-flex"
-          render={
-            <a
-              href={docsUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={t("docs")}
-            />
-          }
-          nativeButton={false}
+        <a
+          href={docsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "hidden sm:inline-flex"
+          )}
         >
           <BookOpenIcon aria-hidden />
           {t("docs")}
-        </Button>
+        </a>
       )}
       {supportUrl === null ? null : (
-        <Button
-          variant="outline"
-          className="hidden sm:inline-flex"
-          render={
-            <a
-              href={supportUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={t("support")}
-            />
-          }
-          nativeButton={false}
+        <a
+          href={supportUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "hidden sm:inline-flex"
+          )}
         >
           <LifeBuoyIcon aria-hidden />
           {t("support")}
-        </Button>
+        </a>
       )}
       <div className="flex items-center gap-1">{actions}</div>
     </header>

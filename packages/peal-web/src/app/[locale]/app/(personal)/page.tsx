@@ -57,7 +57,6 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const { user, workspaces } = me.value;
   const overview = await overviewOrNothing();
   const t = await getTranslations("AppPage");
-  const tOverview = await getTranslations("Overview.home");
   const channels = await getTranslations("ChannelsPage");
   const tPosts = await getTranslations("Posts.nav");
   const media = await getTranslations("Media.page");
@@ -72,26 +71,10 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {t("title", { name: user.name })}
         </h1>
         <p className="text-muted-foreground">{t("description")}</p>
-        {workspaces.length > 1 ? (
-          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            <Link
-              href="/app/agenda"
-              className="underline-offset-4 hover:underline"
-            >
-              {tOverview("agenda")}
-            </Link>
-            <Link
-              href="/app/report"
-              className="underline-offset-4 hover:underline"
-            >
-              {tOverview("report")}
-            </Link>
-          </nav>
-        ) : null}
       </div>
       {workspaces.length === 0 ? (
         <p className="text-muted-foreground">{t("empty")}</p>
@@ -101,7 +84,20 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
             <li key={workspace.id}>
               <Card>
                 <CardHeader>
-                  <CardTitle>{workspace.name}</CardTitle>
+                  <CardTitle>
+                    <Link
+                      href={`/app/${workspace.id}`}
+                      className="flex items-center gap-2.5 underline-offset-4 hover:underline"
+                    >
+                      <span
+                        aria-hidden
+                        className="bg-brand-tint text-brand-text flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold"
+                      >
+                        {workspace.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      {workspace.name}
+                    </Link>
+                  </CardTitle>
                   <CardDescription>
                     {workspace.twoStepRequired && !user.twoStepEnabled
                       ? twoStep("workspaceRequiresBadge")

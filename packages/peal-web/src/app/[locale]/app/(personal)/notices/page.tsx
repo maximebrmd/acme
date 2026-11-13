@@ -34,7 +34,7 @@ const NoticesPage = async ({ params }: PageProps<"/[locale]/app/notices">) => {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-muted-foreground">{t("description")}</p>
@@ -43,7 +43,6 @@ const NoticesPage = async ({ params }: PageProps<"/[locale]/app/notices">) => {
           variant="outline"
           size="sm"
           render={<Link href="/app/notices/preferences" />}
-          nativeButton={false}
         >
           {t("preferences")}
         </Button>

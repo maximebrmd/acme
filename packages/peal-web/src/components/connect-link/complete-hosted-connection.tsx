@@ -58,7 +58,6 @@ const Failed = ({
             render={
               <Link href={`/connect/link#${encodeURIComponent(token)}`} />
             }
-            nativeButton={false}
           >
             {t("tryAgain")}
           </Button>
@@ -112,7 +111,6 @@ const Picker = ({
     <Button
       variant="outline"
       render={<Link href={`/connect/link#${encodeURIComponent(token)}`} />}
-      nativeButton={false}
     >
       {t("tryAgain")}
     </Button>

@@ -73,7 +73,6 @@ const WorkspacePage = async ({
             variant="link"
             size="sm"
             render={<Link href="/admin/workspaces" />}
-            nativeButton={false}
           >
             {t("back")}
           </Button>

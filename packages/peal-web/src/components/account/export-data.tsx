@@ -10,7 +10,6 @@ export const ExportData = () => {
     <div>
       <Button
         variant="outline"
-        nativeButton={false}
         render={
           <a href="/api/me/export" download>
             {t("download")}

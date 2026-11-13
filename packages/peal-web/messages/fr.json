@@ -638,7 +638,6 @@
     "title": "Canaux",
     "description": "Les comptes sociaux sur lesquels {workspace} publie. Connectez un compte pour y programmer des publications.",
     "open": "Canaux",
-    "back": "Retour à vos espaces de travail",
     "loadFailed": "Les canaux n’ont pas pu être chargés. Réessayez.",
     "retry": "Réessayer",
     "empty": "Aucun compte n’est encore connecté.",
@@ -1972,7 +1971,6 @@
   "Billing": {
     "open": "Facturation",
     "openLabel": "Facturation de {workspace}",
-    "back": "Tous les espaces de travail",
     "title": "Facturation",
     "description": "L’abonnement de {workspace}, et ce que l’espace de travail en utilise.",
     "loadFailed": "La facturation n’a pas pu être chargée.",
@@ -3988,9 +3986,7 @@
       "toReconnect": "{count, plural, one {# canal} other {# canaux}} à reconnecter",
       "channelsOff": "{count, plural, one {# canal est désactivé} other {# canaux sont désactivés}}",
       "unanswered": "{count, plural, one {# fil} other {# fils}} avec un commentaire qui attend une réponse",
-      "scheduled": "{count, plural, =0 {Rien ne part ces 7 prochains jours} one {# publication part ces 7 prochains jours} other {# publications partent ces 7 prochains jours}}",
-      "agenda": "Agenda de tous les espaces",
-      "report": "Rapport de tous les espaces"
+      "scheduled": "{count, plural, =0 {Rien ne part ces 7 prochains jours} one {# publication part ces 7 prochains jours} other {# publications partent ces 7 prochains jours}}"
     },
     "agenda": {
       "title": "Agenda",

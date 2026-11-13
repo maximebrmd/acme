@@ -138,10 +138,13 @@ Every signed-in page has the same frame:
 - **Content** on `background`, in white cards and tables. Full-bleed tools
   (the calendar, the inbox, the composer) are white edge to edge.
 
-Studio holds Home, Channels, Calendar, Posts, Analytics, Inbox, Ads and
-Media, with API keys and Webhooks as shortcuts under Developers. Console
-holds Platforms, Customers and Connect links; Activity, Webhooks and Usage
-under Monitor; API keys, OAuth apps and Team under Configure.
+Studio holds Home, Calendar, Posts, Channels and Media, then Inbox,
+Analytics and Ads under Engage. Console holds Platforms, then API keys and
+Webhooks under Build, and Partner under Partners; a page the API offers
+later (connect links, activity, usage, OAuth apps) joins it there. The
+person's own pages, outside any workspace (the overview, the agenda, the
+report, the notices, the account), have a sidebar of their own, with
+their workspaces under it.
 
 ## Pages
 

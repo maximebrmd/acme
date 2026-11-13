@@ -56,7 +56,6 @@ const UserPage = async ({
             variant="link"
             size="sm"
             render={<Link href="/admin/users" />}
-            nativeButton={false}
           >
             {t("back")}
           </Button>

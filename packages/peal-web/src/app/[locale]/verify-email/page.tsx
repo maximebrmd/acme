@@ -24,9 +24,7 @@ const VerifyEmailPage = async ({
 
   return (
     <AuthCard title={t("title")} description={t("description")}>
-      <Button render={<Link href="/app" />} nativeButton={false}>
-        {t("continue")}
-      </Button>
+      <Button render={<Link href="/app" />}>{t("continue")}</Button>
     </AuthCard>
   );
 };

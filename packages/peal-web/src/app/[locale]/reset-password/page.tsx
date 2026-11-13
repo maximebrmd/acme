@@ -20,7 +20,7 @@ const ResetPasswordPage = async ({
   if (error !== undefined || valid._tag === "None") {
     return (
       <AuthCard title={t("invalidTitle")} description={t("invalidDescription")}>
-        <Button render={<Link href="/forgot-password" />} nativeButton={false}>
+        <Button render={<Link href="/forgot-password" />}>
           {t("requestAgain")}
         </Button>
       </AuthCard>

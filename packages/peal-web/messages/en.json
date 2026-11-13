@@ -638,7 +638,6 @@
     "title": "Channels",
     "description": "The social accounts {workspace} posts to. Connect an account to schedule posts on it.",
     "open": "Channels",
-    "back": "Back to your workspaces",
     "loadFailed": "The channels could not be loaded. Try again.",
     "retry": "Try again",
     "empty": "No account is connected yet.",
@@ -1972,7 +1971,6 @@
   "Billing": {
     "open": "Billing",
     "openLabel": "Billing of {workspace}",
-    "back": "All workspaces",
     "title": "Billing",
     "description": "The plan of {workspace}, and how much of it the workspace uses.",
     "loadFailed": "The billing could not be loaded.",
@@ -3988,9 +3986,7 @@
       "toReconnect": "{count, plural, one {# channel} other {# channels}} to reconnect",
       "channelsOff": "{count, plural, one {# channel is} other {# channels are}} off",
       "unanswered": "{count, plural, one {# thread} other {# threads}} with a comment waiting for an answer",
-      "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}",
-      "agenda": "Agenda across workspaces",
-      "report": "Report across workspaces"
+      "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}"
     },
     "agenda": {
       "title": "Agenda",

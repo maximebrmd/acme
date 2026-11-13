@@ -9,7 +9,7 @@ import {
   SparklesIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "peal-ui/components/button";
+import { Button, buttonVariants } from "peal-ui/components/button";
 import {
   Select,
   SelectContent,
@@ -243,15 +243,13 @@ export const WorkspaceHome = ({
               <p className="text-muted-foreground">
                 {t("channels.description")}
               </p>
-              <Button
-                variant="outline"
-                className="mt-1.5"
-                render={<Link href={channelsHref} />}
-                nativeButton={false}
+              <Link
+                href={channelsHref}
+                className={cn(buttonVariants({ variant: "outline" }), "mt-1.5")}
               >
                 <PlusIcon aria-hidden />
                 {t("channels.connect")}
-              </Button>
+              </Link>
             </div>
           </section>
 
@@ -318,15 +316,13 @@ export const WorkspaceHome = ({
                 <span id="home-quickstart">{t("quickstart.chip")}</span>
               </Chip>
               {keysHref === null ? null : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  render={<Link href={keysHref} />}
-                  nativeButton={false}
+                <Link
+                  href={keysHref}
+                  className={buttonVariants({ size: "sm", variant: "ghost" })}
                 >
                   <KeyRoundIcon aria-hidden />
                   {t("quickstart.keys")}
-                </Button>
+                </Link>
               )}
             </div>
             <Tabs defaultValue="agent">
@@ -420,14 +416,15 @@ export const WorkspaceHome = ({
                     </p>
                     {keysHref === null ? null : (
                       <div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          render={<Link href={keysHref} />}
-                          nativeButton={false}
+                        <Link
+                          href={keysHref}
+                          className={buttonVariants({
+                            size: "sm",
+                            variant: "outline",
+                          })}
                         >
                           {t("quickstart.app.createKey")}
-                        </Button>
+                        </Link>
                       </div>
                     )}
                   </Step>

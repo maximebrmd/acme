@@ -37,7 +37,6 @@ export const Pager = async ({
             render={
               <Link href={pagedHref(pathname, { page: page - 1, query })} />
             }
-            nativeButton={false}
           >
             {t("previous")}
           </Button>
@@ -49,7 +48,6 @@ export const Pager = async ({
             render={
               <Link href={pagedHref(pathname, { page: page + 1, query })} />
             }
-            nativeButton={false}
           >
             {t("next")}
           </Button>

@@ -109,7 +109,7 @@ const ThreadPages = ({
 
       return (
         <>
-          <ul className="flex flex-col gap-3">
+          <ul className="bg-card divide-y overflow-hidden rounded-md border">
             {value.items.map((thread) => (
               <ThreadRowView
                 key={thread.id}

@@ -29,9 +29,7 @@ const OAuthWorkspacePage = async ({
       {workspaces.length === 0 ? (
         <div className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
-          <Button render={<Link href="/app" />} nativeButton={false}>
-            {t("create")}
-          </Button>
+          <Button render={<Link href="/app" />}>{t("create")}</Button>
         </div>
       ) : (
         <WorkspacePicker

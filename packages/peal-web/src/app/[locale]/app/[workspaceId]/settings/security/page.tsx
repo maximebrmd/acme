@@ -47,11 +47,7 @@ const SecurityPage = async ({
         managesMembers={may.has("member:update")}
         ownEnabled={me.value.user.twoStepEnabled}
         accountLink={
-          <Button
-            variant="outline"
-            render={<Link href="/app/account" />}
-            nativeButton={false}
-          >
+          <Button variant="outline" render={<Link href="/app/account" />}>
             {t("goToAccount")}
           </Button>
         }

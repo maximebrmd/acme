@@ -37,7 +37,7 @@ const InboxThreadPage = async ({
         >
           {t("thread.back")}
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {t("thread.title")}
         </h1>
       </div>

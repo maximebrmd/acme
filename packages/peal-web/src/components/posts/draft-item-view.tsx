@@ -33,7 +33,7 @@ export const DraftItemView = ({
   const t = useTranslations("Drafts");
 
   return (
-    <li className="flex flex-col gap-1 rounded-lg border p-4">
+    <li className="flex flex-col gap-1 px-4 py-3">
       {children}
       <p className="text-muted-foreground text-xs">
         {t("channels", { count: post.targets.length })} ·{" "}

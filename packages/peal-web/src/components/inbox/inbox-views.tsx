@@ -180,7 +180,7 @@ export const ThreadRowView = ({
   const instant = useInstant();
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border p-4">
+    <li className="flex flex-col gap-2 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">
           {link(

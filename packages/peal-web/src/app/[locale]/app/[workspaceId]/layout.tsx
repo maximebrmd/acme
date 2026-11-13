@@ -50,7 +50,7 @@ const WorkspaceLayout = async ({
       <PlainFrame>
         <TwoStepRequiredNotice
           action={
-            <Button render={<Link href="/app/account" />} nativeButton={false}>
+            <Button render={<Link href="/app/account" />}>
               {t("goToAccount")}
             </Button>
           }

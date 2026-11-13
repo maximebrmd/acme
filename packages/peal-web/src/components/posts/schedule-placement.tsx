@@ -74,7 +74,6 @@ export const SchedulePlacementFields = ({
                 variant="link"
                 size="sm"
                 render={<Link href={`/app/${workspaceId}/settings/queues`} />}
-                nativeButton={false}
               >
                 {t("queueSettings")}
               </Button>
