@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { eq } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option } from "effect";
@@ -159,6 +161,84 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
           new Map()
         );
       })
+  );
+
+  it.effect(
+    "counts a pool's bytes with the workspace's, and asks for no pool where nothing is limited",
+    () =>
+      Effect.gen(function* pooled() {
+        const assets = yield* MediaAssets;
+        const ids = yield* Ids;
+        const since = DateTime.makeUnsafe("2026-06-15T06:00:00Z");
+        const first = yield* freshAsset;
+        const other = WorkspaceIdSchema.make(yield* ids.next);
+
+        yield* assets.insertWithin(first, Option.none(), since, alone);
+
+        const secondId = MediaAssetIdSchema.make(yield* ids.next);
+
+        const second = new MediaAsset({
+          ...first,
+          id: secondId,
+          storageKey: storageKeyFor(other, secondId, first.contentType),
+          workspaceId: other,
+        });
+
+        // The first workspace's 3 GB count against the pool's 5 GB.
+        const refused = yield* assets
+          .insertWithin(
+            second,
+            Option.some(5_000_000_000),
+            since,
+            Effect.succeed([first.workspaceId])
+          )
+          .pipe(Effect.flip);
+
+        assert.deepInclude(refused, {
+          _tag: "PlanLimitReached",
+          used: 3_000_000_000,
+        });
+
+        // No limit: the pool is never asked for.
+        yield* assets.insertWithin(
+          second,
+          Option.none(),
+          since,
+          Effect.die("no pool is read without a limit")
+        );
+
+        assert.strictEqual(
+          yield* assets.storedAcross([first.workspaceId, other], since),
+          6_000_000_000
+        );
+      })
+  );
+
+  it.effect("counts the bytes of as many workspaces as a partner holds", () =>
+    Effect.gen(function* many() {
+      const assets = yield* MediaAssets;
+      const since = DateTime.makeUnsafe("2026-06-15T06:00:00Z");
+      const first = yield* freshAsset;
+
+      yield* assets.insertWithin(first, Option.none(), since, alone);
+
+      // More than a statement's 65,535 parameters.
+      const pool = [
+        first.workspaceId,
+        ...Array.from({ length: 70_000 }, () =>
+          WorkspaceIdSchema.make(randomUUID())
+        ),
+      ];
+
+      assert.strictEqual(
+        yield* assets.storedAcross(pool, since),
+        3_000_000_000
+      );
+      assert.strictEqual(
+        (yield* assets.storedBytesIn(pool, since)).get(first.workspaceId),
+        3_000_000_000
+      );
+    })
   );
 
   it.effect("keeps every status and what a probe found", () =>

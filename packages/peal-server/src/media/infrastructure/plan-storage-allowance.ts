@@ -1,5 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
@@ -9,7 +10,8 @@ import { StorageAllowance } from "#media/application/ports/storage-allowance.ts"
  * Each workspace's media storage allowance, as its billing account's plan
  * gives it: per-account pricing's grows with the accounts connected across
  * the account, which the channels context counts, and only it reads them.
- * The pool is billing's (`PlanPools`), held in a transaction.
+ * The pool is billing's (`PlanPools`), held in a transaction, on a server
+ * that bills only.
  */
 export const PlanStorageAllowanceLive = Layer.effect(
   StorageAllowance,
@@ -17,6 +19,7 @@ export const PlanStorageAllowanceLive = Layer.effect(
     const entitlements = yield* WorkspaceEntitlements;
     const pools = yield* PlanPools;
     const channels = yield* ChannelUsage;
+    const { enabled } = yield* BillingMode;
 
     return StorageAllowance.of({
       bytes: (workspaceId) =>
@@ -34,8 +37,12 @@ export const PlanStorageAllowanceLive = Layer.effect(
           ),
           Effect.orDie
         ),
+      // A server that does not bill limits nothing: it reads no pool and
+      // takes no partner's hold for an upload.
       sharedWith: (workspaceId) =>
-        pools.sharedWith(workspaceId).pipe(Effect.orDie),
+        enabled
+          ? pools.sharedWith(workspaceId).pipe(Effect.orDie)
+          : Effect.succeed([]),
     });
   })
 );

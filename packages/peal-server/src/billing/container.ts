@@ -202,7 +202,7 @@ export const BillingOverviewLive = Layer.mergeAll(
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,
-      ContextWorkspaceUsageLive,
+      ContextWorkspaceUsageLive.pipe(Layer.provide(ConfiguredBillingModeLive)),
       ContextMemberAddressesLive,
       KeyedPseudonymsLive,
       WorkspacePartnerTenancyLive

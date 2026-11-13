@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import type { DateTime } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
@@ -17,18 +17,22 @@ export const pooledRoom = Effect.fn("Media.pooledRoom")(function* pooledRoom(
 ) {
   const allowed = yield* StorageAllowance;
   const assets = yield* MediaAssets;
+  const allowance = yield* allowed.bytes(workspaceId);
 
-  const [allowance, others] = yield* Effect.all([
-    allowed.bytes(workspaceId),
-    allowed.sharedWith(workspaceId),
-  ]);
+  // Nothing limited: no pool is read.
+  if (Option.isNone(allowance)) {
+    return {
+      allowance,
+      sharedWith: Effect.succeed<readonly WorkspaceId[]>([]),
+      stored: 0,
+    };
+  }
 
-  const own = yield* assets.storedBytes(workspaceId, pendingSince);
-  const elsewhere = yield* assets.storedBytesIn(others, pendingSince);
+  const others = yield* allowed.sharedWith(workspaceId);
 
   return {
     allowance,
     sharedWith: allowed.sharedWith(workspaceId),
-    stored: [...elsewhere.values()].reduce((sum, bytes) => sum + bytes, own),
+    stored: yield* assets.storedAcross([workspaceId, ...others], pendingSince),
   };
 });

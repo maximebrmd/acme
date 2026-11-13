@@ -15,6 +15,7 @@ import type { MediaStatusName } from "#media/domain/media-status.ts";
 import { roomFor } from "#shared/domain/allowance.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { mediaAssets } from "./schema.ts";
@@ -184,7 +185,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .from(mediaAssets)
           .where(
             and(
-              inArray(mediaAssets.workspaceId, [...workspaceIds]),
+              anyUuid(mediaAssets.workspaceId, workspaceIds),
               takingRoom(pendingSince)
             )
           )
@@ -206,22 +207,51 @@ export const DrizzleMediaAssetsLive = Layer.effect(
       }
     );
 
-    // What the workspace and the others of its pool store, the pool held
-    // from here to the end of the transaction, after the workspace's lock.
+    const storedAcross = Effect.fn("MediaAssets.storedAcross")(
+      function* storedAcross(
+        workspaceIds: readonly WorkspaceId[],
+        pendingSince: DateTime.Utc
+      ) {
+        if (workspaceIds.length === 0) {
+          return 0;
+        }
+
+        const [row] = yield* db
+          .select({
+            bytes: sql<string>`coalesce(sum(${mediaAssets.byteSize}), 0)::text`,
+          })
+          .from(mediaAssets)
+          .where(
+            and(
+              anyUuid(mediaAssets.workspaceId, workspaceIds),
+              takingRoom(pendingSince)
+            )
+          )
+          .pipe(Effect.orDie);
+
+        return Number(row?.bytes ?? "0");
+      }
+    );
+
+    // What the workspace and the others of its pool store, in one count,
+    // the pool held from here to the end of the transaction, after the
+    // workspace's lock. Without a limit, no pool is read nor held.
     const pooledBytes = (
       workspaceId: WorkspaceId,
+      allowance: Allowance,
       pendingSince: DateTime.Utc,
       sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) =>
       Effect.gen(function* pooled() {
         yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${workspaceId}))`;
 
+        if (Option.isNone(allowance)) {
+          return 0;
+        }
+
         const others = yield* sharedWith;
-        const own = yield* storedBytes(workspaceId, pendingSince);
 
-        const elsewhere = yield* storedBytesIn(others, pendingSince);
-
-        return [...elsewhere.values()].reduce((sum, bytes) => sum + bytes, own);
+        return yield* storedAcross([workspaceId, ...others], pendingSince);
       });
 
     const insertWithin = (
@@ -235,6 +265,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           Effect.gen(function* insertHeld() {
             const used = yield* pooledBytes(
               asset.workspaceId,
+              allowance,
               pendingSince,
               sharedWith
             );
@@ -311,6 +342,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           Effect.gen(function* updateHeld() {
             const used = yield* pooledBytes(
               asset.workspaceId,
+              allowance,
               pendingSince,
               sharedWith
             );
@@ -403,6 +435,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .pipe(Effect.orDie);
       }),
       storedBytes,
+      storedAcross,
       storedBytesIn,
       update,
       updateWithin,

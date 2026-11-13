@@ -1,6 +1,8 @@
 import { Effect, Layer } from "effect";
 
 import { AssistantRequests } from "#assistant/application/assistant-requests.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import type {
   Seated,
@@ -16,7 +18,8 @@ import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 /**
  * A workspace's usage, counted by the context that holds each thing: its
  * channels, its members, the posts going out this month, the assistant
- * requests sent today and the media it stores. The member directory not answering is the database
+ * requests sent today and the media it stores (across its pool, on a
+ * server that bills, as its allowance counts it). The member directory not answering is the database
  * not answering.
  */
 export const ContextWorkspaceUsageLive = Layer.effect(
@@ -27,6 +30,22 @@ export const ContextWorkspaceUsageLive = Layer.effect(
     const seats = yield* WorkspaceSeats;
     const assistant = yield* AssistantRequests;
     const media = yield* MediaStorageUsage;
+    const pools = yield* PlanPools;
+    const { enabled } = yield* BillingMode;
+
+    // The bytes the workspace's pool stores, as its allowance counts them
+    // on a server that bills (holding nothing); its own elsewhere.
+    const storedFor = (workspaceId: WorkspaceId) =>
+      enabled
+        ? pools.sharingIn([workspaceId]).pipe(
+            Effect.flatMap((shared) =>
+              media.storedIn([workspaceId, ...(shared.get(workspaceId) ?? [])])
+            ),
+            Effect.map((stored) =>
+              [...stored.values()].reduce((sum, bytes) => sum + bytes, 0)
+            )
+          )
+        : media.stored(workspaceId);
 
     const of = Effect.fn("WorkspaceUsage.of")(function* of(
       workspaceId: WorkspaceId
@@ -35,7 +54,7 @@ export const ContextWorkspaceUsageLive = Layer.effect(
         {
           assistant: assistant.today(workspaceId),
           channels: channels.connected(workspaceId),
-          media: media.stored(workspaceId),
+          media: storedFor(workspaceId),
           members: seats
             .taken(workspaceId)
             .pipe(Effect.mapError(({ cause }) => new DatabaseError({ cause }))),

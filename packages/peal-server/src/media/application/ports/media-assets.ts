@@ -63,6 +63,14 @@ export class MediaAssets extends Context.Service<
       pendingSince: DateTime.Utc
     ) => Effect.Effect<number>;
     /**
+     * The bytes these workspaces store together, as `storedBytes` counts
+     * them, in one query whatever their number: a pool's.
+     */
+    readonly storedAcross: (
+      workspaceIds: readonly WorkspaceId[],
+      pendingSince: DateTime.Utc
+    ) => Effect.Effect<number>;
+    /**
      * The bytes each of these workspaces stores, as `storedBytes` counts
      * them, in one query; one that stores none is left out.
      */

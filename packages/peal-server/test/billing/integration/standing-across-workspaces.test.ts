@@ -11,6 +11,7 @@ import { SqlClient } from "effect/sql";
 
 import { AssistantRequests } from "#assistant/application/assistant-requests.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
@@ -69,7 +70,18 @@ const standingOn = (
         Layer.mock(MediaStorageUsage, {
           stored: (workspaceId) =>
             Effect.succeed(heavy.has(workspaceId) ? 2_000_000_000 : 0),
-        })
+          storedIn: (workspaceIds) =>
+            Effect.succeed(
+              new Map(
+                workspaceIds
+                  .filter((id) => heavy.has(id))
+                  .map((id) => [id, 2_000_000_000] as const)
+              )
+            ),
+        }),
+        // Media's pool is the workspace alone here; channels' is counted
+        // by the partner rule above.
+        PlanPools.layerAlone
       )
     ),
     Layer.provideMerge(WorkspaceEntitlements.layerShared),

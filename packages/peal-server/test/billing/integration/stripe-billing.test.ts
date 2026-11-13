@@ -1611,6 +1611,111 @@ layer(BillingIntegration, {
       })
   );
 
+  it.effect(
+    "holds a free account's media to 1 GB across its workspaces, uploads sent together included, and shows the account's",
+    () =>
+      Effect.gen(function* acrossAccount() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("pooled-media");
+        const first = yield* workspaceOf(owner, "Pooled one");
+
+        const another = (name: string) =>
+          app
+            .request("/api/auth/organization/create", {
+              body: { name, slug: `${name}-${randomUUID()}` },
+              headers: { cookie: owner.cookies },
+            })
+            .pipe(Effect.flatMap((reply) => bodyOf(CreatedSchema, reply)));
+
+        const upload = (workspaceId: string) =>
+          post(owner, `/api/workspaces/${workspaceId}/media`, {
+            byteSize: 600_000_000,
+            contentType: "video/mp4",
+          });
+
+        assert.strictEqual((yield* upload(first)).status, 201);
+
+        const { id: second } = yield* another("pooled-two");
+        const refused = yield* upload(second);
+
+        assert.strictEqual(refused.status, 402);
+        assert.deepInclude(refused.body, {
+          allowed: 1_000_000_000,
+          limit: "mediaStorage",
+          used: 600_000_000,
+        });
+
+        // The second workspace's page shows the account's media.
+        assert.strictEqual(
+          (yield* billingOf(owner, second)).usage.mediaStorage,
+          600_000_000
+        );
+
+        // Two uploads sent together, in two workspaces of another account.
+        const together = yield* signedUp("pooled-together");
+        const one = yield* workspaceOf(together, "Together one");
+
+        const two = yield* app
+          .request("/api/auth/organization/create", {
+            body: { name: "Together two", slug: `together-${randomUUID()}` },
+            headers: { cookie: together.cookies },
+          })
+          .pipe(Effect.flatMap((reply) => bodyOf(CreatedSchema, reply)));
+
+        const replies = yield* Effect.all(
+          [one, two.id].map((workspaceId) =>
+            post(together, `/api/workspaces/${workspaceId}/media`, {
+              byteSize: 600_000_000,
+              contentType: "video/mp4",
+            })
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(statusesOf(replies), [201, 402]);
+      })
+  );
+
+  it.effect(
+    "stores 5 GB an account on per-account pricing, 15 GB for three",
+    () =>
+      Effect.gen(function* paying() {
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "paying-media",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(
+            payloadOf("customer.subscription.created.pay-as-you-go", delivery)
+          ),
+          200
+        );
+
+        yield* Effect.all(
+          ["one", "two", "three"].map((handle) =>
+            seedChannel(workspaceId, `@${handle}@media.example`)
+          )
+        );
+
+        assert.strictEqual(
+          (yield* billingOf(owner, workspaceId)).allowances.mediaStorage,
+          15_000_000_000
+        );
+
+        // More than the free tier's 1 GB in one file.
+        const accepted = yield* post(
+          owner,
+          `/api/workspaces/${workspaceId}/media`,
+          { byteSize: 1_050_000_000, contentType: "video/mp4" }
+        );
+
+        assert.strictEqual(accepted.status, 201);
+      })
+  );
+
   it.effect("refuses an upload the plan's storage has no room for", () =>
     Effect.gen(function* storage() {
       const owner = yield* signedUp("storage");
