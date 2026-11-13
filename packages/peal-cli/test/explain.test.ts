@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { DateTime } from "effect";
 import { CliError } from "effect/cli";
 import {
   Forbidden,
@@ -6,6 +7,7 @@ import {
   PostNotFound,
   SpendCeilingExceeded,
   TooManyRequests,
+  UsageAllowanceReached,
   WebhookHeaderValuesRequired,
 } from "peal-contract";
 
@@ -169,5 +171,56 @@ describe("a webhook move that keeps headers, explained", () => {
     expect(explained._tag === "Refused" ? explained.reason : "").toContain(
       "--clear-headers"
     );
+  });
+});
+
+describe("a meter's refusal, explained", () => {
+  const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
+
+  const refusalOf = (failure: UsageAllowanceReached): string => {
+    const explained = explain(url)(failure);
+
+    return explained._tag === "Refused" ? explained.reason : explained._tag;
+  };
+
+  it("says a payment method lets the messages go on, at the rate card's price", () => {
+    expect(
+      refusalOf(
+        new UsageAllowanceReached({
+          allowed: 10_000,
+          billingUrl,
+          meter: "outboundMessages",
+          reason: "paymentMethodRequired",
+          resetsAt,
+          used: 10_000,
+        })
+      )
+    ).toBe(
+      `The workspace's billing account used 10000 of the 10000 inbox messages sent, comment replies included it may use this month, which starts again on 2026-12-01 (UTC). A payment method lets it go on (past the allowance 10000 cost $1.00, excluding tax): an owner or an admin adds one at ${billingUrl}. Reading and publishing go on meanwhile.`
+    );
+  });
+
+  it("never quotes the assistant's price before it is confirmed, and sends a ceiling to the billing page", () => {
+    const assistant = {
+      allowed: 0,
+      billingUrl,
+      meter: "assistantRequests" as const,
+      resetsAt,
+      used: 0,
+    };
+
+    expect(
+      refusalOf(
+        new UsageAllowanceReached({
+          ...assistant,
+          reason: "paymentMethodRequired",
+        })
+      )
+    ).toContain("its price past the allowance is not set yet");
+    expect(
+      refusalOf(
+        new UsageAllowanceReached({ ...assistant, reason: "ceilingReached" })
+      )
+    ).toContain(`raises the account's monthly ceiling at ${billingUrl}`);
   });
 });
