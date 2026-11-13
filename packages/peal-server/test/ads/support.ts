@@ -119,22 +119,30 @@ export class TestNetworks extends Context.Service<
 /**
  * The ads use cases on Postgres, with grants' tokens really encrypted
  * (the synthetic keyring), the network a test starts (`onMeta`), and what
- * the workspace is told recorded (`TestNetworks.told`).
+ * the workspace is told recorded (`TestNetworks.told`), on the meters
+ * given.
  */
-export const AdsTest = adsWith(
-  Layer.mergeAll(
-    DrizzleGrantStore,
-    DrizzleAccountStore,
-    DrizzleBoostStore,
-    DrizzleReadModel,
-    DrizzleActiveAdMonths,
-    MeteredUsage.layerUnmetered,
-    CipherGrantSecrets.pipe(Layer.provide(TokenCipherTest)),
-    TestNetworks.layer,
-    TestPosts.layer
-  ),
-  DirectAds
-).pipe(Layer.provideMerge(TransactionsTest), Layer.provideMerge(DatabaseTest));
+export const adsTestWith = <M extends MeteredUsage>(meters: Layer.Layer<M>) =>
+  adsWith(
+    Layer.mergeAll(
+      DrizzleGrantStore,
+      DrizzleAccountStore,
+      DrizzleBoostStore,
+      DrizzleReadModel,
+      DrizzleActiveAdMonths,
+      meters,
+      CipherGrantSecrets.pipe(Layer.provide(TokenCipherTest)),
+      TestNetworks.layer,
+      TestPosts.layer
+    ),
+    DirectAds
+  ).pipe(
+    Layer.provideMerge(TransactionsTest),
+    Layer.provideMerge(DatabaseTest)
+  );
+
+/** The same, on a server that does not bill: no meter refuses. */
+export const AdsTest = adsTestWith(MeteredUsage.layerUnmetered);
 
 /**
  * Starts a fake of Meta's Marketing API for the test, and has the use
