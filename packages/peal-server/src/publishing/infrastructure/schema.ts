@@ -38,7 +38,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * That is its first part; `follow_ups` holds the parts after it, in order,
  * as the domain's `PostPart` encodes them (text, media, text overrides and
  * the seconds each waits), empty on a post of one part, as every post from
- * before parts is.
+ * before parts is. `poll` is the poll asked with the first part, as the
+ * domain's `Poll` encodes it (its choices, minutes open, whether several
+ * may be picked), null on a post without one, as on every post from
+ * before polls.
  * `author_id` is the member who created it (a Better Auth user id), null
  * when an API key did, or for posts from before authors were kept.
  *
@@ -78,6 +81,7 @@ export const posts = publishing.table(
     media: jsonb("media").notNull().default([]),
     occurrence: integer("occurrence"),
     outcome: text("outcome"),
+    poll: jsonb("poll"),
     queueId: uuid("queue_id"),
     recyclingId: uuid("recycling_id"),
     scheduleRevision: integer("schedule_revision").notNull().default(0),

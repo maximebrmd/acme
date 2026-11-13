@@ -1,0 +1,1 @@
+ALTER TABLE "publishing"."posts" ADD COLUMN "poll" jsonb;

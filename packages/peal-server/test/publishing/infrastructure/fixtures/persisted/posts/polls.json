@@ -1,0 +1,9 @@
+[
+  null,
+  { "choices": ["Yes", "No"], "durationMinutes": 1440 },
+  {
+    "choices": ["Mornings", "Evenings", "Weekends"],
+    "durationMinutes": 4320,
+    "multipleChoice": true
+  }
+]

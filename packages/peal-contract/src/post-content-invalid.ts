@@ -78,6 +78,36 @@ export const ContentViolationSchema = Schema.Union([
   // The part is a first comment the channel's account has not let Peal
   // post: connect the channel again to grant the comment permission.
   Schema.TaggedStruct("partsNeedReconnect", onChannel),
+  // The post asks a poll, which Peal sends to none of the platform's posts.
+  Schema.TaggedStruct("pollNotSupported", onChannel),
+  // The poll has fewer or more choices than the platform takes.
+  Schema.TaggedStruct("pollChoiceCount", {
+    ...onChannel,
+    count: Schema.Int,
+    maximum: Schema.Int,
+    minimum: Schema.Int,
+  }),
+  // A choice, by its place from 1, is empty or longer than the platform
+  // takes, counted in `unit`.
+  Schema.TaggedStruct("pollChoiceLength", {
+    ...onChannel,
+    choice: Schema.Int,
+    length: Schema.Int,
+    maximum: Schema.Int,
+    unit: TextUnitSchema,
+  }),
+  // The poll stays open longer or shorter than the platform takes.
+  Schema.TaggedStruct("pollDurationOutOfRange", {
+    ...onChannel,
+    durationMinutes: Schema.Int,
+    maximumMinutes: Schema.Int,
+    minimumMinutes: Schema.Int,
+  }),
+  // The poll lets readers pick several choices, which the platform does
+  // not.
+  Schema.TaggedStruct("pollMultipleChoice", onChannel),
+  // The post shows a file beside its poll, which the platform refuses.
+  Schema.TaggedStruct("pollWithMedia", onChannel),
   // The platform publishes nothing without an image or a video.
   Schema.TaggedStruct("mediaRequired", onChannel),
   Schema.TaggedStruct("tooManyHashtags", tooMany),

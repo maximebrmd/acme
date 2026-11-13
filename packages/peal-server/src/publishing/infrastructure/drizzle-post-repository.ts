@@ -103,6 +103,7 @@ const toStored = (row: PostRow) =>
         followUps: row.followUps,
         media: row.media,
         overrides: row.textOverrides,
+        poll: row.poll,
         text: row.text,
       },
       id: row.id,
@@ -218,6 +219,14 @@ const contentColumns = ({ content }: Post) => ({
     text: part.text,
   })),
   media: mediaColumn(content.media),
+  poll: Option.match(content.poll, {
+    onNone: () => null,
+    onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+      choices,
+      durationMinutes,
+      multipleChoice,
+    }),
+  }),
   text: content.text,
   textOverrides: content.overrides.map(overrideColumn),
 });

@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "7e0e766f-2077-4e77-8203-90b9d66fc2ad",
+  "prevIds": [
+    "0af103f0-89b6-4230-9ba8-cef6b94c61d4"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "posts",
+        "poll"
+      ],
+      "writes": [
+        "s|col|publishing.posts.poll",
+        "n|col|publishing.posts.poll",
+        "e|col|publishing.posts.poll"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "posts",
+        "name": "poll",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

@@ -724,6 +724,81 @@ export const mediaViolationsOn = (
   ];
 };
 
+/**
+ * What the channel's platform would refuse in the post's poll, which goes
+ * with its first part: a poll where Peal sends none there, then its count
+ * of choices, each choice's length (an empty one counts 0), how long it
+ * stays open, several picks, and a file beside it. None without a poll.
+ */
+export const pollViolationsOn = (
+  content: PostContent,
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions> = Option.none()
+): readonly ContentViolation[] => {
+  if (Option.isNone(content.poll)) {
+    return [];
+  }
+
+  const poll = content.poll.value;
+  const rules = rulesFor(channel.platform, options).poll;
+
+  if (rules === undefined) {
+    return [{ _tag: "pollNotSupported", ...channel }];
+  }
+
+  const count = poll.choices.length;
+  const { choiceLimit, duration } = rules;
+
+  return [
+    ...(count < rules.minChoices || count > rules.maxChoices
+      ? [
+          {
+            _tag: "pollChoiceCount" as const,
+            ...channel,
+            count,
+            maximum: rules.maxChoices,
+            minimum: rules.minChoices,
+          },
+        ]
+      : []),
+    ...poll.choices.flatMap((choice, index): readonly ContentViolation[] => {
+      const length = measureText(choice.trim(), choiceLimit.unit);
+
+      return length === 0 || length > choiceLimit.maximum
+        ? [
+            {
+              _tag: "pollChoiceLength",
+              ...channel,
+              choice: index + 1,
+              length,
+              maximum: choiceLimit.maximum,
+              unit: choiceLimit.unit,
+            },
+          ]
+        : [];
+    }),
+    ...(duration._tag === "range" &&
+    (poll.durationMinutes < duration.minimumMinutes ||
+      poll.durationMinutes > duration.maximumMinutes)
+      ? [
+          {
+            _tag: "pollDurationOutOfRange" as const,
+            ...channel,
+            durationMinutes: poll.durationMinutes,
+            maximumMinutes: duration.maximumMinutes,
+            minimumMinutes: duration.minimumMinutes,
+          },
+        ]
+      : []),
+    ...(poll.multipleChoice && !rules.multipleChoice
+      ? [{ _tag: "pollMultipleChoice" as const, ...channel }]
+      : []),
+    ...(content.media.length > 0
+      ? [{ _tag: "pollWithMedia" as const, ...channel }]
+      : []),
+  ];
+};
+
 // The violations of one part, with its place: none for the first.
 const inPart = (
   violations: readonly ContentViolation[],
@@ -816,6 +891,7 @@ export const checkPublishable = (
       return [
         ...violationsOn(sent, channel, chosen),
         ...mediaViolationsOn(sent, channel, filesOf(sent, files), chosen),
+        ...pollViolationsOn(sent, channel, chosen),
         ...partViolationsOn(
           sent,
           channel,

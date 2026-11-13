@@ -258,6 +258,31 @@ export interface FollowUpRules {
 }
 
 /**
+ * How long a platform keeps a poll open: any whole number of minutes
+ * between two bounds, or as long as the platform decides, whatever the
+ * post asks.
+ */
+export type PollDuration =
+  | {
+      readonly _tag: "range";
+      readonly maximumMinutes: number;
+      readonly minimumMinutes: number;
+    }
+  | { readonly _tag: "platformDecides" };
+
+/**
+ * The poll a platform takes with a post, whose first part's text is the
+ * question; never with a file.
+ */
+export interface PollRules {
+  readonly choiceLimit: TextLimit;
+  readonly duration: PollDuration;
+  readonly maxChoices: number;
+  readonly minChoices: number;
+  readonly multipleChoice: boolean;
+}
+
+/**
  * What a post format (a story, a reel) changes of its platform's rules:
  * its media rules, its count of files, whether it needs one and the parts
  * it takes replace the platform's whole, so a format without `followUps`
@@ -297,6 +322,8 @@ export interface PlatformRules {
    * name the options' `format` gives them (`rulesFor` picks them).
    */
   readonly postFormats?: Readonly<Record<string, PostFormatRules>>;
+  /** The poll it takes with a post; left out where the API sends none. */
+  readonly poll?: PollRules;
   /** False where the post goes out without its text; left out, it is sent. */
   readonly sendsText?: boolean;
   /** Every limit applies. */
@@ -447,6 +474,9 @@ const facebookReel: PostFormatRules = {
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
+// A poll's choices on X and Threads: 1 to 25 characters each.
+const shortChoices = { maximum: 25, unit: "codePoints" } as const;
+
 // A first comment, which the account posts under its own post once it is
 // live, held to the platform's limits on a post's text (no platform's
 // page states one for a comment), with no file.
@@ -559,6 +589,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
+    poll: {
+      choiceLimit: { maximum: 50, unit: "codePoints" },
+      duration: { _tag: "range", maximumMinutes: 43_829, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: true,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -596,6 +633,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 800, unit: "codePoints" }],
   },
   threads: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "platformDecides" },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     maxLinks: 5,
     maxMedia: 20,
     media: {
@@ -629,6 +673,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "utf16Units" }],
   },
   x: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "range", maximumMinutes: 10_080, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {

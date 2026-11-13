@@ -87,6 +87,33 @@ export interface FollowUpRules {
 }
 
 /**
+ * How long a platform keeps a poll open: any whole number of minutes
+ * between two bounds, or as long as the platform decides, whatever the
+ * post asks (Threads sets no duration).
+ */
+export type PollDuration =
+  | {
+      readonly _tag: "range";
+      readonly maximumMinutes: number;
+      readonly minimumMinutes: number;
+    }
+  | { readonly _tag: "platformDecides" };
+
+/**
+ * The poll a platform takes with a post, its first part's text as its
+ * question: how many choices, how long each is, how long it stays open,
+ * and whether readers may pick several. Peal sends a poll with no file:
+ * every such platform refuses them together.
+ */
+export interface PollRules {
+  readonly choiceLimit: TextLimit;
+  readonly duration: PollDuration;
+  readonly maxChoices: number;
+  readonly minChoices: number;
+  readonly multipleChoice: boolean;
+}
+
+/**
  * What a post format (`./post-format.ts`: a story, a reel) changes of its
  * platform's rules. Its media rules, its count of files, whether it needs
  * one and the parts it takes replace the platform's whole: a format left
@@ -137,6 +164,11 @@ export interface PlatformRules {
    * `rulesFor` answers them). Left out, the text is sent.
    */
   readonly sendsText?: boolean;
+  /**
+   * The poll it takes with a post (`./poll.ts`). Left out where Peal
+   * sends none: the platform has none, or Peal does not send it yet.
+   */
+  readonly poll?: PollRules;
   /** Every limit applies: Bluesky counts graphemes and bytes. */
   readonly textLimits: readonly TextLimit[];
 }
@@ -392,6 +424,29 @@ const facebookReel: PostFormatRules = {
   sendsText: true,
 };
 
+// Polls, from the platforms' references (read 2026-11-14):
+//
+// - X (docs.x.com/x-api/posts/create-post, `CreatePostsPoll`): `poll`
+//   with `options`, 2 to 4 of "1-25 characters each", and
+//   `duration_minutes` from 5 to 10,080; no multiple choice. The page
+//   names no rule between a poll and media; X has refused them together
+//   in one post, and Peal sends neither with the other.
+// - Mastodon (docs.joinmastodon.org/methods/statuses): `poll[options][]`,
+//   `poll[expires_in]` in seconds, `poll[multiple]`; "If media_ids[] is
+//   provided, poll cannot be used". The instance's `configuration.polls`
+//   bounds it, by default 4 options of 50 characters, open from 300 to
+//   2,629,746 seconds: until channels keep their instance's settings, the
+//   defaults apply, as for the text.
+// - Threads (developers.facebook.com/documentation/threads/create-posts/
+//   polls): `poll_attachment`, `option_a` to `option_d`, 2 to 4 of 1 to 25
+//   characters, "only to text-only posts"; no duration is set.
+//
+// LinkedIn's poll (the Poll Post API) has a question of its own beside
+// the post's text and four durations, Instagram's a caption add-on through
+// Facebook Login only: neither is sent yet. Bluesky, Facebook Pages and
+// YouTube document none.
+const shortChoices = { maximum: 25, unit: "codePoints" } as const;
+
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
@@ -519,6 +574,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
+    poll: {
+      choiceLimit: { maximum: 50, unit: "codePoints" },
+      duration: { _tag: "range", maximumMinutes: 43_829, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: true,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -556,6 +618,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 800, unit: "codePoints" }],
   },
   threads: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "platformDecides" },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     maxLinks: 5,
     maxMedia: 20,
     media: {
@@ -589,6 +658,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "utf16Units" }],
   },
   x: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "range", maximumMinutes: 10_080, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
