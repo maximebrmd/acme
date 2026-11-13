@@ -36,6 +36,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
  *   `legalDisclosures`: what French law has a host keep
  *   (`legal/domain/legal-retention.ts`);
+ * - `requirementMemory`, `transferOffers`: a payment method staff
+ *   required of a person, and an offer to hand a workspace over
+ *   (`billing/domain/requirement-memory.ts`, `account-transfer.ts`);
  * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
  *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
  *   `trial-memory.ts`);
@@ -89,10 +92,12 @@ export const retentionPeriods = {
   legalIdentity: { years: 5 },
   metrics: { days: 30 },
   partnerUsageDays: { days: 400 },
+  requirementMemory: { years: 2 },
   reviewVisitorNames: { months: 24 },
   serverLogs: { days: 31 },
   shortLinkClicks: { days: 400 },
   traces: { days: 14 },
+  transferOffers: { days: 7 },
   trialMemory: { years: 2 },
   usageDays: { days: 400 },
   webhookDeliveries: { days: 30 },
@@ -446,6 +451,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "You, when you subscribe; the payment provider, for the status of your subscription",
       fr: "Vous, lorsque vous vous abonnez ; le prestataire de paiement, pour l’état de votre abonnement",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "Which person pays for each workspace (the member who created it, its oldest owner for one made before, or the owner it was handed to), and so which workspaces share their plan; the offers to hand a workspace to another of its owners (who made each, to whom, and until when); whether staff required a person to add a payment method; and, for staff only, which accounts on a platform are connected in workspaces paid for by different people without a subscription, compared by the platform’s own account identifiers",
+      fr: "Quelle personne paie chaque espace de travail (le membre qui l’a créé, son plus ancien propriétaire pour un espace créé avant, ou le propriétaire à qui il a été confié), et donc quels espaces partagent leur abonnement ; les propositions de confier un espace de travail à un autre de ses propriétaires (qui l’a faite, à qui et jusqu’à quand) ; le fait que l’équipe a exigé d’une personne un moyen de paiement ; et, pour l’équipe seulement, quels comptes d’une plateforme sont connectés dans des espaces de travail payés par des personnes différentes sans abonnement, comparés par les identifiants de compte de la plateforme",
+    },
+    id: "billingAccounts",
+    legalBasis: {
+      en: "Performance of a contract (GDPR Article 6(1)(b)) for who pays for which workspace and the offers to hand one over; legitimate interests (point (f)) for the staff’s comparison and a required payment method: keeping the free tier to one per person",
+      fr: "Exécution d’un contrat (RGPD, article 6, paragraphe 1, point b) pour qui paie quel espace de travail et les propositions de le confier ; intérêts légitimes (point f) pour la comparaison faite par l’équipe et le moyen de paiement exigé : réserver l’offre gratuite à une personne",
+    },
+    name: {
+      en: "Billing accounts",
+      fr: "Comptes de facturation",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Count a person’s workspaces together under one plan, hand a workspace to another payer, and keep the free tier to one per person",
+      fr: "Compter ensemble les espaces de travail d’une personne sous un même abonnement, confier un espace de travail à un autre payeur, et réserver l’offre gratuite à une personne",
+    },
+    retention: {
+      en: `Who pays for a workspace: until the workspace is deleted or the payer’s account is closed, when another owner pays for it. An offer: until it is taken or withdrawn, or the day after it lapses, ${p.transferOffers.days} days after it was made. A payment method required of you: as long as your account exists, and ${years(p.requirementMemory.years).en} after it closes, by a keyed pseudonym of its email address, so the same address gets no second free tier. The staff’s comparison is read when it is shown, and kept nowhere`,
+      fr: `Qui paie un espace de travail : jusqu’à la suppression de l’espace ou la fermeture du compte du payeur, un autre propriétaire le payant alors. Une proposition : jusqu’à ce qu’elle soit acceptée ou retirée, ou le lendemain de son expiration, ${p.transferOffers.days} jours après avoir été faite. Un moyen de paiement exigé de vous : tant que votre compte existe, et ${years(p.requirementMemory.years).fr} après sa fermeture, par un pseudonyme chiffré de son adresse e-mail, pour que la même adresse n’ait pas de seconde offre gratuite. La comparaison de l’équipe est lue quand elle est affichée, et conservée nulle part`,
+    },
+    source: {
+      en: "You, when you create a workspace or hand one over; the service, for a workspace made before; staff, for a required payment method",
+      fr: "Vous, lorsque vous créez un espace de travail ou en confiez un ; le service, pour un espace créé avant ; l’équipe, pour un moyen de paiement exigé",
     },
   },
   {

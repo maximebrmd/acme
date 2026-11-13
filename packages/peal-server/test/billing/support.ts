@@ -71,10 +71,6 @@ export const UnmeteredTest = Layer.succeed(
   })
 );
 
-/**
- * Every workspace in a billing account of its own, shared with no other,
- * which nothing changes: for tests where no account pools anything.
- */
 /** The id of every account `AloneInAccountsTest` answers. */
 export const aloneAccountId = BillingAccountIdSchema.make(
   "00000000-0000-7000-8000-00000000a11e"
@@ -95,7 +91,8 @@ export const aloneAccountOf = (
     standalone: false,
   });
 
-export const AloneInAccountsTest = Layer.mock(BillingAccounts, {
+// Every workspace in a billing account of its own.
+const AloneAccountsOnly = Layer.mock(BillingAccounts, {
   accountsIn: (workspaceIds) =>
     Effect.succeed(new Map(workspaceIds.map((id) => [id, aloneAccountOf(id)]))),
   eraseWorkspace: () => Effect.void,
@@ -115,6 +112,25 @@ export const AloneInAccountsTest = Layer.mock(BillingAccounts, {
   subscriptionChanged: () => Effect.void,
 });
 
+/** Accounts nobody pays for, nor offers, nor any payment method required. */
+const EmptyAccountStoreTest = Layer.mock(BillingAccountStore, {
+  paidBy: () => Effect.succeed([]),
+  requiresPayment: () => Effect.succeed(false),
+  transferOf: () => Effect.succeedNone,
+  transfersFor: () => Effect.succeed([]),
+  workspacesOfEach: () => Effect.succeed(new Map()),
+});
+
+/**
+ * Every workspace in a billing account of its own, shared with no other,
+ * which nothing changes, its store holding nothing of anyone: for tests
+ * where no account pools anything.
+ */
+export const AloneInAccountsTest = Layer.merge(
+  AloneAccountsOnly,
+  EmptyAccountStoreTest
+);
+
 /**
  * What the billing page says of each workspace's account, alone in its
  * own: paid by nobody, its own billing workspace, named to nobody, with
@@ -127,9 +143,7 @@ export const AloneAccountViewsTest = AccountViews.layer.pipe(
       Layer.mock(AccountPayers, {
         namesShownTo: () => Effect.succeed(new Map()),
       }),
-      Layer.mock(BillingAccountStore, {
-        transferOf: () => Effect.succeedNone,
-      })
+      EmptyAccountStoreTest
     )
   ),
   Layer.provideMerge(AloneInAccountsTest)

@@ -223,6 +223,20 @@ const ExportedBillingSchema = Schema.Struct({
   ),
 });
 
+const ExportedAccountsSchema = Schema.Struct({
+  contracts: Schema.Struct({
+    billingAccounts: Schema.Struct({
+      accounts: Schema.Array(
+        Schema.Struct({ workspaceIds: Schema.Array(Schema.String) })
+      ),
+      paymentMethodRequired: Schema.Boolean,
+      transferOffers: Schema.Array(
+        Schema.Struct({ toUserId: Schema.String, workspaceId: Schema.String })
+      ),
+    }),
+  }),
+});
+
 const CheckoutSchema = Schema.Struct({
   redirect: Schema.Boolean,
   url: Schema.String,
@@ -1630,6 +1644,32 @@ layer(BillingIntegration, {
         );
 
         assert.strictEqual(offered.status, 200);
+
+        // The payer's copy of their data lists the account they pay for and
+        // the offer they made.
+        const exported = yield* bodyOf(
+          ExportedAccountsSchema,
+          yield* app.request("/api/me/export", {
+            headers: { cookie: payer.cookies },
+          })
+        );
+
+        const { billingAccounts } = exported.contracts;
+
+        assert.deepStrictEqual(
+          billingAccounts.accounts.map(({ workspaceIds }) => workspaceIds),
+          [[workspaceId]]
+        );
+        assert.isFalse(billingAccounts.paymentMethodRequired);
+        assert.deepStrictEqual(
+          billingAccounts.transferOffers.map(
+            ({ toUserId, workspaceId: id }) => ({
+              id,
+              toUserId,
+            })
+          ),
+          [{ id: workspaceId, toUserId: other.id }]
+        );
 
         const taken = yield* post(
           other,

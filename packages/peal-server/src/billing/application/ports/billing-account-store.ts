@@ -150,6 +150,10 @@ export class BillingAccountStore extends Context.Service<
     readonly deleteTransfer: (
       transferId: AccountTransferId
     ) => Effect.Effect<void, DatabaseError>;
+    /** The offers the person made or was made. */
+    readonly transfersFor: (
+      userId: UserId
+    ) => Effect.Effect<readonly AccountTransfer[], DatabaseError>;
     /** Deletes the offers made for the workspace. */
     readonly deleteTransfersOf: (
       workspaceId: WorkspaceId

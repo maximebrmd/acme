@@ -15,6 +15,7 @@ import type {
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
+import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { ContractRecords } from "./ports/contract-records.ts";
@@ -174,13 +175,43 @@ export class BillingRecords extends Context.Service<
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
       const accounts = yield* BillingAccounts;
+      const accountStore = yield* BillingAccountStore;
 
       const exportUser = Effect.fn("BillingRecords.exportUser")(
         function* exportUser(userId: UserId) {
           const made = yield* contracts.ofUser(userId);
           const asked = yield* requests.ofUser(userId);
+          const paid = yield* accountStore.paidBy(userId);
+
+          const held = yield* accountStore.workspacesOfEach(
+            paid.map(({ id }) => id)
+          );
+
+          const offers = yield* accountStore.transfersFor(userId);
+
+          const required = yield* accountStore.requiresPayment(
+            userId,
+            Option.none()
+          );
 
           const record: ContractsRecord = {
+            billingAccounts: {
+              accounts: paid.map((account) => ({
+                billingWorkspaceId: account.holder,
+                createdAt: account.createdAt,
+                id: account.id,
+                standalone: account.standalone,
+                workspaceIds: held.get(account.id) ?? [],
+              })),
+              paymentMethodRequired: required,
+              transferOffers: offers.map((offer) => ({
+                expiresAt: offer.expiresAt,
+                offeredAt: offer.offeredAt,
+                offeredBy: offer.offeredBy,
+                toUserId: offer.toUserId,
+                workspaceId: offer.workspaceId,
+              })),
+            },
             orders: made.orders.map((order) => ({
               consentVersion: order.consentVersion,
               createdAt: order.createdAt,

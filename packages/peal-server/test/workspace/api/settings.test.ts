@@ -227,7 +227,16 @@ const PortsLive = Layer.mergeAll(
         exportUser: () =>
           Effect.succeed({
             activity: [],
-            contracts: { orders: [], requests: [], withdrawals: [] },
+            contracts: {
+              billingAccounts: {
+                accounts: [],
+                paymentMethodRequired: false,
+                transferOffers: [],
+              },
+              orders: [],
+              requests: [],
+              withdrawals: [],
+            },
             legalHold: {
               basis: "Synthetic basis",
               connectionYears: 1,

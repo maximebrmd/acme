@@ -21,7 +21,9 @@ import {
   platformCaps,
   retentionOf,
 } from "#analytics/domain/analytics-retention.ts";
+import { transferLifetime } from "#billing/domain/account-transfer.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
+import { requirementMemory } from "#billing/domain/requirement-memory.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
 import { usageRetentionDays } from "#billing/domain/usage-meter.ts";
 import { linkRetention } from "#channels/domain/connect-link.ts";
@@ -85,6 +87,12 @@ describe("the data processing registry", () => {
   it("keeps orders, withdrawals and the memory of a trial as billing does", () => {
     expect(retentionPeriods.contracts).toStrictEqual(contractRetention);
     expect(retentionPeriods.trialMemory).toStrictEqual(trialMemory);
+    // A payment method staff required, by the closed address's pseudonym.
+    expect(retentionPeriods.requirementMemory).toStrictEqual(requirementMemory);
+    // An offer to hand a workspace over lapses, then goes with the sweep.
+    expect(Duration.days(retentionPeriods.transferOffers.days)).toStrictEqual(
+      transferLifetime
+    );
   });
 
   it("keeps the erasure ledger as long as its rule says, longer than the backups", () => {

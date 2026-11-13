@@ -55,6 +55,17 @@ const first = (rows: readonly AccountRow[]) =>
     onSome: (row) => toAccount(row).pipe(Effect.map(Option.some)),
   });
 
+const transferOfRow = (row: typeof accountTransfers.$inferSelect) =>
+  decodeTransfer({
+    expiresAt: utc(row.expiresAt),
+    fromAccountId: row.fromAccountId,
+    id: row.id,
+    offeredAt: utc(row.offeredAt),
+    offeredBy: row.offeredBy,
+    toUserId: row.toUserId,
+    workspaceId: row.workspaceId,
+  }).pipe(Effect.orDie);
+
 // The two-key form of a transaction's advisory lock: the first key names
 // what it guards, the second the one guarded.
 const holdKey = (what: string) => `peal-server/billing/${what}`;
@@ -367,15 +378,24 @@ export const DrizzleBillingAccountStoreLive = Layer.effect(
             Effect.flatMap(([row]) =>
               row === undefined
                 ? Effect.succeedNone
-                : decodeTransfer({
-                    expiresAt: utc(row.expiresAt),
-                    fromAccountId: row.fromAccountId,
-                    id: row.id,
-                    offeredAt: utc(row.offeredAt),
-                    offeredBy: row.offeredBy,
-                    toUserId: row.toUserId,
-                    workspaceId: row.workspaceId,
-                  }).pipe(Effect.orDie, Effect.map(Option.some))
+                : transferOfRow(row).pipe(Effect.map(Option.some))
+            )
+          ),
+      transfersFor: (userId) =>
+        db
+          .select()
+          .from(accountTransfers)
+          .where(
+            or(
+              eq(accountTransfers.toUserId, userId),
+              eq(accountTransfers.offeredBy, userId)
+            )
+          )
+          .orderBy(asc(accountTransfers.offeredAt))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap((rows) =>
+              Effect.all(rows.map((row) => transferOfRow(row)))
             )
           ),
       workspacesOf: (accountId) =>
