@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type {
   NotificationPreferences,
@@ -28,5 +28,22 @@ export class PreferenceStore extends Context.Service<
       change: PreferencesChange,
       at: DateTime.Utc
     ) => Effect.Effect<NotificationPreferences, DatabaseError>;
+    /**
+     * A page of the users who turned the weekly digest on, by id, after
+     * `after`: `limit` at most.
+     */
+    readonly digestReaders: (request: {
+      readonly after: Option.Option<UserId>;
+      readonly limit: number;
+    }) => Effect.Effect<readonly UserId[], DatabaseError>;
+    /**
+     * Records that the user's digest of the week starting `week` goes out,
+     * and says whether it may: only once a week, and only while they want
+     * it.
+     */
+    readonly claimDigest: (
+      userId: UserId,
+      week: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
   }
 >()("peal-server/notifications/application/PreferenceStore") {}

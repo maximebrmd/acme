@@ -1,5 +1,5 @@
-import { inArray } from "drizzle-orm";
-import { DateTime, Effect, Layer } from "effect";
+import { and, asc, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
+import { DateTime, Effect, Layer, Option } from "effect";
 
 import { PreferenceStore } from "#notifications/application/preference-store.ts";
 import {
@@ -125,6 +125,56 @@ export const DrizzlePreferenceStore = Layer.effect(
           return row === undefined
             ? yield* Effect.die("An upsert returned no row")
             : preferencesOf(row);
+        }
+      ),
+      // The digest's week is claimed in one statement, which also reads
+      // that the user still wants it: two runs never both send it.
+      claimDigest: Effect.fn("PreferenceStore.claimDigest")(
+        function* claimDigest(userId, week) {
+          const day = DateTime.formatIsoDate(week);
+
+          const rows = yield* db
+            .update(notificationPreferences)
+            .set({ weeklyDigestWeek: day })
+            .where(
+              and(
+                eq(notificationPreferences.userId, userId),
+                eq(notificationPreferences.emailWeeklyDigest, true),
+                or(
+                  isNull(notificationPreferences.weeklyDigestWeek),
+                  lt(notificationPreferences.weeklyDigestWeek, day)
+                )
+              )
+            )
+            .returning({ userId: notificationPreferences.userId })
+            .pipe(Effect.mapError(failed));
+
+          return rows.length === 1;
+        }
+      ),
+      // On the partial index of those who want it
+      // (`notification_preferences_weekly_digest`).
+      digestReaders: Effect.fn("PreferenceStore.digestReaders")(
+        function* digestReaders({ after, limit }) {
+          const rows = yield* db
+            .select({ userId: notificationPreferences.userId })
+            .from(notificationPreferences)
+            .where(
+              and(
+                eq(notificationPreferences.emailWeeklyDigest, true),
+                after.pipe(
+                  Option.map((userId) =>
+                    gt(notificationPreferences.userId, userId)
+                  ),
+                  Option.getOrUndefined
+                )
+              )
+            )
+            .orderBy(asc(notificationPreferences.userId))
+            .limit(limit)
+            .pipe(Effect.mapError(failed));
+
+          return rows.map(({ userId }) => UserIdSchema.make(userId));
         }
       ),
       forUsers: Effect.fn("PreferenceStore.forUsers")(

@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "a8f0f175-f043-484e-8afe-57d1e88d3952",
+  "id": "e1228986-6297-492a-b0a3-d035e31d98a9",
   "prevIds": [
     "1bbf8248-b8c6-4fbd-9b23-4acbf4a5d306"
   ],
@@ -19,6 +19,24 @@
         "s|col|notifications.notification_preferences.email_weekly_digest",
         "n|col|notifications.notification_preferences.email_weekly_digest",
         "e|col|notifications.notification_preferences.email_weekly_digest"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "weekly_digest_week"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.weekly_digest_week",
+        "n|col|notifications.notification_preferences.weekly_digest_week",
+        "e|col|notifications.notification_preferences.weekly_digest_week"
       ],
       "reads": [
         "n|tbl|notifications.notification_preferences",
@@ -58,6 +76,22 @@
         "notNull": true,
         "dimensions": 0,
         "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "weekly_digest_week",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
         "generated": null,
         "identity": null,
         "entityType": "columns"

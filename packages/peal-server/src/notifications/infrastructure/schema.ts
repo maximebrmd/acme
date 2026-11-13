@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   jsonb,
   pgSchema,
@@ -65,6 +66,9 @@ export const notices = notificationsSchema.table(
  * The preferences of the users who changed them; the others have the
  * defaults (`defaultPreferences` in the domain). `every_post`: they hear
  * about every post of their workspaces, not only those they wrote.
+ * `weekly_digest_week` is the week of the last weekly digest claimed, by
+ * its first day: kept here, not as a notice key, so it goes with the
+ * account.
  */
 export const notificationPreferences = notificationsSchema.table(
   "notification_preferences",
@@ -89,6 +93,9 @@ export const notificationPreferences = notificationsSchema.table(
       .default(true),
     // The weekly digest: off unless chosen.
     emailWeeklyDigest: boolean("email_weekly_digest").notNull().default(false),
+    // The first day (UTC) of the last week a digest went out for, so a
+    // week's goes once; null before the first. Gone with the row.
+    weeklyDigestWeek: date("weekly_digest_week", { mode: "string" }),
     everyPost: boolean("every_post").notNull().default(false),
     updatedAt: instant("updated_at").notNull(),
     userId: uuid("user_id").primaryKey(),

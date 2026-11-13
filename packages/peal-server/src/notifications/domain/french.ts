@@ -478,6 +478,42 @@ export const french: EmailCatalog = {
     failing: "toutes les livraisons vers lui ont échoué pendant 5 jours.",
     gone: "il a répondu 410 Gone, ce qui demande de ne plus rien lui envoyer.",
   },
+  weeklyDigest: {
+    action: "Ouvrir mon agenda",
+    calendar: "Ouvrir le calendrier de {workspaceName}",
+    counts: {
+      awaitingApproval: {
+        one: "{count} en attente d’approbation",
+        other: "{count} en attente d’approbation",
+      },
+      failed: { one: "{count} en échec", other: "{count} en échec" },
+      scheduled: {
+        one: "{count} programmée la semaine prochaine",
+        other: "{count} programmées la semaine prochaine",
+      },
+      unconfirmed: {
+        one: "{count} à vérifier sur sa plateforme",
+        other: "{count} à vérifier sur leurs plateformes",
+      },
+      wentOut: {
+        one: "{count} publication partie",
+        other: "{count} publications parties",
+      },
+    },
+    engagement:
+      "Interactions avec les publications de la semaine, au dernier relevé : {engagement}.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez activé le récapitulatif hebdomadaire sur Peal. Pour ne plus le recevoir, désactivez-le dans {preferences}.",
+    impressions: "Impressions : {impressions}.",
+    intro:
+      "Ce qui est parti du {from} au {to}, et ce qui est prévu jusqu’au {until}, dans les espaces de travail dont vous pouvez lire les publications. Les jours et les heures sont en UTC.",
+    more: { one: "et {count} de plus", other: "et {count} de plus" },
+    noText: "Sans texte",
+    plannedHeading: "Prévues",
+    preferences: "vos préférences de notification",
+    subject: "Votre semaine sur Peal : du {from} au {to}",
+    wentOutHeading: "Parties",
+  },
   withinFreePlan:
     "Il ne dépasse en rien ce que permet l’offre gratuite, et garde son contenu.",
   workspaceDeleted: {

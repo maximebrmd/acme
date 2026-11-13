@@ -84,6 +84,7 @@ import {
   NotificationPreferencesApiLive,
   NotificationsLive,
   NotificationsWorkersLive,
+  WeeklyDigestsLive,
 } from "#notifications/container.ts";
 import {
   CapabilitiesApiLive,
@@ -487,6 +488,15 @@ const OverviewContextLive = OverviewLive.pipe(
   )
 );
 
+// The weekly digest, which reads the members and their workspaces from the
+// workspace context, the posts publishing counts and lists, analytics'
+// engagement, and sends through the notifications' mailer.
+const WeeklyDigestContextLive = WeeklyDigestsLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(ChannelsWithNoticesLive, PostAttentionLive, AnalyticsLive)
+  )
+);
+
 // The cancel and withdraw functions anyone reaches, which find the account
 // an address signs in to in the workspace context, tell members and write
 // acknowledgements through the notifications, and record what staff do
@@ -637,7 +647,8 @@ const ContextsLive = Layer.mergeAll(
   // On the cluster, every call to an ad account goes through its gate.
   adsContext(GatedAds),
   ShortLinksContextLive,
-  OverviewContextLive
+  OverviewContextLive,
+  WeeklyDigestContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)
