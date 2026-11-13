@@ -51,6 +51,9 @@ write a post once, schedule it across platforms, and see how it performs.
   command line, an MCP endpoint and an agent skill, and signed webhooks.
 - **Yours to run.** Self-host it with Postgres and any S3-compatible store.
   Billing, captcha, AI and telemetry stay off until you configure them.
+- **Or let us run it.** Peal Cloud is priced per connected account, by the
+  day, with your first accounts free and members, workspaces and posts
+  unlimited: see the [pricing page](https://peal.social/pricing/).
 
 ## Platforms
 
