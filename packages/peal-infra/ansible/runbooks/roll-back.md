@@ -61,8 +61,9 @@ channel off a scheduled post (`post_targets.dropped`, migration
    or recycled from content with a channel's own media sends the post's
    own media to that channel, and a copy loses that channel's media for
    good; an active rule does so on its next occurrence with nobody acting.
-   Before rolling back, have the workspaces of the rules listed pause them
-   (`PATCH …/recycling/{ruleId}` with `"paused": true`, or **Pause** in the web app), and leave the paused ones paused,, and tell the
+   Before rolling back, have the workspaces of the active rules listed
+   pause them (`PATCH …/recycling/{ruleId}` with `"paused": true`, or
+   **Pause** in the web app) and keep the paused ones paused, and tell the
    workspaces of the drafts listed not to schedule or duplicate them until
    this release is back. Keep the roll-back short, and run the checks
    again before releasing this one once more.
