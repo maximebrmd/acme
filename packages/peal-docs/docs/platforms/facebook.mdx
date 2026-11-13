@@ -1,0 +1,55 @@
+---
+title: Facebook Pages
+description: "Connect Facebook Pages to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/facebook.svg
+---
+
+How to connect Facebook Pages, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                  |
+| ----------------- | -------------------------------- |
+| Text              | {{platform-facebook-text-en}}    |
+| Images and videos | {{platform-facebook-media-en}}   |
+| Parts             | {{platform-facebook-parts-en}}   |
+| Formats           | {{platform-facebook-formats-en}} |
+| Alt text          | {{platform-facebook-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+<Steps>
+  <Step title="Sign in with Facebook">
+    Under **Facebook Pages**, choose **Connect Facebook Pages**, sign in with
+    Facebook, and allow Peal to list your Pages and post on them.
+  </Step>
+  <Step title="Choose the Pages">
+    Back in Peal, tick the Pages the workspace posts to, then **Connect**: each
+    becomes a channel. Choose within 15 minutes.
+  </Step>
+</Steps>
+
+- A sign-in that reaches one Page connects it straight away.
+- Only Pages you may create content on are listed. Those the workspace already has are marked: choosing one reconnects it.
+- When connecting fails before any Page is connected, Peal says why, and you can choose again, or **Sign in with Facebook again** for a new list.
+- Once the choice has expired or been made, only signing in again brings the Pages back.
+
+## Options [#options]
+
+Each option is sent only when you choose it. Some apply only to some media: the composer shows them for those, and scheduling refuses them on another post. In the composer, a video has its **Video title**. **API name** is the option's name through the API.
+
+| Option          | API name     | Values                                                                        | Left out    |
+| --------------- | ------------ | ----------------------------------------------------------------------------- | ----------- |
+| **Format**      | `format`     | `story` or `reel` (see [stories and reels](/guides/posts#formats)), or `feed` | A feed post |
+| **Video title** | `videoTitle` | A video or a reel: one line, 255 characters at most                           | No title    |
+
+## Comments [#comments]
+
+Peal reads the comments under your published posts there, and you answer them from Peal: see [Inbox](/guides/engage/inbox#meta).
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers Facebook Pages once its Meta app is registered: see [Threads, Instagram and Facebook Pages](/self-hosting/platforms#meta).

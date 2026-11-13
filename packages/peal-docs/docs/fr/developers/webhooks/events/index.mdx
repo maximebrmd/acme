@@ -1,0 +1,113 @@
+---
+title: Événements
+description: "Chaque événement que Peal envoie, avec un exemple de contenu."
+sidebar:
+  icon: zap
+---
+
+Un point de terminaison s’abonne aux types d’événements ci-dessous, et ne reçoit que ceux-là. Chaque type mène à ses champs et à un exemple de contenu. Le `data` de chaque événement contient `workspaceId`, l’espace de travail où il s’est produit.
+
+## Événements [#events]
+
+| Événement                                                                                   | Quand                                                                                                      |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`post.scheduled`](/developers/webhooks/events/posts#post-scheduled)                        | Une publication a été programmée, ou déplacée à une autre heure                                            |
+| [`post.unscheduled`](/developers/webhooks/events/posts#post-unscheduled)                    | Une publication programmée, ou qui attendait, est repassée en brouillon                                    |
+| [`post.published`](/developers/webhooks/events/posts#post-published)                        | Une publication est en ligne sur un canal                                                                  |
+| [`post.failed`](/developers/webhooks/events/posts#post-failed)                              | Une publication n’est pas partie sur un canal                                                              |
+| [`post.unconfirmed`](/developers/webhooks/events/posts#post-unconfirmed)                    | Peal ne peut pas savoir si une publication est en ligne sur un canal                                       |
+| [`post.cancelled`](/developers/webhooks/events/posts#post-cancelled)                        | Une publication a été annulée                                                                              |
+| [`post.finished`](/developers/webhooks/events/posts#post-finished)                          | Chaque canal d’une publication a son résultat                                                              |
+| [`post.unpublished`](/developers/webhooks/events/posts#post-unpublished)                    | Une publication a été supprimée de la plateforme d’un canal                                                |
+| [`post.unpublish_failed`](/developers/webhooks/events/posts#post-unpublish-failed)          | Peal n’a pas pu supprimer une publication de la plateforme d’un canal                                      |
+| [`post.edited`](/developers/webhooks/events/posts#post-edited)                              | Le texte d’une publication a été modifié sur la plateforme d’un canal                                      |
+| [`post.edit_failed`](/developers/webhooks/events/posts#post-edit-failed)                    | Peal n’a pas pu modifier le texte d’une publication sur la plateforme d’un canal                           |
+| [`post.approval_requested`](/developers/webhooks/events/posts#post-approval-requested)      | Une publication attend une approbation                                                                     |
+| [`post.approved`](/developers/webhooks/events/posts#post-approved)                          | Une publication qui attendait a été approuvée                                                              |
+| [`post.changes_requested`](/developers/webhooks/events/posts#post-changes-requested)        | Des modifications ont été demandées sur une publication qui attendait                                      |
+| [`channel.connected`](/developers/webhooks/events/channels#channel-connected)               | Un compte a été connecté, ou un canal de nouveau autorisé                                                  |
+| [`channel.disconnected`](/developers/webhooks/events/channels#channel-disconnected)         | Un canal a été déconnecté                                                                                  |
+| [`channel.reconnect_needed`](/developers/webhooks/events/channels#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
+| [`channel.disabled`](/developers/webhooks/events/channels#channel-disabled)                 | Un membre a désactivé un canal                                                                             |
+| [`channel.enabled`](/developers/webhooks/events/channels#channel-enabled)                   | Un membre a réactivé un canal                                                                              |
+| [`channel.expiring`](/developers/webhooks/events/channels#channel-expiring)                 | L’autorisation d’un canal prend bientôt fin, et ne peut pas être renouvelée                                |
+| [`media.ready`](/developers/webhooks/events/media-comments#media-ready)                     | Un fichier a été lu, et peut aller dans des publications                                                   |
+| [`media.failed`](/developers/webhooks/events/media-comments#media-failed)                   | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
+| [`comment.received`](/developers/webhooks/events/media-comments#comment-received)           | Quelqu’un a commenté une publication mise en ligne                                                         |
+| [`comment.replied`](/developers/webhooks/events/media-comments#comment-replied)             | Une réponse à un commentaire est partie depuis Peal                                                        |
+| [`boost.started`](/developers/webhooks/events/boosts#boost-started)                         | Une mise en avant a été créée et activée                                                                   |
+| [`boost.paused`](/developers/webhooks/events/boosts#boost-paused)                           | Un membre a mis une mise en avant en pause                                                                 |
+| [`boost.resumed`](/developers/webhooks/events/boosts#boost-resumed)                         | Un membre a relancé une mise en avant en pause                                                             |
+| [`boost.stopped`](/developers/webhooks/events/boosts#boost-stopped)                         | Un membre a arrêté une mise en avant pour de bon                                                           |
+| [`boost.ended`](/developers/webhooks/events/boosts#boost-ended)                             | La date de fin d’une mise en avant est passée                                                              |
+| [`boost.failed`](/developers/webhooks/events/boosts#boost-failed)                           | Une mise en avant n’a pas pu être créée, et rien n’a été diffusé                                           |
+| [`boost.unconfirmed`](/developers/webhooks/events/boosts#boost-unconfirmed)                 | Peal ne peut pas savoir si une mise en avant est diffusée : elle dépense peut-être                         |
+| [`boost.budget_reached`](/developers/webhooks/events/boosts#boost-budget-reached)           | Une mise en avant a dépensé tout son budget total                                                          |
+| [`webhook.test`](#webhook-test)                                                             | Quelqu’un a demandé un événement de test. Envoyé quels que soient les abonnements du point de terminaison. |
+
+### Un événement par canal [#per-channel]
+
+Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
+
+| Champ       | Type           | Ce qu’il contient                                                                                                                                                                                                                                                                                                                    |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API                                                                                                                                                                                                                                    |
+| `channelId` | chaîne         | Le canal                                                                                                                                                                                                                                                                                                                             |
+| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                                                                                                                                                                                                                                                         |
+| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée                                                                                                                                                                                                                                 |
+| `parts`     | objet          | Pour une publication en plusieurs parties, un [fil](/guides/posts#threads) : `count`, le nombre de parties qu’elle y a (1 pour une publication seule), et `live`, combien sont en ligne. Les parties partent dans l’ordre : une publication qui a échoué ou reste à vérifier s’est arrêtée à la partie qui suit la dernière en ligne |
+
+### webhook.test [#webhook-test]
+
+Quelqu’un a demandé un événement de test sur le point de terminaison. Il est envoyé à ce point de terminaison seul, quels que soient ses abonnements, et aucun point de terminaison ne s’y abonne.
+
+| Champ         | Type   | Ce qu’il contient       |
+| ------------- | ------ | ----------------------- |
+| `workspaceId` | chaîne | L’espace de travail     |
+| `endpointId`  | chaîne | Le point de terminaison |
+
+```json title="webhook.test"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "webhook.test",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"
+  }
+}
+```
+
+### Exemples d’un type [#samples]
+
+Un test peut porter à la place un exemple de n’importe quel type d’événement : dans l’application web, choisissez le type à côté de **Envoyer un événement de test** ; par l’API, ajoutez `?eventType=post.published` à l’adresse du test. Il est envoyé quels que soient les abonnements ou les filtres du point de terminaison.
+
+L’exemple a la forme réelle du type, des identifiants qui ne désignent rien (`00000000-0000-7000-8000-…`), l’identifiant de l’espace de travail lui-même, et `"sample": true` à côté des autres champs du corps. Le corps d’un fait n’a jamais `sample`.
+
+<Callout type="warning" title="N’agissez jamais sur un exemple">
+  Lisez `sample` pour que votre serveur distingue un exemple d’un fait.
+</Callout>
+
+```json title="sample post.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "post.published",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
+  "sample": true,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "00000000-0000-7000-8000-000000000001",
+    "targetId": "00000000-0000-7000-8000-000000000002",
+    "channelId": "00000000-0000-7000-8000-000000000003",
+    "platform": "mastodon",
+    "round": 1,
+    "parts": { "count": 1, "live": 1 },
+    "permalink": "https://social.example/@peal_example/1",
+    "publishedAt": "2026-01-01T09:00:00.000Z"
+  }
+}
+```

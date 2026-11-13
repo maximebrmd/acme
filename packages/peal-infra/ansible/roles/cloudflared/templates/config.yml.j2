@@ -40,9 +40,11 @@ ingress:
   - {hostname: {{ peal_hostnames.app }}, path: "^/+(api/|\\.well-known/oauth-)", service: "{{ server }}"{{ everything }}}
   - {hostname: {{ peal_hostnames.app }}, service: "{{ web }}"{{ everything }}}
 
-  # The marketing site and the docs (the static image).
+  # The marketing site and the docs: the static image, or the docs server
+  # when the docs have their assistant (peal_docs_server), which counts each
+  # reader by cf-connecting-ip (AUTH_IP_HEADERS).
   - {hostname: {{ peal_hostnames.site }}, service: "http://127.0.0.1:{{ peal_ports.site }}"{{ everything }}}
-  - {hostname: {{ peal_hostnames.docs }}, service: "http://127.0.0.1:{{ peal_ports.docs }}"{{ everything }}}
+  - {hostname: {{ peal_hostnames.docs }}, service: "http://127.0.0.1:{{ peal_ports.docs_server if peal_docs_server | bool else peal_ports.docs }}"{{ everything }}}
 
 {% if peal_short_link_hostname %}
 

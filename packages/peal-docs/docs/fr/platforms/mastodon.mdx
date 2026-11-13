@@ -1,0 +1,62 @@
+---
+title: Mastodon
+description: "Connecter Mastodon à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/mastodon.svg
+---
+
+Comment connecter un compte Mastodon, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                  |
+| ---------------- | -------------------------------- |
+| Texte            | {{platform-mastodon-text-fr}}    |
+| Images et vidéos | {{platform-mastodon-media-fr}}   |
+| Parties          | {{platform-mastodon-parts-fr}}   |
+| Formats          | {{platform-mastodon-formats-fr}} |
+| Texte alternatif | {{platform-mastodon-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **Mastodon**, indiquez le serveur du compte, comme `mastodon.social`, ou l’adresse du compte lui-même, comme `@vous@mastodon.social`, puis choisissez **Connecter Mastodon**.
+
+Peal fonctionne avec n’importe quel serveur Mastodon accessible sur Internet en HTTPS. La première fois que quelqu’un connecte un compte d’un serveur, Peal s’y enregistre comme application. Il demande à :
+
+- lire le profil du compte ;
+- publier des messages et des médias ;
+- relire les publications du compte, pour leurs chiffres dans les [statistiques](/guides/engage/analytics).
+
+<Callout type="info">
+  Un compte connecté avant que Peal demande à relire ses publications continue
+  de publier comme avant. Reconnectez-le pour l’accorder aussi.
+</Callout>
+
+## Options [#options]
+
+Aucune option n’est obligatoire, et chacune n’est envoyée que si vous la choisissez. **Nom dans l’API** est le nom de l’option par l’API. **Parties** dit si, dans un [fil](/guides/posts#threads), elle part avec chaque partie ou avec la première seule.
+
+| Option                                 | Nom dans l’API   | Valeurs                                                                          | Si omise             | Parties       |
+| -------------------------------------- | ---------------- | -------------------------------------------------------------------------------- | -------------------- | ------------- |
+| **Qui peut voir cette publication**    | `visibility`     | `public`, `unlisted` (public discret), `private` (abonnés seulement)             | Le réglage du compte | Chaque partie |
+| **Avertissement de contenu**           | `contentWarning` | Une ligne, 500 caractères au plus                                                | Aucun                | Chaque partie |
+| **Marquer les médias comme sensibles** | `sensitive`      | Oui ou non                                                                       | Le réglage du compte | Chaque partie |
+| **Langue**                             | `language`       | Un code de deux ou trois lettres minuscules, comme `fr`                          | Le réglage du compte | Chaque partie |
+| **Qui peut citer cette publication**   | `quotePolicy`    | `public`, `followers`, `nobody` ; seulement avec `visibility` public ou unlisted | Le réglage du compte | Chaque partie |
+
+Ce qu’en fait Mastodon :
+
+- Un avertissement de contenu compte dans la limite de caractères de la publication, avec le texte : sur un canal Mastodon, les 500 caractères sont l’avertissement et le texte ensemble, sur chaque partie, et l’éditeur les compte ainsi.
+- Un avertissement de contenu marque aussi la publication comme sensible, quoi que dise **Marquer les médias comme sensibles**.
+- Les serveurs antérieurs à Mastodon 4.5 ignorent la règle de citation, et personne ne peut citer une publication réservée aux abonnés, quoi qu’elle dise.
+- Les mentions privées ne sont pas proposées : Peal publie des publications.
+
+## Commentaires [#comments]
+
+Peal lit les commentaires sous vos publications en ligne, et vous y répondez depuis Peal : voir [Boîte de réception](/guides/engage/inbox#other-platforms).
+
+## Sur votre propre serveur [#self-hosting]
+
+Mastodon ne demande aucun réglage : Peal s’enregistre comme application sur chaque serveur la première fois qu’un compte y est connecté.

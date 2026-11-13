@@ -1,0 +1,103 @@
+---
+title: Votre compte
+description: Changer votre nom, votre langue et votre mot de passe, activer la vérification en deux étapes, télécharger vos données ou supprimer votre compte.
+sidebar:
+  icon: circle-user
+---
+
+Changez votre nom, votre langue et votre mot de passe, protégez votre connexion, téléchargez vos données ou supprimez votre compte. Votre compte vous appartient, dans tous les espaces de travail dont vous êtes membre.
+
+## Votre compte [#account]
+
+Choisissez **Paramètres du compte** dans le menu du compte.
+
+| Réglage                     | Ce qu’il fait                                                                                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nom**                     | Le nom que voient les autres membres, et qui signe vos invitations.                                                                                                                                                                                                                             |
+| **Langue**                  | Anglais ou français. Peal y rédige vos e-mails, y passe l’application dès l’enregistrement, et s’y ouvre à chaque connexion.                                                                                                                                                                    |
+| **Mot de passe**            | Votre mot de passe actuel confirme que c’est bien vous. Le changer ferme vos autres sessions, sauf si vous décochez cette case.                                                                                                                                                                 |
+| **Sessions**                | Les navigateurs et appareils connectés à votre compte, avec leur date de connexion et leur dernière activité. Fermez-en une, ou toutes sauf celle que vous utilisez.                                                                                                                            |
+| **Applications connectées** | La [ligne de commande](/developers/cli) et les [clients MCP](/developers/mcp) que vous laissez agir pour vous, avec ce qu’ils peuvent faire et dans quels espaces de travail. **Révoquez**-en un : il ne peut plus renouveler son accès, et celui qu’il détient déjà prend fin sous 15 minutes. |
+
+### Validation en deux étapes [#two-step]
+
+Avec la validation en deux étapes, la connexion demande, après votre mot de passe, un code fourni par une application d’authentification sur votre téléphone. Votre adresse e-mail doit d’abord être confirmée.
+
+<Steps>
+  <Step title="L’activer">
+    Sous **Validation en deux étapes**, **Activer** demande votre mot de passe.
+  </Step>
+  <Step title="Scanner le code QR">
+    Peal affiche un code QR à scanner avec l’application, et sa clé en texte à
+    saisir à la place. Saisissez le code à 6 chiffres qu’affiche l’application.
+  </Step>
+  <Step title="Garder les codes de secours">
+    Peal affiche alors dix codes de secours, une seule fois : copiez-les ou
+    téléchargez-les, et conservez-les en lieu sûr. Chacun fonctionne une fois, à
+    la place d’un code, quand vous n’avez pas votre téléphone.
+  </Step>
+</Steps>
+
+L’activer ne déconnecte pas les navigateurs et applications déjà connectés : déconnectez-les depuis **Sessions** si vous le souhaitez.
+
+À la connexion, après votre mot de passe, saisissez le code de l’application, ou choisissez **Utiliser un code de secours**.
+
+- **Faire confiance à ce navigateur pendant 30 jours** évite la seconde étape sur ce navigateur jusque-là, ou jusqu’à ce que la validation en deux étapes soit désactivée, ce qui oublie tous les navigateurs de confiance.
+- Après cinq codes erronés, reconnectez-vous avec votre mot de passe. Après dix d’affilée, la validation en deux étapes est bloquée pendant 15 minutes.
+- La seconde étape expire 10 minutes après le mot de passe.
+
+La section indique combien de codes de secours il reste.
+
+- **Nouveaux codes de secours** les remplace tous, avec votre mot de passe.
+- **Désactiver** demande aussi votre mot de passe, et est refusé tant qu’un espace de travail dont vous êtes membre l’[exige](/guides/workspace#require-two-step) : la section nomme ces espaces.
+
+Peal écrit à votre adresse chaque fois qu’elle est activée ou désactivée, que de nouveaux codes sont créés, ou qu’un code de secours sert à se connecter. Si ce n’était pas vous, changez votre mot de passe.
+
+Si vous perdez votre téléphone et vos codes de secours, écrivez à la personne qui gère le serveur. Son équipe peut la [réinitialiser](/self-hosting/staff#actions) une fois sûre que c’est vous, ce qui vous déconnecte partout. Connectez-vous avec votre mot de passe, puis réactivez-la. Les codes par e-mail ou par SMS ne sont pas proposés : un code envoyé par e-mail ne protège rien quand c’est la boîte de réception qui a été prise.
+
+### Télécharger vos données [#export]
+
+**Télécharger mes données** enregistre un fichier JSON de tout ce que Peal conserve sur vous :
+
+- votre compte, vos moyens de connexion et vos sessions, avec leur navigateur et leur adresse (sauf celles que l’équipe a ouvertes pour agir à votre place, qui sont les siennes) ;
+- vos adhésions, et les invitations que vous avez envoyées ou reçues ;
+- vos applications connectées, vos notifications et vos préférences d’e-mail, y compris si vous suivez toutes les publications ;
+- les changements que vous avez demandés dans des espaces de travail, tels que leurs [journaux d’activité](/guides/workspace#activity) les gardent : quand, quelle opération, votre moyen de connexion et le statut répondu, jamais ce qu’une requête contenait ;
+- ce que l’équipe du serveur a fait à votre compte (un bannissement, une confirmation renvoyée, une action à votre place, et chaque modification faite à votre place, avec où et sur quels identifiants…), quand, et le motif donné, mais pas qui l’a fait ;
+- les publications que vous avez écrites dans les espaces de travail partagés, avec leurs destinations, les options de chaque plateforme, et si YouTube a gardé une vidéo privée ;
+- les espaces de travail dont vous êtes le seul membre, avec leurs canaux, publications, leurs [étiquettes, signatures, groupes de canaux et options par défaut](/guides/posts/organise), leurs [files d’attente](/guides/posts/queues#queues), statistiques (les compteurs de chaque publication, tels que Peal les a relevés), médias, clés d’API, utilisation de l’assistant de rédaction et facturation : leur abonnement, l’état de chacun de leurs abonnements Stripe, et combien de publications ils ont faites chaque mois sur X, avec et sans lien. Chaque image ou vidéo que le stockage conserve est accompagnée d’un lien qui la télécharge pendant 7 jours ;
+- ce que la loi impose au serveur de conserver au-delà de votre compte (`legalHold`) : chaque connexion ayant créé, modifié ou supprimé un contenu dans l’année écoulée (quand, depuis quelle adresse, par quel protocole et avec quel moyen de connexion), ce que la fermeture de votre compte laisserait et pour combien de temps, pourquoi, et qui peut l’obtenir. Sur un serveur qui ne conserve rien pour la loi, il vaut `null`.
+
+Le reste d’un espace de travail partagé appartient à son équipe : le fichier contient votre adhésion et les publications que vous y avez écrites, pas celles des autres, ni ses canaux, ses médias ou ses statistiques. Il ne contient aucun mot de passe, jeton, clé ni carte. Les moyens de paiement et les factures restent chez Stripe, dans l’espace de facturation.
+
+À chaque téléchargement d’une copie, depuis l’application web ou la [ligne de commande](/developers/cli/workspace#account), Peal vous prévient par e-mail. Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions.
+
+### Supprimer votre compte [#delete-account]
+
+**Supprimer mon compte…** demande votre mot de passe, puis supprime définitivement le compte. Comme à la connexion, après trois mots de passe essayés en 10 secondes, patientez quelques secondes avant d’en essayer un autre.
+
+<Callout type="danger" title="La suppression de votre compte est définitive">
+  Les espaces de travail dont vous êtes le seul membre disparaissent avec tout
+  leur contenu, comme lors de la [suppression d’un espace de
+  travail](/guides/workspace#delete-workspace).
+</Callout>
+
+- Vous quittez les autres espaces de travail. Les publications que vous y avez écrites restent, sans votre nom, comme les canaux que vous avez connectés, qui appartiennent à l’espace de travail.
+- Les connexions commencées et non terminées, vos sessions, notifications, préférences, invitations et applications connectées disparaissent aussi.
+- Une confirmation part à votre adresse, dans votre langue.
+
+Tant que vous êtes le seul propriétaire d’un espace de travail que d’autres membres utilisent, le compte ne peut pas être supprimé : Peal liste ces espaces. Nommez d’abord un autre membre propriétaire de chacun, ou supprimez-les.
+
+Quand un espace de travail qu’il supprimerait a un abonnement que Stripe peut encore facturer, la fenêtre dit ce que cela arrête et attend que vous cochiez **Résilier l’abonnement maintenant**, comme lors de la [suppression d’un espace de travail](/guides/workspace#delete-workspace). Ces abonnements sont résiliés immédiatement, sans remboursement de la période payée, et l’e-mail de confirmation le précise.
+
+#### Ce que la loi fait conserver [#legal-hold]
+
+Sur Peal Cloud, et sur tout serveur dont l’exploitant y est tenu par la loi française, seul ce que cette loi impose à un hébergeur de conserver reste, à l’écart de tout le reste et lu uniquement pour répondre à une réquisition écrite de l’autorité judiciaire :
+
+| Ce qui est conservé                                                                                                      | Pendant combien de temps                     |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| Vos nom et adresse e-mail                                                                                                | {{keep-legal-identity-fr}}                   |
+| Vos moyens de connexion (l’identifiant de chaque méthode de connexion, jamais votre mot de passe) et votre client Stripe | {{keep-legal-account-fr}}                    |
+| Chaque connexion ayant créé un contenu                                                                                   | {{keep-legal-connections-fr}} après celle-ci |
+
+Une tâche quotidienne les supprime ensuite. La boîte de dialogue et la confirmation le disent lorsque le serveur les conserve. Sur tout autre serveur, rien ne reste ([Auto-hébergement](/self-hosting/privacy#legal-retention) dit quels exploitants doivent les conserver).

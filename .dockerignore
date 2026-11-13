@@ -12,6 +12,8 @@
 **/build
 **/.next
 **/.astro
+**/.blume
+**/.blume-verify
 **/out
 **/coverage
 **/*.tsbuildinfo

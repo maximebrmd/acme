@@ -1,0 +1,72 @@
+---
+// Blume's own sidebar, then a button that opens the web app, held at the
+// foot of the sidebar as the app holds its workspace switcher (DESIGN.md,
+// "The frame"). The app's address comes from DOCS_APP_URL when the docs are
+// built; unset, there is no button, as a self-hosted copy may have no app
+// to point at.
+import NavTree from "blume/components/layout/NavTree.astro";
+import Icon from "blume/components/Icon.astro";
+
+const appUrl = process.env.DOCS_APP_URL?.trim().replace(/\/+$/u, "");
+const french = Astro.url.pathname === "/fr" || Astro.url.pathname.startsWith("/fr/");
+const label = french ? "Tableau de bord" : "Dashboard";
+const href = appUrl === undefined || appUrl === "" ? undefined : `${appUrl}${french ? "/fr" : ""}`;
+---
+
+<NavTree {...Astro.props} />
+{
+  href !== undefined && (
+    <div class="peal-app-link">
+      <a href={href}>
+        <Icon name="layout-dashboard" size={16} />
+        <span>{label}</span>
+        <Icon name="arrow-up-right" size={14} />
+      </a>
+    </div>
+  )
+}
+
+<style>
+  /* Stays at the foot of the sidebar while its list scrolls. */
+  .peal-app-link {
+    position: sticky;
+    /* Down to the sidebar's edge, over its bottom padding, so nothing of
+       the list shows below the button. */
+    bottom: -1.5rem;
+    z-index: 1;
+    margin-top: 1.5rem;
+    margin-bottom: -1.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 1.5rem;
+    background: var(--blume-background);
+  }
+
+  /* The ink button DESIGN.md gives a page's main action: 34 px high, 6 px
+     radius, the background's colour on the foreground's. */
+  .peal-app-link a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 34px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .peal-app-link a span {
+    flex: 1;
+  }
+
+  .peal-app-link a:hover {
+    background: color-mix(in srgb, var(--primary) 88%, white);
+  }
+
+  .peal-app-link a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+</style>

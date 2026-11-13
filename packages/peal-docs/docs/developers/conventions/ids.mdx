@@ -1,0 +1,27 @@
+---
+title: Ids and instants
+description: How the API writes ids, instants and time zones.
+sidebar:
+  icon: fingerprint
+---
+
+## Ids and instants [#ids]
+
+Ids are strings, written in lowercase. Treat every id as an opaque string: compare it, store it, send it back, and read nothing from it.
+
+| Objects                                  | Id                                                     |
+| ---------------------------------------- | ------------------------------------------------------ |
+| Posts, their targets, channels and media | UUIDv7, such as `019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02` |
+| Workspaces and users                     | Random UUIDs                                           |
+| API keys and applications                | Ids of another shape                                   |
+
+### Instants and time zones [#instants]
+
+| Value                | How it is written                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| An instant           | ISO 8601, in UTC, such as `2026-11-16T08:00:00.000Z`. Answers give instants that way; send them the same way. |
+| A time to schedule   | An instant and the IANA time zone it was chosen in, such as `Europe/Paris`, which Peal keeps with the post.   |
+| A day, for analytics | A calendar day, such as `2026-11-16`, with the time zone the days run in.                                     |
+
+- An offset such as `+01:00` is not a time zone, and answers 422 `invalid_time_zone`.
+- A time up to a minute in the past counts as now; an earlier one answers 422 `schedule_in_past`.

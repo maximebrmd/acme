@@ -1,0 +1,221 @@
+---
+title: Files, répétitions et flux
+description: Remplir les créneaux d’un canal depuis une file, répéter une publication, et publier ce que publie un flux.
+sidebar:
+  icon: list-ordered
+---
+
+Laissez Peal choisir l’heure d’une publication dans un emploi du temps hebdomadaire, créer de nouvelles publications à partir d’une autre à intervalle régulier, ou transformer les nouveaux éléments d’un blog en publications.
+
+## Files d’attente [#queues]
+
+Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, par exemple chaque jour de semaine à 09:30 et à 17:00 en Europe/Paris, pour certains canaux et au plus un [groupe de canaux](/fr/guides/posts/organise#sets). Au lieu de choisir une heure, ajoutez une publication à une file : elle prend le prochain créneau libre de la file.
+
+**Réglages**, **Files d’attente** liste les files de l’espace de travail avec leurs prochains créneaux. Ceux qui peuvent modifier les [groupes de canaux](/fr/guides/posts/organise#roles) peuvent y en ajouter, en modifier, en supprimer ou en faire la file par défaut : propriétaires, administrateurs, éditeurs et contributeurs (`post:update` par l’API). Un espace de travail garde jusqu’à 20 files, chacune d’au plus 100 créneaux.
+
+Ajouter une publication à une file la programme : il faut donc ce que demande la programmation de cette publication. Celle d’un contributeur attend une approbation là où l’espace de travail en demande, et elle est refusée sinon.
+
+Comment se comportent les créneaux et les files :
+
+- Un créneau est un jour et une heure sur l’horloge de la file, changements d’heure compris, comme une heure que vous choisissez : une heure que l’horloge saute passe au moment du saut, et une heure qui revient deux fois est la première des deux.
+- Un créneau est pris tant qu’une publication placée par la file est programmée, en attente d’approbation ou en cours de publication exactement à son heure. Rien d’autre n’est gardé des créneaux : repasser en brouillon, annuler ou déplacer à la main une telle publication libère son créneau, et une publication de la file déplacée à l’heure d’un créneau le prend.
+- La première file d’un espace de travail est sa file **par défaut**, celle où va une publication ajoutée sans file précise. En marquer une autre par défaut l’y déplace ; supprimer la file par défaut n’en laisse aucune jusqu’à ce qu’une autre soit marquée.
+- Changer les créneaux d’une file ne déplace aucune publication : celles déjà placées gardent leur heure, jusqu’à ce que vous les [replaciez sur les nouveaux créneaux](#reshuffle).
+- Supprimer une file laisse ses publications programmées à leur heure.
+
+### Ajouter une publication à une file [#add-to-queue]
+
+<Tabs>
+  <Tab title="Application web">
+    <Steps>
+      <Step title="Choisissez Ajouter à la file">
+        Dans l’éditeur, sous **Quand**, choisissez **Ajouter à la file**.
+      </Step>
+      <Step title="Choisissez la file">
+        Choisissez la file (celle par défaut au départ), et lisez où la publication irait : **Prochain créneau libre**.
+      </Step>
+      <Step title="Programmez">
+        Choisissez **Programmer**. Le créneau est décidé quand Peal reçoit la publication, si bien que deux publications ajoutées au même moment ne prennent jamais le même.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal post "An evergreen tip" --default-queue
+peal posts queue <post-id> --queue Weekdays
+```
+
+Voyez [Les files en ligne de commande](/developers/cli/posts#queues).
+
+  </Tab>
+</Tabs>
+
+- Une publication qui ne nomme aucun canal va sur les canaux et le groupe de canaux de la file. Un canal déconnecté depuis est laissé de côté, et c’est dit.
+- La publication est ensuite une publication programmée comme une autre : vérifiée auprès de ses canaux, en attente d’approbation là où l’espace de travail en demande une, visible sur le calendrier avec la marque de sa file, et elle peut être déplacée, repassée en brouillon ou annulée.
+- Une publication déjà programmée passe de même au prochain créneau libre de la file.
+
+<Callout type="info">
+  Les publications du mois permises par l’abonnement se comptent dans le mois du
+  créneau trouvé. Quand ce mois n’a plus de place, la publication est refusée,
+  comme pour une heure que vous choisissez : Peal ne passe jamais de lui-même à
+  un mois suivant. Une file sans créneau, ou dont tous les créneaux des 366
+  prochains jours sont pris, refuse aussi la publication.
+</Callout>
+
+### Replacer les publications en attente sur de nouveaux créneaux [#reshuffle]
+
+Quand vous changez les créneaux d’une file ou son fuseau horaire, **Réglages**, **Files d’attente** propose **Replacer les publications en attente sur les nouveaux créneaux** tant que des publications y attendent, avec leur nombre.
+
+Une fois que vous confirmez, chaque publication en attente dans la file (programmée, ou en attente d’approbation, à une heure à venir) passe sur les créneaux de la file tels qu’ils sont maintenant, dans l’ordre de leurs heures : la première sur le premier créneau libre, la deuxième sur le suivant, et ainsi de suite.
+
+- Les publications déplacées à la main à une autre heure sont déplacées aussi, car la file ne garde pas trace de celles qui l’ont été.
+- Une publication déjà sur son créneau y reste, et un créneau qu’occupe une publication en cours de publication est sauté.
+- Ce que disent les publications et où elles vont ne change pas.
+- Propriétaires, administrateurs et éditeurs peuvent le faire (`post:schedule` par l’API). Par l’API, un contributeur dont les publications attendent une approbation ne déplace que celles-là.
+
+Peal dit ensuite combien de publications ont été déplacées, combien sont restées et combien restent à placer. Les replacer deux fois ne déplace rien la seconde fois.
+
+<Accordion>
+  <AccordionItem title="Approbations et limites de l’abonnement pendant le déplacement">
+    Chaque publication est déplacée comme à la main, sauf pour les approbations : elle prend sa nouvelle heure et compte dans son nouveau mois.
+
+    Une publication programmée passe par les approbations de l’espace de travail comme si vous la programmiez. Une publication en attente d’approbation continue d’attendre, à sa nouvelle heure, quelle que soit la personne qui la déplace : sa demande reste celle de qui l’a faite, et personne n’est sollicité de nouveau pour décider. Pour programmer vous-même une telle publication, quand les vôtres n’ont pas besoin d’approbation, déplacez-la à la main.
+
+    Le déplacement s’arrête, en gardant ce qu’il a déplacé, à un mois où l’abonnement n’a plus de place, quand il ne reste aucun créneau dans les 366 jours, ou quand quelqu’un enregistre la file entre-temps. Replacez-les de nouveau quand il y a de la place.
+
+  </AccordionItem>
+</Accordion>
+
+## Répéter une publication [#recycling]
+
+Une publication programmée, ou déjà en ligne, peut **se répéter** : Peal en crée une nouvelle à intervalle régulier, jusqu’à un nombre de publications ou une date, avec son texte ou, à tour de rôle, des variantes de texte.
+
+Ouvrez la publication et choisissez **Répéter**, puis réglez :
+
+| Réglage                | Valeurs                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Fréquence              | Tous les tant de jours (1 à 365), de semaines (1 à 52) ou de mois (1 à 12)                                  |
+| Fin                    | Après un nombre de publications (2 à 100, celle-ci comprise), à une date, ou après 100 publications au plus |
+| File                   | Éventuellement, une [file d’attente](#queues)                                                               |
+| **Variantes de texte** | Jusqu’à 10                                                                                                  |
+
+Les propriétaires, administrateurs et éditeurs le peuvent (post:schedule par l’API). Les publications d’un contributeur, là où l’espace de travail lui permet de demander, attendent chacune une approbation. **Réglages**, **Répétitions** liste les règles de l’espace de travail avec leurs trois prochaines publications, et permet à ceux qui programment de mettre une règle en pause, de la reprendre ou de l’arrêter.
+
+En ligne de commande ([Répétitions](/developers/cli/posts#recycling)) :
+
+```sh
+peal recycling start <post-id> --every 2w --count 6 --variant "Open all summer, as before."
+peal recycling pause <rule-id>
+peal recycling resume <rule-id>
+peal recycling end <rule-id>
+```
+
+### Comment les nouvelles publications sont créées [#recycling-posts]
+
+- Chaque nouvelle publication est une publication ordinaire, avec le résultat de ses propres canaux, ses notifications et ses statistiques. Déplacez-la, repassez-la en brouillon ou annulez-la comme toute autre : la règle continue selon sa propre horloge.
+- Elle est copiée de la source avec ce que l’espace de travail a encore (ses canaux toujours connectés, ses médias, ses options, ses étiquettes), jamais avec une signature ou une option par défaut ajoutée depuis.
+- La suivante est créée une fois passée l’heure de la dernière : le calendrier en montre une d’avance.
+- Elle est prévue un intervalle après la précédente, à la même heure dans le fuseau de la source, heure d’été comprise. Un mois plus court que le jour de la source en prend le dernier jour (31 janvier, puis 28 février, puis 31 mars). Sur une file d’attente, elle prend le premier créneau libre à partir de cette heure.
+- Une heure manquée pendant que Peal était arrêté est sautée, jamais rattrapée.
+- Une publication dont l’heure, ou le créneau de la file, tomberait après le dernier jour de la règle n’est pas créée : la règle s’arrête là, comme après sa dernière publication.
+- La première dit le texte de la source, la suivante la première variante, et ainsi de suite, puis de nouveau celui de la source. Une variante remplace le texte de la première partie, et ses textes sur certains canaux ; ses médias, parties suivantes et options restent.
+- Certaines plateformes refusent un texte déjà publié pour le compte : les variantes sont faites pour cela. Chaque variante est vérifiée, à l’enregistrement, comme la source qui la dirait, puis à nouveau quand sa publication est créée.
+- Une publication se répète au nom de qui l’a lancée, avec ce qu’il peut faire au moment où elle est créée : les approbations de ses publications s’appliquent, et un membre parti, une clé révoquée ou une application dont l’accès ne publie plus l’arrête.
+- Une publication a une règle en cours à la fois, et un espace de travail 100.
+- Une règle garde la première heure de la source : déplacer la source ne déplace pas les heures auxquelles elle se répète.
+
+### Quand une règle s’arrête [#recycling-stops]
+
+Peal arrête une règle, au lieu de sauter une publication en silence, et prévient les personnes concernées ([notifications](/guides/workspace/notifications#events)) quand :
+
+- sa publication a été supprimée, annulée ou remise en brouillon ;
+- la personne qui l’a lancée ne peut plus programmer ;
+- aucun de ses canaux ne reste ;
+- une plateforme refuse ce qu’elle dirait ;
+- le mois n’a plus de place dans l’offre ;
+- sa file d’attente a été supprimée ou n’a plus de créneau libre.
+
+Tant que sa publication attend une approbation, elle ne crée rien et attend.
+
+Une fois le problème réglé (de la place dans l’offre, d’autres variantes, un canal reconnecté, des créneaux sur sa file, sa publication programmée de nouveau), **Reprendre** la relance à partir de la prochaine heure prévue, avec les mêmes variantes. D’autres variantes pour un texte refusé accompagnent la reprise par la [ligne de commande](/developers/cli/posts#recycling) ou l’API. Elle ne reprend pas si une autre règle répète la publication entre-temps, ou si l’espace de travail en a 100 en cours. Pour toute autre fin, répétez de nouveau la publication.
+
+## Publier depuis un flux [#feeds]
+
+Un espace de travail peut suivre un **flux web** (RSS 2.0, Atom 1.0 ou JSON Feed 1.1), celui d’un blog par exemple : chaque élément qui y paraît après son ajout devient une publication.
+
+**Réglages**, **Flux** en ajoute un :
+
+| Ce que vous donnez                    | Ce qu’il contient                                                                                                                                                                                      |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Son adresse                           | L’adresse du flux, HTTPS publique uniquement                                                                                                                                                           |
+| Ses canaux                            | Les canaux où vont ses publications (un groupe de canaux aussi, par la [ligne de commande](/fr/developers/cli/posts#feeds) ou l’API)                                                                   |
+| **Modèle**                            | Ce à partir de quoi ses publications sont écrites : `{title}`, `{link}` et `{summary}` (le résumé de l’élément en texte brut, 280 caractères au plus). Par défaut le titre, une ligne vide et le lien. |
+| **Joindre l’image de chaque élément** | Importe l’image que nomme un élément (sa pièce jointe, son média ou l’`image` de JSON Feed) dans la médiathèque, au nom de la personne qui a ajouté le flux, décrite par le titre de l’élément         |
+| Ce que deviennent les éléments        | Un **brouillon** chacun par défaut, ou des publications sur une **file d’attente**                                                                                                                     |
+
+**Aperçu** lit l’adresse et montre ses trois éléments les plus récents tels que le modèle les écrirait, sans rien garder.
+
+En ligne de commande ([Flux](/developers/cli/posts#feeds)) :
+
+```sh
+peal feeds preview https://blog.example/feed.xml --template "New on the blog: {title}"
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'{title}\n\n{link}'
+peal feeds add https://blog.example/feed.xml --mode queue --queue Weekdays
+```
+
+### Brouillons ou file d’attente [#feed-mode]
+
+Par défaut, chaque élément devient un **brouillon**, qu’une personne termine et programme.
+
+Quelqu’un qui peut programmer (post:schedule) peut choisir une **file d’attente** à la place. Chaque élément prend alors le prochain créneau libre de la file, en passant par toutes les règles d’une publication, la politique d’approbation comprise. Ce que la file refuse devient un brouillon, avec la raison : une plateforme refuse le texte, le mois n’a plus de place dans l’offre, la file n’a plus de créneau libre, un canal a disparu, ou la même publication part déjà.
+
+<Callout type="warning">
+  En mode file d’attente, chaque élément est programmé sans que personne ne le
+  lise avant. Un flux ne publie jamais sur-le-champ.
+</Callout>
+
+Une image impossible à récupérer (non publique, trop lourde, pas une image, le stockage de l’offre plein) est laissée de côté : la publication part sans elle, et les éléments du flux disent pourquoi.
+
+### Comment Peal lit un flux [#feed-reading]
+
+- À l’ajout d’un flux, Peal le lit une fois et note ce qu’il contient : seul ce qui paraît ensuite devient une publication, et un élément daté d’avant l’ajout n’est jamais créé. Changer son adresse, ou le reprendre, fait de même.
+- Peal lit chaque flux environ une fois par heure, et renvoie ce que le site a dit de sa dernière réponse : un flux inchangé ne lui coûte rien.
+- Il crée au plus 3 publications par passage et 12 par jour et par flux. Le reste d’un afflux est ignoré, jamais créé plus tard.
+- La page de chaque flux liste ses 50 éléments les plus récents et ce que chacun est devenu, jamais ce qu’il disait.
+- Un espace de travail suit 10 flux au plus. Ajouter, déplacer, reprendre et prévisualiser des flux lit 30 adresses par heure au plus.
+
+### Quand un flux s’arrête [#feed-stops]
+
+Un flux agit au nom de la personne qui l’a ajouté, telle qu’elle est quand un élément est créé. Peal l’arrête, et prévient les personnes concernées ([notifications](/fr/guides/workspace/notifications#events)), quand :
+
+- son site indique qu’il n’existe plus ;
+- il n’a pas pu être lu, ou a donné autre chose qu’un flux, pendant sept jours ;
+- la personne qui l’a ajouté ne peut plus y créer de publications ;
+- sa file d’attente a été supprimée.
+
+**Modifier** change son adresse, son modèle, ses canaux, son mode et sa file, ce qui permet de remplacer un canal ou une file disparus : la mise en pause n’est jamais refusée pour eux, et la reprise dit lequel choisir de nouveau.
+
+**Reprendre** le relance, en le lisant aussitôt. La personne qui reprend un flux dont l’auteur est parti en devient responsable, et ses publications agissent dès lors en son nom.
+
+<Accordion>
+  <AccordionItem title="Quand un site change l’identité de ses éléments">
+    Un site qui change l’identité de ses éléments (en déménageant son blog, par
+    exemple) les rend tous nouveaux pour Peal. Jusqu’à trois de ceux datés
+    d’après l’ajout du flux sont publiés de nouveau à ce passage, et le reste
+    est ignoré comme trop nombreux. Mettez le flux en pause avant un tel
+    changement, et reprenez-le après.
+  </AccordionItem>
+  <AccordionItem title="Comment Peal vérifie l’hôte d’un flux">
+    Peal ne lit l’hôte d’un flux qu’une fois son adresse vérifiée comme
+    publique, à chaque redirection aussi. Un hôte dont le nom répond autrement
+    entre cette vérification et la connexion est la seule faille restante, le
+    client HTTP de Peal ne pouvant pas se connecter à l’adresse vérifiée tout en
+    gardant le nom pour TLS.
+  </AccordionItem>
+  <AccordionItem title="Ce que Peal garde d’un flux">
+    Ce que dit un flux est le texte d’autres personnes. Peal garde une empreinte
+    de l’identité de chaque élément, jamais l’élément, et ne donne le texte d’un
+    flux qu’aux publications qu’il crée.
+  </AccordionItem>
+</Accordion>

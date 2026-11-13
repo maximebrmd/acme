@@ -1,0 +1,80 @@
+---
+title: Discovery
+description: The documents that tell a program where the API, its OpenAPI document and its sign-in are.
+sidebar:
+  icon: radar
+---
+
+## Discovery [#discovery]
+
+A program that knows only the address of a Peal server finds the rest from these documents. None needs a credential.
+
+| Address                                     | What it is                                                                                                                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/.well-known/api-catalog`                  | The API catalogue (RFC 9727), as `application/linkset+json`: the API and the MCP endpoint, each with its description, its documentation and where to get a credential for it. |
+| `/api/openapi.json`                         | The OpenAPI 3.1 document of the API: every endpoint, its parameters, answers and errors.                                                                                      |
+| `/api/mcp/server-card`                      | The MCP endpoint's server card, as `application/mcp-server-card+json`: its address, the protocol revisions it speaks and the header that carries the credential.              |
+| `/llms.txt`                                 | The same places as Markdown, for a language model.                                                                                                                            |
+| `/.well-known/oauth-protected-resource/api` | Where an OAuth client gets a token for the API, and the scopes (RFC 9728). `…/api/mcp` is the MCP endpoint's.                                                                 |
+| `/api/changelog`                            | What each release of the API added ([Changelog](/developers/conventions/versioning#changelog)).                                                                               |
+| `/api/health`                               | Answers 204 while the server is up.                                                                                                                                           |
+
+```bash
+curl https://api.example.com/.well-known/api-catalog
+```
+
+```json
+{
+  "linkset": [
+    {
+      "anchor": "https://api.example.com/api",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/openapi.json",
+          "type": "application/openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://docs.example.com/api-overview",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api",
+          "type": "application/json"
+        }
+      ],
+      "status": [{ "href": "https://api.example.com/api/health" }]
+    },
+    {
+      "anchor": "https://api.example.com/api/mcp",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/mcp/server-card",
+          "type": "application/mcp-server-card+json"
+        }
+      ],
+      "service-doc": [
+        { "href": "https://docs.example.com/mcp", "type": "text/html" }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api/mcp",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+<Callout type="info">
+  The links to the documentation (`service-doc`, and a section of `llms.txt`)
+  are there only on a server that knows where its documentation is:
+  `PEAL_DOCS_URL` ([Environment
+  variables](/self-hosting/environment-variables#core)).
+</Callout>
+
+This documentation has an `llms.txt` of its own, at its root, with every page as Markdown.

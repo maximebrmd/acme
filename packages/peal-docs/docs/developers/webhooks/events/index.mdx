@@ -1,0 +1,113 @@
+---
+title: Events
+description: "Every event Peal sends, with an example payload."
+sidebar:
+  icon: zap
+---
+
+An endpoint subscribes to the event types below, and is sent those alone. Each type links to its fields and an example payload. Every event's `data` has `workspaceId`, the workspace it happened in.
+
+## Events [#events]
+
+| Event                                                                                       | When                                                                      |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`post.scheduled`](/developers/webhooks/events/posts#post-scheduled)                        | A post was scheduled, or moved to another time                            |
+| [`post.unscheduled`](/developers/webhooks/events/posts#post-unscheduled)                    | A scheduled post, or one that waited, was taken back to draft             |
+| [`post.published`](/developers/webhooks/events/posts#post-published)                        | A post went live on a channel                                             |
+| [`post.failed`](/developers/webhooks/events/posts#post-failed)                              | A post did not go out on a channel                                        |
+| [`post.unconfirmed`](/developers/webhooks/events/posts#post-unconfirmed)                    | Peal cannot tell whether a post went live on a channel                    |
+| [`post.cancelled`](/developers/webhooks/events/posts#post-cancelled)                        | A post was cancelled                                                      |
+| [`post.finished`](/developers/webhooks/events/posts#post-finished)                          | Every channel of a post has its result                                    |
+| [`post.unpublished`](/developers/webhooks/events/posts#post-unpublished)                    | A post was deleted from a channel's platform                              |
+| [`post.unpublish_failed`](/developers/webhooks/events/posts#post-unpublish-failed)          | Peal could not delete a post from a channel's platform                    |
+| [`post.edited`](/developers/webhooks/events/posts#post-edited)                              | A post's text was edited on a channel's platform                          |
+| [`post.edit_failed`](/developers/webhooks/events/posts#post-edit-failed)                    | Peal could not edit a post's text on a channel's platform                 |
+| [`post.approval_requested`](/developers/webhooks/events/posts#post-approval-requested)      | A post waits for an approval                                              |
+| [`post.approved`](/developers/webhooks/events/posts#post-approved)                          | A post that waited was approved                                           |
+| [`post.changes_requested`](/developers/webhooks/events/posts#post-changes-requested)        | Changes were asked for on a post that waited                              |
+| [`channel.connected`](/developers/webhooks/events/channels#channel-connected)               | An account was connected, or a channel authorized again                   |
+| [`channel.disconnected`](/developers/webhooks/events/channels#channel-disconnected)         | A channel was disconnected                                                |
+| [`channel.reconnect_needed`](/developers/webhooks/events/channels#channel-reconnect-needed) | A channel's authorization stopped working                                 |
+| [`channel.disabled`](/developers/webhooks/events/channels#channel-disabled)                 | A member turned a channel off                                             |
+| [`channel.enabled`](/developers/webhooks/events/channels#channel-enabled)                   | A member turned a channel back on                                         |
+| [`channel.expiring`](/developers/webhooks/events/channels#channel-expiring)                 | A channel's authorization ends soon, and cannot be renewed                |
+| [`media.ready`](/developers/webhooks/events/media-comments#media-ready)                     | A file was read, and can go in posts                                      |
+| [`media.failed`](/developers/webhooks/events/media-comments#media-failed)                   | A file was refused, or could not be read                                  |
+| [`comment.received`](/developers/webhooks/events/media-comments#comment-received)           | Someone commented under a post that went live                             |
+| [`comment.replied`](/developers/webhooks/events/media-comments#comment-replied)             | A reply to a comment went out from Peal                                   |
+| [`boost.started`](/developers/webhooks/events/boosts#boost-started)                         | A boost was made and turned on                                            |
+| [`boost.paused`](/developers/webhooks/events/boosts#boost-paused)                           | A member paused a boost                                                   |
+| [`boost.resumed`](/developers/webhooks/events/boosts#boost-resumed)                         | A member ran a paused boost again                                         |
+| [`boost.stopped`](/developers/webhooks/events/boosts#boost-stopped)                         | A member stopped a boost for good                                         |
+| [`boost.ended`](/developers/webhooks/events/boosts#boost-ended)                             | A boost's end date passed                                                 |
+| [`boost.failed`](/developers/webhooks/events/boosts#boost-failed)                           | A boost could not be made, and nothing ran                                |
+| [`boost.unconfirmed`](/developers/webhooks/events/boosts#boost-unconfirmed)                 | Peal cannot tell whether a boost runs: it may be spending                 |
+| [`boost.budget_reached`](/developers/webhooks/events/boosts#boost-budget-reached)           | A boost spent its whole total budget                                      |
+| [`webhook.test`](#webhook-test)                                                             | Someone asked for a test event. Sent whatever the endpoint subscribes to. |
+
+### One event per channel [#per-channel]
+
+A post goes out on each of its channels separately, so `post.published`, `post.failed` and `post.unconfirmed` name one channel each: a post on three channels brings three events. These fields say which:
+
+| Field       | Type           | What it holds                                                                                                                                                                                                                                                            |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `targetId`  | string         | The post on that channel: the target's id, as the API's `targets` list it                                                                                                                                                                                                |
+| `channelId` | string         | The channel                                                                                                                                                                                                                                                              |
+| `platform`  | string or null | The channel's platform, such as `mastodon`; null once the channel was disconnected                                                                                                                                                                                       |
+| `round`     | integer        | How many times the post was sent there: 1, and one more for each time it was sent again                                                                                                                                                                                  |
+| `parts`     | object         | For a post of several parts, a [thread](/guides/posts#threads): `count`, how many parts it has there (1 for a post alone), and `live`, how many of them are live. Parts go out in order, so a post that failed or is unconfirmed stopped at the part after the last live |
+
+### webhook.test [#webhook-test]
+
+Someone asked for a test event on the endpoint. It is sent to that endpoint alone, whatever it subscribes to, and no endpoint subscribes to it.
+
+| Field         | Type   | What it holds |
+| ------------- | ------ | ------------- |
+| `workspaceId` | string | The workspace |
+| `endpointId`  | string | The endpoint  |
+
+```json title="webhook.test"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "webhook.test",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"
+  }
+}
+```
+
+### Samples of a type [#samples]
+
+A test can carry a sample of any event type instead: in the web app, choose the type beside **Send a test event**; over the API, add `?eventType=post.published` to the test's address. It is sent whatever the endpoint subscribes to or filters.
+
+The sample has that type's real shape, ids that name nothing (`00000000-0000-7000-8000-…`), the workspace's own id, and `"sample": true` beside the other fields of the payload. A payload of a fact never has `sample`.
+
+<Callout type="warning" title="Never act on a sample">
+  Check `sample` so your server can tell a sample from a fact.
+</Callout>
+
+```json title="sample post.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "post.published",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
+  "sample": true,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "00000000-0000-7000-8000-000000000001",
+    "targetId": "00000000-0000-7000-8000-000000000002",
+    "channelId": "00000000-0000-7000-8000-000000000003",
+    "platform": "mastodon",
+    "round": 1,
+    "parts": { "count": 1, "live": 1 },
+    "permalink": "https://social.example/@peal_example/1",
+    "publishedAt": "2026-01-01T09:00:00.000Z"
+  }
+}
+```

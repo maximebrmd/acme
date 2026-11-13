@@ -1,0 +1,257 @@
+---
+title: Démarrage rapide de l’API
+description: Créer une clé d’API, trouver vos canaux, vérifier une publication, l’envoyer et savoir comment elle s’est passée, en cinq requêtes.
+sidebar:
+  icon: terminal
+  order: 3
+---
+
+D’une clé d’API à une publication en ligne, avec un webhook qui vous dit comment elle s’est passée. Chaque étape montre la requête avec `curl`, la ligne de commande `peal` et le SDK TypeScript.
+
+## Avant de commencer [#before]
+
+- Un espace de travail avec au moins un canal connecté dans l’application ([Démarrage rapide](/quickstart), [Connecter des canaux](/guides/channels)).
+- `curl`, la [ligne de commande](/developers/cli) ou un [SDK](/developers/sdks) (`npm install peal-sdk` pour TypeScript).
+- L’adresse de votre instance. Les exemples utilisent `https://api.example.com` ; celle de Peal Cloud est `https://app.peal.social` ([URL de base](/developers#base-url)).
+
+Les identifiants des exemples sont inventés, et les réponses abrégées.
+
+<Prompt description="Vous utilisez un agent de code ? Donnez-lui cette consigne." actions={["copy"]}>
+
+Ajoute l’API de Peal à ce projet, en suivant le démarrage rapide de l’API de Peal.
+
+1. Lis la clé d’API dans la variable d’environnement `PEAL_API_KEY`. Ne l’écris jamais en dur et ne la commite jamais.
+2. Appelle `GET /api/credential` et garde `workspace.id`.
+3. Liste les canaux avec `GET /api/workspaces/{workspaceId}/channels` et demande-moi sur lesquels publier.
+4. Vérifie la publication avec `POST /api/workspaces/{workspaceId}/posts/validate`. Si `valid` vaut false, montre-moi chaque violation et arrête-toi.
+5. Envoie le même corps à `POST /api/workspaces/{workspaceId}/posts/send`, avec un en-tête `Idempotency-Key` qui contient un nouvel UUID.
+6. Crée un point de réception de webhooks avec `POST /api/workspaces/{workspaceId}/webhooks` pour `post.published` et `post.failed`, et conserve son secret de signature, qui n’est montré qu’une fois.
+
+Ce qui part atteint le public des plateformes et ne peut plus être repris depuis Peal : montre-moi la publication et attends mon accord avant de l’envoyer. Arrête-toi pour me demander si un appel renvoie une erreur.
+
+</Prompt>
+
+## 1. Créer une clé d’API [#key]
+
+<Steps>
+  <Step title="Ouvrir les clés d’API">
+    Dans l’application, ouvrez les **Paramètres** de l’espace de travail, puis
+    **Clés d’API**.
+  </Step>
+  <Step title="Lui donner ce dont cette page a besoin">
+    Nommez la clé et choisissez sa durée. Pour cette page, il lui faut
+    `channel:read`, `post:read` et `post:schedule`, et `webhook:manage` pour la
+    dernière étape.
+  </Step>
+  <Step title="La copier">
+    Choisissez **Créer la clé** et copiez-la : elle n’est montrée qu’une fois
+    ([Clés d’API](/guides/workspace#api-keys)).
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash curl
+export PEAL_API_KEY="peal_…"
+```
+
+```sh CLI
+export PEAL_API_URL="https://api.example.com"
+export PEAL_API_KEY="peal_…"
+```
+
+```ts TypeScript
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({
+  token: process.env.PEAL_API_KEY,
+  baseUrl: "https://api.example.com",
+});
+```
+
+</CodeGroup>
+
+## 2. Vérifier la clé [#credential]
+
+`GET /api/credential` dit qui est la clé et ce qu’elle peut faire, et ne lit aucune donnée. Son `workspace.id` est l’espace de travail que nomment toutes les autres requêtes.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/credential \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+
+export WORKSPACE_ID="7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90"
+```
+
+```sh CLI
+peal whoami
+
+export PEAL_WORKSPACE="7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90"
+```
+
+```ts TypeScript
+const credential = await peal.credential.get();
+
+if (credential._tag === "apiKey") {
+  console.log(credential.workspace.id, credential.permissions);
+}
+
+const workspaceId = "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90";
+```
+
+</CodeGroup>
+
+## 3. Trouver vos canaux [#channels]
+
+Un canal est un compte sur lequel l’espace de travail publie. Connectez-en un dans l’application d’abord ([Connecter des canaux](/guides/channels)), puis listez-les : chacun a un `id` et sa `platform`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/channels \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```sh CLI
+peal channels list
+```
+
+```ts TypeScript
+const channels = await peal.channels.list({ workspaceId });
+```
+
+</CodeGroup>
+
+## 4. Vérifier la publication, puis l’envoyer [#post]
+
+`POST …/posts/validate` répond si une publication passerait, avec tout ce qui la refuserait, et ne crée rien ([Vérifier une publication](/developers/posting#validate)).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+    "content": { "text": "Bonjour depuis l’API", "media": [], "overrides": [] },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```sh CLI
+peal post "Bonjour depuis l’API" --channel 0190f3a0-0000-7000-8000-00000000c001 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris --dry-run
+```
+
+```ts TypeScript
+const post = {
+  workspaceId,
+  channelIds: ["0190f3a0-0000-7000-8000-00000000c001"],
+  content: { text: "Bonjour depuis l’API", media: [], overrides: [] },
+  when: {
+    _tag: "at" as const,
+    at: "2026-11-16T08:00:00Z",
+    timeZone: "Europe/Paris",
+  },
+};
+
+const check = await peal.posts.validate(post);
+```
+
+</CodeGroup>
+
+Quand elle répond `"valid": true`, envoyez le même corps à `POST …/posts/send`. Une `Idempotency-Key` permet de l’envoyer à nouveau sans risque après un délai dépassé ([Idempotence](/developers/conventions/idempotency)).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90" \
+  -d '{
+    "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+    "content": { "text": "Bonjour depuis l’API", "media": [], "overrides": [] },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```sh CLI
+peal post "Bonjour depuis l’API" --channel 0190f3a0-0000-7000-8000-00000000c001 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris \
+  --idempotency-key 5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90
+```
+
+```ts TypeScript
+const sent = await peal.posts.send({
+  ...post,
+  "idempotency-key": "5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90",
+});
+```
+
+</CodeGroup>
+
+La publication est programmée : elle apparaît sur le calendrier de l’espace de travail et part à son heure.
+
+<Callout type="info" title="Publier tout de suite">
+  Avec `"when": { "_tag": "now" }` la publication part tout de suite, et
+  `?wait=30` répond une fois que chaque canal a son résultat ([Publier tout de
+  suite](/developers/posting#wait)).
+</Callout>
+
+## 5. Savoir comment elle s’est passée [#webhook]
+
+Plutôt que de demander, faites-le dire par Peal à votre serveur : créez un point de réception de webhooks pour les événements voulus. La réponse contient son secret de signature, montré une seule fois : gardez-le pour [vérifier chaque livraison](/developers/webhooks/requests).
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/peal-events",
+    "eventTypes": ["post.published", "post.failed"]
+  }'
+```
+
+```sh CLI
+peal webhooks create --url https://example.com/peal-events \
+  --events post.published,post.failed
+```
+
+```ts TypeScript
+const endpoint = await peal.webhooks.create({
+  workspaceId,
+  url: "https://example.com/peal-events",
+  eventTypes: ["post.published", "post.failed"],
+});
+```
+
+</CodeGroup>
+
+Quand la publication part, votre serveur reçoit [`post.published`](/developers/webhooks/events/posts#post-published) pour chaque canal qu’elle a atteint, ou [`post.failed`](/developers/webhooks/events/posts#post-failed) avec la raison.
+
+## Ensuite [#next]
+
+<CardGroup cols={2}>
+  <Card title="SDK" href="/developers/sdks" icon="package">
+    Les mêmes requêtes dans huit langages.
+  </Card>
+  <Card
+    title="Erreurs"
+    href="/developers/conventions/errors"
+    icon="circle-alert"
+  >
+    Chaque code d’erreur, et que faire de chacun.
+  </Card>
+  <Card title="API de publication" href="/developers/posting" icon="send">
+    Vérifier, envoyer, créer en lot et importer des publications, et lire leur
+    résultat.
+  </Card>
+  <Card title="Référence de l’API" href="/reference" icon="book-open">
+    Chaque point d’accès et chaque champ.
+  </Card>
+</CardGroup>

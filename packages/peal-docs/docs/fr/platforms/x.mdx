@@ -1,0 +1,66 @@
+---
+title: X
+description: "Connecter X à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/x.svg
+---
+
+Comment connecter un compte X, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                           |
+| ---------------- | ------------------------- |
+| Texte            | {{platform-x-text-fr}}    |
+| Images et vidéos | {{platform-x-media-fr}}   |
+| Parties          | {{platform-x-parts-fr}}   |
+| Formats          | {{platform-x-formats-fr}} |
+| Texte alternatif | {{platform-x-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **X**, choisissez **Connecter X**, connectez-vous sur X et autorisez Peal. Il demande à :
+
+- lire et écrire des publications ;
+- envoyer des médias ;
+- rester connecté, pour renouveler son accès sans vous.
+
+**Canaux** propose X une fois le serveur Peal configuré pour lui (voir [Sur votre propre serveur](#self-hosting)).
+
+### Comment X compte la longueur [#length]
+
+X compte la longueur d’une publication à sa façon, et Peal compte de même, si bien qu’une publication qu’il accepte tient sur X (voyez [Longueur sur chaque canal](/guides/posts#write)) :
+
+- Un lien compte 23 caractères quelle que soit sa longueur, écrit avec `https://` ou sans, comme `peal.social` (un domaine que X connaît, donc pas `localhost`).
+- Un emoji, ou un caractère hors des alphabets latin, grec et cyrillique, compte 2.
+
+## Options [#options]
+
+Aucune option n’est obligatoire, et chacune n’est envoyée que si vous la choisissez. **Nom dans l’API** est le nom de l’option par l’API. **Parties** dit à quoi elle s’applique dans un [fil](/guides/posts#threads).
+
+| Option                              | Nom dans l’API       | Valeurs                                                  | Si omise              | Parties                                    |
+| ----------------------------------- | -------------------- | -------------------------------------------------------- | --------------------- | ------------------------------------------ |
+| **Qui peut répondre**               | `replySettings`      | `following`, `mentionedUsers`, `subscribers`, `verified` | Tout le monde         | La première partie                         |
+| **Communauté**                      | `communityId`        | Le numéro de la communauté, des chiffres seulement       | Les abonnés du compte | La première partie                         |
+| **Partager aussi avec les abonnés** | `shareWithFollowers` | Oui ou non ; seulement avec une communauté               | Non                   | La première partie                         |
+| **Partenariat rémunéré**            | `paidPartnership`    | Oui ou non                                               | Non                   | Chaque partie                              |
+| **Fait avec l’IA**                  | `madeWithAi`         | Oui ou non                                               | Non                   | Chaque partie avec des images ou une vidéo |
+
+X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte :
+
+| Réponse de X                                               | Le canal indique                                                                                                                       | Que faire                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Elle nomme l’une des options (le champ, ou la communauté)  | **Échec**, avec le code `optionRefused`                                                                                                | Changez les options et republiez-la |
+| Elle la refuse pour autre chose, comme un compte restreint | Le type de problème de X lui-même, comme pour une publication sans options (`client-forbidden`, ou `http403` quand X n’en nomme aucun) | Changer les options n’y fera rien   |
+
+Avec `optionRefused`, Peal ne renvoie pas la publication. Le message de X n’est pas gardé : le canal ne dit donc pas quelle option X a refusée.
+
+## Commentaires [#comments]
+
+Peal ne lit pas encore les commentaires sur X.
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose X une fois son application enregistrée : voir [X](/self-hosting/platforms#x). D’ici là, **Canaux** ne le propose pas.

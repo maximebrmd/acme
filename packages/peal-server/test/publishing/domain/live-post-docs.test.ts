@@ -73,7 +73,7 @@ const expected = Object.fromEntries(
 );
 
 describe("the docs' table of where Peal deletes and edits posts", () => {
-  it.each(["scheduling.mdx", "fr/scheduling.mdx"])(
+  it.each(["guides/posts/published.mdx", "fr/guides/posts/published.mdx"])(
     "is live-post-support's, in %s",
     async (page) => {
       await expect(tableOf(page)).resolves.toStrictEqual(expected);

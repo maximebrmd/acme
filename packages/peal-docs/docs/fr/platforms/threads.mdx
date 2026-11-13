@@ -1,0 +1,44 @@
+---
+title: Threads
+description: "Connecter Threads à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/threads.svg
+---
+
+Comment connecter un compte Threads, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                 |
+| ---------------- | ------------------------------- |
+| Texte            | {{platform-threads-text-fr}}    |
+| Images et vidéos | {{platform-threads-media-fr}}   |
+| Parties          | {{platform-threads-parts-fr}}   |
+| Formats          | {{platform-threads-formats-fr}} |
+| Texte alternatif | {{platform-threads-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Sous **Threads**, choisissez **Connecter Threads**, connectez-vous avec votre compte Threads, et autorisez Peal à lire votre profil et à publier.
+
+## Options [#options]
+
+Aucune option n’est obligatoire, et chacune n’est envoyée que si vous la choisissez. **Nom dans l’API** est le nom de l’option par l’API. Threads prend une publication seule, sans [fil](/guides/posts#threads) : chaque option est celle de la publication.
+
+| Option                | Nom dans l’API   | Valeurs                                                                                          | Si omise                                                                   |
+| --------------------- | ---------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **Qui peut répondre** | `replyControl`   | `everyone`, `accounts_you_follow`, `followers_only`, `mentioned_only`, `parent_post_author_only` | Tout le monde                                                              |
+| **Sujet**             | `topicTag`       | Un sujet sur une ligne, 50 caractères au plus, sans `.` ni `&`                                   | Aucun                                                                      |
+| **Aperçu de lien**    | `linkAttachment` | Une adresse commençant par `https://`, sur une publication sans image ni vidéo                   | Threads prévisualise le premier lien d’une publication faite de texte seul |
+
+Un aperçu de lien sur une publication avec des médias est refusé au moment de la programmer.
+
+## Commentaires [#comments]
+
+Peal ne lit pas encore les commentaires sur Threads.
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Threads une fois son application Meta enregistrée : voir [Threads, Instagram et Pages Facebook](/self-hosting/platforms#meta).

@@ -1,0 +1,112 @@
+---
+title: Idempotency
+description: Send a request again safely with an idempotency key, and handle an outcome the platform has not confirmed.
+sidebar:
+  icon: repeat
+---
+
+## Idempotency [#idempotency]
+
+A request whose answer was lost, to a timeout or a dropped connection, may or may not have been applied. Sending it again must not post twice: an `Idempotency-Key` header makes that safe.
+
+The key is any text of your choosing, 255 characters at most, such as a UUID, new for each post. Keys are kept per workspace. On `POST …/posts/send`, which creates a post and sends it:
+
+- Within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other.
+- The same key with another body answers 409 `idempotency_key_reused`, and makes nothing.
+- Once that post was deleted, the key answers 404 `post_not_found`.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44" \
+  -d '{
+    "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+    "content": {
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```ts TypeScript
+// Keep the key with the post: send it again with the same key.
+const post = await peal.posts.send({
+  workspaceId,
+  "idempotency-key": "7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44",
+  channelIds: ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+  content: {
+    text: "Our spring catalogue is out. Read it at https://example.com/spring",
+    media: [],
+    overrides: [],
+  },
+  when: { _tag: "at", at: "2026-11-16T08:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+```bash CLI
+peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
+  --channel 019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11 \
+  --at 2026-11-16T08:00:00Z \
+  --idempotency-key 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44
+```
+
+```json MCP (create_post)
+{
+  "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+  "content": {
+    "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+    "media": [],
+    "overrides": []
+  },
+  "when": {
+    "_tag": "at",
+    "at": "2026-11-16T08:00:00Z",
+    "timeZone": "Europe/Paris"
+  },
+  "idempotencyKey": "7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44"
+}
+```
+
+</CodeGroup>
+
+[Posting from an AI agent](/developers/agents#api) shows a whole request.
+
+### Requests that take a key [#keyed]
+
+| Request                                     | The key                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST …/posts/send`                         | Optional, as above.                                                                                                                                                                                                                                                                                                                                                                      |
+| `POST …/posts/bulk`, `POST …/posts/import`  | Optional, for the whole request, and each of their items or rows may carry a key of its own ([Posting through the API](/developers/posting)).                                                                                                                                                                                                                                            |
+| Creating a customer's workspace             | Optional, through the partner API ([Embedding Peal](/developers/embedding)).                                                                                                                                                                                                                                                                                                             |
+| `POST …/inbox/comments/{commentId}/replies` | Optional. It answers a comment in public. Within 24 hours, the same key with the same comment and text answers the reply the first request made, however it stands, and writes no other; with another comment or text it answers 409 `idempotency_key_reused`. Without a key, a second request is refused (409 `reply_pending`) only while the first reply is on its way or unconfirmed. |
+| `POST …/ads/boosts`                         | Required, as it spends money. The same key with the same request answers the boost it made and never makes another, and with another request answers 409 `boost_key_reused` ([Ads](/developers/ads#api-boost)).                                                                                                                                                                          |
+
+### Requests without a key [#unkeyed]
+
+The other writes take no key. Whether one is safe to send again depends on what it does:
+
+| Request                                                                           | Sent again                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reads (`GET`)                                                                     | Safe.                                                                                                                                                                                             |
+| `PUT`, `PATCH` and `DELETE`                                                       | Safe: they set a resource to what the request says, or remove it. A second `DELETE` answers 404, but removing a channel from a post, which answers the post again.                                |
+| Scheduling, moving, unscheduling or cancelling a post, confirming a target        | Safe: they act on one post, by its id, which goes out once however often it is scheduled. A repeat changes nothing more, or answers 409 with the `status` the post has.                           |
+| Creating a draft, importing media, adding a webhook endpoint, creating an API key | Makes another one. None of them puts anything out: list what the workspace has before sending again, and delete a duplicate.                                                                      |
+| Inviting someone                                                                  | Replaces the pending invitation to that address, and emails it again.                                                                                                                             |
+| Reposting a target (`POST …/posts/{postId}/targets/{targetId}/repost`)            | Not safe: each repost sends the post again on that channel. Read the post first: only a target that failed or is unconfirmed can be reposted, and any other answers 409 `target_status_conflict`. |
+
+### Unconfirmed outcomes [#unconfirmed]
+
+Peal has the same problem with the platforms. When a platform's answer is lost, Peal looks the post up there where the platform allows it. When it cannot tell whether the post went out, the target is `unconfirmed`, and Peal does not send it again, since a second attempt could show the post twice.
+
+<Callout type="warning" title="Never repost an unconfirmed target blindly">
+  Have someone look on the platform, then record what they found with
+  `…/targets/{targetId}/confirm`, or repost ([Follow up on a
+  post](/guides/posts/schedule#follow-up)).
+</Callout>
+
+Each publishing attempt, in `GET …/posts/{postId}/attempts`, says how it ended in `result`. It carries in `refusalCode` the code behind a refusal: the platform's own, as it gave it, or Peal's when Peal refused before calling the platform; `null` when there is none. The platforms' codes are theirs and change with them: show them, log them, and branch on `result`.

@@ -1,0 +1,173 @@
+---
+title: Connecter un client MCP
+description: Connecter un assistant IA ou tout client MCP à Peal, le connecter à un espace de travail, et choisir s’il peut publier.
+sidebar:
+  icon: plug
+---
+
+Peal sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut travailler dans un espace de travail pour vous. Il lit ses publications, médias, statistiques, facturation et membres, écrit des brouillons, programme et publie des publications quand vous l’y autorisez, assure le suivi des publications parties et invite des personnes.
+
+Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez, sans dépasser ce que votre rôle permet. Un agent qui tourne sans personne pour le connecter se sert plutôt d’une [clé d’API](#api-key). [Publier depuis un agent IA](/developers/agents) déroule une publication entière.
+
+## Le point d’accès [#endpoint]
+
+Le point d’accès est `/api/mcp`, à l’adresse où vous ouvrez Peal, comme `https://peal.example.com/api/mcp`. Il parle Streamable HTTP, dans les révisions 2026-07-28, 2025-11-25 et 2025-06-18 du protocole.
+
+`peal mcp`, depuis la [ligne de commande](/developers/cli#mcp), affiche le point d’accès et une configuration que la plupart des clients MCP acceptent :
+
+```json
+{
+  "mcpServers": {
+    "peal": {
+      "type": "http",
+      "url": "https://peal.example.com/api/mcp"
+    }
+  }
+}
+```
+
+Donnez au client cette adresse, ou cette configuration, comme sa documentation l’indique pour un serveur distant en HTTP.
+
+Avant de se connecter, un client peut lire la fiche du point d’accès (server card), à `/api/mcp/server-card`, comme `https://peal.example.com/api/mcp/server-card`. Elle donne l’adresse du point d’accès, les révisions du protocole qu’il parle et l’en-tête qui porte le moyen d’authentification. Elle se lit sans authentification, et depuis des pages de n’importe quelle origine ([Découverte](/developers/conventions/discovery#discovery)).
+
+## Connecter le client [#sign-in]
+
+Peal connecte les clients MCP avec OAuth : vous ne donnez aucune clé au client. À sa première requête, Peal lui répond qu’il lui faut un jeton, et lui indique où le demander.
+
+<Steps>
+  <Step title="Se connecter">
+    Le client s’enregistre auprès de Peal, puis ouvre un navigateur sur la page
+    de connexion de Peal. Connectez-vous si ce n’est pas déjà fait.
+  </Step>
+  <Step title="Choisir un espace de travail">
+    Le client n’agit que dans celui-là. Pour l’utiliser dans un autre,
+    connectez-le de nouveau et choisissez l’autre.
+  </Step>
+  <Step title="Vérifier ce qu’il demande">
+    Peal montre ce que le client demande, et où il vous renvoie ensuite. Publier
+    a sa propre ligne, avec une case que vous pouvez décocher pour ne le laisser
+    écrire que des brouillons ([Ce que le client peut faire](#scopes)). Vérifiez
+    les deux, puis choisissez **Autoriser**, ou **Refuser**.
+  </Step>
+</Steps>
+
+De retour dans le client, ses outils fonctionnent. Peal retient votre réponse pour ce client et cet espace de travail : le connecter de nouveau ne repose pas la question.
+
+<Callout type="warning" title="N’autorisez qu’un client de confiance">
+  Peal ne vérifie pas qui a fait un client qui s’est enregistré lui-même, et le
+  dit sur la page de consentement. N’en autorisez un que si vous lui faites
+  confiance et avez lancé la connexion vous-même.
+</Callout>
+
+<Callout type="note" title="Si le client ne peut pas s’enregistrer">
+  La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
+  qu’un serveur Peal n’autorise que si son administrateur l’active
+  (`MCP_DYNAMIC_REGISTRATION`, voir [Auto-hébergement](/self-hosting#mcp)).
+  `peal mcp` prévient quand ce n’est pas le cas.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="Avec la validation en deux étapes">
+
+Quand votre compte a activé la [validation en deux étapes](/guides/workspace/account#two-step),
+le navigateur demande la seconde étape quand vous vous y connectez, et la
+connexion se poursuit ensuite. Une connexion faite auparavant n’est pas
+redemandée.
+
+Dans un espace de travail qui l’[exige](/guides/workspace#require-two-step)
+alors que votre compte ne l’a pas activée, chaque requête d’un client qui agit
+pour vous est refusée avec une erreur JSON-RPC et le statut 403. L’erreur dit
+de l’activer dans les paramètres de votre compte Peal ; une fois activée, la
+même connexion fonctionne de nouveau.
+
+Un client qui utilise une [clé d’API](#api-key) n’est pas concerné. Aucun outil
+ne lit ni ne modifie la validation en deux étapes ou l’exigence d’un espace de
+travail : elles reviennent à une personne, dans un navigateur.
+
+  </AccordionItem>
+</Accordion>
+
+## Se connecter avec une clé d’API [#api-key]
+
+Un agent qui tourne sur un serveur, sans personne pour le connecter, envoie la [clé d’API](/guides/workspace#api-keys) d’un espace de travail à la place d’un jeton OAuth, dans l’en-tête `Authorization`. Une [clé partenaire](/developers/embedding) envoie aussi un en-tête `Peal-Workspace` ([ci-dessous](#partner-key)).
+
+<CodeGroup>
+
+```json Clé d’API
+{
+  "mcpServers": {
+    "peal": {
+      "type": "http",
+      "url": "https://peal.example.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PEAL_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+```json Clé partenaire
+"headers": {
+  "Authorization": "Bearer ${PEAL_PARTNER_KEY}",
+  "Peal-Workspace": "<workspace-id>"
+}
+```
+
+</CodeGroup>
+
+La façon dont un client lit un en-tête dans son environnement dépend du client : voyez sa documentation, et gardez la clé hors des fichiers que vous partagez.
+
+<Callout type="warning">
+  N’envoyez la clé que dans cet en-tête, jamais dans l’adresse : une adresse
+  finit dans des journaux et des historiques.
+</Callout>
+
+- La connexion agit dans l’espace de travail de la clé, avec les permissions de la clé, et sans scope : une clé sans `post:schedule` écrit tout au plus des brouillons. Créez une clé qui ne porte que ce dont l’agent a besoin.
+- `whoami` répond la clé dans `apiKey`, avec son identifiant et son nom, jamais la clé elle-même. `user` et le rôle (`role`) de l’espace de travail valent `null`, car une clé n’est personne, et `permissions` liste ce que la clé peut faire.
+- Les outils réservés à une personne refusent une clé : `list_members`, `list_invitations`, `invite_member` et `revoke_invitation`.
+- Ce que fait la clé figure dans le [journal d’activité](/guides/workspace#activity) de l’espace de travail, sous l’identifiant et le nom de la clé.
+- Révoquer la clé, sous **Clés d’API** dans les paramètres de l’espace de travail, arrête l’agent aussitôt.
+
+### Avec une clé partenaire [#partner-key]
+
+Une clé partenaire se connecte de la même façon, à l’un des espaces de travail que possède son compte partenaire. Sa clé les couvre tous : le client nomme donc l’espace de travail à chaque requête, par son identifiant, dans un en-tête `Peal-Workspace` à côté d’`Authorization`.
+
+Sans cet en-tête, le point d’accès répond 400, et 404 pour un espace de travail que le compte partenaire ne possède pas, son espace principal compris. Les outils agissent ensuite dans cet espace de travail avec les permissions de la clé, comme pour une clé d’API.
+
+## Ce que le client peut faire [#scopes]
+
+La page de consentement liste ce que le client demande :
+
+| Permission                                                                                                                                       | Scope               | Ce qu’elle permet                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Savoir que c’est vous                                                                                                                            | `openid`            | L’identifiant de votre compte                                                                                                                                                                                |
+| Voir votre nom et votre photo, voir votre adresse e-mail                                                                                         | `profile`, `email`  | Votre profil                                                                                                                                                                                                 |
+| Rester connectée en votre absence, jusqu’à ce que vous la déconnectiez                                                                           | `offline_access`    | Renouveler son accès sans vous                                                                                                                                                                               |
+| Lire l’espace de travail : publications, canaux, médias et statistiques                                                                          | `workspace:read`    | Lire, sans rien changer                                                                                                                                                                                      |
+| Faire ce que votre rôle permet dans l’espace de travail, comme rédiger des brouillons et gérer les médias, sans rien programmer ni publier       | `workspace:write`   | Tout ce que votre [rôle](/guides/posts#roles) permet, lecture comprise, sauf ce qui fait partir des publications : rien de ce qu’il fait n’atteint une plateforme                                            |
+| L’autoriser à programmer et publier des publications sur vos comptes connectés, et à y répondre aux commentaires, où tout le monde peut les voir | `workspace:publish` | Ce que votre rôle permet de ce qui fait partir des publications, et la lecture : programmer, déplacer, publier et republier une publication, la déprogrammer, l’annuler, et confirmer ce qu’elle est devenue |
+
+Publier est une permission à part. La page de consentement la montre sur sa propre ligne, avec une case cochée au départ. Décochez-la, et le client reçoit le reste de ce qu’il a demandé, sans plus. Sans elle, un client qui peut écrire rédige toujours des brouillons, que vous relisez et programmez vous-même ; un client qui ne peut que lire lit toujours.
+
+Un client connecté avant que publier ait sa propre permission n’a que celle d’écrire. Il ne publie rien, et ne déprogramme, ne republie ni ne confirme plus rien, tant que vous ne l’avez pas connecté de nouveau en autorisant la publication. Une connexion garde jusque-là les permissions qu’elle a reçues.
+
+<Callout type="warning" title="Les publicités dépensent de l’argent">
+  Un client peut aussi demander `workspace:ads`, pour les
+  [publicités](/guides/engage/ads#access). Il n’ouvre rien seul. Avec la
+  permission d’écrire, le client déconnecte des comptes publicitaires et met en
+  pause ou arrête des mises en avant. Avec la permission de publier, il met en
+  avant des publications, ce qui dépense de l’argent sur un réseau publicitaire,
+  dans la limite du plafond mensuel fixé par un propriétaire. Aucun client
+  n’active les dépenses ni ne change un plafond.
+</Callout>
+
+Un client qui n’a aucune des trois permissions ci-dessus sur l’espace de travail ne peut rien faire. Son accès dure 15 minutes à la fois, et le client le renouvelle de lui-même. Chaque requête vérifie que vous appartenez toujours à l’espace de travail et n’êtes pas banni.
+
+## Limites [#limits]
+
+- Une instance Peal ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
+- Le point d’accès refuse les requêtes envoyées depuis des pages web (avec un en-tête `Origin`) : connectez un client qui tourne sur votre ordinateur ou sur un serveur.
+- Une connexion peut envoyer 600 requêtes par minute, comptées avec celles que la même clé ou la même application envoie à l’API. Au-delà, le point d’accès répond 429 avec un en-tête `Retry-After` ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
+- Chaque réponse porte un en-tête `X-Request-Id` : citez-le quand vous demandez de l’aide ([Requêtes et réponses](/developers/conventions#requests)).
+- Les **Paramètres du compte**, dans l’application web, listent les clients que vous avez autorisés et les déconnectent ; `peal account apps` les liste depuis la [ligne de commande](/developers/cli/workspace#account). Quitter l’espace de travail arrête tous les clients qui y agissent.

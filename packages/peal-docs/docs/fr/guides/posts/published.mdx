@@ -1,0 +1,143 @@
+---
+title: Après la publication
+description: Supprimer une publication en ligne d’une plateforme, y modifier son texte, et raccourcir ses liens.
+sidebar:
+  icon: send
+---
+
+Reprenez une publication partie, corrigez son texte sur les plateformes qui le permettent, et envoyez ses liens raccourcis.
+
+## Dépublier une publication [#unpublish]
+
+**Dépublier**, sur la page d’une publication, la supprime de la plateforme de ce canal pour tout le monde. Là où Peal supprime des publications, et là où il [les modifie](#edit-live) :
+
+| Plateforme              | Dépublier | Modifier | Pourquoi pas                                                                                                        |
+| ----------------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Mastodon                | Oui       | Oui      |                                                                                                                     |
+| Google Business Profile | Oui       | Oui      |                                                                                                                     |
+| Bluesky                 | Oui       | Non      | Bluesky n’a aucun appel pour modifier une publication                                                               |
+| X                       | Oui       | Non      | X ne dit pas quelles publications peuvent être modifiées, ni avec quel accès                                        |
+| Pinterest               | Oui       | Non      | Modifier une épingle est en bêta, pas ouvert à toutes les applications                                              |
+| LinkedIn                | Non       | Non      | LinkedIn ne dit pas quelle permission une suppression ou une modification demande                                   |
+| Facebook Pages          | Non       | Non      | Meta indique que seules certaines applications peuvent supprimer, et pas quelle permission une modification demande |
+| Threads                 | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Threads n’a aucun appel pour modifier              |
+| Instagram               | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Instagram n’a aucun appel pour modifier            |
+| YouTube                 | Non       | Non      | Il faut une permission plus large que celle que Peal demande                                                        |
+| TikTok                  | Non       | Non      | L’API de TikTok n’a aucun appel pour supprimer ou modifier une publication                                          |
+
+Là où ce n’est pas possible, supprimez la publication sur la plateforme elle-même. Peal ne peut pas non plus dépublier :
+
+- une publication confirmée à la main, car Peal n’a pas son identifiant ;
+- sur un canal déconnecté, désactivé ou à reconnecter, tant qu’il n’est pas revenu.
+
+<Callout type="warning">
+  Dépublier est définitif, depuis Peal comme sur la plateforme : Peal demande
+  donc d’abord, en nommant le canal. Toutes les parties d’un fil sont
+  supprimées, la dernière d’abord, si bien qu’une suppression qui s’arrête en
+  chemin laisse un fil plus court qui se lit toujours depuis le début.
+</Callout>
+
+Les propriétaires, les administrateurs et les éditeurs peuvent dépublier (la permission qui publie, `post:publish`), ainsi qu’une clé d’API qui l’a reçue, ou une application autorisée à publier. En ligne de commande ([Publications](/developers/cli/posts#posts)) :
+
+```sh
+peal posts unpublish <post-id> --channel <channel-id> --yes
+```
+
+### Ce qui se passe ensuite [#unpublish-progress]
+
+La suppression se fait en arrière-plan, avec les autres appels du canal, un à la fois. Le canal indique **Suppression en cours…**, puis **Supprimé de** la plateforme, avec la date.
+
+- La publication reste **Publiée** dans Peal, car elle est bien partie, si bien que le compte du mois et l’utilisation ne changent pas. Son adresse reste, barrée, pour mémoire.
+- Une partie que la plateforme n’a déjà plus, supprimée chez elle auparavant, compte comme supprimée.
+- Une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, et une qui demande à Peal de ralentir, au moment qu’elle indique. Ensuite la suppression **a échoué**, avec la raison, et **Réessayer** supprime ce qui reste.
+- Les statistiques s’arrêtent : les statistiques ne lisent plus la publication et gardent les chiffres déjà lus, et la boîte de réception ne lit plus ses commentaires et garde ceux qu’elle a pendant leurs 30 jours.
+
+<Callout type="warning" title="Publications mises en avant">
+  Une publication montrée par une mise en avant qui n’est pas terminée ne peut
+  pas être dépubliée : arrêtez d’abord la mise en avant, car la publicité
+  continuerait de dépenser pour une publication disparue.
+</Callout>
+
+## Modifier une publication en ligne [#edit-live]
+
+Une publication partie peut voir son texte corrigé sur Mastodon et Google Business Profile.
+
+<Steps>
+  <Step title="Choisissez Modifier">
+    Sur la page de la publication, choisissez **Modifier** à côté du canal. Le
+    texte de ce canal s’ouvre avec le compteur du canal.
+  </Step>
+  <Step title="Enregistrez">
+    Corrigez le texte, puis choisissez **Enregistrer** : il remplace le texte
+    sur la plateforme.
+  </Step>
+</Steps>
+
+En ligne de commande :
+
+```sh
+peal posts edit <post-id> --channel <channel-id> --text "Doors open at 7 pm, not 6."
+```
+
+Seul le texte change : jamais les médias, les options, l’audience ni l’heure.
+
+<Callout type="warning">
+  La modification est publique immédiatement. Qui peut dépublier peut modifier
+  (`post:publish`), mais pas un membre dont les publications demandent une
+  [approbation](/guides/posts/review) : un approbateur fait la modification pour
+  lui, car elle mettrait en ligne un texte que personne n’a relu.
+</Callout>
+
+- Le nouveau texte est vérifié comme le texte du canal l’est quand une publication est programmée : la longueur de la plateforme (un avertissement de contenu Mastodon compte), ses caractères, et le reste.
+- Une fois que la plateforme l’a pris, c’est le texte propre de cette partie sur ce canal dans Peal (les autres canaux gardent le leur). Le canal indique **Modifié le** avec la date, et les webhooks reçoivent `post.edited`.
+- Peal ne garde aucun texte précédent ; Mastodon montre son propre historique des modifications.
+- La modification se fait en arrière-plan, avec les autres appels du canal, et est relancée comme une suppression. Ensuite elle **a échoué**, avec la raison, et **Réessayer** redemande.
+
+<Accordion>
+  <AccordionItem title="Modifier sur Mastodon">
+    Mastodon reçoit de nouveau la publication avec ses médias, son avertissement de contenu et sa sensibilité tels qu’ils sont sur Mastodon à ce moment, changements faits là-bas compris, car Mastodon efface ce qu’une modification omet. Sa langue reste telle quelle.
+
+    Une publication avec un sondage est refusée, car la modification supprimerait le sondage.
+
+    Lire la publication d’abord demande la permission `read:statuses`, qui manque aux canaux connectés avant que Peal la demande : reconnectez le canal.
+
+    Chaque partie d’un fil se modifie seule, par sa place depuis 0 (la publication elle-même).
+
+  </AccordionItem>
+</Accordion>
+
+## Raccourcir les liens [#short-links]
+
+Sur un serveur dont l’exploitant a indiqué où se trouvent les liens courts (`PEAL_SHORT_LINK_BASE`), l’éditeur affiche **Raccourcir les liens** sous le texte. La case est cochée pour les nouvelles publications quand les paramètres de l’espace de travail le prévoient.
+
+Une publication qui le demande part avec chaque lien remplacé par une adresse courte sur chaque canal, quand le lien est écrit avec `http://` ou `https://` et est plus long qu’une adresse courte. L’adresse redirige vers le lien et compte chaque visite.
+
+- Chaque canal, et chaque partie d’un fil, reçoit ses propres adresses, pour savoir quel canal a amené les visiteurs. Une tentative reprise envoie les mêmes adresses.
+- Un lien sans schéma, un lien court ou un lien qui nomme un utilisateur et un mot de passe reste tel qu’écrit. La ligne sous la case indique combien de liens seront raccourcis.
+- Peal n’allonge jamais le texte : un lien n’est remplacé que par une adresse qui n’est pas plus longue que lui, si bien que les compteurs, les aperçus et les vérifications faites à la programmation restent valables.
+- Le texte que Peal conserve reste celui que vous avez écrit ; seul ce que reçoit la plateforme change.
+
+Les liens restent tels qu’écrits :
+
+- sur Pinterest, ses règles refusant les raccourcisseurs de liens ;
+- sur Instagram et TikTok, leurs légendes ne rendant aucun lien cliquable ;
+- pour un lien vers la plateforme d’un canal, la plateforme l’affichant elle-même ;
+- dans la modification d’une publication mise en ligne, qui envoie son texte sans adresse courte.
+
+### Le choix par défaut de l’espace de travail [#short-links-default]
+
+Les propriétaires et les administrateurs choisissent, dans les **Paramètres** de l’espace de travail, si les nouvelles publications demandent des liens courts par défaut. L’auteur d’une publication choisit pour celle-ci.
+
+- Ce choix par défaut vaut pour toute nouvelle publication qui ne dit rien, d’où qu’elle vienne : l’éditeur, l’API, un agent par MCP, la ligne de commande et les flux.
+- Une publication le prend à sa création et le garde, si bien que changer le choix par défaut ne change aucune publication déjà faite.
+- Une publication qui demande de ne pas raccourcir ses liens ne les raccourcit jamais.
+- Sur un serveur sans liens courts, rien n’est raccourci, quel que soit le choix par défaut.
+
+<Callout type="warning">
+  Un lien court suit son espace de travail. La suppression de l’espace de
+  travail, ou le changement ou le retrait de l’adresse courte par l’exploitant,
+  fait cesser de fonctionner les liens courts de ses publications mises en
+  ligne.
+</Callout>
+
+[Statistiques](/guides/engage/analytics#short-links) explique comment les clics sont comptés.

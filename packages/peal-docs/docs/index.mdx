@@ -1,51 +1,84 @@
 ---
 title: Introduction
-description: Peal is a social media scheduling platform. Write a post once, schedule it across platforms, and see how it performs, alone or as a team.
+description: "Peal is a social media scheduling platform: write a post once, schedule it across platforms, and see how it performs."
 sidebar:
+  icon: house
   order: 1
 ---
 
-Peal is a social media scheduling platform.
+Peal is a social media scheduling platform: write a post once, schedule it across platforms, and see how it performs.
 
 <Callout type="warning" title="Early development">
-  Peal is being built in the open and has not been released yet. You can already
-  create workspaces, connect Mastodon, Bluesky, LinkedIn, X, Threads and
-  Instagram accounts and Facebook Pages, write posts with images and videos,
-  schedule them on a calendar and have them published, hear how each one went,
-  see how they did on their platforms, and ask a writing assistant for help.
-  These pages describe what works today, and grow as features land.
+  Peal is being built in the open and has not been released yet. These pages
+  describe what works today, and grow as features land.
 </Callout>
+
+What works today:
+
+- workspaces;
+- Mastodon, Bluesky, LinkedIn, X, Threads and Instagram accounts, and Facebook Pages;
+- posts with images and videos, scheduled on a calendar and published;
+- a notice of how each post went, and how it did on its platforms;
+- a writing assistant.
 
 ## What Peal does [#what-it-does]
 
-- **Write once.** Draft a post in one editor, then give it its own text on each channel where it needs to differ. Counters show how much room each platform leaves.
-- **Schedule across platforms.** Pick the accounts and the time. Peal publishes each post when it is due, in the time zone you scheduled it in, daylight saving included.
-- **See results.** Peal reads back each post's likes, reposts, replies and quotes for a month, so you can see what worked in one place.
-- **Work as a team.** Workspaces have members and roles, so several people can write, review and schedule together.
+| Task                      | What Peal does                                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Write once                | Draft a post in one editor, then give it its own text on each channel where it needs to differ. Counters show how much room each platform leaves. |
+| Schedule across platforms | Pick the accounts and the time. Peal publishes each post when it is due, in the time zone you scheduled it in, daylight saving included.          |
+| See results               | Peal reads back each post's likes, reposts, replies and quotes for a month, so you can see what worked in one place.                              |
+| Work as a team            | Workspaces have members and roles, so several people can write, review and schedule together.                                                     |
 
-Peal never retries a post blindly: when a platform does not confirm whether a post went out, Peal asks again only in ways that cannot post it twice. If that still settles nothing, it marks the post unconfirmed and asks you to check the platform before posting again.
+<Callout type="info" title="No blind retries">
+  When a platform does not confirm whether a post went out, Peal asks again only
+  in ways that cannot post it twice. If that still settles nothing, it marks the
+  post unconfirmed and asks you to check the platform before posting again.
+</Callout>
 
-## Guides [#guides]
+## Where to start [#guides]
 
-- [Connect channels](/channels): add the social accounts a workspace posts to.
-- [Schedule posts](/scheduling): write a post, pick its channels and its time, move it on the calendar, and ask the writing assistant for help.
-- [Images and videos](/media): attach media to a post, and see what each platform accepts.
-- [Notifications](/notifications): hear how posts went and which channels need reconnecting, in the app and by email.
-- [Analytics](/analytics): see how posts did, by channel and day, and which did best.
-- [Ads](/ads): connect Meta ad accounts, see organic and paid results side by side, and boost a published post within a ceiling an owner sets.
-- [Workspaces and your account](/settings): manage a workspace's members, invitations and API keys, choose your language, download your data or delete your account.
-- [Command line](/cli): sign in from a terminal with `peal login`, and check who you are with `peal whoami`.
-- [Connect an MCP client](/mcp): let an AI assistant work in your workspace, and see what each of its tools does.
-- [Posting from an AI agent](/agents): let an agent write drafts for you to review, or schedule and publish posts itself, and choose which.
-- [Webhooks](/webhooks): have Peal tell your own systems what happens in a workspace, signed and retried.
+<CardGroup cols={2}>
+  <Card title="Quickstart" href="/quickstart" icon="rocket">
+    Connect an account, then write and schedule your first post in the app.
+  </Card>
+  <Card title="API quickstart" href="/api-quickstart" icon="code">
+    From an API key to a published post and a webhook, in five requests.
+  </Card>
+  <Card title="Platforms" href="/platforms" icon="globe">
+    What a post may hold on each of the eleven platforms, and their options.
+  </Card>
+  <Card title="Self-hosting" href="/self-hosting" icon="server">
+    Run Peal on your own server, with Postgres and an S3-compatible store.
+  </Card>
+</CardGroup>
+
+The tabs at the top split the rest by reader:
+
+- **Guides**: running a workspace in the app.
+- **Developers**: building on the API, the command line, MCP and webhooks.
+- **Self-hosting**: running a server.
+
+The [glossary](/glossary) says what each word means.
 
 ## Self-hostable [#self-hostable]
 
-Every outside service Peal relies on has a self-hostable default. A self-hosted instance needs Postgres, an S3-compatible store and a way to send email; billing, captcha, AI and telemetry are optional. [Self-hosting](/self-hosting) explains how to run it, [Environment variables](/environment-variables) lists every setting, and the [staff console](/staff) is where the people who run it find accounts and workspaces.
+Every outside service Peal relies on has a self-hostable default. A self-hosted instance needs:
+
+- Postgres;
+- an S3-compatible store;
+- a way to send email.
+
+Billing, captcha, AI and telemetry are optional. [Self-hosting](/self-hosting) explains how to run it, [Environment variables](/self-hosting/environment-variables) lists every setting, and the [staff console](/self-hosting/staff) is where the people who run it find accounts and workspaces.
 
 ## Fair source [#fair-source]
 
-The source is public under the Functional Source License (FSL-1.1-ALv2). You may use, modify and self-host Peal for any purpose except offering it to others as a competing commercial product or service, and each release also becomes available under the Apache License 2.0 two years after it ships. That is why Peal calls itself fair source rather than open source.
+The source is public under the Functional Source License (FSL-1.1-ALv2):
+
+- You may use, modify and self-host Peal for any purpose, except offering it to others as a competing commercial product or service.
+- Each release also becomes available under the Apache License 2.0 two years after it ships.
+
+That is why Peal calls itself fair source rather than open source.
 
 ## Licensing [#licensing]
 
@@ -56,8 +89,8 @@ Peal, the licensor, publishes the source on [GitHub](https://github.com/peal-soc
 | The server, the web app, the command line, these docs and the rest | FSL-1.1-ALv2, as above                                            |
 | The SDKs, and the API contract they are generated from             | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
 
-So an application that calls Peal through an SDK may use it for anything, a competing service included, under the Apache License's terms. A folder with a `LICENSE` file of its own is under that licence; the rest of the repository is under `LICENSE.md`.
+An application that calls Peal through an SDK may use it for anything, a competing service included, under the Apache License's terms. A folder with a `LICENSE` file of its own is under that licence; the rest of the repository is under `LICENSE.md`.
 
 ## Build on the API [#api]
 
-Everything the web app does goes through the same HTTP API. [The API overview](/api-overview) explains how it is organised and how to authenticate, and the [API reference](/reference) lists every endpoint.
+Everything the web app does goes through the same HTTP API. [The API overview](/developers) explains how it is organised and how to authenticate, and the [API reference](/reference) lists every endpoint.

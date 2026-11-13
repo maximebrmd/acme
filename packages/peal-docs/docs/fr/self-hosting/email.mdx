@@ -1,0 +1,25 @@
+---
+title: E-mail
+description: Comment un Peal auto-hébergé envoie ses e-mails, par Resend ou tout serveur SMTP.
+sidebar:
+  icon: mail
+---
+
+Peal envoie ses e-mails par l’API de Resend ou par n’importe quel serveur SMTP. Définissez l’expéditeur et un moyen d’envoi.
+
+## E-mail [#email]
+
+| Réglage                           | Requis        | Ce qu’il fait                                                                                                                                                    |
+| --------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MAIL_FROM`                       | Oui           | L’expéditeur, comme `Peal <noreply@example.com>` ou une adresse depuis laquelle votre service de messagerie peut envoyer                                         |
+| `RESEND_API_KEY`                  | L’un des deux | Envoie par l’API de Resend                                                                                                                                       |
+| `SMTP_URL`                        | L’un des deux | Utilisé sans `RESEND_API_KEY` : un serveur SMTP, comme `smtp://utilisateur:motdepasse@mail.example.com:587`, ou `smtps://…:465` pour du TLS dès le premier octet |
+| `AUTH_REQUIRE_EMAIL_VERIFICATION` | Non           | Avec `false`, on peut se connecter avant d’avoir confirmé son adresse                                                                                            |
+
+[Variables d’environnement](/self-hosting/environment-variables#email) donne leurs valeurs par défaut ; `AUTH_REQUIRE_EMAIL_VERIFICATION` est sous [Connexion](/self-hosting/environment-variables#sign-in).
+
+### Ce que Peal envoie [#sent]
+
+Peal envoie l’e-mail qui confirme une adresse, les réinitialisations de mot de passe, les invitations à un espace de travail, et les [notifications](/guides/workspace/notifications) sur les publications et les canaux, chacun dans la langue du lecteur. Les membres choisissent quelles notifications leur arrivent aussi par e-mail.
+
+Quand le service de messagerie refuse un e-mail pour le moment, un e-mail de compte est réessayé quelques secondes, puis abandonné, car on peut en demander un autre. L’e-mail d’une notification est réessayé pendant environ cinq heures.

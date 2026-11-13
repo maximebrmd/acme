@@ -1,0 +1,78 @@
+---
+title: Assistant de rédaction
+description: Activer l’assistant de rédaction et ses images avec Anthropic ou tout point d’accès compatible OpenAI.
+sidebar:
+  icon: sparkles
+---
+
+L’assistant de rédaction de l’éditeur réécrit une publication sur un ton, la raccourcit pour une plateforme, la traduit ou suggère des hashtags. Il peut aussi créer des images dans la médiathèque. Les deux restent désactivés tant que vous ne nommez pas de fournisseur.
+
+## Assistant de rédaction [#ai]
+
+L’assistant est désactivé tant que `PEAL_AI_PROVIDER` ne nomme pas de fournisseur : d’ici là, l’application web le masque, et ses points d’accès répondent `AssistantUnavailable`. Il fonctionne avec l’API d’Anthropic ou n’importe quel point d’accès compatible OpenAI, comme un serveur de modèles que vous faites tourner :
+
+| Réglage            | Avec Anthropic                                     | Avec un point d’accès compatible OpenAI                                  |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| `PEAL_AI_PROVIDER` | `anthropic`                                        | `openai-compatible`                                                      |
+| `PEAL_AI_API_KEY`  | Requis                                             | S’il en demande une                                                      |
+| `PEAL_AI_MODEL`    | `claude-opus-5-5`, sauf s’il nomme un autre modèle | L’un de ses modèles                                                      |
+| `PEAL_AI_BASE_URL` | L’API d’Anthropic, sauf s’il nomme un proxy        | L’adresse que suit `/chat/completions`, comme `http://127.0.0.1:8000/v1` |
+
+Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. Le serveur appelle le fournisseur directement, sans passer par la garde qui limite les appels aux plateformes aux adresses publiques : le point d’accès peut tourner sur la même machine ou sur votre réseau privé. [Variables d’environnement](/self-hosting/environment-variables#ai) liste chaque réglage de l’assistant.
+
+### Le fournisseur d’un espace de travail [#workspace-provider]
+
+Un espace de travail peut aussi utiliser son propre [fournisseur de texte](/guides/workspace#text-provider), Anthropic ou compatible OpenAI, avec sa propre clé, que l’instance en règle un ou non. Ses demandes partent alors chez lui, par cette garde (HTTPS public seulement), jamais chez le fournisseur de l’instance, et ne comptent dans aucune des demandes quotidiennes de l’espace de travail, jusqu’à 500 par jour. Le serveur garde sa clé chiffrée avec `PEAL_TOKEN_KEYS`, et n’en garde aucune sans elle.
+
+### Demandes quotidiennes [#daily-requests]
+
+Chaque espace de travail peut envoyer à l’assistant `PEAL_AI_DAILY_REQUESTS` demandes par jour UTC, 100 sans réglage ; `0` n’en laisse passer aucune. Avec la [facturation](/self-hosting/options#billing), chaque abonnement fixe la sienne à la place.
+
+<Callout type="warning" title="L’inscription ouverte s’ajoute à votre facture">
+  Sans facturation, chaque espace de travail a autant de demandes : sur une
+  instance où tout le monde peut s’inscrire, chaque nouvel espace de travail
+  s’ajoute à ce que votre fournisseur peut facturer. [Qui peut
+  s’inscrire](/self-hosting/options#sign-up) dit comment la fermer.
+</Callout>
+
+Une demande pour laquelle le fournisseur n’a pas pu être joint ne compte pas. Une demande sans réponse au bout de 90 secondes échoue et compte, car le fournisseur a pu la traiter.
+
+### Ce que reçoit le fournisseur [#sent]
+
+Ce que les membres envoient, c’est le texte de la publication, ou le sujet d’une publication à rédiger, jusqu’à 5 000 caractères, et les réponses sont limitées à 4 096 tokens. Le texte est envoyé comme une donnée, avec des consignes que le texte ne peut pas changer.
+
+Le serveur n’écrit jamais le texte ni la réponse dans ses journaux ou ses traces, n’enregistre ni l’un ni l’autre, et n’envoie au fournisseur aucun contexte de trace. Ses journaux et ses traces ne nomment que le fournisseur, le modèle, le nombre de tokens et le type d’échec.
+
+### Images [#images]
+
+Les images que l’assistant crée dans la médiathèque ([Générer une image](/guides/media#generate)) demandent un modèle d’images à part, car un modèle de rédaction peut n’en créer aucune. Sans réglage, les images sont désactivées.
+
+| Réglage                  | Ce que c’est                             |
+| ------------------------ | ---------------------------------------- |
+| `PEAL_AI_IMAGE_PROVIDER` | `openai-compatible`                      |
+| `PEAL_AI_IMAGE_BASE_URL` | L’adresse que suit `/images/generations` |
+| `PEAL_AI_IMAGE_MODEL`    | L’un de ses modèles                      |
+| `PEAL_AI_IMAGE_API_KEY`  | Sa clé, s’il en demande une              |
+
+Le serveur demande une image de 1024×1024, 1536×1024 ou 1024×1536, la lit en base64, ou récupère l’adresse que donne le fournisseur à travers la garde, et la stocke telle qu’elle est arrivée. Une image coûte 5 des demandes du jour de l’espace de travail ; la description et l’image ne sont jamais journalisées.
+
+<Callout type="info" title="Vérifiez d’abord votre fournisseur">
+  Peal a été testé contre une imitation de ce point d’accès, écrite d’après la
+  référence d’un seul fournisseur : vérifiez les tailles et la réponse de votre
+  fournisseur avant de l’activer.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="Un fournisseur qui refuse les réglages de l’instance">
+    Un fournisseur qui répond 401, 402, 403 ou 404 (une clé refusée, un compte
+    qui ne paie pas, un modèle ou une adresse qu’il n’a pas) est journalisé
+    comme une erreur, par son seul statut, et les images restent désactivées
+    jusqu’au redémarrage du serveur. Les membres apprennent que les images ne
+    sont pas disponibles, sans perdre de demande.
+  </AccordionItem>
+  <AccordionItem title="Une réponse avec une url au lieu du base64">
+    Une réponse qui donne une `url` au lieu du base64 est récupérée comme toute
+    adresse extérieure : elle doit être en HTTPS public, si bien qu’un serveur
+    d’images sur votre réseau privé doit répondre en base64.
+  </AccordionItem>
+</Accordion>
