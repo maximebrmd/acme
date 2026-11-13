@@ -23,6 +23,8 @@ import {
   MeterSchema as ContractMeterSchema,
   rateCard as contractRateCard,
   RateCardSchema,
+  stripeTiersOf as contractStripeTiersOf,
+  stripeUnitAmountOf as contractStripeUnitAmountOf,
 } from "peal-contract/rate-card";
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
@@ -45,6 +47,8 @@ import {
   meterCharge,
   MeterSchema,
   rateCard,
+  stripeTiersOf,
+  stripeUnitAmountOf,
 } from "#billing/domain/rate-card.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import {
@@ -143,6 +147,20 @@ describe("the contract", () => {
     expect(Schema.decodeUnknownSync(RateCardSchema)(rateCard)).toStrictEqual(
       rateCard
     );
+  });
+
+  // The end-to-end tests' stand-in for Stripe lists the catalogue from the
+  // contract's copy.
+  it("gives the prices at Stripe the server checks", () => {
+    expect(contractStripeTiersOf(contractRateCard)).toStrictEqual(
+      stripeTiersOf(rateCard)
+    );
+
+    for (const meter of MeterSchema.literals) {
+      expect(contractStripeUnitAmountOf(meter, contractRateCard)).toBe(
+        stripeUnitAmountOf(meter, rateCard)
+      );
+    }
   });
 
   // Clients generated from the API read a plain integer into 32 bits.
