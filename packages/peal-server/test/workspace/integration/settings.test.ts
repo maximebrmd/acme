@@ -596,6 +596,8 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         yield* uploadedFile(lee, atelier);
         yield* seedUsage(atelier, 7);
         yield* seedNotice(lee.id, studio, "@studio@social.example");
+        // A weekly digest went out for the week of 9 November.
+        yield* sql`INSERT INTO notifications.notification_preferences (user_id, email_channel_reconnect, email_post_failed, email_post_published, email_post_unconfirmed, email_weekly_digest, weekly_digest_week, updated_at) VALUES (${lee.id}, true, true, false, true, true, '2026-11-09', now())`;
 
         const studioChannel = yield* seedChannel(
           studio,
@@ -661,6 +663,11 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           ["ChannelReconnectRequired"]
         );
         assert.isFalse(exported.notificationPreferences.email.postPublished);
+        assert.isTrue(exported.notificationPreferences.email.weeklyDigest);
+        assert.strictEqual(
+          exported.notificationPreferences.lastWeeklyDigest,
+          "2026-11-09"
+        );
 
         // Atelier is Lee's alone; Studio's content is the team's.
         assert.deepStrictEqual(

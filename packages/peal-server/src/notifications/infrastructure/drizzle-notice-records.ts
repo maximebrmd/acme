@@ -218,7 +218,11 @@ export const DrizzleNoticeRecords = Layer.effect(
 
         const preferences =
           chosen === undefined
-            ? defaultPreferences
+            ? {
+                email: defaultPreferences.email,
+                everyPost: defaultPreferences.everyPost,
+                lastWeeklyDigest: null,
+              }
             : {
                 email: {
                   channelReconnect: chosen.emailChannelReconnect,
@@ -233,6 +237,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   weeklyDigest: chosen.emailWeeklyDigest,
                 },
                 everyPost: chosen.everyPost,
+                lastWeeklyDigest: chosen.weeklyDigestWeek,
               };
 
         return { notices: records, preferences };

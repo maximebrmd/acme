@@ -865,7 +865,12 @@ export const AccountExportSchema = Schema.Struct({
   legalHold: nullable(ExportedLegalHoldSchema),
   memberships: Schema.Array(ExportedMembershipSchema),
   notices: Schema.Array(ExportedNoticeSchema),
-  notificationPreferences: NotificationPreferencesSchema,
+  // With the first day (UTC) of the week of the last weekly digest sent,
+  // null before the first.
+  notificationPreferences: Schema.Struct({
+    ...NotificationPreferencesSchema.fields,
+    lastWeeklyDigest: nullable(Schema.String),
+  }),
   // The replies the user sent to comments under posts, in any workspace.
   replies: Schema.Array(ExportedReplySchema),
   // The comments the user wrote on posts, the approvals they asked for and
