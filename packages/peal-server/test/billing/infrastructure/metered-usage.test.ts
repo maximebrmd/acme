@@ -8,6 +8,7 @@ import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
+import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
 import { meterCharge, rateCard } from "#billing/domain/rate-card.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
@@ -427,10 +428,11 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
   );
 
   it.effect(
-    "refuse the assistant to a free account, and stop a paying one at its ceiling until it is raised, and again once lowered",
+    "refuse the assistant to a free account, and bill a paying one nothing past its allowance while its price is not confirmed, whatever the ceiling",
     () =>
       Effect.gen(function* assistant() {
         const ceilings = yield* SpendCeilings;
+        const sql = yield* SqlClient.SqlClient;
         const holder = yield* free;
         const { payer, workspaceId: paid } = yield* paying;
 
@@ -441,45 +443,141 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
         assert.strictEqual(none.allowed, 0);
         assert.strictEqual(none.reason, "paymentMethodRequired");
 
+        // No ceiling is taken for it, and one set before is ignored.
+        const offered = yield* ceilings
+          .set(ownerOf(paid, payer), "assistant", 5000)
+          .pipe(Effect.flip);
+
+        assert.strictEqual(offered._tag, "CeilingNotOffered");
+
+        yield* sql`INSERT INTO billing.spend_ceilings (holder_workspace_id, "group", cents, currency, set_at) VALUES (${paid}, 'assistant', 5000, 'usd', now())`.pipe(
+          Effect.orDie
+        );
         yield* seed(paid, "assistantRequests", requests.allowance);
 
-        const atCeiling = yield* claimOf(paid, "assistantRequests").pipe(
+        const past = yield* claimOf(paid, "assistantRequests").pipe(
           Effect.flip
         );
 
-        assert.strictEqual(atCeiling.reason, "ceilingReached");
-        assert.strictEqual(atCeiling.allowed, requests.allowance);
+        assert.strictEqual(past.reason, "ceilingReached");
+        assert.strictEqual(past.allowed, requests.allowance);
+        assert.deepStrictEqual((yield* keptOf(paid)).reports, []);
 
-        yield* ceilings.set(
-          ownerOf(paid, payer),
-          "assistant",
-          meterCharge("assistantRequests", 2)
-        );
-        yield* claimOf(paid, "assistantRequests");
-        yield* claimOf(paid, "assistantRequests");
+        yield* cleanUp([holder, paid]);
+      })
+  );
 
-        const raised = yield* claimOf(paid, "assistantRequests").pipe(
-          Effect.flip
-        );
+  it.effect(
+    "stop X at its ceiling until it is raised, and again once lowered below what was spent",
+    () =>
+      Effect.gen(function* x() {
+        const ceilings = yield* SpendCeilings;
+        const { payer, workspaceId: paid } = yield* paying;
+        const owner = ownerOf(paid, payer);
 
-        assert.strictEqual(raised.allowed, requests.allowance + 2);
+        yield* ceilings.set(owner, "x", 0);
 
-        // Lowered below what was spent: the next request is refused.
-        yield* ceilings.set(ownerOf(paid, payer), "assistant", 0);
+        const closed = yield* claimOf(paid, "xApi", 10).pipe(Effect.flip);
 
-        const lowered = yield* claimOf(paid, "assistantRequests").pipe(
-          Effect.flip
-        );
+        assert.strictEqual(closed.reason, "ceilingReached");
+
+        yield* ceilings.set(owner, "x", meterCharge("xApi", 20));
+        yield* claimOf(paid, "xApi", 10);
+        yield* claimOf(paid, "xApi", 10);
+
+        const raised = yield* claimOf(paid, "xApi", 10).pipe(Effect.flip);
+
+        assert.strictEqual(raised.allowed, 20);
+
+        yield* ceilings.set(owner, "x", 0);
+
+        const lowered = yield* claimOf(paid, "xApi", 1).pipe(Effect.flip);
 
         assert.strictEqual(lowered.reason, "ceilingReached");
         assert.strictEqual(
           (yield* keptOf(paid)).reports.filter(
-            ({ event }) => event === "peal_assistant_requests"
+            ({ event }) => event === "peal_x_api"
           ).length,
           2
         );
 
-        yield* cleanUp([holder, paid]);
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect(
+    "cap what every meter bills at the threshold until a first invoice is paid, whatever the ceiling",
+    () =>
+      Effect.gen(function* unverified() {
+        const sql = yield* SqlClient.SqlClient;
+        const { workspaceId: paid } = yield* paying;
+
+        // Messages billed this month already take the whole threshold.
+        yield* seed(
+          paid,
+          "outboundMessages",
+          messages.allowance + unverifiedThreshold * 100
+        );
+
+        const capped = yield* claimOf(paid, "outboundMessages").pipe(
+          Effect.flip
+        );
+
+        assert.strictEqual(capped.reason, "ceilingReached");
+
+        // Paid once: no cap but the ceilings.
+        yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${paid}`.pipe(
+          Effect.orDie
+        );
+        yield* claimOf(paid, "outboundMessages");
+
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect("grant a past due account its allowance and nothing past it", () =>
+    Effect.gen(function* pastDue() {
+      const workspaceId = yield* workspaceOwnedBy([yield* person]);
+
+      yield* subscribe(workspaceId, "past_due", "payAsYouGo");
+      yield* seed(workspaceId, "outboundMessages", messages.allowance - 1);
+      yield* claimOf(workspaceId, "outboundMessages");
+
+      const past = yield* claimOf(workspaceId, "outboundMessages").pipe(
+        Effect.flip
+      );
+
+      assert.strictEqual(past.reason, "paymentFailed");
+      assert.deepStrictEqual((yield* keptOf(workspaceId)).reports, []);
+
+      yield* cleanUp([workspaceId]);
+    })
+  );
+
+  it.effect(
+    "give failures back free up to the meter's allowance a month, and count those past it",
+    () =>
+      Effect.gen(function* forgiven() {
+        const meters = yield* MeteredUsage;
+        const { workspaceId: paid } = yield* paying;
+        const bound = rateCard.meters.assistantImages.allowance;
+
+        yield* seed(paid, "assistantImages", 0);
+
+        for (let failed = 0; failed < bound + 2; failed += 1) {
+          const claim = yield* claimOf(paid, "assistantImages");
+
+          yield* meters.forgive(claim);
+        }
+
+        const kept = yield* keptOf(paid);
+
+        assert.deepStrictEqual(
+          kept.meters.find(({ meter }) => meter === "assistantImages")?.used,
+          2
+        );
+
+        yield* cleanUp([paid]);
       })
   );
 });

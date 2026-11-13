@@ -1185,6 +1185,8 @@ export {
   UsageAllowanceReached,
 } from "./usage-allowance-reached.ts";
 
+export { SpendCeilingNotOffered } from "./spend-ceiling-not-offered.ts";
+
 export type { AllowanceReason } from "./usage-allowance-reached.ts";
 
 export {

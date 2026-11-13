@@ -169,7 +169,7 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
     // On a server that bills: one of the billing account's images this
     // month, claimed now (none without a payment method), and given back
     // whenever no image was stored, whatever the reason.
-    if (allowance.metered) {
+    if (yield* allowance.metered(workspaceId)) {
       const meters = yield* MeteredUsage;
 
       // A database failure is a defect here, as the day's count's are.

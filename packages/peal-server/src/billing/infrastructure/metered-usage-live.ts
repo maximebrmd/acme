@@ -18,7 +18,8 @@ import {
   meterEventIdentifier,
   meterMonthOf,
   meterResetsAt,
-  meterStandingOf,
+  spendCapOf,
+  standingOfEntitlements,
   metersOf,
   mostUnits,
   spendGroupOf,
@@ -38,6 +39,7 @@ import type {
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { MeterSchema } from "#shared/domain/meter.ts";
 import type { Meter } from "#shared/domain/meter.ts";
 
 // The meters whose rows a claim of `meter` holds: its group's, which one
@@ -51,6 +53,8 @@ const heldWith = (meter: Meter): readonly Meter[] =>
 /** Where a holder stands for its meters, and the customer that pays. */
 interface Payer {
   readonly customer: Option.Option<string>;
+  /** What every meter bills a month at most, until an invoice is paid. */
+  readonly spendCap: Option.Option<number>;
   readonly standing: MeterStanding;
 }
 
@@ -85,15 +89,20 @@ const BilledMeteredUsageLive = Layer.effect(
     ) {
       const held = yield* subscriptions.ofWorkspaces([holder]);
       const entitlements = entitlementsOf(held.get(holder) ?? []);
-      const standing = meterStandingOf(entitlements);
+      const standing = standingOfEntitlements(entitlements);
 
       const payer: Payer = {
-        // Only per-account pricing reports what passes an allowance.
+        // Only per-account pricing reports what passes an allowance (a
+        // past due one only what is given back).
         customer:
-          standing === "payAsYouGo"
+          standing === "payAsYouGo" || standing === "pastDue"
             ? entitlements.subscription.pipe(
                 Option.map(({ stripeCustomerId }) => stripeCustomerId)
               )
+            : Option.none(),
+        spendCap:
+          standing === "payAsYouGo"
+            ? spendCapOf(entitlements.verified)
             : Option.none(),
         standing,
       };
@@ -199,7 +208,17 @@ const BilledMeteredUsageLive = Layer.effect(
         Effect.gen(function* claiming() {
           const { freeTier, holder } = yield* holders.heldBy(workspaceId);
           const payer = yield* payerOf(holder);
-          const rows = yield* store.hold(holder, month, heldWith(meter));
+
+          // Every meter's rows while a cap spans them all.
+          const rows = yield* store.hold(
+            holder,
+            month,
+            Option.isSome(payer.spendCap)
+              ? MeterSchema.literals
+              : heldWith(meter),
+            heldWith(meter)
+          );
+
           const ceiling = yield* ceilingOf(holder, meter);
 
           const decided = decideClaim({
@@ -207,6 +226,7 @@ const BilledMeteredUsageLive = Layer.effect(
             counts: rows,
             freeTier,
             meter,
+            spendCap: payer.spendCap,
             standing: payer.standing,
             units,
           });
@@ -272,8 +292,12 @@ const BilledMeteredUsageLive = Layer.effect(
       );
     });
 
-    const giveBack = Effect.fn("MeteredUsage.giveBack")(function* giveBack(
-      given: MeterClaim
+    // Takes the units back: always for what never happened, and for a
+    // failure only while the month's failures given back stay within the
+    // meter's allowance (`forgiven`); past it the units count.
+    const takeBack = Effect.fn("MeteredUsage.takeBack")(function* takeBack(
+      given: MeterClaim,
+      failure: boolean
     ) {
       const month = meterMonthOf(given.at);
       const now = yield* DateTime.now;
@@ -283,6 +307,15 @@ const BilledMeteredUsageLive = Layer.effect(
           const { holder } = yield* holders.heldBy(given.workspaceId);
           const payer = yield* payerOf(holder);
           const rows = yield* store.hold(holder, month, [given.meter]);
+          const bound = rateCard.meters[given.meter].allowance;
+
+          const counted = rows.some(
+            (row) => failure && row.forgiven + given.units > bound
+          );
+
+          if (counted) {
+            return;
+          }
 
           yield* settle(
             holder,
@@ -290,6 +323,7 @@ const BilledMeteredUsageLive = Layer.effect(
             payer,
             rows.map((row) => ({
               ...row,
+              forgiven: failure ? row.forgiven + given.units : row.forgiven,
               used: Math.max(0, row.used - given.units),
             })),
             now
@@ -313,6 +347,10 @@ const BilledMeteredUsageLive = Layer.effect(
       );
     });
 
+    const giveBack = (given: MeterClaim) => takeBack(given, false);
+
+    const forgive = (given: MeterClaim) => takeBack(given, true);
+
     const state = Effect.fn("MeteredUsage.state")(function* state(
       workspaceId: WorkspaceId,
       meter: Meter
@@ -323,7 +361,14 @@ const BilledMeteredUsageLive = Layer.effect(
       const payer = yield* payerOf(holder);
       const counts = yield* store.ofMonth(holder, month);
       const ceiling = yield* ceilingOf(holder, meter);
-      const asked = { ceiling, counts, freeTier, standing: payer.standing };
+
+      const asked = {
+        ceiling,
+        counts,
+        freeTier,
+        spendCap: payer.spendCap,
+        standing: payer.standing,
+      };
 
       const meterState: MeterState = {
         allowance: includedUnits(meter, payer.standing, freeTier),
@@ -340,7 +385,7 @@ const BilledMeteredUsageLive = Layer.effect(
       return Option.some(meterState);
     });
 
-    return MeteredUsage.of({ claim, giveBack, state });
+    return MeteredUsage.of({ claim, forgive, giveBack, state });
   })
 );
 

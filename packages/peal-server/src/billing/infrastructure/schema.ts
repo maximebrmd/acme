@@ -478,6 +478,9 @@ export const meterUsage = billing.table(
   "meter_usage",
   {
     events: bigint("events", { mode: "number" }).notNull().default(0),
+    // Units given back for a failure this month: free up to the meter's
+    // allowance, counted past it.
+    forgiven: bigint("forgiven", { mode: "number" }).notNull().default(0),
     holderWorkspaceId: uuid("holder_workspace_id").notNull(),
     meter: text("meter").notNull(),
     month: date("month", { mode: "date" }).notNull(),
@@ -491,7 +494,7 @@ export const meterUsage = billing.table(
     index("meter_usage_month").on(table.month),
     check(
       "meter_usage_counts",
-      sql`${table.used} >= 0 AND ${table.reported} >= 0 AND ${table.events} >= 0`
+      sql`${table.used} >= 0 AND ${table.reported} >= 0 AND ${table.events} >= 0 AND ${table.forgiven} >= 0`
     ),
   ]
 );

@@ -80,7 +80,7 @@ describe(usageRefusalText, () => {
     );
   });
 
-  it("never quotes the assistant's unconfirmed price, and sends a ceiling to the billing page", () => {
+  it("never quotes the assistant's unconfirmed price, sends a ceiling to the billing page, and a legacy plan to per-account pricing", () => {
     const reached = {
       allowed: 0,
       meter: "assistantImages" as const,
@@ -99,8 +99,24 @@ describe(usageRefusalText, () => {
         new AllowanceReached({ ...reached, reason: "ceilingReached" }),
         billingUrl
       )
+    ).toContain("Nothing past the allowance is used until its price is set");
+    expect(
+      usageRefusalText(
+        new AllowanceReached({
+          ...reached,
+          meter: "xApi",
+          reason: "ceilingReached",
+        }),
+        billingUrl
+      )
     ).toContain(
       `raises the account's monthly ceiling on its billing page, ${billingUrl}`
     );
+    expect(
+      usageRefusalText(
+        new AllowanceReached({ ...reached, reason: "planAllowance" }),
+        billingUrl
+      )
+    ).not.toContain("ceiling");
   });
 });

@@ -76,6 +76,18 @@ export const fakeMeters = ({
             return made;
           }
         ),
+        forgive: (given) =>
+          Ref.update(ledger, (now) => ({
+            ...now,
+            givenBack: [...now.givenBack, given],
+            used: new Map([
+              ...now.used,
+              [
+                given.meter,
+                Math.max(0, (now.used.get(given.meter) ?? 0) - given.units),
+              ],
+            ]),
+          })),
         giveBack: (given) =>
           Ref.update(ledger, (now) => ({
             ...now,

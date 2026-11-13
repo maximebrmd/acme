@@ -33,6 +33,7 @@ const toRow = (row: UsageRow) =>
     Effect.orDie,
     Effect.map((meter): MeterRow => ({
       events: row.events,
+      forgiven: row.forgiven,
       meter,
       reported: row.reported,
       used: row.used,
@@ -70,16 +71,18 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
     const hold = (
       holder: WorkspaceId,
       month: DateTime.Utc,
-      meters: readonly Meter[]
+      meters: readonly Meter[],
+      written: readonly Meter[] = meters
     ) => {
       const ordered = [...new Set(meters)].toSorted();
       const date = DateTime.toDateUtc(month);
+      const missing = [...new Set(written)].toSorted();
 
       return Effect.gen(function* held() {
         yield* db
           .insert(meterUsage)
           .values(
-            ordered.map((meter) => ({
+            missing.map((meter) => ({
               holderWorkspaceId: holder,
               meter,
               month: date,
@@ -118,7 +121,12 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
         (row) =>
           db
             .update(meterUsage)
-            .set({ events: row.events, reported: row.reported, used: row.used })
+            .set({
+              events: row.events,
+              forgiven: row.forgiven,
+              reported: row.reported,
+              used: row.used,
+            })
             .where(
               and(ofMonthWhere(holder, month), eq(meterUsage.meter, row.meter))
             ),

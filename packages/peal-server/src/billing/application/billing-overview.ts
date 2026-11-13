@@ -12,7 +12,8 @@ import { livePerAccount } from "#billing/domain/live-per-account.ts";
 import {
   meterMonthOf,
   meterMonthsOf,
-  meterStandingOf,
+  spendCapOf,
+  standingOfEntitlements,
 } from "#billing/domain/meter-claims.ts";
 import type { MeterMonth } from "#billing/domain/meter-claims.ts";
 import {
@@ -218,6 +219,8 @@ export class BillingOverview extends Context.Service<
           { concurrency: "unbounded" }
         );
 
+        const standing = standingOfEntitlements(current);
+
         return {
           billing: holder === workspaceId,
           months: meterMonthsOf({
@@ -227,7 +230,11 @@ export class BillingOverview extends Context.Service<
             counts,
             freeTier,
             month,
-            standing: meterStandingOf(current),
+            spendCap:
+              standing === "payAsYouGo"
+                ? spendCapOf(current.verified)
+                : Option.none(),
+            standing,
           }),
         };
       });

@@ -12,6 +12,8 @@ import type { Meter } from "#shared/domain/meter.ts";
  */
 export interface MeterRow {
   readonly events: number;
+  /** Units given back for a failure this month. */
+  readonly forgiven: number;
   readonly meter: Meter;
   readonly reported: number;
   readonly used: number;
@@ -32,14 +34,16 @@ export class MeterUsageStore extends Context.Service<
   MeterUsageStore,
   {
     /**
-     * The holder's rows of these meters in the month, written at 0 where
-     * missing and held to the end of the caller's transaction, in the
-     * meters' order: claims of one holder's meters take turns.
+     * The holder's rows of these meters in the month, those of `written`
+     * written at 0 where missing (all of them by default), held to the end
+     * of the caller's transaction, in the meters' order: claims of one
+     * holder's meters take turns.
      */
     readonly hold: (
       holder: WorkspaceId,
       month: DateTime.Utc,
-      meters: readonly Meter[]
+      meters: readonly Meter[],
+      written?: readonly Meter[]
     ) => Effect.Effect<readonly MeterRow[], DatabaseError>;
     /** Writes the rows `hold` answered, changed, in the caller's transaction. */
     readonly save: (

@@ -157,6 +157,7 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
     const writingModel = yield* WritingModel;
     const imageModel = yield* ImageModel;
     const allowance = yield* AssistantAllowance;
+    const metered = yield* allowance.metered(workspaceId);
 
     const ownText = yield* TextProviders.use((providers) =>
       providers.find(workspaceId)
@@ -177,14 +178,14 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
     const textMonth = yield* meterMonth(
       workspaceId,
       "assistantRequests",
-      allowance.metered,
+      metered,
       serverText
     );
 
     const imageMonth = yield* meterMonth(
       workspaceId,
       "assistantImages",
-      allowance.metered,
+      metered,
       serverImages
     );
 

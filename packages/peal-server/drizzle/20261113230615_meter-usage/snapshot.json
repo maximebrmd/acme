@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "cd6c5889-7aac-48b4-a7e0-fb6bb9ea39c1",
+  "id": "0183eb57-2238-463b-88eb-d58323b8d86e",
   "prevIds": [
     "0af103f0-89b6-4230-9ba8-cef6b94c61d4"
   ],
@@ -205,6 +205,22 @@
         "schema": "billing",
         "table": "meter_usage",
         "name": "events",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "forgiven",
         "type": "bigint",
         "typeSchema": null,
         "notNull": true,
@@ -473,7 +489,7 @@
         "schema": "billing",
         "table": "meter_usage",
         "name": "meter_usage_counts",
-        "value": "\"used\" >= 0 AND \"reported\" >= 0 AND \"events\" >= 0",
+        "value": "\"used\" >= 0 AND \"reported\" >= 0 AND \"events\" >= 0 AND \"forgiven\" >= 0",
         "entityType": "checks"
       }
     },

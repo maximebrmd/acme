@@ -6,13 +6,18 @@ import { MeterSchema } from "./meter.ts";
  * Why a meter refused: the billing account has no payment method and
  * used its allowance without one (`paymentMethodRequired`: none at all
  * for the assistant on the server's models); it pays, and the units would
- * pass the monthly ceiling it set (`ceilingReached`); or the meter is not
- * turned on for it (`notEnabled`).
+ * pass the monthly ceiling it set, or what it may spend until its first
+ * invoice is paid (`ceilingReached`); the meter is not turned on for it
+ * (`notEnabled`); its legacy plan includes no more (`planAllowance`:
+ * per-account pricing bills past it); or its payment is failing
+ * (`paymentFailed`: nothing past the allowance until it is paid).
  */
 export const AllowanceReasonSchema = Schema.Literals([
   "paymentMethodRequired",
   "ceilingReached",
   "notEnabled",
+  "planAllowance",
+  "paymentFailed",
 ]);
 
 export type AllowanceReason = typeof AllowanceReasonSchema.Type;

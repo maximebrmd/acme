@@ -179,12 +179,24 @@ export const usageRefusalText = (
 
   const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meterNames[meter]} it may use this month, which starts again on ${until} (UTC).`;
 
+  if (reason === "ceilingReached" && unconfirmedMeters.includes(meter)) {
+    return `${held} Nothing past the allowance is used until its price is set: the user waits until then.`;
+  }
+
   if (reason === "ceilingReached") {
-    return `${held} An owner or an admin raises the account's monthly ceiling on its billing page, ${billingUrl}, or the user waits until then.`;
+    return `${held} An owner or an admin raises the account's monthly ceiling on its billing page, ${billingUrl} (until the account's first invoice is paid, what its meters bill a month is capped whatever the ceiling), or the user waits until then.`;
   }
 
   if (reason === "notEnabled") {
     return `${held} The meter is not turned on for this account.`;
+  }
+
+  if (reason === "planAllowance") {
+    return `${held} The workspace's plan includes no more: an owner or an admin moves it to per-account pricing on its billing page, ${billingUrl}, which bills what passes the allowance (${unitPrice(meter)}), or the user waits until then.`;
+  }
+
+  if (reason === "paymentFailed") {
+    return `${held} The account's last payment failed, so nothing past the allowance is used until it goes through: an owner or an admin updates the payment method from its billing page, ${billingUrl}.`;
   }
 
   return `${held} A payment method lets it go on (${unitPrice(meter)}): an owner or an admin of the workspace adds one on its billing page, ${billingUrl}. Reading and publishing go on meanwhile.`;

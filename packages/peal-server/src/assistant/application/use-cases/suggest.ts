@@ -116,7 +116,7 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
   // method), and given back whenever no suggestion came of it, a timeout,
   // a refusal and an unusable answer included. The day's count is kept
   // too, unbounded, for the usage ledger's snapshot.
-  if (allowance.metered) {
+  if (yield* allowance.metered(workspaceId)) {
     const meters = yield* MeteredUsage;
 
     // A database failure is a defect here, as the day's count's are.

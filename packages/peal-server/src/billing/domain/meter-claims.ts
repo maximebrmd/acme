@@ -4,8 +4,14 @@ import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { Meter } from "#shared/domain/meter.ts";
 
+import { unverifiedThreshold } from "./account-days.ts";
 import type { Entitlements } from "./entitlements.ts";
-import { billableUnits, meterCharge, rateCard } from "./rate-card.ts";
+import {
+  billableUnits,
+  meterCharge,
+  rateCard,
+  unconfirmedMeters,
+} from "./rate-card.ts";
 import type { RateCard } from "./rate-card.ts";
 
 /**
@@ -47,26 +53,54 @@ export const defaultCeilingOf = (
 /**
  * Where a billing account stands for its meters: no payment method
  * (`free`), per-account pricing (`payAsYouGo`, billed past each
- * allowance), or a legacy plan, which pays but has no price for a meter:
- * it gets the allowances with a payment method and nothing past them.
+ * allowance), per-account pricing whose payment is failing (`pastDue`:
+ * the allowances with a payment method, nothing past them while Stripe
+ * retries), or a legacy plan, which pays but has no price for a meter:
+ * the allowances with a payment method and nothing past them.
  */
-export type MeterStanding = "free" | "legacy" | "payAsYouGo";
+export type MeterStanding = "free" | "legacy" | "pastDue" | "payAsYouGo";
 
 /**
- * Where entitlements leave a billing account for its meters: per-account
- * pricing while its subscription entitles it, a legacy plan while one
- * does, else no payment method.
+ * Where a plan and its subscription's status leave a billing account for
+ * its meters: per-account pricing while its subscription entitles it
+ * (past due apart), a legacy plan while one does, else no payment method.
  */
 export const meterStandingOf = ({
   plan,
-  subscription,
-}: Pick<Entitlements, "plan" | "subscription">): MeterStanding => {
-  if (Option.isNone(subscription)) {
+  status,
+}: {
+  readonly plan: Option.Option<string>;
+  readonly status: Option.Option<string>;
+}): MeterStanding => {
+  if (Option.isNone(status)) {
     return "free";
   }
 
-  return Option.contains(plan, "payAsYouGo") ? "payAsYouGo" : "legacy";
+  if (!Option.contains(plan, "payAsYouGo")) {
+    return "legacy";
+  }
+
+  return status.value === "past_due" ? "pastDue" : "payAsYouGo";
 };
+
+/** The same, from a billing account's entitlements. */
+export const standingOfEntitlements = ({
+  plan,
+  subscription,
+}: Pick<Entitlements, "plan" | "subscription">): MeterStanding =>
+  meterStandingOf({
+    plan,
+    status: subscription.pipe(Option.map(({ status }) => status)),
+  });
+
+/**
+ * What a billing account none of whose invoices was paid spends past its
+ * allowances a month at most, across every meter: the threshold its
+ * subscription invoices at until then (`unverifiedThreshold`), so a card
+ * that never pays never costs Peal more. None once an invoice was paid.
+ */
+export const spendCapOf = (verified: boolean): Option.Option<number> =>
+  verified ? Option.none() : Option.some(unverifiedThreshold);
 
 /**
  * The units of `meter` a billing account has included this month: the
@@ -127,43 +161,24 @@ export const spendOf = (
     0
   );
 
-// The most billable units of `meter` whose charge stays within `cents`.
+// The most billable units of `meter` whose price, unrounded, stays within
+// `cents`: a unit that rounds to nothing still costs its share.
 const billableWithin = (meter: Meter, cents: number, card: RateCard) => {
-  if (cents < 0) {
-    return 0;
-  }
+  const price = card.prices.usd.meters[meter];
 
-  let low = 0;
-  let high = 1;
-
-  while (meterCharge(meter, high, "usd", card) <= cents) {
-    low = high;
-    high *= 2;
-
-    if (high > Number.MAX_SAFE_INTEGER / 2) {
-      return low;
-    }
-  }
-
-  // meterCharge(low) is within, meterCharge(high) is not.
-  while (high - low > 1) {
-    const middle = Math.floor((low + high) / 2);
-
-    if (meterCharge(meter, middle, "usd", card) <= cents) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-
-  return low;
+  return cents <= 0 || price.cents === 0
+    ? 0
+    : Math.floor((cents * price.per) / price.cents);
 };
 
 /**
  * The most units of `meter` the account may use this month: its included
- * units, and for one that pays per-account pricing, those past them that
- * its ceiling pays for once the group's other meters are counted; none
- * for no end (a meter without a ceiling, paid for).
+ * units, and for per-account pricing, those past them that what bounds it
+ * pays for: the group's ceiling (its own group's other meters counted),
+ * and until a first invoice is paid the cap across every meter
+ * (`spendCap`, every other meter counted); none for no end. A meter whose
+ * price is not confirmed (`unconfirmedMeters`) bills nothing past its
+ * allowance, whatever the ceiling.
  */
 export const mostUnits = (
   meter: Meter,
@@ -171,44 +186,77 @@ export const mostUnits = (
     ceiling,
     counts,
     freeTier,
+    spendCap,
     standing,
   }: {
     readonly ceiling: Option.Option<number>;
     readonly counts: readonly MeterCount[];
     readonly freeTier: boolean;
+    readonly spendCap: Option.Option<number>;
     readonly standing: MeterStanding;
   },
   card: RateCard = rateCard
 ): Option.Option<number> => {
   const included = includedUnits(meter, standing, freeTier, card);
 
-  if (standing !== "payAsYouGo") {
+  if (standing !== "payAsYouGo" || unconfirmedMeters.includes(meter)) {
     return Option.some(included);
   }
 
-  if (Option.isNone(ceiling) || Option.isNone(spendGroupOf(meter))) {
+  const group = spendGroupOf(meter);
+  const others = counts.filter((count) => count.meter !== meter);
+
+  const byGroup = group.pipe(
+    Option.flatMap((named) =>
+      ceiling.pipe(
+        Option.map(
+          (cents) =>
+            cents -
+            spendOf(
+              others.filter((count) =>
+                Option.contains(spendGroupOf(count.meter), named)
+              ),
+              card
+            )
+        )
+      )
+    )
+  );
+
+  const byCap = spendCap.pipe(
+    Option.map((cents) => cents - spendOf(others, card))
+  );
+
+  const room = [...Option.toArray(byGroup), ...Option.toArray(byCap)];
+
+  if (room.length === 0) {
     return Option.none();
   }
 
-  const others = spendOf(
-    counts.filter((count) => count.meter !== meter),
-    card
-  );
-
   return Option.some(
     card.meters[meter].allowance +
-      billableWithin(meter, ceiling.value - others, card)
+      billableWithin(meter, Math.min(...room), card)
   );
 };
+
+// Why a meter refuses, by standing.
+const reasons = {
+  free: "paymentMethodRequired",
+  legacy: "planAllowance",
+  pastDue: "paymentFailed",
+  payAsYouGo: "ceilingReached",
+} as const satisfies { readonly [S in MeterStanding]: AllowanceReason };
 
 /** What a claim may do, as its holder's month stands. */
 export interface ClaimAsked {
   /** The group's ceiling in cents, or none where the meter has none. */
   readonly ceiling: Option.Option<number>;
-  /** The holder's counts this month of the meter's group (or the meter). */
+  /** The holder's counts this month, of every meter. */
   readonly counts: readonly MeterCount[];
   readonly freeTier: boolean;
   readonly meter: Meter;
+  /** The cap across every meter until a first invoice is paid. */
+  readonly spendCap: Option.Option<number>;
   readonly standing: MeterStanding;
   readonly units: number;
 }
@@ -227,10 +275,11 @@ export interface ClaimRefused {
 
 /**
  * Whether `units` more of a meter are granted: within the units included,
- * or for per-account pricing past them, unless the meter's group would
- * pass its ceiling. Past what is included, an account without a payment
- * method is told to add one; a legacy plan, which has no price for a
- * meter, and an account at its ceiling are at their ceiling.
+ * or for per-account pricing past them, unless that would pass what
+ * bounds it (`mostUnits`). Past what is included, an account without a
+ * payment method is told to add one, a legacy plan that its plan holds no
+ * more, a past due one that its payment failed, and one that pays that it
+ * reached its ceiling.
  */
 export const decideClaim = (
   asked: ClaimAsked,
@@ -248,7 +297,7 @@ export const decideClaim = (
 
   return Result.fail({
     allowed: most.value,
-    reason: standing === "free" ? "paymentMethodRequired" : "ceilingReached",
+    reason: reasons[standing],
     used,
   });
 };
@@ -286,18 +335,22 @@ export const meterMonthsOf = (
     ceilings,
     counts,
     freeTier,
+    meters = shownMeters,
     month,
+    spendCap,
     standing,
   }: {
     readonly ceilings: ReadonlyMap<SpendGroup, number>;
     readonly counts: readonly MeterCount[];
     readonly freeTier: boolean;
+    readonly meters?: readonly Meter[];
     readonly month: DateTime.Utc;
+    readonly spendCap: Option.Option<number>;
     readonly standing: MeterStanding;
   },
   card: RateCard = rateCard
 ): readonly MeterMonth[] =>
-  shownMeters.map((meter) => {
+  meters.map((meter) => {
     const group = spendGroupOf(meter);
     const used = counts.find((count) => count.meter === meter)?.used ?? 0;
 
@@ -308,7 +361,9 @@ export const meterMonthsOf = (
     );
 
     const billable =
-      standing === "payAsYouGo" ? billableUnits(meter, used, card) : 0;
+      standing === "payAsYouGo" || standing === "pastDue"
+        ? billableUnits(meter, used, card)
+        : 0;
 
     return {
       allowance: includedUnits(meter, standing, freeTier, card),
@@ -317,7 +372,11 @@ export const meterMonthsOf = (
       charge: meterCharge(meter, billable, "usd", card),
       group,
       meter,
-      most: mostUnits(meter, { ceiling, counts, freeTier, standing }, card),
+      most: mostUnits(
+        meter,
+        { ceiling, counts, freeTier, spendCap, standing },
+        card
+      ),
       resetsAt: meterResetsAt(month),
       used,
     };

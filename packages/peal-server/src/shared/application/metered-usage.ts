@@ -91,6 +91,13 @@ export class MeteredUsage extends Context.Service<
       claim: MeterClaim
     ) => Effect.Effect<void, DatabaseError>;
     /**
+     * Takes back units of a request that failed or was interrupted once
+     * the provider had it, free up to the meter's allowance a month per
+     * billing account (`forgiven`); past that they count, so failures
+     * cannot buy an unbounded number of generations.
+     */
+    readonly forgive: (claim: MeterClaim) => Effect.Effect<void, DatabaseError>;
+    /**
      * The meter of the workspace's billing account now; none on a server
      * that does not bill, where nothing is refused.
      */
@@ -111,6 +118,7 @@ export class MeteredUsage extends Context.Service<
         DateTime.now.pipe(
           Effect.map((at): MeterClaim => ({ at, meter, units, workspaceId }))
         ),
+      forgive: () => Effect.void,
       giveBack: () => Effect.void,
       state: () => Effect.succeedNone,
     })

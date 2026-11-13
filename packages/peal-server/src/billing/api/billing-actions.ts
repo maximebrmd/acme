@@ -14,6 +14,7 @@ import {
   PlanNotSold,
   PlanTooSmall,
   ReductionRefused,
+  SpendCeilingNotOffered,
   TransferNotFound,
   TransferRefused,
   TrialUnavailable,
@@ -282,6 +283,8 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
                 BilledElsewhere: ({ billingWorkspaceId }) =>
                   Effect.fail(new BilledElsewhere({ billingWorkspaceId })),
                 BillingOff: notEnabled,
+                CeilingNotOffered: ({ group }) =>
+                  Effect.fail(new SpendCeilingNotOffered({ group })),
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
                 PersonRequired: forbidden,

@@ -7,13 +7,14 @@ CREATE TABLE "ads"."active_ad_months" (
 --> statement-breakpoint
 CREATE TABLE "billing"."meter_usage" (
 	"events" bigint DEFAULT 0 NOT NULL,
+	"forgiven" bigint DEFAULT 0 NOT NULL,
 	"holder_workspace_id" uuid,
 	"meter" text,
 	"month" date,
 	"reported" bigint DEFAULT 0 NOT NULL,
 	"used" bigint NOT NULL,
 	CONSTRAINT "meter_usage_pkey" PRIMARY KEY("holder_workspace_id","month","meter"),
-	CONSTRAINT "meter_usage_counts" CHECK ("used" >= 0 AND "reported" >= 0 AND "events" >= 0)
+	CONSTRAINT "meter_usage_counts" CHECK ("used" >= 0 AND "reported" >= 0 AND "events" >= 0 AND "forgiven" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."spend_ceilings" (

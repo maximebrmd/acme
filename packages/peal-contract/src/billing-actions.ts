@@ -35,6 +35,7 @@ import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlanNotSold } from "./plan-not-sold.ts";
 import { PlanTooSmall } from "./plan-too-small.ts";
 import { ReductionRefused } from "./reduction-refused.ts";
+import { SpendCeilingNotOffered } from "./spend-ceiling-not-offered.ts";
 import { TransferNotFound } from "./transfer-not-found.ts";
 import { TransferRefused } from "./transfer-refused.ts";
 import { TrialUnavailable } from "./trial-unavailable.ts";
@@ -193,14 +194,19 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
   )
   .add(
     HttpApiEndpoint.put("setCeiling", "/ceilings/:group", {
-      error: [BilledElsewhere, BillingNotEnabled, Forbidden],
+      error: [
+        BilledElsewhere,
+        BillingNotEnabled,
+        Forbidden,
+        SpendCeilingNotOffered,
+      ],
       params: { ...workspaceParams, group: SpendGroupSchema },
       payload: SpendCeilingPayloadSchema,
       success: SpendCeilingSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sets what the billing account spends past a group's monthly allowances at most, in US dollar cents excluding tax: `assistant`, the writing assistant's requests and images on the server's models (by default nothing past what is included), or `x`. Past it, the group's meters refuse (UsageAllowanceReached `ceilingReached`) until the first of next month. It may always be lowered, below what the month already spent too, which then refuses the next use. Set on the workspace that bills the account (BilledElsewhere otherwise), and recorded in the activity log.",
+          "Sets what the billing account spends past a group's monthly allowances at most, in US dollar cents excluding tax: `assistant`, the writing assistant's requests and images on the server's models (by default nothing past what is included), or `x`. Past it, the group's meters refuse (UsageAllowanceReached `ceilingReached`) until the first of next month. It may always be lowered, below what the month already spent too, which then refuses the next use. Until the account's first invoice is paid, what all its meters bill a month is capped whatever the ceilings. A group whose price past the allowance is not confirmed yet takes no ceiling (SpendCeilingNotOffered): nothing past its allowance is billed. Set on the workspace that bills the account (BilledElsewhere otherwise), and recorded in the activity log.",
         summary: "Set a spending ceiling",
       })
     )

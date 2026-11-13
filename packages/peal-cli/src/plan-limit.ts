@@ -122,12 +122,24 @@ export const usageLimitReason = ({
 }: UsageShortfallFields): string => {
   const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meters[meter]} it may use this month, which starts again on ${DateTime.formatIsoDateUtc(resetsAt)} (UTC).`;
 
+  if (reason === "ceilingReached" && unconfirmedMeters.includes(meter)) {
+    return `${held} Nothing past the allowance is used until its price is set: wait until then.`;
+  }
+
   if (reason === "ceilingReached") {
-    return `${held} An owner or an admin raises the account's monthly ceiling at ${billingUrl}, or wait until then.`;
+    return `${held} An owner or an admin raises the account's monthly ceiling at ${billingUrl} (until the account's first invoice is paid, what its meters bill a month is capped whatever the ceiling), or wait until then.`;
   }
 
   if (reason === "notEnabled") {
     return `${held} The meter is not turned on for this account.`;
+  }
+
+  if (reason === "planAllowance") {
+    return `${held} The workspace's plan includes no more: an owner or an admin moves it to per-account pricing at ${billingUrl}, which bills what passes the allowance (${unitPrice(meter)}), or wait until then.`;
+  }
+
+  if (reason === "paymentFailed") {
+    return `${held} The account's last payment failed, so nothing past the allowance is used until it goes through: an owner or an admin updates the payment method from ${billingUrl}.`;
   }
 
   return `${held} A payment method lets it go on (${unitPrice(meter)}): an owner or an admin adds one at ${billingUrl}. Reading and publishing go on meanwhile.`;
