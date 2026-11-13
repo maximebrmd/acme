@@ -390,13 +390,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (tested) turns the texts and media by channel into overrides: a channel
   with media and no text of its own sends the post's text, and reads back
   as following it (`channelTextsOf`); with no text at all its media are
-  not sent and the field says so (`mediaWaitingForText`). Counters and
+  not sent: the composer neither saves nor schedules, and
+  `ComposerActions` says why beside its buttons (`blocked`). Counters and
   media checks read each channel's own (`attachedOn`). A scheduled or held
   post's page lists its channels in `PostChannels`
   (`components/posts/post-channels.tsx`, through `posts.removeTarget`,
   for those who may cancel it), every one removable but the last;
-  `connectedTargets` leaves a `dropped` target out, and the composer is
-  keyed by the count of them so it starts again after a removal.
+  `connectedTargets`, the list's channel names and the calendar's channel
+  filter leave a `dropped` target out, and the composer is keyed by the
+  count of them so it starts again after a removal.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the
