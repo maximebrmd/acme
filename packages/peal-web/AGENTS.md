@@ -533,9 +533,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (connected accounts, account-days so far, `estimate` excluding tax,
   the next account's price, Stripe's `upcomingInvoice` tax included,
   "the invoice is the one that counts"), any other workspace of the
-  account, a partner's customer included, its own accounts and media and
-  never the account's plan card, contract, money or pool (the server
-  answers none of them there); an unpaid contract (`paymentFailed`), or
+  account, a partner's customer included, the account's pool and limits
+  as its usage does, and never the account's plan card, contract or
+  money (the server answers none of them there); a contract whose payment failed
+  (`paymentFailed`: past due shows its alert and the portal, unpaid also
+  replaces the order), or
   an order refused as `AlreadySubscribed`, sends to the portal; the free
   tier's accounts are the answer's `allowances.channels` (none once staff
   required a payment method, `freeWithoutCard`); a legacy plan shows its

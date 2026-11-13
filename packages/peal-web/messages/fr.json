@@ -2150,8 +2150,7 @@
         "media": "Médias stockés",
         "assistant": "Demandes à l’assistant",
         "note": "Des décomptes seulement, conservés {days, number} jours : rien n’est facturé d’après eux. Un tiret marque un jour sans relevé."
-      },
-      "ownStorage": "{used} stockés par cet espace de travail"
+      }
     },
     "checkout": {
       "done": "Merci : le tarif par compte commence dès que Stripe confirme le moyen de paiement, en général en quelques secondes.",
@@ -2216,7 +2215,6 @@
       "estimatePaying": "Ce mois-ci jusqu’ici : {estimate} HT · {included} avec la TVA française de {rate} %.",
       "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte par mois : {price} HT · {included} avec la TVA française de {rate} %.",
       "upcoming": "Prochaine facture de Stripe : {amount} TTC. C’est la facture qui fait foi.",
-      "own": "{connected, plural, one {# compte connecté sur cet espace de travail.} other {# comptes connectés sur cet espace de travail.}}",
       "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût.",
       "nextAccountFree": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, est gratuit : les {free, number} premiers le sont."
     },

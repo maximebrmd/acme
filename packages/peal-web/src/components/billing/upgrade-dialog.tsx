@@ -16,8 +16,8 @@ import {
 } from "peal-ui/components/dialog";
 import { useState, useTransition } from "react";
 
-import { billingOf, standingOf } from "#billing/api.ts";
-import { managesBilling, membersOf } from "#billing/members.ts";
+import { billingOf } from "#billing/api.ts";
+import { managesBilling, membersOf, standingOf } from "#billing/members.ts";
 import { billedElsewhereOf } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
 import { useCheckout } from "#billing/use-checkout.ts";

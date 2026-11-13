@@ -2150,8 +2150,7 @@
         "media": "Media stored",
         "assistant": "Assistant requests",
         "note": "Counts only, kept {days, number} days: nothing here is priced. A dash is a day without a snapshot."
-      },
-      "ownStorage": "{used} stored by this workspace"
+      }
     },
     "checkout": {
       "done": "Thank you: per-account pricing starts as soon as Stripe confirms the payment method, usually within seconds.",
@@ -2216,7 +2215,6 @@
       "estimatePaying": "So far this month: {estimate} excl. VAT · {included} with France’s {rate}% VAT.",
       "nextAccount": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, costs a month: {price} excl. VAT · {included} with France’s {rate}% VAT.",
       "upcoming": "Stripe’s next invoice: {amount}, tax included. The invoice is the one that counts.",
-      "own": "{connected, plural, one {# account connected on this workspace.} other {# accounts connected on this workspace.}}",
       "elsewhere": "They count with the other workspaces of its billing account. The workspace that bills the account shows the month’s account-days and their cost to its members.",
       "nextAccountFree": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, is free: the first {free, number} are."
     },

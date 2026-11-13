@@ -596,14 +596,14 @@ const CurrentPlan = ({
               <AlertDescription>{t("current.pastDue")}</AlertDescription>
             </Alert>
           ) : null}
-          {billing.paymentFailed === true ? (
+          {billing.paymentFailed === true && subscription === null ? (
             <Alert variant="destructive">
               <AlertDescription>{t("current.unpaid")}</AlertDescription>
             </Alert>
           ) : null}
         </div>
       </CardContent>
-      {canManage && billing.paymentFailed === true ? (
+      {canManage && billing.paymentFailed === true && subscription === null ? (
         <CardFooter>
           <UpdatePaymentMethod
             busy={busy}
@@ -770,8 +770,12 @@ const ThisMonth = ({ billing }: { readonly billing: Billing }) => {
           // Another workspace bills the account: this one reads its own
           // accounts, never the account's money.
           <div className="flex flex-col gap-2">
-            <p className="text-2xl font-semibold tabular-nums">
-              {t("own", { connected: accounts.connected })}
+            <p className="text-sm">
+              {t("pooledAcross", {
+                connected: accounts.connected,
+                pooled: accounts.pooled,
+                workspaces: billing.account?.workspaces ?? 1,
+              })}
             </p>
             <p className="text-muted-foreground text-sm">{t("elsewhere")}</p>
           </div>
@@ -1060,35 +1064,12 @@ const UsageMeter = ({
   );
 };
 
-// The media a workspace that does not bill its account stores itself.
-const OwnStorage = ({ used }: { readonly used: number }) => {
-  const t = useTranslations("Billing.usage");
-  const size = useSize();
-
-  return (
-    <li className="flex flex-wrap justify-between gap-3 text-sm">
-      <span className="font-medium">
-        {t("limit", { limit: "mediaStorage" })}
-      </span>
-      <span className="text-muted-foreground tabular-nums">
-        {t("ownStorage", { used: size(used) })}
-      </span>
-    </li>
-  );
-};
-
 const Usage = ({
   billing,
   limits,
-  own = false,
 }: {
   readonly billing: Billing;
   readonly limits: readonly PlanLimit[];
-  /**
-   * Whether the workspace does not bill its account: its media are its
-   * own, without the pool's allowance.
-   */
-  readonly own?: boolean;
 }) => {
   const t = useTranslations("Billing.usage");
   const { allowances, usage } = billing;
@@ -1118,19 +1099,15 @@ const Usage = ({
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col gap-5">
-          {limits.map((limit) =>
-            own && limit === "mediaStorage" ? (
-              <OwnStorage key={limit} used={used[limit]} />
-            ) : (
-              <UsageMeter
-                key={limit}
-                allowed={allowances[limit]}
-                limit={limit}
-                resetsAt={resetsAt[limit]}
-                used={used[limit]}
-              />
-            )
-          )}
+          {limits.map((limit) => (
+            <UsageMeter
+              key={limit}
+              allowed={allowances[limit]}
+              limit={limit}
+              resetsAt={resetsAt[limit]}
+              used={used[limit]}
+            />
+          ))}
         </ul>
       </CardContent>
     </Card>
@@ -1222,7 +1199,7 @@ export const BillingView = (props: BillingViewProps) => {
         <AddPaymentMethod {...props} refusal={refusal} />
       ) : null}
       <Ladder billing={billing} />
-      <Usage billing={billing} limits={usageLimits} own={!billsHere} />
+      <Usage billing={billing} limits={usageLimits} />
     </div>
   );
 };

@@ -128,16 +128,17 @@ const customer: Billing = {
     connected: 3,
     estimate: null,
     nextAccount: null,
-    pooled: 3,
+    pooled: 41,
   },
-  // As the server answers a workspace that does not bill its account:
-  // its own accounts and media, no contract and no pooled media allowance.
-  allowances: { ...perAccount, mediaStorage: null },
+  // As the server answers a workspace that does not bill its account: the
+  // pool's counts and limits, as its usage tells them, and no money or
+  // contract.
+  allowances: { ...perAccount, mediaStorage: 205_000_000_000 },
   estimate: null,
   paymentFailed: false,
   subscription: null,
   upcomingInvoice: null,
-  usage: { ...usage, channels: 3, mediaStorage: 300_000_000 },
+  usage: { ...usage, channels: 41, mediaStorage: 35_000_000_000 },
   withdrawableUntil: null,
 };
 
@@ -352,14 +353,14 @@ describe(BillingView, () => {
     expect(html).not.toContain("I ask Peal");
   });
 
-  it("shows a partner's customer only its own accounts, and none of the account's money", async () => {
+  it("shows a partner's customer the pool's counts and limits, and none of the account's money or contract", async () => {
     const html = await render("en", { billing: customer });
 
     expect(
       missing(html, [
-        "3 accounts connected on this workspace.",
+        "41 accounts across the account’s 9 workspaces, 3 of them on this one.",
         "The workspace that bills the account shows the month’s account-days and their cost to its members.",
-        "300 MB stored by this workspace",
+        "35 GB of 205 GB",
       ])
     ).toStrictEqual([]);
     // Who pays and where is the account card's; this one names no plan,
@@ -388,6 +389,23 @@ describe(BillingView, () => {
       ])
     ).toStrictEqual([]);
     expect(html).not.toContain("Order with obligation to pay");
+  });
+
+  it("says a past due payment once, with the portal, and keeps the plan", async () => {
+    const html = await render("en", {
+      billing: {
+        ...onPerAccount,
+        paymentFailed: true,
+        subscription:
+          onPerAccount.subscription === null
+            ? null
+            : { ...onPerAccount.subscription, status: "past_due" },
+      },
+    });
+
+    expect(html).toContain("The last payment did not go through.");
+    expect(html).not.toContain("back on the free tier");
+    expect(html).toContain("Manage billing");
   });
 
   it("offers the portal beside a refusal that says a contract already exists", async () => {
