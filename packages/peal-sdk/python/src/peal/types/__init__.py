@@ -828,6 +828,7 @@ if typing.TYPE_CHECKING:
     from .text_override import TextOverride
     from .text_provider import TextProvider
     from .text_provider_address_refused_encoded import TextProviderAddressRefusedEncoded
+    from .text_provider_busy_encoded import TextProviderBusyEncoded
     from .text_provider_key_required_encoded import TextProviderKeyRequiredEncoded
     from .text_provider_kind import TextProviderKind
     from .text_provider_not_found_encoded import TextProviderNotFoundEncoded
@@ -1752,6 +1753,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TextOverride": ".text_override",
     "TextProvider": ".text_provider",
     "TextProviderAddressRefusedEncoded": ".text_provider_address_refused_encoded",
+    "TextProviderBusyEncoded": ".text_provider_busy_encoded",
     "TextProviderKeyRequiredEncoded": ".text_provider_key_required_encoded",
     "TextProviderKind": ".text_provider_kind",
     "TextProviderNotFoundEncoded": ".text_provider_not_found_encoded",
@@ -2700,6 +2702,7 @@ __all__ = [
     "TextOverride",
     "TextProvider",
     "TextProviderAddressRefusedEncoded",
+    "TextProviderBusyEncoded",
     "TextProviderKeyRequiredEncoded",
     "TextProviderKind",
     "TextProviderNotFoundEncoded",

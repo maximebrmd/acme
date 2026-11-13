@@ -1016,6 +1016,7 @@ module Peal
     autoload :TextProviderKind, ::File.join(__dir__, "peal/types/text_provider_kind")
     autoload :TextProvider, ::File.join(__dir__, "peal/types/text_provider")
     autoload :TextProviderAddressRefusedEncoded, ::File.join(__dir__, "peal/types/text_provider_address_refused_encoded")
+    autoload :TextProviderBusyEncoded, ::File.join(__dir__, "peal/types/text_provider_busy_encoded")
     autoload :TextProviderKeyRequiredEncoded, ::File.join(__dir__, "peal/types/text_provider_key_required_encoded")
     autoload :TextProviderNotFoundEncoded, ::File.join(__dir__, "peal/types/text_provider_not_found_encoded")
     autoload :TextProviderSetting, ::File.join(__dir__, "peal/types/text_provider_setting")

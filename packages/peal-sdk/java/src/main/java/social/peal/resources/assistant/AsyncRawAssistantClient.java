@@ -184,7 +184,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request) {
@@ -192,7 +192,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
@@ -443,7 +443,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(String workspaceId) {
         return imageProvider(
@@ -451,7 +451,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, RequestOptions requestOptions) {
@@ -460,7 +460,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request) {
@@ -468,7 +468,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure.
+     * Reads the image provider the workspace brought, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests: its address and model, never its key, or null. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProviderSetting>> imageProvider(
             String workspaceId, ImageProviderAssistantRequest request, RequestOptions requestOptions) {
@@ -568,7 +568,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
             String workspaceId, ImageProviderChange request) {
@@ -576,7 +576,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.
+     * Sets the image provider the workspace brings, an endpoint that speaks the OpenAI images API (<code>POST {baseUrl}/images/generations</code>), whose images then spend none of the workspace's daily assistant requests. The workspace's image prompts then go to <code>baseUrl</code> with <code>apiKey</code> as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: <code>apiKey</code> may be left out to keep the stored one only while <code>baseUrl</code> stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<ImageProvider>> setImageProvider(
             String workspaceId, ImageProviderChange request, RequestOptions requestOptions) {
@@ -696,7 +696,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(String workspaceId) {
         return removeImageProvider(
@@ -704,7 +704,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RequestOptions requestOptions) {
@@ -713,7 +713,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request) {
@@ -721,7 +721,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure.
+     * Removes the workspace's image provider and its key: images are made by the server's image model again, if it has one, and cost the workspace's daily requests. Needs assistant:configure, which no OAuth client holds but Peal's command line (since 2026-11-13; before, any client with workspace:write did).
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeImageProvider(
             String workspaceId, RemoveImageProviderAssistantRequest request, RequestOptions requestOptions) {

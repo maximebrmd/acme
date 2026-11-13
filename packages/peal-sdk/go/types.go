@@ -22978,6 +22978,124 @@ func (t *TextProviderAddressRefusedEncoded) String() string {
 }
 
 var (
+	textProviderBusyEncodedFieldCode      = big.NewInt(1 << 0)
+	textProviderBusyEncodedFieldMessage   = big.NewInt(1 << 1)
+	textProviderBusyEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type TextProviderBusyEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TextProviderBusyEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TextProviderBusyEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TextProviderBusyEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TextProviderBusyEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TextProviderBusyEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderBusyEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(textProviderBusyEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderBusyEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(textProviderBusyEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TextProviderBusyEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(textProviderBusyEncodedFieldRequestID)
+}
+
+func (t *TextProviderBusyEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TextProviderBusyEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TextProviderBusyEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TextProviderBusyEncoded) MarshalJSON() ([]byte, error) {
+	type embed TextProviderBusyEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TextProviderBusyEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
 	textProviderKeyRequiredEncodedFieldCode      = big.NewInt(1 << 0)
 	textProviderKeyRequiredEncodedFieldMessage   = big.NewInt(1 << 1)
 	textProviderKeyRequiredEncodedFieldRequestID = big.NewInt(1 << 2)
