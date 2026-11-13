@@ -5,7 +5,7 @@ import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
 import { partCount } from "#publishing/domain/post-content.ts";
-import { livePartsOf } from "#publishing/domain/post-target.ts";
+import { isDropped, livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -165,7 +165,10 @@ export const WebhookPostEvents = Layer.effect(
         data: {
           postId: post.id,
           scheduledAt: post.status.schedule.at,
-          targets: yield* refsOf(targets),
+          // A channel taken off the post is no longer one it goes to.
+          targets: yield* refsOf(
+            targets.filter((target) => !isDropped(target))
+          ),
           timeZone: post.status.schedule.timeZone,
           workspaceId: post.workspaceId,
         },

@@ -348,7 +348,7 @@ Peal cannot tell whether the post went live on the channel, and never sends it a
 
 ### post.cancelled [#post-cancelled]
 
-The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event. A channel Peal was sending to at that moment ends with its own event: `post.published`, `post.failed` or `post.unconfirmed` if the platform was called, or a `post.cancelled` naming it alone if it was not. A channel someone removes from a post that waits for its time is told the same way, a `post.cancelled` naming it alone: the post keeps its time and still goes out on its other channels, and its `post.finished` lists that channel as `cancelled`.
+The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event. A channel Peal was sending to at that moment ends with its own event: `post.published`, `post.failed` or `post.unconfirmed` if the platform was called, or a `post.cancelled` naming it alone if it was not. A channel someone removes from a post that waits for its time is told the same way, a `post.cancelled` naming it alone: the post keeps its time and still goes out on its other channels, a `post.scheduled` told when it moves no longer names that channel, and its `post.finished` lists it as `cancelled`.
 
 | Field         | Type   | What it holds                                                                        |
 | ------------- | ------ | ------------------------------------------------------------------------------------ |
