@@ -26,7 +26,7 @@ export class MediaClient {
     }
 
     /**
-     * Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Pass the page's `nextCursor` as `cursor` for the next one. Needs media:read.
+     * Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Every filter given must hold: `kind` (`image`, `video` or `document`), and `q`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's `nextCursor` as `cursor`, with the same filters, for the next one. Needs media:read.
      *
      * @param {Peal.ListMediaRequest} request
      * @param {MediaClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -50,10 +50,12 @@ export class MediaClient {
     }
 
     private async __list(request: Peal.ListMediaRequest, requestOptions?: MediaClient.RequestOptions): Promise<core.WithRawResponse<Peal.MediaPage>> {
-        const { workspaceId, cursor, limit } = request;
+        const { workspaceId, cursor, kind, limit, q } = request;
         const _queryParams: Record<string, unknown> = {
             cursor,
-            limit
+            kind: kind != null ? kind : undefined,
+            limit,
+            q
         };
         const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
         let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
@@ -92,7 +94,7 @@ export class MediaClient {
     }
 
     /**
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give `fileName`, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
      *
      * @param {Peal.NewUpload} request
      * @param {MediaClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -161,7 +163,7 @@ export class MediaClient {
     }
 
     /**
-     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
      *
      * @param {Peal.MediaImport} request
      * @param {MediaClient.RequestOptions} requestOptions - Request-specific configuration.

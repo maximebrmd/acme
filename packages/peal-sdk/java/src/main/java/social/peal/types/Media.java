@@ -40,6 +40,8 @@ public final class Media {
 
     private final Optional<Integer> durationMs;
 
+    private final Optional<String> fileName;
+
     private final String id;
 
     private final MediaKind kind;
@@ -63,6 +65,7 @@ public final class Media {
             String createdAt,
             Optional<MediaDimensions> dimensions,
             Optional<Integer> durationMs,
+            Optional<String> fileName,
             String id,
             MediaKind kind,
             Optional<Integer> pageCount,
@@ -78,6 +81,7 @@ public final class Media {
         this.createdAt = createdAt;
         this.dimensions = dimensions;
         this.durationMs = durationMs;
+        this.fileName = fileName;
         this.id = id;
         this.kind = kind;
         this.pageCount = pageCount;
@@ -137,6 +141,14 @@ public final class Media {
             return Optional.empty();
         }
         return durationMs;
+    }
+
+    @JsonIgnore
+    public Optional<String> getFileName() {
+        if (fileName == null) {
+            return Optional.empty();
+        }
+        return fileName;
     }
 
     @JsonProperty("id")
@@ -200,6 +212,12 @@ public final class Media {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("fileName")
+    private Optional<String> _getFileName() {
+        return fileName;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("pageCount")
     private Optional<Integer> _getPageCount() {
         return pageCount;
@@ -231,6 +249,7 @@ public final class Media {
                 && createdAt.equals(other.createdAt)
                 && dimensions.equals(other.dimensions)
                 && durationMs.equals(other.durationMs)
+                && fileName.equals(other.fileName)
                 && id.equals(other.id)
                 && kind.equals(other.kind)
                 && pageCount.equals(other.pageCount)
@@ -250,6 +269,7 @@ public final class Media {
                 this.createdAt,
                 this.dimensions,
                 this.durationMs,
+                this.fileName,
                 this.id,
                 this.kind,
                 this.pageCount,
@@ -332,6 +352,12 @@ public final class Media {
 
         _FinalStage durationMs(Nullable<Integer> durationMs);
 
+        _FinalStage fileName(Optional<String> fileName);
+
+        _FinalStage fileName(String fileName);
+
+        _FinalStage fileName(Nullable<String> fileName);
+
         _FinalStage pageCount(Optional<Integer> pageCount);
 
         _FinalStage pageCount(Integer pageCount);
@@ -376,6 +402,8 @@ public final class Media {
 
         private Optional<Integer> pageCount = Optional.empty();
 
+        private Optional<String> fileName = Optional.empty();
+
         private Optional<Integer> durationMs = Optional.empty();
 
         private Optional<MediaDimensions> dimensions = Optional.empty();
@@ -398,6 +426,7 @@ public final class Media {
             createdAt(other.getCreatedAt());
             dimensions(other.getDimensions());
             durationMs(other.getDurationMs());
+            fileName(other.getFileName());
             id(other.getId());
             kind(other.getKind());
             pageCount(other.getPageCount());
@@ -514,6 +543,31 @@ public final class Media {
         }
 
         @java.lang.Override
+        public _FinalStage fileName(Nullable<String> fileName) {
+            if (fileName.isNull()) {
+                this.fileName = null;
+            } else if (fileName.isEmpty()) {
+                this.fileName = Optional.empty();
+            } else {
+                this.fileName = Optional.of(fileName.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage fileName(String fileName) {
+            this.fileName = Optional.ofNullable(fileName);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "fileName", nulls = Nulls.SKIP)
+        public _FinalStage fileName(Optional<String> fileName) {
+            this.fileName = fileName;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage durationMs(Nullable<Integer> durationMs) {
             if (durationMs.isNull()) {
                 this.durationMs = null;
@@ -624,6 +678,7 @@ public final class Media {
                     createdAt,
                     dimensions,
                     durationMs,
+                    fileName,
                     id,
                     kind,
                     pageCount,
@@ -643,6 +698,7 @@ public final class Media {
                     || key.equalsIgnoreCase("createdAt")
                     || key.equalsIgnoreCase("dimensions")
                     || key.equalsIgnoreCase("durationMs")
+                    || key.equalsIgnoreCase("fileName")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("kind")
                     || key.equalsIgnoreCase("pageCount")

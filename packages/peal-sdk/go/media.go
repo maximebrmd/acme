@@ -50,6 +50,7 @@ var (
 	newUploadFieldAltText     = big.NewInt(1 << 1)
 	newUploadFieldByteSize    = big.NewInt(1 << 2)
 	newUploadFieldContentType = big.NewInt(1 << 3)
+	newUploadFieldFileName    = big.NewInt(1 << 4)
 )
 
 type NewUpload struct {
@@ -57,6 +58,7 @@ type NewUpload struct {
 	AltText     *string `json:"altText,omitempty" url:"-"`
 	ByteSize    int64   `json:"byteSize" url:"-"`
 	ContentType string  `json:"contentType" url:"-"`
+	FileName    *string `json:"fileName,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -97,6 +99,13 @@ func (n *NewUpload) SetByteSize(byteSize int64) {
 func (n *NewUpload) SetContentType(contentType string) {
 	n.ContentType = contentType
 	n.require(newUploadFieldContentType)
+}
+
+// SetFileName sets the FileName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewUpload) SetFileName(fileName *string) {
+	n.FileName = fileName
+	n.require(newUploadFieldFileName)
 }
 
 func (n *NewUpload) UnmarshalJSON(data []byte) error {
@@ -327,13 +336,17 @@ func (m *MediaImport) MarshalJSON() ([]byte, error) {
 var (
 	listMediaRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	listMediaRequestFieldCursor      = big.NewInt(1 << 1)
-	listMediaRequestFieldLimit       = big.NewInt(1 << 2)
+	listMediaRequestFieldKind        = big.NewInt(1 << 2)
+	listMediaRequestFieldLimit       = big.NewInt(1 << 3)
+	listMediaRequestFieldQ           = big.NewInt(1 << 4)
 )
 
 type ListMediaRequest struct {
-	WorkspaceID string  `json:"-" url:"-"`
-	Cursor      *string `json:"-" url:"cursor,omitempty"`
-	Limit       *string `json:"-" url:"limit,omitempty"`
+	WorkspaceID string     `json:"-" url:"-"`
+	Cursor      *string    `json:"-" url:"cursor,omitempty"`
+	Kind        *MediaKind `json:"-" url:"kind,omitempty"`
+	Limit       *string    `json:"-" url:"limit,omitempty"`
+	Q           *string    `json:"-" url:"q,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -362,11 +375,25 @@ func (l *ListMediaRequest) SetCursor(cursor *string) {
 	l.require(listMediaRequestFieldCursor)
 }
 
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListMediaRequest) SetKind(kind *MediaKind) {
+	l.Kind = kind
+	l.require(listMediaRequestFieldKind)
+}
+
 // SetLimit sets the Limit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListMediaRequest) SetLimit(limit *string) {
 	l.Limit = limit
 	l.require(listMediaRequestFieldLimit)
+}
+
+// SetQ sets the Q field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListMediaRequest) SetQ(q *string) {
+	l.Q = q
+	l.require(listMediaRequestFieldQ)
 }
 
 var (

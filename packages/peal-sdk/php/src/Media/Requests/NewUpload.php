@@ -26,10 +26,17 @@ class NewUpload extends JsonSerializableType
     public string $contentType;
 
     /**
+     * @var ?string $fileName
+     */
+    #[JsonProperty('fileName')]
+    public ?string $fileName;
+
+    /**
      * @param array{
      *   byteSize: int,
      *   contentType: string,
      *   altText?: ?string,
+     *   fileName?: ?string,
      * } $values
      */
     public function __construct(
@@ -38,5 +45,6 @@ class NewUpload extends JsonSerializableType
         $this->altText = $values['altText'] ?? null;
         $this->byteSize = $values['byteSize'];
         $this->contentType = $values['contentType'];
+        $this->fileName = $values['fileName'] ?? null;
     }
 }

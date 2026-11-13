@@ -126,6 +126,14 @@ func TestSettersNewUpload(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFileName", func(t *testing.T) {
+		obj := &NewUpload{}
+		var fernTestValueFileName *string
+		obj.SetFileName(fernTestValueFileName)
+		assert.Equal(t, fernTestValueFileName, obj.FileName)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestSettersMarkExplicitNewUpload(t *testing.T) {
@@ -230,6 +238,37 @@ func TestSettersMarkExplicitNewUpload(t *testing.T) {
 
 		// Act
 		obj.SetContentType(fernTestValueContentType)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFileName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NewUpload{}
+		var fernTestValueFileName *string
+
+		// Act
+		obj.SetFileName(fernTestValueFileName)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -686,11 +725,27 @@ func TestSettersListMediaRequest(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetKind", func(t *testing.T) {
+		obj := &ListMediaRequest{}
+		var fernTestValueKind *MediaKind
+		obj.SetKind(fernTestValueKind)
+		assert.Equal(t, fernTestValueKind, obj.Kind)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetLimit", func(t *testing.T) {
 		obj := &ListMediaRequest{}
 		var fernTestValueLimit *string
 		obj.SetLimit(fernTestValueLimit)
 		assert.Equal(t, fernTestValueLimit, obj.Limit)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetQ", func(t *testing.T) {
+		obj := &ListMediaRequest{}
+		var fernTestValueQ *string
+		obj.SetQ(fernTestValueQ)
+		assert.Equal(t, fernTestValueQ, obj.Q)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -759,6 +814,37 @@ func TestSettersMarkExplicitListMediaRequest(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetKind_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ListMediaRequest{}
+		var fernTestValueKind *MediaKind
+
+		// Act
+		obj.SetKind(fernTestValueKind)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetLimit_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -767,6 +853,37 @@ func TestSettersMarkExplicitListMediaRequest(t *testing.T) {
 
 		// Act
 		obj.SetLimit(fernTestValueLimit)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetQ_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ListMediaRequest{}
+		var fernTestValueQ *string
+
+		// Act
+		obj.SetQ(fernTestValueQ)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

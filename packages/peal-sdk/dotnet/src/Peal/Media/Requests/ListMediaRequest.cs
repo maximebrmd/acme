@@ -13,7 +13,13 @@ public record ListMediaRequest
     public string? Cursor { get; set; }
 
     [JsonIgnore]
+    public MediaKind? Kind { get; set; }
+
+    [JsonIgnore]
     public string? Limit { get; set; }
+
+    [JsonIgnore]
+    public string? Q { get; set; }
 
     /// <inheritdoc />
     public override string ToString()

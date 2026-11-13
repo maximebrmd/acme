@@ -56,6 +56,12 @@ class Media extends JsonSerializableType
     public ?int $durationMs;
 
     /**
+     * @var ?string $fileName
+     */
+    #[JsonProperty('fileName')]
+    public ?string $fileName;
+
+    /**
      * @var string $id
      */
     #[JsonProperty('id')]
@@ -105,6 +111,7 @@ class Media extends JsonSerializableType
      *   codec?: ?string,
      *   dimensions?: ?MediaDimensions,
      *   durationMs?: ?int,
+     *   fileName?: ?string,
      *   pageCount?: ?int,
      *   url?: ?string,
      * } $values
@@ -120,6 +127,7 @@ class Media extends JsonSerializableType
         $this->createdAt = $values['createdAt'];
         $this->dimensions = $values['dimensions'] ?? null;
         $this->durationMs = $values['durationMs'] ?? null;
+        $this->fileName = $values['fileName'] ?? null;
         $this->id = $values['id'];
         $this->kind = $values['kind'];
         $this->pageCount = $values['pageCount'] ?? null;

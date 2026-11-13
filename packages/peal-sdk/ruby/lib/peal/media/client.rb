@@ -10,8 +10,10 @@ module Peal
         @client = client
       end
 
-      # Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Pass the
-      # page's `nextCursor` as `cursor` for the next one. Needs media:read.
+      # Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Every filter
+      # given must hold: `kind` (`image`, `video` or `document`), and `q`, text the file's name or its description
+      # holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's
+      # `nextCursor` as `cursor`, with the same filters, for the next one. Needs media:read.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -22,7 +24,9 @@ module Peal
       # @option request_options [Integer] :timeout_in_seconds
       # @option params [String] :workspace_id
       # @option params [String, nil] :cursor
+      # @option params [Peal::Types::MediaKind, nil] :kind
       # @option params [String, nil] :limit
+      # @option params [String, nil] :q
       #
       # @example
       #   client.media.list(workspace_id: "workspaceId")
@@ -32,7 +36,9 @@ module Peal
         params = Peal::Internal::Types::Utils.normalize_keys(params)
         query_params = {}
         query_params["cursor"] = params[:cursor] if params.key?(:cursor)
+        query_params["kind"] = params[:kind] if params.key?(:kind)
         query_params["limit"] = params[:limit] if params.key?(:limit)
+        query_params["q"] = params[:q] if params.key?(:q)
 
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],
@@ -60,9 +66,10 @@ module Peal
       end
 
       # Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT
-      # per part for a larger video. Send the file with them, then complete the upload. The requests only take the
-      # declared size and content type. On a server that bills, the declared size must fit the plan's media storage with
-      # what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+      # per part for a larger video. Send the file with them, then complete the upload. Give `fileName`, what the file
+      # is called on the device, so members find it in the library by its name. The requests only take the declared size
+      # and content type. On a server that bills, the declared size must fit the plan's media storage with what the
+      # workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
       #
       # @param request_options [Hash]
       # @param params [Peal::Media::Types::NewUpload]
@@ -115,7 +122,8 @@ module Peal
       end
 
       # Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload
-      # does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself,
+      # does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the
+      # last segment of the address's path, once redirects are followed, never its query. The server fetches it itself,
       # from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or
       # cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The
       # file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16
