@@ -12,9 +12,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Build screens from `peal-ui` components and Tailwind classes; add no other
   stylesheet.
-- ui-sdk (`@ui-sdk/react`, on `@ui-sdk/core`) gives unstyled behaviour
-  (keyboard, focus, selection, popups, ARIA) for what peal-ui's components
-  do not cover. Its clone in `.local/references/ui-sdk` is the source of
+- peal-ui's components are shadcn/ui's look on ui-sdk (`@ui-sdk/react`, on
+  `@ui-sdk/core`), which gives their unstyled behaviour (keyboard, focus,
+  selection, popups, ARIA), as it does for what peal-ui does not cover:
+  nothing imports Base UI. Its clone in `.local/references/ui-sdk` is the source of
   truth: before using it, read the skill in `packages/core/skills/ui-sdk`,
   then the React pages in `apps/docs/content/docs/react` (`components/`
   holds one per component). To build a new component, also read
@@ -23,11 +24,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   their `data-*` state attributes; never import `@ui-sdk/core/web.css`, its
   default look.
 - Add a shadcn component by running `bunx shadcn add <name>` in
-  `packages/peal-ui`, which reads its `components.json`. Point the component's
+  `packages/peal-ui`, which reads its `components.json`. Its style
+  (`base-nova`) writes the component on Base UI: put the matching ui-sdk
+  part in place of each Base UI one, its classes on ui-sdk's state
+  attributes (a bare `data-selected` takes `data-[selected]:`, as shadcn's
+  `data-selected:` reads `data-selected="true"`), and add no
+  `@base-ui/react`. Point the component's
   `cn` import (the CLI writes `"cn"`) at `../lib/utils` and its sibling imports
   at `./`, rewrite function components as arrow functions, take every
   user-facing string (labels such as a dialog's close button) as a prop, then
-  run `bun run fix`.
+  run `bun run fix`. `@shadcn/lint` proves a wrapper classless only around
+  Base UI, so it reads every peal-ui wrapper as styled: classes on an
+  element a peal-ui part renders go on a component of the screen's own.
 - Use theme tokens (`text-muted-foreground`, not `text-gray-500`) and
   component variants and sizes rather than restyling a component; the
   `@shadcn/lint` rules check pages against peal-ui. Peal is light only

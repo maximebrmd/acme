@@ -10,7 +10,8 @@ changing a screen.
 Peal has one theme, light. There is no dark mode yet, so no screen follows
 the operating system's setting and none offers a switch:
 
-- peal-ui sets `color-scheme: light` and defines no dark tokens. Its `dark:`
+- peal-ui, shadcn/ui's components on ui-sdk's behaviour, sets
+  `color-scheme: light` and defines no dark tokens. Its `dark:`
   variant matches a `.dark` class that nothing sets, so the `dark:` classes
   shadcn/ui's components bring with them stay inert.
 - Write no `dark:` class in Peal's own code, in the web app or the site.

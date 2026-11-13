@@ -31,9 +31,9 @@ one per tool under `packages/peal-infra/`:
   `openapi.json` for the docs.
 - `peal-server`: the Effect server on Bun: the bounded contexts below, Better
   Auth, the MCP endpoint, and the cluster that runs durable jobs and crons.
-- `peal-ui`: the design system, shipped as sources that apps compile: shadcn/ui
-  on Base UI (Nova style, lucide icons), the Tailwind CSS v4 theme and the
-  Geist fonts.
+- `peal-ui`: the design system, shipped as sources that apps compile:
+  shadcn/ui's look (Nova style, lucide icons) on ui-sdk's behaviour, the
+  Tailwind CSS v4 theme and the Geist fonts.
 - `peal-web`: the Next.js App Router app, with next-intl, `@effect/atom-react`,
   Better Auth's client and Tiptap.
 - `peal-cli`: the `peal` command line, `effect/cli` on Bun, a client of the API

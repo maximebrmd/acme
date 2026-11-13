@@ -126,7 +126,7 @@ SDKs derive their clients from it.
 | [`peal-contract`](../packages/peal-contract) | The HTTP API definition (Effect `HttpApi`), shared by the server and clients |
 | [`peal-server`](../packages/peal-server)     | The Effect server on Bun: bounded contexts, Better Auth, MCP, durable jobs   |
 | [`peal-web`](../packages/peal-web)           | The web app: Next.js App Router, next-intl, Tiptap                           |
-| [`peal-ui`](../packages/peal-ui)             | The design system: shadcn/ui on Base UI and Tailwind CSS v4, as sources      |
+| [`peal-ui`](../packages/peal-ui)             | The design system: shadcn/ui's look on ui-sdk, Tailwind CSS v4, as sources   |
 | [`peal-cli`](../packages/peal-cli)           | The `peal` command line, signing in with OAuth                               |
 | [`peal-sdk`](../packages/peal-sdk)           | The API's clients in eight languages, generated from the contract            |
 | [`peal-docs`](../packages/peal-docs)         | The documentation, with the API reference from the contract's OpenAPI        |
