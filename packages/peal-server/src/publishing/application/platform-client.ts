@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import type { Poll } from "#publishing/domain/poll.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -43,6 +44,12 @@ export interface OutgoingPost {
   readonly options: Option.Option<TargetOptions>;
   /** The part's place in the post: 0 for the post itself. */
   readonly part: number;
+  /**
+   * The poll the post asks, on its first part only, checked against the
+   * platform when it was scheduled. An adapter of a platform that takes
+   * one (`poll` in `#publishing/domain/platform-rules.ts`) must send it.
+   */
+  readonly poll: Option.Option<Poll>;
   /**
    * What a part after the first answers to; none for the post itself.
    * An adapter of a platform that takes parts (`followUps` in

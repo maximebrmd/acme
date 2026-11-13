@@ -12,6 +12,7 @@ import {
   CurrentThreadedPlatforms,
   threadedPlatformsWith,
 } from "#publishing/application/threaded-platforms.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -441,6 +442,59 @@ layer(PublisherTest)(
         assert.deepStrictEqual(
           refused,
           new BadRequest({ code: "partsNotSupported" })
+        );
+        assert.lengthOf(yield* Ref.get(handed), before);
+      })
+    );
+
+    it.effect("never receive a poll they would not send", () =>
+      Effect.gen(function* refusesPolls() {
+        const posts = yield* PostRepository;
+        const postId = yield* newId(PostIdSchema);
+        const channelId = yield* newId(ChannelIdSchema);
+
+        const target = createTarget(
+          yield* newId(PostTargetIdSchema),
+          postId,
+          channelId
+        );
+
+        yield* posts.insert(
+          createDraft(
+            postId,
+            yield* freshWorkspace,
+            new PostContent({
+              media: [],
+              overrides: [],
+              poll: Option.some(
+                new Poll({ choices: ["Yes", "No"], durationMinutes: 60 })
+              ),
+              text: "A video's question",
+            }),
+            Option.none()
+          ),
+          [target]
+        );
+
+        const before = (yield* Ref.get(handed)).length;
+
+        const refused = yield* PlatformPublisher.use((publisher) =>
+          publisher.publish({
+            channelId,
+            idempotencyKey: "a-synthetic-stray-poll",
+            part: 0,
+            postId,
+            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            targetId: target.id,
+          })
+        ).pipe(
+          Effect.flip,
+          Effect.ensuring(posts.remove(postId).pipe(Effect.orDie))
+        );
+
+        assert.deepStrictEqual(
+          refused,
+          new BadRequest({ code: "pollNotSupported" })
         );
         assert.lengthOf(yield* Ref.get(handed), before);
       })

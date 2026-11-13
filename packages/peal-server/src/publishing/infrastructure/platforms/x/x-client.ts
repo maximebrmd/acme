@@ -204,6 +204,10 @@ interface NewPost {
   made_with_ai?: true;
   media?: { readonly media_ids: readonly string[] };
   paid_partnership?: true;
+  poll?: {
+    readonly duration_minutes: number;
+    readonly options: readonly string[];
+  };
   reply?: { readonly in_reply_to_tweet_id: string };
   reply_settings?: XReplySettings;
   share_with_followers?: true;
@@ -596,6 +600,15 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
 
     if (prepared.mediaIds.length > 0) {
       body.media = { media_ids: prepared.mediaIds };
+    }
+
+    // The post's poll (`CreatePostsPoll`: `options`, `duration_minutes`),
+    // with the first part only, never with files: scheduling refuses both.
+    if (Option.isSome(post.poll)) {
+      body.poll = {
+        duration_minutes: post.poll.value.durationMinutes,
+        options: post.poll.value.choices,
+      };
     }
 
     // A part after the first replies to the part before it: the thread.

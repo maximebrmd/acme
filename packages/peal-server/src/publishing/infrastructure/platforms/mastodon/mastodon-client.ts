@@ -168,6 +168,35 @@ const optionParams = (post: OutgoingPost): StatusOptions => {
   return params;
 };
 
+/**
+ * What the status shows beside its text: its files, or its poll (the
+ * statuses reference: `poll[options][]`, `poll[expires_in]` in seconds,
+ * `poll[multiple]`; "If media_ids[] is provided, poll cannot be used", so
+ * a status with a poll sends no `media_ids`, which scheduling keeps empty
+ * there). Several picks are said only when asked, Mastodon's default
+ * being one.
+ */
+const attachedTo = (
+  post: OutgoingPost,
+  prepared: MastodonMedia
+):
+  | { readonly media_ids: readonly string[] }
+  | {
+      readonly poll: {
+        readonly expires_in: number;
+        readonly multiple?: true;
+        readonly options: readonly string[];
+      };
+    } =>
+  Option.match(post.poll, {
+    onNone: () => ({ media_ids: prepared.mediaIds }),
+    onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+      poll: multipleChoice
+        ? { expires_in: durationMinutes * 60, multiple: true, options: choices }
+        : { expires_in: durationMinutes * 60, options: choices },
+    }),
+  });
+
 const readinessOf = (media: MastodonMedia): Readiness<MastodonMedia> =>
   media.pending.length === 0
     ? { _tag: "ready", prepared: media }
@@ -459,13 +488,13 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
             HttpClientRequest.bodyJsonUnsafe(
               Option.match(post.replyTo, {
                 onNone: () => ({
-                  media_ids: prepared.mediaIds,
+                  ...attachedTo(post, prepared),
                   status: post.text,
                   ...optionParams(post),
                 }),
                 onSome: ({ parent }) => ({
                   in_reply_to_id: parent,
-                  media_ids: prepared.mediaIds,
+                  ...attachedTo(post, prepared),
                   status: post.text,
                   ...optionParams(post),
                 }),

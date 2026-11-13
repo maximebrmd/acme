@@ -133,6 +133,34 @@ const optionParams = (post: OutgoingPost): ContainerOptions => {
   return params;
 };
 
+// The letters Threads names a poll's options by, in order.
+const optionNames = ["option_a", "option_b", "option_c", "option_d"] as const;
+
+/**
+ * A text post's poll (the polls guide, developers.facebook.com/
+ * documentation/threads/create-posts/polls, read 2026-11-14):
+ * `poll_attachment`, a JSON object of `option_a` to `option_d`, "only to
+ * text-only posts", which scheduling keeps without files. Threads sets no
+ * duration, so the poll's is not sent.
+ */
+const pollParams = (
+  post: OutgoingPost
+): { readonly poll_attachment?: string } =>
+  Option.match(post.poll, {
+    onNone: () => ({}),
+    onSome: ({ choices }) => ({
+      poll_attachment: JSON.stringify(
+        Object.fromEntries(
+          choices.flatMap((choice, index) => {
+            const name = optionNames[index];
+
+            return name === undefined ? [] : [[name, choice]];
+          })
+        )
+      ),
+    }),
+  });
+
 const listedOf = (
   listed: (typeof ThreadsSchema.Type)["data"][number]
 ): ListedPost => ({
@@ -276,6 +304,7 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
       if (single === undefined) {
         const id = yield* container(post, {
           media_type: "TEXT",
+          ...pollParams(post),
           text: post.text,
           ...optionParams(post),
         });

@@ -10,6 +10,7 @@ import {
 } from "effect";
 
 import { MastodonOptions } from "#publishing/domain/mastodon-options.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -645,3 +646,69 @@ describe("a Mastodon post's options", () => {
     }).pipe(Effect.scoped)
   );
 });
+
+describe("a poll on Mastodon", () => {
+  it.live("goes with the status, in seconds, several picks when asked", () =>
+    Effect.gen(function* poll() {
+      const { accountId, client, instance } = yield* onInstance();
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId,
+          poll: Option.some(
+            new Poll({
+              choices: ["Mornings", "Evenings"],
+              durationMinutes: 60,
+              multipleChoice: true,
+            })
+          ),
+          text: "When do you read?",
+        })
+      );
+
+      const [status] = instance.statuses();
+      const [call] = statusCalls(instance);
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(status?.sentPoll, {
+        expiresIn: 3600,
+        multiple: true,
+        options: ["Mornings", "Evenings"],
+      });
+      // No `media_ids` beside a poll, which Mastodon refuses together.
+      assert.notProperty(JSON.parse(textOf(call ?? never)), "media_ids");
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("says nothing of several picks on a poll of one", () =>
+    Effect.gen(function* single() {
+      const { accountId, client, instance } = yield* onInstance();
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId,
+          poll: Option.some(
+            new Poll({ choices: ["Yes", "No"], durationMinutes: 5 })
+          ),
+          text: "Ready?",
+        })
+      );
+
+      const [call] = statusCalls(instance);
+
+      assert.deepStrictEqual(JSON.parse(textOf(call ?? never)).poll, {
+        expires_in: 300,
+        options: ["Yes", "No"],
+      });
+    }).pipe(Effect.scoped)
+  );
+});
+
+const never = {
+  body: new Uint8Array(),
+  headers: {},
+  method: "NONE",
+  path: "",
+  query: new URLSearchParams(),
+  search: "",
+};

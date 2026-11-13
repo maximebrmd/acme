@@ -2,7 +2,10 @@ import { Effect, Layer, Option, Result } from "effect";
 
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
-import { followUpsThrough } from "#publishing/domain/platform-rules.ts";
+import {
+  followUpsThrough,
+  rulesFor,
+} from "#publishing/domain/platform-rules.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -47,6 +50,9 @@ const dueAt = (post: Post) =>
   post.status._tag === "scheduled"
     ? Option.some(post.status.schedule.at)
     : Option.none();
+
+// The platform's own word for a poll it takes none of.
+const pollNotSupported = "pollNotSupported";
 
 const noReplyTarget = new BadRequest({
   code: ownRefusalCodes.replyTargetUnknown,
@@ -232,6 +238,17 @@ export const RoutedPlatformPublisher = Layer.effect(
         });
       }
 
+      // Scheduling refuses a poll where Peal sends none; one that came
+      // this far all the same must never go out without it.
+      const poll = part.index === 0 ? post.content.poll : Option.none();
+
+      if (
+        Option.isSome(poll) &&
+        rulesFor(account.platform, target.value.options).poll === undefined
+      ) {
+        return yield* new BadRequest({ code: pollNotSupported });
+      }
+
       const sent: OutgoingPost = {
         accountId: account.accountId,
         channelId: request.channelId,
@@ -239,6 +256,7 @@ export const RoutedPlatformPublisher = Layer.effect(
         media: part.media,
         options: target.value.options,
         part: part.index,
+        poll,
         replyTo: yield* replyTargetOf(target.value, part.index),
         startedAt: request.startedAt,
         text: yield* textSent(post, request, account.platform, part.text),
