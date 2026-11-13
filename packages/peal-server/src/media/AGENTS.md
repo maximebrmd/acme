@@ -93,10 +93,18 @@
   never in logs, webhook events or what goes to a platform; in the
   workspace's export.
 - `MediaAssets.list` takes `text` (in the name or the description, ILIKE
-  with its wildcards escaped) and `kind` (the kind's content types). The
-  text is found through pg_trgm's GIN indexes on both columns (the
-  extension comes from the custom migration `media-trigrams`), the kind
-  through `(workspace_id, content_type, id)`; read on a scale database
-  (`seed-scale.ts`: a workspace of 100,000 files), a search that finds few
-  files reads under a millisecond. Text under three characters has no
-  trigram and walks the workspace's files newest first, stopping at a page.
+  with its wildcards escaped, cleaned and composed by `searchTextOf` in
+  `listMedia`) and `kind` (the kind's content types), and orders by `id
+  DESC NULLS LAST`, as the workspace's indexes are written: a bare `DESC`
+  is `NULLS FIRST`, which no workspace index gives, and Postgres then reads
+  the primary key backwards across every workspace
+  (`drizzle-media-assets.test.ts` reads the plans). The text is found
+  through pg_trgm's GIN indexes on both columns (the extension comes from
+  the custom migration `media-trigrams`), the kind through `(workspace_id,
+  content_type, id)`. Read on a scale database (`seed-scale.ts`: 500,000
+  files, one workspace of 100,000): a page, a kind or a common word in
+  under a millisecond from the workspace's indexes; a rare text 1.5 to 3
+  ms from the trigrams, up to about 30 ms when its trigrams are common
+  across every workspace's files; text under three characters has no
+  trigram and walks the workspace's files, about 30 ms for no match in
+  100,000.
