@@ -158,6 +158,7 @@ export const allowanceOf = (
     AssistantAllowance.of({
       dailyRequests: () => Effect.succeed(dailyRequests),
       imageRequests: () => Effect.succeed(imageRequests),
+      sharedWith: () => Effect.succeed([]),
     })
   );
 

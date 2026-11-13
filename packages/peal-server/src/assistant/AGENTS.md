@@ -28,10 +28,16 @@
 - Every use case checks `assistant:use` (owners, admins, editors and
   contributors; not viewers, nor read-only OAuth clients) and works in the
   actor's workspace only.
-- The quota is per workspace and UTC day: `AssistantAllowance` gives the
-  limit (the workspace plan's on a server that bills, otherwise
-  `PEAL_AI_DAILY_REQUESTS`, 100), and `AssistantUsage.claim` counts a request in one conditional
-  upsert before the call, so requests sent together never pass it. Give a
+- The quota is per UTC day, across the billing account's workspaces on a
+  server that bills and per workspace elsewhere: `AssistantAllowance` gives
+  the limit (the plan's on a server that bills, otherwise
+  `PEAL_AI_DAILY_REQUESTS`, 100) and the pool (`sharedWith`, billing's
+  `PlanPools`, none when it does not bill), and `AssistantUsage.claim`
+  counts a request before the call: alone, in one conditional upsert; in
+  a pool, in a transaction holding the pool, then each of its workspaces'
+  lock in their order, the pool's day summed with it. Each workspace keeps
+  its own count; the status and billing's usage show the pool's
+  (`pooledUsed`). Requests sent together never pass it. Give a
   request back only when the provider never ran it (`unreachable`); a
   timeout, a refusal or an unusable answer counts.
 - The model has 90 seconds to answer (`answerTimeout`). Anything between the

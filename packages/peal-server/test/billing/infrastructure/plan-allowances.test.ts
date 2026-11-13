@@ -6,6 +6,7 @@ import { ConfigProvider, DateTime, Effect, Layer, Option } from "effect";
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { PlanAssistantAllowanceLive } from "#assistant/infrastructure/plan-assistant-allowance.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { Entitlements } from "#billing/domain/entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
@@ -44,6 +45,7 @@ const allowancesWith = (
         BillingMode.of({ enabled: true, graceSince: graceUntil, graceUntil })
       )
     ),
+    Layer.provide(PlanPools.layerAlone),
     Layer.provide(entitlements),
     Layer.provide(
       Layer.succeed(
@@ -273,6 +275,51 @@ describe("the plan allowances", () => {
           ).pipe(Effect.provide(allowancesWith(UnmeteredTest))),
           100
         );
+      })
+  );
+  it.effect(
+    "count the assistant's day across the billing account on a server that bills, and each workspace alone elsewhere",
+    () =>
+      Effect.gen(function* assistantPool() {
+        const other = WorkspaceIdSchema.make(
+          "7b8c9d0e-1f2a-4b3c-9d4e-5f6a7b8c9d0e"
+        );
+
+        const sharedOn = (enabled: boolean) =>
+          AssistantAllowance.use((allowance) =>
+            allowance.sharedWith(workspaceId)
+          ).pipe(
+            Effect.provide(
+              PlanAssistantAllowanceLive.pipe(
+                Layer.provide(
+                  Layer.succeed(
+                    BillingMode,
+                    BillingMode.of({
+                      enabled,
+                      graceSince: Option.none(),
+                      graceUntil: Option.none(),
+                    })
+                  )
+                ),
+                Layer.provide(
+                  Layer.succeed(
+                    PlanPools,
+                    PlanPools.of({
+                      sharedWith: () => Effect.succeed([other]),
+                      sharingIn: () => Effect.succeed(new Map()),
+                    })
+                  )
+                ),
+                Layer.provide(everyWorkspaceOn("payAsYouGo")),
+                Layer.provide(
+                  ConfigProvider.layer(ConfigProvider.fromUnknown({}))
+                )
+              )
+            )
+          );
+
+        assert.deepStrictEqual(yield* sharedOn(true), [other]);
+        assert.deepStrictEqual(yield* sharedOn(false), []);
       })
   );
 });

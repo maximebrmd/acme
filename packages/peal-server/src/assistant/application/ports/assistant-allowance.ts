@@ -5,8 +5,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
  * How many requests a workspace may send the assistant each day: its
- * plan's allowance on a server that bills, otherwise the server's setting,
- * the same for every workspace.
+ * plan's allowance on a server that bills, across its billing account,
+ * otherwise the server's setting, the same for every workspace alone.
  */
 export class AssistantAllowance extends Context.Service<
   AssistantAllowance,
@@ -17,5 +17,14 @@ export class AssistantAllowance extends Context.Service<
      * trial (`imageRequestsOnTrial`).
      */
     readonly imageRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
+    /**
+     * The other workspaces whose requests count with the workspace's
+     * against the day's limit: its billing account's, on a server that
+     * bills; none elsewhere. In a transaction, the pool stays held until
+     * it ends (`AssistantUsage.claim`).
+     */
+    readonly sharedWith: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly WorkspaceId[]>;
   }
 >()("peal-server/assistant/application/AssistantAllowance") {}
