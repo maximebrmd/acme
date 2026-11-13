@@ -13,4 +13,5 @@ export interface NewUpload {
     altText?: string | null;
     byteSize: number;
     contentType: string;
+    fileName?: string | null;
 }

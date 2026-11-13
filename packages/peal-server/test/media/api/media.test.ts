@@ -3,9 +3,11 @@ import {
   ConfigProvider,
   DateTime,
   Effect,
+  Exit,
   Layer,
   Logger,
   Option,
+  Schema,
 } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
@@ -14,6 +16,7 @@ import {
   Forbidden,
   MediaInUse,
   MediaNotFound,
+  MediaQuerySchema,
   MediaStoreUnavailable,
   UploadIncomplete,
   UploadRejected,
@@ -522,6 +525,75 @@ layer(UseCasesTest)("the media endpoints", (it) => {
         HttpApiError.BadRequest
       );
     })
+  );
+
+  it.effect(
+    "keep each file's name, and search them by name, description and kind",
+    () =>
+      Effect.gen(function* search() {
+        const { client, workspaceId } = yield* as("owner");
+        const params = { workspaceId };
+
+        const upload = (
+          contentType: string,
+          fileName: string | null,
+          altText: string | null
+        ) =>
+          client.media
+            .create({
+              params,
+              payload: {
+                altText,
+                byteSize: 10,
+                contentType,
+                fileName,
+              },
+            })
+            .pipe(Effect.map(({ media }) => media));
+
+        const poster = yield* upload("image/png", "Launch poster.png", null);
+        const clip = yield* upload("video/mp4", "clip.mp4", "The LAUNCH");
+        const other = yield* upload("image/png", null, null);
+
+        assert.strictEqual(poster.fileName, "Launch poster.png");
+        assert.isNull(other.fileName);
+        assert.strictEqual(
+          (yield* client.media.get({ params: { ...params, mediaId: clip.id } }))
+            .fileName,
+          "clip.mp4"
+        );
+
+        const found = (query: {
+          readonly kind?: "image" | "video";
+          readonly q?: string;
+        }) =>
+          client.media
+            .list({ params, query })
+            .pipe(Effect.map((page) => page.items.map(({ id }) => id)));
+
+        assert.deepStrictEqual(yield* found({ q: "launch" }), [
+          clip.id,
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ kind: "image" }), [
+          other.id,
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ kind: "image", q: "launch" }), [
+          poster.id,
+        ]);
+        assert.deepStrictEqual(yield* found({ q: "nothing of the sort" }), []);
+        // A NUL is no text to search for: the contract refuses it, so the
+        // client never sends it, and the server answers such a query with
+        // InvalidRequest (400), as any query it cannot decode.
+        assert.strictEqual(
+          (yield* Effect.flip(found({ q: "a\u0000b" })))._tag,
+          "SchemaError"
+        );
+        assert.isTrue(
+          Exit.isFailure(Schema.decodeUnknownExit(MediaQuerySchema)("a\u0000b"))
+        );
+      })
   );
 
   it.effect("let a viewer read media, and nothing more", () =>

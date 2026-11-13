@@ -59,7 +59,7 @@
   Tests reach a loopback host with `mediaWith` and an open guard.
 - An image the writing assistant made is the third way a file arrives
   (`storeGenerated`, media:upload): the import and it share the second half
-  (`use-cases/arrived-file.ts`: `roomIn`, `storeArriving`, `recordArrived`),
+  (`use-cases/arrived-file.ts`: `roomIn`, `storeArriving`, `keepArriving`),
   never a copy of it. Only an image is taken; the bytes are stored as the
   provider gave them, never re-encoded, the asset is marked
   (`aiGenerated`, `media.assets.ai_generated`, set at creation only) and
@@ -72,6 +72,39 @@
   refuses the deletion (`MediaInUse`, listing the posts), and drafts lose
   the attachment in one transaction. `GET …/media/:id/usage` tells clients
   beforehand.
+- A file that arrives (an import, an image the assistant made) is stored
+  and recorded through `keepArriving`: from the moment the store holds it
+  to its asset's insert nothing interrupts it, and any failure there takes
+  it out of the store. Never put a step that can fail between the two.
 - Imports from a link run two at once per workspace and eight per process
   (`ImportSlots`, `importsAtOnce`); past it the answer is `MediaImportBusy`
   (429), to retry.
+- A file keeps its name (`media.media_assets.file_name`, `fileNameOf` in
+  `domain/file-name.ts`): the last segment of what `createUpload` is given
+  (never a folder), or of the path of the address an import was served
+  from after its redirects (`nameInAddress`: never the query, and none for
+  a segment without an extension or that looks like a token), composed
+  (NFC), without the characters that show nothing (zero-width, tags), on
+  one line through `storableLine`, at most 255 characters
+  (`maxFileNameLength`, the contract's `maxMediaFileNameLength`). Outside
+  text never makes it fail: what cannot be a name is none. An image the assistant made has
+  none, and so does every file stored before the release that added
+  names, which no source can name: clients show the kind instead. Set at creation only;
+  never in logs, webhook events or what goes to a platform; in the
+  workspace's export.
+- `MediaAssets.list` takes `text` (in the name or the description, ILIKE
+  with its wildcards escaped, cleaned and composed by `searchTextOf` in
+  `listMedia`) and `kind` (the kind's content types), and orders by `id
+  DESC NULLS LAST`, as the workspace's indexes are written: a bare `DESC`
+  is `NULLS FIRST`, which no workspace index gives, and Postgres then reads
+  the primary key backwards across every workspace
+  (`drizzle-media-assets.test.ts` reads the plans). The text is found
+  through pg_trgm's GIN indexes on both columns (the extension comes from
+  the custom migration `media-trigrams`), the kind through `(workspace_id,
+  content_type, id)`. Read on a scale database (`seed-scale.ts`: 500,000
+  files, one workspace of 100,000): a page, a kind or a common word in
+  under a millisecond from the workspace's indexes; a rare text 1.5 to 3
+  ms from the trigrams, up to about 30 ms when its trigrams are common
+  across every workspace's files; text under three characters has no
+  trigram and walks the workspace's files, about 30 ms for no match in
+  100,000.

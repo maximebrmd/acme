@@ -24,6 +24,7 @@ const media = (id: string, altText: string | null = null): Media => ({
   createdAt: created,
   dimensions: { height: 800, width: 1200 },
   durationMs: null,
+  fileName: null,
   id,
   kind: "image",
   pageCount: null,

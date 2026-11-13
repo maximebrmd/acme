@@ -7,6 +7,7 @@ import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { finishUpload } from "#media/application/use-cases/finish-upload.ts";
 import { pooledRoom } from "#media/application/use-cases/pooled-storage.ts";
 import type { AltText } from "#media/domain/alt-text.ts";
+import type { FileName } from "#media/domain/file-name.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { acceptUpload, startUpload } from "#media/domain/media-asset.ts";
 import { kindOf, maxByteSize } from "#media/domain/media-format.ts";
@@ -194,57 +195,77 @@ export const storeArriving = Effect.fn("Media.storeArriving")(
   }
 );
 
+/** A file once stored, and what it was called where it came from. */
+export interface Arrival {
+  readonly fileName: Option.Option<FileName>;
+  readonly stored: StoredArrival;
+}
+
 /**
- * Records the stored file as an asset of the workspace, counted again
- * under the workspace's lock with what was stored meanwhile (a file that
- * no longer fits leaves the store), then completes and probes it as
- * `finishUpload` does.
+ * Stores the file (`arriving`, which ends once its bytes are in the
+ * store) and records it as an asset of the workspace, counted again under
+ * the workspace's lock with what was stored meanwhile, then completes and
+ * probes it as `finishUpload` does. From the moment the store holds the
+ * file to the moment its asset is recorded nothing interrupts it, and any
+ * failure there, a file that no longer fits or a defect, takes the file
+ * out of the store: no file is ever kept without an asset, which nothing
+ * would count or delete.
  */
-export const recordArrived = Effect.fn("Media.recordArrived")(
-  function* recordArrived({
+export const keepArriving = <E, R>(
+  {
     aiGenerated,
     altText,
     id,
     room,
-    stored,
     workspaceId,
   }: {
     readonly aiGenerated: boolean;
     readonly altText: Option.Option<AltText>;
     readonly id: MediaAssetId;
     readonly room: ArrivalRoom;
-    readonly stored: StoredArrival;
     readonly workspaceId: WorkspaceId;
-  }) {
-    const accepted = yield* Effect.fromResult(
-      acceptUpload(stored.contentType, stored.byteSize)
-    );
-
-    const asset = startUpload(
-      {
-        accepted,
-        aiGenerated,
-        altText,
-        id,
-        upload: { _tag: "single" },
-        workspaceId,
-      },
-      room.now
-    );
-
+  },
+  arriving: Effect.Effect<Arrival, E, R>
+) =>
+  Effect.gen(function* keeping() {
     const storage = yield* MediaStorage;
 
-    yield* MediaAssets.use((assets) =>
-      assets.insertWithin(
-        asset,
-        room.allowance,
-        room.pendingSince,
-        room.sharedWith
+    const record = ({ fileName, stored }: Arrival) =>
+      Effect.gen(function* recording() {
+        const accepted = yield* Effect.fromResult(
+          acceptUpload(stored.contentType, stored.byteSize)
+        );
+
+        const asset = startUpload(
+          {
+            accepted,
+            aiGenerated,
+            altText,
+            fileName,
+            id,
+            upload: { _tag: "single" },
+            workspaceId,
+          },
+          room.now
+        );
+
+        yield* MediaAssets.use((assets) =>
+          assets.insertWithin(
+            asset,
+            room.allowance,
+            room.pendingSince,
+            room.sharedWith
+          )
+        );
+      }).pipe(
+        Effect.onError(() => storage.remove(stored.key).pipe(Effect.ignore))
+      );
+
+    yield* Effect.uninterruptibleMask((restore) =>
+      restore(arriving).pipe(
+        Effect.flatMap((arrival) => restore(record(arrival)))
       )
-    ).pipe(
-      Effect.onError(() => storage.remove(stored.key).pipe(Effect.ignore))
     );
 
     return yield* finishUpload({ assetId: id, workspaceId });
-  }
-);
+  }).pipe(Effect.withSpan("Media.keepArriving"));

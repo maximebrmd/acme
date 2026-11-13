@@ -495,6 +495,7 @@ if typing.TYPE_CHECKING:
     from .media_kind import MediaKind
     from .media_not_found_encoded import MediaNotFoundEncoded
     from .media_page import MediaPage
+    from .media_query import MediaQuery
     from .media_source_failure import MediaSourceFailure
     from .media_source_not_public_encoded import MediaSourceNotPublicEncoded
     from .media_source_unreachable_encoded import MediaSourceUnreachableEncoded
@@ -1445,6 +1446,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaKind": ".media_kind",
     "MediaNotFoundEncoded": ".media_not_found_encoded",
     "MediaPage": ".media_page",
+    "MediaQuery": ".media_query",
     "MediaSourceFailure": ".media_source_failure",
     "MediaSourceNotPublicEncoded": ".media_source_not_public_encoded",
     "MediaSourceUnreachableEncoded": ".media_source_unreachable_encoded",
@@ -2412,6 +2414,7 @@ __all__ = [
     "MediaKind",
     "MediaNotFoundEncoded",
     "MediaPage",
+    "MediaQuery",
     "MediaSourceFailure",
     "MediaSourceNotPublicEncoded",
     "MediaSourceUnreachableEncoded",

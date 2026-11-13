@@ -28,6 +28,7 @@ const pending: Media = {
   createdAt,
   dimensions: null,
   durationMs: null,
+  fileName: null,
   id: mediaId,
   kind: "video",
   pageCount: null,
@@ -181,7 +182,12 @@ describe(uploadFile, () => {
 
       assert.deepStrictEqual(media, ready);
       assert.deepStrictEqual(yield* Ref.get(store.created), [
-        { altText: "A test pattern", byteSize: 12, contentType: "video/mp4" },
+        {
+          altText: "A test pattern",
+          byteSize: 12,
+          contentType: "video/mp4",
+          fileName: null,
+        },
       ]);
       assert.deepStrictEqual(yield* Ref.get(store.sent), [
         { bytes: indices(0, 12), url: request("file").url },
@@ -190,6 +196,26 @@ describe(uploadFile, () => {
       assert.strictEqual(yield* Ref.get(completing), 1);
       assert.strictEqual((yield* Ref.get(progress)).at(-1), 1);
       assert.strictEqual(yield* Ref.get(store.completed), 1);
+    })
+  );
+
+  it.effect("sends the file's name, for the library to find it by", () =>
+    Effect.gen(function* named() {
+      const store = yield* fakes(single);
+      const { events } = yield* listening;
+
+      const file = new File([fileOf(3)], "Launch day.mp4", {
+        type: "video/mp4",
+      });
+
+      yield* uploadFile(store.api, file, { altText: "", events }).pipe(
+        Effect.provideService(Transfer, store.transfer)
+      );
+
+      assert.strictEqual(
+        (yield* Ref.get(store.created))[0]?.fileName,
+        "Launch day.mp4"
+      );
     })
   );
 

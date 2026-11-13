@@ -101,6 +101,12 @@ export const parseContentType = (
 export const kindOf = (contentType: MediaContentType): MediaKind =>
   mediaFormats[contentType].kind;
 
+/** The content types Peal accepts of a kind. */
+export const contentTypesOf = (kind: MediaKind): readonly MediaContentType[] =>
+  MediaContentTypeSchema.literals.filter(
+    (contentType) => kindOf(contentType) === kind
+  );
+
 /**
  * The most pages a document may have: 300, what LinkedIn's Documents API
  * takes, the one platform that shows documents. A longer one is refused

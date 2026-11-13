@@ -11,6 +11,7 @@ export interface Media {
     createdAt: string;
     dimensions: Media.Dimensions | null;
     durationMs: number | null;
+    fileName: string | null;
     id: string;
     kind: Peal.MediaKind;
     pageCount: number | null;

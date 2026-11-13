@@ -221,6 +221,8 @@ export interface MediaRecord {
    */
   readonly downloadUrl: string | null;
   readonly durationMs: number | null;
+  /** What the file was called where it came from, if anything. */
+  readonly fileName: string | null;
   readonly height: number | null;
   readonly id: string;
   /** A document's pages, as the probe counted them; null for other files. */

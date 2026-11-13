@@ -135,7 +135,13 @@ export const uploadFile = (
     const prepared = yield* client.media
       .create({
         params,
-        payload: { ...altOf(altText), byteSize, contentType },
+        // The file's own name, so the library finds it by it.
+        payload: {
+          ...altOf(altText),
+          byteSize,
+          contentType,
+          fileName: path.basename(file),
+        },
       })
       .pipe(Effect.mapError(explain(url)));
 

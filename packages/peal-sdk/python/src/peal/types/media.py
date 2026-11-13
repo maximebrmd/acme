@@ -29,6 +29,9 @@ class Media(UniversalBaseModel):
     duration_ms: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="durationMs"), pydantic.Field(alias="durationMs")
     ] = None
+    file_name: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="fileName"), pydantic.Field(alias="fileName")
+    ] = None
     id: str
     kind: MediaKind
     page_count: typing_extensions.Annotated[

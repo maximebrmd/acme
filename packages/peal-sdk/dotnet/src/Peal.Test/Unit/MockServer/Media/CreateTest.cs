@@ -33,6 +33,7 @@ public class CreateTest : BaseMockServerTest
                   "width": 1
                 },
                 "durationMs": 1,
+                "fileName": "fileName",
                 "id": "id",
                 "kind": "image",
                 "pageCount": 1,
@@ -79,6 +80,7 @@ public class CreateTest : BaseMockServerTest
                 AltText = null,
                 ByteSize = 1000000,
                 ContentType = "contentType",
+                FileName = null,
             }
         );
         JsonAssert.AreEqual(response, mockResponse);
@@ -108,6 +110,7 @@ public class CreateTest : BaseMockServerTest
                   "width": 1
                 },
                 "durationMs": 1,
+                "fileName": "fileName",
                 "id": "id",
                 "kind": "image",
                 "pageCount": 1,

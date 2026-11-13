@@ -70,8 +70,10 @@ under Development stack.
   name none of them takes.
 - A counter born at its first event has no earlier sample, so
   `increase` never sees it: alert on a state (a gauge the job sets each
-  run), or on `sum(c) - (sum(c offset 1h) or vector(0))`, and set the
-  job's gauges when the server starts. The billing rules are run through
+  run), or on `(sum(increase(c[1h])) or vector(0)) + (sum(c unless c
+  offset 1h unless c offset 5m) or vector(0))` (a restart's increase, and
+  a series born in the last five minutes, not one back after a telemetry
+  gap), and set the job's gauges when the server starts. The billing rules are run through
   promtool in the production image (`test/alerting-promtool.test.ts`,
   skipped without Docker): add a case with a rule.
 - The backup and disk rules read gauges the host posts to the collector

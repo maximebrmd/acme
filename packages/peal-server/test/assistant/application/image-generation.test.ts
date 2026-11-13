@@ -125,7 +125,9 @@ const cleanedUp = (workspaceId: WorkspaceId) =>
 
       const { assets: left } = yield* assets.list(workspaceId, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 50,
+        text: Option.none(),
       });
 
       yield* Effect.all(
@@ -143,7 +145,12 @@ const cleanedUp = (workspaceId: WorkspaceId) =>
 
 const imagesOf = (workspaceId: WorkspaceId) =>
   MediaAssets.use((assets) =>
-    assets.list(workspaceId, { after: Option.none(), limit: 50 })
+    assets.list(workspaceId, {
+      after: Option.none(),
+      kind: Option.none(),
+      limit: 50,
+      text: Option.none(),
+    })
   ).pipe(Effect.map(({ assets }) => assets));
 
 layer(ImagesTest, { timeout: "60 seconds" })(

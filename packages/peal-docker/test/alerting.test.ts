@@ -105,7 +105,7 @@ describe("the production alert rules", () => {
       noDataState: "OK",
     });
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
-      "(sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))"
+      "(sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h unless peal_billing_duplicate_subscriptions_total offset 5m) or vector(0))"
     );
   });
 
@@ -142,7 +142,7 @@ describe("the production alert rules", () => {
     ],
     [
       "peal-threshold-unset",
-      "(sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h) or vector(0))",
+      "(sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h unless peal_billing_threshold_unset_total offset 5m) or vector(0))",
       "critical",
       0,
     ],

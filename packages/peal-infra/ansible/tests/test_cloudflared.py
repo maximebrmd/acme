@@ -208,6 +208,7 @@ SANDBOX_OPEN = [
     "/api/channels/oauth/bluesky/client-metadata.json",
     "/api/channels/oauth/bluesky/jwks.json",
     "/api/auth/stripe/webhook",
+    "/api/stripe/meter-errors",
     "/api/data-deletion/facebook",
     "/api/data-deletion/facebook/deauthorize",
     "/api/data-deletion/instagram",

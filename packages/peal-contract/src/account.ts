@@ -306,6 +306,9 @@ const ExportedMediaSchema = Schema.Struct({
   // uploaded, or refused.
   downloadUrl: nullable(Schema.String),
   durationMs: nullable(Schema.Int),
+  // What the file was called where it came from; null for an image the
+  // assistant made, and for a file added before Peal kept names.
+  fileName: nullable(Schema.String),
   height: nullable(Schema.Int),
   id: Schema.String,
   // A document's pages; null for an image or a video.

@@ -1747,7 +1747,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"aiGenerated\": true,\n      \"altText\": \"altText\",\n      \"byteSize\": 1000000,\n      \"codec\": \"codec\",\n      \"contentType\": \"image/gif\",\n      \"createdAt\": \"createdAt\",\n      \"dimensions\": {\n        \"height\": 1,\n        \"width\": 1\n      },\n      \"durationMs\": 1,\n      \"id\": \"id\",\n      \"kind\": \"image\",\n      \"pageCount\": 1,\n      \"status\": {\n        \"_tag\": \"pending\"\n      },\n      \"updatedAt\": \"updatedAt\",\n      \"url\": \"url\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"items\": [\n    {\n      \"aiGenerated\": true,\n      \"altText\": \"altText\",\n      \"byteSize\": 1000000,\n      \"codec\": \"codec\",\n      \"contentType\": \"image/gif\",\n      \"createdAt\": \"createdAt\",\n      \"dimensions\": {\n        \"height\": 1,\n        \"width\": 1\n      },\n      \"durationMs\": 1,\n      \"fileName\": \"fileName\",\n      \"id\": \"id\",\n      \"kind\": \"image\",\n      \"pageCount\": 1,\n      \"status\": {\n        \"_tag\": \"pending\"\n      },\n      \"updatedAt\": \"updatedAt\",\n      \"url\": \"url\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1783,7 +1783,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"media\": {\n    \"aiGenerated\": true,\n    \"altText\": \"altText\",\n    \"byteSize\": 1000000,\n    \"codec\": \"codec\",\n    \"contentType\": \"image/gif\",\n    \"createdAt\": \"createdAt\",\n    \"dimensions\": {\n      \"height\": 1,\n      \"width\": 1\n    },\n    \"durationMs\": 1,\n    \"id\": \"id\",\n    \"kind\": \"image\",\n    \"pageCount\": 1,\n    \"status\": {\n      \"_tag\": \"pending\"\n    },\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"upload\": {\n    \"expiresAt\": \"expiresAt\",\n    \"request\": {\n      \"headers\": {\n        \"key\": \"value\"\n      },\n      \"method\": \"PUT\",\n      \"url\": \"url\"\n    },\n    \"_tag\": \"single\"\n  }\n}",
+        "body": "{\n  \"media\": {\n    \"aiGenerated\": true,\n    \"altText\": \"altText\",\n    \"byteSize\": 1000000,\n    \"codec\": \"codec\",\n    \"contentType\": \"image/gif\",\n    \"createdAt\": \"createdAt\",\n    \"dimensions\": {\n      \"height\": 1,\n      \"width\": 1\n    },\n    \"durationMs\": 1,\n    \"fileName\": \"fileName\",\n    \"id\": \"id\",\n    \"kind\": \"image\",\n    \"pageCount\": 1,\n    \"status\": {\n      \"_tag\": \"pending\"\n    },\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"upload\": {\n    \"expiresAt\": \"expiresAt\",\n    \"request\": {\n      \"headers\": {\n        \"key\": \"value\"\n      },\n      \"method\": \"PUT\",\n      \"url\": \"url\"\n    },\n    \"_tag\": \"single\"\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1819,7 +1819,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"fileName\": \"fileName\",\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1858,7 +1858,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"fileName\": \"fileName\",\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1936,7 +1936,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"fileName\": \"fileName\",\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1975,7 +1975,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"fileName\": \"fileName\",\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2457,7 +2457,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"aiGenerated\": true,\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"fileName\": \"fileName\",\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

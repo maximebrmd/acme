@@ -12558,12 +12558,13 @@ var (
 	mediaFieldCreatedAt   = big.NewInt(1 << 5)
 	mediaFieldDimensions  = big.NewInt(1 << 6)
 	mediaFieldDurationMs  = big.NewInt(1 << 7)
-	mediaFieldID          = big.NewInt(1 << 8)
-	mediaFieldKind        = big.NewInt(1 << 9)
-	mediaFieldPageCount   = big.NewInt(1 << 10)
-	mediaFieldStatus      = big.NewInt(1 << 11)
-	mediaFieldUpdatedAt   = big.NewInt(1 << 12)
-	mediaFieldURL         = big.NewInt(1 << 13)
+	mediaFieldFileName    = big.NewInt(1 << 8)
+	mediaFieldID          = big.NewInt(1 << 9)
+	mediaFieldKind        = big.NewInt(1 << 10)
+	mediaFieldPageCount   = big.NewInt(1 << 11)
+	mediaFieldStatus      = big.NewInt(1 << 12)
+	mediaFieldUpdatedAt   = big.NewInt(1 << 13)
+	mediaFieldURL         = big.NewInt(1 << 14)
 )
 
 // mediaNullableFields maps the wire names of Media's nullable fields (required or optional) to their field bits.
@@ -12572,6 +12573,7 @@ var mediaNullableFields = map[string]*big.Int{
 	"codec":      mediaFieldCodec,
 	"dimensions": mediaFieldDimensions,
 	"durationMs": mediaFieldDurationMs,
+	"fileName":   mediaFieldFileName,
 	"pageCount":  mediaFieldPageCount,
 	"url":        mediaFieldURL,
 }
@@ -12585,6 +12587,7 @@ type Media struct {
 	CreatedAt   string           `json:"createdAt" url:"createdAt"`
 	Dimensions  *MediaDimensions `json:"dimensions,omitempty" url:"dimensions,omitempty"`
 	DurationMs  *int             `json:"durationMs,omitempty" url:"durationMs,omitempty"`
+	FileName    *string          `json:"fileName,omitempty" url:"fileName,omitempty"`
 	ID          string           `json:"id" url:"id"`
 	Kind        MediaKind        `json:"kind" url:"kind"`
 	PageCount   *int             `json:"pageCount,omitempty" url:"pageCount,omitempty"`
@@ -12653,6 +12656,13 @@ func (m *Media) GetDurationMs() *int {
 		return nil
 	}
 	return m.DurationMs
+}
+
+func (m *Media) GetFileName() *string {
+	if m == nil {
+		return nil
+	}
+	return m.FileName
 }
 
 func (m *Media) GetID() string {
@@ -12767,6 +12777,13 @@ func (m *Media) SetDimensions(dimensions *MediaDimensions) {
 func (m *Media) SetDurationMs(durationMs *int) {
 	m.DurationMs = durationMs
 	m.require(mediaFieldDurationMs)
+}
+
+// SetFileName sets the FileName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetFileName(fileName *string) {
+	m.FileName = fileName
+	m.require(mediaFieldFileName)
 }
 
 // SetID sets the ID field and marks it as non-optional;

@@ -728,8 +728,10 @@ groups:
               refId: A
               instant: true
               # Rare: any in the hour is one too many; the hour's increase, a
-              # restart's included, and a series born within it counted whole.
-              expr: (sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))
+              # restart's included, and a series born in the last five minutes
+              # counted whole (one present five minutes ago is not new, so a
+              # gap in the telemetry an hour ago is not read as a birth).
+              expr: (sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h unless peal_billing_duplicate_subscriptions_total offset 5m) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -953,8 +955,8 @@ groups:
             model:
               refId: A
               instant: true
-              # The hour's increase, a restart's included, and a series born within the hour counted whole.
-              expr: (sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h) or vector(0))
+              # The hour's increase, a restart's included, and a series born in the last five minutes counted whole: one present five minutes ago is not new, so a gap in the telemetry an hour ago is not read as a birth.
+              expr: (sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h unless peal_billing_threshold_unset_total offset 5m) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -985,9 +987,11 @@ groups:
             model:
               refId: A
               instant: true
-              # The hour's increase, a restart's included, and a series born
-              # within it counted whole.
-              expr: (sum(increase(peal_billing_meter_errors_total[1h])) or vector(0)) + (sum(peal_billing_meter_errors_total unless peal_billing_meter_errors_total offset 1h) or vector(0))
+              # The hour's increase, a restart's included, and a series born in
+              # the last five minutes counted whole: one present five minutes
+              # ago is not new, so a gap in the telemetry an hour ago is not
+              # read as a birth.
+              expr: (sum(increase(peal_billing_meter_errors_total[1h])) or vector(0)) + (sum(peal_billing_meter_errors_total unless peal_billing_meter_errors_total offset 1h unless peal_billing_meter_errors_total offset 5m) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:

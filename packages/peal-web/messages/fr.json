@@ -1845,7 +1845,19 @@
       "deleting": "Suppression…",
       "keep": "Le garder",
       "deleteFailed": "Le média n’a pas pu être supprimé. Réessayez.",
-      "deleted": "Le média a été supprimé."
+      "deleted": "Le média a été supprimé.",
+      "search": "Rechercher dans la bibliothèque",
+      "searchPlaceholder": "Rechercher par nom de fichier ou description",
+      "kindFilter": "Type",
+      "anyKind": "Tous les types",
+      "kinds": "{kind, select, image {Images} document {Documents PDF} other {Vidéos}}",
+      "noMatch": "Aucun média ne correspond à cette recherche. Les fichiers ajoutés avant que Peal garde les noms ne se trouvent que par leur description.",
+      "clearSearch": "Effacer la recherche",
+      "preview": "Afficher {name} en grand",
+      "previewClose": "Fermer",
+      "previewMissing": "Le fichier n’est pas stocké : il n’y a rien à afficher.",
+      "openDocument": "Ouvrir le document dans un nouvel onglet",
+      "resultsShown": "{count, plural, one {# fichier affiché} other {# fichiers affichés}}{more, select, true {, et d’autres} other {}}."
     }
   },
   "PostMedia": {

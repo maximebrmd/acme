@@ -60,6 +60,10 @@ export const sandboxResources = [
         },
         {
           type: "public",
+          uri: "sandbox.example.test/api/stripe/meter-errors",
+        },
+        {
+          type: "public",
           uri: "sandbox.example.test/api/data-deletion",
         },
       ],

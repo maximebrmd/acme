@@ -129,6 +129,7 @@ export const HttpRemoteMedia = Layer.effect(
       const [first, rest] = yield* Stream.peel(bytes, Sink.head<Uint8Array>());
 
       const file: RemoteFile = {
+        address: response.request.url,
         declaredSize: Headers.get(response.headers, "content-length").pipe(
           Option.flatMap(decodeSize)
         ),
