@@ -448,6 +448,64 @@ describe("LinkedIn pages' comments", () => {
   );
 
   it.effect(
+    "ends a list without a total whose page past the end answers 404, as all of it",
+    () =>
+      Effect.gen(function* notFoundPast() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, notFoundPastEnd: true, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 20; n += 1) {
+          api.add(comment(n));
+        }
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          20
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, two pages, then the 404 past them.
+        assert.lengthOf(api.requests(), 4);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "takes a first page shorter than LinkedIn's smallest that meets the summary's count for all of it, in one call",
+    () =>
+      Effect.gen(function* shortFirst() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+        api.add(comment(1));
+        api.add(comment(2));
+        api.add(comment(3, { parentUrn: commentUrn(1) }));
+        api.add(comment(4, { parentUrn: commentUrn(1) }));
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          4
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, the post's one page, the comment's one page.
+        assert.lengthOf(api.requests(), 3);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
     "stops reading, never publishing nor answering, once the day's calls for reads are spent",
     () =>
       Effect.gen(function* budget() {

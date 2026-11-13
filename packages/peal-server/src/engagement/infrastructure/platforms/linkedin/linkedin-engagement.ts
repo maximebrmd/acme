@@ -191,6 +191,10 @@ const PageSchema = Schema.Struct({
 
 type Paging = (typeof PageSchema.Type)["paging"];
 
+// The shortest page LinkedIn's samples give: a page shorter than that is
+// no page LinkedIn capped, so it is the list's tail.
+const smallestPage = 10;
+
 /** How far a list was read: in all, on its last page, on its longest. */
 interface ListRead {
   readonly last: number;
@@ -201,7 +205,8 @@ interface ListRead {
 /**
  * Whether a list ends once `read`: its `paging.total` reached, or,
  * without one, the first-level count its summary gave (`expected`) met
- * exactly on a page shorter than one before it, the list's tail. Neither
+ * exactly on a page shorter than one before it or than `smallestPage`,
+ * the list's tail. Neither
  * a page shorter than asked nor `links` without a next one proves it:
  * Rest.li adds a next link only to a page as long as the `count` asked, so
  * a page LinkedIn caps (its samples show 10) has none. A count met on a
@@ -219,7 +224,9 @@ const listEnds = (
 
   return Option.exists(
     expected,
-    (count) => read.total === count && read.last < read.longest
+    (count) =>
+      read.total === count &&
+      (read.last < read.longest || read.last < smallestPage)
   );
 };
 
@@ -506,6 +513,32 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       }
     );
 
+    // A page of a list LinkedIn refused: none when that ends the list read
+    // whole, or the step the read ends with. A list LinkedIn says is not
+    // there is all of it when the summary showed none either; otherwise
+    // what was read stands, not as all of it. Past its first page, a 404
+    // is the end of it, as for the replies a resume reads.
+    const refusedPage = Effect.fn("LinkedInEngagement.refusedPage")(
+      function* refusedPage(
+        response: HttpClientResponse.HttpClientResponse,
+        at: Progress,
+        first: boolean,
+        list: { readonly noneShown: boolean; readonly start: number }
+      ) {
+        const step = yield* refusedRead(response, at, first);
+
+        if (Option.isNone(step) && list.start > 0) {
+          return Option.none<Step>();
+        }
+
+        return Option.some(
+          Option.getOrElse(step, () =>
+            at.read(list.noneShown && at.comments.length === 0)
+          )
+        );
+      }
+    );
+
     // A list of comments under `target`, page by page, into `at`: none
     // when it was read whole, or the step the read ends with.
     const listInto = Effect.fn("LinkedInEngagement.list")(function* listInto(
@@ -555,16 +588,10 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         }
 
         if (!isSuccess(sent.success)) {
-          const step = yield* refusedRead(sent.success, at, first);
-
-          // A list LinkedIn says is not there: all of it when the summary
-          // showed none either; otherwise what was read stands, not as
-          // all of it.
-          return Option.some(
-            Option.getOrElse(step, () =>
-              at.read(noneShown && at.comments.length === 0)
-            )
-          );
+          return yield* refusedPage(sent.success, at, first, {
+            noneShown,
+            start,
+          });
         }
 
         const body = yield* pageOf(sent.success);

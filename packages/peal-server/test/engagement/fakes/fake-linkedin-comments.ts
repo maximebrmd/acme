@@ -51,6 +51,8 @@ export type LinkedInCommentsRoute =
 export interface FakeLinkedInCommentsOptions {
   /** The longest page the fake gives, whatever `count` asks. */
   readonly maxCount?: number;
+  /** A page asked past a list's end answers 404, as for a target without any. */
+  readonly notFoundPastEnd?: boolean;
   /** Pages without `paging.total`, with `links: []`, as LinkedIn's sample. */
   readonly withoutTotal?: boolean;
 }
@@ -193,6 +195,10 @@ export const fakeLinkedInComments = Effect.fnUntraced(
       }
 
       const start = Number(query.get("start") ?? "0");
+
+      if (options.notFoundPastEnd === true && start >= found.length) {
+        return linkedinError(404, "Not Found");
+      }
 
       const asked = Number(query.get("count") ?? "10");
 
