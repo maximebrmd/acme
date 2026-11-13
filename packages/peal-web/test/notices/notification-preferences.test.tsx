@@ -36,20 +36,22 @@ const render = async (locale: "en" | "fr") => {
   );
 };
 
-// Each choice by its label's text, and whether its box is checked. Base UI
-// puts the id on the box's native input, which labels name, and names the
-// box from them once the page runs.
+// Each choice by its label's text, and whether its box is checked. ui-sdk's
+// checkbox is a button with the checkbox role, which carries the id the
+// label names and the checked state; a hidden native input follows it.
 const choices = (html: string) =>
   new Map(
     [
       ...html.matchAll(
-        /<input id="(?<id>[^"]+)"[^>]*type="checkbox"(?<rest>[^>]*)\/>\s*<label for="(?<label>[^"]+)"[^>]*>(?<text>[^<]+)<\/label>/gu
+        /<button (?<box>[^>]*role="checkbox"[^>]*)>.*?<\/button><input [^>]*type="checkbox"[^>]*\/>\s*<label for="(?<label>[^"]+)"[^>]*>(?<text>[^<]+)<\/label>/gu
       ),
     ].map(({ groups }) => [
       groups?.["text"],
       {
-        checked: (groups?.["rest"] ?? "").includes("checked"),
-        labelled: groups?.["id"] === groups?.["label"],
+        checked: (groups?.["box"] ?? "").includes('aria-checked="true"'),
+        labelled: (groups?.["box"] ?? "").includes(
+          `id="${groups?.["label"] ?? ""}"`
+        ),
       },
     ])
   );

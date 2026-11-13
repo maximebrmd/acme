@@ -10,7 +10,8 @@ import { DayPicker, getDefaultClassNames } from "react-day-picker";
 import type { CustomComponents, DayButton } from "react-day-picker";
 
 import { cn } from "../lib/utils";
-import { Button, buttonVariants } from "./button";
+import type { Button } from "./button";
+import { buttonVariants } from "./button";
 
 const CalendarChevron = ({
   className,
@@ -73,9 +74,12 @@ const CalendarDayButton = ({
   }, [focused]);
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    // A plain button with Button's look: react-day-picker gives each day
+    // its own handlers, for a native button.
+    <button
+      ref={ref}
+      type="button"
+      data-slot="button"
       data-day={day.isoDate}
       data-selected-single={
         modifiers["selected"] === true &&
@@ -87,6 +91,7 @@ const CalendarDayButton = ({
       data-range-end={rangeEnd}
       data-range-middle={rangeMiddle}
       className={cn(
+        buttonVariants({ size: "icon", variant: "ghost" }),
         "group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-foreground relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:rounded-r-(--cell-radius) data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:rounded-l-(--cell-radius) [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className

@@ -53,7 +53,7 @@ export const NoticeItem = ({
   };
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start sm:justify-between">
+    <li className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-1">
         <p id={textId} className={unread ? "font-medium" : undefined}>
           {text}
@@ -68,7 +68,6 @@ export const NoticeItem = ({
           variant="outline"
           size="sm"
           render={<Link href={href} />}
-          nativeButton={false}
           aria-describedby={textId}
         >
           {open}
@@ -146,7 +145,7 @@ const NoticePages = ({
 
       return (
         <>
-          <ul className="flex flex-col gap-3">
+          <ul className="bg-card divide-y overflow-hidden rounded-md border">
             {value.items.map((notice) => (
               <NoticeItem
                 key={notice.id}

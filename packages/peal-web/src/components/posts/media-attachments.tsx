@@ -68,7 +68,7 @@ interface RowProps {
   readonly disabled: boolean;
   readonly item: AttachedMedia;
   readonly onAltText: (altText: string) => void;
-  readonly onMove: (offset: number, button: HTMLButtonElement) => void;
+  readonly onMove: (offset: number, button: HTMLElement) => void;
   readonly onRemove: () => void;
   /** The platforms the post goes to that show alt text, by name. */
   readonly platforms: readonly string[];
@@ -312,7 +312,7 @@ export const MediaAttachments = ({
     item: AttachedMedia,
     from: number,
     offset: number,
-    button: HTMLButtonElement
+    button: HTMLElement
   ) => {
     const to = Math.min(Math.max(from + offset, 0), count - 1);
 

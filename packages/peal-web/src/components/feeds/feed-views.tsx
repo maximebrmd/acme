@@ -298,7 +298,7 @@ export const FeedFieldsView = ({
             checked={draft.attachPicture}
             disabled={disabled}
             onCheckedChange={(checked) => {
-              onChange({ ...draft, attachPicture: checked });
+              onChange({ ...draft, attachPicture: checked === true });
             }}
           />
           <Label htmlFor={pictureId}>{t("picture")}</Label>
@@ -323,11 +323,12 @@ export const FeedFieldsView = ({
                     onCheckedChange={(checked) => {
                       onChange({
                         ...draft,
-                        channelIds: checked
-                          ? [...draft.channelIds, channel.id]
-                          : draft.channelIds.filter(
-                              (kept) => kept !== channel.id
-                            ),
+                        channelIds:
+                          checked === true
+                            ? [...draft.channelIds, channel.id]
+                            : draft.channelIds.filter(
+                                (kept) => kept !== channel.id
+                              ),
                       });
                     }}
                   />

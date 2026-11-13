@@ -63,7 +63,7 @@ export const ChannelPicker = ({
               checked={selected.includes(channel.id)}
               disabled={disabled}
               onCheckedChange={(checked) => {
-                toggle(channel.id, checked);
+                toggle(channel.id, checked === true);
               }}
             />
             <Avatar size="sm">

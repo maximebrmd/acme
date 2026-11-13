@@ -660,7 +660,8 @@ describe(ReplyBoxView, () => {
         "Everyone who sees the post sees the reply, sent as the channel’s account.",
       ])
     ).toStrictEqual([]);
-    expect(send(html)).toContain('aria-disabled="false"');
+    // Send is on: nothing marks it disabled.
+    expect(send(html)).not.toMatch(/ (?<aria>aria-)?disabled(?<end>=| |>)/u);
 
     await expect(render("fr", box("Merci !"))).resolves.toContain(
       "elle commencera par @ada@social.example, que le décompte inclut."

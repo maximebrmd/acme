@@ -10,7 +10,7 @@ export const ErrorView = ({
   home,
   onRetry,
 }: {
-  readonly home: ReactElement;
+  readonly home: ReactElement<{ readonly href: string }>;
   readonly onRetry: () => void;
 }) => {
   const t = useTranslations("ErrorPage");
@@ -21,7 +21,7 @@ export const ErrorView = ({
       <p className="text-muted-foreground">{t("description")}</p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={onRetry}>{t("retry")}</Button>
-        <Button variant="outline" render={home} nativeButton={false}>
+        <Button variant="outline" render={home}>
           {t("home")}
         </Button>
       </div>

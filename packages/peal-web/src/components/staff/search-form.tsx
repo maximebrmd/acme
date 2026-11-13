@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { Button, buttonVariants } from "peal-ui/components/button";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
 
@@ -27,20 +27,19 @@ export const SearchForm = async ({
             id="staff-search"
             name="query"
             type="search"
-            defaultValue={query}
+            defaultValue={query ?? ""}
             maxLength={200}
             autoComplete="off"
           />
         </div>
         <Button type="submit">{t("submit")}</Button>
         {query === undefined ? null : (
-          <Button
-            variant="ghost"
-            render={<Link href={pathname} />}
-            nativeButton={false}
+          <Link
+            href={pathname}
+            className={buttonVariants({ variant: "ghost" })}
           >
             {t("clear")}
-          </Button>
+          </Link>
         )}
       </form>
     </search>

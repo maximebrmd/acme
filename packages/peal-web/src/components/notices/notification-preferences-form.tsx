@@ -61,7 +61,9 @@ const PreferenceRow = ({
         checked={checked}
         disabled={disabled}
         {...(hint === undefined ? {} : { "aria-describedby": hintId })}
-        onCheckedChange={onChange}
+        onCheckedChange={(next) => {
+          onChange(next === true);
+        }}
       />
       <Label htmlFor={id}>{label}</Label>
       {hint === undefined ? null : (

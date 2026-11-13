@@ -2,7 +2,7 @@ import { Effect, Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { BillingAccountDetails } from "#components/staff/billing-account-details.tsx";
 import { SearchForm } from "#components/staff/search-form.tsx";
@@ -75,13 +75,12 @@ const BillingAccountsPage = async ({
         <SharedChannelsTable items={page.items} pathname={pathname} />
         {page.next === null ? null : (
           <div>
-            <Button
-              variant="outline"
-              render={<Link href={{ pathname, query: { after: page.next } }} />}
-              nativeButton={false}
+            <Link
+              href={{ pathname, query: { after: page.next } }}
+              className={buttonVariants({ variant: "outline" })}
             >
               {t("more")}
-            </Button>
+            </Link>
           </div>
         )}
       </section>

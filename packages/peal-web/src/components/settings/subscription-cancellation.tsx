@@ -90,7 +90,9 @@ export const SubscriptionCancellation = ({
             <Checkbox
               id={id}
               checked={agreed}
-              onCheckedChange={onAgreedChange}
+              onCheckedChange={(checked) => {
+                onAgreedChange(checked === true);
+              }}
             />
             <Label htmlFor={id}>
               {t("agree", { count: subscriptions.length })}

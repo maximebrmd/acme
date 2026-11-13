@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Button } from "peal-ui/components/button";
+import { buttonVariants } from "peal-ui/components/button";
 
 import { Link } from "#i18n/navigation.ts";
 import { pageCount, pagedHref } from "#staff/paging.ts";
@@ -31,28 +31,20 @@ export const Pager = async ({
       </p>
       <div className="flex gap-2">
         {page > 1 ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={
-              <Link href={pagedHref(pathname, { page: page - 1, query })} />
-            }
-            nativeButton={false}
+          <Link
+            href={pagedHref(pathname, { page: page - 1, query })}
+            className={buttonVariants({ size: "sm", variant: "outline" })}
           >
             {t("previous")}
-          </Button>
+          </Link>
         ) : null}
         {page < pages ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={
-              <Link href={pagedHref(pathname, { page: page + 1, query })} />
-            }
-            nativeButton={false}
+          <Link
+            href={pagedHref(pathname, { page: page + 1, query })}
+            className={buttonVariants({ size: "sm", variant: "outline" })}
           >
             {t("next")}
-          </Button>
+          </Link>
         ) : null}
       </div>
     </nav>

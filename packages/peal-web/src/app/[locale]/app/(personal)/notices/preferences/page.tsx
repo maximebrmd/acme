@@ -36,7 +36,7 @@ const NotificationPreferencesPage = async ({
         >
           {t("back")}
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
       <NotificationPreferencesForm />

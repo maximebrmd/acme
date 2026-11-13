@@ -56,9 +56,7 @@ export const ResetPasswordForm = ({ token }: { readonly token: string }) => {
         <Alert>
           <AlertDescription>{t("done")}</AlertDescription>
         </Alert>
-        <Button render={<Link href="/sign-in" />} nativeButton={false}>
-          {t("signIn")}
-        </Button>
+        <Button render={<Link href="/sign-in" />}>{t("signIn")}</Button>
       </div>
     );
   }

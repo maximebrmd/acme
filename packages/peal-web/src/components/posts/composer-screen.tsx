@@ -149,7 +149,6 @@ const ExistingPost = ({
             <Button
               variant="outline"
               render={<Link href={`/app/${workspaceId}/ads`} />}
-              nativeButton={false}
             >
               {tAds("toAds")}
             </Button>

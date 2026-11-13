@@ -65,7 +65,7 @@ export const ApprovalsList = ({
       {result.value.length === 0 ? (
         <p className="text-muted-foreground">{t("approvals.empty")}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="bg-card divide-y overflow-hidden rounded-md border">
           {result.value.map((approval) => (
             <ApprovalItemView key={approval.id} approval={approval}>
               <Link

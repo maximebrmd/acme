@@ -708,7 +708,6 @@
     "title": "Channels",
     "description": "The social accounts {workspace} posts to. Connect an account to schedule posts on it.",
     "open": "Channels",
-    "back": "Back to your workspaces",
     "loadFailed": "The channels could not be loaded. Try again.",
     "retry": "Try again",
     "empty": "No account is connected yet.",
@@ -2043,7 +2042,6 @@
   "Billing": {
     "open": "Billing",
     "openLabel": "Billing of {workspace}",
-    "back": "All workspaces",
     "title": "Billing",
     "description": "The plan of {workspace}, and how much of it the workspace uses.",
     "loadFailed": "The billing could not be loaded.",
@@ -2390,27 +2388,7 @@
   "WorkspaceSettings": {
     "open": "Settings",
     "openLabel": "Settings of {workspace}",
-    "back": "Back to the workspaces",
-    "title": "Workspace settings",
-    "description": "{workspace}: its name, its members, who is invited, and its API keys.",
     "role": "{role, select, owner {Owner} admin {Admin} editor {Editor} contributor {Contributor} viewer {Viewer} other {{role}}}",
-    "nav": {
-      "label": "Workspace settings",
-      "general": "General",
-      "members": "Members",
-      "invitations": "Invitations",
-      "apiKeys": "API keys",
-      "webhooks": "Webhooks",
-      "partner": "Partner",
-      "tags": "Tags",
-      "signatures": "Signatures",
-      "channelSets": "Channel sets",
-      "queues": "Queues",
-      "security": "Security",
-      "recycling": "Repeating posts",
-      "feeds": "Feeds",
-      "assistant": "Assistant"
-    },
     "general": {
       "title": "Name",
       "description": "The name every member sees, and invitations name.",
@@ -2569,6 +2547,166 @@
         "loadMore": "Load more",
         "deleted": "Customers deleted since are not listed."
       }
+    }
+  },
+  "WorkspaceShell": {
+    "productName": "Peal",
+    "label": "Workspace",
+    "breadcrumb": "Where you are",
+    "openMenu": "Open the menu",
+    "docs": "Docs",
+    "support": "Support",
+    "back": "Back from {section}",
+    "modes": {
+      "label": "Mode",
+      "studio": "Studio",
+      "console": "Console",
+      "unavailable": "Your role in this workspace has no Console pages"
+    },
+    "groups": {
+      "engage": "Engage",
+      "build": "Build",
+      "partners": "Partners"
+    },
+    "sections": {
+      "posts": "Posts",
+      "settings": "Settings"
+    },
+    "workspaces": {
+      "label": "Switch workspace",
+      "switch": "Your other workspaces",
+      "all": "All workspaces"
+    },
+    "pages": {
+      "calendar": "Calendar",
+      "posts": "Posts",
+      "allPosts": "All posts",
+      "drafts": "Drafts",
+      "approvals": "Approvals",
+      "import": "Import posts",
+      "channels": "Channels",
+      "media": "Media",
+      "inbox": "Inbox",
+      "analytics": "Analytics",
+      "ads": "Ads",
+      "apiKeys": "API keys",
+      "webhooks": "Webhooks",
+      "partner": "Partner",
+      "general": "General",
+      "members": "Members",
+      "invitations": "Invitations",
+      "security": "Security",
+      "billing": "Plan and billing",
+      "tags": "Tags",
+      "signatures": "Signatures",
+      "channelSets": "Channel sets",
+      "queues": "Queues",
+      "recycling": "Repeating posts",
+      "feeds": "Feeds",
+      "assistant": "Assistant",
+      "newPost": "New post",
+      "post": "Post",
+      "thread": "Conversation",
+      "home": "Home",
+      "platforms": "Platforms"
+    }
+  },
+  "WorkspaceHome": {
+    "title": "Write once.",
+    "subtitle": "Peal posts it everywhere.",
+    "copy": "Copy",
+    "copied": "Copied.",
+    "copyFailed": "Copying failed. Select the text and copy it yourself.",
+    "channels": {
+      "chip": "Channels",
+      "title": "Connect your channels",
+      "description": "Eleven networks, from Instagram to Mastodon. Connect each once, and every member, assistant and app of the workspace can post to it.",
+      "connect": "Connect a channel"
+    },
+    "agents": {
+      "chip": "Assistants",
+      "description": "Post, reply and read your numbers from the assistant your team already uses. Copy its setup, give it to the assistant, and sign in to Peal once.",
+      "copy": "Copy the setup for {agent}",
+      "list": {
+        "claude": {
+          "name": "Claude",
+          "how": "In claude.ai or the desktop app, add a custom connector with this address"
+        },
+        "claudeCode": {
+          "name": "Claude Code",
+          "how": "Run this command in a terminal"
+        },
+        "chatgpt": {
+          "name": "ChatGPT",
+          "how": "In ChatGPT’s settings, add a connector with this address"
+        },
+        "cursor": {
+          "name": "Cursor",
+          "how": "Paste this into the mcp.json file of Cursor’s settings"
+        },
+        "vsCode": {
+          "name": "VS Code with GitHub Copilot",
+          "how": "Run this command in a terminal"
+        },
+        "geminiCli": {
+          "name": "Gemini CLI",
+          "how": "Run this command in a terminal"
+        },
+        "windsurf": {
+          "name": "Windsurf",
+          "how": "Paste this into Windsurf’s mcp_config.json"
+        }
+      }
+    },
+    "quickstart": {
+      "chip": "Quickstart",
+      "keys": "Manage keys",
+      "picture": {
+        "you": "You",
+        "ask": "Schedule our autumn menu post on Instagram and Threads for Friday at 7.",
+        "done": "Scheduled on 2 channels."
+      },
+      "agent": {
+        "tab": "Add to my assistant",
+        "connect": "Connect your assistant",
+        "which": "Assistant",
+        "signIn": "On its first request, it opens Peal in your browser to sign in and pick this workspace: there is no key to paste.",
+        "other": "Another assistant? Most take this configuration.",
+        "try": "Try it",
+        "prompts": {
+          "schedule": {
+            "label": "Schedule a post",
+            "text": "Schedule a post on every channel for tomorrow at 9:00: “Fresh bread from 7am, as every day.”"
+          },
+          "results": {
+            "label": "Read the results",
+            "text": "Which posts went out this week, and which did best?"
+          },
+          "comments": {
+            "label": "Answer comments",
+            "text": "Show me the comments that still wait for an answer."
+          }
+        }
+      },
+      "app": {
+        "tab": "Build into my app",
+        "key": "Create an API key",
+        "keyDescription": "Give it only the permissions your app needs. Keep it in your app’s secrets, as PEAL_API_KEY.",
+        "createKey": "Create a key",
+        "install": "Install the SDK",
+        "call": "Make a first call"
+      }
+    }
+  },
+  "PersonalShell": {
+    "label": "Your pages",
+    "workspaces": "Workspaces",
+    "pages": {
+      "overview": "Overview",
+      "agenda": "Agenda",
+      "report": "Report",
+      "notices": "Notices",
+      "account": "Account"
     }
   },
   "Webhooks": {
@@ -3994,9 +4132,7 @@
       "toReconnect": "{count, plural, one {# channel} other {# channels}} to reconnect",
       "channelsOff": "{count, plural, one {# channel is} other {# channels are}} off",
       "unanswered": "{count, plural, one {# thread} other {# threads}} with a comment waiting for an answer",
-      "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}",
-      "agenda": "Agenda across workspaces",
-      "report": "Report across workspaces"
+      "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}"
     },
     "agenda": {
       "title": "Agenda",
@@ -4036,5 +4172,32 @@
       "previous": "Beside {from} to {to}.",
       "caption": "Totals of the posts published from {from} to {to}, each with its change against the days before: a dash where no platform gives a count, and no change where the days before are no longer all kept."
     }
+  },
+  "Platforms": {
+    "title": "Platforms",
+    "description": "The networks this server posts to, what a post may hold on each, and the workspace’s channels there.",
+    "search": "Find a platform",
+    "searchPlaceholder": "Find a platform by name, id or capability…",
+    "noMatch": "No platform matches “{query}”.",
+    "loading": "Reading the platforms…",
+    "loadFailed": "The platforms could not be read.",
+    "retry": "Try again",
+    "columns": {
+      "platform": "Platform",
+      "id": "Id",
+      "text": "Text",
+      "media": "Images and videos",
+      "capabilities": "Peal does",
+      "channels": "Channels"
+    },
+    "noLimit": "Not checked",
+    "textLimit": "{maximum, number} {unit, select, graphemes {characters} codePoints {code points} utf8Bytes {bytes} emojiBytes {weighted characters} utf16Units {UTF-16 units} weighted {weighted characters} other {{unit}}}",
+    "media": "{count, plural, =0 {None} one {# per post} other {# per post}}",
+    "followUps": {
+      "thread": "Threads",
+      "comment": "First comment"
+    },
+    "analytics": "Analytics",
+    "unpublish": "Unpublish"
   }
 }

@@ -46,7 +46,7 @@ const PostImportPage = async ({
         >
           {t("allPosts")}
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
           {t("description", {
             rows: maxImportRows,

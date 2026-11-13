@@ -32,7 +32,7 @@ export const ShellFrame = ({
   readonly footer: ReactNode;
   readonly header: ReactNode;
   readonly hosted: ReactNode;
-}) => {
+}): ReactNode => {
   const pathname = usePathname();
 
   const frame = useSyncExternalStore<Frame>(
@@ -40,6 +40,11 @@ export const ShellFrame = ({
     () => frameOf(pathname, cameThroughLink(pathname)),
     () => (isCallbackPage(pathname) ? "unknown" : frameOf(pathname, false))
   );
+
+  // The signed-in app's layouts draw their own frame around its pages.
+  if (frame === "own") {
+    return children;
+  }
 
   return (
     <>

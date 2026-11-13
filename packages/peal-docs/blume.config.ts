@@ -85,6 +85,14 @@ export default defineConfig({
       spec: "../peal-contract/openapi.json",
     }),
   ],
+  // Light only, in the mark's blue and Geist, as DESIGN.md has it: no
+  // toggle, and no reader's earlier choice of dark.
+  theme: {
+    accent: "#415EEE",
+    fonts: { body: "geist", display: "geist", mono: "geist-mono" },
+    mode: "light",
+    toggle: false,
+  },
   title: "Peal",
   // The plans' prices and limits, from the contract's catalogue, and the
   // retention periods, from its registry of what Peal does with data.

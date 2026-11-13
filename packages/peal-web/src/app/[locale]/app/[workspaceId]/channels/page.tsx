@@ -2,11 +2,10 @@ import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Button } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { ChannelsSettings } from "#components/channels/channels-settings.tsx";
-import { Link, redirect } from "#i18n/navigation.ts";
+import { redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
 // A workspace's channels: the accounts it posts to. The list loads in the
@@ -39,17 +38,7 @@ const ChannelsPage = async ({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <div>
-          <Button
-            variant="link"
-            size="sm"
-            render={<Link href="/app" />}
-            nativeButton={false}
-          >
-            {t("back")}
-          </Button>
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
           {t("description", { workspace: workspace.name })}
         </p>

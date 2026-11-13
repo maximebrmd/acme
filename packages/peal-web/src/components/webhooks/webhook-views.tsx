@@ -270,7 +270,9 @@ const EventChoice = ({
         id={id}
         checked={checked}
         disabled={disabled}
-        onCheckedChange={onChange}
+        onCheckedChange={(next) => {
+          onChange(next === true);
+        }}
       />
       <span className="flex flex-col items-start gap-0.5">
         <Label htmlFor={id}>{t(`events.${type}`)}</Label>
@@ -311,7 +313,7 @@ const ChannelsFieldset = ({
         checked={draft.channelIds.has(id)}
         disabled={disabled}
         onCheckedChange={(checked) => {
-          onChange(withChannel(draft, id, checked));
+          onChange(withChannel(draft, id, checked === true));
         }}
       />
       <Label htmlFor={`${idPrefix}-webhook-channel-${id}`}>{label}</Label>
@@ -573,7 +575,7 @@ export const EndpointFieldsView = ({
             checked={everyTypeChosen(draft)}
             disabled={disabled}
             onCheckedChange={(checked) => {
-              onChange(withEveryType(draft, checked));
+              onChange(withEveryType(draft, checked === true));
             }}
           />
           <Label htmlFor={allId}>{t("allEvents")}</Label>
@@ -639,7 +641,7 @@ export const EndpointFieldsView = ({
             checked={draft.enabled}
             disabled={disabled}
             onCheckedChange={(enabled) => {
-              onChange({ ...draft, enabled });
+              onChange({ ...draft, enabled: enabled === true });
             }}
           />
           <Label htmlFor={enabledId}>{t("enabled")}</Label>

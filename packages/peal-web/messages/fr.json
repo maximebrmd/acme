@@ -708,7 +708,6 @@
     "title": "Canaux",
     "description": "Les comptes sociaux sur lesquels {workspace} publie. Connectez un compte pour y programmer des publications.",
     "open": "Canaux",
-    "back": "Retour à vos espaces de travail",
     "loadFailed": "Les canaux n’ont pas pu être chargés. Réessayez.",
     "retry": "Réessayer",
     "empty": "Aucun compte n’est encore connecté.",
@@ -2043,7 +2042,6 @@
   "Billing": {
     "open": "Facturation",
     "openLabel": "Facturation de {workspace}",
-    "back": "Tous les espaces de travail",
     "title": "Facturation",
     "description": "L’abonnement de {workspace}, et ce que l’espace de travail en utilise.",
     "loadFailed": "La facturation n’a pas pu être chargée.",
@@ -2390,27 +2388,7 @@
   "WorkspaceSettings": {
     "open": "Paramètres",
     "openLabel": "Paramètres de {workspace}",
-    "back": "Retour aux espaces de travail",
-    "title": "Paramètres de l’espace de travail",
-    "description": "{workspace} : son nom, ses membres, les personnes invitées et ses clés d’API.",
     "role": "{role, select, owner {Propriétaire} admin {Administrateur} editor {Éditeur} contributor {Contributeur} viewer {Lecteur} other {{role}}}",
-    "nav": {
-      "label": "Paramètres de l’espace de travail",
-      "general": "Général",
-      "members": "Membres",
-      "invitations": "Invitations",
-      "apiKeys": "Clés d’API",
-      "webhooks": "Webhooks",
-      "partner": "Partenaire",
-      "tags": "Étiquettes",
-      "signatures": "Signatures",
-      "channelSets": "Groupes de canaux",
-      "queues": "Files d’attente",
-      "security": "Sécurité",
-      "recycling": "Répétitions",
-      "feeds": "Flux",
-      "assistant": "Assistant"
-    },
     "general": {
       "title": "Nom",
       "description": "Le nom que voient tous les membres, et que citent les invitations.",
@@ -2569,6 +2547,166 @@
         "loadMore": "Afficher plus",
         "deleted": "Les clients supprimés depuis ne sont pas listés."
       }
+    }
+  },
+  "WorkspaceShell": {
+    "productName": "Peal",
+    "label": "Espace de travail",
+    "breadcrumb": "Où vous êtes",
+    "openMenu": "Ouvrir le menu",
+    "docs": "Documentation",
+    "support": "Assistance",
+    "back": "Quitter {section}",
+    "modes": {
+      "label": "Mode",
+      "studio": "Studio",
+      "console": "Console",
+      "unavailable": "Votre rôle dans cet espace n’a aucune page de la Console"
+    },
+    "groups": {
+      "engage": "Échanger",
+      "build": "Développer",
+      "partners": "Partenaires"
+    },
+    "sections": {
+      "posts": "Publications",
+      "settings": "Paramètres"
+    },
+    "workspaces": {
+      "label": "Changer d’espace de travail",
+      "switch": "Vos autres espaces",
+      "all": "Tous les espaces de travail"
+    },
+    "pages": {
+      "calendar": "Calendrier",
+      "posts": "Publications",
+      "allPosts": "Toutes les publications",
+      "drafts": "Brouillons",
+      "approvals": "Validations",
+      "import": "Importer des publications",
+      "channels": "Canaux",
+      "media": "Médias",
+      "inbox": "Boîte de réception",
+      "analytics": "Statistiques",
+      "ads": "Publicité",
+      "apiKeys": "Clés d’API",
+      "webhooks": "Webhooks",
+      "partner": "Partenaire",
+      "general": "Général",
+      "members": "Membres",
+      "invitations": "Invitations",
+      "security": "Sécurité",
+      "billing": "Abonnement et facturation",
+      "tags": "Étiquettes",
+      "signatures": "Signatures",
+      "channelSets": "Groupes de canaux",
+      "queues": "Files d’attente",
+      "recycling": "Répétitions",
+      "feeds": "Flux",
+      "assistant": "Assistant",
+      "newPost": "Nouvelle publication",
+      "post": "Publication",
+      "thread": "Conversation",
+      "home": "Accueil",
+      "platforms": "Plateformes"
+    }
+  },
+  "WorkspaceHome": {
+    "title": "Écrivez une fois.",
+    "subtitle": "Peal publie partout.",
+    "copy": "Copier",
+    "copied": "Copié.",
+    "copyFailed": "La copie a échoué. Sélectionnez le texte et copiez-le vous-même.",
+    "channels": {
+      "chip": "Canaux",
+      "title": "Connectez vos canaux",
+      "description": "Onze réseaux, d’Instagram à Mastodon. Connectez chacun une fois : chaque membre, assistant et application de l’espace de travail peut y publier.",
+      "connect": "Connecter un canal"
+    },
+    "agents": {
+      "chip": "Assistants",
+      "description": "Publiez, répondez et lisez vos chiffres depuis l’assistant que votre équipe utilise déjà. Copiez sa configuration, donnez-la à l’assistant, et connectez-vous à Peal une fois.",
+      "copy": "Copier la configuration pour {agent}",
+      "list": {
+        "claude": {
+          "name": "Claude",
+          "how": "Dans claude.ai ou l’application de bureau, ajoutez un connecteur personnalisé avec cette adresse"
+        },
+        "claudeCode": {
+          "name": "Claude Code",
+          "how": "Lancez cette commande dans un terminal"
+        },
+        "chatgpt": {
+          "name": "ChatGPT",
+          "how": "Dans les paramètres de ChatGPT, ajoutez un connecteur avec cette adresse"
+        },
+        "cursor": {
+          "name": "Cursor",
+          "how": "Collez ceci dans le fichier mcp.json des paramètres de Cursor"
+        },
+        "vsCode": {
+          "name": "VS Code avec GitHub Copilot",
+          "how": "Lancez cette commande dans un terminal"
+        },
+        "geminiCli": {
+          "name": "Gemini CLI",
+          "how": "Lancez cette commande dans un terminal"
+        },
+        "windsurf": {
+          "name": "Windsurf",
+          "how": "Collez ceci dans le fichier mcp_config.json de Windsurf"
+        }
+      }
+    },
+    "quickstart": {
+      "chip": "Démarrage rapide",
+      "keys": "Gérer les clés",
+      "picture": {
+        "you": "Vous",
+        "ask": "Programme notre publication du menu d’automne sur Instagram et Threads pour vendredi à 7 h.",
+        "done": "Programmée sur 2 canaux."
+      },
+      "agent": {
+        "tab": "Ajouter à mon assistant",
+        "connect": "Connectez votre assistant",
+        "which": "Assistant",
+        "signIn": "À sa première requête, il ouvre Peal dans votre navigateur pour vous connecter et choisir cet espace de travail : aucune clé à coller.",
+        "other": "Un autre assistant ? La plupart acceptent cette configuration.",
+        "try": "Essayez",
+        "prompts": {
+          "schedule": {
+            "label": "Programmer une publication",
+            "text": "Programme une publication sur tous les canaux pour demain à 9 h : « Pain frais dès 7 h, comme chaque jour. »"
+          },
+          "results": {
+            "label": "Lire les résultats",
+            "text": "Quelles publications sont parties cette semaine, et lesquelles ont le mieux marché ?"
+          },
+          "comments": {
+            "label": "Répondre aux commentaires",
+            "text": "Montre-moi les commentaires qui attendent encore une réponse."
+          }
+        }
+      },
+      "app": {
+        "tab": "Intégrer à mon application",
+        "key": "Créez une clé d’API",
+        "keyDescription": "Ne lui donnez que les permissions dont votre application a besoin. Gardez-la dans les secrets de votre application, sous PEAL_API_KEY.",
+        "createKey": "Créer une clé",
+        "install": "Installez le SDK",
+        "call": "Faites un premier appel"
+      }
+    }
+  },
+  "PersonalShell": {
+    "label": "Vos pages",
+    "workspaces": "Espaces de travail",
+    "pages": {
+      "overview": "Vue d’ensemble",
+      "agenda": "Agenda",
+      "report": "Rapport",
+      "notices": "Notifications",
+      "account": "Compte"
     }
   },
   "Webhooks": {
@@ -3994,9 +4132,7 @@
       "toReconnect": "{count, plural, one {# canal} other {# canaux}} à reconnecter",
       "channelsOff": "{count, plural, one {# canal est désactivé} other {# canaux sont désactivés}}",
       "unanswered": "{count, plural, one {# fil} other {# fils}} avec un commentaire qui attend une réponse",
-      "scheduled": "{count, plural, =0 {Rien ne part ces 7 prochains jours} one {# publication part ces 7 prochains jours} other {# publications partent ces 7 prochains jours}}",
-      "agenda": "Agenda de tous les espaces",
-      "report": "Rapport de tous les espaces"
+      "scheduled": "{count, plural, =0 {Rien ne part ces 7 prochains jours} one {# publication part ces 7 prochains jours} other {# publications partent ces 7 prochains jours}}"
     },
     "agenda": {
       "title": "Agenda",
@@ -4036,5 +4172,32 @@
       "previous": "À côté du {from} au {to}.",
       "caption": "Totaux des publications parues du {from} au {to}, chacun avec son évolution par rapport aux jours d’avant : un tiret quand aucune plateforme ne donne un compte, et aucune évolution quand les jours d’avant ne sont plus tous conservés."
     }
+  },
+  "Platforms": {
+    "title": "Plateformes",
+    "description": "Les réseaux sur lesquels ce serveur publie, ce qu’une publication peut contenir sur chacun, et les canaux de l’espace de travail.",
+    "search": "Chercher une plateforme",
+    "searchPlaceholder": "Chercher une plateforme par nom, identifiant ou fonction…",
+    "noMatch": "Aucune plateforme ne correspond à « {query} ».",
+    "loading": "Lecture des plateformes…",
+    "loadFailed": "Les plateformes n’ont pas pu être lues.",
+    "retry": "Réessayer",
+    "columns": {
+      "platform": "Plateforme",
+      "id": "Identifiant",
+      "text": "Texte",
+      "media": "Images et vidéos",
+      "capabilities": "Peal sait",
+      "channels": "Canaux"
+    },
+    "noLimit": "Non vérifié",
+    "textLimit": "{maximum, number} {unit, select, graphemes {caractères} codePoints {points de code} utf8Bytes {octets} emojiBytes {caractères pondérés} utf16Units {unités UTF-16} weighted {caractères pondérés} other {{unit}}}",
+    "media": "{count, plural, =0 {Aucune} one {# par publication} other {# par publication}}",
+    "followUps": {
+      "thread": "Fils",
+      "comment": "Premier commentaire"
+    },
+    "analytics": "Statistiques",
+    "unpublish": "Dépublier"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
+import { Separator as SeparatorPrimitive } from "@ui-sdk/react/separator";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
 
@@ -8,7 +9,9 @@ const Separator = ({
   className,
   orientation = "horizontal",
   ...props
-}: SeparatorPrimitive.Props) => (
+}: Omit<React.ComponentProps<typeof SeparatorPrimitive>, "className"> & {
+  readonly className?: string | undefined;
+}) => (
   <SeparatorPrimitive
     data-slot="separator"
     orientation={orientation}

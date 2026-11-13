@@ -222,6 +222,7 @@ describe("a new member's first post", { serial: true }, () => {
 
     await picker.getByRole("button", /^Video added on/u).tap();
     await picker.getByRole("button", "Attach 1 item").tap();
+    await expect(picker).toBeHidden();
     await screen.getByRole("textbox", "Time").fill("23:59");
     await screen.getByRole("button", "Schedule").tap();
 
@@ -267,11 +268,11 @@ describe("a new member's first post", { serial: true }, () => {
       .tap();
 
     await expect(
-      screen.getByRole("heading", "Workspace settings", { level: 1 })
+      screen.getByRole("heading", "General", { level: 1 })
     ).toBeVisible();
 
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Invitations")
       .tap();
     await screen.getByLabel("Email").fill(guestAddress());
@@ -295,8 +296,13 @@ describe("a new member's first post", { serial: true }, () => {
     screen,
   }) => {
     await app.open(`/app/${workspaceId}/settings`);
+    // Webhooks are the Console's: the mode switch opens it at API keys.
     await screen
-      .getByRole("navigation", "Workspace settings")
+      .getByRole("navigation", "Mode")
+      .getByRole("link", "Console")
+      .tap();
+    await screen
+      .getByRole("navigation", "Workspace")
       .getByRole("link", "Webhooks")
       .tap();
 
@@ -352,7 +358,7 @@ describe("a new member's first post", { serial: true }, () => {
       screen.getByRole("heading", "Bienvenue sur Peal")
     ).toBeVisible();
     await expect(
-      screen.getByRole("banner").getByRole("button", "Se connecter")
+      screen.getByRole("banner").getByRole("link", "Se connecter")
     ).toBeVisible();
     await app.open("/fr/app");
     await expect(browser).toHaveURL("/fr/sign-in");

@@ -1,6 +1,7 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { Button as ButtonPrimitive } from "@ui-sdk/react/button";
 import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
 
@@ -41,16 +42,52 @@ const buttonVariants = cva(
   }
 );
 
+type Primitive = React.ComponentProps<typeof ButtonPrimitive>;
+
+// ui-sdk's Button: a native button, or, through `render`, a link that keeps
+// its link semantics. Callers may pass `undefined` for an option they leave
+// unset (`onClick={canSave ? save : undefined}`), which ui-sdk's props, read
+// with exactOptionalPropertyTypes, do not take: each is passed only when set.
+type ButtonProps = Omit<
+  React.ComponentProps<"button">,
+  "children" | "className" | "disabled" | "onClick" | "style" | "type"
+> &
+  VariantProps<typeof buttonVariants> & {
+    readonly children?: React.ReactNode;
+    readonly className?: string | undefined;
+    readonly disabled?: boolean | undefined;
+    readonly focusableWhenDisabled?: boolean | undefined;
+    readonly onClick?: Primitive["onClick"] | undefined;
+    readonly pendingAnnouncement?: string | undefined;
+    readonly render?: Primitive["render"] | undefined;
+    readonly style?: React.CSSProperties | undefined;
+    readonly type?: Primitive["type"] | undefined;
+  };
+
 const Button = ({
   className,
-  variant = "default",
+  disabled,
+  focusableWhenDisabled,
+  onClick,
+  pendingAnnouncement,
+  render,
   size = "default",
+  style,
+  type,
+  variant = "default",
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) => (
+}: ButtonProps) => (
   <ButtonPrimitive
     data-slot="button"
     className={cn(buttonVariants({ className, size, variant }))}
     {...props}
+    {...(disabled === undefined ? {} : { disabled })}
+    {...(focusableWhenDisabled === undefined ? {} : { focusableWhenDisabled })}
+    {...(onClick === undefined ? {} : { onClick })}
+    {...(pendingAnnouncement === undefined ? {} : { pendingAnnouncement })}
+    {...(render === undefined ? {} : { render })}
+    {...(style === undefined ? {} : { style })}
+    {...(type === undefined ? {} : { type })}
   />
 );
 
