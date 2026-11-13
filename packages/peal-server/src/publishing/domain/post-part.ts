@@ -1,8 +1,10 @@
 import { Schema } from "effect";
 
-import { MediaAttachment } from "./media-attachment.ts";
+import { PartMediaSchema } from "./part-media.ts";
 import { PostTextSchema } from "./post-text.ts";
 import { TextOverride } from "./text-override.ts";
+
+export { maxMediaPerPost, PartMediaSchema } from "./part-media.ts";
 
 /**
  * The most parts that follow a post's first: a post is 25 parts at most,
@@ -13,24 +15,12 @@ export const maxFollowUps = 24;
 /** The longest wait before a part: a day after the part before it. */
 export const maxPartDelaySeconds = 86_400;
 
-/** The most images and videos a part holds: what the largest carousels take. */
-export const maxMediaPerPost = 20;
-
 const isUniqueBy =
   <A>(key: (item: A) => string) =>
   (items: readonly A[]): boolean =>
     new Set(items.map(key)).size === items.length;
 
-/** The media one part shows, in order: each file once. */
-export const PartMediaSchema = Schema.Array(MediaAttachment).check(
-  Schema.isMaxLength(maxMediaPerPost),
-  Schema.makeFilter(
-    isUniqueBy((attachment: MediaAttachment) => attachment.mediaId),
-    { expected: "each media attached once" }
-  )
-);
-
-/** The text one part has instead on some channels: one per channel. */
+/** What one part has instead on some channels: one override per channel. */
 export const PartOverridesSchema = Schema.Array(TextOverride).check(
   Schema.makeFilter(
     isUniqueBy((override: TextOverride) => override.channelId),

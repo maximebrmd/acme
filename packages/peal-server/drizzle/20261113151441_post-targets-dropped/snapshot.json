@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "482d2f2e-ad6f-432c-a000-1ce7fcd2eb9e",
+  "prevIds": [
+    "82e49c30-94ae-4a29-912e-b4df379d2ca9"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "post_targets",
+        "dropped"
+      ],
+      "writes": [
+        "s|col|publishing.post_targets.dropped",
+        "n|col|publishing.post_targets.dropped",
+        "e|col|publishing.post_targets.dropped"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "post_targets",
+        "name": "dropped",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

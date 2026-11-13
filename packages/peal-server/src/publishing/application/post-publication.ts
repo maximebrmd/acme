@@ -134,15 +134,24 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
         ) {
           const targets = yield* posts.lockTargets(postId);
 
+          // A target taken off the post before its time stays cancelled.
           const missed = yield* Effect.all(
             targets.map((target) =>
-              Effect.fromResult(missTarget(target, now)).pipe(
-                Effect.orDie,
-                Effect.tap((next) =>
-                  posts.updateTarget(next, target).pipe(Effect.flatMap(applied))
-                )
-              )
+              isSettled(target)
+                ? Effect.succeed(target)
+                : Effect.fromResult(missTarget(target, now)).pipe(
+                    Effect.orDie,
+                    Effect.tap((next) =>
+                      posts
+                        .updateTarget(next, target)
+                        .pipe(Effect.flatMap(applied))
+                    )
+                  )
             )
+          );
+
+          const marked = missed.filter(
+            (target, index) => target !== targets[index]
           );
 
           const finished = yield* Effect.fromResult(
@@ -153,7 +162,7 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
 
           // Each target settled here, never in recordTargetRun: told once,
           // as a step run again finds the post finished and misses nothing.
-          yield* Effect.forEach(missed, (target) => outcomes.settled(target), {
+          yield* Effect.forEach(marked, (target) => outcomes.settled(target), {
             discard: true,
           });
           yield* events.finished(finished, missed);

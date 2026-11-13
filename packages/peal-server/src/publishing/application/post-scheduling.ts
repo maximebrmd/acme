@@ -14,10 +14,17 @@ import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
+import type { LastTargetLeft } from "#publishing/domain/last-target-left.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { PostOccurrence } from "#publishing/domain/post-occurrence.ts";
-import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
+import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
+import {
+  cancelTarget,
+  isDropped,
+  isSettled,
+} from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
@@ -47,6 +54,7 @@ import type { Queue } from "#publishing/domain/queue.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
+import { dropTarget as dropTargetOf } from "#publishing/domain/target-removal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -74,7 +82,7 @@ import { freeSlotOf, queueNamed } from "./placement.ts";
 import type { Placement } from "./placement.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
-import type { PostNotFound } from "./post-not-found.ts";
+import { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
 import type { PresetAsk, DroppedChannels } from "./post-presets.ts";
@@ -537,6 +545,33 @@ export class PostScheduling extends Context.Service<
     ) => Effect.Effect<
       PostWithTargets,
       DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
+    >;
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or
+     * awaiting an approval), which still goes out on its others: the
+     * target is cancelled, marked `dropped`, and never sent
+     * (`dropTarget`). Refused for a post that is publishing or done
+     * (`InvalidPostTransition`), a target that is not pending
+     * (`InvalidTargetTransition`), and the last target still pending
+     * (`LastTargetLeft`: cancel the post instead). It is an edit of the
+     * post: it goes through the approval gate as moving it does, so a
+     * post whose approval no longer covers it waits for one again, its
+     * job stopped; a post already waiting keeps its request, which
+     * follows what it now is. Webhooks hear `post.cancelled` naming the
+     * channel alone.
+     */
+    readonly dropTarget: (
+      actor: Actor,
+      postId: PostId,
+      targetId: PostTargetId
+    ) => Effect.Effect<
+      PostWithTargets,
+      | DatabaseError
+      | InvalidPostTransition
+      | InvalidTargetTransition
+      | LastTargetLeft
+      | MissingPermission
+      | PostNotFound
     >;
     /**
      * Cancels a post. Once it is publishing, the post itself finishes with
@@ -1793,6 +1828,18 @@ export class PostScheduling extends Context.Service<
               const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
               yield* applied(yield* posts.update(draft, current.post));
+
+              // A draft is for the channels it still goes to: those taken
+              // off it are gone with their targets.
+              const targets = yield* posts.lockTargets(postId);
+
+              if (targets.some(isDropped)) {
+                yield* posts.setTargets(
+                  postId,
+                  targets.filter((target) => !isDropped(target))
+                );
+              }
+
               yield* stopJob(current);
               yield* noLongerWaits(current.post);
 
@@ -1876,8 +1923,61 @@ export class PostScheduling extends Context.Service<
         );
       });
 
+      const dropTarget = Effect.fn("PostScheduling.dropTarget")(
+        function* dropTarget(
+          actor: Actor,
+          postId: PostId,
+          targetId: PostTargetId
+        ) {
+          yield* mayAsk(actor);
+
+          return yield* transaction(
+            Effect.gen(function* dropAndAsk() {
+              const current = yield* lockPost(actor, postId);
+              const now = yield* DateTime.now;
+
+              yield* mayChange(actor, current.post);
+
+              const targets = yield* posts.lockTargets(postId);
+              const target = targets.find(({ id }) => id === targetId);
+
+              if (target === undefined) {
+                return yield* new PostNotFound({ postId });
+              }
+
+              const dropped = yield* Effect.fromResult(
+                dropTargetOf(current.post, targets, target, now)
+              );
+
+              yield* applied(yield* posts.updateTarget(dropped, target));
+
+              const left = targets.map((kept) =>
+                kept.id === dropped.id ? dropped : kept
+              );
+
+              // An edit of the post: the gate decides again, as a move
+              // does. One that waits keeps its request, which follows it.
+              const asked =
+                current.post.status._tag === "awaitingApproval"
+                  ? yield* keptWaiting(actor, current.post, left)
+                  : yield* throughGate(actor, current.post, left);
+
+              if (asked.status._tag !== current.post.status._tag) {
+                yield* applied(yield* posts.update(asked, current.post));
+                yield* stopJob(current);
+              }
+
+              yield* events.dropped(asked, dropped);
+
+              return { post: asked, targets: left };
+            })
+          );
+        }
+      );
+
       return PostScheduling.of({
         cancel,
+        dropTarget,
         enqueue,
         forgetExpiredKeys,
         mayAsk,

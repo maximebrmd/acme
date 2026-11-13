@@ -123,7 +123,8 @@ const makeTelling = Effect.gen(function* makeTelling() {
 /**
  * PostEvents through the webhooks context: `post.scheduled` for each
  * schedule or move (keyed by the post's schedule revision),
- * `post.unscheduled`, `post.cancelled` with the targets cancelled then,
+ * `post.unscheduled`, `post.cancelled` with the targets cancelled then
+ * (or the one channel taken off a post that still goes out),
  * what a member found for an unconfirmed target, as the `post.published`
  * or `post.failed` it turned out to be, and `post.finished` with every
  * target's result, once per round and outcome.
@@ -192,6 +193,27 @@ export const WebhookPostEvents = Layer.effect(
       );
     });
 
+    // A channel taken off the post is told as the post cancelled there
+    // alone, once for the target: the post goes out on its others.
+    const dropped = Effect.fn("PostEvents.dropped")(function* dropped(
+      post: Post,
+      target: PostTarget
+    ) {
+      if (target.status._tag !== "cancelled") {
+        return;
+      }
+
+      yield* publish(`post-target:${target.id}:dropped`, {
+        data: {
+          cancelledAt: target.status.cancelledAt,
+          postId: post.id,
+          targets: yield* refsOf([target]),
+          workspaceId: post.workspaceId,
+        },
+        type: "post.cancelled",
+      });
+    });
+
     // Each target's result, once every one has its own: none while one
     // is still pending or publishing.
     const resultsOf = Effect.fn("PostEvents.resultsOf")(function* resultsOf(
@@ -258,6 +280,7 @@ export const WebhookPostEvents = Layer.effect(
       cancelled: (post, targets) => neverStopping(cancelled(post, targets)),
       confirmed: (post, target) =>
         neverStopping(settled(post, target, "confirmed")),
+      dropped: (post, target) => neverStopping(dropped(post, target)),
       finished: (post, targets) => neverStopping(finished(post, targets)),
       scheduled: (post, targets) => neverStopping(scheduled(post, targets)),
       unscheduled: (post) => neverStopping(unscheduled(post)),

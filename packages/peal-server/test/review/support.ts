@@ -101,6 +101,7 @@ const Hearing = Layer.effectContext(
       PostEvents.of({
         cancelled: hear("cancelled"),
         confirmed: hear("confirmed"),
+        dropped: hear("dropped"),
         finished: hear("finished"),
         scheduled: hear("scheduled"),
         unscheduled: hear("unscheduled"),
