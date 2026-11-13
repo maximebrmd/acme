@@ -45,6 +45,12 @@ class Billing extends JsonSerializableType
     public ?Money $estimate;
 
     /**
+     * @var ?bool $paymentFailed
+     */
+    #[JsonProperty('paymentFailed')]
+    public ?bool $paymentFailed;
+
+    /**
      * @var bool $paymentMethod
      */
     #[JsonProperty('paymentMethod')]
@@ -116,6 +122,7 @@ class Billing extends JsonSerializableType
      *   vatRate: int,
      *   account?: ?BillingAccount,
      *   estimate?: ?Money,
+     *   paymentFailed?: ?bool,
      *   plan?: ?value-of<Plan>,
      *   rateCard?: ?RateCard,
      *   subscription?: ?BillingSubscription,
@@ -133,6 +140,7 @@ class Billing extends JsonSerializableType
         $this->currency = $values['currency'];
         $this->enabled = $values['enabled'];
         $this->estimate = $values['estimate'] ?? null;
+        $this->paymentFailed = $values['paymentFailed'] ?? null;
         $this->paymentMethod = $values['paymentMethod'];
         $this->plan = $values['plan'] ?? null;
         $this->plans = $values['plans'];
