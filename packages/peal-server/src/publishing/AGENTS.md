@@ -25,19 +25,32 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   never `content.media` for a channel. `shownMedia` lists every channel's,
   so `mediaFor`, `MediaInPosts` (`showingMedia`'s SQL reads
   `text_overrides` and the parts' `overrides`) and copies see them; a
-  change of an override keeps its media (`changedOverride`).
+  change of an override keeps its media (`changedOverride`), a recycling
+  variant too (`sayingVariant`), and a deletion that leaves one none
+  gives the channel the part's media again. An override's `text` stays
+  required: a channel given media alone carries the post's text.
 - `PostScheduling.dropTarget` (`removeTarget`, `remove_post_target`, `peal
   posts remove-target`) takes a pending target off a scheduled or held
   post (`target-removal.ts`): cancelled with `dropped`
-  (`post_targets.dropped`), the last one refused (`LastTargetLeft`), under
-  the post's then the targets' locks, so a job's claim is either before
-  (refused) or after (it skips the cancelled target). It passes the gate
-  as a move does (`throughGate`; a held post `keptWaiting`), and the job
-  stays unless the post is held. Dropped targets count for nothing in
-  `outcomeOf` and the approval subject, are not copied, stay cancelled
-  when a post is missed, and are deleted when the post goes back to
-  draft. Webhooks hear `post.cancelled` naming the target alone
-  (`PostEvents.dropped`).
+  (`post_targets.dropped`), the channel's overrides in every part gone
+  with it (`withoutChannelOf`), the last one refused (`LastTargetLeft`),
+  one dropped already answered as it is (a retry is safe), under the
+  post's then the targets' locks, so a job's claim is either before
+  (refused) or after (it skips the cancelled target). A scheduled post
+  passes the gate as a move does (`throughGate`, its job stopped when it
+  is held); a held one keeps its request, which takes the new subject
+  (`ApprovalGate.follow`). Dropped targets count for nothing in
+  `outcomeOf`, the approval subject, a review (`keptTargets`), copies,
+  `post.scheduled`, the search's channel filter and the staff console's
+  count; they stay cancelled when a post is missed. Every way back to
+  draft (`unschedule`, `HeldPosts.sendBack`, a late `release`) saves
+  through `saveBackToDraft`, which deletes them and their channels'
+  overrides, and `targetsOn` never reuses one, so a channel chosen again
+  starts pending. Webhooks hear `post.cancelled` naming the target alone,
+  `scope: "target"` (`PostEvents.dropped`). Stored shapes:
+  `fixtures/persisted/posts/text-overrides.json` and the dropped row in
+  `post-parts-storage.test.ts`; rolling back past them is in the server
+  guide.
 - `platformRules[platform].followUps` says what parts become there
   (`thread`: X, Bluesky, Mastodon; `comment`: none yet) and how many; the
   contract's copy and the capabilities' `followUps` follow it. Scheduling
