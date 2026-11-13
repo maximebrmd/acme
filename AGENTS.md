@@ -155,13 +155,25 @@ several:
 
 ## Read the sources, not memory
 
-Effect 4, Drizzle 1.0, Better Auth, the AT Protocol OAuth client, Tiptap, Blume
-and Astro move faster than any training data. `bun run references` clones each
+Effect 4, Drizzle 1.0, Better Auth, the AT Protocol OAuth client, Tiptap,
+ui-sdk, Blume and Astro move faster than any training data. `bun run references` clones each
 one's source, at the version this workspace installs, into
 `.local/references/<name>` (ignored by Git, Nx and the linters). Read the code,
 tests and docs there before using an API, and rerun the command after an
 upgrade. Effect also ships agent docs in `.local/references/effect/ai-docs`,
 and Next.js ships its docs in `packages/peal-web/node_modules/next/dist/docs`.
+
+## Design
+
+[`DESIGN.md`](DESIGN.md) is the design system: the colours of the mark,
+type, shape, the frame (Studio and Console, the drill-down sidebar, the top
+bar) and the page patterns. Read it before changing a screen of the web
+app, the site or the docs. Peal is light only: no dark mode, no `dark:`
+class in Peal's own code.
+
+Look for patterns through the MCP servers in `.mcp.json` (shadcn/ui's
+registry, and 21st.dev's with `TWENTYFIRST_API_KEY`), then build them from
+peal-ui and its theme: a reference is a starting point, not code to paste.
 
 ## Development stack
 

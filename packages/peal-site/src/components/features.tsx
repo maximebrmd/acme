@@ -16,12 +16,10 @@ export const Features = ({ features }: FeaturesProps) => (
     {features.map((feature) => (
       <li
         key={feature.title}
-        className="rounded-2xl border border-neutral-200 p-6 dark:border-neutral-800"
+        className="rounded-2xl border border-neutral-200 p-6"
       >
         <h3 className="text-lg font-semibold">{feature.title}</h3>
-        <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-          {feature.body}
-        </p>
+        <p className="mt-2 text-neutral-600">{feature.body}</p>
       </li>
     ))}
   </ul>
