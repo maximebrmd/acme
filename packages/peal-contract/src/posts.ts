@@ -108,7 +108,9 @@ const PartMediaSchema = Schema.Array(MediaAttachmentSchema).check(
  * there instead of the part's, in order (an empty list shows none there).
  * Left out, the channel shows the part's own media; Peal answers `media`
  * only on an override that gives some. Each channel is checked on the
- * media it receives.
+ * media it receives. `text` is never empty: to give a channel media alone,
+ * send the post's text, which then stays the channel's when the post's
+ * text changes, unless the client changes it too.
  */
 export const TextOverrideSchema = Schema.Struct({
   channelId: Schema.String,

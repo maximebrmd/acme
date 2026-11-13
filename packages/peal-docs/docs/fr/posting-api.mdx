@@ -507,7 +507,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
 
 ## Des médias propres sur un canal [#channel-media]
 
-Le texte d’une publication sur un canal (une entrée de `content.overrides`, ou des `overrides` d’une partie) peut aussi donner à ce canal des images et vidéos propres, dans `media`, qu’il montre alors à la place de celles de la publication : dans l’ordre, chacune avec son texte alternatif, 20 au plus, des médias prêts de l’espace de travail. Une liste vide n’en montre aucun sur ce canal ; absente, le canal montre ceux de la publication, et Peal ne répond `media` que sur une entrée qui en donne. Une entrée a toujours son `text` : envoyez-y le texte de la publication pour ne donner au canal que des médias.
+Le texte d’une publication sur un canal (une entrée de `content.overrides`, ou des `overrides` d’une partie) peut aussi donner à ce canal des images et vidéos propres, dans `media`, qu’il montre alors à la place de celles de la publication : dans l’ordre, chacune avec son texte alternatif, 20 au plus, des médias prêts de l’espace de travail. Une liste vide n’en montre aucun sur ce canal ; absente, le canal montre ceux de la publication, et Peal ne répond `media` que sur une entrée qui en donne. Une entrée a toujours son `text`, qui ne peut pas être vide : envoyez-y le texte de la publication pour ne donner au canal que des médias. Ce texte est désormais celui du canal : quand vous changez le texte de la publication, changez-le là aussi (l’application web le fait).
 
 ```json
 {

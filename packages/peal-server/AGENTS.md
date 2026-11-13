@@ -333,6 +333,14 @@ and no socket, for tests.
 - The server migrates when it starts, so write migrations that the previous
   release can still run against, and roll back by releasing the previous
   commit.
+- A release that gives stored JSON a key the previous release ignores, or a
+  row a state it never wrote, says in
+  `packages/peal-infra/ansible/runbooks/roll-back.md` what the previous
+  release does with it and the read-only checks to run before rolling back
+  past it. Per-channel posts did: an override's `media` (the release before
+  sends the post's media there, unchecked) and `post_targets.dropped` (it
+  counts the target, and fails a missed post's claim on it): roll back
+  only once no post still to go out has either.
 
 ### Metrics and alerts
 

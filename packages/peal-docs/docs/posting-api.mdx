@@ -507,7 +507,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
 
 ## Media of its own on a channel [#channel-media]
 
-A post's text on one channel (an entry of `content.overrides`, or of a part's `overrides`) may also give that channel images and videos of its own, in `media`, which it then shows instead of the post's: in order, each with its alt text, 20 at most, ready media of the workspace. An empty list shows none there; left out, the channel shows the post's, and Peal answers `media` only on an override that gives some. An override always has its `text`: send the post's own text there to give a channel media alone.
+A post's text on one channel (an entry of `content.overrides`, or of a part's `overrides`) may also give that channel images and videos of its own, in `media`, which it then shows instead of the post's: in order, each with its alt text, 20 at most, ready media of the workspace. An empty list shows none there; left out, the channel shows the post's, and Peal answers `media` only on an override that gives some. An override always has its `text`, which may not be empty: send the post's own text there to give a channel media alone. That text is the channel's from then on, so when you change the post's text, change it there too (the web app does).
 
 ```json
 {
