@@ -1,8 +1,20 @@
-import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Metric,
+  Option,
+  Schema,
+} from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
-import type { SubscriptionStatus } from "#billing/domain/subscription.ts";
+import { billsAt, entitles } from "#billing/domain/subscription.ts";
+import type {
+  Subscription,
+  SubscriptionStatus,
+} from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -49,6 +61,20 @@ export type RecordedEvent = RecordOutcome | "ignored";
 
 const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
 
+/**
+ * The second per-account subscriptions of one billing account ended: a
+ * customer who paid twice and holds two confirmations, which someone must
+ * answer. An alert rule reads it (peal-duplicate-subscription).
+ */
+export const duplicateSubscriptions = Metric.counter(
+  "peal.billing.duplicate_subscriptions",
+  {
+    description:
+      "Second per-account subscriptions of one billing account, ended when recorded",
+    incremental: true,
+  }
+);
+
 // Whether Stripe already ends the trial, cancelled, when it ends.
 const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
   Option.exists(event.cancelAt, (at) =>
@@ -58,6 +84,18 @@ const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
 // A paid subscription that gives its plan, as one ordered during a trial.
 const paidFor = (status: SubscriptionStatus) =>
   status === "active" || status === "past_due";
+
+// The order subscriptions started in, the earliest first; one without a
+// start last, then by id, so every server keeps the same one.
+const startOf = (held: Subscription): number =>
+  Option.match(held.startedAt, {
+    onNone: () => Number.POSITIVE_INFINITY,
+    onSome: (at) => at.epochMilliseconds,
+  });
+
+const byStart = (left: Subscription, right: Subscription): number =>
+  startOf(left) - startOf(right) ||
+  left.stripeSubscriptionId.localeCompare(right.stripeSubscriptionId);
 
 /**
  * Keeps a workspace's subscriptions as Stripe's webhook events describe
@@ -219,6 +257,73 @@ export class RecordSubscription extends Context.Service<
                 stripeSubscriptionId,
                 "orderedDuringTrial"
               ),
+            { discard: true }
+          );
+        }
+
+        // Per-account pricing now runs: a legacy plan the workspace still
+        // pays for ends with the period it paid for (it is not ended at
+        // once: no credit is made for its unused time here).
+        if (
+          outcome !== "ignored" &&
+          recorded.plan === "payAsYouGo" &&
+          paidFor(recorded.status)
+        ) {
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          yield* Effect.forEach(
+            held.filter(
+              (legacy) =>
+                legacy.plan !== "payAsYouGo" &&
+                legacy.status !== "trialing" &&
+                !legacy.cancelAtPeriodEnd &&
+                entitles(legacy)
+            ),
+            ({ stripeSubscriptionId }) =>
+              stripe.cancelAtPeriodEnd(
+                recorded.workspaceId,
+                stripeSubscriptionId,
+                `moved-${recorded.stripeSubscriptionId}`
+              ),
+            { discard: true }
+          );
+        }
+
+        // One per-account subscription per account: should a second one go
+        // through (two checkouts finished before either was recorded), the
+        // newer ends at once, unbilled, and the older is kept.
+        if (outcome !== "ignored" && recorded.plan === "payAsYouGo") {
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          const live = held
+            .filter(
+              ({ plan, status }) => plan === "payAsYouGo" && billsAt(status)
+            )
+            .toSorted(byStart);
+
+          yield* Effect.forEach(
+            live.slice(1),
+            ({ stripeSubscriptionId }) =>
+              stripe
+                .endNow(
+                  recorded.workspaceId,
+                  stripeSubscriptionId,
+                  "duplicateSubscription"
+                )
+                .pipe(
+                  Effect.andThen(Metric.update(duplicateSubscriptions, 1)),
+                  Effect.andThen(
+                    Effect.logError(
+                      "Ended a second per-account subscription of one billing account"
+                    ).pipe(
+                      Effect.annotateLogs({
+                        kept: live[0]?.stripeSubscriptionId ?? "",
+                        stripeSubscriptionId,
+                        workspaceId: recorded.workspaceId,
+                      })
+                    )
+                  )
+                ),
             { discard: true }
           );
         }

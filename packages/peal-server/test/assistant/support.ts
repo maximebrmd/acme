@@ -158,6 +158,10 @@ export const allowanceOf = (
     AssistantAllowance.of({
       dailyRequests: () => Effect.succeed(dailyRequests),
       imageRequests: () => Effect.succeed(imageRequests),
+      // A server that does not bill: no pool is ever read.
+      pooled: false,
+      sharedWith: () => Effect.die("no pool is read where none is shared"),
+      sharingWith: () => Effect.die("no pool is read where none is shared"),
     })
   );
 

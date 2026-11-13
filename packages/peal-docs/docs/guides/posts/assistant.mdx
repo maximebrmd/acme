@@ -52,11 +52,11 @@ An image from the instance's model costs 5 of the day's requests; one from the w
 
 ## Limits [#limits]
 
-| Limit                                  | Value                                                                                                                  |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Text or subject                        | Up to 5,000 characters                                                                                                 |
-| Requests a day                         | 100 per workspace unless the instance sets another, counted from midnight UTC. The menu shows how many are left today. |
-| With the workspace's own text provider | None counts: the menu says the workspace's provider writes, and that provider takes up to 500 requests a day.          |
+| Limit                                  | Value                                                                                                                                                                                              |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text or subject                        | Up to 5,000 characters                                                                                                                                                                             |
+| Requests a day                         | 100 per workspace unless the instance sets another, counted from midnight UTC. On Peal Cloud, the plan's, shared by the workspaces of the billing account. The menu shows how many are left today. |
+| With the workspace's own text provider | None counts: the menu says the workspace's provider writes, and that provider takes up to 500 requests a day.                                                                                      |
 
 - A request that could not reach the AI provider does not count.
 - One that took more than 90 seconds does, as the provider may have worked on it.

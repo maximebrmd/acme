@@ -9,13 +9,37 @@ La facturation, le captcha et l’inscription fermée sont tous désactivés sur
 
 ## Facturation [#billing]
 
-La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, et un abonnement Stripe le fait passer à Starter, Pro, Business ou Agency, au mois ou à l’année. [Abonnements et facturation](/guides/workspace/billing) les présente, avec ce que chacun limite, l’essai, la commande, la résiliation et la rétractation.
+La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, 2 comptes connectés sur tout son compte de facturation. Un abonnement Stripe au tarif par compte, au mois, lui en donne autant qu’il veut, facturés au compte et à l’usage (les abonnements par paliers de canaux ne sont plus vendus). [Abonnements et facturation](/guides/workspace/billing) présente les deux, avec ce que chacun limite, la commande, la résiliation et la rétractation.
+
+<Callout type="warning" title="Définir un délai avant d’activer la facturation">
+  Activer la facturation, ou mettre à jour un serveur qui facturait avec les
+  abonnements par paliers de canaux (dont l’offre gratuite comptait 3 comptes),
+  met au-delà de l’offre gratuite chaque espace de travail qui compte plus de 2
+  comptes. Définissez d’abord `PEAL_BILLING_GRACE_UNTIL`, pour les laisser
+  publier sur les comptes qu’ils avaient jusqu’à un jour, pendant que ceux qui
+  gèrent leur facturation sont prévenus ([Variables
+  d’environnement](/self-hosting/environment-variables#billing)). Sans elle, le
+  serveur l’avertit au démarrage.
+</Callout>
+
+<Callout
+  type="warning"
+  title="Ne jamais revenir à une version d’avant le tarif par compte"
+>
+  Une fois qu’un serveur facture au tarif par compte, ne revenez jamais à une
+  version d’avant. Elle donne aux abonnements au compte les limites de
+  l’ancienne offre gratuite (3 canaux, 2 membres, 30 publications), si bien que
+  chaque espace payant au-delà cesse de publier. Elle ne sait pas non plus lire
+  les avis de moyen de paiement que la période de grâce enregistre, si bien que
+  les avis et l’export des données échouent pour qui en a un.
+</Callout>
 
 | Réglage                    | Où                           | Ce qu’il fait                                                                                                                         |
 | -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `STRIPE_SECRET_KEY`        | Serveur                      | Active la facturation                                                                                                                 |
 | `STRIPE_WEBHOOK_SECRET`    | Serveur                      | Le secret de signature du webhook                                                                                                     |
 | `STRIPE_LOOKUP_KEY_PREFIX` | Serveur                      | Le préfixe des clés de recherche du catalogue                                                                                         |
+| `PEAL_BILLING_GRACE_UNTIL` | Serveur                      | Le jour jusqu’auquel les espaces de travail au-delà de l’offre gratuite continuent de publier sur les comptes qu’ils avaient          |
 | `PEAL_TERMS_URL`           | Application web              | Vos conditions d’utilisation, vers lesquelles la page de facturation renvoie avant une commande                                       |
 | `PEAL_CONTACT_URL`         | Application web              | L’adresse où écrire pour davantage que le plus grand abonnement                                                                       |
 | `SITE_APP_URL`             | Construction du site vitrine | Permet au pied de page du site de renvoyer vers les pages de l’application qui permettent de résilier un contrat et de s’en rétracter |
@@ -98,7 +122,12 @@ Une limite s’applique quand on ajoute quelque chose : un espace de travail pas
 
 ### Le catalogue [#catalogue]
 
-Un serveur qui facture vérifie le catalogue de Peal au démarrage. Un prix d’abonnement qui diffère l’arrête, en énumérant les écarts. Tant que la tarification par compte n’est pas vendue, un catalogue qui diffère ne l’arrête pas : le serveur démarre, consigne les écarts avec la commande qui le crée, et l’alerte `peal-stripe-catalogue` se déclenche. Si Stripe ne répond pas, il démarre et consigne un avertissement.
+Un serveur qui facture vérifie le catalogue de Peal au démarrage.
+
+- Un compteur ou un prix absent ou qui facture autrement, ou un prix sur un produit archivé, l’arrête, en énumérant les écarts et la commande qui crée le catalogue.
+- Les prix des abonnements par paliers de canaux, qui ne sont plus vendus, ne sont vérifiés que tant qu’un abonnement à l’un d’eux court encore : un nouveau compte Stripe n’en a besoin d’aucun.
+- Si Stripe ne répond pas, le serveur démarre et consigne un avertissement.
+- Le serveur ne lit le catalogue qu’au démarrage : après avoir lancé la commande, redémarrez un serveur déjà démarré.
 
 La tarification par compte, c’est un compteur (meter), un produit et un prix à l’usage en dollars américains, hors taxes et facturé chaque mois, pour chaque ligne de la grille tarifaire. Leurs clés de recherche (lookup keys), qui sont aussi les noms d’événements des compteurs, sont celles-ci, ou commencent par le préfixe défini dans `STRIPE_LOOKUP_KEY_PREFIX` :
 
@@ -117,9 +146,9 @@ La clé de la commande doit pouvoir écrire les compteurs, les produits et les p
   <AccordionItem title="Quand les montants de la grille changent, et revenir en arrière">
     La commande crée un nouveau prix qui reprend la clé de recherche, et laisse
     l’ancien actif pour les abonnements qui l’utilisent. La version précédente
-    ne trouve alors plus son propre prix sous cette clé : pour revenir en
-    arrière, démarrez la version précédente, puis lancez son `stripe-catalogue`,
-    qui ramène la clé.
+    ne trouve alors plus son propre prix sous cette clé, et ne démarre pas :
+    pour revenir en arrière, lancez le `stripe-catalogue` de la version
+    précédente, qui ramène la clé, puis démarrez cette version.
   </AccordionItem>
   <AccordionItem title="Noms des produits et codes de taxe">
     La commande donne à chaque produit qu’elle crée son nom et le code de taxe

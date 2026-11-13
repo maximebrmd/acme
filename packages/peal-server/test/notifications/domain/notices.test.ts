@@ -139,6 +139,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     refunded: { amount: 642, currency: "eur" },
     withdrawnAt: DateTime.makeUnsafe("2026-11-12T08:00:00Z"),
   },
+  PaymentMethodNeeded: {
+    _tag: "PaymentMethodNeeded",
+    accounts: 3,
+    allowed: 2,
+    graceUntil: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
+  },
   TrialEnding: {
     _tag: "TrialEnding",
     endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
@@ -171,6 +177,7 @@ describe("notice events", () => {
       events.SubscriptionRenewing,
       events.SubscriptionWithdrawn,
       events.TrialEnding,
+      events.PaymentMethodNeeded,
     ]) {
       expect(audienceOf(billing)).toBe("billing:manage");
       expect(pageOf(billing, workspaceId)).toBe(`/app/${workspaceId}/billing`);
@@ -423,8 +430,9 @@ describe("notification preferences", () => {
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
       Option.some("recyclingEnded"),
-      // Billing's five, deliveries failing, then the webhook endpoint
+      // Billing's six, deliveries failing, then the webhook endpoint
       // turned off.
+      Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),

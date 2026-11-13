@@ -3,6 +3,7 @@
 import type { Standing } from "peal-contract";
 import type { ReactNode } from "react";
 
+import { GraceBanner } from "#components/billing/grace-banner.tsx";
 import { OverPlanScreen } from "#components/billing/over-plan-screen.tsx";
 import type { UpgradeWorkspace } from "#components/billing/upgrade-dialog.tsx";
 import { usePathname } from "#i18n/navigation.ts";
@@ -34,6 +35,17 @@ export const PlanGate = ({
   workspace,
 }: PlanGateProps): ReactNode => {
   const pathname = usePathname();
+  const graceUntil = standing?.graceUntil ?? null;
+
+  // A grace keeps it publishing until a day, which every member reads.
+  if (standing !== null && graceUntil !== null) {
+    return (
+      <>
+        <GraceBanner graceUntil={graceUntil} />
+        {children}
+      </>
+    );
+  }
 
   if (
     standing === null ||

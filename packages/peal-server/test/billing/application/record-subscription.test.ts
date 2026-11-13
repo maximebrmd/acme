@@ -1,11 +1,14 @@
 import { assert, layer } from "@effect/vitest";
-import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
-import { RecordSubscription } from "#billing/application/record-subscription.ts";
+import {
+  duplicateSubscriptions,
+  RecordSubscription,
+} from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
@@ -108,6 +111,8 @@ const PortsInMemory = Layer.mergeAll(
           credit: (_workspace, id) => asked(`credit ${id}`),
           endAtTrialEnd: (_workspace, id, end) =>
             asked(`endAtTrialEnd ${id} ${DateTime.formatIso(end)}`),
+          endAndInvoice: (_workspace, id, reason) =>
+            asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
           isBusiness: () => Effect.succeed(false),
           paidInvoices: () => Effect.succeed([]),
@@ -168,6 +173,17 @@ const record = (fields: Partial<SubscriptionEvent>) =>
   RecordSubscription.use((subscriptions) =>
     subscriptions.record(event(fields))
   );
+
+// A per-account subscription, active since `startedAt`.
+const perAccount = (id: string, startedAt: string) =>
+  record({
+    plan: "payAsYouGo",
+    startedAt: Option.some(at(startedAt)),
+    startedBy: Option.none(),
+    status: "active",
+    stripeSubscriptionId: id,
+    trialEnd: Option.none(),
+  });
 
 layer(RecordTest)("recording a subscription", (it) => {
   it.effect(
@@ -230,6 +246,79 @@ layer(RecordTest)("recording a subscription", (it) => {
         assert.deepStrictEqual(yield* askedOfStripe, [
           "endNow sub_synthetic_trial orderedDuringTrial",
         ]);
+      })
+  );
+
+  it.effect(
+    "ends a trial at once, and a legacy plan at its period's end, once per-account pricing is recorded",
+    () =>
+      Effect.gen(function* moved() {
+        yield* reset;
+        yield* record({ cancelAt: Option.some(trialEnd) });
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
+        yield* record({
+          plan: "payAsYouGo",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        });
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_trial orderedDuringTrial",
+          "cancelAtPeriodEnd sub_synthetic_legacy",
+        ]);
+
+        // Recorded again, Stripe is asked again under the same keys.
+        const entitlements = (yield* RecordLog.use(({ held }) =>
+          Ref.get(held)
+        )).map(({ plan, stripeSubscriptionId }) => [
+          stripeSubscriptionId,
+          plan,
+        ]);
+
+        assert.deepInclude(entitlements, [
+          "sub_synthetic_accounts",
+          "payAsYouGo",
+        ]);
+      })
+  );
+
+  it.effect(
+    "ends at once, without a charge, a second per-account subscription of the account, keeping the older",
+    () =>
+      Effect.gen(function* duplicate() {
+        const before = (yield* Metric.value(duplicateSubscriptions)).count;
+
+        yield* reset;
+        yield* perAccount("sub_synthetic_first", "2026-11-09T10:00:00Z");
+        yield* perAccount("sub_synthetic_second", "2026-11-09T10:05:00Z");
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_second duplicateSubscription",
+        ]);
+
+        // The older one's event arriving last ends the newer one too.
+        yield* reset;
+        yield* perAccount("sub_synthetic_late", "2026-11-09T10:05:00Z");
+        yield* perAccount("sub_synthetic_early", "2026-11-09T10:00:00Z");
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_late duplicateSubscription",
+        ]);
+        // Each counted, for the alert (peal-duplicate-subscription).
+        assert.strictEqual(
+          (yield* Metric.value(duplicateSubscriptions)).count - before,
+          2
+        );
       })
   );
 

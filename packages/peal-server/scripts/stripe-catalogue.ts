@@ -12,11 +12,15 @@
 // bills otherwise by a new one, which takes its lookup key, leaving the
 // old one active for the subscriptions on it. It prints what it made, by
 // name and id, never the key. Running it again changes nothing. With
-// --check it changes nothing, and fails when anything would change.
+// --check it changes nothing, and fails when anything would change. Its
+// exit code says how it failed (catalogueExitCode): 3 the catalogue
+// differs, 4 Stripe refused or answered what cannot be read, 5 Stripe did
+// not answer, 1 anything else.
 import { BunRuntime } from "@effect/platform-bun";
 import { Console, Effect } from "effect";
 
 import { catalogueOf } from "#billing/domain/catalogue.ts";
+import { catalogueExitCode } from "#billing/infrastructure/stripe-catalogue-command.ts";
 import { runCatalogue } from "#billing/infrastructure/stripe-catalogue.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import {
@@ -40,7 +44,18 @@ const program = Effect.gen(function* stripeCatalogue() {
     ),
     published: catalogueOf(catalogueKeysOf(prefix)),
     report: (line) => Console.log(line),
-  });
+  }).pipe(
+    Effect.tapError((failure) =>
+      Console.error(`${failure._tag}: ${failure.message}`).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            process.exitCode = catalogueExitCode(failure);
+          })
+        )
+      )
+    ),
+    Effect.ignore
+  );
 });
 
 BunRuntime.runMain(program);

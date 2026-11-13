@@ -378,3 +378,14 @@ export const accountTransfers = billing.table(
     index("account_transfers_by").on(table.offeredBy),
   ]
 );
+
+/**
+ * When this server first ran with each billing grace
+ * (`PEAL_BILLING_GRACE_UNTIL`, its day the key): only the channels
+ * connected before then are graced, never one connected after. Written
+ * once, the first time a server that bills starts with that day.
+ */
+export const graceStarts = billing.table("grace_starts", {
+  graceUntil: date("grace_until", { mode: "string" }).primaryKey(),
+  startedAt: instant("started_at").notNull(),
+});

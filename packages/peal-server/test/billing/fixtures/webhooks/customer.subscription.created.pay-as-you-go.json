@@ -1,0 +1,204 @@
+{
+  "id": "evt_synthetic_created",
+  "object": "event",
+  "api_version": "2026-10-28.endive",
+  "created": 1793268000,
+  "data": {
+    "object": {
+      "id": "sub_synthetic",
+      "object": "subscription",
+      "billing_cycle_anchor": 1793491200,
+      "cancel_at": null,
+      "cancel_at_period_end": false,
+      "canceled_at": null,
+      "collection_method": "charge_automatically",
+      "created": 1793268000,
+      "currency": "usd",
+      "customer": "cus_synthetic",
+      "ended_at": null,
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_synthetic_accounts",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_accounts",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "tiered",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_accounts",
+              "product": "prod_synthetic_accounts",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_accounts",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          },
+          {
+            "id": "si_synthetic_outbound_messages",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_outbound_messages",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_outbound_messages",
+              "product": "prod_synthetic_outbound_messages",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_outbound_messages",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          },
+          {
+            "id": "si_synthetic_managed_ads",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_managed_ads",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_managed_ads",
+              "product": "prod_synthetic_managed_ads",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_managed_ads",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          },
+          {
+            "id": "si_synthetic_assistant_requests",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_assistant_requests",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_assistant_requests",
+              "product": "prod_synthetic_assistant_requests",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_assistant_requests",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          },
+          {
+            "id": "si_synthetic_assistant_images",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_assistant_images",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_assistant_images",
+              "product": "prod_synthetic_assistant_images",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_assistant_images",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          },
+          {
+            "id": "si_synthetic_x_api",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1793491200,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_x_api",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "usd",
+              "livemode": false,
+              "lookup_key": "peal_x_api",
+              "product": "prod_synthetic_x_api",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "meter": "mtr_synthetic_x_api",
+                "usage_type": "metered"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring"
+            },
+            "subscription": "sub_synthetic"
+          }
+        ],
+        "has_more": false,
+        "url": "/v1/subscription_items?subscription=sub_synthetic"
+      },
+      "livemode": false,
+      "metadata": {},
+      "schedule": null,
+      "start_date": 1793268000,
+      "status": "active",
+      "trial_end": null,
+      "trial_start": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "customer.subscription.created"
+}

@@ -9,6 +9,7 @@ import { CancelSubscription } from "#billing/application/cancel-subscription.ts"
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { ConfirmContractRequest } from "#billing/application/confirm-contract-request.ts";
 import { ContractRequestDesk } from "#billing/application/contract-request-desk.ts";
+import { GraceWarningLive } from "#billing/application/grace-warning.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { UsageAtCheckout } from "#billing/application/ports/usage-at-checkout.ts";
@@ -27,6 +28,7 @@ import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
+import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
@@ -121,6 +123,7 @@ const HoldersLive = AccountPlanHoldersLive.pipe(
  */
 export const BillingLive = Layer.mergeAll(
   WorkspaceEntitlements.layerShared,
+  AccountPlanPoolsLive,
   RecordSubscription.layer,
   CheckoutOrders.layer,
   BillingRecords.layer,
@@ -187,7 +190,10 @@ export const BillingOverviewLive = Layer.mergeAll(
   SnapshotUsage.layer,
   UsageReports.layer,
   UsageAtCheckoutBound,
-  AccountActionsLive
+  AccountActionsLive,
+  // The start's warning about a free tier over its accounts, without a
+  // grace: read through the standing, once built.
+  GraceWarningLive.pipe(Layer.provide(WorkspaceStanding.layer))
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -195,11 +201,12 @@ export const BillingOverviewLive = Layer.mergeAll(
       ContextUsageStatesLive,
       HoldersLive,
       AccountsLive,
+      DrizzleBillingAccountStoreLive,
       WorkspaceAccountPayersLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,
-      ContextWorkspaceUsageLive,
+      ContextWorkspaceUsageLive.pipe(Layer.provide(ConfiguredBillingModeLive)),
       ContextMemberAddressesLive,
       KeyedPseudonymsLive,
       WorkspacePartnerTenancyLive

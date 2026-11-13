@@ -1,15 +1,32 @@
 ---
 title: Plans and billing
-description: "Peal Cloud's plans, priced by connected accounts, the free plan and the trial, and how to order, cancel or withdraw."
+description: "Peal Cloud's per-account pricing, the free tier, the plans priced by channels that subscriptions still hold, and how to order, cancel or withdraw."
 sidebar:
   icon: credit-card
 ---
 
-On Peal Cloud, each workspace is on a plan. The plans are priced by connected accounts (channels): the more a workspace connects, the less each one costs.
+On Peal Cloud, each workspace is on its [billing account](#accounts)'s plan: the free tier, or per-account pricing once a payment method is added.
 
-Every plan, the free one included, has every platform, the calendar, analytics, the API, the [MCP server](/developers/mcp) and the [command line](/developers/cli). A server you run yourself bills nothing and limits nothing ([Self-hosting](/self-hosting/options#billing)).
+Both have every platform, the calendar, analytics, the API, the [MCP server](/developers/mcp) and the [command line](/developers/cli), with members, workspaces and posts unlimited. A server you run yourself bills nothing and limits nothing ([Self-hosting](/self-hosting/options#billing)).
 
-## The plans [#plans]
+## Per-account pricing [#pricing]
+
+A billing account connects its first {{free-accounts}} accounts for nothing, across all its workspaces. With a payment method, it connects any number.
+
+| What                     | Without a payment method                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | With a payment method                                                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connected accounts       | The first {{free-accounts}}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Any number: each account past the first {{free-accounts}} costs {{account-price-en}} a month excluding tax ({{account-price-vat-en}} with France's {{vat-rate}}% VAT), less from account {{account-less-from}} on |
+| Media storage (fair use) | {{free-storage-en}} across the billing account                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | {{storage-per-account-en}} per connected account                                                                                                                                                                  |
+| Writing assistant        | Requests per UTC day, for each workspace: none on Peal's models without a payment method, and a daily allowance with one. An image the instance's model makes costs 5 of them ([Generate an image](/guides/media#generate)). An image from the workspace's own [image provider](/guides/workspace#image-provider), and a suggestion from its own [text provider](/guides/workspace#text-provider), cost none, on any plan: they are outside the allowance, and are not counted in the usage the billing page shows. |
+
+- Accounts are counted by the day they are connected, and billed each month for the month past.
+- Prices are in US dollars, excluding tax: VAT is added at checkout for customers in the EU, at their country's rate.
+- At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars.
+- A workspace's own [providers](/guides/workspace#image-provider) work on any plan, and cost nothing.
+
+## The plans priced by channels [#plans]
+
+These plans are no longer sold: a subscription to one keeps it, with the limits below, until it ends.
 
 | Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
 | -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
@@ -20,21 +37,15 @@ Every plan, the free one included, has every platform, the calendar, analytics, 
 | Agency   | {{agency-channels-en}}   | {{agency-members-en}}   | {{agency-scheduledPosts-en}}   | {{agency-assistantRequests-en}}   | {{agency-mediaStorage-en}}   | {{agency-month-en}} ({{agency-month-excl-en}})     | {{agency-year-en}} ({{agency-year-excl-en}})     |
 
 - Prices include France's {{vat-rate}}% VAT; the price excluding VAT is in brackets.
-- In another EU country, its own VAT applies at checkout, and a business with a valid VAT number pays the price excluding VAT (reverse charge).
 - A year costs ten months.
 
-The workspace's **Billing** page shows the same prices, its plan, and how much of each limit it uses. `GET /api/workspaces/:workspaceId/billing` answers them too, prices in cents excluding VAT.
+The workspace's **Billing** page shows its plan and how much of each limit it uses. `GET /api/workspaces/:workspaceId/billing` answers them too.
 
-## The free plan and the trial [#trial]
+## The free tier and trials [#trial]
 
-A new workspace is on its [billing account](#accounts)'s plan: the free plan, until a plan is ordered for the account. An account may make as many workspaces as it likes, but they share one plan and count their channels together, so another workspace adds nothing free.
+A new workspace is on its [billing account](#accounts)'s plan: the free tier, until a payment method is added for the account. An account may make as many workspaces as it likes, but they share one plan and count their accounts together, so another workspace adds nothing free.
 
-Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method.
-
-- Nothing is charged. Three days before the end, the members who manage billing are reminded, in the app and by email.
-- When the trial ends, the workspace is back on the free plan, with its content, even if a payment method was added meanwhile: a trial never turns into a charge.
-- A plan ordered during the trial starts once it is paid for, and the trial ends then. A checkout left unfinished leaves the trial running.
-- An account closed after its trial leaves a keyed pseudonym of its email address for 2 years, so the same address signing up again gets no second trial.
+No trial is offered any more: the free accounts replace it. A trial started before runs to its end, without a charge, and the workspace is then on the free tier, with its content. Three days before, the members who manage billing are reminded, with what the workspace holds beyond the free tier.
 
 ## Billing accounts [#accounts]
 
@@ -44,7 +55,7 @@ Every workspace belongs to one billing account, which pays for it.
 - A workspace made before billing accounts is on its oldest owner's.
 - A [partner account](/developers/embedding)'s home workspace and the workspaces it owns are on the partner's billing account, apart from its owners' own.
 
-The workspaces of an account share one plan and count their channels together: a free account holds the free plan's channels across all its workspaces.
+The workspaces of an account share one plan and count their channels together: a free account holds the free tier's {{free-accounts}} accounts across all its workspaces.
 
 The plan is ordered, cancelled and withdrawn from on the account's billing workspace, its oldest (a partner's home workspace), which holds the subscription. The Billing page of every other workspace of the account names it, with a link for its members, and orders nothing (409 `billed_elsewhere`). A workspace with a plan subscription of its own from before keeps it alone until it ends, then joins its payer's account. On a server that does not bill, the accounts are kept and limit nothing.
 
@@ -82,26 +93,25 @@ A workspace never goes above its plan: each limit is checked when something is a
 
 | Limit             | How it is checked                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Channels          | Connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan.                                                                                                                                                                                                                                                       |
-| Members           | Pending invitations included, when inviting and again when an invitation is accepted.                                                                                                                                                                                                                                                                                                                                                                                     |
-| Posts             | Posts going out in a calendar month (UTC), on the free plan. Checked again when each post is due: once a trial or a larger plan ends, only the month's first posts the plan allows go out, by their time.                                                                                                                                                                                                                                                                 |
+| Channels          | On the free tier, connecting an account past the first {{free-accounts}} of the billing account is refused, and with a payment method nothing is. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan.                                                                                                                                                                |
+| Members           | Pending invitations included, when inviting and again when an invitation is accepted, on the plans priced by channels that limit them only.                                                                                                                                                                                                                                                                                                                               |
+| Posts             | Posts going out in a calendar month (UTC), on the plans priced by channels that limit them only. Checked again when each post is due.                                                                                                                                                                                                                                                                                                                                     |
 | Writing assistant | Requests per UTC day, for each workspace. An image the instance's model makes costs 5 of them ([Generate an image](/guides/media#generate)), so the free plan makes none that way. An image from the workspace's own [image provider](/guides/workspace#image-provider), and a suggestion from its own [text provider](/guides/workspace#text-provider), cost none, on any plan: they are outside the allowance, and are not counted in the usage the billing page shows. |
 | Media             | The bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room. The room an upload is given is held for it for six hours: finished later, it needs room again.                                                                                                                                                                                                     |
 
-In the web app, a refusal opens a dialog that says which limit was reached, with what the workspace holds and its plan. It offers the smallest plan with room, its price with VAT first, monthly or yearly.
+In the web app, a refusal opens a dialog that says which limit was reached, with what the workspace holds and its plan. It offers per-account pricing, with what the next account costs.
 
-- Owners and admins order it there, by card, as on the Billing page ([Ordering](#ordering)), and come back to what they were doing.
+- Owners and admins add a payment method there, by card, as on the Billing page ([Ordering](#ordering)), and come back to what they were doing.
 - Other members read who can.
-- On the largest plan, the dialog says how to ask for more.
 
-Over the API, each refusal answers 402 `PlanLimitReached`, with the `limit`, what the plan `allowed`, what the workspace holds (`used`), its `plan`, the smallest plan with room (`planWithRoom`, null on the largest plan) and the billing page (`billingUrl`). The writing assistant's daily allowance answers 429 `AssistantQuotaExceeded` with the same plan fields. The command line and MCP tools say the same in words, with the plan to order and the billing page.
+Over the API, each refusal answers 402 `PlanLimitReached`, with the `limit`, what the plan `allowed`, what the workspace holds (`used`), its `plan`, the plan with room (`planWithRoom`: `payAsYouGo` when a payment method gives room, null when no plan holds that much) and the billing page (`billingUrl`). The writing assistant's daily allowance answers 429 `AssistantQuotaExceeded` with the same plan fields. The command line and MCP tools say the same in words, with the plan to order and the billing page.
 
 ## A workspace over its plan [#over]
 
-A plan can shrink under a workspace: its trial ends, or its subscription is cancelled or left unpaid. Nothing is deleted, so the workspace may then hold more than its plan allows. With more channels or members than the plan allows, it must come back within its plan before it does anything else.
+A plan can shrink under a workspace: its trial ends, or its subscription is cancelled or left unpaid, and it is back on the free tier. Nothing is deleted, so the workspace may then hold more than its plan allows. With more channels than the plan allows across its billing account (or more members, on a plan priced by channels that limits them), it must come back within its plan before it does anything else.
 
 - Every member who opens the workspace sees what it holds beyond the plan.
-- Owners and admins can order the smallest plan that holds everything, or choose which channels stay connected and which members stay. The others are disconnected or removed in one confirmed step, and pending invitations are revoked. Disconnecting is the same as disconnecting each channel by hand: its tokens are deleted and the platforms that allow it are asked to forget Peal. Other members read who can do this.
+- Owners and admins can add a payment method, which holds everything, or choose which channels stay connected (and, on such a plan, which members stay). The others are disconnected or removed in one confirmed step, and pending invitations are revoked. Disconnecting is the same as disconnecting each channel by hand: its tokens are deleted and the platforms that allow it are asked to forget Peal. Other members read who can do this.
 - More media than the plan allows refuses uploads only: the library stays open, to delete from.
 
 <Callout
@@ -116,7 +126,16 @@ A plan can shrink under a workspace: its trial ends, or its subscription is canc
 
 Those posts are not moved back to drafts: a failed post keeps its time, text and channels, tells its author by notice and email, and is posted again in one step, where a draft would lose its schedule without telling anyone.
 
-Three days before a trial ends, the reminder lists what the workspace holds beyond the free plan. `GET /api/workspaces/:workspaceId/billing/standing` answers the same for every member: what is over, whether the workspace must come back within its plan, and the smallest plan that holds everything.
+<Callout type="info" title="When Peal Cloud starts billing">
+  A workspace on the free tier with more accounts than it includes keeps
+  scheduling and publishing on the accounts it had then until a day Peal
+  announces, and connects no more meanwhile. An account connected since is not
+  covered, and a workspace whose subscription ends meanwhile keeps the accounts
+  it had then, until that day. Its billing managers are told, in the app and by
+  email, and every member sees the day.
+</Callout>
+
+Three days before a trial ends, the reminder lists what the workspace holds beyond the free tier. `GET /api/workspaces/:workspaceId/billing/standing` answers the same for every member: what is over, whether the workspace must come back within its plan, until when a grace keeps it publishing (`graceUntil`), and the plan that holds everything.
 
 ## Usage [#usage]
 
@@ -141,32 +160,41 @@ They are counts only: nothing is priced, charged or limited by them. A server th
 
 ## Ordering [#ordering]
 
-Owners and admins order on the workspace's **Billing** page, in their own session.
+Owners and admins order per-account pricing on the billing workspace's **Billing** page, in their own session.
 
 <Steps>
   <Step title="Tick the box">
     Before anything is paid, they tick a box that is never ticked for them: "I
-    ask Peal to start my subscription now. I know that, as a consumer, I may
-    withdraw within 14 days, with “Withdraw from contract here”, at the foot of
-    every page and on this one, and then pay only for the days used." Peal
-    records it with the order.
+    ask Peal to start per-account pricing now: each connected account past the
+    free ones, counted by the day, and each use past its monthly allowance are
+    billed at the rate card’s prices, excluding tax, each month for the month
+    past. I know that, as a consumer, I may withdraw within 14 days, with
+    “Withdraw from contract here”, at the foot of every page and on this one,
+    and then pay only for what was used." Peal records it with the order.
   </Step>
   <Step title="Pay at Stripe">
     Peal then opens Stripe's checkout from the **Order with obligation to pay**
-    button. Stripe asks for the billing address and, for a business, the VAT
-    number, and computes the VAT.
+    button. Stripe asks for a card, though nothing is due yet, the billing
+    address and, for a business, the VAT number, and computes the VAT.
   </Step>
   <Step title="Get the confirmation">
-    A confirmation of the subscription comes by email, with what Stripe charged,
-    VAT included, and the contract number, which cancels or withdraws without
-    signing in.
+    A confirmation comes by email, with the rates and the contract number, which
+    cancels or withdraws without signing in.
   </Step>
 </Steps>
 
-- A plan changes on the billing page only, with an order each time.
+- The subscription bills calendar months (UTC), from the first of the next month.
 - Stripe's portal changes the payment method and gives the invoices and receipts, also once the plan has ended (**Invoices and receipts**).
-- An order for a plan too small for what the workspace holds, as when moving to a smaller plan, is refused (409 `PlanTooSmall`) with what to remove first: channels to disconnect, members to remove, media to delete.
-- An address that already had a trial, with an account since closed too, is shown none and cannot order one.
+- Only per-account pricing is ordered, monthly: another plan or a year is refused (409 `PlanNotSold`).
+- An account that already has it, even past due or unpaid, orders nothing more (409 `AlreadySubscribed`): a failed payment is settled by updating the payment method in Stripe's portal.
+- An order from a page whose box shows older words, or that names none, is refused (409 `ConsentChanged`): load the page again.
+- A workspace on a plan priced by channels, or in a trial, may order it too: that plan or trial then ends with its period, or at once for a trial.
+
+<Callout type="warning" title="No credit for a plan priced by channels">
+  For now no credit is given for the plan's unused time: it stays paid until its
+  period ends (up to a year for a yearly plan) while the accounts are billed per
+  account from the move, so moving near the end of the period costs least.
+</Callout>
 
 ## Cancelling [#cancelling]
 
@@ -192,7 +220,7 @@ As a consumer, you may withdraw from the contract within 14 days of subscribing,
 
 It works as cancelling does: your name, the address for the acknowledgement and the contract, a summary, then **Confirm withdrawal**. It is applied at once when you are signed in or give the contract number, and otherwise from the link Peal emails you. The 14 days and the refund count from the moment Peal received your statement, which the acknowledgement states with what you sent.
 
-Withdrawing ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice.
+Withdrawing ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice. Per-account pricing is billed for the month past: withdrawing invoices its use to that moment, and nothing paid ahead is refunded.
 
 <Callout type="info">
   A business that gave a VAT number Stripe verified has no right to withdraw,
@@ -201,7 +229,7 @@ Withdrawing ends the subscription at once and refunds, for each payment since yo
 
 ## Yearly plans [#renewal]
 
-A yearly plan renews each year until cancelled. 45 days before it renews, and never less than a month before, the members who manage billing are reminded, in the app and by an email of its own, that the contract need not be renewed. The reminder gives:
+Yearly plans are no longer sold. A yearly plan priced by channels renews each year until cancelled. 45 days before it renews, and never less than a month before, the members who manage billing are reminded, in the app and by an email of its own, that the contract need not be renewed. The reminder gives:
 
 - what Stripe will charge, VAT included;
 - the last day to refuse the renewal, in a box;

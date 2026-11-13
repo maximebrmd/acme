@@ -44,7 +44,8 @@ export class WorkspaceUsage extends Context.Service<
      * number, holding nothing.
      */
     readonly heldIn: (
-      workspaceIds: readonly WorkspaceId[]
+      workspaceIds: readonly WorkspaceId[],
+      before?: DateTime.Utc
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, Seated>, DatabaseError>;
   }
 >()("peal-server/billing/application/WorkspaceUsage") {}

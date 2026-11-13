@@ -110,6 +110,14 @@ describe("a review link", { serial: true }, () => {
 
   test("makes a link that lets its holder approve", async ({ app, screen }) => {
     await app.open(postPage);
+
+    // The review loads after the page, above the links, and pushes them
+    // down a few hundred pixels: a list opened before it lands follows its
+    // field off the screen. It is read once it shows its comment box, which
+    // takes longer than an assertion's 5 seconds on a loaded machine.
+    await expect(screen.getByRole("textbox", "Your comment")).toBeVisible({
+      timeout: 30_000,
+    });
     await screen.getByRole("combobox", "Whoever opens it may").tap();
     await screen.getByRole("option", "View, comment and approve").tap();
     await screen.getByRole("button", "Create a link").tap();

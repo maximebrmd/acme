@@ -25,9 +25,13 @@
 - The run's server bills, against a stand-in for Stripe that lists Peal's
   meters and prices, the rate card's and the legacy plans', from the
   contract (`scripts/stripe.ts`), as the server checks them when it
-  starts: a new workspace is on the free plan, so a
-  journey stays within three channels, two members and one workspace per
-  account, or tests the refusal (`upgrade-prompt.e2e.ts`). No test pays.
+  starts: a new workspace is on the free tier, two channels across the
+  account's workspaces, so a journey stays within them, or puts its
+  workspace on per-account pricing in the database
+  (`seedPerAccountSubscription`, `tests/support/billing.ts`, as
+  `composer-comforts.e2e.ts` does for its three), or tests the refusal
+  (`upgrade-prompt.e2e.ts`, which reads per-account pricing's offer). The
+  run has no billing grace. No test pays.
   So the functions to cancel and withdraw are on
   (`contract-functions.e2e.ts`): a journey there sends requests no
   contract answers, and reads their acknowledgement in Mailpit.
@@ -42,6 +46,10 @@
   which would otherwise call a platform for them. Update them when
   `analytics.tracked_posts` or `engagement.threads` change. Mark a comment
   answered rather than reply: a reply's job would call the platform.
+- A part of a page that loads after it moves what is below it, and an
+  open list follows its field off the screen ("element is outside of the
+  viewport"): wait for that part (the post's review shows "Your comment")
+  before opening a list beneath it.
 - `tests/tags.e2e.ts` signs up a member of its own, adds a tag in the
   settings, schedules a tagged post and another, filters the calendar by
   the tag and clears the filter, then cancels both. The calendar names a

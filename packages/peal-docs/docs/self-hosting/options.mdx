@@ -9,13 +9,35 @@ Billing, the captcha and closed sign-up are all off on a new server. Each sectio
 
 ## Billing [#billing]
 
-Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Starter, Pro, Business or Agency, monthly or yearly. [Plans and billing](/guides/workspace/billing) lists them, with what each limits, the trial, ordering, cancelling and withdrawing.
+Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free tier, 2 connected accounts across its billing account. A Stripe subscription to per-account pricing, monthly, gives it any number, billed by the account and by use (the plans priced by channels are no longer sold). [Plans and billing](/guides/workspace/billing) explains both, with what each limits, ordering, cancelling and withdrawing.
+
+<Callout type="warning" title="Set a grace before turning billing on">
+  Turning billing on, or upgrading a server that billed on the plans priced by
+  channels (whose free plan held 3 accounts), puts every workspace that holds
+  more than 2 accounts over the free tier. Set `PEAL_BILLING_GRACE_UNTIL` first,
+  to keep them publishing on the accounts they had until a day, while their
+  billing managers are told ([Environment
+  variables](/self-hosting/environment-variables#billing)). Without it the
+  server warns at startup.
+</Callout>
+
+<Callout
+  type="warning"
+  title="Never go back to a release from before per-account pricing"
+>
+  Once a server bills on per-account pricing, never go back to a release from
+  before it. That release gives per-account subscriptions the old free plan's
+  allowances (3 channels, 2 members, 30 posts), so every paying workspace above
+  them stops publishing. It cannot read the payment-method notices the grace
+  stores either, so the notices and the data export fail for whoever has one.
+</Callout>
 
 | Setting                    | Where                | What it does                                                                                 |
 | -------------------------- | -------------------- | -------------------------------------------------------------------------------------------- |
 | `STRIPE_SECRET_KEY`        | Server               | Turns billing on                                                                             |
 | `STRIPE_WEBHOOK_SECRET`    | Server               | The signing secret of the webhook endpoint                                                   |
 | `STRIPE_LOOKUP_KEY_PREFIX` | Server               | The prefix of the catalogue's lookup keys                                                    |
+| `PEAL_BILLING_GRACE_UNTIL` | Server               | The day until which workspaces over the free tier keep publishing on the accounts they had   |
 | `PEAL_TERMS_URL`           | Web app              | Your terms of service, which the billing page links to before an order                       |
 | `PEAL_CONTACT_URL`         | Web app              | Where people write for more than the largest plan                                            |
 | `SITE_APP_URL`             | Marketing site build | Lets the site's footer link to the app's pages to cancel a contract and to withdraw from one |
@@ -95,7 +117,12 @@ A limit applies when something is added, so a workspace on a smaller plan than i
 
 ### The catalogue [#catalogue]
 
-A server that bills checks Peal's catalogue when it starts. A plan price that differs stops it, with the list of what differs. Until per-account pricing is sold, a catalogue that differs does not: the server starts, logs what differs with the command that gives it, and the `peal-stripe-catalogue` alert fires. If Stripe does not answer, it starts and logs a warning.
+A server that bills checks Peal's catalogue when it starts.
+
+- A meter or a price that is missing or bills otherwise, or a price on an archived product, stops it, with the list of what differs and the command that gives the catalogue.
+- The prices of the plans priced by tiers of channels, which are no longer sold, are checked only while a subscription to one still runs, so a new Stripe account needs none.
+- If Stripe does not answer, the server starts and logs a warning.
+- The server reads the catalogue only as it starts: after running the command, restart a server already running.
 
 Per-account pricing is a meter, a product and a metered price in US dollars, tax-exclusive and billed monthly, for each line of the rate card. Their lookup keys, which are also the meters' event names, are these, or start with the prefix set in `STRIPE_LOOKUP_KEY_PREFIX`:
 
@@ -114,8 +141,9 @@ The command's key needs write access to meters, products and prices. It prints w
   <AccordionItem title="When the rate card's amounts change, and rolling back">
     The command makes a new price that takes the lookup key, and leaves the old
     one active for the subscriptions on it. The release before then no longer
-    finds its own price under that key: to roll back, start the previous
-    release, then run its `stripe-catalogue`, which moves the key back.
+    finds its own price under that key, and does not start: to roll back, run
+    the previous release's `stripe-catalogue`, which moves the key back, then
+    start that release.
   </AccordionItem>
   <AccordionItem title="Product names and tax codes">
     The command gives each product it makes its name and the tax code

@@ -676,6 +676,38 @@ groups:
                     type: gt
                     params: [0]
 
+      - uid: peal-duplicate-subscription
+        title: A billing account paid for per-account pricing twice
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two checkouts of one billing account finished before either was recorded, and the server ended the newer per-account subscription at once, without a charge (peal.billing.duplicate_subscriptions). The customer holds two confirmations. The server's error log names the workspace, the subscription kept and the one ended; check the ended one at Stripe and tell the customer which contract stands.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Rare: any in the hour is one too many.
+              expr: sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-stripe-catalogue
         title: Stripe's catalogue differs from the rate card
         condition: B

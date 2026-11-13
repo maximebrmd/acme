@@ -27,6 +27,8 @@ import social.peal.core.ObjectMappers;
 public final class Standing {
     private final Optional<BillingAccount> account;
 
+    private final Optional<String> graceUntil;
+
     private final boolean mustReduce;
 
     private final List<Excess> over;
@@ -41,6 +43,7 @@ public final class Standing {
 
     private Standing(
             Optional<BillingAccount> account,
+            Optional<String> graceUntil,
             boolean mustReduce,
             List<Excess> over,
             Optional<Plan> plan,
@@ -48,6 +51,7 @@ public final class Standing {
             int scheduledPosts,
             Map<String, Object> additionalProperties) {
         this.account = account;
+        this.graceUntil = graceUntil;
         this.mustReduce = mustReduce;
         this.over = over;
         this.plan = plan;
@@ -59,6 +63,14 @@ public final class Standing {
     @JsonProperty("account")
     public Optional<BillingAccount> getAccount() {
         return account;
+    }
+
+    @JsonIgnore
+    public Optional<String> getGraceUntil() {
+        if (graceUntil == null) {
+            return Optional.empty();
+        }
+        return graceUntil;
     }
 
     @JsonProperty("mustReduce")
@@ -93,6 +105,12 @@ public final class Standing {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("graceUntil")
+    private Optional<String> _getGraceUntil() {
+        return graceUntil;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("plan")
     private Optional<Plan> _getPlan() {
         return plan;
@@ -117,6 +135,7 @@ public final class Standing {
 
     private boolean equalTo(Standing other) {
         return account.equals(other.account)
+                && graceUntil.equals(other.graceUntil)
                 && mustReduce == other.mustReduce
                 && over.equals(other.over)
                 && plan.equals(other.plan)
@@ -127,7 +146,13 @@ public final class Standing {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.account, this.mustReduce, this.over, this.plan, this.planWithRoom, this.scheduledPosts);
+                this.account,
+                this.graceUntil,
+                this.mustReduce,
+                this.over,
+                this.plan,
+                this.planWithRoom,
+                this.scheduledPosts);
     }
 
     @java.lang.Override
@@ -160,6 +185,12 @@ public final class Standing {
 
         _FinalStage account(BillingAccount account);
 
+        _FinalStage graceUntil(Optional<String> graceUntil);
+
+        _FinalStage graceUntil(String graceUntil);
+
+        _FinalStage graceUntil(Nullable<String> graceUntil);
+
         _FinalStage over(List<Excess> over);
 
         _FinalStage addOver(Excess over);
@@ -191,6 +222,8 @@ public final class Standing {
 
         private List<Excess> over = new ArrayList<>();
 
+        private Optional<String> graceUntil = Optional.empty();
+
         private Optional<BillingAccount> account = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -200,6 +233,7 @@ public final class Standing {
         @java.lang.Override
         public Builder from(Standing other) {
             account(other.getAccount());
+            graceUntil(other.getGraceUntil());
             mustReduce(other.getMustReduce());
             over(other.getOver());
             plan(other.getPlan());
@@ -297,6 +331,31 @@ public final class Standing {
         }
 
         @java.lang.Override
+        public _FinalStage graceUntil(Nullable<String> graceUntil) {
+            if (graceUntil.isNull()) {
+                this.graceUntil = null;
+            } else if (graceUntil.isEmpty()) {
+                this.graceUntil = Optional.empty();
+            } else {
+                this.graceUntil = Optional.of(graceUntil.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage graceUntil(String graceUntil) {
+            this.graceUntil = Optional.ofNullable(graceUntil);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "graceUntil", nulls = Nulls.SKIP)
+        public _FinalStage graceUntil(Optional<String> graceUntil) {
+            this.graceUntil = graceUntil;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage account(BillingAccount account) {
             this.account = Optional.ofNullable(account);
             return this;
@@ -311,12 +370,14 @@ public final class Standing {
 
         @java.lang.Override
         public Standing build() {
-            return new Standing(account, mustReduce, over, plan, planWithRoom, scheduledPosts, additionalProperties);
+            return new Standing(
+                    account, graceUntil, mustReduce, over, plan, planWithRoom, scheduledPosts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("account")
+                    || key.equalsIgnoreCase("graceUntil")
                     || key.equalsIgnoreCase("mustReduce")
                     || key.equalsIgnoreCase("over")
                     || key.equalsIgnoreCase("plan")

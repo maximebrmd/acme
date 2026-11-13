@@ -3,6 +3,7 @@ import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 
+import type { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
@@ -123,7 +124,7 @@ export const MastodonAuthorizersTest = Layer.effect(
  */
 export const connectChannelWith = <E, R>(
   authorizers: Layer.Layer<PlatformAuthorizers, E, R>,
-  entitlements: typeof UnmeteredTest = UnmeteredTest
+  entitlements: Layer.Layer<WorkspaceEntitlements> = UnmeteredTest
 ) =>
   ConnectChannel.layer.pipe(
     Layer.provideMerge(

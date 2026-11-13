@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { describe, test } from "@e2e-dev/web";
 import { credentials, expect } from "e2e";
 
+import { seedPerAccountSubscription } from "./support/billing.ts";
 import { seedChannel } from "./support/channels.ts";
 import { emailedLink } from "./support/mailpit.ts";
 
@@ -67,6 +68,9 @@ describe("the composer's comforts", { serial: true }, () => {
       /^\/app\/(?<id>[^/]+)\/calendar$/u.exec(href)?.groups?.["id"] ?? "";
     expect(workspaceId).not.toBe("");
 
+    // Three accounts are more than the free tier's two: the workspace is
+    // on per-account pricing.
+    await seedPerAccountSubscription(workspaceId);
     await Promise.all(
       handles.map(async (handle) => {
         await seedChannel(workspaceId, handle);

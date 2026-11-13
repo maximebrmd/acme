@@ -38,6 +38,7 @@ public class StandingTest : BaseMockServerTest
                 },
                 "workspaces": 1
               },
+              "graceUntil": "graceUntil",
               "mustReduce": true,
               "over": [
                 {
@@ -102,6 +103,7 @@ public class StandingTest : BaseMockServerTest
                 },
                 "workspaces": 1
               },
+              "graceUntil": "graceUntil",
               "mustReduce": true,
               "over": [
                 {

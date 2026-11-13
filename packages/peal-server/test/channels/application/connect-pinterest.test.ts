@@ -429,7 +429,7 @@ const fill = Effect.fn("test.fill")(function* fill(
   }
 });
 
-// The free plan, which allows 3 channels.
+// The free plan, which allows 2 accounts.
 const FreePlanTest = Layer.mergeAll(
   connectAdaptersOn(everyWorkspaceOn("free")),
   RecordedNotices.layer
@@ -443,17 +443,17 @@ layer(FreePlanTest)("connecting a Pinterest account on the free plan", (it) => {
         const on = yield* onPinterest();
         const workspaceId = yield* freshWorkspace;
 
-        yield* fill(workspaceId, 3);
+        yield* fill(workspaceId, 2);
 
         assert.deepStrictEqual(
           yield* Effect.flip(
             on.connect.start(manager(workspaceId), "pinterest", noHandle)
           ),
           new PlanLimitReached({
-            allowed: 3,
+            allowed: 2,
             limit: "channels",
-            needed: 4,
-            used: 3,
+            needed: 3,
+            used: 2,
           })
         );
       }).pipe(Effect.scoped)

@@ -240,6 +240,27 @@ const unitsByBand = (
     return { band, units: Math.max(0, Math.min(quantity, to) - from) };
   });
 
+/**
+ * The accounts a billing account connects for nothing, without a payment
+ * method: the ladder's first bands that cost nothing (2).
+ */
+export const freeAccountsOf = (
+  card: RateCard = rateCard,
+  currency: PriceCurrency = "usd"
+): number => {
+  let free = 0;
+
+  for (const { monthly, upTo } of card.prices[currency].accounts.bands) {
+    if (monthly !== 0 || upTo === null) {
+      break;
+    }
+
+    free = upTo;
+  }
+
+  return free;
+};
+
 /** What `accounts` connected all month cost, in cents: 10 cost 4,000. */
 export const accountsMonthly = (
   accounts: number,

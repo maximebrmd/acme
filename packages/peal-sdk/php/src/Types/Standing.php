@@ -15,6 +15,12 @@ class Standing extends JsonSerializableType
     public ?BillingAccount $account;
 
     /**
+     * @var ?string $graceUntil
+     */
+    #[JsonProperty('graceUntil')]
+    public ?string $graceUntil;
+
+    /**
      * @var bool $mustReduce
      */
     #[JsonProperty('mustReduce')]
@@ -50,6 +56,7 @@ class Standing extends JsonSerializableType
      *   over: array<Excess>,
      *   scheduledPosts: int,
      *   account?: ?BillingAccount,
+     *   graceUntil?: ?string,
      *   plan?: ?value-of<Plan>,
      *   planWithRoom?: ?value-of<PaidPlan>,
      * } $values
@@ -58,6 +65,7 @@ class Standing extends JsonSerializableType
         array $values,
     ) {
         $this->account = $values['account'] ?? null;
+        $this->graceUntil = $values['graceUntil'] ?? null;
         $this->mustReduce = $values['mustReduce'];
         $this->over = $values['over'];
         $this->plan = $values['plan'] ?? null;

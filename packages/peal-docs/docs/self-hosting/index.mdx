@@ -107,7 +107,7 @@ docker compose --project-name peal --file compose.production.yaml \
   run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
 ```
 
-It changes nothing when Stripe already holds it. Until per-account pricing is sold, a server whose catalogue differs starts all the same and logs what differs with this command.
+It changes nothing when Stripe already holds it. A server whose catalogue differs refuses to start, and logs what differs with this command. One already running reads the catalogue again only when it restarts.
 
 ### Grafana [#grafana]
 

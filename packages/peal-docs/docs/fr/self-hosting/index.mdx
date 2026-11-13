@@ -109,7 +109,7 @@ docker compose --project-name peal --file compose.production.yaml \
   run --rm --no-deps server packages/peal-server/scripts/stripe-catalogue.ts
 ```
 
-Elle ne change rien quand Stripe le détient déjà. Tant que la tarification par compte n’est pas vendue, un serveur dont le catalogue diffère démarre quand même et consigne les écarts avec cette commande.
+Elle ne change rien quand Stripe le détient déjà. Un serveur dont le catalogue diffère refuse de démarrer, et consigne les écarts avec cette commande. Un serveur déjà démarré ne relit le catalogue qu’à son redémarrage.
 
 ### Grafana [#grafana]
 

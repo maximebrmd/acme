@@ -1,0 +1,86 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "2c623494-2d6d-44a7-86f1-396051a5c37c",
+  "prevIds": [
+    "82e49c30-94ae-4a29-912e-b4df379d2ca9"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "grace_starts"
+      ],
+      "writes": [
+        "s|tbl|billing.grace_starts",
+        "n|tbl|billing.grace_starts",
+        "e|tbl|billing.grace_starts",
+        "n|rel|billing.grace_starts",
+        "n|type|billing.grace_starts",
+        "n|rel|billing.grace_starts_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "grace_starts",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "grace_starts",
+        "name": "grace_until",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "grace_starts",
+        "name": "started_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "grace_starts",
+        "name": "grace_starts_pkey",
+        "columns": [
+          "grace_until"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

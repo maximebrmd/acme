@@ -21,6 +21,8 @@ const requestTimeout = 10_000;
 const comments: Readonly<Record<EndReason, string>> = {
   cancelledLate:
     "Cancelled on Peal: the request came before the period renewed",
+  duplicateSubscription:
+    "Second per-account subscription of the same billing account",
   duplicateTrial: "Second trial of the same account or workspace",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",
@@ -191,7 +193,13 @@ export const StripeContractsLive = Layer.effect(
       ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.cancelAt"));
     };
 
-    const endNow = (workspaceId: WorkspaceId, id: string, reason: EndReason) =>
+    // Ends it at once, its unbilled usage invoiced now or never.
+    const ending = (
+      workspaceId: WorkspaceId,
+      id: string,
+      reason: EndReason,
+      invoiced: boolean
+    ) =>
       Option.match(client, {
         onNone: () => Effect.die("Billing is off: Stripe has no key"),
         onSome: (stripe) =>
@@ -204,10 +212,14 @@ export const StripeContractsLive = Layer.effect(
                 id,
                 {
                   cancellation_details: { comment: comments[reason] },
-                  invoice_now: false,
+                  invoice_now: invoiced,
                   prorate: false,
                 },
-                { idempotencyKey: `${reason}-${id}` }
+                {
+                  idempotencyKey: invoiced
+                    ? `${reason}-invoiced-${id}`
+                    : `${reason}-${id}`,
+                }
               ),
           }).pipe(
             Effect.matchEffect({
@@ -218,7 +230,21 @@ export const StripeContractsLive = Layer.effect(
               onSuccess: () => Effect.void,
             })
           ),
-      }).pipe(Effect.withSpan("StripeContracts.endNow"));
+      });
+
+    const endNow = (workspaceId: WorkspaceId, id: string, reason: EndReason) =>
+      ending(workspaceId, id, reason, false).pipe(
+        Effect.withSpan("StripeContracts.endNow")
+      );
+
+    const endAndInvoice = (
+      workspaceId: WorkspaceId,
+      id: string,
+      reason: EndReason
+    ) =>
+      ending(workspaceId, id, reason, true).pipe(
+        Effect.withSpan("StripeContracts.endAndInvoice")
+      );
 
     const isBusiness = (workspaceId: WorkspaceId, customerId: string) =>
       call(
@@ -374,6 +400,7 @@ export const StripeContractsLive = Layer.effect(
       cancelAtPeriodEnd,
       credit,
       endAtTrialEnd,
+      endAndInvoice,
       endNow,
       isBusiness,
       paidInvoices,

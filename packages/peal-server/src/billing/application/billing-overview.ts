@@ -1,28 +1,22 @@
 import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 
 import type { Entitlements } from "#billing/domain/entitlements.ts";
+import { planAllowances, planPrices } from "#billing/domain/legacy-plans.ts";
+import type { PlanPrice } from "#billing/domain/legacy-plans.ts";
 import {
-  planAllowances,
+  allowancesOf,
   legacyPlans,
   trialDays,
   trialPlan,
 } from "#billing/domain/plans.ts";
 import type { Allowances } from "#billing/domain/plans.ts";
-import { planPrices } from "#billing/domain/prices.ts";
-import type { PlanPrice } from "#billing/domain/prices.ts";
 import { mayWithdraw } from "#billing/domain/withdrawal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { LegacyPlan, PaidPlan, Plan } from "#shared/domain/plan.ts";
 
-import { BillingAccounts } from "./billing-accounts.ts";
-import { trialOffered } from "./place-order.ts";
-import type { MemberAddresses } from "./ports/member-addresses.ts";
-import type { Subscriptions } from "./ports/subscriptions.ts";
-import type { Trials } from "./ports/trials.ts";
 import type { Usage } from "./ports/workspace-usage.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
@@ -60,12 +54,33 @@ export interface Overview {
 const priceOfPlan = (plan: LegacyPlan): Option.Option<PlanPrice> =>
   plan === "free" ? Option.none() : Option.some(planPrices[plan]);
 
-/** Every plan, with its allowances and prices. */
+/**
+ * Every legacy plan, with its allowances and prices, as the contract's
+ * `planCatalogue` copies them. Legacy: none is sold.
+ */
 export const catalogue: readonly PlanOffer[] = legacyPlans.map((plan) => ({
   allowances: planAllowances[plan],
   plan,
   price: priceOfPlan(plan),
 }));
+
+/**
+ * The plans a workspace can be on, from the smallest: the free tier and
+ * per-account pricing, which the rate card prices (no listed price), with
+ * their allowances for the account's `accounts` and free tier.
+ */
+const offersFor = (
+  entitlements: Entitlements,
+  accounts: number
+): readonly PlanOffer[] =>
+  (["free", "payAsYouGo"] as const).map((plan) => ({
+    allowances: allowancesOf(plan, {
+      accounts,
+      freeTier: entitlements.freeTier,
+    }),
+    plan,
+    price: Option.none(),
+  }));
 
 /** The actor's workspace's billing, for its billing page. Needs billing:read. */
 export class BillingOverview extends Context.Service<
@@ -81,37 +96,6 @@ export class BillingOverview extends Context.Service<
     Effect.gen(function* BillingOverviewLive() {
       const entitlements = yield* WorkspaceEntitlements;
       const usage = yield* WorkspaceUsage;
-      const accounts = yield* BillingAccounts;
-
-      const context = yield* Effect.context<
-        MemberAddresses | Pseudonyms | Subscriptions | Trials
-      >();
-
-      // Whether this member may start the trial here: in person, with
-      // billing:manage, neither the account, its address nor the
-      // workspace had one.
-      const trialFor = Effect.fn("BillingOverview.trialFor")(function* trialFor(
-        actor: Actor
-      ) {
-        const { subject } = actor;
-
-        if (
-          subject._tag !== "user" ||
-          Option.isSome(subject.impersonatedBy) ||
-          Result.isFailure(authorize(actor, "billing:manage"))
-        ) {
-          return false;
-        }
-
-        // Ordered on the account's billing workspace only.
-        const { holder } = yield* accounts.of(actor.workspaceId);
-
-        if (holder !== actor.workspaceId) {
-          return false;
-        }
-
-        return yield* trialOffered(subject.userId, actor.workspaceId);
-      }, Effect.provide(context));
 
       const of = Effect.fn("BillingOverview.of")(function* of(actor: Actor) {
         yield* Effect.fromResult(authorize(actor, "billing:read"));
@@ -126,10 +110,11 @@ export class BillingOverview extends Context.Service<
 
         const overview: Overview = {
           entitlements: current,
-          plans: billing ? catalogue : [],
+          plans: billing ? offersFor(current, used.channels) : [],
+          // No trial is offered: the rate card's free accounts replace it.
           trial: billing
             ? Option.some({
-                available: yield* trialFor(actor),
+                available: false,
                 days: trialDays,
                 plan: trialPlan,
               })

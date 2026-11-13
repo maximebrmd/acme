@@ -23,13 +23,13 @@ import {
   syntheticCredentials,
 } from "#test/channels/support.ts";
 
-// The free plan, which allows 3 channels.
+// The free plan, which allows 2 accounts.
 const FreePlanTest = connectChannelWith(
   MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard)),
   everyWorkspaceOn("free")
 );
 
-const freeChannels = 3;
+const freeChannels = 2;
 
 const manager = (workspaceId: WorkspaceId) =>
   actorIn(workspaceId, ["channel:read", "channel:connect"]);

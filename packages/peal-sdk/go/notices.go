@@ -504,6 +504,7 @@ type NoticeEvent struct {
 	ChannelReconnectSoon          *NoticeEventChannelReconnectSoon
 	SubscriptionStarted           *NoticeEventSubscriptionStarted
 	TrialEnding                   *NoticeEventTrialEnding
+	PaymentMethodNeeded           *NoticeEventPaymentMethodNeeded
 	SubscriptionRenewing          *NoticeEventSubscriptionRenewing
 	SubscriptionCancelled         *NoticeEventSubscriptionCancelled
 	SubscriptionWithdrawn         *NoticeEventSubscriptionWithdrawn
@@ -606,6 +607,13 @@ func (n *NoticeEvent) GetTrialEnding() *NoticeEventTrialEnding {
 		return nil
 	}
 	return n.TrialEnding
+}
+
+func (n *NoticeEvent) GetPaymentMethodNeeded() *NoticeEventPaymentMethodNeeded {
+	if n == nil {
+		return nil
+	}
+	return n.PaymentMethodNeeded
 }
 
 func (n *NoticeEvent) GetSubscriptionRenewing() *NoticeEventSubscriptionRenewing {
@@ -755,6 +763,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.TrialEnding = value
+	case "PaymentMethodNeeded":
+		value := new(NoticeEventPaymentMethodNeeded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PaymentMethodNeeded = value
 	case "SubscriptionRenewing":
 		value := new(NoticeEventSubscriptionRenewing)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -854,6 +868,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.TrialEnding != nil {
 		return internal.MarshalJSONWithExtraProperty(n.TrialEnding, "_tag", "TrialEnding")
 	}
+	if n.PaymentMethodNeeded != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PaymentMethodNeeded, "_tag", "PaymentMethodNeeded")
+	}
 	if n.SubscriptionRenewing != nil {
 		return internal.MarshalJSONWithExtraProperty(n.SubscriptionRenewing, "_tag", "SubscriptionRenewing")
 	}
@@ -900,6 +917,7 @@ type NoticeEventVisitor interface {
 	VisitChannelReconnectSoon(*NoticeEventChannelReconnectSoon) error
 	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
 	VisitTrialEnding(*NoticeEventTrialEnding) error
+	VisitPaymentMethodNeeded(*NoticeEventPaymentMethodNeeded) error
 	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
@@ -947,6 +965,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.TrialEnding != nil {
 		return visitor.VisitTrialEnding(n.TrialEnding)
+	}
+	if n.PaymentMethodNeeded != nil {
+		return visitor.VisitPaymentMethodNeeded(n.PaymentMethodNeeded)
 	}
 	if n.SubscriptionRenewing != nil {
 		return visitor.VisitSubscriptionRenewing(n.SubscriptionRenewing)
@@ -1018,6 +1039,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.TrialEnding != nil {
 		fields = append(fields, "TrialEnding")
+	}
+	if n.PaymentMethodNeeded != nil {
+		fields = append(fields, "PaymentMethodNeeded")
 	}
 	if n.SubscriptionRenewing != nil {
 		fields = append(fields, "SubscriptionRenewing")
@@ -1777,6 +1801,124 @@ func (n *NoticeEventFeedStopped) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventFeedStopped) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPaymentMethodNeededFieldAccounts   = big.NewInt(1 << 0)
+	noticeEventPaymentMethodNeededFieldAllowed    = big.NewInt(1 << 1)
+	noticeEventPaymentMethodNeededFieldGraceUntil = big.NewInt(1 << 2)
+)
+
+type NoticeEventPaymentMethodNeeded struct {
+	Accounts   int    `json:"accounts" url:"accounts"`
+	Allowed    int    `json:"allowed" url:"allowed"`
+	GraceUntil string `json:"graceUntil" url:"graceUntil"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPaymentMethodNeeded) GetAccounts() int {
+	if n == nil {
+		return 0
+	}
+	return n.Accounts
+}
+
+func (n *NoticeEventPaymentMethodNeeded) GetAllowed() int {
+	if n == nil {
+		return 0
+	}
+	return n.Allowed
+}
+
+func (n *NoticeEventPaymentMethodNeeded) GetGraceUntil() string {
+	if n == nil {
+		return ""
+	}
+	return n.GraceUntil
+}
+
+func (n *NoticeEventPaymentMethodNeeded) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPaymentMethodNeeded) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetAccounts sets the Accounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPaymentMethodNeeded) SetAccounts(accounts int) {
+	n.Accounts = accounts
+	n.require(noticeEventPaymentMethodNeededFieldAccounts)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPaymentMethodNeeded) SetAllowed(allowed int) {
+	n.Allowed = allowed
+	n.require(noticeEventPaymentMethodNeededFieldAllowed)
+}
+
+// SetGraceUntil sets the GraceUntil field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPaymentMethodNeeded) SetGraceUntil(graceUntil string) {
+	n.GraceUntil = graceUntil
+	n.require(noticeEventPaymentMethodNeededFieldGraceUntil)
+}
+
+func (n *NoticeEventPaymentMethodNeeded) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPaymentMethodNeeded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPaymentMethodNeeded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPaymentMethodNeeded) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPaymentMethodNeeded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPaymentMethodNeeded) String() string {
 	if n == nil {
 		return "<nil>"
 	}

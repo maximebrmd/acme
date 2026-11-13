@@ -24,6 +24,7 @@ const account: BillingAccount = {
 
 const standing: Standing = {
   account,
+  graceUntil: null,
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 4 },

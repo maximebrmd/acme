@@ -118,7 +118,16 @@ const billingWith = (enabled: boolean) =>
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
+    )
   );
 
 const event = (status: string): SubscriptionEvent => ({
@@ -190,7 +199,7 @@ layer(billingWith(true))("billing on a server that bills", (it) => {
 
       assert.deepStrictEqual(
         found.plans.map(({ plan }) => plan),
-        ["free", "starter", "pro", "business", "agency"]
+        ["free", "payAsYouGo"]
       );
       assert.strictEqual(found.usage.channels, 2);
 
@@ -214,7 +223,7 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
 
       assert.isTrue(Option.isNone(entitlements.plan));
       assert.isTrue(
-        Object.values(entitlements.allowances).every(Option.isNone)
+        Object.values(entitlements.allowancesFor(0)).every(Option.isNone)
       );
 
       const found = yield* BillingOverview.use((billing) =>
@@ -382,7 +391,16 @@ const recordsWith = (enabled: boolean) =>
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
+    )
   );
 
 const periodEnd = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
@@ -741,7 +759,14 @@ const UnreadTest = Layer.mergeAll(
       NoContractsTest,
       AloneInAccountsTest,
       PlainPseudonymsTest,
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled: false,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      ),
       Layer.succeed(
         Checkouts,
         Checkouts.of({
@@ -811,7 +836,14 @@ const RememberedTest = BillingRecords.layer.pipe(
         transfersFor: () => Effect.succeed([]),
         workspacesOfEach: () => Effect.succeed(new Map()),
       }),
-      Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled: true,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
     )
   ),
   Layer.provide(TransactionsTest)

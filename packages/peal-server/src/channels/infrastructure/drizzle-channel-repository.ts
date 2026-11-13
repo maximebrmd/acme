@@ -6,6 +6,7 @@ import {
   gt,
   ilike,
   isNotNull,
+  lt,
   lte,
   or,
   sql,
@@ -251,7 +252,7 @@ export const DrizzleChannelRepository = Layer.effect(
                 Effect.mapError(failed),
                 Effect.map(([row]) => row?.due ?? 0)
               ),
-      countIn: (workspaceIds) =>
+      countIn: (workspaceIds, before) =>
         workspaceIds.length === 0
           ? Effect.succeed(new Map())
           : db
@@ -260,7 +261,14 @@ export const DrizzleChannelRepository = Layer.effect(
                 workspaceId: channels.workspaceId,
               })
               .from(channels)
-              .where(anyUuid(channels.workspaceId, workspaceIds))
+              .where(
+                before === undefined
+                  ? anyUuid(channels.workspaceId, workspaceIds)
+                  : and(
+                      anyUuid(channels.workspaceId, workspaceIds),
+                      lt(channels.createdAt, DateTime.toDate(before))
+                    )
+              )
               .groupBy(channels.workspaceId)
               .pipe(
                 Effect.mapError(failed),

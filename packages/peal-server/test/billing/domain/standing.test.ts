@@ -1,7 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
 
-import { planAllowances, unlimited } from "#billing/domain/plans.ts";
+import { planAllowances } from "#billing/domain/legacy-plans.ts";
+import { allowancesOf, unlimited } from "#billing/domain/plans.ts";
 import {
   excessesOf,
   mustReduce,
@@ -50,17 +51,30 @@ describe(mustReduce, () => {
   });
 });
 
+describe("the free tier", () => {
+  const free = allowancesOf("free", { accounts: 0, freeTier: true });
+
+  it("must reduce past 2 accounts, never for its members", () => {
+    expect(mustReduce(excessesOf(free, held(2, 40)))).toBeFalsy();
+    expect(excessesOf(free, held(3, 40))).toStrictEqual([
+      { allowed: 2, limit: "channels", used: 3 },
+    ]);
+    expect(mustReduce(excessesOf(free, held(3, 1)))).toBeTruthy();
+  });
+});
+
 describe(planHolding, () => {
-  it("names the smallest paid plan that holds everything the workspace has", () => {
-    expect(planHolding(held(8, 5))).toStrictEqual(Option.some("pro"));
-    expect(planHolding(held(3, 3))).toStrictEqual(Option.some("starter"));
-    expect(planHolding(held(4, 4))).toStrictEqual(Option.some("pro"));
-    expect(planHolding(held(1, 1, 30_000_000_000))).toStrictEqual(
-      Option.some("business")
+  it("names per-account pricing for anything a workspace holds", () => {
+    expect(planHolding(held(8, 5))).toStrictEqual(Option.some("payAsYouGo"));
+    expect(planHolding(held(101, 1))).toStrictEqual(Option.some("payAsYouGo"));
+    expect(planHolding(held(2, 1, 10_000_000_000))).toStrictEqual(
+      Option.some("payAsYouGo")
     );
   });
 
-  it("names none past the largest plan", () => {
-    expect(planHolding(held(101, 1))).toStrictEqual(Option.none());
+  it("names none for more media than its accounts would store", () => {
+    expect(planHolding(held(1, 1, 30_000_000_000))).toStrictEqual(
+      Option.none()
+    );
   });
 });

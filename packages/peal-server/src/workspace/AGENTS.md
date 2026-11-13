@@ -476,9 +476,10 @@ The staff context follows these rules too. What the law has a host keep is in
   `WorkspaceEntitlements.layerShared`). Channels are counted across the
   home workspace and every workspace the partner owns, under the partner's
   advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
-  `AccountChannelAllowanceLive`, which takes a person's billing account's
-  hold in the same place for any other workspace: see billing's guide);
-  the other limits apply per workspace. Billing reads owners through
+  billing's `PlanPools`, which takes a person's billing account's hold in
+  the same place for any other workspace: see billing's guide); media
+  storage is counted across the same pool, its hold taken after the
+  workspace's storage lock; the other limits apply per workspace. Billing reads owners through
   `WorkspaceOwners` (oldest first, `firstOwnedBy`, `namesShownTo`, for
   members only) and `PartnerOwnership.partnersIn`; the workspace context
   still imports nothing of billing but in `auth/` (its Better Auth hooks).
