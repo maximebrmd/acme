@@ -513,9 +513,11 @@ export class WebhookEndpoints extends Context.Service<
 
         const { id } = yield* found(actor, endpointId);
 
-        if (!(yield* store.remove(actor.workspaceId, id))) {
-          yield* new EndpointNotFound({ endpointId });
-        }
+        const removed = yield* store.remove(actor.workspaceId, id);
+
+        yield* removed
+          ? Effect.void
+          : Effect.fail(new EndpointNotFound({ endpointId }));
       });
 
       const rotate = Effect.fn("WebhookEndpoints.rotateSecret")(

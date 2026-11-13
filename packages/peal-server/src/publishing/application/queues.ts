@@ -160,9 +160,11 @@ export class Queues extends Context.Service<
 
           const kept = yield* sets.list(actor.workspaceId);
 
-          if (!kept.some(({ id }) => id === channelSetId.value)) {
-            yield* new ChannelSetNotFound({ channelSet: channelSetId.value });
-          }
+          yield* kept.some(({ id }) => id === channelSetId.value)
+            ? Effect.void
+            : Effect.fail(
+                new ChannelSetNotFound({ channelSet: channelSetId.value })
+              );
         }
       });
 

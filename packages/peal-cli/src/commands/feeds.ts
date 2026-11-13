@@ -239,9 +239,9 @@ const add = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("feeds.add")(function* add(input) {
-    if (Option.isSome(input.queue) && !Option.contains(input.mode, "queue")) {
-      yield* new Refused({ reason: "--queue goes with --mode queue." });
-    }
+    yield* Option.isSome(input.queue) && !Option.contains(input.mode, "queue")
+      ? Effect.fail(new Refused({ reason: "--queue goes with --mode queue." }))
+      : Effect.void;
 
     const template = yield* templateOf(input.template);
     const session = yield* inWorkspace(input.workspace);
@@ -333,11 +333,13 @@ const update = Command.make(
     const { client, url, workspace } = session;
     const { queueId, setId } = yield* savedIdsOf(session, input);
 
-    if (Option.isSome(input.queue) && input.defaultQueue) {
-      yield* new Refused({
-        reason: "Give --queue or --default-queue, not both.",
-      });
-    }
+    yield* Option.isSome(input.queue) && input.defaultQueue
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --queue or --default-queue, not both.",
+          })
+        )
+      : Effect.void;
 
     // A queue goes with a feed that puts posts on one.
     if (
@@ -348,12 +350,14 @@ const update = Command.make(
         .get({ params: { feedId: input.feed, workspaceId: workspace.id } })
         .pipe(Effect.mapError(explain(url)));
 
-      if (current.mode !== "queue" || Option.contains(input.mode, "draft")) {
-        yield* new Refused({
-          reason:
-            "--queue and --default-queue go with a feed whose posts go on a queue: add --mode queue.",
-        });
-      }
+      yield* current.mode !== "queue" || Option.contains(input.mode, "draft")
+        ? Effect.fail(
+            new Refused({
+              reason:
+                "--queue and --default-queue go with a feed whose posts go on a queue: add --mode queue.",
+            })
+          )
+        : Effect.void;
     }
 
     const payload: { -readonly [K in keyof FeedChange]: FeedChange[K] } = {};
@@ -391,12 +395,14 @@ const update = Command.make(
       payload.url = input.url.value;
     }
 
-    if (Object.keys(payload).length === 0) {
-      yield* new Refused({
-        reason:
-          "Give --channel, --mode, --queue, --default-queue, --set, --no-set, --template, --url, --picture or several: nothing else of a feed changes (peal feeds pause and resume change its state).",
-      });
-    }
+    yield* Object.keys(payload).length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --channel, --mode, --queue, --default-queue, --set, --no-set, --template, --url, --picture or several: nothing else of a feed changes (peal feeds pause and resume change its state).",
+          })
+        )
+      : Effect.void;
 
     const feed = yield* client.feeds
       .update({

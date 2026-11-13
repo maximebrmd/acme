@@ -191,13 +191,11 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
       const total = usage?.config?.quota_total;
 
       // The quota is over a moving day: Meta does not say when room comes.
-      if (
-        usage?.quota_usage !== undefined &&
-        total !== undefined &&
-        usage.quota_usage >= total
-      ) {
-        yield* new RateLimited({});
-      }
+      yield* usage?.quota_usage !== undefined &&
+      total !== undefined &&
+      usage.quota_usage >= total
+        ? Effect.fail(new RateLimited({}))
+        : Effect.void;
     });
 
     const describe = Effect.fn("ThreadsClient.describe")(function* describe(

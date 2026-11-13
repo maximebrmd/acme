@@ -384,14 +384,16 @@ export class Feeds extends Context.Service<
       ) {
         const allowance = yield* budget.take(actor.workspaceId);
 
-        if (allowance._tag === "refused") {
-          yield* new FeedReadsLimited({
-            retryAfterSeconds: Math.max(
-              1,
-              Math.ceil(Duration.toSeconds(allowance.retryAfter))
-            ),
-          });
-        }
+        yield* allowance._tag === "refused"
+          ? Effect.fail(
+              new FeedReadsLimited({
+                retryAfterSeconds: Math.max(
+                  1,
+                  Math.ceil(Duration.toSeconds(allowance.retryAfter))
+                ),
+              })
+            )
+          : Effect.void;
       });
 
       // The address read once for a member, as a feed: refused when it is
@@ -433,9 +435,9 @@ export class Feeds extends Context.Service<
               saved.list(actor.workspaceId)
             );
 
-            if (!sets.some(({ id }) => id === setId)) {
-              yield* new ChannelSetNotFound({ channelSet: setId });
-            }
+            yield* sets.some(({ id }) => id === setId)
+              ? Effect.void
+              : Effect.fail(new ChannelSetNotFound({ channelSet: setId }));
           }
 
           if (targets.mode === "queue") {
@@ -701,9 +703,11 @@ export class Feeds extends Context.Service<
 
         yield* mayChangeStarted(actor, current, mayStart(actor, current.mode));
 
-        if (!(yield* store.remove(actor.workspaceId, feedId))) {
-          yield* new FeedNotFound({ feedId });
-        }
+        const removed = yield* store.remove(actor.workspaceId, feedId);
+
+        yield* removed
+          ? Effect.void
+          : Effect.fail(new FeedNotFound({ feedId }));
       });
 
       const preview = Effect.fn("Feeds.preview")(function* preview(

@@ -62,12 +62,14 @@ const rename = Command.make(
     name,
     workspace: choice,
   }) {
-    if (clear && Option.isSome(name)) {
-      yield* new Refused({
-        reason:
-          "Give a name, or --clear to take the channel's name back: not both.",
-      });
-    }
+    yield* clear && Option.isSome(name)
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give a name, or --clear to take the channel's name back: not both.",
+          })
+        )
+      : Effect.void;
 
     const payload = yield* checkLabel(
       name.pipe(

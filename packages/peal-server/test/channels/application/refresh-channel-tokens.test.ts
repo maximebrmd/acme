@@ -764,8 +764,11 @@ layer(FileTest)("a refresh run that cannot finish", (it) => {
             )
           )
           .pipe(
-            Effect.provide(refresherFor(workspaceId, authorizer)),
-            Effect.provide(capture)
+            Effect.provide(
+              refresherFor(workspaceId, authorizer).pipe(
+                Layer.provideMerge(capture)
+              )
+            )
           );
 
         const took = DateTime.distance(startedAt, yield* DateTime.now);

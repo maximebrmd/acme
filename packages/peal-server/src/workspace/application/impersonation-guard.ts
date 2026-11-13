@@ -77,17 +77,19 @@ export class ImpersonationGuard extends Context.Service<
           ({ ban, staff: isStaff }) => isStaff && !isBanned(ban, now)
         );
 
-        if (!staff) {
-          const ended = yield* sessions.endBy(staffId);
-
-          yield* Effect.forEach(
-            ended,
-            (userId) => log.ended({ staffId, userId }),
-            { discard: true }
-          );
-
-          yield* new NotSignedIn();
-        }
+        // Staff no longer: every session it impersonates ends.
+        yield* staff
+          ? Effect.void
+          : sessions.endBy(staffId).pipe(
+              Effect.flatMap((ended) =>
+                Effect.forEach(
+                  ended,
+                  (userId) => log.ended({ staffId, userId }),
+                  { discard: true }
+                )
+              ),
+              Effect.andThen(Effect.fail(new NotSignedIn()))
+            );
       });
 
       return ImpersonationGuard.of({

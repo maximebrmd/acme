@@ -110,22 +110,26 @@ export class DisconnectChannel extends Context.Service<
             : false;
 
           if (!removed || Option.isNone(channel)) {
-            yield* new ChannelNotFound({ channelId });
-          } else if (Option.isSome(credentials)) {
-            yield* revoke(channel.value, credentials.value).pipe(
-              Effect.timeout(revokeTimeout),
-              Effect.catch((error) =>
-                Effect.logWarning(
-                  "The platform did not revoke a disconnected channel's tokens",
-                  error
-                )
-              ),
-              Effect.annotateLogs({
-                channelId: channel.value.id,
-                platform: channel.value.platform,
-              })
-            );
+            return yield* new ChannelNotFound({ channelId });
           }
+
+          if (Option.isNone(credentials)) {
+            return yield* Effect.void;
+          }
+
+          return yield* revoke(channel.value, credentials.value).pipe(
+            Effect.timeout(revokeTimeout),
+            Effect.catch((error) =>
+              Effect.logWarning(
+                "The platform did not revoke a disconnected channel's tokens",
+                error
+              )
+            ),
+            Effect.annotateLogs({
+              channelId: channel.value.id,
+              platform: channel.value.platform,
+            })
+          );
         }
       );
 

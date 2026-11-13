@@ -152,23 +152,19 @@ export const RoutedPlatformPublisher = Layer.effect(
     ) {
       const channels = yield* allowance.channels(post.workspaceId);
 
-      if (
-        Result.isFailure(
-          withinAllowance("channels", channels.allowed, channels.connected)
-        )
-      ) {
-        yield* overPlan;
-      }
+      yield* Result.isFailure(
+        withinAllowance("channels", channels.allowed, channels.connected)
+      )
+        ? overPlan
+        : Effect.void;
 
       const members = yield* allowance.members(post.workspaceId);
 
-      if (
-        Result.isFailure(
-          withinAllowance("members", members.allowed, members.taken)
-        )
-      ) {
-        yield* overPlan;
-      }
+      yield* Result.isFailure(
+        withinAllowance("members", members.allowed, members.taken)
+      )
+        ? overPlan
+        : Effect.void;
 
       const allowed = yield* allowance.scheduledPerMonth(post.workspaceId);
       const at = dueAt(post);
@@ -180,9 +176,7 @@ export const RoutedPlatformPublisher = Layer.effect(
           { at: at.value, postId: post.id }
         );
 
-        if (before >= allowed.value) {
-          yield* overPlan;
-        }
+        yield* before >= allowed.value ? overPlan : Effect.void;
       }
     });
 

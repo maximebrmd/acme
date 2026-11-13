@@ -277,11 +277,13 @@ const preview = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("queues.preview")(function* previewCommand(input) {
-    if (input.count < 1 || input.count > maxQueuePreview) {
-      yield* new Refused({
-        reason: `--count takes 1 to ${String(maxQueuePreview)}, not ${String(input.count)}.`,
-      });
-    }
+    yield* input.count < 1 || input.count > maxQueuePreview
+      ? Effect.fail(
+          new Refused({
+            reason: `--count takes 1 to ${String(maxQueuePreview)}, not ${String(input.count)}.`,
+          })
+        )
+      : Effect.void;
 
     const session = yield* inWorkspace(input.workspace);
     const queue = yield* findQueue(session, input.queue);
@@ -430,32 +432,38 @@ const update = Command.make(
     const givenSlots = yield* slotsOf(input.slots);
     const givenChannels = channelIdsOf(input.channels);
 
-    if (input.clearChannels && givenChannels.length > 0) {
-      yield* new Refused({
-        reason: "Give --channel or --clear-channels, not both.",
-      });
-    }
+    yield* input.clearChannels && givenChannels.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --channel or --clear-channels, not both.",
+          })
+        )
+      : Effect.void;
 
-    if (input.clearSlots && givenSlots.length > 0) {
-      yield* new Refused({ reason: "Give --slot or --clear-slots, not both." });
-    }
+    yield* input.clearSlots && givenSlots.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --slot or --clear-slots, not both.",
+          })
+        )
+      : Effect.void;
 
-    if (
-      Option.isNone(input.name) &&
-      Option.isNone(input.zone) &&
-      Option.isNone(input.set) &&
-      !input.noSet &&
-      !input.isDefault &&
-      !input.clearChannels &&
-      !input.clearSlots &&
-      givenSlots.length === 0 &&
-      givenChannels.length === 0
-    ) {
-      yield* new Refused({
-        reason:
-          "Give --name, --zone, --slot, --clear-slots, --channel, --clear-channels, --set, --no-set, --default or several: nothing else of a queue changes.",
-      });
-    }
+    yield* Option.isNone(input.name) &&
+    Option.isNone(input.zone) &&
+    Option.isNone(input.set) &&
+    !input.noSet &&
+    !input.isDefault &&
+    !input.clearChannels &&
+    !input.clearSlots &&
+    givenSlots.length === 0 &&
+    givenChannels.length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --name, --zone, --slot, --clear-slots, --channel, --clear-channels, --set, --no-set, --default or several: nothing else of a queue changes.",
+          })
+        )
+      : Effect.void;
 
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;

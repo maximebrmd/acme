@@ -81,9 +81,7 @@ const exportData = Command.make(
           .exists(file)
           .pipe(Effect.mapError(cannotSave(file)));
 
-        if (exists && !force) {
-          yield* existing(file);
-        }
+        yield* exists && !force ? existing(file) : Effect.void;
       });
 
     // A file made for the copy alone, readable by the user only: created

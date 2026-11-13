@@ -2,6 +2,7 @@ import { BunRuntime } from "@effect/platform-bun";
 import { Console, DateTime, Effect } from "effect";
 
 import { ErasureReplayServicesLive } from "#app/server.ts";
+import { ErasuresOutstanding } from "#workspace/application/erasures-outstanding.ts";
 import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 
 // After the database was restored from a backup, and before the server
@@ -40,13 +41,14 @@ const program = Effect.gen(function* replayErasures() {
 
   yield* Console.log(lines.join("\n"));
 
-  if (report.failed.length > 0 || report.unreadable.length > 0) {
-    yield* Effect.fail(
-      new Error(
-        `${report.failed.length} erasures were refused and ${report.unreadable.length} objects of the ledger do not read: keep the server stopped until each is applied or accounted for`
+  yield* report.failed.length > 0 || report.unreadable.length > 0
+    ? Effect.fail(
+        new ErasuresOutstanding({
+          refused: report.failed.length,
+          unreadable: report.unreadable.length,
+        })
       )
-    );
-  }
+    : Effect.void;
 });
 
 BunRuntime.runMain(program.pipe(Effect.provide(ErasureReplayServicesLive)));
