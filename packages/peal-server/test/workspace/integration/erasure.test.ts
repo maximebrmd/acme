@@ -312,6 +312,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM billing.account_transfers WHERE to_user_id = ${id} OR offered_by = ${id}`,
   "billing.accounts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.accounts WHERE payer_user_id = ${id}`,
+  // A payment method staff required of them stays by their address's
+  // pseudonym, without the user.
+  "billing.payment_requirements": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.payment_requirements WHERE user_id = ${id}`,
   // Orders, trials, withdrawals and requests to cancel or withdraw stay
   // with their workspaces, without the user, nor, for requests, the name
   // and the address they wrote.
@@ -793,6 +797,10 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
   // workspace alone.
   yield* sql`INSERT INTO billing.accounts (id, holder_workspace_id, payer_user_id, standalone, created_at)
     VALUES (${uuid7()}, ${randomUUID()}, ${person.id}, true, now())`;
+
+  // A payment method staff required of them.
+  yield* sql`INSERT INTO billing.payment_requirements (id, user_id, required_at)
+    VALUES (${uuid7()}, ${person.id}, now())`;
 
   yield* sql`INSERT INTO auth.device_code (device_code, user_code, user_id, expires_at, status)
     VALUES (${randomUUID()}, ${randomUUID().slice(0, 8)}, ${person.id}, now() + interval '10 minutes', 'approved')`;
