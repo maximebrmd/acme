@@ -531,14 +531,19 @@ const make = Effect.gen(function* BillingAccountsLive() {
   );
 
   const forgetPayer = Effect.fn("BillingAccounts.forgetPayer")(
-    function* forgetPayer(userId: UserId) {
+    function* forgetPayer(userId: UserId, pseudonym: string) {
       yield* store.holdPayer(userId);
       yield* store.deleteTransfersFor(userId);
 
+      // A payment method staff required stays with the address, for when
+      // it signs up again.
+      yield* store.rememberPayment(userId, pseudonym, yield* DateTime.now);
+
       const paid = yield* store.paidBy(userId);
 
+      // Held in the order of their ids, as every other path holds them.
       yield* Effect.forEach(
-        paid,
+        paid.toSorted((a, b) => a.id.localeCompare(b.id)),
         Effect.fnUntraced(function* release(account) {
           yield* store.holdAccount(account.id);
           yield* store.delete(account.id);
@@ -631,7 +636,8 @@ export class BillingAccounts extends Context.Service<
      * left the next time they are read.
      */
     readonly forgetPayer: (
-      userId: UserId
+      userId: UserId,
+      pseudonym: string
     ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/billing/application/BillingAccounts") {

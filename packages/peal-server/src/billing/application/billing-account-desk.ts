@@ -8,6 +8,7 @@ import type {
 } from "#billing/domain/billing-account.ts";
 import { entitles, stillBills } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -15,6 +16,7 @@ import { BillingAccounts } from "./billing-accounts.ts";
 import { AccountChannels } from "./ports/account-channels.ts";
 import type { PlatformAccount } from "./ports/account-channels.ts";
 import { AccountDeskAudit } from "./ports/account-desk-audit.ts";
+import { AccountPayers } from "./ports/account-payers.ts";
 import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 
@@ -94,6 +96,20 @@ export class BillingAccountDesk extends Context.Service<
       const channels = yield* AccountChannels;
       const audit = yield* AccountDeskAudit;
       const { transaction } = yield* TransactionRunner;
+      const payers = yield* AccountPayers;
+      const pseudonyms = yield* Pseudonyms;
+
+      // Forgets a requirement of the person, by id and by address.
+      const releaseFor = (payer: UserId) =>
+        Effect.gen(function* releasePayer() {
+          const email = yield* payers.emailOf(payer);
+
+          const pseudonym = Option.isSome(email)
+            ? Option.some(yield* pseudonyms.ofEmail(email.value))
+            : Option.none<string>();
+
+          yield* store.releasePayment(payer, pseudonym);
+        });
 
       const found = (accountId: BillingAccountId) =>
         store.get(accountId).pipe(
@@ -275,7 +291,12 @@ export class BillingAccountDesk extends Context.Service<
 
             yield* store.delete(source.id);
 
-            return target;
+            // Its workspaces bring no free tier with them.
+            if (!source.freeTier) {
+              yield* store.setFreeTier(target.id, false);
+            }
+
+            return yield* found(target.id);
           })
         );
 
@@ -309,6 +330,16 @@ export class BillingAccountDesk extends Context.Service<
             });
 
             yield* store.setFreeTier(accountId, !required);
+
+            // Kept by the person too, so no account they make later has a
+            // free tier: their next one reads it.
+            if (Option.isSome(current.payer)) {
+              const payer = current.payer.value;
+
+              yield* required
+                ? store.requirePayment(payer, yield* DateTime.now)
+                : releaseFor(payer);
+            }
 
             return yield* found(current.id);
           })

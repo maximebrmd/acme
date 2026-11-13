@@ -365,7 +365,7 @@ export class BillingRecords extends Context.Service<
             Effect.andThen(requests.forgetUser(userId)),
             // The accounts they paid for: the workspaces left go to their
             // oldest owner left.
-            Effect.andThen(accounts.forgetPayer(userId))
+            Effect.andThen(accounts.forgetPayer(userId, pseudonym))
           ),
         settleWorkspace,
       });

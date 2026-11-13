@@ -221,7 +221,7 @@ layer(accountsTest)("billing accounts", (it) => {
 
         // Closing the account: its accounts are forgotten, its memberships
         // deleted, in one transaction.
-        yield* accounts.forgetPayer(leaving);
+        yield* accounts.forgetPayer(leaving, "pseudonym:synthetic-closed");
         yield* SqlClient.SqlClient.use(
           (sql) => sql`DELETE FROM auth.member WHERE user_id = ${leaving}`
         ).pipe(Effect.orDie);

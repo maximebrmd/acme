@@ -380,16 +380,22 @@ export const accountsTest = BillingAccounts.layer.pipe(
   Layer.provideMerge(DatabaseTest)
 );
 
+/** A synthetic account with this address. */
+export const personWith = (email: string) =>
+  Effect.gen(function* personWithAddress() {
+    const sql = yield* SqlClient.SqlClient;
+    const userId = UserIdSchema.make(randomUUID());
+    const at = nextInstant();
+
+    yield* sql`INSERT INTO auth.user (id, name, email, email_verified, created_at, updated_at) VALUES (${userId}, 'Synthetic payer', ${email}, true, ${at}, ${at})`;
+
+    return userId;
+  }).pipe(Effect.orDie);
+
 /** A synthetic account, with an address of its own. */
-export const person = Effect.gen(function* person() {
-  const sql = yield* SqlClient.SqlClient;
-  const userId = UserIdSchema.make(randomUUID());
-  const at = nextInstant();
-
-  yield* sql`INSERT INTO auth.user (id, name, email, email_verified, created_at, updated_at) VALUES (${userId}, 'Synthetic payer', ${`${userId}@example.com`}, true, ${at}, ${at})`;
-
-  return userId;
-}).pipe(Effect.orDie);
+export const person = Effect.suspend(() =>
+  personWith(`${randomUUID()}@example.com`)
+);
 
 /** A workspace these accounts own, joined in this order. */
 export const workspaceOwnedBy = Effect.fn("workspaceOwnedBy")(

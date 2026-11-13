@@ -138,7 +138,8 @@ export const BillingLive = Layer.mergeAll(
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
       HoldersLive,
-      AccountsLive
+      AccountsLive,
+      DrizzleBillingAccountStoreLive
     )
   )
 );
@@ -258,6 +259,7 @@ export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
     Layer.mergeAll(
       AccountsLive,
       AccountStoresLive,
+      KeyedPseudonymsLive,
       ContextAccountChannelsLive,
       AuditedAccountDeskLive
     )

@@ -1,6 +1,8 @@
 // What staff do about one free tier per person, on Postgres: the platform
 // accounts connected under several free billing accounts, merging one
 // account into another, requiring a payment method; each audited first.
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
@@ -13,15 +15,22 @@ import { AccountsNotMerged } from "#billing/domain/accounts-not-merged.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
+import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { BillingAccountAuditLive } from "#staff/container.ts";
 import {
   accountsTest,
   cleanUpAccounts,
   person,
+  personWith,
+  PlainPseudonymsTest,
   subscribe,
   workspaceOwnedBy,
 } from "#test/billing/support.ts";
+import {
+  PartnerOwnershipLive,
+  WorkspaceOwnersLive,
+} from "#workspace/container.ts";
 
 // The platform accounts the channels context answers, as the tests set them.
 let shared: readonly PlatformAccountHeld[] = [];
@@ -50,6 +59,10 @@ const DeskTest = BillingAccountDesk.layer.pipe(
       DrizzleBillingAccountStoreLive,
       DrizzleSubscriptionsLive,
       ChannelsSharedTest,
+      PlainPseudonymsTest,
+      WorkspaceAccountPayersLive.pipe(
+        Layer.provide(Layer.merge(PartnerOwnershipLive, WorkspaceOwnersLive))
+      ),
       AuditedAccountDeskLive.pipe(Layer.provide(BillingAccountAuditLive))
     )
   ),
@@ -232,6 +245,105 @@ layer(DeskTest)("the billing accounts desk", (it) => {
       assert.strictEqual(byWorkspace.account.id, account.id);
 
       yield* cleanUp([workspace]);
+    })
+  );
+
+  it.effect(
+    "keep a payment method required of a person whatever becomes of their accounts",
+    () =>
+      Effect.gen(function* survives() {
+        const desk = yield* BillingAccountDesk;
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const staff = yield* person;
+        const email = `${randomUUID()}@example.com`;
+        const payer = yield* personWith(email);
+        const first = yield* workspaceOwnedBy([payer]);
+
+        yield* desk.requirePaymentMethod({
+          accountId: (yield* accounts.of(first)).id,
+          reason: "Synthetic reason",
+          required: true,
+          staffId: staff,
+        });
+
+        // Its only workspace erased, a new one made.
+        yield* accounts.eraseWorkspace(first);
+
+        const second = yield* workspaceOwnedBy([payer]);
+
+        assert.isFalse((yield* accounts.of(second)).freeTier);
+
+        // The account closed, and the address signing up again.
+        yield* accounts.forgetPayer(payer, `pseudonym:${email}`);
+        yield* sql`DELETE FROM auth.member WHERE user_id = ${payer}`.pipe(
+          Effect.orDie
+        );
+        yield* sql`DELETE FROM auth.user WHERE id = ${payer}`.pipe(
+          Effect.orDie
+        );
+
+        const again = yield* personWith(email);
+        const third = yield* workspaceOwnedBy([again]);
+
+        assert.isFalse((yield* accounts.of(third)).freeTier);
+
+        // Given back: the next account is free again.
+        const back = yield* desk.requirePaymentMethod({
+          accountId: (yield* accounts.of(third)).id,
+          reason: "Synthetic undo",
+          required: false,
+          staffId: staff,
+        });
+
+        assert.isTrue(back.account.freeTier);
+        yield* accounts.eraseWorkspace(third);
+
+        const fourth = yield* workspaceOwnedBy([again]);
+
+        assert.isTrue((yield* accounts.of(fourth)).freeTier);
+
+        yield* cleanUp([first, second, third, fourth]);
+      })
+  );
+
+  it.effect("carry a required payment method through a merge", () =>
+    Effect.gen(function* merged() {
+      const desk = yield* BillingAccountDesk;
+      const accounts = yield* BillingAccounts;
+      const staff = yield* person;
+      const kept = yield* person;
+      const required = yield* person;
+      const into = yield* workspaceOwnedBy([kept]);
+      const from = yield* workspaceOwnedBy([required]);
+
+      const [target, source] = yield* Effect.all([
+        accounts.of(into),
+        accounts.of(from),
+      ]);
+
+      yield* desk.requirePaymentMethod({
+        accountId: source.id,
+        reason: "Synthetic reason",
+        required: true,
+        staffId: staff,
+      });
+
+      const done = yield* desk.merge({
+        from: source.id,
+        into: target.id,
+        reason: "Synthetic reason",
+        staffId: staff,
+      });
+
+      assert.isFalse(done.account.freeTier);
+
+      // The merged person's next workspace has no free tier either.
+      const later = yield* workspaceOwnedBy([required]);
+
+      assert.isFalse((yield* accounts.of(later)).freeTier);
+
+      yield* cleanUp([into, from, later]);
     })
   );
 });
