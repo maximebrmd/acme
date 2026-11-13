@@ -23,20 +23,20 @@ const reasonOf = (failure: PlanLimitReached): string => {
 };
 
 describe("a plan's refusal, explained", () => {
-  it("names the plan, what the workspace holds, the plan with room and the billing page", () => {
+  it("says a payment method gives room on the free tier, at the rate card's price", () => {
     expect(
       reasonOf(
         new PlanLimitReached({
           allowed: 2,
           billingUrl,
-          limit: "members",
+          limit: "channels",
           plan: "free",
-          planWithRoom: "starter",
+          planWithRoom: "payAsYouGo",
           used: 2,
         })
       )
     ).toBe(
-      `The workspace's Free plan allows 2 members, pending invitations included, and it has 2. The Starter plan has room: an owner or an admin orders it at ${billingUrl}`
+      `The workspace's Free plan allows 2 channels, and it has 2. A payment method gives room: with per-account pricing, each connected account past the first 2 costs $5.00 a month, excluding tax, less from account 11 on. An owner or an admin adds one at ${billingUrl}`
     );
   });
 
@@ -47,13 +47,13 @@ describe("a plan's refusal, explained", () => {
           allowed: 500_000_000,
           billingUrl,
           limit: "mediaStorage",
-          plan: "free",
-          planWithRoom: "starter",
+          plan: "starter",
+          planWithRoom: "agency",
           used: 480_000_000,
         })
       )
     ).toBe(
-      `The workspace's Free plan allows 500 MB of media stored, uploads in progress included, and it has 480 MB. The Starter plan has room: an owner or an admin orders it at ${billingUrl}`
+      `The workspace's Starter plan allows 500 MB of media stored, uploads in progress included, and it has 480 MB. The Agency plan has room: an owner or an admin orders it at ${billingUrl}`
     );
   });
 
@@ -70,7 +70,7 @@ describe("a plan's refusal, explained", () => {
         })
       )
     ).toBe(
-      "The workspace's Agency plan allows 100 channels, and it has 100. No plan is larger: write to the people who run this server to ask for more, or remove some."
+      "The workspace's Agency plan allows 100 channels, and it has 100. No plan holds more: write to the people who run this server to ask for more, or remove some."
     );
   });
 });

@@ -703,10 +703,11 @@ released. Then, on the server:
 
 1. on a server that bills (`STRIPE_SECRET_KEY` in `credentials.env`), the
    new image compares Stripe's catalogue with the one it gives
-   (`stripe-catalogue --check`, read-only at Stripe), and the play prints
-   what differs, without failing: until per-account pricing is sold, the
-   new server starts on a catalogue that differs, warns and alerts
-   ([Stripe catalogue](#stripe-catalogue));
+   (`stripe-catalogue --check`, read-only at Stripe): one that differs
+   stops the release there, the old server still running, as the new one
+   would refuse to start ([Stripe catalogue](#stripe-catalogue)); one that
+   could not be compared (Stripe not answering, Compose failing) is
+   reported, and the release goes on;
 2. when Postgres is to restart, because its image or its settings changed,
    the old server stops first, with 75 seconds to finish its calls to the
    platforms;
@@ -743,22 +744,27 @@ sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-
 
 It prints what it makes, and nothing on a second run; `--check` only
 compares. The key needs write access to meters, products and prices.
-Until per-account pricing is sold, a server whose catalogue differs starts
-all the same, logs what differs and the command, and
-`peal-stripe-catalogue` alerts; once it is sold, the server stops instead,
-so run the command before the release that sells it.
+Per-account pricing is sold: a server whose catalogue differs (a meter or
+price missing or billing otherwise, or a price on an archived product)
+refuses to start, saying what differs and the command, and a release
+stops before it replaces the server. The server reads the catalogue only
+as it starts: after running the command for a server that runs already,
+restart it, by a release or with `sudo peal-compose up -d server`, which
+is also how the `peal-stripe-catalogue` alert of an older release that
+only warned clears. The legacy plans' prices are checked only while a
+subscription to one still entitles a workspace.
 
 - Turning billing on: put `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
   in the vault, run `site.yml` so `credentials.env` holds them, run the
-  command above, then release (or restart the server).
-- A release whose rate card changes a price: the command makes a new price
-  that takes the lookup key, and leaves the old one active. The release
-  before it then no longer finds its own price under that key. To roll
-  back, release the previous commit, then run the command above, which now
-  runs the previous image and moves the key back to a third price. Until
-  per-account pricing is sold, the previous server starts meanwhile and
-  only warns; the change that sells it says how to roll back across a
-  price change, as the previous server would then stop.
+  command above, then release, or restart the server as above.
+- A release whose rate card changes a price: it stops at the comparison,
+  with the release's image already the one `peal-compose run` runs; run
+  the command above, which makes a new price that takes the lookup key and
+  leaves the old one active, then release again. The release before it
+  then no longer finds its own price under that key: to roll back, release
+  the previous commit, which stops at the comparison the same way, run the
+  command above, which then runs the previous image and moves the key back
+  to a third price, and release the previous commit again.
 
 ## Backups
 

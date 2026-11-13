@@ -31,7 +31,7 @@ export const CatalogueAtStartSchema = Schema.Literals(["warn", "stop"]);
 
 export type CatalogueAtStart = typeof CatalogueAtStartSchema.Type;
 
-export const catalogueAtStart: CatalogueAtStart = "warn";
+export const catalogueAtStart: CatalogueAtStart = "stop";
 
 /** What each line is called on the invoice: its product's and meter's name. */
 const lineNames = {
@@ -373,7 +373,8 @@ const heldPriceOf = (
 /**
  * What is wrong with a Stripe account's catalogue for the one the rate
  * card gives: a meter or a price that is missing, or would count or bill
- * something else. Meters first, then prices, each in the catalogue's order.
+ * something else, or a price on a product archived at Stripe. Meters
+ * first, then prices, each in the catalogue's order.
  */
 export const catalogueProblems = (
   published: readonly CataloguePrice[],
@@ -394,6 +395,18 @@ export const catalogueProblems = (
       ],
       onSome: (found) =>
         priceDifferences(price, found, heldMeterOf(price, held)),
+    })
+  ),
+  // Checkout refuses a price on an archived product.
+  ...published.flatMap((price) =>
+    Option.match(heldPriceOf(price, held), {
+      onNone: () => [],
+      onSome: ({ productId }) =>
+        held.products.some(({ active, id }) => id === productId && !active)
+          ? [
+              `${price.lookupKey}: its product ${productId} is archived at Stripe, where checkout would refuse it`,
+            ]
+          : [],
     })
   ),
 ];

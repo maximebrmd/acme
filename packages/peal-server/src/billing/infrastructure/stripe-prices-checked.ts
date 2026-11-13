@@ -1,15 +1,17 @@
 import { Effect, Layer, Match, Metric, Option, Result } from "effect";
 
+import { LegacySubscriptions } from "#billing/application/ports/legacy-subscriptions.ts";
 import {
   catalogueAtStart,
   catalogueOf,
   catalogueProblems,
 } from "#billing/domain/catalogue.ts";
-import type { CatalogueAtStart, HeldMeter } from "#billing/domain/catalogue.ts";
+import type { CatalogueAtStart } from "#billing/domain/catalogue.ts";
 import { priceProblems, publishedPrices } from "#billing/domain/price-check.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
 
+import { DrizzleLegacySubscriptionsLive } from "./drizzle-legacy-subscriptions.ts";
 import { catalogueCommand } from "./stripe-catalogue-command.ts";
 import type { StripeCatalogueUnread } from "./stripe-catalogue-unread.ts";
 import {
@@ -17,6 +19,7 @@ import {
   legacyPriceOf,
   readMeters,
   readPrices,
+  readProducts,
 } from "./stripe-catalogue.ts";
 import { StripePricesMismatch } from "./stripe-prices-mismatch.ts";
 import { StripePricesUnchecked } from "./stripe-prices-unchecked.ts";
@@ -46,7 +49,7 @@ const uncheckedReason = ({ during, reason }: StripeCatalogueUnread): string =>
 /** The warning a server that starts on a catalogue that differs logs. */
 export const catalogueWarning = (problems: readonly string[]): string =>
   [
-    "Stripe does not hold the rate card's catalogue (billing/domain/rate-card.ts), which per-account pricing bills with. The server starts, as nothing sells per-account pricing yet:",
+    "Stripe does not hold the rate card's catalogue (billing/domain/rate-card.ts), which per-account pricing bills with. The server starts, as its check only warns:",
     ...problems.map((problem) => `- ${problem}`),
     `Give Stripe the catalogue with the server's image: ${catalogueCommand}.`,
   ].join("\n");
@@ -72,24 +75,27 @@ const unanswered = (
  * catalogue the rate card gives (`billing/domain/catalogue.ts`): an active
  * meter summing the events of each line, and under each lookup key an
  * active metered price in dollars, monthly, tax-exclusive, on that meter,
- * at the rate card's tiers or unit amount. It also checks the legacy
- * plans' prices (`billing/domain/prices.ts`): their amount, currency and
- * interval, tax-exclusive. Those are the only plans sold until
- * per-account pricing is, so they are checked whatever the subscriptions,
- * and a difference stops the server, saying each one
+ * at the rate card's tiers or unit amount, on a product that is not
+ * archived (checkout refuses one). While a subscription to a legacy plan
+ * still entitles a workspace (`LegacySubscriptions`), it also checks the
+ * legacy plans' prices (`billing/domain/prices.ts`): their amount,
+ * currency and interval, tax-exclusive; once none does, a Stripe account
+ * needs none of them. A difference stops the server, saying each one
  * (`StripePricesMismatch`): it would otherwise charge something else than
- * it shows. So does Stripe refusing the prices' request, as with a key
- * revoked, or answering what the check cannot read
- * (`StripePricesUnchecked`): nothing was checked. Stripe not answering at
- * all is logged and the server starts: an outage at Stripe must not keep
- * Peal down, and checkout fails on its own until Stripe is back.
+ * it shows. So does Stripe refusing a request, as with a key revoked, or
+ * answering what the check cannot read (`StripePricesUnchecked`): nothing
+ * was checked. Stripe not answering at all is logged and the server
+ * starts: an outage at Stripe must not keep Peal down, and checkout fails
+ * on its own until Stripe is back. The meters, prices and products are
+ * read together, so an outage costs one wait, not three.
  *
- * What the catalogue does follows `atStart`: with `warn`, a catalogue
- * that differs, or meters Stripe refuses or garbles, is a warning naming
- * the command that gives it, counted in `catalogueProblemsAtStart`; with
- * `stop`, it stops the server as a plan price does. The composition root
- * builds it with the server, not with the routes tests serve against
- * stripe-mock, whose one price is none of Peal's.
+ * What the catalogue does follows `atStart`: with `stop`, which the
+ * server runs now per-account pricing is sold, it stops the server as a
+ * plan price does; with `warn`, a catalogue that differs, or meters
+ * Stripe refuses or garbles, is a warning naming the command that gives
+ * it, counted in `catalogueProblemsAtStart`, which an alert reads. The
+ * composition root builds it with the server, not with the routes tests
+ * serve against stripe-mock, whose one price is none of Peal's.
  */
 export const stripePricesChecked = (atStart: CatalogueAtStart) =>
   Layer.effectDiscard(
@@ -106,12 +112,22 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
       });
 
       const catalogue = catalogueOf(settings.value.catalogue);
-      const legacy = publishedPrices(settings.value.prices);
+
+      const legacy = (yield* LegacySubscriptions.use(
+        ({ entitling }) => entitling
+      ).pipe(Effect.orDie))
+        ? publishedPrices(settings.value.prices)
+        : [];
 
       // Meters Stripe refused or garbled only warn while the catalogue
       // does: what Stripe said of them is the problem then.
-      const meters: Option.Option<Result.Result<readonly HeldMeter[], string>> =
-        yield* readMeters(client).pipe(
+      const asWarning = <A>(
+        read: Effect.Effect<A, StripeCatalogueUnread>
+      ): Effect.Effect<
+        Option.Option<Result.Result<A, string>>,
+        StripePricesUnchecked
+      > =>
+        read.pipe(
           Effect.map((found) => Option.some(Result.succeed(found))),
           Effect.catch((error) =>
             atStart === "warn" && error.reason !== "unanswered"
@@ -126,12 +142,26 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
           )
         );
 
-      const prices = yield* readPrices(client, [
-        ...catalogue.map(({ lookupKey }) => lookupKey),
-        ...legacy.map(({ lookupKey }) => lookupKey),
-      ]).pipe(Effect.map(Option.some), Effect.catch(unanswered));
+      const [meters, prices, products] = yield* Effect.all(
+        [
+          asWarning(readMeters(client)),
+          readPrices(client, [
+            ...catalogue.map(({ lookupKey }) => lookupKey),
+            ...legacy.map(({ lookupKey }) => lookupKey),
+          ]).pipe(Effect.map(Option.some), Effect.catch(unanswered)),
+          readProducts(client).pipe(
+            Effect.map(Option.some),
+            Effect.catch(unanswered)
+          ),
+        ],
+        { concurrency: "unbounded" }
+      );
 
-      if (Option.isNone(meters) || Option.isNone(prices)) {
+      if (
+        Option.isNone(meters) ||
+        Option.isNone(prices) ||
+        Option.isNone(products)
+      ) {
         return;
       }
 
@@ -141,7 +171,7 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
           catalogueProblems(catalogue, {
             meters: found,
             prices: heldPricesOf(prices.value),
-            products: [],
+            products: products.value,
           }),
       });
 
@@ -168,5 +198,10 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
     }).pipe(Effect.withSpan("Billing.checkStripePrices"))
   );
 
-/** The check the server runs: see `catalogueAtStart`. */
-export const StripePricesCheckedLive = stripePricesChecked(catalogueAtStart);
+/**
+ * The check the server runs (see `catalogueAtStart`), reading the legacy
+ * subscriptions from the database, migrated before it.
+ */
+export const StripePricesCheckedLive = stripePricesChecked(
+  catalogueAtStart
+).pipe(Layer.provide(DrizzleLegacySubscriptionsLive));

@@ -12,6 +12,7 @@ import type {
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
+import { perAccountPrice } from "#plan-limit.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -60,7 +61,13 @@ const planLine = (billing: Billing): string => {
   const { subscription } = billing;
 
   if (subscription === null) {
-    return `Plan: ${billing.plan}, with no subscription.`;
+    return billing.plan === "free"
+      ? `Plan: free, without a payment method. A payment method gives more: ${perAccountPrice()}.`
+      : `Plan: ${billing.plan}, with no subscription.`;
+  }
+
+  if (subscription.plan === "payAsYouGo") {
+    return `Plan: per-account pricing, billed each month for the month past, subscription ${subscription.status}: ${perAccountPrice()}.`;
   }
 
   if (subscription.status === "trialing" && subscription.trialEnd !== null) {
@@ -93,21 +100,34 @@ const standingLines = (standing: Standing): string[] => {
     return [];
   }
 
-  const waiting = standing.mustReduce
-    ? [
+  const waiting = () => {
+    if (standing.mustReduce) {
+      return [
         `Until it is back within its plan, nothing is scheduled or published: the ${String(standing.scheduledPosts)} posts going out this month each fail when due, and can be posted again afterwards.`,
-      ]
-    : ["Until it is back within its plan's storage, it uploads nothing."];
+      ];
+    }
 
-  const wayOut =
-    standing.planWithRoom === null
-      ? "No plan holds everything: an owner or an admin chooses which channels and members stay, in the web app, or writes to the people who run this server."
+    return standing.graceUntil === null
+      ? ["Until it is back within its plan's storage, it uploads nothing."]
+      : [
+          `Until ${instant(standing.graceUntil)} it still schedules and publishes, and connects no more accounts; after that, nothing is published until it is back within its plan.`,
+        ];
+  };
+
+  const wayOut = () => {
+    if (standing.planWithRoom === null) {
+      return "No plan holds everything: an owner or an admin chooses which channels and members stay, in the web app, or writes to the people who run this server.";
+    }
+
+    return standing.planWithRoom === "payAsYouGo"
+      ? `A payment method holds everything (${perAccountPrice()}): an owner or an admin adds one, or chooses which accounts stay, in the web app.`
       : `The ${standing.planWithRoom} plan holds everything: an owner or an admin orders it, or chooses which channels and members stay, in the web app.`;
+  };
 
   return [
     `The workspace holds more than its plan allows: ${standing.over.map(excess).join(", ")}.`,
-    ...waiting,
-    wayOut,
+    ...waiting(),
+    wayOut(),
   ];
 };
 
@@ -159,7 +179,7 @@ export const billing = Command.make(
 
     if (found.enabled) {
       yield* Console.log(
-        "Owners and admins order, cancel or withdraw on the workspace's Billing page in the web app."
+        "Owners and admins add a payment method, cancel or withdraw on the workspace's Billing page in the web app."
       );
     }
   })
