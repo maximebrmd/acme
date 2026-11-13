@@ -48,6 +48,8 @@ export const PlanAssistantAllowanceLive = Layer.effect(
             trial ? Math.min(daily, imageRequestsOnTrial) : daily
           )
         ),
+      // A server that bills meters the server's models by month.
+      metered: enabled,
       // A server that does not bill counts each workspace alone, and
       // reads or holds no pool.
       pooled: enabled,

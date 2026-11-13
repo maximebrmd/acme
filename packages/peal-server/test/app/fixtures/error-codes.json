@@ -870,6 +870,11 @@
     "tag": "UploadRejected"
   },
   {
+    "code": "usage_allowance_reached",
+    "status": 402,
+    "tag": "UsageAllowanceReached"
+  },
+  {
     "code": "user_not_found",
     "status": 404,
     "tag": "UserNotFound"

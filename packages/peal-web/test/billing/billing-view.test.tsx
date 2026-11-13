@@ -70,6 +70,7 @@ const onFree: Billing = {
   currency: "eur",
   enabled: true,
   estimate: { amount: 0, currency: "usd" },
+  meters: null,
   paymentMethod: false,
   plan: "free",
   plans: [
@@ -126,6 +127,7 @@ const unbilled: Billing = {
   currency: "eur",
   enabled: false,
   estimate: null,
+  meters: null,
   paymentMethod: false,
   plan: null,
   plans: [],

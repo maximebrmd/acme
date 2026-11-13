@@ -27,6 +27,7 @@ import { PublishingPlatformLimitsLive } from "#assistant/infrastructure/publishi
 import { UnavailableImageModelLive } from "#assistant/infrastructure/unavailable-image-model.ts";
 import { UnavailableWritingModelLive } from "#assistant/infrastructure/unavailable-writing-model.ts";
 import { Ids } from "#shared/application/ids.ts";
+import type { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -42,6 +43,8 @@ import { FakeOwnWritingModelLive } from "#test/assistant/fake-own-writing-model.
 import { UnmeteredTest } from "#test/billing/support.ts";
 import { OpenOutboundGuard, TokenCipherTest } from "#test/channels/support.ts";
 import { mediaTestWith } from "#test/media/support.ts";
+import { fakeMeters } from "#test/shared/support.ts";
+import type { FakeMetersLedger } from "#test/shared/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 /**
@@ -147,17 +150,20 @@ export const NoGeneratedImages = Layer.succeed(
 
 /**
  * Every workspace may send `dailyRequests` a day, of which images may
- * take `imageRequests`.
+ * take `imageRequests`; or, `metered`, as a server that bills, through the
+ * meters given beside it.
  */
 export const allowanceOf = (
   dailyRequests: number,
-  imageRequests = dailyRequests
+  imageRequests = dailyRequests,
+  metered = false
 ) =>
   Layer.succeed(
     AssistantAllowance,
     AssistantAllowance.of({
       dailyRequests: () => Effect.succeed(dailyRequests),
       imageRequests: () => Effect.succeed(imageRequests),
+      metered,
       // A server that does not bill: no pool is ever read.
       pooled: false,
       sharedWith: () => Effect.die("no pool is read where none is shared"),
@@ -276,22 +282,28 @@ export const DatabaseTest = Layer.mergeAll(MigrationsLive, IdsLive).pipe(
  */
 export const assistantTest = ({
   dailyRequests = 3,
+  meters = fakeMeters({ allowed: Option.none() }),
+  metered = false,
   model = "fake",
 }: {
   readonly dailyRequests?: number;
+  /** The meters, as a server that bills claims them (`metered`). */
+  readonly meters?: Layer.Layer<MeteredUsage | FakeMetersLedger>;
+  readonly metered?: boolean;
   readonly model?: "fake" | "off";
 } = {}) =>
   WritingAssistant.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
         DrizzleAssistantUsageLive,
-        allowanceOf(dailyRequests),
+        allowanceOf(dailyRequests, dailyRequests, metered),
         PublishingPlatformLimitsLive,
         UnavailableImageModelLive,
         CountedImageSlots,
         NoGeneratedImages
       )
     ),
+    Layer.provideMerge(meters),
     Layer.provideMerge(ImageProvidersTest),
     Layer.provideMerge(
       model === "fake"
@@ -389,9 +401,14 @@ export const imagesTest = ({
   imageRequests = dailyRequests,
   images = "fake",
   library = "media",
+  meters = fakeMeters({ allowed: Option.none() }),
+  metered = false,
   providers = "fake",
 }: {
   readonly dailyRequests?: number;
+  /** The meters, as a server that bills claims them (`metered`). */
+  readonly meters?: Layer.Layer<MeteredUsage | FakeMetersLedger>;
+  readonly metered?: boolean;
   readonly entitlements?: typeof UnmeteredTest;
   /** The requests images may take each day: none on a trial. */
   readonly imageRequests?: number;
@@ -412,7 +429,7 @@ export const imagesTest = ({
     Layer.provide(
       Layer.mergeAll(
         DrizzleAssistantUsageLive,
-        allowanceOf(dailyRequests, imageRequests),
+        allowanceOf(dailyRequests, imageRequests, metered),
         PublishingPlatformLimitsLive,
         CountedImageSlots,
         library === "media"
@@ -422,6 +439,7 @@ export const imagesTest = ({
           : FullLibrary
       )
     ),
+    Layer.provideMerge(meters),
     Layer.provideMerge(FakeWritingModelLive),
     Layer.provideMerge(
       // With the loopback providers, the fake's script stays with nothing

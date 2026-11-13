@@ -59,6 +59,7 @@ import {
   subscriptionOf,
   AccountDaysUncountedTest,
   NoOwnChannelsTest,
+  NoMetersTest,
 } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -361,7 +362,10 @@ const BilledByTest = Layer.succeed(
 );
 
 const ActionsTest = Layer.mergeAll(
-  BillingOverview.layer.pipe(Layer.provide(WorkspaceEntitlements.layer)),
+  BillingOverview.layer.pipe(
+    Layer.provide(WorkspaceEntitlements.layer),
+    Layer.provide(NoMetersTest)
+  ),
   PlaceOrder.layer,
   CheckoutOrders.layer,
   CancelSubscription.layer,

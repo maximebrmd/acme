@@ -1,5 +1,7 @@
+import { DateTime } from "effect";
 import { freeAccountsOf, rateCard } from "peal-contract";
-import type { PlanLimitReached } from "peal-contract";
+import type { PlanLimitReached, UsageAllowanceReached } from "peal-contract";
+import { unconfirmedMeters } from "peal-contract/rate-card";
 
 type Limit = PlanLimitReached["limit"];
 
@@ -75,4 +77,58 @@ export const planLimitReason = ({
   return planWithRoom === "payAsYouGo"
     ? `${held} A payment method gives room: ${perAccountPrice()}. An owner or an admin adds one at ${billingUrl}`
     : `${held} The ${plans[planWithRoom]} plan has room: an owner or an admin orders it at ${billingUrl}`;
+};
+
+const meters: Readonly<Record<UsageAllowanceReached["meter"], string>> = {
+  assistantImages: "writing assistant images on the server's model",
+  assistantRequests: "writing assistant requests on the server's model",
+  managedAds: "managed ads",
+  outboundMessages: "inbox messages sent, comment replies included",
+  xApi: "units of X API usage",
+};
+
+// What a unit past the allowance costs, from the rate card: never a figure
+// the owner has not confirmed.
+const unitPrice = (meter: UsageAllowanceReached["meter"]): string => {
+  if (unconfirmedMeters.includes(meter)) {
+    return "its price past the allowance is not set yet";
+  }
+
+  const { cents, per } = rateCard.prices.usd.meters[meter];
+
+  return per === 1
+    ? `past the allowance each costs ${dollars(cents)}, excluding tax`
+    : `past the allowance ${String(per)} cost ${dollars(cents)}, excluding tax`;
+};
+
+/** A meter's refusal, what the account used of it, and the way out. */
+export type UsageShortfallFields = Pick<
+  UsageAllowanceReached,
+  "allowed" | "billingUrl" | "meter" | "reason" | "resetsAt" | "used"
+>;
+
+/**
+ * What a meter's refusal means, as the user reads it: what the billing
+ * account used of what its month allows, until when, and the way out: a
+ * payment method, or a higher ceiling, on the billing page.
+ */
+export const usageLimitReason = ({
+  allowed,
+  billingUrl,
+  meter,
+  reason,
+  resetsAt,
+  used,
+}: UsageShortfallFields): string => {
+  const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meters[meter]} it may use this month, which starts again on ${DateTime.formatIsoDateUtc(resetsAt)} (UTC).`;
+
+  if (reason === "ceilingReached") {
+    return `${held} An owner or an admin raises the account's monthly ceiling at ${billingUrl}, or wait until then.`;
+  }
+
+  if (reason === "notEnabled") {
+    return `${held} The meter is not turned on for this account.`;
+  }
+
+  return `${held} A payment method lets it go on (${unitPrice(meter)}): an owner or an admin adds one at ${billingUrl}. Reading and publishing go on meanwhile.`;
 };

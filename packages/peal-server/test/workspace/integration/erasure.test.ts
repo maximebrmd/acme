@@ -84,6 +84,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM ads.campaigns WHERE workspace_id = ${id}`,
   "ads.grants": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM ads.grants WHERE workspace_id = ${id}`,
+  "ads.active_ad_months": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.active_ad_months WHERE workspace_id = ${id}`,
   "ads.insight_days": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM ads.insight_days WHERE workspace_id = ${id}`,
   "ads.sign_in_attempts": (sql, id) =>
@@ -154,10 +156,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE workspace_id = ${id}`,
   "billing.meter_reports": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.meter_reports WHERE holder_workspace_id = ${id}`,
+  "billing.meter_usage": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.meter_usage WHERE holder_workspace_id = ${id}`,
   "billing.metered_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
   "billing.orders": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.orders WHERE workspace_id = ${id}`,
+  "billing.spend_ceilings": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.spend_ceilings WHERE holder_workspace_id = ${id}`,
   "billing.subscriptions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${id}`,
   // A trial an account started stays, without the workspace, so the
@@ -640,6 +646,10 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${workspaceId}, current_date, 'publishedPosts', 'x', 2), (${workspaceId}, current_date, 'channels', '', 1)`;
   yield* sql`INSERT INTO billing.account_days (holder_workspace_id, day, peak, reported)
     VALUES (${workspaceId}, current_date, 3, 3)`;
+  yield* sql`INSERT INTO billing.meter_usage (holder_workspace_id, month, meter, used, reported)
+    VALUES (${workspaceId}, date_trunc('month', now())::date, 'outboundMessages', 4, 0)`;
+  yield* sql`INSERT INTO billing.spend_ceilings (holder_workspace_id, "group", cents, currency, set_at)
+    VALUES (${workspaceId}, 'assistant', 500, 'usd', now())`;
   yield* sql`INSERT INTO billing.meter_reports (identifier, holder_workspace_id, stripe_customer_id, event_name, value, occurred_at, created_at, sent_at)
     VALUES (${`acc:${workspaceId}:synthetic:3`}, ${workspaceId}, 'cus_synthetic', 'peal_accounts', 3, now(), now(), now())`;
   // An order with its consent, a trial (one per account: the user's
@@ -723,6 +733,9 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO ads.ads (account_id, workspace_id, external_id, ad_set_external_id, campaign_external_id, name, status, raw_status, synced_at)
     VALUES (${adAccountId}, ${workspaceId}, '4001', '3001', '2001', 'Synthetic ad', 'active', 'ACTIVE', now())`;
+
+  yield* sql`INSERT INTO ads.active_ad_months (workspace_id, month, ad_external_id)
+    VALUES (${workspaceId}, date_trunc('month', now())::date, '4001')`;
 
   yield* sql`INSERT INTO ads.insight_days (account_id, workspace_id, ad_external_id, day, spend, impressions, reach, clicks)
     VALUES (${adAccountId}, ${workspaceId}, '4001', current_date, 1250, 1000, 800, 12)`;

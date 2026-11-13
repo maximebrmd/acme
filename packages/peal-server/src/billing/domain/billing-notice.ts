@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { MeterSchema } from "#shared/domain/meter.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 
 import { BillingIntervalSchema } from "./billing-interval.ts";
@@ -75,6 +76,14 @@ export const BillingNoticeSchema = Schema.Union([
     accounts: Schema.Int,
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
+  }),
+  // The billing account, without a payment method, used the `allowed`
+  // units of `meter` its month includes: the meter pauses until
+  // `resetsAt`, the first of next month.
+  Schema.TaggedStruct("AllowanceReached", {
+    allowed: Schema.Int,
+    meter: MeterSchema,
+    resetsAt: Schema.DateTimeUtc,
   }),
   // The subscription was cancelled, and ends at `endsAt`.
   Schema.TaggedStruct("SubscriptionCancelled", {

@@ -30,6 +30,7 @@ import {
   PlainPseudonymsTest,
   subscriptionOf,
   subscriptionsHolding,
+  NoMetersTest,
 } from "#test/billing/support.ts";
 import {
   anonymousSecurityTest,
@@ -123,6 +124,7 @@ const overviewWith = (
 ) =>
   Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
+    Layer.provide(NoMetersTest),
     Layer.provide(WorkspaceEntitlements.layer),
     Layer.provide(Layer.mergeAll(holders, OwnChannelsTest, billed)),
     Layer.provide(subscriptions),

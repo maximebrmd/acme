@@ -38,6 +38,7 @@ import {
   PlainPseudonymsTest,
   StripeUncalledTest,
   UsageBillingUncalledTest,
+  NoMetersTest,
 } from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -117,6 +118,7 @@ const NoUpcomingTest = Layer.mock(StripeContracts, {
 
 const billingWith = (enabled: boolean) =>
   BillingOverview.layer.pipe(
+    Layer.provide(NoMetersTest),
     Layer.provide(UsageTest),
     Layer.provideMerge(
       Layer.mergeAll(WorkspaceEntitlements.layer, RecordSubscription.layer)
@@ -360,6 +362,7 @@ const UsageInMemory = Layer.effect(
     const records = yield* Ref.make<readonly UsageRecord[]>([]);
 
     return UsageLedger.of({
+      takeBack: () => Effect.die("no counter is given back in this test"),
       add: ({ record }) =>
         Ref.update(records, (all) => {
           const same = (kept: UsageRecord) =>
@@ -398,6 +401,7 @@ const recordsWith = (enabled: boolean) =>
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
+        NoMetersTest,
         SubscriptionsInMemory,
         NoTrialsTest,
         StripeUncalledTest,
@@ -567,8 +571,10 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
           accountDays: [],
+          meterMonths: [],
           meteredPosts: [],
           plan: "business",
+          spendCeilings: [],
           subscriptions: [
             {
               cancelAtPeriodEnd: false,
@@ -625,8 +631,10 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         assert.strictEqual(yield* Ref.get(log.expired), 1);
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
           accountDays: [],
+          meterMonths: [],
           meteredPosts: [],
           plan: "free",
+          spendCeilings: [],
           subscriptions: [],
           usage: [],
           usageReports: [],
@@ -786,8 +794,10 @@ layer(recordsWith(true))(
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
           accountDays: [],
+          meterMonths: [],
           meteredPosts: [],
           plan: "free",
+          spendCeilings: [],
           subscriptions: [],
           usage: [],
           usageReports: [],
@@ -828,6 +838,7 @@ const UnreadTest = Layer.mergeAll(
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
+      NoMetersTest,
       MeteredPostsInMemory,
       UsageInMemory,
       NoContractsTest,
@@ -892,6 +903,7 @@ layer(UnreadTest)("billing off", (it) => {
 const RememberedTest = BillingRecords.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
+      NoMetersTest,
       SubscriptionsInMemory,
       NoTrialsTest,
       StripeUncalledTest,

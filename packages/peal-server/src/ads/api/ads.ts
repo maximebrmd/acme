@@ -28,6 +28,7 @@ import { AdReports, auditPageSize } from "#ads/application/ad-reports.ts";
 import { boostPageSize, Boosts } from "#ads/application/boosts.ts";
 import { SpendAuthorizations } from "#ads/application/spend-authorizations.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { allowanceRefusal } from "#shared/api/allowance-reached.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 
 import {
@@ -176,6 +177,7 @@ export const AdsHandlers = HttpApiBuilder.group(
     const spending = yield* SpendAuthorizations;
     const reports = yield* AdReports;
     const boosts = yield* Boosts;
+    const allowanceReached = yield* allowanceRefusal;
 
     const control = (boostId: string, action: "pause" | "resume" | "stop") =>
       CurrentMember.pipe(
@@ -287,7 +289,11 @@ export const AdsHandlers = HttpApiBuilder.group(
             )
           ),
           Effect.map(toBoostView),
-          Effect.catchTags({ ...boostRefusals, BoostKeyReused: keyReused })
+          Effect.catchTags({
+            ...boostRefusals,
+            AllowanceReached: allowanceReached,
+            BoostKeyReused: keyReused,
+          })
         ),
       disconnect: ({ params }) =>
         CurrentMember.pipe(

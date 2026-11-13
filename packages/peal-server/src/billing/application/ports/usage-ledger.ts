@@ -27,6 +27,13 @@ export class UsageLedger extends Context.Service<
       entry: WorkspaceUsageRecord
     ) => Effect.Effect<void, DatabaseError>;
     /**
+     * Takes the record's quantity back from the day's count, never below
+     * zero, in the caller's transaction: a counter's unit given back.
+     */
+    readonly takeBack: (
+      entry: WorkspaceUsageRecord
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Replaces each day's count with the record's, in one statement: the
      * end-of-day states, which a second run writes again unchanged.
      */
@@ -48,8 +55,8 @@ export class UsageLedger extends Context.Service<
     ) => Effect.Effect<readonly WorkspaceUsageRecord[], DatabaseError>;
     /**
      * The posts that went out in these workspaces over the period's days,
-     * added up by day and platform, oldest first: nothing is asked for
-     * none.
+     * added up by day and platform, oldest first, and the billing
+     * meters' counters by day: nothing is asked for none.
      */
     readonly postsAcross: (
       workspaceIds: readonly WorkspaceId[],

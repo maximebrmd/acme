@@ -429,8 +429,9 @@ export const accountDays = billing.table(
  * rows oldest first and marks them sent; one Stripe refused for good keeps
  * its error code in `refusal`, as does one Stripe took and then reported
  * an error of (`stripe:<code>`, from its meter error events).
- * Ids and counts only. Deleted 400 days after it was sent (or written,
- * never sent), and with the workspace.
+ * A meter's units given back after they were reported write a row of a
+ * negative value. Ids and counts only. Deleted 400 days after it was sent
+ * (or written, never sent), and with the workspace.
  */
 export const meterReports = billing.table(
   "meter_reports",
@@ -459,6 +460,60 @@ export const meterReports = billing.table(
       .on(table.createdAt)
       .where(sql`${table.refusal} IS NOT NULL`),
     index("meter_reports_holder").on(table.holderWorkspaceId),
-    check("meter_reports_value", sql`${table.value} > 0`),
+    // A fall is reported as a negative value: Stripe sums a meter's
+    // events, and bills a period whose sum is negative as none.
+    check("meter_reports_value", sql`${table.value} <> 0`),
+  ]
+);
+
+/**
+ * Each billing account's meters by calendar month (UTC), on its billing
+ * workspace (the holder): the units its workspaces used (`used`), the
+ * units past the allowance put in the outbox to Stripe (`reported`, for a
+ * holder that pays per-account pricing only), and how many meter events
+ * the row made (`events`, which names the next one). Counts and ids only.
+ * Kept 400 days; erasing the workspace deletes its rows.
+ */
+export const meterUsage = billing.table(
+  "meter_usage",
+  {
+    events: bigint("events", { mode: "number" }).notNull().default(0),
+    holderWorkspaceId: uuid("holder_workspace_id").notNull(),
+    meter: text("meter").notNull(),
+    month: date("month", { mode: "date" }).notNull(),
+    reported: bigint("reported", { mode: "number" }).notNull().default(0),
+    used: bigint("used", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.holderWorkspaceId, table.month, table.meter],
+    }),
+    index("meter_usage_month").on(table.month),
+    check(
+      "meter_usage_counts",
+      sql`${table.used} >= 0 AND ${table.reported} >= 0 AND ${table.events} >= 0`
+    ),
+  ]
+);
+
+/**
+ * What a billing account spends past a group's allowances a month at
+ * most (`assistant`, `x`), in cents of `currency`, set on its billing
+ * workspace by a member with billing:manage. No row: the rate card's
+ * default. It names nobody: the activity log keeps who set it. Erasing
+ * the workspace deletes its rows.
+ */
+export const spendCeilings = billing.table(
+  "spend_ceilings",
+  {
+    cents: bigint("cents", { mode: "number" }).notNull(),
+    currency: text("currency").notNull(),
+    group: text("group").notNull(),
+    holderWorkspaceId: uuid("holder_workspace_id").notNull(),
+    setAt: instant("set_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.holderWorkspaceId, table.group] }),
+    check("spend_ceilings_cents", sql`${table.cents} >= 0`),
   ]
 );

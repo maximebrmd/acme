@@ -8,16 +8,20 @@ import {
   Result,
 } from "effect";
 
+import type { AccountSnapshot } from "#ads/domain/account-snapshot.ts";
 import type { AdAccount } from "#ads/domain/ad-account.ts";
 import type { AdAccountId } from "#ads/domain/ids.ts";
 import { firstSyncDays, resyncDays } from "#ads/domain/insight-retention.ts";
 import type { Ids } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { addDays, localDateOf } from "#shared/domain/wall-clock.ts";
 
 import { BoostFollowUp } from "./boost-follow-up.ts";
 import { AccountStore } from "./ports/account-store.ts";
 import type { SyncOutcome } from "./ports/account-syncer.ts";
+import { ActiveAdMonths } from "./ports/active-ad-months.ts";
 import { AdNetworks } from "./ports/ad-network.ts";
 import type { ReadFailure } from "./ports/ad-network.ts";
 import { AdNotices } from "./ports/ad-notices.ts";
@@ -67,6 +71,80 @@ export class SyncAccount extends Context.Service<
       const notices = yield* AdNotices;
       const followUp = yield* BoostFollowUp;
       const ports = yield* Effect.context<BoostStore | Ids>();
+      const activeMonths = yield* ActiveAdMonths;
+      const meters = yield* MeteredUsage;
+      const { transaction } = yield* TransactionRunner;
+
+      // Counts each ad seen delivering or in review once a month, as one
+      // of the billing account's managed ads, and answers the snapshot to
+      // keep: once the meter pauses (no payment method, the month's
+      // allowance used), the ads it could not count are not recorded and
+      // their numbers stop updating. Nothing a network runs is touched.
+      const metered = Effect.fn("SyncAccount.metered")(function* metered<
+        S extends AccountSnapshot,
+      >(account: AdAccount, taken: S, now: DateTime.Utc) {
+        const month = DateTime.startOf(now, "month");
+
+        const running = taken.ads
+          .filter(({ status }) => status === "active" || status === "inReview")
+          .map(({ externalId }) => externalId);
+
+        const unseen = yield* activeMonths.unseen(
+          account.workspaceId,
+          month,
+          running
+        );
+
+        const unrecorded = new Set<string>();
+
+        for (const adExternalId of unseen) {
+          const counted =
+            unrecorded.size > 0
+              ? false
+              : yield* transaction(
+                  activeMonths
+                    .record(account.workspaceId, month, adExternalId)
+                    .pipe(
+                      Effect.tap((recorded) =>
+                        recorded
+                          ? meters.claim(account.workspaceId, "managedAds", 1)
+                          : Effect.void
+                      )
+                    )
+                ).pipe(
+                  Effect.as(true),
+                  Effect.catchTag("AllowanceReached", () =>
+                    Effect.succeed(false)
+                  )
+                );
+
+          if (!counted) {
+            unrecorded.add(adExternalId);
+          }
+        }
+
+        if (unrecorded.size === 0) {
+          return taken;
+        }
+
+        yield* Effect.logInfo(
+          "A billing account's managed ads are paused: ads past the month's allowance are not recorded"
+        ).pipe(
+          Effect.annotateLogs({
+            accountId: account.id,
+            unrecorded: unrecorded.size,
+          })
+        );
+
+        const kept: S = {
+          ...taken,
+          insights: taken.insights.filter(
+            ({ adExternalId }) => !unrecorded.has(adExternalId)
+          ),
+        };
+
+        return kept;
+      });
 
       const putOff = (account: AdAccount, wait: Duration.Duration) =>
         DateTime.now.pipe(
@@ -155,7 +233,7 @@ export class SyncAccount extends Context.Service<
           return yield* failedRead(account, snapshot.failure);
         }
 
-        const taken = snapshot.success;
+        const taken = yield* metered(account, snapshot.success, now);
 
         const promoted = taken.ads.flatMap((ad) => [
           ...Option.toArray(ad.promotedPagePostId),

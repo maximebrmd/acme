@@ -1,0 +1,498 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "27c67feb-8c07-4a40-9fb0-f497f250ff8e",
+  "prevIds": [
+    "1fe047f3-a815-4169-8951-4bdf74787699"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "active_ad_months"
+      ],
+      "writes": [
+        "s|tbl|ads.active_ad_months",
+        "n|tbl|ads.active_ad_months",
+        "e|tbl|ads.active_ad_months",
+        "n|rel|ads.active_ad_months",
+        "n|type|ads.active_ad_months",
+        "n|rel|ads.active_ad_months_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "meter_usage"
+      ],
+      "writes": [
+        "s|tbl|billing.meter_usage",
+        "n|tbl|billing.meter_usage",
+        "e|tbl|billing.meter_usage",
+        "n|rel|billing.meter_usage",
+        "n|type|billing.meter_usage",
+        "n|rel|billing.meter_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "spend_ceilings"
+      ],
+      "writes": [
+        "s|tbl|billing.spend_ceilings",
+        "n|tbl|billing.spend_ceilings",
+        "e|tbl|billing.spend_ceilings",
+        "n|rel|billing.spend_ceilings",
+        "n|type|billing.spend_ceilings",
+        "n|rel|billing.spend_ceilings_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "active_ad_months",
+        "active_ad_months_month"
+      ],
+      "writes": [
+        "s|idx|ads.active_ad_months_month",
+        "n|idx|ads.active_ad_months_month",
+        "e|idx|ads.active_ad_months_month",
+        "n|rel|ads.active_ad_months_month"
+      ],
+      "reads": [
+        "n|tbl|ads.active_ad_months",
+        "n|sch|ads",
+        "n|col|ads.active_ad_months.month"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "meter_usage",
+        "meter_usage_month"
+      ],
+      "writes": [
+        "s|idx|billing.meter_usage_month",
+        "n|idx|billing.meter_usage_month",
+        "e|idx|billing.meter_usage_month",
+        "n|rel|billing.meter_usage_month"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_usage",
+        "n|sch|billing",
+        "n|col|billing.meter_usage.month"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "billing",
+        "meter_reports"
+      ],
+      "writes": [
+        "s|ck|billing.meter_reports.meter_reports_value"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_reports",
+        "n|sch|billing",
+        "n|col|billing.meter_reports.value",
+        "e|col|billing.meter_reports.value"
+      ],
+      "sqlHash": "44e12ccb13708034"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "name": "active_ad_months",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "meter_usage",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "spend_ceilings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "table": "active_ad_months",
+        "name": "ad_external_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "table": "active_ad_months",
+        "name": "month",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "table": "active_ad_months",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "events",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "holder_workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "meter",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "month",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "reported",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "used",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "cents",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "currency",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "holder_workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "set_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "table": "active_ad_months",
+        "name": "active_ad_months_month",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "month",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "meter_usage_month",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "month",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ads",
+        "table": "active_ad_months",
+        "name": "active_ad_months_pkey",
+        "columns": [
+          "workspace_id",
+          "month",
+          "ad_external_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "meter_usage_pkey",
+        "columns": [
+          "holder_workspace_id",
+          "month",
+          "meter"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "spend_ceilings_pkey",
+        "columns": [
+          "holder_workspace_id",
+          "group"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_usage",
+        "name": "meter_usage_counts",
+        "value": "\"used\" >= 0 AND \"reported\" >= 0 AND \"events\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "spend_ceilings",
+        "name": "spend_ceilings_cents",
+        "value": "\"cents\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"billing\",\"meter_reports\",\"meter_reports_value\"]",
+      "set": {
+        "value": "\"value\" <> 0"
+      }
+    }
+  ]
+}

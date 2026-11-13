@@ -18,6 +18,13 @@ export class AssistantAllowance extends Context.Service<
      */
     readonly imageRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
     /**
+     * Whether the server's models are metered per billing account and
+     * month (`MeteredUsage`) instead of the day's limit: on a server that
+     * bills, chosen once when the layer is built. The day's count is
+     * still kept then, unbounded, for the usage ledger's snapshot.
+     */
+    readonly metered: boolean;
+    /**
      * Whether workspaces share a day at all: on a server that bills. When
      * not, a claim is one statement, and neither read below is made.
      */

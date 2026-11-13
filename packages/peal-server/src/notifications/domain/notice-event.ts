@@ -3,6 +3,7 @@ import { Effect, Match, Option, Schema } from "effect";
 import type { Permission } from "#shared/domain/access.ts";
 import { Uuid7Schema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { MeterSchema } from "#shared/domain/meter.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
 
@@ -219,6 +220,14 @@ export const NoticeEventSchema = Schema.Union([
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
   }),
+  // The billing account, without a payment method, used the `allowed`
+  // units of `meter` its month includes: the meter pauses until
+  // `resetsAt`, the first of next month, unless a payment method is added.
+  Schema.TaggedStruct("AllowanceReached", {
+    allowed: Schema.Int,
+    meter: MeterSchema,
+    resetsAt: Schema.DateTimeUtc,
+  }),
   // A yearly plan renews at `renewsAt`, for `price`, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
@@ -341,6 +350,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     PaymentMethodNeeded: () => Option.none<EmailKind>(),
+    AllowanceReached: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
     WebhookDeliveriesFailing: () => Option.some<EmailKind>("webhookFailing"),
     WebhookEndpointDisabled: () => Option.none<EmailKind>(),
@@ -377,6 +387,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     PaymentMethodNeeded: (): Permission => "billing:manage",
+    AllowanceReached: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
     WebhookDeliveriesFailing: (): Permission => "webhook:manage",
     WebhookEndpointDisabled: (): Permission => "webhook:manage",
@@ -404,6 +415,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
     PaymentMethodNeeded: () => false,
+    AllowanceReached: () => false,
     TrialEnding: () => false,
     WebhookDeliveriesFailing: () => false,
     WebhookEndpointDisabled: () => false,
@@ -529,6 +541,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     PaymentMethodNeeded: () => `/app/${workspaceId}/billing`,
+    AllowanceReached: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
     WebhookDeliveriesFailing: () => `/app/${workspaceId}/settings/webhooks`,
     WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,

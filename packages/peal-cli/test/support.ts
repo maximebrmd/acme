@@ -268,6 +268,7 @@ const signedInGroupsLive = (
         offerTransfer: () => refusing,
         order: () => refusing,
         reduce: () => refusing,
+        setCeiling: () => refusing,
         withdraw: () => refusing,
         withdrawTransfer: () => refusing,
         withdrawal: () => refusing,

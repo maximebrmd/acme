@@ -6,7 +6,12 @@ import {
 } from "peal-contract";
 
 import { MediaTools } from "#app/mcp/media-tools.ts";
-import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
+import {
+  notAllowed,
+  planRefusal,
+  refuse,
+  usageRefusal,
+} from "#app/mcp/refusals.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { itemView } from "#media/api/media-view.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
@@ -86,6 +91,7 @@ export const MediaToolsLive = MediaTools.toLayer(
     const library = yield* MediaLibrary;
     const assistant = yield* WritingAssistant;
     const refusedByPlan = yield* planRefusal;
+    const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -136,6 +142,10 @@ export const MediaToolsLive = MediaTools.toLayer(
             .generateImage(maker, { aspect: aspect ?? "square", prompt })
             .pipe(
               Effect.catchTags({
+                AllowanceReached: refusedByMeter(
+                  maker.workspaceId,
+                  "Nothing was made."
+                ),
                 AssistantQuotaExceeded: ({ dailyLimit }) =>
                   refuse(
                     dailyLimit < imageRequestCost

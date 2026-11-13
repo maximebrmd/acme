@@ -13,6 +13,7 @@ import type {
   PlanLimitReached,
   TooManyRequests,
   Unauthenticated,
+  UsageAllowanceReached,
   WorkspaceNotFound,
 } from "peal-contract";
 
@@ -30,6 +31,7 @@ export type ImageFailure =
   | PlanLimitReached
   | TooManyRequests
   | Unauthenticated
+  | UsageAllowanceReached
   | WorkspaceNotFound
   // The request failed in a way the API does not declare.
   | { readonly _tag: "Unexpected" };
@@ -45,6 +47,7 @@ const providerKeys = {
 
 /** The message of `Assistant.images.errors` that says why. */
 export type ImageFailureKey =
+  | "allowance"
   | "busy"
   | "declined"
   | "empty"
@@ -52,6 +55,7 @@ export type ImageFailureKey =
   | "generic"
   | "invalidAnswer"
   | "ownLimit"
+  | "paymentMethod"
   | "providerAddress"
   | "providerKey"
   | "providerRedirected"
@@ -83,6 +87,8 @@ export const imageFailureKey = (failure: ImageFailure): ImageFailureKey =>
     TooManyRequests: (): ImageFailureKey => "generic",
     Unauthenticated: (): ImageFailureKey => "generic",
     Unexpected: (): ImageFailureKey => "generic",
+    UsageAllowanceReached: ({ reason }): ImageFailureKey =>
+      reason === "paymentMethodRequired" ? "paymentMethod" : "allowance",
     WorkspaceNotFound: (): ImageFailureKey => "generic",
   });
 

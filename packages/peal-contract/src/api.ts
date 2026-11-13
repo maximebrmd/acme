@@ -663,6 +663,10 @@ export {
   AccountWorkspaceSchema,
   BillingAccountSchema,
   BillingAccountsUsageSchema,
+  BillingMeterSchema,
+  SpendCeilingPayloadSchema,
+  SpendCeilingSchema,
+  SpendGroupSchema,
   BillingApi,
   BillingSchema,
   BillingTransferSchema,
@@ -693,6 +697,10 @@ export type {
   Billing,
   BillingAccount,
   BillingAccountsUsage,
+  BillingMeter,
+  SpendCeiling,
+  SpendCeilingPayload,
+  SpendGroup,
   BillingSubscription,
   BillingTransfer,
   TransferPayload,
@@ -1171,6 +1179,13 @@ export { PermissionSchema } from "./permission.ts";
 export type { Permission } from "./permission.ts";
 
 export { PlanLimitReached } from "./plan-limit-reached.ts";
+
+export {
+  AllowanceReasonSchema,
+  UsageAllowanceReached,
+} from "./usage-allowance-reached.ts";
+
+export type { AllowanceReason } from "./usage-allowance-reached.ts";
 
 export {
   ChannelConnectionSchema,

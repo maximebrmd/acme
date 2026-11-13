@@ -29,8 +29,10 @@ import type { Reply } from "#engagement/domain/reply.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
+import { MeteredUsage, pausedOf } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
@@ -49,6 +51,7 @@ import { ReplyLimits } from "./ports/reply-limits.ts";
 import { ReplySender } from "./ports/reply-sender.ts";
 import { ReplyEmpty } from "./reply-empty.ts";
 import { ReplyKeyReused } from "./reply-key-reused.ts";
+import { messageOf } from "./reply-message.ts";
 import { ReplyNotFound } from "./reply-not-found.ts";
 import { ReplyPending } from "./reply-pending.ts";
 import { ReplyTooLong } from "./reply-too-long.ts";
@@ -82,7 +85,9 @@ const applied = (comment: Comment, action: ModerationAction): Comment => {
  *
  * A reply is checked (its comment still there, the channel able, the text
  * within the platform's length) and journalled with the start of its job
- * in one transaction; the job sends it. While a reply to a comment is on
+ * and one of the billing account's outbound messages (`MeteredUsage`) in
+ * one transaction; the job sends it. A reply that ends as never sent
+ * gives its message back. While a reply to a comment is on
  * its way or unconfirmed, no other is written to that comment.
  */
 export class EngagementReplies extends Context.Service<
@@ -101,6 +106,7 @@ export class EngagementReplies extends Context.Service<
     ) => Effect.Effect<
       Reply,
       | AbilityUnavailable
+      | AllowanceReached
       | CommentGone
       | CommentNotFound
       | Refused
@@ -159,6 +165,7 @@ export class EngagementReplies extends Context.Service<
       const inbox = yield* CurrentInboxPlatforms;
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
+      const meters = yield* MeteredUsage;
 
       // Changes a comment as it stands under its thread's lock, which the
       // collection takes too: neither writes over what the other changed.
@@ -284,6 +291,17 @@ export class EngagementReplies extends Context.Service<
           return yield* new ReplyTooLong(overflow.value);
         }
 
+        // A paused meter refuses before anything is journalled; the claim
+        // in the journal's transaction holds requests sent together.
+        const paused = (yield* meters.state(
+          actor.workspaceId,
+          "outboundMessages"
+        )).pipe(Option.flatMap(pausedOf));
+
+        if (Option.isSome(paused)) {
+          return yield* paused.value;
+        }
+
         const now = yield* DateTime.now;
 
         const written = writeReply(
@@ -294,9 +312,11 @@ export class EngagementReplies extends Context.Service<
           now
         );
 
-        // The journal row and its job, together. The database holds one
-        // reply on its way or unconfirmed a comment, and one reply a key:
-        // of two requests sent together, one is journalled and has a job.
+        // The journal row, its outbound message and its job, together.
+        // The database holds one reply on its way or unconfirmed a
+        // comment, and one reply a key: of two requests sent together, one
+        // is journalled and has a job. A message the billing account has
+        // no allowance for undoes the journal.
         const journalled = yield* transaction(
           store
             .journalReply(
@@ -311,7 +331,9 @@ export class EngagementReplies extends Context.Service<
             .pipe(
               Effect.tap((made) =>
                 made._tag === "journalled"
-                  ? jobs.start(written.id)
+                  ? meters
+                      .claim(actor.workspaceId, "outboundMessages", 1)
+                      .pipe(Effect.andThen(jobs.start(written.id)))
                   : Effect.void
               )
             )
@@ -398,6 +420,11 @@ export class EngagementReplies extends Context.Service<
                   : markUnanswered(kept)
               )
             );
+
+            // A reply that never went out gives its message back.
+            if (!found) {
+              yield* meters.giveBack(messageOf(confirmed));
+            }
 
             const summary = yield* store.thread(confirmed.threadId);
 

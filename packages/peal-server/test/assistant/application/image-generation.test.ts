@@ -244,6 +244,8 @@ layer(ImagesTest, { timeout: "60 seconds" })(
           available: false,
           dailyLimit: 10,
           maxPromptLength: 1000,
+          month: null,
+          reason: null,
           requestCost: 5,
           source: null,
         });

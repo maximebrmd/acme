@@ -1,10 +1,13 @@
-import { and, asc, between, eq, sql } from "drizzle-orm";
+import { and, asc, between, eq, inArray, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
-import { UsageRecordSchema } from "#billing/domain/usage-meter.ts";
+import {
+  UsageCounterSchema,
+  UsageRecordSchema,
+} from "#billing/domain/usage-meter.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
@@ -82,6 +85,25 @@ export const DrizzleUsageLedgerLive = Layer.effect(
             Effect.asVoid,
             Effect.withSpan("UsageLedger.add")
           ),
+      takeBack: (entry) =>
+        db
+          .update(usageDays)
+          .set({
+            quantity: sql`greatest(0, ${usageDays.quantity} - ${entry.record.quantity})`,
+          })
+          .where(
+            and(
+              eq(usageDays.workspaceId, entry.workspaceId),
+              eq(usageDays.day, DateTime.toDateUtc(entry.record.day)),
+              eq(usageDays.meter, entry.record.meter),
+              eq(usageDays.dimension, entry.record.dimension)
+            )
+          )
+          .pipe(
+            Effect.mapError(failed),
+            Effect.asVoid,
+            Effect.withSpan("UsageLedger.takeBack")
+          ),
       allOf: (workspaceId) =>
         db
           .select()
@@ -147,7 +169,7 @@ export const DrizzleUsageLedgerLive = Layer.effect(
                 Effect.withSpan("UsageLedger.ofWorkspaces")
               ),
       // Added up in the database, which reads the rows of every workspace
-      // and returns one a day and platform.
+      // and returns one a day and platform, and one a day and counter.
       postsAcross: (workspaceIds, { from, to }) =>
         workspaceIds.length === 0
           ? Effect.succeed([])
@@ -163,7 +185,10 @@ export const DrizzleUsageLedgerLive = Layer.effect(
               .where(
                 and(
                   anyUuid(usageDays.workspaceId, workspaceIds),
-                  eq(usageDays.meter, "publishedPosts"),
+                  inArray(usageDays.meter, [
+                    "publishedPosts",
+                    ...UsageCounterSchema.literals,
+                  ]),
                   between(
                     usageDays.day,
                     DateTime.toDateUtc(from),

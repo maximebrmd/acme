@@ -707,6 +707,7 @@ const billing: Billing = {
   currency: "eur",
   enabled: true,
   estimate: { amount: 0, currency: "usd" },
+  meters: null,
   paymentMethod: false,
   plan: "free",
   plans: [],
@@ -735,6 +736,7 @@ const usageReport = (period: {
   current: billing.usage,
   days: [
     {
+      assistantImages: 0,
       assistantRequests: 1,
       billableAccounts: 2,
       byPlatform: [
@@ -745,9 +747,11 @@ const usageReport = (period: {
       day: "2026-11-01",
       mediaStorage: 125_000_000,
       members: 2,
+      outboundMessages: 0,
       publishedPosts: 3,
     },
     {
+      assistantImages: 0,
       assistantRequests: 0,
       billableAccounts: 2,
       byPlatform: [],
@@ -755,9 +759,11 @@ const usageReport = (period: {
       day: "2026-11-02",
       mediaStorage: 125_000_000,
       members: 2,
+      outboundMessages: 0,
       publishedPosts: 0,
     },
     {
+      assistantImages: 0,
       assistantRequests: null,
       billableAccounts: null,
       byPlatform: [],
@@ -765,6 +771,7 @@ const usageReport = (period: {
       day: "2026-11-03",
       mediaStorage: null,
       members: null,
+      outboundMessages: 0,
       publishedPosts: 0,
     },
   ],
@@ -772,6 +779,7 @@ const usageReport = (period: {
   plan: billing.plan,
   sharedWith: null,
   totals: {
+    assistantImages: 0,
     billableAccountDays: 4,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
@@ -779,6 +787,8 @@ const usageReport = (period: {
     ],
     channelDays: 4,
     daysCounted: 2,
+    managedAds: 0,
+    outboundMessages: 0,
     meteredPosts: [
       { month: "2026-11-01", platform: "x", posts: 2, postsWithLinks: 1 },
     ],
@@ -1157,11 +1167,14 @@ const tenantUsage = (
   connected: number,
   publishedPosts: number
 ): TenantUsage => ({
+  assistantImages: 0,
   assistantRequests: 0,
   byPlatform: [{ platform: "x", posts: publishedPosts }],
   channelDays: connected * 2,
   channels: connected,
   daysCounted: 2,
+  managedAds: 0,
+  outboundMessages: 0,
   externalId,
   home: workspaceId === studioId,
   mediaStorage: null,
@@ -1214,6 +1227,7 @@ const partnerUsageReport = (
     totals: later
       ? null
       : {
+          assistantImages: 0,
           billableAccountDays: null,
           byPlatform: [
             { platform: "bluesky", posts: 3 },
@@ -1221,6 +1235,8 @@ const partnerUsageReport = (
           ],
           channelDays: 14,
           daysCounted: 2,
+          managedAds: 0,
+          outboundMessages: 0,
           meteredPosts: [],
           publishedPosts: 7,
         },

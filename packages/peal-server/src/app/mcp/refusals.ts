@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { DateTime, Effect, Option } from "effect";
 import {
   CurrentMember,
   freeAccountsOf,
@@ -6,11 +6,14 @@ import {
   rateCard,
 } from "peal-contract";
 import type { LivePostRefusal, Member, Permission } from "peal-contract";
+import { unconfirmedMeters } from "peal-contract/rate-card";
 
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import type { UpgradePath } from "#shared/application/upgrade-paths.ts";
+import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { Meter } from "#shared/domain/meter.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
 import type { Plan } from "#shared/domain/plan.ts";
@@ -135,6 +138,73 @@ export const planRefusal = UpgradePaths.use((paths) =>
             Effect.flatMap((path) =>
               refuse(
                 `${nothing === "" ? "" : `${nothing} `}${planRefusalText(reached, path)}`
+              )
+            )
+          )
+  )
+);
+
+const meterNames: Readonly<Record<Meter, string>> = {
+  assistantImages: "writing assistant images on the server's model",
+  assistantRequests: "writing assistant requests on the server's model",
+  managedAds: "managed ads",
+  outboundMessages: "inbox messages sent, comment replies included",
+  xApi: "units of X API usage",
+};
+
+// What a unit past the allowance costs, from the rate card: never a
+// figure the owner has not confirmed.
+const unitPrice = (meter: Meter): string => {
+  if (unconfirmedMeters.includes(meter)) {
+    return "its price past the allowance is not set yet";
+  }
+
+  const { cents, per } = rateCard.prices.usd.meters[meter];
+
+  return per === 1
+    ? `past the allowance each costs ${dollars(cents)}, excluding tax`
+    : `past the allowance ${String(per)} cost ${dollars(cents)}, excluding tax`;
+};
+
+/**
+ * What a meter's refusal tells the user through their MCP client: what
+ * the billing account used of what its month allows, until when, and the
+ * way out: a payment method, or a higher ceiling, on the billing page.
+ */
+export const usageRefusalText = (
+  { allowed, meter, reason, resetsAt, used }: AllowanceReached,
+  billingUrl: string
+): string => {
+  const until = DateTime.formatIsoDateUtc(resetsAt);
+
+  const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meterNames[meter]} it may use this month, which starts again on ${until} (UTC).`;
+
+  if (reason === "ceilingReached") {
+    return `${held} An owner or an admin raises the account's monthly ceiling on its billing page, ${billingUrl}, or the user waits until then.`;
+  }
+
+  if (reason === "notEnabled") {
+    return `${held} The meter is not turned on for this account.`;
+  }
+
+  return `${held} A payment method lets it go on (${unitPrice(meter)}): an owner or an admin of the workspace adds one on its billing page, ${billingUrl}. Reading and publishing go on meanwhile.`;
+};
+
+/**
+ * Refuses a tool whose meter the billing account used up this month, with
+ * the way out (`usageRefusalText`), after `nothing`, what the call left
+ * undone. Built with the toolkit, as its use cases are.
+ */
+export const usageRefusal = UpgradePaths.use((paths) =>
+  Effect.succeed(
+    (workspaceId: WorkspaceId, nothing = "") =>
+      (reached: AllowanceReached) =>
+        paths
+          .paid(workspaceId)
+          .pipe(
+            Effect.flatMap(({ billingUrl }) =>
+              refuse(
+                `${nothing === "" ? "" : `${nothing} `}${usageRefusalText(reached, billingUrl)}`
               )
             )
           )

@@ -24,6 +24,7 @@ import { Checkouts } from "./ports/checkouts.ts";
 import { ContractRecords } from "./ports/contract-records.ts";
 import { ContractReferences } from "./ports/contract-references.ts";
 import { ContractRequests } from "./ports/contract-requests.ts";
+import { MeterUsageStore } from "./ports/meter-usage-store.ts";
 import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { UsageLedger } from "./ports/usage-ledger.ts";
@@ -180,6 +181,7 @@ export class BillingRecords extends Context.Service<
       const metered = yield* MeteredPostLedger;
       const usage = yield* UsageLedger;
       const accountDays = yield* AccountDayStore;
+      const meterUsage = yield* MeterUsageStore;
       const contracts = yield* ContractRecords;
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
@@ -272,12 +274,19 @@ export class BillingRecords extends Context.Service<
           const counted = yield* metered.ofWorkspace(workspaceId);
           const used = yield* usage.allOf(workspaceId);
           const daysKept = yield* accountDays.allOf(workspaceId);
+          const metersKept = yield* meterUsage.allOf(workspaceId);
 
           const record: BillingRecord = {
             accountDays: daysKept.days.map(({ day, peak, reported }) => ({
               day: DateTime.formatIsoDateUtc(day),
               peak,
               reported,
+            })),
+            meterMonths: metersKept.months.map((kept) => ({
+              meter: kept.meter,
+              month: DateTime.formatIsoDateUtc(kept.month),
+              reported: kept.reported,
+              used: kept.used,
             })),
             meteredPosts: counted.map((count) => ({
               month: count.month,
@@ -286,6 +295,9 @@ export class BillingRecords extends Context.Service<
               postsWithLinks: count.postsWithLinks,
             })),
             plan: enabled ? Option.getOrNull(entitlementsOf(held).plan) : null,
+            spendCeilings: metersKept.ceilings.map(
+              ({ cents, group, setAt }) => ({ cents, group, setAt })
+            ),
             subscriptions: held.map((subscription) => ({
               cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
               currentPeriodEnd: Option.getOrNull(subscription.currentPeriodEnd),
@@ -411,6 +423,7 @@ export class BillingRecords extends Context.Service<
           yield* metered.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
           yield* accountDays.eraseWorkspace(workspaceId);
+          yield* meterUsage.eraseWorkspace(workspaceId);
           // Its requests stay without it, as its orders do; its contract
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);

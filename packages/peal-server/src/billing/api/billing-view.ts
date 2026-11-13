@@ -2,6 +2,7 @@ import { Effect, Option } from "effect";
 import type {
   Billing,
   BillingAccount,
+  BillingMeter,
   PlanAllowances,
   Standing as StandingView,
 } from "peal-contract";
@@ -9,8 +10,37 @@ import type {
 import type { AccountView } from "#billing/application/account-views.ts";
 import type { Overview } from "#billing/application/billing-overview.ts";
 import type { Standing } from "#billing/application/workspace-standing.ts";
+import type { MeterMonth } from "#billing/domain/meter-claims.ts";
 import type { Allowances } from "#billing/domain/plans.ts";
 import { currency, displayVatRate } from "#billing/domain/prices.ts";
+import {
+  rateCard as card,
+  unconfirmedMeters,
+} from "#billing/domain/rate-card.ts";
+
+// Cents of the rate card's currency.
+const usd = (amount: number) => ({ amount, currency: "usd" });
+
+/**
+ * What clients see of a meter this month: its money only for the
+ * workspace that bills the account.
+ */
+export const meterView = (
+  month: MeterMonth,
+  billing: boolean
+): BillingMeter => ({
+  allowance: month.allowance,
+  billable: month.billable,
+  ceiling: month.ceiling.pipe(Option.map(usd), Option.getOrNull),
+  estimate: billing ? usd(month.charge) : null,
+  group: Option.getOrNull(month.group),
+  meter: month.meter,
+  most: Option.getOrNull(month.most),
+  price: card.prices.usd.meters[month.meter],
+  priceConfirmed: !unconfirmedMeters.includes(month.meter),
+  resetsAt: month.resetsAt,
+  used: month.used,
+});
 
 // What clients see of billing, which the API and the MCP tools answer.
 
@@ -85,6 +115,7 @@ export const billingView = (
     accounts,
     entitlements,
     estimate,
+    meters,
     paymentMethod,
     plans,
     rateCard,
@@ -110,6 +141,12 @@ export const billingView = (
   currency,
   enabled: Option.isSome(entitlements.plan),
   estimate: Option.getOrNull(estimate),
+  meters: meters.pipe(
+    Option.map(({ billing, months }) =>
+      months.map((month) => meterView(month, billing))
+    ),
+    Option.getOrNull
+  ),
   paymentMethod,
   plan: Option.getOrNull(entitlements.plan),
   plans: plans.map(({ allowances, plan, price }) => ({

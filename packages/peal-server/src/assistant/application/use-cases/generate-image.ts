@@ -22,6 +22,7 @@ import {
 } from "#assistant/domain/image-limits.ts";
 import { checkImagePrompt } from "#assistant/domain/image-prompt.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
@@ -122,8 +123,10 @@ const ownImage = Effect.fn("WritingAssistant.generateOwnImage")(
  * anything is spent: the image model must
  * be on, the prompt one the assistant takes, the workspace's storage must
  * have room for the largest image, one of the images made at once must be
- * free, and the workspace must have `imageRequestCost` requests left
- * today, which are counted then. The cost is given back whenever no image
+ * free, and, on a server that bills, the billing account must have an
+ * image left this month (`MeteredUsage`), given back whenever none is
+ * stored; elsewhere the workspace must have `imageRequestCost` requests
+ * left today, which are counted then. The cost is given back whenever no image
  * came of it: the provider could not be reached, refused the request or
  * the server's settings, or the plan had no room left to keep it. A
  * timeout or an unusable answer counts, as the provider may have made the
@@ -161,11 +164,29 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
       return yield* new ImagesBusy();
     }
 
+    const allowance = yield* AssistantAllowance;
+
+    // On a server that bills: one of the billing account's images this
+    // month, claimed now (none without a payment method), and given back
+    // whenever no image was stored, whatever the reason.
+    if (allowance.metered) {
+      const meters = yield* MeteredUsage;
+
+      // A database failure is a defect here, as the day's count's are.
+      const claim = yield* meters
+        .claim(workspaceId, "assistantImages", 1)
+        .pipe(Effect.catchTag("DatabaseError", Effect.die));
+
+      return yield* model.generate({ aspect, prompt: checked }).pipe(
+        Effect.flatMap((made) => images.store(actor, made.bytes)),
+        Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie))
+      );
+    }
+
     const usage = yield* AssistantUsage;
     const window = usageWindowAt(yield* DateTime.now);
 
     // Images may take less of the day than suggestions: none on a trial.
-    const allowance = yield* AssistantAllowance;
     const dailyLimit = yield* allowance.imageRequests(workspaceId);
 
     const claimed = yield* usage.claim(

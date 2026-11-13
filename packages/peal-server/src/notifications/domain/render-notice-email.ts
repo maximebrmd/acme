@@ -341,6 +341,14 @@ const contentOf = (
         ["graceUntil", instantIn(graceUntil, locale)],
       ],
     }),
+    AllowanceReached: ({ allowed, meter, resetsAt }): Content => ({
+      messages: catalog.allowanceReached,
+      values: [
+        ["allowed", new Intl.NumberFormat(locale).format(allowed)],
+        ["meter", catalog.meters[meter]],
+        ["resetsAt", instantIn(resetsAt, locale)],
+      ],
+    }),
     SubscriptionWithdrawn: ({ plan, refunded, withdrawnAt }): Content => ({
       messages: catalog.subscriptionWithdrawn,
       values: [

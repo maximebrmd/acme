@@ -20,7 +20,7 @@ import { AdReports } from "#ads/application/ad-reports.ts";
 import { boostPageSize, Boosts } from "#ads/application/boosts.ts";
 import { SpendAuthorizations } from "#ads/application/spend-authorizations.ts";
 import { AdsTools } from "#app/mcp/ads-tools.ts";
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
 
 // Why Peal refuses a boost before anything is reserved or sent, in words
@@ -193,6 +193,7 @@ export const AdsToolsLive = AdsTools.toLayer(
     const spending = yield* SpendAuthorizations;
     const reports = yield* AdReports;
     const boosts = yield* Boosts;
+    const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -209,10 +210,18 @@ export const AdsToolsLive = AdsTools.toLayer(
       boost_post: ({ idempotencyKey, ...asked }) =>
         actor.pipe(
           Effect.flatMap((who) =>
-            boosts.request(who, askOf(asked), idempotencyKey)
-          ),
-          Effect.map(toBoostView),
-          Effect.catchTags({ ...boostRefusals, BoostKeyReused: keyReused })
+            boosts.request(who, askOf(asked), idempotencyKey).pipe(
+              Effect.map(toBoostView),
+              Effect.catchTags({
+                ...boostRefusals,
+                AllowanceReached: refusedByMeter(
+                  who.workspaceId,
+                  "Nothing was reserved or sent."
+                ),
+                BoostKeyReused: keyReused,
+              })
+            )
+          )
         ),
       get_ad_account: ({ accountId }) =>
         actor.pipe(

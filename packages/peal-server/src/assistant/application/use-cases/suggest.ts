@@ -22,6 +22,7 @@ import {
 import type { TextLimit } from "#assistant/domain/text-limit.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import { planFor } from "#assistant/domain/writing-prompt.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 
 /** What to do with which text, for whom. */
@@ -68,10 +69,11 @@ const acceptedFrom = <E, R>(
 /**
  * Asks for a suggestion on a post's text, and checks what the model
  * answers before anyone sees it. With the workspace's own text provider
- * when it brought one (`askOwnProvider`: none of Peal's daily requests,
- * on any plan); otherwise with the server's model, in order: the
+ * when it brought one (`askOwnProvider`: none of Peal's requests, on any
+ * plan, and no meter); otherwise with the server's model, in order: the
  * assistant must be on, the text must be one it takes, and the workspace
- * must have requests left today. A request of Peal's counts once it is
+ * must have requests left: this month's of its billing account on a
+ * server that bills, today's elsewhere. A request of Peal's counts once it is
  * sent; one the provider never ran is taken back. Nothing is saved: the
  * person accepts the suggestion or not.
  */
@@ -108,6 +110,34 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
   const window = usageWindowAt(yield* DateTime.now);
 
   const allowance = yield* AssistantAllowance;
+
+  // On a server that bills: one of the billing account's requests this
+  // month, claimed before the model is asked (none without a payment
+  // method), and given back whenever no suggestion came of it, a timeout,
+  // a refusal and an unusable answer included. The day's count is kept
+  // too, unbounded, for the usage ledger's snapshot.
+  if (allowance.metered) {
+    const meters = yield* MeteredUsage;
+
+    // A database failure is a defect here, as the day's count's are.
+    const claim = yield* meters
+      .claim(workspaceId, "assistantRequests", 1)
+      .pipe(Effect.catchTag("DatabaseError", Effect.die));
+
+    yield* usage.claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1);
+
+    const giveBack = meters
+      .giveBack(claim)
+      .pipe(
+        Effect.andThen(usage.release(workspaceId, window.day, 1)),
+        Effect.orDie
+      );
+
+    return yield* acceptedFrom(plan, draft, (answer) =>
+      model.write(plan.prompt, answer)
+    ).pipe(Effect.onError(() => giveBack));
+  }
+
   const dailyLimit = yield* allowance.dailyRequests(workspaceId);
 
   const claimed =

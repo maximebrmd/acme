@@ -45,6 +45,7 @@ const report: WorkspaceUsageReport = {
   },
   days: [
     {
+      assistantImages: 0,
       assistantRequests: 2,
       billableAccounts: null,
       byPlatform: [
@@ -55,9 +56,11 @@ const report: WorkspaceUsageReport = {
       day: "2026-11-09",
       mediaStorage: 1_500_000_000,
       members: 1,
+      outboundMessages: 0,
       publishedPosts: 3,
     },
     {
+      assistantImages: 0,
       assistantRequests: 0,
       billableAccounts: null,
       byPlatform: [{ platform: "x", posts: 1 }],
@@ -65,9 +68,11 @@ const report: WorkspaceUsageReport = {
       day: "2026-11-10",
       mediaStorage: 1_500_000_000,
       members: 1,
+      outboundMessages: 0,
       publishedPosts: 1,
     },
     {
+      assistantImages: 0,
       assistantRequests: null,
       billableAccounts: null,
       byPlatform: [],
@@ -75,6 +80,7 @@ const report: WorkspaceUsageReport = {
       day: "2026-11-11",
       mediaStorage: null,
       members: null,
+      outboundMessages: 0,
       publishedPosts: 0,
     },
   ],
@@ -82,6 +88,7 @@ const report: WorkspaceUsageReport = {
   plan: null,
   sharedWith: null,
   totals: {
+    assistantImages: 0,
     billableAccountDays: null,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
@@ -89,6 +96,8 @@ const report: WorkspaceUsageReport = {
     ],
     channelDays: 5,
     daysCounted: 2,
+    managedAds: 0,
+    outboundMessages: 0,
     meteredPosts: [
       { month: "2026-11-01", platform: "x", posts: 3, postsWithLinks: 1 },
     ],
@@ -100,19 +109,24 @@ const empty: WorkspaceUsageReport = {
   ...report,
   days: report.days.map((day) => ({
     ...day,
+    assistantImages: 0,
     assistantRequests: null,
     billableAccounts: null,
     byPlatform: [],
     channels: null,
     mediaStorage: null,
     members: null,
+    outboundMessages: 0,
     publishedPosts: 0,
   })),
   totals: {
+    assistantImages: 0,
     billableAccountDays: null,
     byPlatform: [],
     channelDays: 0,
     daysCounted: 0,
+    managedAds: 0,
+    outboundMessages: 0,
     meteredPosts: [],
     publishedPosts: 0,
   },

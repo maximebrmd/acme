@@ -11,7 +11,7 @@ import {
 } from "./billing-plans.ts";
 import { Forbidden } from "./forbidden.ts";
 import { ByteCountSchema, Int64Schema } from "./int64.ts";
-import { RateCardSchema } from "./rate-card.ts";
+import { MeterSchema, RateCardSchema, UnitPriceSchema } from "./rate-card.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 // Null for no limit.
@@ -192,6 +192,70 @@ export const BillingAccountsUsageSchema = Schema.Struct({
 export type BillingAccountsUsage = typeof BillingAccountsUsageSchema.Type;
 
 /**
+ * The groups of meters a billing account bounds with a monthly ceiling of
+ * its own: the writing assistant's requests and images together
+ * (`assistant`), and X's API (`x`).
+ */
+export const SpendGroupSchema = Schema.Literals(["assistant", "x"]).annotate({
+  identifier: "SpendGroup",
+});
+
+export type SpendGroup = typeof SpendGroupSchema.Type;
+
+/**
+ * A meter of the billing account this calendar month (UTC), across its
+ * workspaces: what the month includes (`allowance`), what was used, the
+ * units past the allowance billed (for an account that pays), what they
+ * cost so far, the most it may use, its price past the allowance and its
+ * ceiling. Without a payment method, the meter pauses at its allowance
+ * until `resetsAt`.
+ */
+export const BillingMeterSchema = Schema.Struct({
+  allowance: Schema.Int,
+  // The units past the allowance billed this month: none without a
+  // payment method, which never passes it.
+  billable: Schema.Int,
+  // The most the account spends past the allowance a month, for a meter
+  // whose group has a ceiling (`group`); null for none.
+  ceiling: Schema.NullOr(MoneySchema),
+  // What `billable` costs so far, excluding tax; null for a workspace
+  // that does not bill the account.
+  estimate: Schema.NullOr(MoneySchema),
+  // The group whose ceiling bounds the meter; null for none.
+  group: Schema.NullOr(SpendGroupSchema),
+  meter: MeterSchema,
+  // The most units the account may use this month; null for no end.
+  most: Schema.NullOr(Schema.Int),
+  // What units past the allowance cost: `cents` for every `per`.
+  price: UnitPriceSchema,
+  // Whether the owner confirmed the allowance and the price; when false
+  // they are placeholders, shown as coming.
+  priceConfirmed: Schema.Boolean,
+  // The first of next month, 00:00 UTC, when the meter counts from zero.
+  resetsAt: Schema.DateTimeUtc,
+  used: Schema.Int,
+}).annotate({ identifier: "BillingMeter" });
+
+export type BillingMeter = typeof BillingMeterSchema.Type;
+
+/** What a member set a group's ceiling to. */
+export const SpendCeilingPayloadSchema = Schema.Struct({
+  // US dollar cents excluding tax, a month, past the allowances.
+  cents: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+}).annotate({ identifier: "SpendCeilingPayload" });
+
+export type SpendCeilingPayload = typeof SpendCeilingPayloadSchema.Type;
+
+/** A billing account's ceiling on a group of meters. */
+export const SpendCeilingSchema = Schema.Struct({
+  ceiling: MoneySchema,
+  group: SpendGroupSchema,
+  setAt: Schema.DateTimeUtc,
+}).annotate({ identifier: "SpendCeiling" });
+
+export type SpendCeiling = typeof SpendCeilingSchema.Type;
+
+/**
  * A workspace's billing. On a server that bills, a workspace is on the
  * free tier (`free`: 2 connected accounts across its billing account, no
  * payment method) or on per-account pricing (`payAsYouGo`: a payment
@@ -214,9 +278,13 @@ export const BillingSchema = Schema.Struct({
   currency: Schema.String,
   enabled: Schema.Boolean,
   // What the month so far costs, excluding tax, from the server's own
-  // counts and the rate card (the connected accounts for now); null on a
-  // server that does not bill. The invoice is the one that counts.
+  // counts and the rate card (the connected accounts and the meters);
+  // null on a server that does not bill. The invoice is the one that
+  // counts.
   estimate: Schema.NullOr(MoneySchema),
+  // The billing account's meters this month, on a server that bills;
+  // null elsewhere, where nothing is metered.
+  meters: Schema.NullOr(Schema.Array(BillingMeterSchema)),
   // Whether the billing account pays with a payment method: its
   // per-account subscription is active or past due.
   paymentMethod: Schema.Boolean,

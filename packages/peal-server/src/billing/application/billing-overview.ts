@@ -9,6 +9,12 @@ import type { Entitlements } from "#billing/domain/entitlements.ts";
 import { planAllowances, planPrices } from "#billing/domain/legacy-plans.ts";
 import type { PlanPrice } from "#billing/domain/legacy-plans.ts";
 import {
+  meterMonthOf,
+  meterMonthsOf,
+  meterStandingOf,
+} from "#billing/domain/meter-claims.ts";
+import type { MeterMonth } from "#billing/domain/meter-claims.ts";
+import {
   allowancesOf,
   legacyPlans,
   trialDays,
@@ -31,6 +37,7 @@ import type { LegacyPlan, PaidPlan, Plan } from "#shared/domain/plan.ts";
 
 import { AccountDays } from "./account-days.ts";
 import { AccountChannels } from "./ports/account-channels.ts";
+import { MeterUsageStore } from "./ports/meter-usage-store.ts";
 import { PlanHolders } from "./ports/plan-holders.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import type { Usage } from "./ports/workspace-usage.ts";
@@ -74,6 +81,15 @@ export interface Overview {
   readonly entitlements: Entitlements;
   /** The month so far, excluding tax; none on a server that does not bill. */
   readonly estimate: Option.Option<Money>;
+  /**
+   * The billing account's meters this month, and whether the reader's
+   * workspace bills it (it alone reads their money); none on a server
+   * that does not bill.
+   */
+  readonly meters: Option.Option<{
+    readonly billing: boolean;
+    readonly months: readonly MeterMonth[];
+  }>;
   /** Whether a subscription paid for with a payment method entitles it. */
   readonly paymentMethod: boolean;
   /** Every plan, from the smallest; none on a server that does not bill. */
@@ -165,6 +181,35 @@ export class BillingOverview extends Context.Service<
       const holders = yield* PlanHolders;
       const days = yield* AccountDays;
       const stripe = yield* StripeContracts;
+      const meterStore = yield* MeterUsageStore;
+
+      // The billing account's meters this month, on its holder.
+      const metersOf = Effect.fn("BillingOverview.metersOf")(function* metersOf(
+        workspaceId: Actor["workspaceId"],
+        current: Entitlements,
+        now: DateTime.Utc
+      ) {
+        const { freeTier, holder } = yield* holders.heldBy(workspaceId);
+        const month = meterMonthOf(now);
+
+        const [counts, ceilings] = yield* Effect.all(
+          [meterStore.ofMonth(holder, month), meterStore.ceilings(holder)],
+          { concurrency: "unbounded" }
+        );
+
+        return {
+          billing: holder === workspaceId,
+          months: meterMonthsOf({
+            ceilings: new Map(
+              ceilings.map(({ cents, group }) => [group, cents] as const)
+            ),
+            counts,
+            freeTier,
+            month,
+            standing: meterStandingOf(current),
+          }),
+        };
+      });
 
       // What Stripe's next invoice of the subscription takes: none when it
       // cannot say, which the page tells as no figure.
@@ -250,6 +295,25 @@ export class BillingOverview extends Context.Service<
           ? yield* monthOf(actor.workspaceId, current, used.channels, now)
           : noMonth;
 
+        const meters = billing
+          ? Option.some(yield* metersOf(actor.workspaceId, current, now))
+          : Option.none();
+
+        // The meters' charges join the accounts' for the workspace that
+        // bills the account.
+        const estimate = month.estimate.pipe(
+          Option.map((accounts) =>
+            dollars(
+              accounts.amount +
+                Option.match(meters, {
+                  onNone: () => 0,
+                  onSome: ({ months }) =>
+                    months.reduce((sum, { charge }) => sum + charge, 0),
+                })
+            )
+          )
+        );
+
         const overview: Overview = {
           accounts: {
             accountDays: month.accountDays,
@@ -259,7 +323,8 @@ export class BillingOverview extends Context.Service<
             pooled: used.channels,
           },
           entitlements: current,
-          estimate: month.estimate,
+          estimate,
+          meters,
           paymentMethod: Option.exists(current.subscription, ({ status }) =>
             paidWith(status)
           ),

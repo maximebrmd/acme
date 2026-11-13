@@ -12,6 +12,7 @@ import { AssistantQuotaExceeded } from "./assistant-quota-exceeded.ts";
 import { AssistantSecretsNotConfigured } from "./assistant-secrets-not-configured.ts";
 import { AssistantUnavailable } from "./assistant-unavailable.ts";
 import { Authentication } from "./authentication.ts";
+import { MoneySchema } from "./billing-plans.ts";
 import { Forbidden } from "./forbidden.ts";
 import { ImageProviderAddressRefused } from "./image-provider-address-refused.ts";
 import { ImageProviderKeyRequired } from "./image-provider-key-required.ts";
@@ -24,11 +25,13 @@ import { OwnTextLimitReached } from "./own-text-limit-reached.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
 import { maxPostTextLength } from "./post-text.ts";
+import { UnitPriceSchema } from "./rate-card.ts";
 import { TextProviderAddressRefused } from "./text-provider-address-refused.ts";
 import { TextProviderBusy } from "./text-provider-busy.ts";
 import { TextProviderKeyRequired } from "./text-provider-key-required.ts";
 import { TextProviderNotFound } from "./text-provider-not-found.ts";
 import { TextProviderRefused } from "./text-provider-refused.ts";
+import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /**
@@ -156,6 +159,44 @@ export const AssistantImageSourceSchema = Schema.Literals([
 
 export type AssistantImageSource = typeof AssistantImageSourceSchema.Type;
 
+/**
+ * One of the assistant's meters this calendar month (UTC), on a server
+ * that bills, for the server's models: what the billing account's month
+ * includes, what its workspaces used, the most it may use (the allowance,
+ * and what its ceiling pays for past it), the price of each unit past the
+ * allowance and the ceiling, in US dollar cents excluding tax. The
+ * included allowance and the prices are not decided yet (`priceConfirmed`
+ * false): clients show them as coming.
+ */
+export const AssistantMonthSchema = Schema.Struct({
+  allowance: Schema.Int,
+  // The most the account may spend past the allowance a month.
+  ceiling: MoneySchema,
+  // The most units it may use this month.
+  most: Schema.Int,
+  // What units past the allowance cost: `cents` for every `per`.
+  price: UnitPriceSchema,
+  // Whether the owner confirmed the allowance and the price.
+  priceConfirmed: Schema.Boolean,
+  // The first of next month, when the month's count starts again.
+  resetsAt: Schema.DateTimeUtc,
+  used: Schema.Int,
+}).annotate({ identifier: "AssistantMonth" });
+
+export type AssistantMonth = typeof AssistantMonthSchema.Type;
+
+/**
+ * Why the assistant does not write, or make images, for the workspace
+ * when the server could: `paymentMethod`, its billing account has no
+ * payment method, which the server's models need on a server that bills
+ * (a provider of the workspace's own needs none).
+ */
+export const AssistantOffReasonSchema = Schema.Literals([
+  "paymentMethod",
+]).annotate({ identifier: "AssistantOffReason" });
+
+export type AssistantOffReason = typeof AssistantOffReasonSchema.Type;
+
 export const AssistantImagesStatusSchema = Schema.Struct({
   // The aspects an image can be made in.
   aspects: Schema.Array(ImageAspectSchema),
@@ -174,6 +215,11 @@ export const AssistantImagesStatusSchema = Schema.Struct({
   // How many of the day's requests an image costs: 0 when `source` is
   // `workspace`.
   requestCost: Schema.Int,
+  // On a server that bills, the month of the server's images; null
+  // elsewhere, and while `source` is `workspace`.
+  month: Schema.NullOr(AssistantMonthSchema),
+  // Why images are off when the server could make them; null otherwise.
+  reason: Schema.NullOr(AssistantOffReasonSchema),
   // Who makes the images, or null when nobody does (`available` false).
   source: Schema.NullOr(AssistantImageSourceSchema),
 }).annotate({ identifier: "AssistantImagesStatus" });
@@ -205,6 +251,13 @@ export const AssistantStatusSchema = Schema.Struct({
   images: AssistantImagesStatusSchema,
   // The longest text the assistant takes, in UTF-16 code units.
   maxTextLength: Schema.Int,
+  // On a server that bills, the month of the server's requests; null
+  // elsewhere, and while `source` is `workspace`. The daily fields then
+  // tell the month: `dailyLimit` its most, `remaining` what is left,
+  // `resetsAt` the first of next month.
+  month: Schema.NullOr(AssistantMonthSchema),
+  // Why the assistant is off when the server could write; null otherwise.
+  reason: Schema.NullOr(AssistantOffReasonSchema),
   remaining: Schema.Int,
   // Midnight UTC, when the day's count starts again.
   resetsAt: Schema.DateTimeUtc,
@@ -383,7 +436,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (`source`: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.",
+          "Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (`source`: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (`images.source`: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. On a server that bills, `month` and `images.month` tell the billing account's month of the server's models (included, used, price and ceiling), and `reason` `paymentMethod` why they are off without a payment method. Needs assistant:use.",
         summary: "Get the assistant's status",
       })
     ),
@@ -393,6 +446,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         AssistantUnavailable,
         AssistantInputRejected,
         AssistantQuotaExceeded,
+        UsageAllowanceReached,
         AssistantFailed,
         TextProviderRefused,
         OwnTextLimitReached,
@@ -404,7 +458,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
+          "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (`source` `workspace` in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise, on a server that does not bill, each request counts toward the workspace's daily quota, unless the model's provider could not be reached (AssistantQuotaExceeded past it). On a server that bills, the server's model needs a payment method on the billing account (UsageAllowanceReached `paymentMethodRequired` without one, before anything is asked): each request counts toward the month's allowance across the account's workspaces (the status's `month`), then is billed at its price up to the ceiling the account set (UsageAllowanceReached `ceilingReached`); a request that brings no suggestion, a timeout included, is not counted. Needs assistant:use.",
         summary: "Suggest a change to a post's text",
       })
     ),
@@ -414,6 +468,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         AssistantUnavailable,
         AssistantInputRejected,
         AssistantQuotaExceeded,
+        UsageAllowanceReached,
         AssistantFailed,
         ImageProviderRefused,
         OwnImageLimitReached,
@@ -427,7 +482,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (`images.source`).",
+          "Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose. On a server that does not bill, an image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached. On a server that bills, it needs a payment method on the billing account (UsageAllowanceReached `paymentMethodRequired` without one, before anything is asked) and counts one of the month's images (`images.month`), billed past the allowance up to the account's ceiling (UsageAllowanceReached `ceilingReached`); an image that is not stored, whatever the reason, is not counted. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (`images.source`).",
         summary: "Make an image into the media library",
       })
     ),
