@@ -1,31 +1,40 @@
 "use client";
 
-import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
-import * as React from "react";
+import {
+  AlertDialog as AlertDialogPrimitive,
+  AlertDialogBackdrop as AlertDialogBackdropPrimitive,
+  AlertDialogClose as AlertDialogClosePrimitive,
+  AlertDialogContent as AlertDialogContentPrimitive,
+  AlertDialogDescription as AlertDialogDescriptionPrimitive,
+  AlertDialogTitle as AlertDialogTitlePrimitive,
+  AlertDialogTrigger as AlertDialogTriggerPrimitive,
+} from "@ui-sdk/react/alert-dialog";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
 
-const AlertDialog = ({ ...props }: AlertDialogPrimitive.Root.Props) => (
-  <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
-);
+type WithClassName<Props> = Omit<Props, "className"> & {
+  readonly className?: string | undefined;
+};
 
-const AlertDialogTrigger = ({
-  ...props
-}: AlertDialogPrimitive.Trigger.Props) => (
-  <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
-);
+const AlertDialog = (
+  props: React.ComponentProps<typeof AlertDialogPrimitive>
+) => <AlertDialogPrimitive {...props} />;
 
-const AlertDialogPortal = ({ ...props }: AlertDialogPrimitive.Portal.Props) => (
-  <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+const AlertDialogTrigger = (
+  props: React.ComponentProps<typeof AlertDialogTriggerPrimitive>
+) => (
+  <AlertDialogTriggerPrimitive data-slot="alert-dialog-trigger" {...props} />
 );
 
 const AlertDialogOverlay = ({
   className,
   ...props
-}: AlertDialogPrimitive.Backdrop.Props) => (
-  <AlertDialogPrimitive.Backdrop
-    data-slot="alert-dialog-overlay"
+}: WithClassName<
+  React.ComponentProps<typeof AlertDialogBackdropPrimitive>
+>) => (
+  <AlertDialogBackdropPrimitive
     className={cn(
       "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
       className
@@ -38,13 +47,12 @@ const AlertDialogContent = ({
   className,
   size = "default",
   ...props
-}: AlertDialogPrimitive.Popup.Props & {
-  size?: "default" | "sm";
+}: WithClassName<React.ComponentProps<typeof AlertDialogContentPrimitive>> & {
+  readonly size?: "default" | "sm";
 }) => (
-  <AlertDialogPortal>
+  <>
     <AlertDialogOverlay />
-    <AlertDialogPrimitive.Popup
-      data-slot="alert-dialog-content"
+    <AlertDialogContentPrimitive
       data-size={size}
       className={cn(
         "group/alert-dialog-content bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 ring-1 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm",
@@ -52,7 +60,7 @@ const AlertDialogContent = ({
       )}
       {...props}
     />
-  </AlertDialogPortal>
+  </>
 );
 
 const AlertDialogHeader = ({
@@ -100,9 +108,8 @@ const AlertDialogMedia = ({
 const AlertDialogTitle = ({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) => (
-  <AlertDialogPrimitive.Title
-    data-slot="alert-dialog-title"
+}: WithClassName<React.ComponentProps<typeof AlertDialogTitlePrimitive>>) => (
+  <AlertDialogTitlePrimitive
     className={cn(
       "font-heading text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
       className
@@ -114,9 +121,10 @@ const AlertDialogTitle = ({
 const AlertDialogDescription = ({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) => (
-  <AlertDialogPrimitive.Description
-    data-slot="alert-dialog-description"
+}: WithClassName<
+  React.ComponentProps<typeof AlertDialogDescriptionPrimitive>
+>) => (
+  <AlertDialogDescriptionPrimitive
     className={cn(
       "text-muted-foreground *:[a]:hover:text-foreground text-sm text-balance md:text-pretty *:[a]:underline *:[a]:underline-offset-3",
       className
@@ -141,12 +149,17 @@ const AlertDialogCancel = ({
   variant = "outline",
   size = "default",
   ...props
-}: AlertDialogPrimitive.Close.Props &
+}: WithClassName<React.ComponentProps<typeof AlertDialogClosePrimitive>> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) => (
-  <AlertDialogPrimitive.Close
-    data-slot="alert-dialog-cancel"
-    className={cn(className)}
-    render={<Button variant={variant} size={size} />}
+  <AlertDialogClosePrimitive
+    render={
+      <Button
+        data-slot="alert-dialog-cancel"
+        className={cn(className)}
+        variant={variant}
+        size={size}
+      />
+    }
     {...props}
   />
 );
@@ -161,7 +174,6 @@ export {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogOverlay,
-  AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
 };
