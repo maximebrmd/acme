@@ -1,17 +1,27 @@
 "use client";
 
-import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
-import * as React from "react";
+import {
+  Popover as PopoverPrimitive,
+  PopoverContent as PopoverContentPrimitive,
+  PopoverDescription as PopoverDescriptionPrimitive,
+  PopoverTitle as PopoverTitlePrimitive,
+  PopoverTrigger as PopoverTriggerPrimitive,
+} from "@ui-sdk/react/popover";
+import type * as React from "react";
 
 import { cn } from "../lib/utils";
 
-const Popover = ({ ...props }: PopoverPrimitive.Root.Props) => (
-  <PopoverPrimitive.Root data-slot="popover" {...props} />
+type WithClassName<Props> = Omit<Props, "className"> & {
+  readonly className?: string | undefined;
+};
+
+const Popover = (props: React.ComponentProps<typeof PopoverPrimitive>) => (
+  <PopoverPrimitive {...props} />
 );
 
-const PopoverTrigger = ({ ...props }: PopoverPrimitive.Trigger.Props) => (
-  <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
-);
+const PopoverTrigger = (
+  props: React.ComponentProps<typeof PopoverTriggerPrimitive>
+) => <PopoverTriggerPrimitive data-slot="popover-trigger" {...props} />;
 
 const PopoverContent = ({
   className,
@@ -20,29 +30,19 @@ const PopoverContent = ({
   side = "bottom",
   sideOffset = 4,
   ...props
-}: PopoverPrimitive.Popup.Props &
-  Pick<
-    PopoverPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
-  >) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Positioner
-      align={align}
-      alignOffset={alignOffset}
-      side={side}
-      sideOffset={sideOffset}
-      className="isolate z-50"
-    >
-      <PopoverPrimitive.Popup
-        data-slot="popover-content"
-        className={cn(
-          "bg-popover text-popover-foreground ring-foreground/10 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg p-2.5 text-sm shadow-md ring-1 outline-hidden duration-100",
-          className
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Positioner>
-  </PopoverPrimitive.Portal>
+}: WithClassName<React.ComponentProps<typeof PopoverContentPrimitive>>) => (
+  <PopoverContentPrimitive
+    data-slot="popover-content"
+    align={align}
+    alignOffset={alignOffset}
+    side={side}
+    sideOffset={sideOffset}
+    className={cn(
+      "bg-popover text-popover-foreground ring-foreground/10 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg p-2.5 text-sm shadow-md ring-1 outline-hidden duration-100",
+      className
+    )}
+    {...props}
+  />
 );
 
 const PopoverHeader = ({
@@ -59,8 +59,8 @@ const PopoverHeader = ({
 const PopoverTitle = ({
   className,
   ...props
-}: PopoverPrimitive.Title.Props) => (
-  <PopoverPrimitive.Title
+}: WithClassName<React.ComponentProps<typeof PopoverTitlePrimitive>>) => (
+  <PopoverTitlePrimitive
     data-slot="popover-title"
     className={cn("font-medium", className)}
     {...props}
@@ -70,8 +70,8 @@ const PopoverTitle = ({
 const PopoverDescription = ({
   className,
   ...props
-}: PopoverPrimitive.Description.Props) => (
-  <PopoverPrimitive.Description
+}: WithClassName<React.ComponentProps<typeof PopoverDescriptionPrimitive>>) => (
+  <PopoverDescriptionPrimitive
     data-slot="popover-description"
     className={cn("text-muted-foreground", className)}
     {...props}

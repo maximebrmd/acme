@@ -83,19 +83,21 @@ export const EmojiMenu = ({
     setOpen(false);
   };
 
-  // Back to the text an emoji went into, at its caret; else as usual.
+  // Back to the text an emoji went into, at its caret; else as usual. The
+  // editor's own focus restores its caret, and the popover's focus on the
+  // element it is given then changes nothing.
   const handleFinalFocus = () => {
     const editor = live(chosen.current ?? null);
 
     chosen.current = undefined;
 
     if (editor === undefined) {
-      return true;
+      return null;
     }
 
     editor.commands.focus();
 
-    return false;
+    return editor.view.dom;
   };
 
   const categoryLabel = (label: string) => {
