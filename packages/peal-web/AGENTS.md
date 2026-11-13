@@ -384,6 +384,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   chosen, and code that formats a time itself adds `useTimeOptions()` to
   its options. The server renders the language's clock; the preference
   applies after hydration.
+- The media library (`components/media/media-library.tsx`) narrows its
+  pages with `LibraryToolbarView` (text and kind, `#media/library-search.ts`:
+  `queryOf`, and the atoms' `pageKeyOf`), asking once the person pauses
+  (`useDebounced`, `searchDelayMs`): never a request per key. A file's name
+  is the member's text, rendered as text; one without a name is called by
+  its kind (`useMediaName`). A thumbnail opens `MediaPreviewBody` in a
+  dialog: an image whole, a video muted with controls, a document as a
+  link to a tab of its own, never embedded.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

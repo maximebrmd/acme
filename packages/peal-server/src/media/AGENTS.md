@@ -75,3 +75,21 @@
 - Imports from a link run two at once per workspace and eight per process
   (`ImportSlots`, `importsAtOnce`); past it the answer is `MediaImportBusy`
   (429), to retry.
+- A file keeps its name (`media.media_assets.file_name`, `fileNameOf` in
+  `domain/file-name.ts`): the last segment of what `createUpload` is given
+  (never a folder), or of the path of the address an import was served
+  from after its redirects (`nameInAddress`, never the query), on one line
+  through `storableLine`, at most 255 characters (`maxFileNameLength`, the
+  contract's `maxMediaFileNameLength`). An image the assistant made has
+  none, and so does every file stored before the release that added
+  names, which no source can name: clients show the kind instead. Set at creation only;
+  never in logs, webhook events or what goes to a platform; in the
+  workspace's export.
+- `MediaAssets.list` takes `text` (in the name or the description, ILIKE
+  with its wildcards escaped) and `kind` (the kind's content types). The
+  text is found through pg_trgm's GIN indexes on both columns (the
+  extension comes from the custom migration `media-trigrams`), the kind
+  through `(workspace_id, content_type, id)`; read on a scale database
+  (`seed-scale.ts`: a workspace of 100,000 files), a search that finds few
+  files reads under a millisecond. Text under three characters has no
+  trigram and walks the workspace's files newest first, stopping at a page.
