@@ -126,7 +126,8 @@ export interface PlanOffer {
   readonly year: OfferPrice;
 }
 
-const priced = (cents: number): OfferPrice => ({
+/** `cents` excluding VAT, with the VAT pages show beside (France's). */
+export const priced = (cents: number): OfferPrice => ({
   excluded: cents,
   included: withDisplayVat(cents),
 });
