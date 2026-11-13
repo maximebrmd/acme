@@ -191,6 +191,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   in a status region. Polling works through any proxy and needs nothing
   shared between servers; keep it. Write notices from their events with
   `src/notices/notice-text.ts`.
+- The composer's parts after the first (`FollowUpParts`) are a thread or
+  a first comment, as the contract's `rulesFor` says, but only where this
+  server sends them: `usePartsOffered` reads the platforms' capabilities
+  (`followUps` null where it sends none: comments the inbox does not
+  read, X threads turned off) and `partsTaken` takes it, so a channel is
+  named as taking a post alone there. A part is counted by
+  `partRulesFor` (a comment: text alone, its own limits), in the part's
+  counters and in `partsFitOn`. The poll (`PostPoll`, `#posts/poll.ts`)
+  goes with the first part, in the content only when there is one
+  (`pollContentOf`); each channel whose platform would refuse it is
+  named with why (`pollProblemsOn`, the server's rules from the
+  contract), and the composer neither schedules nor publishes until it
+  fits (`pollFitsOn`, folded into `partsFit`). `PollView` shows a poll in
+  `PostDetail` and on both review screens, as an approval covers it.
 - The composer's options come from `TargetOptionsSection`
   (`components/posts/target-options-panel.tsx`), which renders the fields
   `#posts/target-options.ts` describes for each selected channel's platform

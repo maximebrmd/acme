@@ -174,6 +174,7 @@ export const PostReviewSection = ({
           comments={review.value.comments}
           failure={failure === null ? null : failureText(t, failure)}
           media={review.value.media}
+          poll={review.value.poll}
           onComment={onComment}
           onResolve={mayWrite ? onResolve : undefined}
         />

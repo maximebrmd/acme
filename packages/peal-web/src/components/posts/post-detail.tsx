@@ -57,6 +57,7 @@ import { channelName as nameOfChannel } from "#channels/channel-name.ts";
 import { BoostDialog } from "#components/ads/boost-dialog.tsx";
 import { PostPaid } from "#components/ads/post-paid.tsx";
 import { LivePostActions } from "#components/posts/live/live-post-actions.tsx";
+import { PollView } from "#components/posts/poll-view.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import { PostQueueLine } from "#components/posts/queue-choice.tsx";
@@ -648,6 +649,10 @@ export const PostDetailView = ({
             <p className="text-muted-foreground text-xs">
               {t("media", { count: post.content.media.length })}
             </p>
+            {post.content.poll === undefined ||
+            post.content.poll === null ? null : (
+              <PollView poll={post.content.poll} />
+            )}
             {(post.content.followUps ?? []).length === 0 ? null : (
               <ol className="flex flex-col gap-2">
                 {(post.content.followUps ?? []).map((part, index) => (
