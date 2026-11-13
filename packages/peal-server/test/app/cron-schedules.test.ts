@@ -114,9 +114,11 @@ describe("the crons' schedules", () => {
     () =>
       Effect.gen(function* reporter() {
         const crons = yield* everyCron;
+
         const report = crons.find(
           ({ name }) => name === "billing.usage-report"
         );
+
         const reported = report === undefined ? [] : minutesOf(report);
 
         assert.deepStrictEqual(reported.slice(0, 4), [3, 8, 13, 18]);

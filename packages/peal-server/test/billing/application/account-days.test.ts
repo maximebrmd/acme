@@ -30,6 +30,7 @@ import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-
 import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import {
   accountsTest,
   cleanUpAccounts,
@@ -293,6 +294,42 @@ layer(DaysTest)("the account-days", (it) => {
           ]
         );
 
+        yield* cleanUp([holder]);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "refuse the 101st account of per-account pricing until its first invoice is paid",
+    () =>
+      Effect.gen(function* ceiling() {
+        const connect = yield* ConnectChannel;
+        const holder = yield* paying;
+        const instance = yield* mastodonInstance();
+
+        const start = connect.start(manager(holder), "mastodon", {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        });
+
+        yield* fill(holder, 100);
+
+        assert.deepStrictEqual(
+          yield* start.pipe(Effect.flip),
+          new PlanLimitReached({
+            allowed: 100,
+            limit: "channels",
+            needed: 101,
+            used: 100,
+          })
+        );
+
+        yield* SqlClient.SqlClient.use(
+          (sql) =>
+            sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${holder}`
+        ).pipe(Effect.orDie);
+
+        yield* start;
         yield* cleanUp([holder]);
       }).pipe(Effect.scoped)
   );

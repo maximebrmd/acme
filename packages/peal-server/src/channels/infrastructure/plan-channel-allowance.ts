@@ -20,7 +20,7 @@ export const PlanChannelAllowanceLive = Layer.effect(
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: () => Effect.void,
       sharedWith: () => Effect.succeed([]),
       sharingIn: () => Effect.succeed(new Map()),
@@ -43,7 +43,7 @@ export const SharedChannelAllowanceLive = Layer.effect(
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: () => Effect.void,
       sharedWith: (workspaceId) =>
         ownership.poolOf(workspaceId).pipe(
@@ -84,7 +84,7 @@ export const AccountChannelAllowanceLive = Layer.effect(
       channels: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
+          .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: days.counted,
       sharedWith: pools.sharedWith,
       sharingIn: pools.sharingIn,

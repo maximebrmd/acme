@@ -7,6 +7,7 @@ import type { Plan } from "#shared/domain/plan.ts";
 
 import { allowancesOf, largerPlan, unlimited } from "./plans.ts";
 import type { Allowances } from "./plans.ts";
+import { rateCard } from "./rate-card.ts";
 import { entitles, Subscription } from "./subscription.ts";
 
 /** The limits whose allowance depends on the plan alone, not on usage. */
@@ -42,6 +43,25 @@ export class Entitlements extends Schema.Class<Entitlements>(
   /** One limit of its plan that depends on nothing it holds. */
   allowanceOf(limit: CountedLimit): Allowance {
     return this.allowancesFor(0)[limit];
+  }
+
+  /**
+   * The accounts its billing account may hold once one more is
+   * connected: its plan's, but per-account pricing whose first invoice was
+   * not paid yet holds the rate card's `unverifiedCeiling`. Only
+   * connecting is held to it: what is connected already never makes the
+   * account over its plan.
+   */
+  connectableAccounts(): Allowance {
+    const allowed = this.allowanceOf("channels");
+
+    return Option.isNone(allowed) &&
+      Option.contains(this.plan, "payAsYouGo") &&
+      Option.exists(this.subscription, ({ paidInvoiceAt }) =>
+        Option.isNone(paidInvoiceAt)
+      )
+      ? Option.some(rateCard.unverifiedCeiling)
+      : allowed;
   }
 }
 
