@@ -247,6 +247,20 @@ describe(BillingView, () => {
     expect(html).not.toContain("Stripe’s next invoice");
   });
 
+  it("says the next account is free while the free accounts are not all taken", async () => {
+    const html = await render("en", {
+      billing: {
+        ...onFree,
+        accounts: { ...onFree.accounts, connected: 1, pooled: 1 },
+      },
+    });
+
+    expect(html).toContain(
+      "One more account, the 2nd, is free: the first 2 are."
+    );
+    expect(html).not.toContain("costs $0.00");
+  });
+
   it("lists the ladder from the rate card, with the day rule and the currency's two sentences", async () => {
     const html = await render("en", { billing: onFree });
 

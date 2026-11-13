@@ -2189,7 +2189,8 @@
       "nextAccount": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, costs {price} a month, excluding tax.",
       "upcoming": "Stripe’s next invoice: {amount}, tax included. The invoice is the one that counts.",
       "own": "{connected, plural, one {# account connected on this workspace.} other {# accounts connected on this workspace.}}",
-      "elsewhere": "They count with the other workspaces of its billing account. The workspace that bills the account shows the month’s account-days and their cost to its members."
+      "elsewhere": "They count with the other workspaces of its billing account. The workspace that bills the account shows the month’s account-days and their cost to its members.",
+      "nextAccountFree": "One more account, the {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, is free: the first {free, number} are."
     },
     "ladder": {
       "title": "Rates",

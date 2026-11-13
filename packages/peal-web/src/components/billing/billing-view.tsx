@@ -618,10 +618,12 @@ const MonthFigures = ({
           : t("estimateFree", { estimate })}
       </p>
       <p className="text-muted-foreground text-sm tabular-nums">
-        {t("nextAccount", {
-          position: next.position,
-          price: dollars(next.price.excluded),
-        })}
+        {next.price.excluded === 0
+          ? t("nextAccountFree", { free, position: next.position })
+          : t("nextAccount", {
+              position: next.position,
+              price: dollars(next.price.excluded),
+            })}
       </p>
       {billing.upcomingInvoice === null ? null : (
         <p className="text-sm tabular-nums">
@@ -688,29 +690,33 @@ const Ladder = ({ billing }: { readonly billing: Billing }) => {
         </h2>
         <p className="text-muted-foreground text-sm">{t("description")}</p>
       </div>
-      <Table>
-        <TableCaption>{t("caption")}</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead scope="col">{t("accounts")}</TableHead>
-            <TableHead scope="col" className="text-right">
-              {t("price")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ladderOf(card).map(({ from, monthly, to }) => (
-            <TableRow key={from}>
-              <TableHead scope="row">
-                {to === null ? t("from", { from }) : t("band", { from, to })}
+      <div className="bg-card rounded-md border">
+        <Table>
+          <TableCaption>{t("caption")}</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("accounts")}</TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("price")}
               </TableHead>
-              <TableCell variant="numeric">
-                {monthly.excluded === 0 ? t("free") : dollars(monthly.excluded)}
-              </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {ladderOf(card).map(({ from, monthly, to }) => (
+              <TableRow key={from}>
+                <TableHead scope="row">
+                  {to === null ? t("from", { from }) : t("band", { from, to })}
+                </TableHead>
+                <TableCell variant="numeric">
+                  {monthly.excluded === 0
+                    ? t("free")
+                    : dollars(monthly.excluded)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       <p className="text-sm">
         {t("dayRule", {
           after: card.daysPerMonth + 1,

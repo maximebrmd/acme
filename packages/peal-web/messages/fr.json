@@ -2189,7 +2189,8 @@
       "nextAccount": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, coûte {price} HT par mois.",
       "upcoming": "Prochaine facture de Stripe : {amount} TTC. C’est la facture qui fait foi.",
       "own": "{connected, plural, one {# compte connecté sur cet espace de travail.} other {# comptes connectés sur cet espace de travail.}}",
-      "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût."
+      "elsewhere": "Ils comptent avec les autres espaces de travail de son compte de facturation. L’espace de travail qui facture le compte montre à ses membres les comptes-jours du mois et leur coût.",
+      "nextAccountFree": "Un compte de plus, le {position, selectordinal, one {#er} other {#e}}, est gratuit : les {free, number} premiers le sont."
     },
     "ladder": {
       "title": "Tarifs",
