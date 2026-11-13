@@ -152,7 +152,7 @@ export const DrizzlePostOversight = Layer.effect(
 
       const rows = yield* db
         .select({
-          channels: sql<number>`(SELECT count(*)::int FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id})`,
+          channels: sql<number>`(SELECT count(*)::int FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND NOT ${postTargets.dropped})`,
           postId: posts.id,
           scheduledAt: posts.scheduledAt,
           workspaceId: posts.workspaceId,

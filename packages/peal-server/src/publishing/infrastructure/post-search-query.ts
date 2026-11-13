@@ -85,7 +85,8 @@ export const pageConditions = ({
     some(
       filter.channelIds,
       (channelIds) =>
-        sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND ${inArray(postTargets.channelId, [...channelIds])})`
+        // A channel taken off the post is none of its channels.
+        sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND NOT ${postTargets.dropped} AND ${inArray(postTargets.channelId, [...channelIds])})`
     ),
     some(
       filter.tagIds,

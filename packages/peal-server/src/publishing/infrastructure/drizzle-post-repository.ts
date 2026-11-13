@@ -522,7 +522,12 @@ export const DrizzlePostRepository = Layer.effect(
           .selectDistinct({ channelId: postTargets.channelId })
           .from(postTargets)
           .innerJoin(posts, eq(posts.id, postTargets.postId))
-          .where(eq(posts.workspaceId, workspaceId))
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              eq(postTargets.dropped, false)
+            )
+          )
           .pipe(
             Effect.mapError(failed),
             Effect.map((rows) =>

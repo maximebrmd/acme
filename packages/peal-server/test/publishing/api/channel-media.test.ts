@@ -266,6 +266,16 @@ describe("removing a channel from a scheduled post", () => {
           assert.strictEqual(removed.status, "scheduled");
           // Its text there went with it.
           assert.deepStrictEqual(removed.content.overrides, []);
+
+          // Searched by channel, it is found where it goes, not on the
+          // channel taken off it.
+          const on = (channelId: string) =>
+            client.posts
+              .search({ params: { workspaceId }, query: { channelId } })
+              .pipe(Effect.map(({ items }) => items.map(({ id }) => id)));
+
+          assert.deepStrictEqual(yield* on(mastodon), [post.id]);
+          assert.deepStrictEqual(yield* on(bluesky), []);
           assert.deepStrictEqual(
             removed.targets.map(({ channelId, dropped, status }) => ({
               channelId,
