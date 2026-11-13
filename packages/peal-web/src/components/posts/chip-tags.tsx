@@ -1,5 +1,5 @@
 import type { Tag } from "peal-contract";
-import { TagDot, TagStripe } from "peal-ui/components/tag";
+import { TagDot } from "peal-ui/components/tag";
 
 const shownTags = 3;
 
@@ -28,15 +28,3 @@ export const ChipTags = ({
       ) : null}
     </span>
   );
-
-/**
- * A post's colour on the calendar: its first tag's, in the workspace's
- * order, along the chip's edge. Nothing for a post without tags, which
- * keeps its state's colour alone. Hidden from assistive technology, as
- * the chip's name lists the tags.
- */
-export const ChipEdge = ({ tags }: { readonly tags: readonly Tag[] }) => {
-  const [first] = tags;
-
-  return first === undefined ? null : <TagStripe colour={first.colour} />;
-};

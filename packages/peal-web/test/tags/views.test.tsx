@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { CalendarFilters } from "#components/posts/calendar-filters.tsx";
-import { ChipEdge, ChipTags } from "#components/posts/chip-tags.tsx";
+import { ChipTags } from "#components/posts/chip-tags.tsx";
 import {
   PostTagsView,
   TagChoicesView,
@@ -277,24 +277,6 @@ describe(ChipTags, () => {
     await expect(
       render("en", <ChipTags tags={[]} title="No tag." />)
     ).resolves.toBe("");
-  });
-});
-
-describe(ChipEdge, () => {
-  it("colours a calendar's post along its edge by its first tag", async () => {
-    const html = await render(
-      "en",
-      <ChipEdge tags={[news, launch, tag("t3", "Product", "red")]} />
-    );
-
-    expect(html.match(/data-slot="tag-stripe"/gu)).toHaveLength(1);
-    expect(html).toContain(`bg-tag-${news.colour}`);
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).not.toContain("bg-tag-red");
-  });
-
-  it("leaves a post without tags uncoloured", async () => {
-    await expect(render("en", <ChipEdge tags={[]} />)).resolves.toBe("");
   });
 });
 

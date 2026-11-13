@@ -384,8 +384,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   queue's slots read on its own clock with `instantOf`'s daylight saving
   policy, a slot held by a post of its queue not shown free; on a day the
   clocks change, times carry their zone's name. A month cell's "more"
-  opens its day. A chip carries its first tag's colour along its edge
-  (`ChipEdge`, peal-ui's `TagStripe`) beside its state's tint.
+  opens its day. A tag's colour shows only in its dots (`ChipTags`), as a
+  post's state is the one colour a chip carries (DESIGN.md).
 - Times of day follow the browser's own preference (`#i18n/hour-cycle.ts`,
   in `localStorage`, chosen on the account page): `ViewerHourCycle`, in the
   locale layout, gives every message's `{at, time, short}` the clock
