@@ -249,8 +249,9 @@
   finalisation hour (invoice: $40.00 and $1.20, plus tax for a French
   address); an event stamped 23:59 on the last day sent at 00:11 on the
   first (which invoice takes it); a checkout opened on the last day,
-  before 23:29 UTC, closing at 00:00 (`expires_at`), and one opened after,
-  anchored on the first of the month after; cancel, withdraw and delete on three
+  before 23:29 UTC, closing at 00:00 (`expires_at`), and one opened after
+  and paid after 00:00, its anchor then past (does Stripe bill the full
+  period from it, as its docs say?); cancel, withdraw and delete on three
   subscriptions (their final invoices); half-unit rounding (50 billable
   messages, 5 X units, a tier's thirds: is half a cent rounded up, as
   `meterCharge` and `accountsCharge` assume?); dollars a settlement
@@ -412,9 +413,9 @@
   minutes, a failed lookup 10 seconds, `keptLineItems`) has no quantity on
   any line, asks for a card always (`payment_method_collection:
   "always"`) and anchors on the first of next month UTC without proration
-  (`payingParams`), the first of the month after within 31 minutes of it;
-  the session closes at the anchor or a day from the hour, whichever
-  comes first (`expires_at`). It opens none while a meter's price cannot
+  (`payingParams`), always (Stripe takes no anchor past one period); the
+  session closes at the anchor or a day from the hour, whichever comes
+  first, but never sooner than Stripe's shortest session (`expires_at`). It opens none while a meter's price cannot
   be found, or the plan Better Auth read lacks one (`CHECKOUT_UNAVAILABLE`).
   A withdrawal from `payAsYouGo` credits nothing: what it paid was the
   month past's usage (`creditsAt`).

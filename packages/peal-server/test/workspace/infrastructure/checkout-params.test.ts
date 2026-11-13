@@ -221,7 +221,7 @@ const anchorAndExpiry = (iso: string) => {
 };
 
 describe(payingParams, () => {
-  it("closes the checkout before its anchor passes, and anchors a month on when the month ends within the hour", () => {
+  it("always anchors on the first of next month, and closes the checkout by then while Stripe allows", () => {
     // Mid-month: Stripe's longest, a day, from the hour.
     expect(anchorAndExpiry("2026-11-13T12:25:00Z")).toStrictEqual([
       seconds("2026-12-01T00:00:00Z"),
@@ -232,11 +232,11 @@ describe(payingParams, () => {
       seconds("2026-12-01T00:00:00Z"),
       seconds("2026-12-01T00:00:00Z"),
     ]);
-    // Within Stripe's shortest checkout of the anchor: the first of the
-    // month after.
+    // Within Stripe's shortest session of the anchor: the anchor stays,
+    // and the session lives that shortest, past it.
     expect(anchorAndExpiry("2026-11-30T23:40:00Z")).toStrictEqual([
-      seconds("2027-01-01T00:00:00Z"),
-      seconds("2026-12-01T23:00:00Z"),
+      seconds("2026-12-01T00:00:00Z"),
+      seconds("2026-12-01T00:11:00Z"),
     ]);
   });
 });
