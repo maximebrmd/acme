@@ -55,9 +55,10 @@ export const eventRefusals: ReadonlySet<string> = new Set([
  * What a failed meter event becomes: Stripe not answering, limiting the
  * rate (429), failing itself (5xx) or still running the same request
  * (409) is `unavailable`; an invalid request with one of `eventRefusals`
- * is final, kept by its code; anything else (401, 403, an idempotency
- * key reused otherwise, a code not listed, an error of a kind not known)
- * is `refusing`: tried again, and the customer paused.
+ * is final, kept by its code; 401 and 403 are `account`, the same for
+ * every customer; anything else (an idempotency key reused otherwise, a
+ * code not listed, an error of a kind not known) is `refusing`: tried
+ * again, and that customer paused.
  */
 export const outcomeOfFailure = (cause: unknown): ReportOutcome =>
   Option.match(decodeError(cause), {
@@ -72,6 +73,10 @@ export const outcomeOfFailure = (cause: unknown): ReportOutcome =>
         type === "StripeRateLimitError"
       ) {
         return { _tag: "retry", reason: "unavailable" };
+      }
+
+      if (statusCode === 401 || statusCode === 403) {
+        return { _tag: "retry", reason: "account" };
       }
 
       return statusCode === 400 &&

@@ -76,6 +76,31 @@ export const accountDaysStart = ClusterCron.make({
 });
 
 /**
+ * Starts today's account-days once when a server that bills starts, so the
+ * day's gauge tells the truth from then (`peal-account-days-unstarted`
+ * never reads a restart as a day not started). A failure is the hourly
+ * run's to make good; the server starts all the same.
+ */
+export const accountDaysAtStart = Layer.effectDiscard(
+  Effect.gen(function* accountDaysAtStart() {
+    const { enabled } = yield* BillingMode;
+
+    if (!enabled) {
+      return;
+    }
+
+    yield* StartAccountDays.use((start) => start.run).pipe(
+      Effect.catchCause((cause) =>
+        Effect.logWarning(
+          "Starting the day's account-days at the start failed",
+          cause
+        )
+      )
+    );
+  })
+);
+
+/**
  * The reporter's crons and the hourly start of the day, registered only
  * on a server that bills: one that does not counts and reports nothing,
  * so it runs none of them.
@@ -85,7 +110,12 @@ export const usageReporting = Layer.unwrap(
     const { enabled } = yield* BillingMode;
 
     return enabled
-      ? Layer.mergeAll(usageReport, usageItems, accountDaysStart)
+      ? Layer.mergeAll(
+          usageReport,
+          usageItems,
+          accountDaysStart,
+          accountDaysAtStart
+        )
       : Layer.empty;
   })
 );

@@ -7,7 +7,10 @@ import { Sharding } from "effect/cluster";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
 import { StartAccountDays } from "#billing/application/start-account-days.ts";
-import { usageReporting } from "#billing/infrastructure/usage-report-cron.ts";
+import {
+  accountDaysAtStart,
+  usageReporting,
+} from "#billing/infrastructure/usage-report-cron.ts";
 
 const modeOf = (enabled: boolean) =>
   Layer.succeed(
@@ -45,6 +48,32 @@ layer(Layer.empty)("the reporter's crons", (it) => {
       Effect.gen(function* registered() {
         assert.isTrue(Exit.isSuccess(yield* builtOn(false)));
         assert.isTrue(Exit.isFailure(yield* builtOn(true)));
+      })
+  );
+
+  it.effect(
+    "start the day once when a server that bills starts, and not where it does not",
+    () =>
+      Effect.gen(function* atStart() {
+        let runs = 0;
+
+        const counting = Layer.mock(StartAccountDays, {
+          run: Effect.sync(() => {
+            runs += 1;
+
+            return { accounts: 1, started: 1 };
+          }),
+        });
+
+        for (const enabled of [true, false]) {
+          yield* Layer.build(
+            accountDaysAtStart.pipe(
+              Layer.provide(Layer.merge(modeOf(enabled), counting))
+            )
+          ).pipe(Effect.scoped);
+        }
+
+        assert.strictEqual(runs, 1);
       })
   );
 });

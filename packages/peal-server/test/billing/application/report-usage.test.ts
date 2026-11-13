@@ -26,6 +26,7 @@ import type {
 } from "#billing/application/ports/usage-billing.ts";
 import {
   customersPaused,
+  refusedKept,
   ReportUsage,
   reportsRefused,
 } from "#billing/application/report-usage.ts";
@@ -52,8 +53,11 @@ const sentEvents = Ref.makeUnsafe<readonly MeterEvent[]>([]);
 const answers = Ref.makeUnsafe<ReadonlyMap<string, ReportOutcome>>(new Map());
 
 // The customers whose every event Stripe answers as one that refuses the
-// server's key.
+// server's key, and those it refuses for a reason of their own it does not
+// name.
 const refusingCustomers = Ref.makeUnsafe<ReadonlySet<string>>(new Set());
+
+const stuckCustomers = Ref.makeUnsafe<ReadonlySet<string>>(new Set());
 
 // The subscriptions whose items were kept, and the thresholds set.
 const itemsKept = Ref.makeUnsafe<readonly string[]>([]);
@@ -87,10 +91,19 @@ const UsageBillingTest = Layer.succeed(
           event.stripeCustomerId
         );
 
-        return (
-          answer ??
-          (refusing ? { _tag: "retry", reason: "refusing" } : { _tag: "sent" })
+        const stuck = (yield* Ref.get(stuckCustomers)).has(
+          event.stripeCustomerId
         );
+
+        if (answer !== undefined) {
+          return answer;
+        }
+
+        if (refusing) {
+          return { _tag: "retry", reason: "account" };
+        }
+
+        return stuck ? { _tag: "retry", reason: "refusing" } : { _tag: "sent" };
       }),
     setThreshold: (_workspaceId, id, cents) =>
       Ref.update(thresholds, (all) => [...all, { cents, id }]),
@@ -415,6 +428,35 @@ layer(ReportTest)("the reporter of usage to Stripe", (it) => {
   );
 
   it.effect(
+    "never lets customers Stripe keeps refusing for their own reasons stop the others",
+    () =>
+      Effect.gen(function* stuckFew() {
+        const store = yield* AccountDayStore;
+        const report = yield* ReportUsage;
+        const now = yield* DateTime.now;
+        const stuck = Array.from({ length: 5 }, () => customer());
+        const healthy = Array.from({ length: 15 }, () => customer());
+
+        // The stuck ones first: the oldest rows are theirs.
+        const reports = [...stuck, ...healthy].map((each, index) =>
+          reportOf(each, now, 100 + index)
+        );
+
+        yield* Ref.set(stuckCustomers, new Set(stuck));
+        yield* store.enqueue(reports, []);
+
+        const ran = yield* report.run;
+
+        assert.lengthOf(yield* sentOf(healthy), healthy.length);
+        assert.strictEqual(ran.paused, stuck.length);
+
+        yield* Ref.set(stuckCustomers, new Set());
+        yield* Ref.set(sentEvents, []);
+        yield* cleanUp(holder);
+      })
+  );
+
+  it.effect(
     "sends a report again with the timestamp of its first attempt, however late",
     () =>
       Effect.gen(function* firstStamp() {
@@ -651,3 +693,35 @@ layer(Layer.provideMerge(DrizzleAccountDayStoreLive, DatabaseTest))(
     );
   }
 );
+
+// A server that bills starts with three refusals kept in its outbox.
+const RestartedTest = ReportUsage.make(2).pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      UsageBillingTest,
+      StripeTest,
+      subscriptionsHolding([]),
+      Layer.mock(AccountDayStore, {
+        backlog: Effect.succeed({ left: 0, oldest: Option.none(), refused: 3 }),
+      }),
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled: true,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
+    )
+  )
+);
+
+layer(RestartedTest)("the reporter when the server starts", (it) => {
+  it.effect("tells the refusals the rows keep, never 0", () =>
+    Effect.gen(function* restarted() {
+      yield* ReportUsage;
+
+      assert.strictEqual(yield* gaugeOf(refusedKept), 3);
+    })
+  );
+});

@@ -695,9 +695,9 @@ groups:
             model:
               refId: A
               instant: true
-              # Rare: any in the hour is one too many, the first after a start
-              # included (absent an hour ago reads as 0).
-              expr: sum(peal_billing_duplicate_subscriptions_total) - (sum(peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))
+              # Rare: any in the hour is one too many; the hour's increase, a
+              # restart's included, and a series born within it counted whole.
+              expr: (sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -873,11 +873,11 @@ groups:
       - uid: peal-account-days-unstarted
         title: Today's account-days are not started
         condition: B
-        for: 0s
+        for: 65m
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: Today's account-days were not started for every billing account by 02:00 UTC (peal.billing.account_days.started_day, with peal.billing.account_days.started of peal.billing.account_days.accounts); a paying account whose day is not started is not billed for it unless it connects something. The 00:11 snapshot starts the day and billing.account-days starts it again every hour at minute 49; their warnings ("Starting a batch of the day's account-days failed") say why.
+          summary: Today's account-days were not started for every billing account by 02:00 UTC, nor by the hourly run after it (peal.billing.account_days.started_day, with peal.billing.account_days.started of peal.billing.account_days.accounts); a paying account whose day is not started is not billed for it unless it connects something. The 00:11 snapshot starts the day and billing.account-days starts it again every hour at minute 49; their warnings ("Starting a batch of the day's account-days failed") say why.
         labels:
           severity: critical
         data:
@@ -921,8 +921,8 @@ groups:
             model:
               refId: A
               instant: true
-              # An increase over the hour that counts a series born within it: absent an hour ago reads as 0.
-              expr: sum(peal_billing_threshold_unset_total) - (sum(peal_billing_threshold_unset_total offset 1h) or vector(0))
+              # The hour's increase, a restart's included, and a series born within the hour counted whole.
+              expr: (sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:

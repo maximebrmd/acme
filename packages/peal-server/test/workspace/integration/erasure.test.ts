@@ -663,9 +663,16 @@ const fill = Effect.fn("fill")(function* fill(
 
   // Its billing account, made with it, and an offer of it to the person
   // (made up: an offer goes to another owner).
-  yield* sql`INSERT INTO billing.account_transfers (id, workspace_id, from_account_id, to_user_id, offered_by, offered_at, expires_at)
+  // Made where the workspace was made (Better Auth's workspaceCreated
+  // hook): a seed that finds no account fails here, not at the count.
+  const offered = yield* sql<{
+    readonly id: string;
+  }>`INSERT INTO billing.account_transfers (id, workspace_id, from_account_id, to_user_id, offered_by, offered_at, expires_at)
     SELECT ${uuid7()}, ${workspaceId}, account_id, ${person.id}, ${person.id}, now(), now() + interval '7 days'
-    FROM billing.account_workspaces WHERE workspace_id = ${workspaceId}`;
+    FROM billing.account_workspaces WHERE workspace_id = ${workspaceId}
+    RETURNING id`;
+
+  assert.lengthOf(offered, 1, "the workspace's billing account offered it");
 
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;
@@ -817,9 +824,14 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
   });
 
   // A billing account they pay for, as a plan of its own keeps one
-  // workspace alone.
+  // workspace alone; its billing workspace exists (one nobody is a member
+  // of), so another suite's repair of accounts left without one leaves it.
+  const alone = randomUUID();
+
+  yield* sql`INSERT INTO auth.organization (id, name, slug, created_at)
+    VALUES (${alone}, 'Synthetic billed alone', ${`erasure-alone-${alone}`}, now())`;
   yield* sql`INSERT INTO billing.accounts (id, holder_workspace_id, payer_user_id, standalone, created_at)
-    VALUES (${uuid7()}, ${randomUUID()}, ${person.id}, true, now())`;
+    VALUES (${uuid7()}, ${alone}, ${person.id}, true, now())`;
 
   // A payment method staff required of them, by an id the test knows.
   yield* sql`INSERT INTO billing.payment_requirements (id, user_id, required_at)

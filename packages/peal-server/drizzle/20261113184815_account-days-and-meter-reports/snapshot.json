@@ -2,9 +2,9 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "b6398e8e-994a-42b7-8a2c-524855ed5943",
+  "id": "6bd2fddf-b8d6-494c-aa49-08095b78c278",
   "prevIds": [
-    "2c623494-2d6d-44a7-86f1-396051a5c37c"
+    "1bbf8248-b8c6-4fbd-9b23-4acbf4a5d306"
   ],
   "footprints": [
     {
@@ -121,6 +121,26 @@
         "n|tbl|billing.meter_reports",
         "n|sch|billing",
         "n|col|billing.meter_reports.sent_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "meter_reports",
+        "meter_reports_refused"
+      ],
+      "writes": [
+        "s|idx|billing.meter_reports_refused",
+        "n|idx|billing.meter_reports_refused",
+        "e|idx|billing.meter_reports_refused",
+        "n|rel|billing.meter_reports_refused"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_reports",
+        "n|sch|billing",
+        "n|col|billing.meter_reports.created_at"
       ]
     },
     {
@@ -469,6 +489,30 @@
         ],
         "isUnique": false,
         "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_refused",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"refusal\" IS NOT NULL",
         "with": "",
         "method": "btree",
         "concurrently": false,

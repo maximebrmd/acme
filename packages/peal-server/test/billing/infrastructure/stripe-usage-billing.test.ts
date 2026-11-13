@@ -189,12 +189,12 @@ layer(Layer.empty)("usage at Stripe", (it) => {
           [
             "acc:key",
             error(401, "invalid_request_error"),
-            { _tag: "retry", reason: "refusing" },
+            { _tag: "retry", reason: "account" },
           ],
           [
             "acc:permission",
             error(403, "invalid_request_error", "secret_key_required"),
-            { _tag: "retry", reason: "refusing" },
+            { _tag: "retry", reason: "account" },
           ],
           [
             "acc:mismatch",

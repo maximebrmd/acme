@@ -427,7 +427,8 @@ export const accountDays = billing.table(
  * from that fact (Stripe's event identifier), so the same fact never makes
  * two rows. The reporter stamps a row at its first attempt, sends unsent
  * rows oldest first and marks them sent; one Stripe refused for good keeps
- * its error code in `refusal`.
+ * its error code in `refusal`, as does one Stripe took and then reported
+ * an error of (`stripe:<code>`, from its meter error events).
  * Ids and counts only. Deleted 400 days after it was sent (or written,
  * never sent), and with the workspace.
  */
@@ -452,6 +453,11 @@ export const meterReports = billing.table(
       .on(table.createdAt)
       .where(sql`${table.sentAt} IS NULL`),
     index("meter_reports_sent").on(table.sentAt),
+    // Those Stripe refused, before or after it took them: few, read each
+    // run.
+    index("meter_reports_refused")
+      .on(table.createdAt)
+      .where(sql`${table.refusal} IS NOT NULL`),
     index("meter_reports_holder").on(table.holderWorkspaceId),
     check("meter_reports_value", sql`${table.value} > 0`),
   ]

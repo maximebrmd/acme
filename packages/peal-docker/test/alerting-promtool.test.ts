@@ -3,7 +3,13 @@
 // counter born at 1 or a gauge set once at the start included, and stays
 // quiet otherwise. Skipped without Docker.
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -130,20 +136,49 @@ const cases: readonly Case[] = [
   {
     expected: [
       ["25h", false],
-      ["26h10m", true],
+      ["27h20m", true],
     ],
-    interval: "10m",
-    name: "a day not started by 02:00 the next day",
-    series: { peal_billing_account_days_started_day: "0x200" },
+    interval: "5m",
+    name: "a day not started by 02:00 the next day, an hourly run after",
+    series: { peal_billing_account_days_started_day: "0x400" },
     uid: "peal-account-days-unstarted",
   },
   {
     expected: [["30h", false]],
-    interval: "10m",
+    interval: "5m",
     name: "a day started each day",
     // The next day's first second, from the 24th hour on.
-    series: { peal_billing_account_days_started_day: "0x144 86400x60" },
+    series: { peal_billing_account_days_started_day: "0x288 86400x120" },
     uid: "peal-account-days-unstarted",
+  },
+  {
+    expected: [["39h20m", false]],
+    interval: "5m",
+    name: "a restart at 15:00, the day before set until the run at start",
+    // Today from 24h, the day before for 40 minutes from 39h, today again.
+    series: {
+      peal_billing_account_days_started_day: "_x288 86400x180 0x8 86400x60",
+    },
+    uid: "peal-account-days-unstarted",
+  },
+  {
+    expected: [
+      ["31m", true],
+      ["35m", true],
+    ],
+    interval: "1m",
+    name: "refusals kept across a restart, read from the rows at the start",
+    // Three kept, the server restarts at 30m and reads three again.
+    series: { peal_billing_usage_report_refused_kept: "3x29 _ 3x30" },
+    uid: "peal-usage-report-refused",
+  },
+  {
+    expected: [["40m", true]],
+    interval: "1m",
+    name: "a threshold refused after a restart, the counter higher an hour before",
+    // At 2, the server restarts at 30m, one refusal at 35m.
+    series: { peal_billing_threshold_unset_total: "2x30 0x5 1x30" },
+    uid: "peal-threshold-unset",
   },
   {
     expected: [
@@ -183,6 +218,8 @@ describe("the billing alerts in Prometheus", () => {
     () => {
       const folder = mkdtempSync(path.join(tmpdir(), "peal-alerts-"));
 
+      chmodSync(folder, 0o755);
+
       try {
         const uids = [...new Set(cases.map(({ uid }) => uid))];
 
@@ -208,7 +245,8 @@ describe("the billing alerts in Prometheus", () => {
               interval,
               name,
             })),
-          })
+          }),
+          { mode: 0o644 }
         );
 
         const ran = spawnSync(

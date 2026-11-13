@@ -85,7 +85,10 @@ export const customersPaused = Metric.gauge(
   }
 );
 
-/** After this many attempts in a row Stripe did not take, a run stops. */
+/**
+ * After this many attempts in a row Stripe did not answer, or refused the
+ * server's key, a run stops.
+ */
 export const retriesBeforeHalting = 5;
 
 /** What one customer's turn in a run did. */
@@ -200,10 +203,23 @@ export class ReportUsage extends Context.Service<
           );
 
           yield* Metric.update(reportsRefused, 0);
-          yield* Metric.update(refusedKept, 0);
-          yield* Metric.update(customersPaused, 0);
           yield* Metric.update(reportedAt, started);
           yield* Metric.update(thresholdsUnset, 0);
+
+          // The refusals kept are a state of the rows: read, never zeroed,
+          // so a restart neither clears nor fires the alert again. Paused
+          // customers are told by the first run.
+          yield* store.backlog.pipe(
+            Effect.flatMap(({ refused }) =>
+              Metric.update(refusedKept, refused)
+            ),
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Reading the refusals kept at the start failed",
+                cause
+              )
+            )
+          );
         }
 
         // A run stops asking Stripe after this many attempts in a row it
@@ -259,11 +275,15 @@ export class ReportUsage extends Context.Service<
             });
 
             if (outcome._tag === "retry") {
-              yield* Ref.update(halted, (count) => count + 1);
+              // Only what is the same for every customer stops the run: a
+              // refusal of one customer's own pauses that customer alone.
+              if (outcome.reason !== "refusing") {
+                yield* Ref.update(halted, (count) => count + 1);
+              }
 
               ended = {
                 deferred: reports.length - index,
-                paused: outcome.reason === "refusing",
+                paused: outcome.reason !== "unavailable",
                 refused,
                 sent,
                 stalled: true,

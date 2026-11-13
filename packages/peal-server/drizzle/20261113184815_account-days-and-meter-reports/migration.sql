@@ -25,4 +25,5 @@ ALTER TABLE "billing"."subscriptions" ADD COLUMN "paid_invoice_at" timestamp wit
 CREATE INDEX "account_days_day" ON "billing"."account_days" ("day");--> statement-breakpoint
 CREATE INDEX "meter_reports_unsent" ON "billing"."meter_reports" ("created_at") WHERE "sent_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "meter_reports_sent" ON "billing"."meter_reports" ("sent_at");--> statement-breakpoint
+CREATE INDEX "meter_reports_refused" ON "billing"."meter_reports" ("created_at") WHERE "refusal" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "meter_reports_holder" ON "billing"."meter_reports" ("holder_workspace_id");

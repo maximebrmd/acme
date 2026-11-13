@@ -18,17 +18,18 @@ export interface MeterEvent {
 /**
  * What became of a meter event: taken; to be tried again on the next run,
  * because Stripe did not answer, limited the rate or failed itself
- * (`unavailable`), or refused what is not the event's own, as the
- * server's key, its permissions or a meter (`refusing`), which pauses the
- * customer and is alerted on; or refused for good for the event's own
- * fault (its value, its timestamp, its customer), with Stripe's error code
- * (never its message).
+ * (`unavailable`), refused the server's key or its permissions (`account`,
+ * the same for every customer), or refused for a reason it does not name
+ * as the event's own (`refusing`: a meter, an idempotency key, a code not
+ * known), each of the last two pausing the customer and alerted on; or
+ * refused for good for the event's own fault (its value, its timestamp,
+ * its customer), with Stripe's error code (never its message).
  */
 export type ReportOutcome =
   | { readonly _tag: "sent" }
   | {
       readonly _tag: "retry";
-      readonly reason: "refusing" | "unavailable";
+      readonly reason: "account" | "refusing" | "unavailable";
     }
   | { readonly _tag: "refused"; readonly code: string };
 
