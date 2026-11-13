@@ -294,6 +294,11 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
             })
           )
         ),
+      markPaidInvoice: () => Effect.void,
+      perAccount: () =>
+        Effect.succeed(
+          held.filter((subscription) => subscription.plan === "payAsYouGo")
+        ),
       record: () => Effect.succeed("recorded" as const),
       remindable: () => Effect.succeed(held),
     })

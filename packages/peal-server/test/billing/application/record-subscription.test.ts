@@ -57,6 +57,8 @@ const PortsInMemory = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Ref.get(held),
           ofWorkspaces: () => Effect.die("not read here"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: (change) =>
             Ref.update(held, (all) => [
               ...all.filter(

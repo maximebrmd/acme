@@ -42,6 +42,9 @@ export const subscriptions = billing.table(
     interval: text("interval").notNull().default("month"),
     lastEventAt: instant("last_event_at").notNull(),
     lastEventId: text("last_event_id").notNull(),
+    // When the reporter first found an invoice of it paid that took
+    // something: per-account pricing's ceiling before then lifts.
+    paidInvoiceAt: instant("paid_invoice_at"),
     plan: text("plan").notNull(),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
@@ -389,3 +392,63 @@ export const graceStarts = billing.table("grace_starts", {
   graceUntil: date("grace_until", { mode: "string" }).primaryKey(),
   startedAt: instant("started_at").notNull(),
 });
+
+/**
+ * Each billing account's connected accounts by UTC day, on its billing
+ * workspace (the holder): the most connected at once that day across its
+ * workspaces (`peak`, raised by each connection and written when the day
+ * starts; a disconnection lowers nothing), and how many of the day's
+ * account-days were put in the outbox to Stripe (`reported`, at most what
+ * the day bills: none on the 31st). Counts and ids only. Kept 400 days,
+ * the `day` index serving the purge; erasing the workspace deletes its
+ * rows.
+ */
+export const accountDays = billing.table(
+  "account_days",
+  {
+    day: date("day", { mode: "date" }).notNull(),
+    holderWorkspaceId: uuid("holder_workspace_id").notNull(),
+    peak: integer("peak").notNull(),
+    reported: integer("reported").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.holderWorkspaceId, table.day] }),
+    index("account_days_day").on(table.day),
+    check(
+      "account_days_counts",
+      sql`${table.reported} >= 0 AND ${table.reported} <= ${table.peak}`
+    ),
+  ]
+);
+
+/**
+ * The outbox of usage to Stripe: one row per meter event, written in the
+ * transaction that changed the count it reports, its `identifier` derived
+ * from that fact (Stripe's event identifier), so the same fact never makes
+ * two rows. The reporter sends unsent rows oldest first and marks them
+ * sent; one Stripe refused for good keeps its error code in `refusal`.
+ * Ids and counts only. Deleted 400 days after it was sent (or written,
+ * never sent), and with the workspace.
+ */
+export const meterReports = billing.table(
+  "meter_reports",
+  {
+    createdAt: instant("created_at").notNull(),
+    eventName: text("event_name").notNull(),
+    holderWorkspaceId: uuid("holder_workspace_id").notNull(),
+    identifier: text("identifier").primaryKey(),
+    occurredAt: instant("occurred_at").notNull(),
+    refusal: text("refusal"),
+    sentAt: instant("sent_at"),
+    stripeCustomerId: text("stripe_customer_id").notNull(),
+    value: bigint("value", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    index("meter_reports_unsent")
+      .on(table.createdAt)
+      .where(sql`${table.sentAt} IS NULL`),
+    index("meter_reports_sent").on(table.sentAt),
+    index("meter_reports_holder").on(table.holderWorkspaceId),
+    check("meter_reports_value", sql`${table.value} > 0`),
+  ]
+);

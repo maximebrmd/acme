@@ -61,6 +61,8 @@ const SubscriptionsInMemory = Layer.effect(
       forgetUser: () => Effect.void,
       ofWorkspace: () => Ref.get(saved),
       ofWorkspaces: () => Effect.die("not read here"),
+      markPaidInvoice: () => Effect.void,
+      perAccount: () => Effect.succeed([]),
       record: (change) =>
         Ref.update(saved, (all) => [...all, change.subscription]).pipe(
           Effect.as("recorded" as const)
@@ -784,6 +786,8 @@ const UnreadTest = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Effect.die("read while billing is off"),
           ofWorkspaces: () => Effect.die("read while billing is off"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: () => Effect.die("not used"),
           remindable: () => Effect.die("not used"),
         })

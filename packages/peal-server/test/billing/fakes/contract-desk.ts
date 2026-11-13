@@ -302,6 +302,8 @@ const PortsInMemory = Layer.mergeAll(
               )
             ),
           ofWorkspaces: () => Effect.die("not read here"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: () => Effect.succeed("recorded" as const),
           remindable: () => Ref.get(held),
         })

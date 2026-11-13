@@ -1,0 +1,534 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "cade15fa-f19b-4639-a9c9-206672f65f3a",
+  "prevIds": [
+    "2c623494-2d6d-44a7-86f1-396051a5c37c"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "account_days"
+      ],
+      "writes": [
+        "s|tbl|billing.account_days",
+        "n|tbl|billing.account_days",
+        "e|tbl|billing.account_days",
+        "n|rel|billing.account_days",
+        "n|type|billing.account_days",
+        "n|rel|billing.account_days_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "meter_reports"
+      ],
+      "writes": [
+        "s|tbl|billing.meter_reports",
+        "n|tbl|billing.meter_reports",
+        "e|tbl|billing.meter_reports",
+        "n|rel|billing.meter_reports",
+        "n|type|billing.meter_reports",
+        "n|rel|billing.meter_reports_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "paid_invoice_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.paid_invoice_at",
+        "n|col|billing.subscriptions.paid_invoice_at",
+        "e|col|billing.subscriptions.paid_invoice_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "account_days",
+        "account_days_day"
+      ],
+      "writes": [
+        "s|idx|billing.account_days_day",
+        "n|idx|billing.account_days_day",
+        "e|idx|billing.account_days_day",
+        "n|rel|billing.account_days_day"
+      ],
+      "reads": [
+        "n|tbl|billing.account_days",
+        "n|sch|billing",
+        "n|col|billing.account_days.day"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "meter_reports",
+        "meter_reports_unsent"
+      ],
+      "writes": [
+        "s|idx|billing.meter_reports_unsent",
+        "n|idx|billing.meter_reports_unsent",
+        "e|idx|billing.meter_reports_unsent",
+        "n|rel|billing.meter_reports_unsent"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_reports",
+        "n|sch|billing",
+        "n|col|billing.meter_reports.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "meter_reports",
+        "meter_reports_sent"
+      ],
+      "writes": [
+        "s|idx|billing.meter_reports_sent",
+        "n|idx|billing.meter_reports_sent",
+        "e|idx|billing.meter_reports_sent",
+        "n|rel|billing.meter_reports_sent"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_reports",
+        "n|sch|billing",
+        "n|col|billing.meter_reports.sent_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "meter_reports",
+        "meter_reports_holder"
+      ],
+      "writes": [
+        "s|idx|billing.meter_reports_holder",
+        "n|idx|billing.meter_reports_holder",
+        "e|idx|billing.meter_reports_holder",
+        "n|rel|billing.meter_reports_holder"
+      ],
+      "reads": [
+        "n|tbl|billing.meter_reports",
+        "n|sch|billing",
+        "n|col|billing.meter_reports.holder_workspace_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "account_days",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "meter_reports",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "holder_workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "peak",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "reported",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "event_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "holder_workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "identifier",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "occurred_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "refusal",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "sent_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "stripe_customer_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "value",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "paid_invoice_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "account_days_day",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "day",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_unsent",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"sent_at\" IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_sent",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sent_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_holder",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "holder_workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "account_days_pkey",
+        "columns": [
+          "holder_workspace_id",
+          "day"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_pkey",
+        "columns": [
+          "identifier"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_days",
+        "name": "account_days_counts",
+        "value": "\"reported\" >= 0 AND \"reported\" <= \"peak\"",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "meter_reports",
+        "name": "meter_reports_value",
+        "value": "\"value\" > 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}
