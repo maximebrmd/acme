@@ -334,6 +334,8 @@ describe("a post's webhook events", () => {
             cancelled.data.targets.map(({ targetId }) => targetId),
             [target.id]
           );
+          // One channel, not the post: it still goes out on the others.
+          assert.strictEqual(cancelled.data.scope, "target");
           assert.deepStrictEqual(
             moved.data.targets.map(({ channelId }) => channelId),
             [kept]
@@ -395,6 +397,7 @@ describe("a post's webhook events", () => {
             cancelled.data.targets.map(({ targetId }) => targetId),
             moved.targets.map(({ id }) => id)
           );
+          assert.strictEqual(cancelled.data.scope, "post");
         })
       ),
     timeout

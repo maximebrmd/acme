@@ -294,6 +294,11 @@ export const WebhookPayloadSchema = Schema.Union([
     data: Schema.Struct({
       ...post,
       cancelledAt: Schema.DateTimeUtc,
+      // What was cancelled: `post`, the post (on these channels: those it
+      // had not reached), or `target`, one channel taken off a post that
+      // still goes out on its others. Absent on an event made before it
+      // was told, which is about the post.
+      scope: Schema.optionalKey(Schema.Literals(["post", "target"])),
       targets: Schema.Array(WebhookTargetSchema),
     }),
     type: Schema.Literal("post.cancelled"),

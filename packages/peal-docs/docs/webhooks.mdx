@@ -348,14 +348,15 @@ Peal cannot tell whether the post went live on the channel, and never sends it a
 
 ### post.cancelled [#post-cancelled]
 
-The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event. A channel Peal was sending to at that moment ends with its own event: `post.published`, `post.failed` or `post.unconfirmed` if the platform was called, or a `post.cancelled` naming it alone if it was not. A channel someone removes from a post that waits for its time is told the same way, a `post.cancelled` naming it alone: the post keeps its time and still goes out on its other channels, a `post.scheduled` told when it moves no longer names that channel, and its `post.finished` lists it as `cancelled`.
+The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event. A channel Peal was sending to at that moment ends with its own event: `post.published`, `post.failed` or `post.unconfirmed` if the platform was called, or a `post.cancelled` naming it alone if it was not. A channel someone removes from a post that waits for its time is told by a `post.cancelled` naming it alone, with `scope` `target`: the post keeps its time and still goes out on its other channels, a `post.scheduled` told when it moves no longer names that channel, and its `post.finished` lists it as `cancelled`.
 
-| Field         | Type   | What it holds                                                                        |
-| ------------- | ------ | ------------------------------------------------------------------------------------ |
-| `workspaceId` | string | The workspace                                                                        |
-| `postId`      | string | The post                                                                             |
-| `cancelledAt` | string | When it was cancelled, as an instant in UTC                                          |
-| `targets`     | array  | The channels it will not go out on, each with `targetId`, `channelId` and `platform` |
+| Field         | Type   | What it holds                                                                                                                                                                |
+| ------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | string | The workspace                                                                                                                                                                |
+| `postId`      | string | The post                                                                                                                                                                     |
+| `cancelledAt` | string | When it was cancelled, as an instant in UTC                                                                                                                                  |
+| `scope`       | string | `post` when the post was cancelled; `target` when one channel was taken off a post that still goes out. Left out of events made before it was sent, which are about the post |
+| `targets`     | array  | The channels it will not go out on, each with `targetId`, `channelId` and `platform`                                                                                         |
 
 ```json title="post.cancelled"
 {
@@ -368,6 +369,7 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
     "cancelledAt": "2026-11-09T18:30:00.000Z",
+    "scope": "post",
     "targets": [
       {
         "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",

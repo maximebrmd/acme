@@ -177,7 +177,7 @@ const samples: Samples = {
     type: "post.approved",
   }),
   "post.cancelled": (workspaceId) => ({
-    data: { cancelledAt: at, postId, targets, workspaceId },
+    data: { cancelledAt: at, postId, scope: "post", targets, workspaceId },
     type: "post.cancelled",
   }),
   "post.changes_requested": (workspaceId) => ({

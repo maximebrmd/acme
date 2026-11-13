@@ -86,6 +86,7 @@ const makeTelling = Effect.gen(function* makeTelling() {
           data: {
             cancelledAt,
             postId: post.id,
+            scope: "post",
             targets: [
               {
                 channelId: on.channelId,
@@ -188,6 +189,7 @@ export const WebhookPostEvents = Layer.effect(
           data: {
             cancelledAt,
             postId: post.id,
+            scope: "post",
             targets: yield* refsOf(targets),
             workspaceId: post.workspaceId,
           },
@@ -210,6 +212,7 @@ export const WebhookPostEvents = Layer.effect(
         data: {
           cancelledAt: target.status.cancelledAt,
           postId: post.id,
+          scope: "target",
           targets: yield* refsOf([target]),
           workspaceId: post.workspaceId,
         },
