@@ -399,7 +399,7 @@ export const french: EmailCatalog = {
   },
   paymentMethodNeeded: {
     action: "Ajouter un moyen de paiement",
-    body: "{workspaceName} compte {accounts} comptes connectés, plus que les {allowed} de l’offre gratuite, car il les a connectés avant que Peal ne facture. Jusqu’au {graceUntil}, il continue de programmer et de publier, et n’en connecte pas d’autre. Après ce jour, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation, ou que {allowed} comptes seulement sont gardés : les publications programmées échouent alors à leur échéance, et peuvent être republiées ensuite.",
+    body: "{workspaceName} compte {accounts} comptes connectés, plus que les {allowed} de l’offre gratuite. Jusqu’au {graceUntil}, il continue de programmer et de publier sur les comptes qu’il avait quand la facturation a commencé, et n’en connecte pas d’autre. Après ce jour, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation, ou que {allowed} comptes seulement sont gardés : les publications programmées échouent alors à leur échéance, et peuvent être republiées ensuite.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject:

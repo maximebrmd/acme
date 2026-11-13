@@ -390,7 +390,7 @@ export const english: EmailCatalog = {
   },
   paymentMethodNeeded: {
     action: "Add a payment method",
-    body: "{workspaceName} holds {accounts} connected accounts, more than the {allowed} the free tier includes, as it connected them before Peal billed. Until {graceUntil} it still schedules and publishes, and connects no more. After that day nothing is published until a payment method is added on the billing page, or {allowed} accounts are kept: posts scheduled then fail when due, and can be posted again afterwards.",
+    body: "{workspaceName} holds {accounts} connected accounts, more than the {allowed} the free tier includes. Until {graceUntil} it still schedules and publishes on the accounts it held when billing began, and connects no more. After that day nothing is published until a payment method is added on the billing page, or {allowed} accounts are kept: posts scheduled then fail when due, and can be posted again afterwards.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Add a payment method to {workspaceName} before {graceUntil}",
