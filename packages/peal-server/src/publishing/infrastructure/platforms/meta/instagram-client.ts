@@ -20,6 +20,7 @@ import type {
 import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { postFormatOf } from "#publishing/domain/post-format.ts";
+import { withFirstComments } from "#publishing/infrastructure/platforms/first-comment.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { MediaAssetId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -52,6 +53,7 @@ import {
   withText,
 } from "./graph-calls.ts";
 import type { GraphAuth, MetaHttp } from "./graph-calls.ts";
+import { instagramCommentCalls } from "./meta-first-comment.ts";
 
 // From Instagram's "Content Publishing" page and the IG User Media
 // reference, the same with Instagram Login (on graph.instagram.com) as with
@@ -555,6 +557,19 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
       prepare,
     };
 
-    return sequenced(steps, options.timing ?? defaultStepTiming);
+    const timing = options.timing ?? defaultStepTiming;
+
+    // A first comment goes under the published media, on the host its
+    // account is reached through; a story takes no parts.
+    return withFirstComments(
+      sequenced(steps, timing),
+      instagramCommentCalls({
+        api,
+        calls: { commit: commitCall, step },
+        node: (on, id, edge) =>
+          apiUrl(on, `/${encodeURIComponent(id)}/${edge}`),
+      }),
+      timing
+    );
   }
 );
