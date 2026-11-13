@@ -1623,7 +1623,7 @@ layer(BillingIntegration, {
   );
 
   it.effect(
-    "holds a free account's media to 1 GB across its workspaces, uploads sent together included, and shows the account's",
+    "holds a free account's media to 1 GB across its workspaces, uploads sent together included, and tells only the billing workspace the account's",
     () =>
       Effect.gen(function* acrossAccount() {
         const app = yield* TestApp;
@@ -1656,10 +1656,15 @@ layer(BillingIntegration, {
           used: 600_000_000,
         });
 
-        // The second workspace's page shows the account's media.
+        // The workspace that bills the account reads the account's media;
+        // the second one its own, never the pool's.
+        assert.strictEqual(
+          (yield* billingOf(owner, first)).usage.mediaStorage,
+          600_000_000
+        );
         assert.strictEqual(
           (yield* billingOf(owner, second)).usage.mediaStorage,
-          600_000_000
+          0
         );
 
         // Two uploads sent together, in two workspaces of another account.
