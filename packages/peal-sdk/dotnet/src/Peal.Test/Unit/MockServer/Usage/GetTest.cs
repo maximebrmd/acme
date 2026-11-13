@@ -37,6 +37,7 @@ public class GetTest : BaseMockServerTest
               "days": [
                 {
                   "assistantRequests": 1,
+                  "billableAccounts": 1,
                   "byPlatform": [
                     {
                       "platform": "x",
@@ -55,6 +56,7 @@ public class GetTest : BaseMockServerTest
                 },
                 {
                   "assistantRequests": 1,
+                  "billableAccounts": 1,
                   "byPlatform": [
                     {
                       "platform": "x",
@@ -81,6 +83,7 @@ public class GetTest : BaseMockServerTest
                 "partnerWorkspaceId": "partnerWorkspaceId"
               },
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",
@@ -160,6 +163,7 @@ public class GetTest : BaseMockServerTest
               "days": [
                 {
                   "assistantRequests": 1,
+                  "billableAccounts": 1,
                   "byPlatform": [
                     {
                       "platform": "x",
@@ -182,6 +186,7 @@ public class GetTest : BaseMockServerTest
                 "partnerWorkspaceId": "partnerWorkspaceId"
               },
               "totals": {
+                "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
                     "platform": "x",

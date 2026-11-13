@@ -4,10 +4,12 @@ import { assert, layer } from "@effect/vitest";
 import { Clock, DateTime, Effect, Layer, Option } from "effect";
 import { TestClock } from "effect/testing";
 
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { UsageStates } from "#billing/application/ports/usage-states.ts";
 import type { WorkspaceDayState } from "#billing/application/ports/usage-states.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -59,9 +61,24 @@ const Unreadable = Layer.succeed(
   })
 );
 
+// No billing account's day to start, nor any to purge.
+const NoAccountDaysTest = Layer.mergeAll(
+  Layer.succeed(
+    StartAccountDays,
+    StartAccountDays.of({
+      pooledOf: () => Effect.succeed(0),
+      raiseAccount: () => Effect.void,
+      run: Effect.succeed({ accounts: 0, started: 0 }),
+    })
+  ),
+  Layer.mock(AccountDayStore, { purgeBefore: () => Effect.succeed(0) })
+);
+
 const snapshotOn = (states: typeof ErasedMeanwhile) =>
   SnapshotUsage.make(10).pipe(
-    Layer.provide(Layer.merge(states, AloneInAccountsTest)),
+    Layer.provide(
+      Layer.mergeAll(states, AloneInAccountsTest, NoAccountDaysTest)
+    ),
     Layer.provideMerge(DrizzleUsageLedgerLive),
     Layer.provideMerge(DatabaseTest)
   );

@@ -5,19 +5,32 @@ pub struct Billing {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<BillingAccount>,
     #[serde(default)]
+    pub accounts: BillingAccountsUsage,
+    #[serde(default)]
     pub allowances: PlanAllowances,
     #[serde(default)]
     pub currency: String,
     #[serde(default)]
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub estimate: Option<Money>,
+    #[serde(rename = "paymentMethod")]
+    #[serde(default)]
+    pub payment_method: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub plan: Option<Plan>,
     #[serde(default)]
     pub plans: Vec<PlanOffer>,
+    #[serde(rename = "rateCard")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rate_card: Option<RateCard>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription: Option<BillingSubscription>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trial: Option<TrialOffer>,
+    #[serde(rename = "upcomingInvoice")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub upcoming_invoice: Option<Money>,
     #[serde(default)]
     pub usage: Usage,
     #[serde(rename = "vatRate")]
@@ -38,13 +51,18 @@ impl Billing {
 #[non_exhaustive]
 pub struct BillingBuilder {
     account: Option<BillingAccount>,
+    accounts: Option<BillingAccountsUsage>,
     allowances: Option<PlanAllowances>,
     currency: Option<String>,
     enabled: Option<bool>,
+    estimate: Option<Money>,
+    payment_method: Option<bool>,
     plan: Option<Plan>,
     plans: Option<Vec<PlanOffer>>,
+    rate_card: Option<RateCard>,
     subscription: Option<BillingSubscription>,
     trial: Option<TrialOffer>,
+    upcoming_invoice: Option<Money>,
     usage: Option<Usage>,
     vat_rate: Option<i64>,
     withdrawable_until: Option<String>,
@@ -53,6 +71,11 @@ pub struct BillingBuilder {
 impl BillingBuilder {
     pub fn account(mut self, value: BillingAccount) -> Self {
         self.account = Some(value);
+        self
+    }
+
+    pub fn accounts(mut self, value: BillingAccountsUsage) -> Self {
+        self.accounts = Some(value);
         self
     }
 
@@ -71,6 +94,16 @@ impl BillingBuilder {
         self
     }
 
+    pub fn estimate(mut self, value: Money) -> Self {
+        self.estimate = Some(value);
+        self
+    }
+
+    pub fn payment_method(mut self, value: bool) -> Self {
+        self.payment_method = Some(value);
+        self
+    }
+
     pub fn plan(mut self, value: Plan) -> Self {
         self.plan = Some(value);
         self
@@ -81,6 +114,11 @@ impl BillingBuilder {
         self
     }
 
+    pub fn rate_card(mut self, value: RateCard) -> Self {
+        self.rate_card = Some(value);
+        self
+    }
+
     pub fn subscription(mut self, value: BillingSubscription) -> Self {
         self.subscription = Some(value);
         self
@@ -88,6 +126,11 @@ impl BillingBuilder {
 
     pub fn trial(mut self, value: TrialOffer) -> Self {
         self.trial = Some(value);
+        self
+    }
+
+    pub fn upcoming_invoice(mut self, value: Money) -> Self {
+        self.upcoming_invoice = Some(value);
         self
     }
 
@@ -108,15 +151,20 @@ impl BillingBuilder {
 
     /// Consumes the builder and constructs a [`Billing`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`accounts`](BillingBuilder::accounts)
     /// - [`allowances`](BillingBuilder::allowances)
     /// - [`currency`](BillingBuilder::currency)
     /// - [`enabled`](BillingBuilder::enabled)
+    /// - [`payment_method`](BillingBuilder::payment_method)
     /// - [`plans`](BillingBuilder::plans)
     /// - [`usage`](BillingBuilder::usage)
     /// - [`vat_rate`](BillingBuilder::vat_rate)
     pub fn build(self) -> Result<Billing, BuildError> {
         Ok(Billing {
             account: self.account,
+            accounts: self
+                .accounts
+                .ok_or_else(|| BuildError::missing_field("accounts"))?,
             allowances: self
                 .allowances
                 .ok_or_else(|| BuildError::missing_field("allowances"))?,
@@ -126,12 +174,18 @@ impl BillingBuilder {
             enabled: self
                 .enabled
                 .ok_or_else(|| BuildError::missing_field("enabled"))?,
+            estimate: self.estimate,
+            payment_method: self
+                .payment_method
+                .ok_or_else(|| BuildError::missing_field("payment_method"))?,
             plan: self.plan,
             plans: self
                 .plans
                 .ok_or_else(|| BuildError::missing_field("plans"))?,
+            rate_card: self.rate_card,
             subscription: self.subscription,
             trial: self.trial,
+            upcoming_invoice: self.upcoming_invoice,
             usage: self
                 .usage
                 .ok_or_else(|| BuildError::missing_field("usage"))?,

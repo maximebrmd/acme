@@ -799,10 +799,12 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         );
         // This server does not bill: no plan, no subscription.
         assert.deepStrictEqual(own?.billing, {
+          accountDays: [],
           meteredPosts: [],
           plan: null,
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
         assert.notInclude(text, "A synthetic draft of Studio.");
         assert.deepStrictEqual(

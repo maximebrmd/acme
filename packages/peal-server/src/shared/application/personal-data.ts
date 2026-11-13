@@ -511,6 +511,16 @@ export interface UsageRecord {
  */
 export interface BillingRecord {
   /**
+   * The accounts its billing account had connected at most each day (UTC,
+   * YYYY-MM-DD), kept on it as the account's billing workspace, and how
+   * many of those account-days were reported to the payment provider.
+   */
+  readonly accountDays: readonly {
+    readonly day: string;
+    readonly peak: number;
+    readonly reported: number;
+  }[];
+  /**
    * The posts it made on platforms that bill the server per post, and how
    * many held a link, by month (its first instant).
    */
@@ -536,6 +546,17 @@ export interface BillingRecord {
     readonly dimension: string;
     readonly meter: string;
     readonly quantity: number;
+  }[];
+  /**
+   * The usage reported of it to the payment provider: each event's meter,
+   * the units, the instant they describe and when it was sent (null while
+   * it waits, or if it was refused).
+   */
+  readonly usageReports: readonly {
+    readonly eventName: string;
+    readonly occurredAt: DateTime.Utc;
+    readonly sentAt: DateTime.Utc | null;
+    readonly value: number;
   }[];
 }
 

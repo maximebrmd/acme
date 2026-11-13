@@ -662,6 +662,7 @@ export { TooManyContractRequests } from "./too-many-contract-requests.ts";
 export {
   AccountWorkspaceSchema,
   BillingAccountSchema,
+  BillingAccountsUsageSchema,
   BillingApi,
   BillingSchema,
   BillingTransferSchema,
@@ -691,6 +692,7 @@ export type {
   AccountWorkspace,
   Billing,
   BillingAccount,
+  BillingAccountsUsage,
   BillingSubscription,
   BillingTransfer,
   TransferPayload,

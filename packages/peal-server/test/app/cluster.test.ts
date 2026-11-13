@@ -24,10 +24,13 @@ import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
+import { ReportUsage } from "#billing/application/report-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
@@ -113,6 +116,17 @@ const Ticks = ClusterCron.make({
 // real collection read their posts, a real purge delete their audit
 // events, and real reminders tell their members.
 const ChannelJobsTest = Layer.mergeAll(
+  // A server that does not bill: the reporter of usage is not registered.
+  Layer.succeed(
+    BillingMode,
+    BillingMode.of({
+      enabled: false,
+      graceSince: Option.none(),
+      graceUntil: Option.none(),
+    })
+  ),
+  Layer.mock(ReportUsage, {}),
+  Layer.mock(StartAccountDays, {}),
   Layer.succeed(PurgeAuditLog, PurgeAuditLog.of({ purge: Effect.succeed(0) })),
   Layer.succeed(
     SendBillingReminders,
@@ -126,6 +140,8 @@ const ChannelJobsTest = Layer.mergeAll(
     SnapshotUsage,
     SnapshotUsage.of({
       run: Effect.succeed({
+        accountDays: 0,
+        accountDaysPurged: 0,
         day: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
         purged: 0,
         workspaces: 0,

@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface UsageTotals {
+    billableAccountDays: number | null;
     byPlatform: Peal.PlatformPosts[];
     channelDays: number;
     daysCounted: number;

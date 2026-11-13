@@ -3,6 +3,7 @@ import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import type { Billing, PlanAllowances } from "peal-contract";
+import { rateCard } from "peal-contract/rate-card";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { BillingView } from "#components/billing/billing-view.tsx";
@@ -58,9 +59,18 @@ const onFree: Billing = {
     transfer: null,
     workspaces: 1,
   },
+  accounts: {
+    accountDays: 0,
+    connected: 3,
+    estimate: { amount: 0, currency: "usd" },
+    nextAccount: { amount: 500, currency: "usd" },
+    pooled: 3,
+  },
   allowances: free,
   currency: "eur",
   enabled: true,
+  estimate: { amount: 0, currency: "usd" },
+  paymentMethod: false,
   plan: "free",
   plans: [
     { allowances: free, plan: "free", price: null },
@@ -71,8 +81,10 @@ const onFree: Billing = {
       price: { month: 2500, year: 25_000 },
     },
   ],
+  rateCard,
   subscription: null,
   trial: { available: true, days: 14, plan: "pro" },
+  upcomingInvoice: null,
   usage,
   vatRate: 20,
   withdrawableUntil: null,
@@ -97,6 +109,13 @@ const onStarter: Billing = {
 };
 
 const unbilled: Billing = {
+  accounts: {
+    accountDays: null,
+    connected: 3,
+    estimate: null,
+    nextAccount: null,
+    pooled: 3,
+  },
   allowances: {
     assistantRequests: null,
     channels: null,
@@ -106,10 +125,14 @@ const unbilled: Billing = {
   },
   currency: "eur",
   enabled: false,
+  estimate: null,
+  paymentMethod: false,
   plan: null,
   plans: [],
+  rateCard: null,
   subscription: null,
   trial: null,
+  upcomingInvoice: null,
   usage,
   vatRate: 20,
   withdrawableUntil: null,

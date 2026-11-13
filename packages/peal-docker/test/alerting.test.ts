@@ -32,6 +32,13 @@ const watched = [
   "peal_billing_stripe_catalogue_problems",
   "peal_billing_duplicate_subscriptions_total",
   "peal_notifications_weekly_digest_failures_total",
+  "peal_billing_usage_report_oldest_age",
+  "peal_billing_usage_report_ran_at",
+  "peal_billing_usage_report_refused_kept",
+  "peal_billing_usage_report_paused",
+  "peal_billing_account_days_started_day",
+  "peal_billing_threshold_unset_total",
+  "peal_billing_meter_errors_total",
 ];
 
 const RuleSchema = Schema.Struct({
@@ -98,8 +105,69 @@ describe("the production alert rules", () => {
       noDataState: "OK",
     });
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
-      "sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)"
+      "(sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))"
     );
+  });
+
+  it.each([
+    [
+      "peal-usage-report-behind",
+      "max(peal_billing_usage_report_oldest_age) or vector(0)",
+      "warning",
+      21_600,
+    ],
+    [
+      "peal-usage-report-stopped",
+      "time() - max(peal_billing_usage_report_ran_at)",
+      "warning",
+      1800,
+    ],
+    [
+      "peal-usage-report-refused",
+      "max(peal_billing_usage_report_refused_kept) or vector(0)",
+      "critical",
+      0,
+    ],
+    [
+      "peal-usage-report-key-refused",
+      "max(peal_billing_usage_report_paused) or vector(0)",
+      "critical",
+      0,
+    ],
+    [
+      "peal-account-days-unstarted",
+      "time() - max(peal_billing_account_days_started_day)",
+      "critical",
+      93_600,
+    ],
+    [
+      "peal-threshold-unset",
+      "(sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h) or vector(0))",
+      "critical",
+      0,
+    ],
+  ])(
+    "alert from %s when usage stops reaching Stripe, quiet where nothing bills",
+    (uid, expr, severity, threshold) => {
+      const rule = ruleOf(uid);
+
+      expect(rule).toMatchObject({
+        execErrState: "Error",
+        labels: { severity },
+        noDataState: "OK",
+      });
+      expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
+        expr
+      );
+      expect(rules).toContain(`params: [${threshold}]`);
+    }
+  );
+
+  it("never tell the operator to report usage by hand", () => {
+    expect(ruleOf("peal-usage-report-refused")?.annotations.summary).toContain(
+      "never report usage again by hand"
+    );
+    expect(rules).not.toMatch(/report the usage again by hand/u);
   });
 
   it("give every rule its own uid", () => {

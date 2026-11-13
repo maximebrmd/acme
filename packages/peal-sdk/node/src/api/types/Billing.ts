@@ -4,13 +4,18 @@ import * as Peal from "../index.js";
 
 export interface Billing {
     account?: Peal.BillingAccount | undefined;
+    accounts: Peal.BillingAccountsUsage;
     allowances: Peal.PlanAllowances;
     currency: string;
     enabled: boolean;
+    estimate: Peal.Money | null;
+    paymentMethod: boolean;
     plan: Peal.Plan | null;
     plans: Peal.PlanOffer[];
+    rateCard: Peal.RateCard | null;
     subscription: Peal.BillingSubscription | null;
     trial: Peal.TrialOffer | null;
+    upcomingInvoice: Peal.Money | null;
     usage: Peal.Usage;
     vatRate: number;
     withdrawableUntil: string | null;

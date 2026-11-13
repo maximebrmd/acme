@@ -28,19 +28,29 @@ import social.peal.core.ObjectMappers;
 public final class Billing {
     private final Optional<BillingAccount> account;
 
+    private final BillingAccountsUsage accounts;
+
     private final PlanAllowances allowances;
 
     private final String currency;
 
     private final boolean enabled;
 
+    private final Optional<Money> estimate;
+
+    private final boolean paymentMethod;
+
     private final Optional<Plan> plan;
 
     private final List<PlanOffer> plans;
 
+    private final Optional<RateCard> rateCard;
+
     private final Optional<BillingSubscription> subscription;
 
     private final Optional<TrialOffer> trial;
+
+    private final Optional<Money> upcomingInvoice;
 
     private final Usage usage;
 
@@ -52,25 +62,35 @@ public final class Billing {
 
     private Billing(
             Optional<BillingAccount> account,
+            BillingAccountsUsage accounts,
             PlanAllowances allowances,
             String currency,
             boolean enabled,
+            Optional<Money> estimate,
+            boolean paymentMethod,
             Optional<Plan> plan,
             List<PlanOffer> plans,
+            Optional<RateCard> rateCard,
             Optional<BillingSubscription> subscription,
             Optional<TrialOffer> trial,
+            Optional<Money> upcomingInvoice,
             Usage usage,
             int vatRate,
             Optional<String> withdrawableUntil,
             Map<String, Object> additionalProperties) {
         this.account = account;
+        this.accounts = accounts;
         this.allowances = allowances;
         this.currency = currency;
         this.enabled = enabled;
+        this.estimate = estimate;
+        this.paymentMethod = paymentMethod;
         this.plan = plan;
         this.plans = plans;
+        this.rateCard = rateCard;
         this.subscription = subscription;
         this.trial = trial;
+        this.upcomingInvoice = upcomingInvoice;
         this.usage = usage;
         this.vatRate = vatRate;
         this.withdrawableUntil = withdrawableUntil;
@@ -80,6 +100,11 @@ public final class Billing {
     @JsonProperty("account")
     public Optional<BillingAccount> getAccount() {
         return account;
+    }
+
+    @JsonProperty("accounts")
+    public BillingAccountsUsage getAccounts() {
+        return accounts;
     }
 
     @JsonProperty("allowances")
@@ -98,6 +123,19 @@ public final class Billing {
     }
 
     @JsonIgnore
+    public Optional<Money> getEstimate() {
+        if (estimate == null) {
+            return Optional.empty();
+        }
+        return estimate;
+    }
+
+    @JsonProperty("paymentMethod")
+    public boolean getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    @JsonIgnore
     public Optional<Plan> getPlan() {
         if (plan == null) {
             return Optional.empty();
@@ -108,6 +146,14 @@ public final class Billing {
     @JsonProperty("plans")
     public List<PlanOffer> getPlans() {
         return plans;
+    }
+
+    @JsonIgnore
+    public Optional<RateCard> getRateCard() {
+        if (rateCard == null) {
+            return Optional.empty();
+        }
+        return rateCard;
     }
 
     @JsonIgnore
@@ -124,6 +170,14 @@ public final class Billing {
             return Optional.empty();
         }
         return trial;
+    }
+
+    @JsonIgnore
+    public Optional<Money> getUpcomingInvoice() {
+        if (upcomingInvoice == null) {
+            return Optional.empty();
+        }
+        return upcomingInvoice;
     }
 
     @JsonProperty("usage")
@@ -145,9 +199,21 @@ public final class Billing {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("estimate")
+    private Optional<Money> _getEstimate() {
+        return estimate;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("plan")
     private Optional<Plan> _getPlan() {
         return plan;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("rateCard")
+    private Optional<RateCard> _getRateCard() {
+        return rateCard;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -160,6 +226,12 @@ public final class Billing {
     @JsonProperty("trial")
     private Optional<TrialOffer> _getTrial() {
         return trial;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("upcomingInvoice")
+    private Optional<Money> _getUpcomingInvoice() {
+        return upcomingInvoice;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -181,13 +253,18 @@ public final class Billing {
 
     private boolean equalTo(Billing other) {
         return account.equals(other.account)
+                && accounts.equals(other.accounts)
                 && allowances.equals(other.allowances)
                 && currency.equals(other.currency)
                 && enabled == other.enabled
+                && estimate.equals(other.estimate)
+                && paymentMethod == other.paymentMethod
                 && plan.equals(other.plan)
                 && plans.equals(other.plans)
+                && rateCard.equals(other.rateCard)
                 && subscription.equals(other.subscription)
                 && trial.equals(other.trial)
+                && upcomingInvoice.equals(other.upcomingInvoice)
                 && usage.equals(other.usage)
                 && vatRate == other.vatRate
                 && withdrawableUntil.equals(other.withdrawableUntil);
@@ -197,13 +274,18 @@ public final class Billing {
     public int hashCode() {
         return Objects.hash(
                 this.account,
+                this.accounts,
                 this.allowances,
                 this.currency,
                 this.enabled,
+                this.estimate,
+                this.paymentMethod,
                 this.plan,
                 this.plans,
+                this.rateCard,
                 this.subscription,
                 this.trial,
+                this.upcomingInvoice,
                 this.usage,
                 this.vatRate,
                 this.withdrawableUntil);
@@ -214,14 +296,18 @@ public final class Billing {
         return ObjectMappers.stringify(this);
     }
 
-    public static AllowancesStage builder() {
+    public static AccountsStage builder() {
         return new Builder();
+    }
+
+    public interface AccountsStage {
+        AllowancesStage accounts(@NotNull BillingAccountsUsage accounts);
+
+        Builder from(Billing other);
     }
 
     public interface AllowancesStage {
         CurrencyStage allowances(@NotNull PlanAllowances allowances);
-
-        Builder from(Billing other);
     }
 
     public interface CurrencyStage {
@@ -229,7 +315,11 @@ public final class Billing {
     }
 
     public interface EnabledStage {
-        UsageStage enabled(boolean enabled);
+        PaymentMethodStage enabled(boolean enabled);
+    }
+
+    public interface PaymentMethodStage {
+        UsageStage paymentMethod(boolean paymentMethod);
     }
 
     public interface UsageStage {
@@ -251,6 +341,12 @@ public final class Billing {
 
         _FinalStage account(BillingAccount account);
 
+        _FinalStage estimate(Optional<Money> estimate);
+
+        _FinalStage estimate(Money estimate);
+
+        _FinalStage estimate(Nullable<Money> estimate);
+
         _FinalStage plan(Optional<Plan> plan);
 
         _FinalStage plan(Plan plan);
@@ -262,6 +358,12 @@ public final class Billing {
         _FinalStage addPlans(PlanOffer plans);
 
         _FinalStage addAllPlans(List<PlanOffer> plans);
+
+        _FinalStage rateCard(Optional<RateCard> rateCard);
+
+        _FinalStage rateCard(RateCard rateCard);
+
+        _FinalStage rateCard(Nullable<RateCard> rateCard);
 
         _FinalStage subscription(Optional<BillingSubscription> subscription);
 
@@ -275,6 +377,12 @@ public final class Billing {
 
         _FinalStage trial(Nullable<TrialOffer> trial);
 
+        _FinalStage upcomingInvoice(Optional<Money> upcomingInvoice);
+
+        _FinalStage upcomingInvoice(Money upcomingInvoice);
+
+        _FinalStage upcomingInvoice(Nullable<Money> upcomingInvoice);
+
         _FinalStage withdrawableUntil(Optional<String> withdrawableUntil);
 
         _FinalStage withdrawableUntil(String withdrawableUntil);
@@ -284,12 +392,23 @@ public final class Billing {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AllowancesStage, CurrencyStage, EnabledStage, UsageStage, VatRateStage, _FinalStage {
+            implements AccountsStage,
+                    AllowancesStage,
+                    CurrencyStage,
+                    EnabledStage,
+                    PaymentMethodStage,
+                    UsageStage,
+                    VatRateStage,
+                    _FinalStage {
+        private BillingAccountsUsage accounts;
+
         private PlanAllowances allowances;
 
         private String currency;
 
         private boolean enabled;
+
+        private boolean paymentMethod;
 
         private Usage usage;
 
@@ -297,13 +416,19 @@ public final class Billing {
 
         private Optional<String> withdrawableUntil = Optional.empty();
 
+        private Optional<Money> upcomingInvoice = Optional.empty();
+
         private Optional<TrialOffer> trial = Optional.empty();
 
         private Optional<BillingSubscription> subscription = Optional.empty();
 
+        private Optional<RateCard> rateCard = Optional.empty();
+
         private List<PlanOffer> plans = new ArrayList<>();
 
         private Optional<Plan> plan = Optional.empty();
+
+        private Optional<Money> estimate = Optional.empty();
 
         private Optional<BillingAccount> account = Optional.empty();
 
@@ -314,16 +439,28 @@ public final class Billing {
         @java.lang.Override
         public Builder from(Billing other) {
             account(other.getAccount());
+            accounts(other.getAccounts());
             allowances(other.getAllowances());
             currency(other.getCurrency());
             enabled(other.getEnabled());
+            estimate(other.getEstimate());
+            paymentMethod(other.getPaymentMethod());
             plan(other.getPlan());
             plans(other.getPlans());
+            rateCard(other.getRateCard());
             subscription(other.getSubscription());
             trial(other.getTrial());
+            upcomingInvoice(other.getUpcomingInvoice());
             usage(other.getUsage());
             vatRate(other.getVatRate());
             withdrawableUntil(other.getWithdrawableUntil());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("accounts")
+        public AllowancesStage accounts(@NotNull BillingAccountsUsage accounts) {
+            this.accounts = Objects.requireNonNull(accounts, "accounts must not be null");
             return this;
         }
 
@@ -343,8 +480,15 @@ public final class Billing {
 
         @java.lang.Override
         @JsonSetter("enabled")
-        public UsageStage enabled(boolean enabled) {
+        public PaymentMethodStage enabled(boolean enabled) {
             this.enabled = enabled;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("paymentMethod")
+        public UsageStage paymentMethod(boolean paymentMethod) {
+            this.paymentMethod = paymentMethod;
             return this;
         }
 
@@ -384,6 +528,31 @@ public final class Billing {
         @JsonSetter(value = "withdrawableUntil", nulls = Nulls.SKIP)
         public _FinalStage withdrawableUntil(Optional<String> withdrawableUntil) {
             this.withdrawableUntil = withdrawableUntil;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage upcomingInvoice(Nullable<Money> upcomingInvoice) {
+            if (upcomingInvoice.isNull()) {
+                this.upcomingInvoice = null;
+            } else if (upcomingInvoice.isEmpty()) {
+                this.upcomingInvoice = Optional.empty();
+            } else {
+                this.upcomingInvoice = Optional.of(upcomingInvoice.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage upcomingInvoice(Money upcomingInvoice) {
+            this.upcomingInvoice = Optional.ofNullable(upcomingInvoice);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "upcomingInvoice", nulls = Nulls.SKIP)
+        public _FinalStage upcomingInvoice(Optional<Money> upcomingInvoice) {
+            this.upcomingInvoice = upcomingInvoice;
             return this;
         }
 
@@ -438,6 +607,31 @@ public final class Billing {
         }
 
         @java.lang.Override
+        public _FinalStage rateCard(Nullable<RateCard> rateCard) {
+            if (rateCard.isNull()) {
+                this.rateCard = null;
+            } else if (rateCard.isEmpty()) {
+                this.rateCard = Optional.empty();
+            } else {
+                this.rateCard = Optional.of(rateCard.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage rateCard(RateCard rateCard) {
+            this.rateCard = Optional.ofNullable(rateCard);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "rateCard", nulls = Nulls.SKIP)
+        public _FinalStage rateCard(Optional<RateCard> rateCard) {
+            this.rateCard = rateCard;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllPlans(List<PlanOffer> plans) {
             if (plans != null) {
                 this.plans.addAll(plans);
@@ -487,6 +681,31 @@ public final class Billing {
         }
 
         @java.lang.Override
+        public _FinalStage estimate(Nullable<Money> estimate) {
+            if (estimate.isNull()) {
+                this.estimate = null;
+            } else if (estimate.isEmpty()) {
+                this.estimate = Optional.empty();
+            } else {
+                this.estimate = Optional.of(estimate.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage estimate(Money estimate) {
+            this.estimate = Optional.ofNullable(estimate);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "estimate", nulls = Nulls.SKIP)
+        public _FinalStage estimate(Optional<Money> estimate) {
+            this.estimate = estimate;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage account(BillingAccount account) {
             this.account = Optional.ofNullable(account);
             return this;
@@ -503,13 +722,18 @@ public final class Billing {
         public Billing build() {
             return new Billing(
                     account,
+                    accounts,
                     allowances,
                     currency,
                     enabled,
+                    estimate,
+                    paymentMethod,
                     plan,
                     plans,
+                    rateCard,
                     subscription,
                     trial,
+                    upcomingInvoice,
                     usage,
                     vatRate,
                     withdrawableUntil,
@@ -519,13 +743,18 @@ public final class Billing {
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("account")
+                    || key.equalsIgnoreCase("accounts")
                     || key.equalsIgnoreCase("allowances")
                     || key.equalsIgnoreCase("currency")
                     || key.equalsIgnoreCase("enabled")
+                    || key.equalsIgnoreCase("estimate")
+                    || key.equalsIgnoreCase("paymentMethod")
                     || key.equalsIgnoreCase("plan")
                     || key.equalsIgnoreCase("plans")
+                    || key.equalsIgnoreCase("rateCard")
                     || key.equalsIgnoreCase("subscription")
                     || key.equalsIgnoreCase("trial")
+                    || key.equalsIgnoreCase("upcomingInvoice")
                     || key.equalsIgnoreCase("usage")
                     || key.equalsIgnoreCase("vatRate")
                     || key.equalsIgnoreCase("withdrawableUntil")) {
