@@ -143,13 +143,59 @@ const mavenArtifact = (
     ? "okhttp-jvm"
     : artifact;
 
+/**
+ * The release each group's artifacts take at least. Maven takes the version
+ * a pom names, not a range, so the SDK's users get the generator's unless
+ * they override it: a generator that names a release with known
+ * vulnerabilities gets this one in its place. Jackson's modules go together,
+ * on its latest 2.18 patch (2.18.6, the generator's, has advisories fixed in
+ * 2.18.11). A generator that names a later release keeps it.
+ */
+const minimumVersions: ReadonlyMap<string, string> = new Map([
+  ["com.fasterxml.jackson.core", "2.18.12"],
+  ["com.fasterxml.jackson.datatype", "2.18.12"],
+]);
+
+/** Compares dotted numeric versions (2.18.6 before 2.18.12). */
+const isBefore = (version: string, minimum: string): boolean => {
+  const parts = version.split(".").map(Number);
+  const minimumParts = minimum.split(".").map(Number);
+
+  if ([...parts, ...minimumParts].some(Number.isNaN)) {
+    throw new Error(`Cannot compare the versions ${version} and ${minimum}`);
+  }
+
+  for (const [index, minimumPart] of minimumParts.entries()) {
+    const part = parts[index] ?? 0;
+
+    if (part !== minimumPart) {
+      return part < minimumPart;
+    }
+  }
+
+  return false;
+};
+
+const mavenVersion = (
+  group: string | undefined,
+  version: string | undefined
+): string | undefined => {
+  const minimum = group === undefined ? undefined : minimumVersions.get(group);
+
+  return minimum !== undefined &&
+    version !== undefined &&
+    isBefore(version, minimum)
+    ? minimum
+    : version;
+};
+
 const mavenDependencies = (gradleBuild: string): string => {
   const dependencies = [...gradleBuild.matchAll(gradleDependency)].map(
     ({ groups: { artifact, configuration, group, version } = {} }) =>
       `        <dependency>
             <groupId>${group}</groupId>
             <artifactId>${mavenArtifact(group, artifact)}</artifactId>
-            <version>${version}</version>${configuration === "testImplementation" ? "\n            <scope>test</scope>" : ""}
+            <version>${mavenVersion(group, version)}</version>${configuration === "testImplementation" ? "\n            <scope>test</scope>" : ""}
         </dependency>`
   );
 

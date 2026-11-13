@@ -6,5 +6,5 @@
     "client-class-name": "PealClient",
     "package-prefix": "social.peal"
   },
-  "requestedVersion": "0.3.0"
+  "requestedVersion": "0.3.1"
 }

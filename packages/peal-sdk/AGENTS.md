@@ -69,6 +69,12 @@
 - The SDKs' manifests keep the generator's dependency ranges, and their lock
   files (`Gemfile.lock`, `composer.lock`, `Cargo.lock`) stay out of Git: a
   library leaves its dependencies' versions to the projects that install it.
+  The exception is a version with known vulnerabilities in a manifest that
+  pins one: `finish.ts` raises it (`minimumVersions`, Jackson in Java's
+  pom). Dependabot's security updates read the generated manifests: fix
+  what they report there, in the generator or `finish.ts`, never in the
+  generated file, which `sdk:check` would refuse; Dependabot then closes
+  its pull request.
 - `sdk:build` builds each SDK as its registry would get it, then loads it:
   Python with the workspace's uv, the others in their image
   (`scripts/container.ts`: as the calling user, with their downloads cached in
