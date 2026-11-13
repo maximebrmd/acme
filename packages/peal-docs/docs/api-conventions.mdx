@@ -504,13 +504,13 @@ Wait `retryAfterSeconds`, then send the request again. A client that reads `Rate
 
 Some features have a limit of their own, which this one does not replace:
 
-| Limit                                                  | Error                      | See                                                |
-| ------------------------------------------------------ | -------------------------- | -------------------------------------------------- |
+| Limit                                                                                       | Error                      | See                                                |
+| ------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------- |
 | The writing assistant's requests per day, across the billing account on a server that bills | `assistant_quota_exceeded` | [Ask the writing assistant](/scheduling#assistant) |
-| Imports running at once                                | `media_import_busy`        | [Media](/media)                                    |
-| Test events and resends of webhooks per hour           | `too_many_webhook_sends`   | [The delivery log](/webhooks#log)                  |
-| Pending invitations of a workspace                     | `too_many_invitations`     | [Invitations](/settings#invitations)               |
-| What a plan allows, on a server that bills             | `plan_limit_reached`       | [Plans and billing](/billing#limits)               |
+| Imports running at once                                                                     | `media_import_busy`        | [Media](/media)                                    |
+| Test events and resends of webhooks per hour                                                | `too_many_webhook_sends`   | [The delivery log](/webhooks#log)                  |
+| Pending invitations of a workspace                                                          | `too_many_invitations`     | [Invitations](/settings#invitations)               |
+| What a plan allows, on a server that bills                                                  | `plan_limit_reached`       | [Plans and billing](/billing#limits)               |
 
 ## Versioning [#versioning]
 

@@ -504,13 +504,13 @@ Attendez `retryAfterSeconds`, puis renvoyez la requête. Un client qui lit `Rate
 
 Certaines fonctions ont leur propre limite, que celle-ci ne remplace pas :
 
-| Limite                                                                     | Erreur                     | Voir                                                                   |
-| -------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
+| Limite                                                                                                           | Erreur                     | Voir                                                                   |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
 | Les demandes à l’assistant de rédaction, par jour, pour tout le compte de facturation sur un serveur qui facture | `assistant_quota_exceeded` | [Demander de l’aide à l’assistant de rédaction](/scheduling#assistant) |
-| Les imports en cours en même temps                                         | `media_import_busy`        | [Médias](/media)                                                       |
-| Les événements de test et les renvois de webhooks, par heure               | `too_many_webhook_sends`   | [Le journal des livraisons](/webhooks#log)                             |
-| Les invitations en attente d’un espace de travail                          | `too_many_invitations`     | [Invitations](/settings#invitations)                                   |
-| Ce que permet un abonnement, sur un serveur qui facture                    | `plan_limit_reached`       | [Abonnements et facturation](/billing#limits)                          |
+| Les imports en cours en même temps                                                                               | `media_import_busy`        | [Médias](/media)                                                       |
+| Les événements de test et les renvois de webhooks, par heure                                                     | `too_many_webhook_sends`   | [Le journal des livraisons](/webhooks#log)                             |
+| Les invitations en attente d’un espace de travail                                                                | `too_many_invitations`     | [Invitations](/settings#invitations)                                   |
+| Ce que permet un abonnement, sur un serveur qui facture                                                          | `plan_limit_reached`       | [Abonnements et facturation](/billing#limits)                          |
 
 ## Versions [#versioning]
 
