@@ -2,7 +2,8 @@ import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option } from "effect";
 
 import { entitlementsOf, unmetered } from "#billing/domain/entitlements.ts";
-import { planAllowances, unlimited } from "#billing/domain/plans.ts";
+import { planAllowances } from "#billing/domain/legacy-plans.ts";
+import { allowancesOf, unlimited } from "#billing/domain/plans.ts";
 import { stillBills, Subscription } from "#billing/domain/subscription.ts";
 import type { SubscriptionStatus } from "#billing/domain/subscription.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -38,7 +39,10 @@ describe(entitlementsOf, () => {
 
     expect(free.plan).toStrictEqual(Option.some("free"));
     expect(free.subscription).toStrictEqual(Option.none());
-    expect(free.allowances).toStrictEqual(planAllowances.free);
+    expect(free.allowancesFor(0)).toStrictEqual(
+      allowancesOf("free", { accounts: 0, freeTier: true })
+    );
+    expect(free.allowanceOf("channels")).toStrictEqual(Option.some(2));
   });
 
   it.each<SubscriptionStatus>(["active", "trialing", "past_due"])(
@@ -77,9 +81,7 @@ describe(entitlementsOf, () => {
     );
   });
 
-  // Per-account pricing is held to the free plan's allowances until it is
-  // wired to the rate card: it must never win over a legacy plan.
-  it("keeps a legacy plan over per-account pricing, before it is wired", () => {
+  it("puts per-account pricing above a legacy plan held with it", () => {
     const agency = subscription("agency", "active");
     const payAsYouGo = subscription("payAsYouGo", "active");
 
@@ -89,9 +91,47 @@ describe(entitlementsOf, () => {
     ]) {
       const entitlements = entitlementsOf(held);
 
-      expect(entitlements.plan).toStrictEqual(Option.some("agency"));
-      expect(entitlements.allowances).toStrictEqual(planAllowances.agency);
+      expect(entitlements.plan).toStrictEqual(Option.some("payAsYouGo"));
+      expect(entitlements.subscription).toStrictEqual(Option.some(payAsYouGo));
+      expect(entitlements.allowanceOf("channels")).toStrictEqual(Option.none());
     }
+  });
+
+  it("keeps a legacy plan's own allowances", () => {
+    const entitlements = entitlementsOf([subscription("agency", "active")]);
+
+    expect(entitlements.allowancesFor(40)).toStrictEqual(planAllowances.agency);
+  });
+
+  it("gives per-account pricing storage by the accounts connected", () => {
+    const entitlements = entitlementsOf([subscription("payAsYouGo", "active")]);
+
+    expect(entitlements.allowancesFor(3).mediaStorage).toStrictEqual(
+      Option.some(15_000_000_000)
+    );
+    expect(entitlements.allowanceOf("assistantRequests")).toStrictEqual(
+      Option.some(20)
+    );
+  });
+
+  it("gives no free account once staff required a payment method", () => {
+    expect(entitlementsOf([], false).allowanceOf("channels")).toStrictEqual(
+      Option.some(0)
+    );
+    expect(
+      entitlementsOf([subscription("payAsYouGo", "active")], false).allowanceOf(
+        "channels"
+      )
+    ).toStrictEqual(Option.none());
+  });
+
+  it("puts a workspace back on the free tier when per-account pricing is unpaid", () => {
+    expect(
+      entitlementsOf([subscription("payAsYouGo", "unpaid")]).plan
+    ).toStrictEqual(Option.some("free"));
+    expect(
+      entitlementsOf([subscription("payAsYouGo", "past_due")]).plan
+    ).toStrictEqual(Option.some("payAsYouGo"));
   });
 
   it("keeps a new subscription's plan when an old one ended", () => {
@@ -123,29 +163,9 @@ describe(stillBills, () => {
   );
 });
 
-describe("the plans", () => {
-  it("limit less on each larger plan, and the assistant on every plan", () => {
-    const { business, free, pro } = planAllowances;
-
-    for (const limit of [
-      "assistantRequests",
-      "channels",
-      "members",
-      "scheduledPosts",
-    ] as const) {
-      const sizes = [free, pro, business].map((plan) =>
-        Option.getOrElse(plan[limit], () => Number.POSITIVE_INFINITY)
-      );
-
-      expect(sizes).toStrictEqual(sizes.toSorted((a, b) => a - b));
-      expect(Option.isSome(free[limit])).toBeTruthy();
-    }
-
-    expect(Option.isSome(business.assistantRequests)).toBeTruthy();
-  });
-
-  it("limit nothing on a server that does not bill", () => {
+describe("a server that does not bill", () => {
+  it("limits nothing", () => {
     expect(unmetered.plan).toStrictEqual(Option.none());
-    expect(unmetered.allowances).toStrictEqual(unlimited);
+    expect(unmetered.allowancesFor(1000)).toStrictEqual(unlimited);
   });
 });

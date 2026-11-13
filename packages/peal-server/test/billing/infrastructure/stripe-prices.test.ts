@@ -12,13 +12,13 @@ import {
   Option,
 } from "effect";
 
+import { LegacySubscriptions } from "#billing/application/ports/legacy-subscriptions.ts";
 import { catalogueOf } from "#billing/domain/catalogue.ts";
 import { priceOf } from "#billing/domain/prices.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
 import {
   catalogueProblemsAtStart,
   stripePricesChecked,
-  StripePricesCheckedLive,
 } from "#billing/infrastructure/stripe-prices-checked.ts";
 import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
 import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
@@ -70,24 +70,31 @@ const changing = (
   ),
 });
 
-// The check once per-account pricing is sold: a catalogue that differs
-// stops the server too.
+// The check the server runs, now per-account pricing is sold: a catalogue
+// that differs stops the server.
 const stopping = stripePricesChecked("stop");
 
-// The server starting, as far as the check goes.
+// The check as it was before: a catalogue that differs only warns.
+const warning = stripePricesChecked("warn");
+
+// The server starting, as far as the check goes, while a legacy plan's
+// subscription entitles a workspace (`legacy`) or none does.
 const startingOn = (
   settings: Readonly<Record<string, string>>,
-  check: typeof StripePricesCheckedLive = StripePricesCheckedLive
+  check: typeof stopping = stopping,
+  legacy = true
 ) =>
   Layer.build(
     check.pipe(
+      Layer.provide(LegacySubscriptions.layerEntitling(legacy)),
       Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(settings)))
     )
   ).pipe(Effect.scoped, Effect.asVoid);
 
 const billingOn = (
   apiUrl: string,
-  check: typeof StripePricesCheckedLive = StripePricesCheckedLive
+  check: typeof stopping = stopping,
+  legacy = true
 ) =>
   startingOn(
     {
@@ -95,7 +102,8 @@ const billingOn = (
       STRIPE_SECRET_KEY: "sk_test_0123456789syntheticprices",
       STRIPE_WEBHOOK_SECRET: "whsec_synthetic_prices",
     },
-    check
+    check,
+    legacy
   );
 
 // The start, with the warnings it logged.
@@ -111,7 +119,7 @@ const warnedOn = (apiUrl: string) =>
       }),
     ]);
 
-    yield* billingOn(apiUrl).pipe(Effect.provide(logs));
+    yield* billingOn(apiUrl, warning).pipe(Effect.provide(logs));
 
     return lines;
   });
@@ -151,8 +159,10 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
 
         yield* billingOn(stripe.url);
 
-        // Every page of the active meters, then the catalogue's six keys
-        // and the plans' eight, ten a call, with the tiers.
+        // Every page of the active meters and of the products, and the
+        // catalogue's six keys and, while a legacy plan's subscription
+        // entitles, the plans' eight, ten a call, with the tiers: read
+        // together.
         assert.sameMembers(lookupKeysAsked(stripe.requests()), [
           ...published.map(({ lookupKey }) => lookupKey),
           ...LegacyPaidPlanSchema.literals.flatMap((plan) => [
@@ -160,15 +170,13 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
             `peal_${plan}_yearly`,
           ]),
         ]);
-        assert.deepStrictEqual(
-          stripe.requests().map(({ method, path }) => `${method} ${path}`),
+        assert.sameMembers(
           [
-            "GET /v1/billing/meters",
-            "GET /v1/billing/meters",
-            "GET /v1/billing/meters",
-            "GET /v1/prices",
-            "GET /v1/prices",
-          ]
+            ...new Set(
+              stripe.requests().map(({ method, path }) => `${method} ${path}`)
+            ),
+          ],
+          ["GET /v1/billing/meters", "GET /v1/prices", "GET /v1/products"]
         );
       }).pipe(Effect.scoped)
   );
@@ -345,9 +353,52 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
   );
 
   it.effect(
-    "starts, until per-account pricing is sold, on an account without the catalogue, warning with the command that gives it",
+    "needs no legacy price once no legacy plan's subscription entitles, and asks for none",
     () =>
-      Effect.gen(function* warning() {
+      Effect.gen(function* fresh() {
+        const stripe = yield* stripeAccount(holding(published));
+
+        yield* billingOn(stripe.url, stopping, false);
+
+        assert.sameMembers(
+          lookupKeysAsked(stripe.requests()),
+          published.map(({ lookupKey }) => lookupKey)
+        );
+
+        // While one entitles, the same account stops the server.
+        const stopped = yield* billingOn(stripe.url, stopping, true).pipe(
+          Effect.flip
+        );
+
+        assert.include(
+          stopped.message,
+          "peal_starter_monthly: Stripe has no active price with this lookup key"
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("stops on a price whose product is archived", () =>
+    Effect.gen(function* archived() {
+      const stripe = yield* stripeAccount({
+        ...complete,
+        products: complete.products.map((product) =>
+          product.key === "peal_managed_ads"
+            ? { ...product, active: false }
+            : product
+        ),
+      });
+
+      const stopped = yield* billingOn(stripe.url).pipe(Effect.flip);
+
+      assert.strictEqual(stopped._tag, "StripePricesMismatch");
+      assert.include(stopped.message, "peal_managed_ads");
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "starts with `warn` on an account without the catalogue, warning with the command that gives it",
+    () =>
+      Effect.gen(function* warns() {
         const stripe = yield* stripeAccount(legacyOnly);
 
         const warnings = yield* warnedOn(stripe.url);
@@ -372,7 +423,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
   );
 
   it.effect(
-    "still stops, until per-account pricing is sold, on plan prices that differ, naming only them",
+    "still stops with `warn` on plan prices that differ, naming only them",
     () =>
       Effect.gen(function* legacy() {
         const stripe = yield* stripeAccount({
@@ -382,7 +433,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
           ),
         });
 
-        const stopped = yield* billingOn(stripe.url).pipe(Effect.flip);
+        const stopped = yield* billingOn(stripe.url, warning).pipe(Effect.flip);
 
         assert.strictEqual(stopped._tag, "StripePricesMismatch");
         assert.strictEqual(
@@ -397,7 +448,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
   );
 
   it.effect(
-    "starts, until per-account pricing is sold, when Stripe refuses or garbles only the meters, warning",
+    "starts with `warn` when Stripe refuses or garbles only the meters, warning",
     () =>
       Effect.gen(function* meters() {
         const stripe = yield* stripeAccount(complete, ({ path }) =>

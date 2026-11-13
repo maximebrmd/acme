@@ -17,7 +17,10 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
-import { UnmeteredTest } from "#test/billing/support.ts";
+import {
+  NoAccountsConnectedTest,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
 // The development stack's SeaweedFS (packages/peal-docker/compose.yaml),
@@ -81,6 +84,7 @@ export const mediaTestWith = <E = never, R = never>(
       Layer.mergeAll(
         MediaInPostsTest,
         entitlements,
+        NoAccountsConnectedTest,
         webhooks,
         TransactionsTest,
         // No name resolves: the guard refuses every address a test could

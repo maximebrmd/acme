@@ -144,6 +144,16 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       refunded,
       withdrawnAt,
     }),
+    PaymentMethodNeeded: ({
+      accounts,
+      allowed,
+      graceUntil,
+    }): NoticeEventRecord => ({
+      _tag: "PaymentMethodNeeded",
+      accounts,
+      allowed,
+      graceUntil,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
       endsAt,

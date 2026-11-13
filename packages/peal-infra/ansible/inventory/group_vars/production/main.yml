@@ -112,6 +112,11 @@ peal_settings:
   # vault. X's analytics stay off: X bills each read.
   YOUTUBE_CLIENT_ID: 370547380506-ap0ocl7sbbjqgc0n9pihspup46dn9505.apps.googleusercontent.com
   X_CLIENT_ID: OTdwb0p4d0QzaWFpRU5iamYzWGU6MTpjaQ
+  # The day billing is turned on, every workspace on the free tier with more
+  # accounts than it includes would stop publishing: set the grace's day
+  # (YYYY-MM-DD) with STRIPE_SECRET_KEY, a month or so ahead (the docs'
+  # environment variables page, "Billing").
+  # PEAL_BILLING_GRACE_UNTIL: "2027-01-31"
   # Where the web app sends people who need more than the largest plan
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.

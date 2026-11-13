@@ -4,9 +4,14 @@ import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
+import { pooledUsed } from "./pooled-requests.ts";
+import { AssistantAllowance } from "./ports/assistant-allowance.ts";
 import { AssistantUsage } from "./ports/assistant-usage.ts";
 
-/** The requests a workspace sent today, and when the day's count resets. */
+/**
+ * The requests a workspace's pool sent today, as its limit counts them,
+ * and when the day's count resets.
+ */
 export interface RequestsToday {
   readonly resetsAt: DateTime.Utc;
   readonly used: number;
@@ -35,12 +40,18 @@ export class AssistantRequests extends Context.Service<
     AssistantRequests,
     Effect.gen(function* AssistantRequestsLive() {
       const usage = yield* AssistantUsage;
+      const allowance = yield* AssistantAllowance;
 
       const today = Effect.fn("AssistantRequests.today")(function* today(
         workspaceId: WorkspaceId
       ) {
         const window = usageWindowAt(yield* DateTime.now);
-        const used = yield* usage.used(workspaceId, window.day);
+
+        const used = yield* pooledUsed(workspaceId, window.day).pipe(
+          Effect.provideService(AssistantUsage, usage),
+          Effect.provideService(AssistantAllowance, allowance)
+        );
+
         const requests: RequestsToday = { resetsAt: window.resetsAt, used };
 
         return requests;

@@ -46,7 +46,14 @@ const Neighbours = Layer.mergeAll(
   ),
   UnmeteredTest,
   AloneInAccountsTest,
-  Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
+  Layer.succeed(
+    BillingMode,
+    BillingMode.of({
+      enabled: false,
+      graceSince: Option.none(),
+      graceUntil: Option.none(),
+    })
+  ),
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
   DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest)),

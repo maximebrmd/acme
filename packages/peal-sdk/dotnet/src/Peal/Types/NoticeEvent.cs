@@ -127,6 +127,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PaymentMethodNeeded"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PaymentMethodNeeded value)
+    {
+        Type = "PaymentMethodNeeded";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionRenewing"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.SubscriptionRenewing value)
@@ -277,6 +286,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "TrialEnding"
     /// </summary>
     public bool IsTrialEnding => Type == "TrialEnding";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "PaymentMethodNeeded"
+    /// </summary>
+    public bool IsPaymentMethodNeeded => Type == "PaymentMethodNeeded";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "SubscriptionRenewing"
@@ -434,6 +448,15 @@ public record NoticeEvent
             : throw new global::System.Exception("NoticeEvent.Type is not 'TrialEnding'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPaymentMethodNeeded"/> if <see cref="Type"/> is 'PaymentMethodNeeded', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PaymentMethodNeeded'.</exception>
+    public Peal.NoticeEventPaymentMethodNeeded AsPaymentMethodNeeded() =>
+        IsPaymentMethodNeeded
+            ? (Peal.NoticeEventPaymentMethodNeeded)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PaymentMethodNeeded'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionRenewing"/> if <see cref="Type"/> is 'SubscriptionRenewing', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionRenewing'.</exception>
@@ -533,6 +556,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventChannelReconnectSoon, T> onChannelReconnectSoon,
         Func<Peal.NoticeEventSubscriptionStarted, T> onSubscriptionStarted,
         Func<Peal.NoticeEventTrialEnding, T> onTrialEnding,
+        Func<Peal.NoticeEventPaymentMethodNeeded, T> onPaymentMethodNeeded,
         Func<Peal.NoticeEventSubscriptionRenewing, T> onSubscriptionRenewing,
         Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
         Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
@@ -559,6 +583,7 @@ public record NoticeEvent
             "ChannelReconnectSoon" => onChannelReconnectSoon(AsChannelReconnectSoon()),
             "SubscriptionStarted" => onSubscriptionStarted(AsSubscriptionStarted()),
             "TrialEnding" => onTrialEnding(AsTrialEnding()),
+            "PaymentMethodNeeded" => onPaymentMethodNeeded(AsPaymentMethodNeeded()),
             "SubscriptionRenewing" => onSubscriptionRenewing(AsSubscriptionRenewing()),
             "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
             "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
@@ -587,6 +612,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventChannelReconnectSoon> onChannelReconnectSoon,
         Action<Peal.NoticeEventSubscriptionStarted> onSubscriptionStarted,
         Action<Peal.NoticeEventTrialEnding> onTrialEnding,
+        Action<Peal.NoticeEventPaymentMethodNeeded> onPaymentMethodNeeded,
         Action<Peal.NoticeEventSubscriptionRenewing> onSubscriptionRenewing,
         Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
         Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
@@ -636,6 +662,9 @@ public record NoticeEvent
                 break;
             case "TrialEnding":
                 onTrialEnding(AsTrialEnding());
+                break;
+            case "PaymentMethodNeeded":
+                onPaymentMethodNeeded(AsPaymentMethodNeeded());
                 break;
             case "SubscriptionRenewing":
                 onSubscriptionRenewing(AsSubscriptionRenewing());
@@ -839,6 +868,20 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPaymentMethodNeeded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPaymentMethodNeeded(out Peal.NoticeEventPaymentMethodNeeded? value)
+    {
+        if (Type == "PaymentMethodNeeded")
+        {
+            value = (Peal.NoticeEventPaymentMethodNeeded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionRenewing"/> and returns true if successful.
     /// </summary>
     public bool TryAsSubscriptionRenewing(out Peal.NoticeEventSubscriptionRenewing? value)
@@ -997,6 +1040,9 @@ public record NoticeEvent
 
     public static implicit operator NoticeEvent(NoticeEvent.TrialEnding value) => new(value);
 
+    public static implicit operator NoticeEvent(NoticeEvent.PaymentMethodNeeded value) =>
+        new(value);
+
     public static implicit operator NoticeEvent(NoticeEvent.SubscriptionRenewing value) =>
         new(value);
 
@@ -1128,6 +1174,13 @@ public record NoticeEvent
                 "TrialEnding" => jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventTrialEnding?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.NoticeEventTrialEnding"),
+                "PaymentMethodNeeded" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPaymentMethodNeeded?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPaymentMethodNeeded"
+                        ),
                 "SubscriptionRenewing" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionRenewing?>(
                         options
@@ -1212,6 +1265,7 @@ public record NoticeEvent
                     "ChannelReconnectSoon" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionStarted" => JsonSerializer.SerializeToNode(value.Value, options),
                     "TrialEnding" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PaymentMethodNeeded" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionRenewing" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
@@ -1494,6 +1548,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.TrialEnding(
             Peal.NoticeEventTrialEnding value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PaymentMethodNeeded
+    /// </summary>
+    [Serializable]
+    public struct PaymentMethodNeeded
+    {
+        public PaymentMethodNeeded(Peal.NoticeEventPaymentMethodNeeded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPaymentMethodNeeded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PaymentMethodNeeded(
+            Peal.NoticeEventPaymentMethodNeeded value
         ) => new(value);
     }
 

@@ -88,12 +88,18 @@ type WithdrawalFailure = ReceivedFailure | MissingPermission | PersonRequired;
 // What goes back of each paid invoice at `at`: the part of the period it
 // paid for not supplied yet, that period read from its lines, or else the
 // subscription's current one. Without either, all of it goes back.
+// Per-account pricing bills in arrears: what it was paid was for usage
+// supplied, so nothing goes back, whatever its lines say.
 const creditsAt = (
   invoices: readonly PaidInvoice[],
   subscription: Subscription,
   at: DateTime.Utc
 ): readonly InvoiceCredit[] =>
   invoices.map((invoice) => {
+    if (subscription.plan === "payAsYouGo") {
+      return { amount: 0, invoiceId: invoice.invoiceId };
+    }
+
     const period = Option.all({
       end: invoice.periodEnd,
       start: invoice.periodStart,
@@ -316,7 +322,11 @@ export class Withdraw extends Context.Service<
           );
         }
 
-        yield* stripe.endNow(workspaceId, id, "withdrawn");
+        // Per-account pricing bills the month past: its usage to now is
+        // invoiced as it ends, and nothing paid ahead is refunded.
+        yield* subscription.plan === "payAsYouGo"
+          ? stripe.endAndInvoice(workspaceId, id, "withdrawn")
+          : stripe.endNow(workspaceId, id, "withdrawn");
 
         const done: ReceivedWithdrawal = {
           plan: subscription.plan,

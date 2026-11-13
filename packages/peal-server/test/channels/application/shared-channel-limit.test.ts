@@ -57,7 +57,7 @@ const share = Effect.fn("share")(function* share(
   );
 });
 
-// The free plan, which allows 3 channels, shared as the partners' rows say.
+// The free plan, which allows 2 accounts, shared as the partners' rows say.
 const SharedFreePlanTest = Layer.mergeAll(
   ConnectChannel.layer,
   ChannelUsage.layer
@@ -80,7 +80,7 @@ const SharedFreePlanTest = Layer.mergeAll(
   Layer.provideMerge(DatabaseTest)
 );
 
-const freeChannels = 3;
+const freeChannels = 2;
 
 const manager = (workspaceId: WorkspaceId) =>
   actorIn(workspaceId, ["channel:read", "channel:connect"]);
@@ -121,10 +121,10 @@ layer(SharedFreePlanTest)("a partner's workspaces on one plan", (it) => {
 
         yield* share(home, [first, second]);
         yield* fill(home, 1);
-        yield* fill(first, 2);
+        yield* fill(first, 1);
 
-        // The third workspace has no channel, and no room: the plan's
-        // three are taken by the others.
+        // The third workspace has no channel, and no room: the free
+        // tier's two are taken by the others.
         const refused = yield* connect
           .start(manager(second), "mastodon", {
             connection: Option.none(),
@@ -158,7 +158,7 @@ layer(SharedFreePlanTest)("a partner's workspaces on one plan", (it) => {
 
         assert.deepStrictEqual(
           [own.get(home), own.get(first), own.get(second)],
-          [1, 2, undefined]
+          [1, 1, undefined]
         );
       }).pipe(Effect.scoped)
   );

@@ -629,8 +629,8 @@ layer(connectTest(["instagramLogin"], { flatGrant: true }))(
   }
 );
 
-// The free plan, which allows 3 channels.
-const freeChannels = 3;
+// The free plan, which allows 2 accounts.
+const freeChannels = 2;
 
 // Synthetic channels on another platform, connected without it.
 const fill = Effect.fn("fill")(function* fill(

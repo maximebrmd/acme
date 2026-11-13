@@ -101,11 +101,12 @@ export class ChannelRepository extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Channel[], DatabaseError>;
     /**
-     * How many channels each of these workspaces has; one without any is
-     * left out.
+     * How many channels each of these workspaces has, or had connected
+     * before `before` when it is given; one without any is left out.
      */
     readonly countIn: (
-      workspaceIds: readonly WorkspaceId[]
+      workspaceIds: readonly WorkspaceId[],
+      before?: DateTime.Utc
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DatabaseError>;
     readonly findById: (
       workspaceId: WorkspaceId,

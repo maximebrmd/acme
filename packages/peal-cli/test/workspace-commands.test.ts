@@ -950,14 +950,17 @@ describe("peal billing, members and invitations", () => {
       const session = yield* signedIn();
       const shown = yield* session.printed(["billing", ...inStudio]);
 
-      assert.include(shown, "Plan: free, with no subscription.");
-      assert.match(shown, /Members\s+2 of 2/u);
+      assert.include(
+        shown,
+        "Plan: free, without a payment method. A payment method gives more: with per-account pricing, each connected account past the first 2 costs $5.00 a month, excluding tax, less from account 11 on."
+      );
+      assert.match(shown, /Members\s+2 of no limit/u);
       assert.match(
         shown,
-        /Posts this month\s+7 of 30, until 2026-12-01T00:00:00Z/u
+        /Posts this month\s+7 of no limit, until 2026-12-01T00:00:00Z/u
       );
-      assert.match(shown, /Media stored\s+125\.0 MB of 500\.0 MB/u);
-      assert.include(shown, "may try the pro plan free for 14 days");
+      assert.match(shown, /Media stored\s+125\.0 MB of 1\.0 GB/u);
+      assert.notInclude(shown, "may try");
       assert.include(
         yield* session.refused(["billing", "--workspace", "shop"]),
         "your role in this workspace does not allow it"
@@ -985,8 +988,8 @@ describe("peal billing, members and invitations", () => {
           "Usage of Studio from 2026-11-01 to 2026-11-03, by UTC day:"
         );
         assert.include(shown, "Plan: free.");
-        assert.match(shown, /Channels\s+2 of 3/u);
-        assert.match(shown, /Media stored\s+125\.0 MB of 500\.0 MB/u);
+        assert.match(shown, /Channels\s+2 of 2/u);
+        assert.match(shown, /Media stored\s+125\.0 MB of 1\.0 GB/u);
         assert.match(shown, /Posts published\s+3: bluesky 1, x 2/u);
         assert.match(shown, /Channel-days\s+4, over 2 days counted/u);
         assert.match(shown, /Posts on x in 2026-11\s+2, 1 with a link/u);
@@ -1021,7 +1024,7 @@ describe("peal billing, members and invitations", () => {
 
         assert.include(
           shown,
-          "The workspace holds more than its plan allows: 8 channels of 3, 5 members of 2, 1.2 GB of media of 500.0 MB."
+          "The workspace holds more than its plan allows: 8 channels of 2, 1.2 GB of media of 1.0 GB."
         );
         assert.include(
           shown,
@@ -1029,7 +1032,7 @@ describe("peal billing, members and invitations", () => {
         );
         assert.include(
           shown,
-          "The pro plan holds everything: an owner or an admin orders it, or chooses which channels and members stay, in the web app."
+          "A payment method holds everything (with per-account pricing, each connected account past the first 2 costs $5.00 a month, excluding tax, less from account 11 on): an owner or an admin adds one, or chooses which accounts stay, in the web app."
         );
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );

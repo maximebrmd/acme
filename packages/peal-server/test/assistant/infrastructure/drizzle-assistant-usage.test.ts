@@ -61,6 +61,70 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
     })
   );
 
+  it.effect(
+    "counts the day across the workspaces of a pool, each keeping its own count",
+    () =>
+      Effect.gen(function* pooled() {
+        const usage = yield* AssistantUsage;
+        const workspaceId = yield* freshWorkspace;
+        const other = yield* freshWorkspace;
+
+        const withOther = Effect.succeed([other]);
+        const withFirst = Effect.succeed([workspaceId]);
+
+        yield* usage.claim(workspaceId, ninth, 3, 2, withOther);
+
+        // Two of three used by the first: the other's first request of
+        // the day, costing two, would pass the pool's limit.
+        assert.isTrue(
+          Option.isNone(yield* usage.claim(other, ninth, 3, 2, withFirst))
+        );
+        assert.deepStrictEqual(
+          (yield* usage.claim(other, ninth, 3, 1, withFirst)).pipe(
+            Option.getOrNull
+          ),
+          1
+        );
+        assert.isTrue(
+          Option.isNone(yield* usage.claim(workspaceId, ninth, 3, 1, withOther))
+        );
+        assert.deepStrictEqual(
+          yield* usage.usedIn([workspaceId, other], ninth),
+          new Map([
+            [workspaceId, 2],
+            [other, 1],
+          ])
+        );
+      })
+  );
+
+  it.effect(
+    "lets no pooled request past the limit when the pool's workspaces ask together",
+    () =>
+      Effect.gen(function* pooledTogether() {
+        const usage = yield* AssistantUsage;
+        const first = yield* freshWorkspace;
+        const second = yield* freshWorkspace;
+
+        const claims = yield* Effect.all(
+          Array.from({ length: 12 }, (_, index) =>
+            index % 2 === 0
+              ? usage.claim(first, ninth, 5, 1, Effect.succeed([second]))
+              : usage.claim(second, ninth, 5, 1, Effect.succeed([first]))
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        const used = yield* usage.usedIn([first, second], ninth);
+
+        assert.strictEqual(claims.filter(Option.isSome).length, 5);
+        assert.strictEqual(
+          [...used.values()].reduce((sum, requests) => sum + requests, 0),
+          5
+        );
+      })
+  );
+
   it.effect("reads many workspaces' day in one call", () =>
     Effect.gen(function* many() {
       const usage = yield* AssistantUsage;

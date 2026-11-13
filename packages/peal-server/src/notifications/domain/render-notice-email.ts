@@ -17,6 +17,7 @@ import type {
   NoticeChannel,
   NoticeEvent,
   NoticeExcess,
+  NoticeRates,
 } from "./notice-event.ts";
 
 /** A notice for one reader, as an email. */
@@ -96,6 +97,55 @@ const standingIn = (
     new Map([["over", listed.join(", ")]]),
     keep
   );
+};
+
+// Per-account pricing's ladder, a part a band, in the reader's words.
+const ratesIn = (
+  catalog: EmailCatalog,
+  { bands, currency, freeAccounts }: NoticeRates,
+  locale: Locale
+): string => {
+  const parts: string[] = [];
+  let from = 1;
+
+  for (const { monthly, upTo } of bands) {
+    if (monthly === 0 && upTo !== null) {
+      parts.push(
+        fill(
+          catalog.rates.free,
+          new Map([["count", String(freeAccounts)]]),
+          keep
+        )
+      );
+    } else {
+      const price = moneyIn({ amount: monthly, currency }, locale);
+
+      parts.push(
+        upTo === null
+          ? fill(
+              catalog.rates.lastBand,
+              new Map([
+                ["from", String(from)],
+                ["price", price],
+              ]),
+              keep
+            )
+          : fill(
+              catalog.rates.band,
+              new Map([
+                ["from", String(from)],
+                ["price", price],
+                ["to", String(upTo)],
+              ]),
+              keep
+            )
+      );
+    }
+
+    from = (upTo ?? from) + 1;
+  }
+
+  return parts.join(", ");
 };
 
 // The body, with what the contract's number is for once it has one.
@@ -243,32 +293,54 @@ const contentOf = (
       interval,
       plan,
       price,
+      rates,
       reference,
       startedAt,
       trialEnd,
     }): Content =>
-      Option.match(trialEnd, {
-        onNone: (): Content => ({
-          messages: numbered(catalog.subscriptionStarted, catalog, reference),
-          values: [
-            ["reference", reference ?? ""],
-            ["interval", catalog.intervals[interval]],
-            ["plan", catalog.plans[plan]],
-            ["price", moneyIn(price, locale)],
-            ["startedAt", instantIn(startedAt, locale)],
-          ],
-        }),
-        onSome: (endsAt): Content => ({
-          messages: numbered(catalog.trialStarted, catalog, reference),
-          values: [
-            ["reference", reference ?? ""],
-            ["endsAt", instantIn(endsAt, locale)],
-            ["plan", catalog.plans[plan]],
-            ["price", moneyIn(price, locale)],
-            ["startedAt", instantIn(startedAt, locale)],
-          ],
-        }),
-      }),
+      rates === undefined
+        ? Option.match(trialEnd, {
+            onNone: (): Content => ({
+              messages: numbered(
+                catalog.subscriptionStarted,
+                catalog,
+                reference
+              ),
+              values: [
+                ["reference", reference ?? ""],
+                ["interval", catalog.intervals[interval]],
+                ["plan", catalog.plans[plan]],
+                ["price", moneyIn(price, locale)],
+                ["startedAt", instantIn(startedAt, locale)],
+              ],
+            }),
+            onSome: (endsAt): Content => ({
+              messages: numbered(catalog.trialStarted, catalog, reference),
+              values: [
+                ["reference", reference ?? ""],
+                ["endsAt", instantIn(endsAt, locale)],
+                ["plan", catalog.plans[plan]],
+                ["price", moneyIn(price, locale)],
+                ["startedAt", instantIn(startedAt, locale)],
+              ],
+            }),
+          })
+        : {
+            messages: numbered(catalog.perAccountStarted, catalog, reference),
+            values: [
+              ["reference", reference ?? ""],
+              ["rates", ratesIn(catalog, rates, locale)],
+              ["startedAt", instantIn(startedAt, locale)],
+            ],
+          },
+    PaymentMethodNeeded: ({ accounts, allowed, graceUntil }): Content => ({
+      messages: catalog.paymentMethodNeeded,
+      values: [
+        ["accounts", String(accounts)],
+        ["allowed", String(allowed)],
+        ["graceUntil", instantIn(graceUntil, locale)],
+      ],
+    }),
     SubscriptionWithdrawn: ({ plan, refunded, withdrawnAt }): Content => ({
       messages: catalog.subscriptionWithdrawn,
       values: [

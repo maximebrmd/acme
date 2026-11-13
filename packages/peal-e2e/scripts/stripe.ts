@@ -25,7 +25,8 @@ const intervals = [
   { key: "yearly", name: "year" },
 ] as const;
 
-// The legacy plans' prices: per-account pricing has none yet.
+// The legacy plans' prices, which the server checks only while a legacy
+// subscription entitles: none in a run, but listed as Stripe would.
 const legacyPlans = PaidPlanSchema.literals.filter(
   (plan): plan is LegacyPaidPlan => plan !== "payAsYouGo"
 );

@@ -826,7 +826,7 @@ const fill = Effect.fn("test.fill")(function* fill(
   }
 });
 
-// The free plan, which allows 3 channels.
+// The free plan, which allows 2 accounts.
 const FreePlanTest = Layer.mergeAll(
   connectAdaptersOn(everyWorkspaceOn("free")),
   RecordedNotices.layer
@@ -840,7 +840,7 @@ layer(FreePlanTest)("choosing LinkedIn pages on the free plan", (it) => {
         const on = yield* onLinkedIn();
         const workspaceId = yield* freshWorkspace;
 
-        yield* fill(workspaceId, 2);
+        yield* fill(workspaceId, 1);
 
         on.linkedin.grantRoles(linkedinMember.sub, [
           administrator(linkedinPage),
@@ -851,7 +851,7 @@ layer(FreePlanTest)("choosing LinkedIn pages on the free plan", (it) => {
 
         assert(outcome._tag === "choose");
 
-        // Two channels and two pages would make four.
+        // One channel and two pages would make three.
         assert.deepStrictEqual(
           yield* Effect.flip(
             on.connect.choose(manager(workspaceId), "linkedin", {
@@ -860,10 +860,10 @@ layer(FreePlanTest)("choosing LinkedIn pages on the free plan", (it) => {
             })
           ),
           new PlanLimitReached({
-            allowed: 3,
+            allowed: 2,
             limit: "channels",
-            needed: 4,
-            used: 2,
+            needed: 3,
+            used: 1,
           })
         );
 

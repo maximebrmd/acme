@@ -179,6 +179,16 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       refunded,
       withdrawnAt,
     }),
+    PaymentMethodNeeded: ({
+      accounts,
+      allowed,
+      graceUntil,
+    }): NoticeEventView => ({
+      _tag: "PaymentMethodNeeded",
+      accounts,
+      allowed,
+      graceUntil,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventView => ({
       _tag: "TrialEnding",
       endsAt,

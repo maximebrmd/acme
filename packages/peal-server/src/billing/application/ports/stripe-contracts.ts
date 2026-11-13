@@ -39,6 +39,8 @@ export type EndReason =
   // A cancellation applied after the period it was received in had ended.
   | "cancelledLate"
   | "duplicateTrial"
+  // A second per-account subscription of one billing account.
+  | "duplicateSubscription"
   | "orderedDuringTrial"
   | "trialCancelled"
   | "withdrawn";
@@ -97,6 +99,17 @@ export class StripeContracts extends Context.Service<
       workspaceId: WorkspaceId,
       subscriptionId: string,
       trialEnd: DateTime.Utc
+    ) => Effect.Effect<void, StripeUnreachable>;
+    /**
+     * Ends the subscription now and invoices the usage it has not billed
+     * yet, to this moment, without proration: how per-account pricing,
+     * billed for the month past, ends at once. Asked twice, Stripe ends it
+     * once.
+     */
+    readonly endAndInvoice: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      reason: EndReason
     ) => Effect.Effect<void, StripeUnreachable>;
     /**
      * Ends the subscription now, without proration or final invoice. Asked

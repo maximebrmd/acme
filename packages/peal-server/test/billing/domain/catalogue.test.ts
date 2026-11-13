@@ -6,6 +6,7 @@ import {
   catalogueProblems,
   planCatalogue,
   planLines,
+  catalogueAtStart,
 } from "#billing/domain/catalogue.ts";
 import type {
   CataloguePrice,
@@ -81,6 +82,12 @@ const changing = (
   prices: complete.prices.map((price) =>
     price.lookupKey === lookupKey ? change(price) : price
   ),
+});
+
+describe("the catalogue at start", () => {
+  it("stops a server on a catalogue that differs, now per-account pricing is sold", () => {
+    expect(catalogueAtStart).toBe("stop");
+  });
 });
 
 describe(catalogueOf, () => {

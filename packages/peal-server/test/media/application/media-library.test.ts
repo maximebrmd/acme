@@ -878,6 +878,7 @@ layer(WithoutFfprobeTest)("the media library without ffprobe", (it) => {
 // A plan with room for one of the two files below.
 const smallStorage = StorageAllowance.of({
   bytes: () => Effect.succeed(Option.some(8000)),
+  sharedWith: () => Effect.succeed([]),
 });
 
 layer(LibraryTest)("an upload finished after its room lapsed", (it) => {

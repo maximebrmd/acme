@@ -1,5 +1,10 @@
 import { Effect, Option } from "effect";
-import { CurrentMember, queueHorizonDays } from "peal-contract";
+import {
+  CurrentMember,
+  freeAccountsOf,
+  queueHorizonDays,
+  rateCard,
+} from "peal-contract";
 import type { LivePostRefusal, Member, Permission } from "peal-contract";
 
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
@@ -75,6 +80,19 @@ const planNames: Readonly<Record<Plan, string>> = {
   starter: "Starter",
 };
 
+const dollars = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+
+// What a payment method gives, from the rate card: per-account pricing's
+// price of an account past the free ones, and the account from which
+// they cost less.
+const perAccountPrice = (): string => {
+  const { bands } = rateCard.prices.usd.accounts;
+  const free = freeAccountsOf(rateCard);
+  const paid = bands.find(({ monthly }) => monthly > 0);
+
+  return `with per-account pricing, each connected account past the first ${String(free)} costs ${dollars(paid?.monthly ?? 0)} a month, excluding tax, less from account ${String((paid?.upTo ?? free) + 1)} on`;
+};
+
 /**
  * What a plan's refusal tells the user through their MCP client: the plan,
  * what it allows and what the workspace holds, then the way out, which is
@@ -94,9 +112,11 @@ export const planRefusalText = (
 
   return Option.match(planWithRoom, {
     onNone: () =>
-      `${held} No plan is larger: the user writes to the people who run this server to ask for more, or removes some.`,
+      `${held} No plan holds more: the user writes to the people who run this server to ask for more, or removes some.`,
     onSome: (larger) =>
-      `${held} The ${planNames[larger]} plan has room: an owner or an admin of the workspace orders it on its billing page, ${billingUrl}`,
+      larger === "payAsYouGo"
+        ? `${held} A payment method gives room: ${perAccountPrice()}. An owner or an admin of the workspace adds one on its billing page, ${billingUrl}`
+        : `${held} The ${planNames[larger]} plan has room: an owner or an admin of the workspace orders it on its billing page, ${billingUrl}`,
   });
 };
 

@@ -20,7 +20,11 @@ import { HttpRemoteMedia } from "#media/infrastructure/http-remote-media.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
+import {
+  everyWorkspaceOn,
+  NoAccountsConnectedTest,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { syntheticPdf } from "#test/media/pdf.ts";
 import {
@@ -145,6 +149,7 @@ const importing = (entitlements: typeof UnmeteredTest) =>
         Layer.mergeAll(
           MediaInPostsTest,
           entitlements,
+          NoAccountsConnectedTest,
           NoWebhooks,
           TransactionsTest
         )
@@ -452,7 +457,11 @@ const importingHeard = Layer.mergeAll(
       Layer.provide(OpenOutboundGuard),
       Layer.provide(FetchHttpClient.layer)
     )
-  ).pipe(Layer.provide(Layer.mergeAll(MediaInPostsTest, UnmeteredTest))),
+  ).pipe(
+    Layer.provide(
+      Layer.mergeAll(MediaInPostsTest, UnmeteredTest, NoAccountsConnectedTest)
+    )
+  ),
   S3MediaStorageLive
 ).pipe(Layer.provideMerge(WebhooksTest), Layer.provide(storageSettings));
 

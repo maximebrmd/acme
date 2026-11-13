@@ -4,6 +4,9 @@ pub use crate::prelude::*;
 pub struct Standing {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub account: Option<BillingAccount>,
+    #[serde(rename = "graceUntil")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub grace_until: Option<String>,
     #[serde(rename = "mustReduce")]
     #[serde(default)]
     pub must_reduce: bool,
@@ -29,6 +32,7 @@ impl Standing {
 #[non_exhaustive]
 pub struct StandingBuilder {
     account: Option<BillingAccount>,
+    grace_until: Option<String>,
     must_reduce: Option<bool>,
     over: Option<Vec<Excess>>,
     plan: Option<Plan>,
@@ -39,6 +43,11 @@ pub struct StandingBuilder {
 impl StandingBuilder {
     pub fn account(mut self, value: BillingAccount) -> Self {
         self.account = Some(value);
+        self
+    }
+
+    pub fn grace_until(mut self, value: impl Into<String>) -> Self {
+        self.grace_until = Some(value.into());
         self
     }
 
@@ -75,6 +84,7 @@ impl StandingBuilder {
     pub fn build(self) -> Result<Standing, BuildError> {
         Ok(Standing {
             account: self.account,
+            grace_until: self.grace_until,
             must_reduce: self
                 .must_reduce
                 .ok_or_else(|| BuildError::missing_field("must_reduce"))?,

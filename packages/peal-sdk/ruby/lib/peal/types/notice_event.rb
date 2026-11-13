@@ -33,6 +33,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventTrialEnding }, key: "TRIAL_ENDING"
 
+      member -> { Peal::Types::NoticeEventPaymentMethodNeeded }, key: "PAYMENT_METHOD_NEEDED"
+
       member -> { Peal::Types::NoticeEventSubscriptionRenewing }, key: "SUBSCRIPTION_RENEWING"
 
       member -> { Peal::Types::NoticeEventSubscriptionCancelled }, key: "SUBSCRIPTION_CANCELLED"

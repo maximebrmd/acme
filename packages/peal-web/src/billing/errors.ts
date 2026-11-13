@@ -9,6 +9,8 @@ const isWithdrawalRefused = Schema.is(WithdrawalUnavailable);
 const isTransferRefused = Schema.is(TransferRefused);
 
 const reasons: ReadonlyMap<string, BillingError> = new Map([
+  ["AlreadySubscribed", "alreadySubscribed"],
+  ["ConsentChanged", "consentChanged"],
   ["Forbidden", "forbidden"],
   ["NothingToCancel", "nothingToCancel"],
   ["PlanTooSmall", "planTooSmall"],

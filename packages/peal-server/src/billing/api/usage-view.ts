@@ -37,7 +37,9 @@ export const usageView = ({
   sharedWith,
 }: WorkspaceUsageReport): WorkspaceUsageReportView => ({
   allowances: entitlements.plan.pipe(
-    Option.map(() => allowancesView(entitlements.allowances)),
+    Option.map(() =>
+      allowancesView(entitlements.allowancesFor(current.channels))
+    ),
     Option.getOrNull
   ),
   current,
@@ -70,7 +72,16 @@ export const partnerUsageView = ({
   period,
 }: PartnerUsageReport): PartnerUsageReportView => ({
   allowances: entitlements.plan.pipe(
-    Option.map(() => allowancesView(entitlements.allowances)),
+    Option.map(() =>
+      allowancesView(
+        entitlements.allowancesFor(
+          Option.match(account, {
+            onNone: () => 0,
+            onSome: ({ held }) => held.channels,
+          })
+        )
+      )
+    ),
     Option.getOrNull
   ),
   current: account.pipe(

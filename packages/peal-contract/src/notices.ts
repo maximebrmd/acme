@@ -161,6 +161,16 @@ export const NoticeEventSchema = Schema.Union([
     over: Schema.Array(ExcessSchema),
     plan: PaidPlanSchema,
   }),
+  // The workspace, on the free tier, holds `accounts` connected accounts,
+  // more than the `allowed` it includes, as when billing was turned on
+  // after they were connected: until `graceUntil` it still schedules and
+  // publishes; after, nothing is published until a payment method is added
+  // on the billing page or `allowed` accounts are kept.
+  Schema.TaggedStruct("PaymentMethodNeeded", {
+    accounts: Schema.Int,
+    allowed: Schema.Int,
+    graceUntil: Schema.DateTimeUtc,
+  }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
   // charge, VAT included, unless it is cancelled before.
   Schema.TaggedStruct("SubscriptionRenewing", {
