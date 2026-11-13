@@ -79,6 +79,11 @@ export const mediaAssets = media.table(
       "gin",
       table.altText.op("gin_trgm_ops")
     ),
+    // The uploads never completed, oldest first, for their sweep: few
+    // rows of all, so it reads no other.
+    index("media_assets_pending_created_at_index")
+      .on(table.createdAt)
+      .where(sql`${table.status} = 'pending'`),
     check(
       "media_assets_status",
       sql`${table.status} IN ('pending', 'uploaded', 'ready', 'rejected')`
@@ -100,4 +105,28 @@ export const mediaAssets = media.table(
       sql`(${table.width} IS NULL) = (${table.height} IS NULL)`
     ),
   ]
+);
+
+// Where each sweep that lists the bucket over several runs stopped: the
+// last key listed (relative to the store's prefix) and, for multipart
+// uploads, the last upload of it. No row: the next run starts from the
+// first key.
+export const sweepCursors = media.table("sweep_cursors", {
+  afterKey: text("after_key").notNull(),
+  afterUploadId: text("after_upload_id"),
+  sweep: text("sweep").primaryKey(),
+  updatedAt: instant("updated_at").notNull(),
+});
+
+// The workspaces erased whose folder the store may still hold: written in
+// the erasure's transaction, deleted once the folder is empty, so a store
+// that failed after the erasure committed has its folder emptied by the
+// sweep. Ids only.
+export const erasedFolders = media.table(
+  "erased_folders",
+  {
+    erasedAt: instant("erased_at").notNull(),
+    workspaceId: uuid("workspace_id").primaryKey(),
+  },
+  (table) => [index("erased_folders_erased_at_index").on(table.erasedAt)]
 );

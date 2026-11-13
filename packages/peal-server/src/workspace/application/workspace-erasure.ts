@@ -61,8 +61,9 @@ const retry = { schedule: Schedule.exponential("500 millis"), times: 3 };
 
 /**
  * Deletes the media files of a workspace erased a moment ago, once the
- * transaction that erased it committed. Files the store keeps are only
- * logged: nothing refers to them any more, and the workspace is gone.
+ * transaction that erased it committed. Files the store keeps are logged,
+ * and deleted later: the erasure listed the folder for the media
+ * context's sweep, which empties it.
  */
 export const removeWorkspaceFiles = Effect.fn("Workspace.removeFiles")(
   function* removeWorkspaceFiles(workspaceId: WorkspaceId) {

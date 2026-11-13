@@ -153,7 +153,9 @@ The staff context follows these rules too. What the law has a host keep is in
   which `ContextRecords` reaches. The rows go in one TransactionRunner
   transaction, Better Auth's included (the server's Drizzle on the `auth`
   tables, the Stripe plugin's `subscription` too), and the workspace's media
-  folder once it commits. A context that keeps new data about a workspace or
+  folder once it commits; a store that fails then leaves the folder listed
+  in the transaction (`media.erased_folders`), which media's hourly
+  `media.folder-sweep` empties. A context that keeps new data about a workspace or
   a user adds it to its records, and its tables to
   `test/workspace/integration/erasure.test.ts`, which fails on a table that
   does not say what becomes of its rows (deleted, left without the user, or

@@ -108,3 +108,29 @@
   across every workspace's files; text under three characters has no
   trigram and walks the workspace's files, about 30 ms for no match in
   100,000.
+- Four hourly `ClusterCron`s sweep the store (`MediaSweeps`,
+  `infrastructure/crons.ts`), each bounded (`PEAL_MEDIA_SWEEP_BATCH`, 500 a
+  run; ten pages of the bucket) and safe to run again: `media.pending-sweep`
+  deletes assets pending since `PEAL_MEDIA_SWEEP_PENDING_AFTER` (a day),
+  the row first and only while still pending (`forgetExpired`), so a
+  completion that wins keeps it, then the upload and the file;
+  `media.upload-sweep` aborts multipart uploads open since
+  `PEAL_MEDIA_SWEEP_UPLOADS_AFTER`; `media.orphan-sweep` deletes files the
+  store dated `PEAL_MEDIA_SWEEP_ORPHANS_AFTER` ago that no asset holds, or
+  a rejected one, checking each key again just before it goes;
+  `media.folder-sweep` empties the folders of erased workspaces
+  (`media.erased_folders`, written in the erasure's transaction by
+  `MediaRecords.eraseWorkspace`, deleted once `removeWorkspaceFiles` or the
+  sweep emptied it, after 15 minutes' grace), so a store that fails after
+  an erasure commits never keeps its files. Ages under the part URLs' six
+  hours and an hour stop the server (`minimumSweepAge`). Listing sweeps
+  keep where they stopped (`media.sweep_cursors`, keys relative to the
+  prefix). `MediaBucket` lists `<prefix>media/` only and hands out only
+  what `mediaKeyOf` reads as a key Peal writes: never widen either, the
+  erasure ledger and other instances share the bucket. Metrics
+  `peal.media.sweep.{objects,bytes,failures}` (by `sweep`); the
+  `peal-media-sweep-failing` alert reads the failures.
+- Sweep tests (`test/media/infrastructure/media-sweeps.test.ts`) give the
+  sweeps a prefix of the run's own and delete it after; rows they sweep
+  are dated before 1970, which no other suite writes. A dev server on the
+  tests' database sweeps their pending rows dated 1970 like any.

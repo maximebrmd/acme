@@ -14,11 +14,28 @@ import {
 } from "@aws-sdk/client-s3";
 import type { ListPartsCommandOutput } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Duration, Effect, Layer, Option, Ref, Schema, Stream } from "effect";
+import {
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Ref,
+  Schema,
+  Stream,
+} from "effect";
 
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MultipartUploadNotFound } from "#media/application/multipart-upload-not-found.ts";
+import { MediaBucket } from "#media/application/ports/media-bucket.ts";
+import type {
+  BucketFile,
+  BucketPage,
+  BucketUpload,
+  UploadMarker,
+} from "#media/application/ports/media-bucket.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
+import type { RemovedFolder } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import type {
   FileToStore,
@@ -31,6 +48,7 @@ import type {
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import type { MediaContentType } from "#media/domain/media-format.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
+import { mediaKeyOf } from "#media/domain/storage-key.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
 import type { PartNumber } from "#media/domain/upload-plan.ts";
@@ -704,22 +722,29 @@ export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
       function* removeObjects(prefix: string) {
         let token: string | undefined;
         let more = true;
+        let files = 0;
+        let bytes = 0;
 
         while (more) {
           const page = yield* listObjects(prefix, token);
 
-          const keys = (page.Contents ?? []).flatMap(({ Key: key }) =>
-            key === undefined ? [] : [key]
+          const listed = (page.Contents ?? []).flatMap(
+            ({ Key: key, Size: size }) =>
+              key === undefined ? [] : [{ byteSize: size ?? 0, key }]
           );
 
-          yield* Effect.forEach(keys, deleteObject, {
+          yield* Effect.forEach(listed, ({ key }) => deleteObject(key), {
             concurrency: removals,
             discard: true,
           });
 
+          files += listed.length;
+          bytes += listed.reduce((total, { byteSize }) => total + byteSize, 0);
           token = page.NextContinuationToken;
           more = page.IsTruncated === true && token !== undefined;
         }
+
+        return { bytes, files };
       }
     );
 
@@ -728,6 +753,7 @@ export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
         let keyMarker: string | undefined;
         let uploadIdMarker: string | undefined;
         let more = true;
+        let aborted = 0;
 
         while (more) {
           const page = yield* listUploads(prefix, keyMarker, uploadIdMarker);
@@ -745,10 +771,13 @@ export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
             { concurrency: removals, discard: true }
           );
 
+          aborted += uploads.length;
           keyMarker = page.NextKeyMarker;
           uploadIdMarker = page.NextUploadIdMarker;
           more = page.IsTruncated === true && keyMarker !== undefined;
         }
+
+        return aborted;
       }
     );
 
@@ -757,8 +786,11 @@ export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
         const prefix = `${keyPrefix}media/${workspaceId}/`;
 
         // Uploads first: completing one would add a file to the folder.
-        yield* abortUploads(prefix);
-        yield* removeObjects(prefix);
+        const uploads = yield* abortUploads(prefix);
+        const { bytes, files } = yield* removeObjects(prefix);
+        const removed: RemovedFolder = { bytes, files, uploads };
+
+        return removed;
       }
     );
 
@@ -770,4 +802,159 @@ export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
 export const S3MediaFoldersLive = Layer.effect(
   MediaFolders,
   S3StorageConfig.pipe(Effect.flatMap(makeS3MediaFolders))
+);
+
+const ListedFileSchema = Schema.Struct({
+  Key: Schema.String,
+  LastModified: Schema.Date,
+  Size: Schema.Int,
+});
+
+const ListedUploadSchema = Schema.Struct({
+  Initiated: Schema.Date,
+  Key: Schema.String,
+  UploadId: MultipartUploadIdSchema,
+});
+
+const listingFailed = (operation: string) => (cause: unknown) =>
+  new MediaStorageFailed({ cause, operation });
+
+const decodeFiles = Schema.decodeUnknownEffect(Schema.Array(ListedFileSchema));
+
+const decodeUploads = Schema.decodeUnknownEffect(
+  Schema.Array(ListedUploadSchema)
+);
+
+/**
+ * The bucket's media folder, `<prefix>media/`, from settings, for the
+ * sweeps. Every listing names that folder as its prefix, so nothing else
+ * of the bucket is listed, and hands out only the keys Peal writes
+ * (`mediaKeyOf`), relative to the store's prefix as every other call
+ * takes them.
+ */
+export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
+  function* makeS3MediaBucket(settings: S3StorageSettings) {
+    const { bucket, keyPrefix } = settings;
+    const client = yield* acquireS3Client(settings);
+    const folder = `${keyPrefix}media/`;
+
+    // The key relative to the store's prefix, if it is one Peal writes.
+    const ownKey = (objectKey: string) =>
+      objectKey.startsWith(folder)
+        ? mediaKeyOf(objectKey.slice(keyPrefix.length))
+        : Option.none();
+
+    const listFiles = Effect.fn("S3MediaBucket.listFiles")(function* listFiles(
+      after: Option.Option<string>
+    ) {
+      const page = yield* request(
+        "list the media folder",
+        async (signal) =>
+          await client.send(
+            new ListObjectsV2Command({
+              Bucket: bucket,
+              Prefix: folder,
+              StartAfter: after.pipe(
+                Option.map((key) => `${keyPrefix}${key}`),
+                Option.getOrUndefined
+              ),
+            }),
+            { abortSignal: signal }
+          )
+      );
+
+      const listed = yield* decodeFiles(page.Contents ?? []).pipe(
+        Effect.mapError(listingFailed("list the media folder"))
+      );
+
+      const items = listed.flatMap(({ Key, LastModified, Size }) =>
+        Option.match(ownKey(Key), {
+          onNone: () => [],
+          onSome: (key): readonly BucketFile[] => [
+            {
+              byteSize: Size,
+              key,
+              modifiedAt: DateTime.fromDateUnsafe(LastModified),
+            },
+          ],
+        })
+      );
+
+      const last = listed.at(-1);
+
+      const result: BucketPage<BucketFile, string> = {
+        items,
+        next:
+          page.IsTruncated === true && last !== undefined
+            ? Option.some(last.Key.slice(keyPrefix.length))
+            : Option.none(),
+      };
+
+      return result;
+    });
+
+    const listUploads = Effect.fn("S3MediaBucket.listUploads")(
+      function* listUploads(after: Option.Option<UploadMarker>) {
+        const page = yield* request(
+          "list the media folder's uploads",
+          async (signal) =>
+            await client.send(
+              new ListMultipartUploadsCommand({
+                Bucket: bucket,
+                KeyMarker: after.pipe(
+                  Option.map(({ key }) => `${keyPrefix}${key}`),
+                  Option.getOrUndefined
+                ),
+                Prefix: folder,
+                UploadIdMarker: after.pipe(
+                  Option.flatMap(({ uploadId }) => uploadId),
+                  Option.getOrUndefined
+                ),
+              }),
+              { abortSignal: signal }
+            )
+        );
+
+        const listed = yield* decodeUploads(page.Uploads ?? []).pipe(
+          Effect.mapError(listingFailed("list the media folder's uploads"))
+        );
+
+        const items = listed.flatMap(({ Initiated, Key, UploadId }) =>
+          Option.match(ownKey(Key), {
+            onNone: () => [],
+            onSome: (key): readonly BucketUpload[] => [
+              {
+                key,
+                startedAt: DateTime.fromDateUnsafe(Initiated),
+                uploadId: UploadId,
+              },
+            ],
+          })
+        );
+
+        const last = listed.at(-1);
+
+        const result: BucketPage<BucketUpload, UploadMarker> = {
+          items,
+          next:
+            page.IsTruncated === true && last !== undefined
+              ? Option.some({
+                  key: last.Key.slice(keyPrefix.length),
+                  uploadId: Option.some(last.UploadId),
+                })
+              : Option.none(),
+        };
+
+        return result;
+      }
+    );
+
+    return MediaBucket.of({ listFiles, listUploads });
+  }
+);
+
+/** The bucket's media folder, configured from the environment. */
+export const S3MediaBucketLive = Layer.effect(
+  MediaBucket,
+  S3StorageConfig.pipe(Effect.flatMap(makeS3MediaBucket))
 );

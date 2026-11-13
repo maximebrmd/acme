@@ -23,8 +23,8 @@ export interface DeleteMediaRequest {
  * nothing points to. It answers with the drafts that lost the asset.
  *
  * A single upload URL that has not expired yet can still create the file
- * again; nothing removes such a file until a sweep of keys without an asset
- * exists.
+ * again: the sweep of files no asset holds (`MediaSweeps.orphans`) deletes
+ * it once it is `orphansAfter` old.
  */
 export const deleteMedia = Effect.fn("Media.deleteMedia")(
   function* deleteMedia({ assetId, workspaceId }: DeleteMediaRequest) {
