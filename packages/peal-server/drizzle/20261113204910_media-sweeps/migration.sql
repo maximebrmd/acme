@@ -3,6 +3,14 @@ CREATE TABLE "media"."erased_folders" (
 	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
+CREATE TABLE "media"."store_identity" (
+	"claimed_at" timestamp with time zone,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid NOT NULL,
+	"singleton" boolean PRIMARY KEY DEFAULT true,
+	CONSTRAINT "store_identity_singleton" CHECK ("singleton")
+);
+--> statement-breakpoint
 CREATE TABLE "media"."sweep_cursors" (
 	"after_key" text NOT NULL,
 	"after_upload_id" text,

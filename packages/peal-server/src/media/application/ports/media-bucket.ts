@@ -59,5 +59,21 @@ export class MediaBucket extends Context.Service<
       BucketPage<BucketUpload, UploadMarker>,
       MediaStorageFailed
     >;
+    /**
+     * The id of the database the media folder belongs to, as its owner
+     * marker (`<prefix>media/.owner`, which no listing hands out) names
+     * it, if it has one.
+     */
+    readonly owner: Effect.Effect<Option.Option<string>, MediaStorageFailed>;
+    /**
+     * Writes the owner marker naming `id`, only if there is none, and
+     * says whether it did: one written meanwhile is never replaced. With
+     * `replace`, for an operator handing the folder to this database on
+     * purpose, it writes it whatever is there.
+     */
+    readonly claim: (
+      id: string,
+      options: { readonly replace: boolean }
+    ) => Effect.Effect<boolean, MediaStorageFailed>;
   }
 >()("peal-server/media/application/MediaBucket") {}

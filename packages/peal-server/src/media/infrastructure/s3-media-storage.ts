@@ -122,6 +122,12 @@ const noSuchUpload: ReadonlySet<string> = new Set(["NoSuchUpload"]);
 
 const notFound: ReadonlySet<string> = new Set(["NoSuchKey", "NotFound"]);
 
+// What a store answers to a create-only write when the object exists.
+const isPreconditionFailed = (cause: unknown): boolean =>
+  cause instanceof S3ServiceException &&
+  (cause.name === "PreconditionFailed" ||
+    cause.$metadata.httpStatusCode === 412);
+
 const StoredPartSchema = Schema.Struct({
   ETag: Schema.NonEmptyString,
   PartNumber: PartNumberSchema,
@@ -833,10 +839,16 @@ const decodeUploads = Schema.decodeUnknownEffect(
  * takes them.
  */
 export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
-  function* makeS3MediaBucket(settings: S3StorageSettings) {
+  function* makeS3MediaBucket(
+    settings: S3StorageSettings,
+    // Keys a page at most; the store's own (1,000 on most) when unset.
+    pageSize?: number
+  ) {
     const { bucket, keyPrefix } = settings;
     const client = yield* acquireS3Client(settings);
     const folder = `${keyPrefix}media/`;
+    // Never a key `mediaKeyOf` reads, so no listing hands it out.
+    const marker = `${folder}.owner`;
 
     // The key relative to the store's prefix, if it is one Peal writes.
     const ownKey = (objectKey: string) =>
@@ -853,6 +865,7 @@ export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
           await client.send(
             new ListObjectsV2Command({
               Bucket: bucket,
+              MaxKeys: pageSize,
               Prefix: folder,
               StartAfter: after.pipe(
                 Option.map((key) => `${keyPrefix}${key}`),
@@ -905,6 +918,7 @@ export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
                   Option.map(({ key }) => `${keyPrefix}${key}`),
                   Option.getOrUndefined
                 ),
+                MaxUploads: pageSize,
                 Prefix: folder,
                 UploadIdMarker: after.pipe(
                   Option.flatMap(({ uploadId }) => uploadId),
@@ -949,7 +963,46 @@ export const makeS3MediaBucket = Effect.fn("S3MediaBucket.make")(
       }
     );
 
-    return MediaBucket.of({ listFiles, listUploads });
+    const owner = request("read the media folder's owner", async (signal) => {
+      const answer = await client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: marker }),
+        { abortSignal: signal }
+      );
+
+      return (await answer.Body?.transformToString()) ?? "";
+    }).pipe(
+      Effect.map((text) => Option.some(text.trim())),
+      Effect.catchIf(
+        (failure) => isS3Error(failure.cause, notFound),
+        () => Effect.succeed(Option.none<string>())
+      ),
+      Effect.withSpan("S3MediaBucket.owner")
+    );
+
+    const claim = (id: string, { replace }: { readonly replace: boolean }) =>
+      request(
+        "write the media folder's owner",
+        async (signal) =>
+          await client.send(
+            new PutObjectCommand({
+              Body: id,
+              Bucket: bucket,
+              ContentType: "text/plain",
+              IfNoneMatch: replace ? undefined : "*",
+              Key: marker,
+            }),
+            { abortSignal: signal }
+          )
+      ).pipe(
+        Effect.as(true),
+        Effect.catchIf(
+          (failure) => isPreconditionFailed(failure.cause),
+          () => Effect.succeed(false)
+        ),
+        Effect.withSpan("S3MediaBucket.claim")
+      );
+
+    return MediaBucket.of({ claim, listFiles, listUploads, owner });
   }
 );
 

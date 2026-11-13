@@ -116,7 +116,13 @@ const Ticks = ClusterCron.make({
 // refresh, or mark, the channels other suites keep in this database, a
 // real collection read their posts, a real purge delete their audit
 // events, and real reminders tell their members.
-const swept = { bytes: 0, left: false, swept: 0 };
+const swept = {
+  bytes: 0,
+  failed: 0,
+  left: false,
+  refused: Option.none(),
+  swept: 0,
+};
 
 const ChannelJobsTest = Layer.mergeAll(
   // A server that does not bill: the reporter of usage is not registered.

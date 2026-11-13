@@ -130,3 +130,19 @@ export const erasedFolders = media.table(
   },
   (table) => [index("erased_folders_erased_at_index").on(table.erasedAt)]
 );
+
+// This database's own id, written once and kept through restores: the
+// media folder's owner marker (`<prefix>media/.owner`) names it, and the
+// sweeps that delete what this database does not know of run only while
+// it does. `claimed_at` is when this database first wrote or found it.
+export const storeIdentity = media.table(
+  "store_identity",
+  {
+    claimedAt: instant("claimed_at"),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").notNull(),
+    // One row: the column's only value.
+    singleton: boolean("singleton").primaryKey().default(true),
+  },
+  (table) => [check("store_identity_singleton", sql`${table.singleton}`)]
+);

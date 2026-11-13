@@ -10,9 +10,23 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 /** An asset whose upload started long ago and never completed. */
 export interface ExpiredUpload {
   readonly assetId: MediaAssetId;
+  readonly createdAt: DateTime.Utc;
   readonly storageKey: StorageKey;
   readonly upload: UploadMethod;
   readonly workspaceId: WorkspaceId;
+}
+
+/** Where a read of the expired uploads stopped, oldest first. */
+export interface ExpiredPosition {
+  readonly assetId: MediaAssetId;
+  readonly createdAt: DateTime.Utc;
+}
+
+/** This database's own id, for the media folder's owner marker. */
+export interface StoreIdentity {
+  readonly id: string;
+  /** Whether this database has ever claimed the folder. */
+  readonly claimed: boolean;
 }
 
 /** The sweeps that list the bucket over several runs. */
@@ -34,10 +48,14 @@ export interface SweepCursor {
 export class MediaSweepStore extends Context.Service<
   MediaSweepStore,
   {
-    /** Up to `limit` assets still pending that started before, oldest first. */
+    /**
+     * Up to `limit` assets still pending that started before, oldest
+     * first (by start, then id), after `after` if given.
+     */
     readonly expiredUploads: (
       before: DateTime.Utc,
-      limit: number
+      limit: number,
+      after: Option.Option<ExpiredPosition>
     ) => Effect.Effect<readonly ExpiredUpload[], DatabaseError>;
     /**
      * Deletes the asset if it is still pending and started before, and
@@ -72,6 +90,19 @@ export class MediaSweepStore extends Context.Service<
       before: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly WorkspaceId[], DatabaseError>;
+    /** Whether any asset of the workspace is recorded. */
+    readonly holdsAssets: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * This database's id, `candidate` if it had none: kept from then on,
+     * through restores.
+     */
+    readonly identity: (
+      candidate: string
+    ) => Effect.Effect<StoreIdentity, DatabaseError>;
+    /** Notes that this database claimed the media folder. */
+    readonly markClaimed: Effect.Effect<void, DatabaseError>;
     /** Forgets the folder once the store holds nothing of it. */
     readonly forgetFolder: (
       workspaceId: WorkspaceId

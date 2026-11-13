@@ -110,28 +110,42 @@
   100,000.
 - Four hourly `ClusterCron`s sweep the store (`MediaSweeps`,
   `infrastructure/crons.ts`), each bounded (`PEAL_MEDIA_SWEEP_BATCH`, 500 a
-  run; ten pages of the bucket) and safe to run again: `media.pending-sweep`
-  deletes assets pending since `PEAL_MEDIA_SWEEP_PENDING_AFTER` (a day),
-  through `MediaUsage.release` first (drafts lose it; a scheduled post
-  keeps it, and it stays), the row next and only while still pending (`forgetExpired`), so a
-  completion that wins keeps it, then the upload and the file;
-  `media.upload-sweep` aborts multipart uploads open since
-  `PEAL_MEDIA_SWEEP_UPLOADS_AFTER`; `media.orphan-sweep` deletes files the
+  run; ten pages) and safe to run again; one thing the store refuses is
+  counted and skipped, never blocking the rest. `PEAL_MEDIA_SWEEPS`
+  (`on` in production, `off` elsewhere) switches them all: off, nothing
+  is listed. `media.pending-sweep` takes assets pending since
+  `PEAL_MEDIA_SWEEP_PENDING_AFTER` (a day): one a scheduled post shows is
+  paged past; otherwise the row goes first, only while still pending
+  (`forgetExpired`), then `MediaUsage.release` (drafts), then the upload
+  and the file. `media.upload-sweep` aborts multipart uploads open since
+  `PEAL_MEDIA_SWEEP_UPLOADS_AFTER`. `media.orphan-sweep` deletes files the
   store dated `PEAL_MEDIA_SWEEP_ORPHANS_AFTER` ago that no asset holds, or
-  a rejected one, checking each key again just before it goes;
+  a rejected one, checking each key again before it goes, and stops
+  deleting nothing (`breaker`) on a page with more unheld files than
+  `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100) or a fifth of 50 old ones.
   `media.folder-sweep` empties the folders of erased workspaces
   (`media.erased_folders`, written in the erasure's transaction by
-  `MediaRecords.eraseWorkspace`, deleted once `removeWorkspaceFiles` or the
-  sweep emptied it, after 15 minutes' grace), so a store that fails after
-  an erasure commits never keeps its files. Ages under the part URLs' six
-  hours and an hour stop the server (`minimumSweepAge`). Listing sweeps
-  keep where they stopped (`media.sweep_cursors`, keys relative to the
-  prefix). `MediaBucket` lists `<prefix>media/` only and hands out only
-  what `mediaKeyOf` reads as a key Peal writes: never widen either, the
-  erasure ledger and other instances share the bucket. Metrics
-  `peal.media.sweep.{objects,bytes,failures}` (by `sweep`); the
-  `peal-media-sweep-failing` alert reads the failures.
+  `MediaRecords.eraseWorkspace`, deleted once emptied; 15 minutes' grace),
+  leaving one whose workspace still has assets, so a store that fails
+  after an erasure commits never keeps its files. Ages must be finite and
+  at least the part URLs' six hours and an hour (`minimumSweepAge`).
+- The pending and orphan sweeps delete what this database does not know
+  of, so they run only while `<prefix>media/.owner` names this database's
+  id (`media.store_identity`, made once, kept through restores): the first
+  run writes it create-only; another id (`foreign`) or none once claimed
+  (`unmarked`) stops them. Never replace the marker but through
+  `claimMediaFolder` (`bun src/claim-media-folder.ts`, `nx run
+  peal-server:media:claim`), an operator's act. A restore keeps the id:
+  the restore runbook turns the sweeps off until the restore is final.
+- Listing sweeps keep where they stopped (`media.sweep_cursors`, keys
+  relative to the prefix). `MediaBucket` lists `<prefix>media/` only and
+  hands out only what `mediaKeyOf` reads as a key Peal writes: never widen
+  either, the erasure ledger and other instances share the bucket.
+  Metrics `peal.media.sweep.{objects,bytes,failures}` (by `sweep`, counted
+  as each goes; each key at debug) and `peal.media.sweep.refusals` (by
+  `sweep` and `reason`); alerts `peal-media-sweep-failing` and
+  `peal-media-sweep-refused`.
 - Sweep tests (`test/media/infrastructure/media-sweeps.test.ts`) give the
-  sweeps a prefix of the run's own and delete it after; rows they sweep
-  are dated before 1970, which no other suite writes. A dev server on the
-  tests' database sweeps their pending rows dated 1970 like any.
+  sweeps a prefix of the run's own and delete it after, and forget the
+  database's claim and cursors; rows they sweep are dated before 1970,
+  which no other suite writes.

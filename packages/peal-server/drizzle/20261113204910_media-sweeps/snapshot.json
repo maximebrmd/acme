@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "27cfa75c-5734-4f03-b5a0-98a3e0d6606a",
+  "id": "95bde687-1449-4115-9cea-9c5228681561",
   "prevIds": [
     "1fe047f3-a815-4169-8951-4bdf74787699"
   ],
@@ -21,6 +21,25 @@
         "n|rel|media.erased_folders",
         "n|type|media.erased_folders",
         "n|rel|media.erased_folders_pkey"
+      ],
+      "reads": [
+        "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "media",
+        "store_identity"
+      ],
+      "writes": [
+        "s|tbl|media.store_identity",
+        "n|tbl|media.store_identity",
+        "e|tbl|media.store_identity",
+        "n|rel|media.store_identity",
+        "n|type|media.store_identity",
+        "n|rel|media.store_identity_pkey"
       ],
       "reads": [
         "n|sch|media"
@@ -100,6 +119,15 @@
       "op": "create",
       "row": {
         "schema": "media",
+        "name": "store_identity",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
         "name": "sweep_cursors",
         "isRlsEnabled": false,
         "entityType": "tables"
@@ -132,6 +160,70 @@
         "notNull": true,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "claimed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "singleton",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
         "generated": null,
         "identity": null,
         "entityType": "columns"
@@ -266,6 +358,19 @@
       "op": "create",
       "row": {
         "schema": "media",
+        "table": "store_identity",
+        "name": "store_identity_pkey",
+        "columns": [
+          "singleton"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
         "table": "sweep_cursors",
         "name": "sweep_cursors_pkey",
         "columns": [
@@ -273,6 +378,16 @@
         ],
         "nameExplicit": false,
         "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "store_identity",
+        "name": "store_identity_singleton",
+        "value": "\"singleton\"",
+        "entityType": "checks"
       }
     }
   ]

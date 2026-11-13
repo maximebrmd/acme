@@ -6,6 +6,7 @@ import {
   minimumSweepAge,
 } from "#media/application/sweep-policy.ts";
 import type { SweepPolicy } from "#media/application/sweep-policy.ts";
+import { isProduction } from "#shared/infrastructure/environment.ts";
 
 // The sweeps of the media store, from the environment, read when the
 // server starts: a value that does not read, or an age under the part
@@ -13,6 +14,8 @@ import type { SweepPolicy } from "#media/application/sweep-policy.ts";
 //
 // | Variable                       | Meaning                                       |
 // | ------------------------------ | --------------------------------------------- |
+// | PEAL_MEDIA_SWEEPS              | on or off: on in production, off elsewhere    |
+// | PEAL_MEDIA_SWEEP_ORPHANS_LIMIT | orphans a page may hold before the sweep stops |
 // | PEAL_MEDIA_SWEEP_PENDING_AFTER | an upload never completed goes after this     |
 // | PEAL_MEDIA_SWEEP_UPLOADS_AFTER | a multipart upload left open goes after this  |
 // | PEAL_MEDIA_SWEEP_ORPHANS_AFTER | a file no asset holds goes once this old      |
@@ -24,8 +27,9 @@ export const maxSweepBatch = 10_000;
 const AgeSchema = Schema.DurationFromString.check(
   Schema.makeFilter(
     (age: Duration.Duration) =>
-      Duration.isGreaterThanOrEqualTo(age, minimumSweepAge) ||
-      `must be at least ${Duration.format(minimumSweepAge)}`
+      (Duration.isFinite(age) &&
+        Duration.isGreaterThanOrEqualTo(age, minimumSweepAge)) ||
+      `must be a finite duration of at least ${Duration.format(minimumSweepAge)}: set PEAL_MEDIA_SWEEPS=off for none`
   )
 );
 
@@ -33,6 +37,18 @@ const age = (name: string, fallback: Duration.Duration) =>
   Config.schema(AgeSchema, name).pipe(Config.withDefault(fallback));
 
 export const sweepPolicyConfig: Config.Config<SweepPolicy> = Config.all({
+  enabled: isProduction.pipe(
+    Config.flatMap((production) =>
+      Config.Literals(["on", "off"], "PEAL_MEDIA_SWEEPS").pipe(
+        Config.withDefault(production ? "on" : "off")
+      )
+    ),
+    Config.map((switched) => switched === "on")
+  ),
+  orphansLimit: Config.schema(
+    Schema.Int.check(Schema.isBetween({ maximum: maxSweepBatch, minimum: 1 })),
+    "PEAL_MEDIA_SWEEP_ORPHANS_LIMIT"
+  ).pipe(Config.withDefault(defaultSweepPolicy.orphansLimit)),
   batch: Config.schema(
     Schema.Int.check(Schema.isBetween({ maximum: maxSweepBatch, minimum: 1 })),
     "PEAL_MEDIA_SWEEP_BATCH"

@@ -53,6 +53,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "media:claim": {
+      "command": "bun src/claim-media-folder.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "erasures:replay": {
       "command": "bun src/replay-erasures.ts",
       "options": { "cwd": "{projectRoot}" },

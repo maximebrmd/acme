@@ -9,62 +9,95 @@ import {
 } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { Ids } from "#shared/application/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { MediaStorageFailed } from "./media-storage-failed.ts";
 import { MediaBucket } from "./ports/media-bucket.ts";
-import type { BucketPage } from "./ports/media-bucket.ts";
+import type { BucketFile, BucketPage } from "./ports/media-bucket.ts";
 import { MediaFolders } from "./ports/media-folders.ts";
 import { MediaStorage } from "./ports/media-storage.ts";
 import { MediaSweepStore } from "./ports/media-sweep-store.ts";
 import type {
+  ExpiredPosition,
   ExpiredUpload,
   ListingSweep,
   SweepCursor,
 } from "./ports/media-sweep-store.ts";
 import { MediaUsage } from "./ports/media-usage.ts";
-import { CurrentSweepPolicy } from "./sweep-policy.ts";
+import {
+  CurrentSweepPolicy,
+  orphanShareFloor,
+  orphanShareLimit,
+} from "./sweep-policy.ts";
 
 /** The sweeps of the media store, as metrics and logs name them. */
 export type SweepName = "folders" | "orphans" | "pending" | "uploads";
+
+/** Why a sweep would not delete anything this run. */
+export type SweepRefusal =
+  // The media folder's owner marker names another database.
+  | "foreign"
+  // This database claimed the folder, and its marker is gone.
+  | "unmarked"
+  // A page held more orphans than a sound database leaves.
+  | "breaker";
 
 /** What one run of a sweep did. */
 export interface SweepReport {
   /** The bytes of the files it deleted, as the store sized them. */
   readonly bytes: number;
+  /** What it could not delete: each is tried again at the next run. */
+  readonly failed: number;
   /** Whether it stopped at its bound with more to do, for the next run. */
   readonly left: boolean;
+  /** Why it deleted nothing more, if it refused to. */
+  readonly refused: Option.Option<SweepRefusal>;
   /** What it deleted: assets and their files, uploads, or files. */
   readonly swept: number;
 }
 
 /**
- * What the sweeps deleted, by sweep (`sweep`): uploads never completed,
- * multipart uploads left open, files no asset holds, and the files and
- * uploads of erased workspaces.
+ * What the sweeps deleted, by sweep (`sweep`), counted as each goes:
+ * uploads never completed, multipart uploads left open, files no asset
+ * holds, and the files and uploads of erased workspaces.
  */
 export const sweptObjects = Metric.counter("peal.media.sweep.objects", {
   description: "What the media store's sweeps deleted, by sweep",
   incremental: true,
 });
 
-/** The bytes of the files the sweeps deleted, by sweep. */
+/** The bytes of the files the sweeps deleted, by sweep, as each goes. */
 export const sweptBytes = Metric.counter("peal.media.sweep.bytes", {
   description: "Bytes of the files the media store's sweeps deleted, by sweep",
   incremental: true,
 });
 
 /**
- * The runs of a sweep that failed, by sweep: the next run tries again.
- * One that fails run after run has an alert (`peal-media-sweep-failing`).
+ * The runs of a sweep that failed, and the things a run could not delete,
+ * by sweep: the next run tries again. Failures that keep coming have an
+ * alert (`peal-media-sweep-failing`).
  */
 export const sweepFailures = Metric.counter("peal.media.sweep.failures", {
-  description: "Runs of the media store's sweeps that failed, by sweep",
+  description:
+    "Runs of the media store's sweeps that failed, and what they could not delete, by sweep",
   incremental: true,
 });
 
-// Pages of the bucket one run lists at most: stores list up to 1,000 keys
-// a page, so a run reads 10,000 at most, and a large bucket over several
-// runs, from where the last stopped.
+/**
+ * The runs of a sweep that refused to delete, by sweep and `reason`
+ * (`SweepRefusal`): an alert fires at the first
+ * (`peal-media-sweep-refused`).
+ */
+export const sweepRefusals = Metric.counter("peal.media.sweep.refusals", {
+  description:
+    "Runs of the media store's sweeps that refused to delete, by sweep and reason",
+  incremental: true,
+});
+
+// Pages one run reads at most: of the bucket (1,000 keys each on most
+// stores), so a large bucket is read over several runs from where the
+// last stopped, and of expired uploads.
 const pagesPerRun = 10;
 
 // Erased workspaces whose folder one run empties at most: each can hold
@@ -74,30 +107,76 @@ const foldersPerRun = 25;
 // A folder the erasure is emptying right now is left to it for this long.
 const folderGrace = Duration.minutes(15);
 
+const nothing: SweepReport = {
+  bytes: 0,
+  failed: 0,
+  left: false,
+  refused: Option.none(),
+  swept: 0,
+};
+
 type SweepFailure = DatabaseError | MediaStorageFailed;
+
+// One thing the store would not let go: counted, named, left to the
+// next run, and the run goes on.
+const skipped =
+  (sweep: SweepName, subject: string) => (cause: MediaStorageFailed) =>
+    Effect.logWarning(
+      "A sweep of the media store could not delete one thing: the next run tries again",
+      cause
+    ).pipe(
+      Effect.annotateLogs({ subject, sweep }),
+      Effect.andThen(failedOne(sweep)),
+      Effect.as("failed" as const)
+    );
+
+// One thing a sweep could not delete, counted.
+const failedOne = (sweep: SweepName) =>
+  Metric.update(Metric.withAttributes(sweepFailures, { sweep }), 1);
+
+// What one page of a listing sweep did.
+interface Taken {
+  readonly bytes: number;
+  readonly failed: number;
+  /** The batch ran out on this page: list it again next run. */
+  readonly full: boolean;
+  /** Stop here, deleting nothing of the page, for this reason. */
+  readonly refused: Option.Option<SweepRefusal>;
+  readonly swept: number;
+}
 
 /**
  * The media store's sweeps, each run by a cron of its own on one server
- * at a time, each bounded (`CurrentSweepPolicy`'s `batch`, pages of the
- * bucket) and safe to run again, or beside the requests that change what
- * it reads: what a run leaves, the next one does.
+ * at a time, each bounded (`CurrentSweepPolicy`'s `batch`, pages) and safe
+ * to run again, or beside the requests that change what it reads: what a
+ * run leaves, the next one does. Off (`CurrentSweepPolicy.enabled`), none
+ * lists or deletes anything. One thing the store refuses to delete is
+ * counted and left, and the run goes on.
  *
  * - `pending`: assets whose upload started `pendingAfter` ago and never
- *   completed: the drafts that show one lose it, as `deleteMedia` does (a
- *   post that may still go out keeps it, and it stays), then the asset
- *   goes, only while still pending, so a
- *   completion that comes first keeps it; then its multipart upload and
- *   its file. A store that fails after leaves them to the two sweeps
- *   below.
+ *   completed. One a post that may still go out shows stays, and is paged
+ *   past; otherwise the asset goes, only while still pending, so a
+ *   completion that comes first keeps it, then the drafts that show it
+ *   lose it, as `deleteMedia` does, then its multipart upload and file. A
+ *   store that fails after leaves them to the two sweeps below.
  * - `uploads`: multipart uploads open in the media folder that started
  *   `uploadsAfter` ago, aborted.
  * - `orphans`: files of the media folder that no asset holds, or whose
  *   asset was rejected, and the store wrote `orphansAfter` ago, as a
  *   single upload's URL used after its asset was deleted leaves. Each is
- *   checked again just before it goes.
+ *   checked again just before it goes. A page with more of them than
+ *   `orphansLimit`, or more than `orphanShareLimit` of its old files,
+ *   stops the run before anything on it goes: this database is likely not
+ *   the bucket's newest truth (restored to an earlier time, or another).
  * - `folders`: the folders of erased workspaces that the erasure could not
  *   empty once it committed, emptied again until the store holds nothing
- *   of them.
+ *   of them; one whose workspace still has assets is left, and counted.
+ *
+ * `pending` and `orphans` delete what this database does not know of, so
+ * they run only while the media folder's owner marker names this
+ * database: on a folder without one, the first run writes it; another id,
+ * or no marker once this database wrote one, stops them (`SweepRefusal`).
+ * The marker is never replaced but by an operator (`claimMediaFolder`).
  *
  * Nothing outside the media folder, under the store's prefix, is ever
  * listed or deleted, nor any key Peal does not write (`mediaKeyOf`).
@@ -119,9 +198,16 @@ export class MediaSweeps extends Context.Service<
       const storage = yield* MediaStorage;
       const folders = yield* MediaFolders;
       const usage = yield* MediaUsage;
+      const ids = yield* Ids;
 
-      const { batch, orphansAfter, pendingAfter, uploadsAfter } =
-        yield* CurrentSweepPolicy;
+      const {
+        batch,
+        enabled,
+        orphansAfter,
+        orphansLimit,
+        pendingAfter,
+        uploadsAfter,
+      } = yield* CurrentSweepPolicy;
 
       const since = Effect.fn("MediaSweeps.since")(function* since(
         age: Duration.Duration
@@ -129,32 +215,117 @@ export class MediaSweeps extends Context.Service<
         return DateTime.subtractDuration(yield* DateTime.now, age);
       });
 
-      // The drafts that show it lose it, as deleting it takes it from
-      // them; a post that may still go out keeps it, and the asset stays.
-      const released = (expired: ExpiredUpload) =>
-        usage.release(expired.workspaceId, expired.assetId).pipe(
-          Effect.as(true),
-          Effect.catchTag("MediaInUse", () =>
-            Effect.logWarning(
-              "An upload never completed stays: a scheduled post shows it"
-            ).pipe(
-              Effect.annotateLogs({ assetId: expired.assetId }),
-              Effect.as(false)
-            )
+      // Counts what went as it goes, so a run that fails later loses none
+      // of it, and names it at debug: keys hold ids only.
+      const counted = Effect.fn("MediaSweeps.counted")(function* counted(
+        sweep: SweepName,
+        subject: string,
+        objects: number,
+        bytes: number
+      ) {
+        yield* Metric.update(
+          Metric.withAttributes(sweptObjects, { sweep }),
+          objects
+        );
+        yield* Metric.update(
+          Metric.withAttributes(sweptBytes, { sweep }),
+          bytes
+        );
+        yield* Effect.logDebug("Swept from the media store").pipe(
+          Effect.annotateLogs({ bytes, objects, subject, sweep })
+        );
+      });
+
+      // Whether the media folder is this database's: its owner marker
+      // names this database's id, or there was none and this database
+      // wrote it now.
+      const ownership = Effect.gen(function* ownership() {
+        const self = yield* store.identity(yield* ids.next);
+        const marker = yield* bucket.owner;
+
+        if (Option.isSome(marker)) {
+          if (marker.value !== self.id) {
+            return Option.some<SweepRefusal>("foreign");
+          }
+
+          if (!self.claimed) {
+            yield* store.markClaimed;
+          }
+
+          return Option.none<SweepRefusal>();
+        }
+
+        if (self.claimed) {
+          return Option.some<SweepRefusal>("unmarked");
+        }
+
+        // Written only if none is there: one another server wrote
+        // meanwhile is read again, never replaced.
+        const wrote = yield* bucket.claim(self.id, { replace: false });
+
+        if (!wrote) {
+          const written = yield* bucket.owner;
+
+          if (Option.getOrUndefined(written) !== self.id) {
+            return Option.some<SweepRefusal>("foreign");
+          }
+        }
+
+        yield* store.markClaimed;
+        yield* Effect.logInfo(
+          "The media folder's owner marker now names this database"
+        );
+
+        return Option.none<SweepRefusal>();
+      });
+
+      const owned = (
+        sweep: Effect.Effect<SweepReport, SweepFailure>
+      ): Effect.Effect<SweepReport, SweepFailure> =>
+        ownership.pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => sweep,
+              onSome: (reason) =>
+                Effect.succeed({ ...nothing, refused: Option.some(reason) }),
+            })
           )
         );
 
-      // The asset goes first, then what the store holds of it.
+      const switched = (
+        sweep: Effect.Effect<SweepReport, SweepFailure>
+      ): Effect.Effect<SweepReport, SweepFailure> =>
+        enabled ? sweep : Effect.succeed(nothing);
+
+      // One expired upload: kept while a post that may still go out shows
+      // it; otherwise the asset goes first, while still pending, then the
+      // drafts lose it, then what the store holds of it.
       const sweepUpload = Effect.fn("MediaSweeps.sweepUpload")(
         function* sweepUpload(expired: ExpiredUpload, before: DateTime.Utc) {
-          if (
-            !(yield* released(expired)) ||
-            !(yield* store.forgetExpired(expired.assetId, before))
-          ) {
-            return Option.none<number>();
+          const { assetId, storageKey: key, upload, workspaceId } = expired;
+          const shown = yield* usage.of(workspaceId, assetId);
+
+          if (shown.scheduled.length > 0) {
+            yield* Effect.logWarning(
+              "An upload never completed stays: a scheduled post shows it"
+            ).pipe(Effect.annotateLogs({ assetId }));
+
+            return "kept" as const;
           }
 
-          const { storageKey: key, upload } = expired;
+          if (!(yield* store.forgetExpired(assetId, before))) {
+            return "kept" as const;
+          }
+
+          yield* usage
+            .release(workspaceId, assetId)
+            .pipe(
+              Effect.catchTag("MediaInUse", () =>
+                Effect.logError(
+                  "A post was scheduled with an upload never completed as it was swept"
+                ).pipe(Effect.annotateLogs({ assetId }))
+              )
+            );
 
           if (upload._tag === "multipart") {
             yield* storage.abortMultipartUpload({
@@ -165,35 +336,67 @@ export class MediaSweeps extends Context.Service<
 
           const stored = yield* storage.head(key);
 
+          const bytes = Option.match(stored, {
+            onNone: () => 0,
+            onSome: ({ byteSize }) => byteSize,
+          });
+
           if (Option.isSome(stored)) {
             yield* storage.remove(key);
           }
 
-          return Option.some(
-            Option.match(stored, {
-              onNone: () => 0,
-              onSome: ({ byteSize }) => byteSize,
-            })
-          );
+          yield* counted("pending", key, 1, bytes);
+
+          return bytes;
         }
       );
 
       const pending = Effect.gen(function* pendingSweep() {
         const before = yield* since(pendingAfter);
-        const expired = yield* store.expiredUploads(before, batch);
+        let after = Option.none<ExpiredPosition>();
+        let swept = 0;
+        let bytes = 0;
+        let failed = 0;
+        let pages = 0;
+        let more = true;
 
-        const swept = yield* Effect.forEach(
-          expired,
-          (upload) => sweepUpload(upload, before),
-          { concurrency: 1 }
-        );
+        // Assets kept are paged past, so they never hold up the batch.
+        while (more && swept < batch && pages < pagesPerRun) {
+          const expired = yield* store.expiredUploads(before, batch, after);
+          const room = batch - swept;
+          const tried = expired.slice(0, room);
 
-        const sizes = swept.flatMap(Option.toArray);
+          for (const upload of tried) {
+            const done = yield* sweepUpload(upload, before).pipe(
+              Effect.catchTag(
+                "MediaStorageFailed",
+                skipped("pending", upload.storageKey)
+              )
+            );
+
+            if (done === "failed") {
+              failed += 1;
+            } else if (done !== "kept") {
+              swept += 1;
+              bytes += done;
+            }
+
+            after = Option.some({
+              assetId: upload.assetId,
+              createdAt: upload.createdAt,
+            });
+          }
+
+          pages += 1;
+          more = expired.length === batch || tried.length < expired.length;
+        }
 
         const report: SweepReport = {
-          bytes: sizes.reduce((total, size) => total + size, 0),
-          left: expired.length === batch,
-          swept: sizes.length,
+          ...nothing,
+          bytes,
+          failed,
+          left: more,
+          swept,
         };
 
         return report;
@@ -201,9 +404,9 @@ export class MediaSweeps extends Context.Service<
 
       // Lists the bucket from where the sweep stopped, a page at a time,
       // deleting what `take` picks, until the batch is spent, the run's
-      // pages are, or the listing ends, and keeps where it stopped. A page
-      // the batch ran out in is listed again by the next run: what went is
-      // no longer on it.
+      // pages are, the listing ends or `take` refuses, and keeps where it
+      // stopped. A page the batch ran out in, or that was refused, is
+      // listed again by the next run: what went is no longer on it.
       const listing = <A, M>(
         sweep: ListingSweep,
         list: (
@@ -214,34 +417,31 @@ export class MediaSweeps extends Context.Service<
         take: (
           items: readonly A[],
           room: number
-        ) => Effect.Effect<
-          {
-            readonly bytes: number;
-            readonly swept: number;
-            readonly full: boolean;
-          },
-          SweepFailure
-        >
+        ) => Effect.Effect<Taken, SweepFailure>
       ) =>
         Effect.gen(function* listingSweep() {
           const saved = yield* store.cursor(sweep);
           let after = saved.pipe(Option.map(fromCursor));
           let swept = 0;
           let bytes = 0;
+          let failed = 0;
           let pages = 0;
           let ended = false;
-          let full = false;
+          let stop = false;
+          let refused = Option.none<SweepRefusal>();
 
-          while (!ended && !full && pages < pagesPerRun) {
+          while (!ended && !stop && pages < pagesPerRun) {
             const page = yield* list(after);
             const done = yield* take(page.items, batch - swept);
 
             swept += done.swept;
             bytes += done.bytes;
+            failed += done.failed;
             pages += 1;
-            ({ full } = done);
+            ({ refused } = done);
+            stop = done.full || Option.isSome(refused);
 
-            if (!full) {
+            if (!stop) {
               ended = Option.isNone(page.next);
               after = page.next;
             }
@@ -253,7 +453,13 @@ export class MediaSweeps extends Context.Service<
             yield* DateTime.now
           );
 
-          const report: SweepReport = { bytes, left: !ended, swept };
+          const report: SweepReport = {
+            bytes,
+            failed,
+            left: !ended,
+            refused,
+            swept,
+          };
 
           return report;
         });
@@ -274,21 +480,54 @@ export class MediaSweeps extends Context.Service<
 
               const taken = old.slice(0, room);
 
-              yield* Effect.forEach(
+              const done = yield* Effect.forEach(
                 taken,
                 ({ key, uploadId }) =>
-                  storage.abortMultipartUpload({ key, uploadId }),
-                { discard: true }
+                  storage
+                    .abortMultipartUpload({ key, uploadId })
+                    .pipe(
+                      Effect.andThen(counted("uploads", key, 1, 0)),
+                      Effect.as("aborted" as const),
+                      Effect.catchTag(
+                        "MediaStorageFailed",
+                        skipped("uploads", key)
+                      )
+                    ),
+                { concurrency: 1 }
               );
 
-              return {
+              const failed = done.filter((end) => end === "failed").length;
+
+              const result: Taken = {
                 bytes: 0,
+                failed,
                 full: taken.length === room && room > 0,
-                swept: taken.length,
+                refused: Option.none(),
+                swept: taken.length - failed,
               };
+
+              return result;
             })
         );
       }).pipe(Effect.withSpan("MediaSweeps.uploads"));
+
+      // A file no asset holds, checked again just before it goes.
+      const deleteOrphan = (file: BucketFile) =>
+        store.keptKeys([file.key]).pipe(
+          Effect.flatMap((held) =>
+            held.size > 0
+              ? Effect.succeed(Option.none<number>())
+              : storage
+                  .remove(file.key)
+                  .pipe(
+                    Effect.andThen(
+                      counted("orphans", file.key, 1, file.byteSize)
+                    ),
+                    Effect.as(Option.some(file.byteSize))
+                  )
+          ),
+          Effect.catchTag("MediaStorageFailed", skipped("orphans", file.key))
+        );
 
       const orphans = Effect.gen(function* orphansSweep() {
         const before = yield* since(orphansAfter);
@@ -306,54 +545,107 @@ export class MediaSweeps extends Context.Service<
 
               const kept = yield* store.keptKeys(old.map(({ key }) => key));
               const unheld = old.filter(({ key }) => !kept.has(key));
+
+              const tripped =
+                unheld.length > orphansLimit ||
+                (old.length >= orphanShareFloor &&
+                  unheld.length > old.length * orphanShareLimit);
+
+              if (tripped) {
+                yield* Effect.logError(
+                  "A sweep of the media store stopped: a page of the bucket holds more files this database does not know of than a sound one leaves"
+                ).pipe(
+                  Effect.annotateLogs({
+                    old: old.length,
+                    orphans: unheld.length,
+                  })
+                );
+
+                const refusal: Taken = {
+                  bytes: 0,
+                  failed: 0,
+                  full: false,
+                  refused: Option.some("breaker"),
+                  swept: 0,
+                };
+
+                return refusal;
+              }
+
               const taken = unheld.slice(0, room);
 
-              // Checked again just before it goes, one at a time.
-              const deleted = yield* Effect.forEach(
-                taken,
-                (file) =>
-                  store
-                    .keptKeys([file.key])
-                    .pipe(
-                      Effect.flatMap((held) =>
-                        held.size > 0
-                          ? Effect.succeed(Option.none<number>())
-                          : storage
-                              .remove(file.key)
-                              .pipe(Effect.as(Option.some(file.byteSize)))
-                      )
-                    ),
-                { concurrency: 1 }
+              const done = yield* Effect.forEach(taken, deleteOrphan, {
+                concurrency: 1,
+              });
+
+              const gone = done.flatMap((end) =>
+                end === "failed" ? [] : Option.toArray(end)
               );
 
-              const gone = deleted.flatMap(Option.toArray);
-
-              return {
+              const result: Taken = {
                 bytes: gone.reduce((total, size) => total + size, 0),
+                failed: done.filter((end) => end === "failed").length,
                 full: taken.length === room && room > 0,
+                refused: Option.none(),
                 swept: gone.length,
               };
+
+              return result;
             })
         );
       }).pipe(Effect.withSpan("MediaSweeps.orphans"));
+
+      // One erased workspace's folder, emptied, then forgotten; one whose
+      // workspace still has assets is left alone, and counted.
+      const emptyFolder = Effect.fn("MediaSweeps.emptyFolder")(
+        function* emptyFolder(workspaceId: WorkspaceId) {
+          if (yield* store.holdsAssets(workspaceId)) {
+            yield* Effect.logError(
+              "An erased workspace's folder is listed for the sweep, and the workspace still has media: left"
+            ).pipe(Effect.annotateLogs({ workspaceId }));
+            yield* failedOne("folders");
+
+            return "failed" as const;
+          }
+
+          const removed = yield* folders.removeWorkspace(workspaceId);
+
+          yield* store.forgetFolder(workspaceId);
+          yield* counted(
+            "folders",
+            workspaceId,
+            removed.files + removed.uploads,
+            removed.bytes
+          );
+
+          return removed;
+        }
+      );
 
       const foldersSweep = Effect.gen(function* foldersSweep() {
         const before = yield* since(folderGrace);
         const erased = yield* store.erasedFolders(before, foldersPerRun);
 
-        const removed = yield* Effect.forEach(
+        const done = yield* Effect.forEach(
           erased,
           (workspaceId) =>
-            folders
-              .removeWorkspace(workspaceId)
-              .pipe(Effect.tap(() => store.forgetFolder(workspaceId))),
+            emptyFolder(workspaceId).pipe(
+              Effect.catchTag(
+                "MediaStorageFailed",
+                skipped("folders", workspaceId)
+              )
+            ),
           { concurrency: 1 }
         );
 
+        const emptied = done.flatMap((end) => (end === "failed" ? [] : [end]));
+
         const report: SweepReport = {
-          bytes: removed.reduce((total, { bytes }) => total + bytes, 0),
+          ...nothing,
+          bytes: emptied.reduce((total, { bytes }) => total + bytes, 0),
+          failed: done.length - emptied.length,
           left: erased.length === foldersPerRun,
-          swept: removed.reduce(
+          swept: emptied.reduce(
             (total, { files, uploads: aborted }) => total + files + aborted,
             0
           ),
@@ -363,20 +655,21 @@ export class MediaSweeps extends Context.Service<
       }).pipe(Effect.withSpan("MediaSweeps.folders"));
 
       return MediaSweeps.of({
-        folders: foldersSweep,
-        orphans,
-        pending,
-        uploads,
+        folders: switched(foldersSweep),
+        orphans: switched(owned(orphans)),
+        pending: switched(owned(pending)),
+        uploads: switched(uploads),
       });
     })
   );
 }
 
 /**
- * Runs a sweep once, as its cron does: counts what it deleted, logs it
- * when it deleted anything or left work, and, when it fails, logs and
- * counts the failure (`sweepFailures`) and succeeds: the next run tries
- * again.
+ * Runs a sweep once, as its cron does: logs what it did when it deleted
+ * anything, left work, could not delete something or refused, counts a
+ * refusal (`sweepRefusals`), and, when the run fails, logs and counts the
+ * failure (`sweepFailures`) and succeeds: the next run tries again. What
+ * the run deleted is counted as it goes, failed run or not.
  */
 export const runSweep = (
   name: SweepName,
@@ -386,19 +679,25 @@ export const runSweep = (
 ): Effect.Effect<Option.Option<SweepReport>, never, MediaSweeps> =>
   MediaSweeps.use(sweep).pipe(
     Effect.tap((report) =>
-      Effect.gen(function* counted() {
-        yield* Metric.update(
-          Metric.withAttributes(sweptObjects, { sweep: name }),
-          report.swept
-        );
-        yield* Metric.update(
-          Metric.withAttributes(sweptBytes, { sweep: name }),
-          report.bytes
-        );
+      Effect.gen(function* logged() {
+        const { refused, ...done } = report;
 
-        if (report.swept > 0 || report.left) {
+        if (Option.isSome(refused)) {
+          yield* Metric.update(
+            Metric.withAttributes(sweepRefusals, {
+              reason: refused.value,
+              sweep: name,
+            }),
+            1
+          );
+          yield* Effect.logError(
+            "A sweep of the media store refused to delete"
+          ).pipe(Effect.annotateLogs({ reason: refused.value, sweep: name }));
+        }
+
+        if (done.swept > 0 || done.left || done.failed > 0) {
           yield* Effect.logInfo("Swept the media store").pipe(
-            Effect.annotateLogs({ sweep: name, ...report })
+            Effect.annotateLogs({ sweep: name, ...done })
           );
         }
       })

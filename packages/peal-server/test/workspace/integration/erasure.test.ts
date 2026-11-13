@@ -436,6 +436,8 @@ const kept = {
     "what staff handed over on legal requests, and on what grounds, kept 5 years",
   "media.erased_folders":
     "the ids of erased workspaces whose media folder the store may still hold, until the sweep finds it empty",
+  "media.store_identity":
+    "the database's own random id, which the media folder's owner marker names",
   "media.sweep_cursors":
     "where each sweep of the store stopped listing it: one storage key, which holds ids only",
   "notifications.sent_notices":

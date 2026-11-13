@@ -7,6 +7,8 @@ import { defaultUploadPolicy } from "./upload-policy.ts";
  * must be, and how much one run of each deletes at most.
  */
 export interface SweepPolicy {
+  /** Whether the sweeps run at all: off, they list and delete nothing. */
+  readonly enabled: boolean;
   /**
    * How long after it started an upload never completed is deleted, its
    * file and its asset.
@@ -21,7 +23,21 @@ export interface SweepPolicy {
   readonly orphansAfter: Duration.Duration;
   /** The most one run of each sweep deletes. */
   readonly batch: number;
+  /**
+   * The most files one page of the bucket may hold that no asset holds
+   * before the sweep of them stops, deleting none: a database restored to
+   * an earlier time, or another's, sees most of the bucket as orphans.
+   */
+  readonly orphansLimit: number;
 }
+
+/**
+ * The share of a page's files past their bound that may be orphans before
+ * the sweep stops, on a page of `orphanShareFloor` such files or more.
+ */
+export const orphanShareLimit = 0.2;
+
+export const orphanShareFloor = 50;
 
 /**
  * The youngest any sweep may reach: the part URLs' life and an hour, so
@@ -33,9 +49,11 @@ export const minimumSweepAge = Duration.sum(
   Duration.hours(1)
 );
 
-/** A day for each, and 500 a run. */
+/** On, a day for each, 500 a run, and 100 orphans a page at most. */
 export const defaultSweepPolicy: SweepPolicy = {
   batch: 500,
+  enabled: true,
+  orphansLimit: 100,
   orphansAfter: Duration.days(1),
   pendingAfter: Duration.days(1),
   uploadsAfter: Duration.days(1),

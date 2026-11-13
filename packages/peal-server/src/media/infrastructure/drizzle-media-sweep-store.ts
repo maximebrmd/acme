@@ -1,10 +1,12 @@
-import { and, asc, eq, inArray, lt, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { MediaSweepStore } from "#media/application/ports/media-sweep-store.ts";
 import type {
+  ExpiredPosition,
   ExpiredUpload,
   ListingSweep,
+  StoreIdentity,
   SweepCursor,
 } from "#media/application/ports/media-sweep-store.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
@@ -17,12 +19,18 @@ import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { erasedFolders, mediaAssets, sweepCursors } from "./schema.ts";
+import {
+  erasedFolders,
+  mediaAssets,
+  storeIdentity,
+  sweepCursors,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const ExpiredUploadSchema = Schema.Struct({
   assetId: MediaAssetIdSchema,
+  createdAt: Schema.DateTimeUtcFromDate,
   storageKey: StorageKeySchema,
   upload: UploadMethodSchema,
   workspaceId: WorkspaceIdSchema,
@@ -57,10 +65,15 @@ export const DrizzleMediaSweepStore = Layer.effect(
     const db = yield* Drizzle;
 
     const expiredUploads = Effect.fn("MediaSweepStore.expiredUploads")(
-      function* expiredUploads(before: DateTime.Utc, limit: number) {
+      function* expiredUploads(
+        before: DateTime.Utc,
+        limit: number,
+        after: Option.Option<ExpiredPosition>
+      ) {
         const rows = yield* db
           .select({
             assetId: mediaAssets.id,
+            createdAt: mediaAssets.createdAt,
             partSize: mediaAssets.multipartPartSize,
             storageKey: mediaAssets.storageKey,
             uploadId: mediaAssets.multipartUploadId,
@@ -70,10 +83,17 @@ export const DrizzleMediaSweepStore = Layer.effect(
           .where(
             and(
               eq(mediaAssets.status, "pending"),
-              lt(mediaAssets.createdAt, DateTime.toDate(before))
+              lt(mediaAssets.createdAt, DateTime.toDate(before)),
+              after.pipe(
+                Option.map(
+                  ({ assetId, createdAt }) =>
+                    sql`(${mediaAssets.createdAt}, ${mediaAssets.id}) > (${DateTime.toDate(createdAt)}, ${assetId})`
+                ),
+                Option.getOrUndefined
+              )
             )
           )
-          .orderBy(asc(mediaAssets.createdAt))
+          .orderBy(asc(mediaAssets.createdAt), asc(mediaAssets.id))
           .limit(limit)
           .pipe(Effect.mapError(failed));
 
@@ -205,6 +225,57 @@ export const DrizzleMediaSweepStore = Layer.effect(
       return ids;
     });
 
+    const holdsAssets = Effect.fn("MediaSweepStore.holdsAssets")(
+      function* holdsAssets(workspaceId: WorkspaceId) {
+        const rows = yield* db
+          .select({ id: mediaAssets.id })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.workspaceId, workspaceId))
+          .limit(1)
+          .pipe(Effect.mapError(failed));
+
+        return rows.length > 0;
+      }
+    );
+
+    const identity = Effect.fn("MediaSweepStore.identity")(function* identity(
+      candidate: string
+    ) {
+      yield* db
+        .insert(storeIdentity)
+        .values({
+          createdAt: DateTime.toDate(yield* DateTime.now),
+          id: candidate,
+          singleton: true,
+        })
+        .onConflictDoNothing()
+        .pipe(Effect.mapError(failed));
+
+      const [row] = yield* db
+        .select()
+        .from(storeIdentity)
+        .pipe(Effect.mapError(failed));
+
+      if (row === undefined) {
+        return yield* new DatabaseError({ cause: "No store identity" });
+      }
+
+      const found: StoreIdentity = {
+        claimed: row.claimedAt !== null,
+        id: row.id,
+      };
+
+      return found;
+    });
+
+    const markClaimed = Effect.gen(function* markClaimed() {
+      yield* db
+        .update(storeIdentity)
+        .set({ claimedAt: DateTime.toDate(yield* DateTime.now) })
+        .where(isNull(storeIdentity.claimedAt))
+        .pipe(Effect.mapError(failed));
+    }).pipe(Effect.withSpan("MediaSweepStore.markClaimed"));
+
     const forgetFolder = Effect.fn("MediaSweepStore.forgetFolder")(
       function* forgetFolder(workspaceId: WorkspaceId) {
         yield* db
@@ -220,7 +291,10 @@ export const DrizzleMediaSweepStore = Layer.effect(
       expiredUploads,
       forgetExpired,
       forgetFolder,
+      holdsAssets,
+      identity,
       keptKeys,
+      markClaimed,
       saveCursor,
     });
   })

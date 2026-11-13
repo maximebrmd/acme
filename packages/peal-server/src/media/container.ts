@@ -73,6 +73,16 @@ export const mediaWith = <E, R>(remote: Layer.Layer<RemoteMedia, E, R>) =>
   );
 
 /**
+ * What handing the media folder to this database needs
+ * (`claimMediaFolder`): this database's id and the bucket's owner marker.
+ * Needs Drizzle and the store's settings.
+ */
+export const MediaFolderClaimLive = Layer.mergeAll(
+  DrizzleMediaSweepStore,
+  S3MediaBucketLive
+);
+
+/**
  * The files members import, fetched from public hosts only, through the
  * OutboundGuard, which resolves their names with the runtime's Dns.
  */

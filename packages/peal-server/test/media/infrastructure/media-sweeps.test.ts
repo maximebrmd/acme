@@ -20,9 +20,11 @@ import { DateTime, Duration, Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { claimMediaFolder } from "#media/application/claim-media-folder.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MediaSweeps } from "#media/application/media-sweeps.ts";
+import type { SweepReport } from "#media/application/media-sweeps.ts";
 import { MediaBucket } from "#media/application/ports/media-bucket.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
@@ -167,25 +169,33 @@ const cleanUp = Effect.gen(function* cleanUp() {
 
   const sql = yield* SqlClient.SqlClient;
 
+  // Cursors and the claim are the database's, for whichever prefix: the
+  // next run's prefix starts unmarked and unclaimed.
   yield* sql`DELETE FROM media.sweep_cursors`.pipe(Effect.orDie);
+  yield* sql`UPDATE media.store_identity SET claimed_at = NULL`.pipe(
+    Effect.orDie
+  );
 }).pipe(Effect.scoped);
 
-const StoreTest = Layer.unwrap(
-  Effect.gen(function* store() {
-    const settings = yield* own;
+// The store under this run's prefix, its listings `pageSize` keys a page
+// if given.
+const storeWith = (pageSize?: number) =>
+  Layer.unwrap(
+    Effect.gen(function* store() {
+      const settings = yield* own;
 
-    return Layer.mergeAll(
-      Layer.effect(MediaStorage, makeS3MediaStorage(settings)),
-      Layer.effect(MediaBucket, makeS3MediaBucket(settings)),
-      Layer.effect(MediaFolders, makeS3MediaFolders(settings))
-    );
-  })
-).pipe(Layer.orDie);
+      return Layer.mergeAll(
+        Layer.effect(MediaStorage, makeS3MediaStorage(settings)),
+        Layer.effect(MediaBucket, makeS3MediaBucket(settings, pageSize)),
+        Layer.effect(MediaFolders, makeS3MediaFolders(settings))
+      );
+    })
+  ).pipe(Layer.orDie);
 
 // The sweeps under `policy`, on this run's store, and what the tests read
 // and write beside them. Cursors left by an earlier run are forgotten
 // first, and everything the run wrote when the block ends.
-const sweepsWith = (policy: Partial<SweepPolicy>) =>
+const sweepsWith = (policy: Partial<SweepPolicy>, pageSize?: number) =>
   Layer.mergeAll(
     MediaSweeps.layer.pipe(
       Layer.provide(
@@ -197,7 +207,7 @@ const sweepsWith = (policy: Partial<SweepPolicy>) =>
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
-        StoreTest,
+        storeWith(pageSize),
         DrizzleMediaSweepStore,
         // Which posts show an asset, as the publishing context tells.
         PublishingMediaUsage.pipe(Layer.provide(MediaInPostsTest))
@@ -207,6 +217,12 @@ const sweepsWith = (policy: Partial<SweepPolicy>) =>
     Layer.provideMerge(DatabaseTest),
     Layer.provide(storageSettings)
   );
+
+const counts = (done: {
+  readonly bytes: number;
+  readonly left: boolean;
+  readonly swept: number;
+}): SweepReport => ({ ...done, failed: 0, refused: Option.none() });
 
 // Before 1970: rows no other suite writes.
 const longAgo = DateTime.makeUnsafe("1964-06-01T00:00:00Z");
@@ -362,11 +378,10 @@ layer(sweepsWith({}), { timeout: "120 seconds" })(
 
           const report = yield* MediaSweeps.use((sweeps) => sweeps.pending);
 
-          assert.deepStrictEqual(report, {
-            bytes: 1500,
-            left: false,
-            swept: 2,
-          });
+          assert.deepStrictEqual(
+            report,
+            counts({ bytes: 1500, left: false, swept: 2 })
+          );
           assert.deepStrictEqual(
             yield* rowsOf([single.key, parts.key, young.key, done.key]),
             [young.key, done.key].toSorted()
@@ -378,7 +393,7 @@ layer(sweepsWith({}), { timeout: "120 seconds" })(
           // Run again, it finds nothing more.
           assert.deepStrictEqual(
             yield* MediaSweeps.use((sweeps) => sweeps.pending),
-            { bytes: 0, left: false, swept: 0 }
+            counts({ bytes: 0, left: false, swept: 0 })
           );
 
           yield* deleteRows([young.key, done.key]);
@@ -457,17 +472,16 @@ layer(sweepsWith({}), { timeout: "120 seconds" })(
 
           const report = yield* MediaSweeps.use((sweeps) => sweeps.folders);
 
-          assert.deepStrictEqual(report, {
-            bytes: 3000,
-            left: false,
-            swept: 3,
-          });
+          assert.deepStrictEqual(
+            report,
+            counts({ bytes: 3000, left: false, swept: 3 })
+          );
           assert.isFalse(yield* stored(first.key));
           assert.isFalse(yield* stored(second));
           assert.isFalse(yield* isOpen(third, uploadId));
           assert.deepStrictEqual(
             yield* MediaSweeps.use((sweeps) => sweeps.folders),
-            { bytes: 0, left: false, swept: 0 }
+            counts({ bytes: 0, left: false, swept: 0 })
           );
         })
     );
@@ -491,7 +505,7 @@ layer(sweepsWith({}), { timeout: "120 seconds" })(
 
           assert.deepStrictEqual(
             yield* MediaSweeps.use((sweeps) => sweeps.folders),
-            { bytes: 0, left: false, swept: 0 }
+            counts({ bytes: 0, left: false, swept: 0 })
           );
         })
     );
@@ -544,7 +558,10 @@ layer(sweepsWith(past), realClock)(
 
         const report = yield* MediaSweeps.use((sweeps) => sweeps.uploads);
 
-        assert.deepStrictEqual(report, { bytes: 0, left: false, swept: 2 });
+        assert.deepStrictEqual(
+          report,
+          counts({ bytes: 0, left: false, swept: 2 })
+        );
         assert.isFalse(yield* isOpen(first.key, firstId));
         assert.isFalse(yield* isOpen(second.key, secondId));
       })
@@ -588,11 +605,10 @@ layer(sweepsWith(past), realClock)(
 
           const report = yield* MediaSweeps.use((sweeps) => sweeps.orphans);
 
-          assert.deepStrictEqual(report, {
-            bytes: 2500,
-            left: false,
-            swept: 2,
-          });
+          assert.deepStrictEqual(
+            report,
+            counts({ bytes: 2500, left: false, swept: 2 })
+          );
           assert.isFalse(yield* stored(orphan.key));
           assert.isFalse(yield* stored(rejected.key));
           assert.isTrue(yield* stored(held.key));
@@ -604,7 +620,11 @@ layer(sweepsWith(past), realClock)(
 
           assert.deepStrictEqual(
             left.toSorted(),
-            [`${prefix}${held.key}`, ...others].toSorted()
+            [
+              `${prefix}${held.key}`,
+              `${prefix}media/.owner`,
+              ...others,
+            ].toSorted()
           );
 
           yield* deleteRows([held.key, rejected.key]);
@@ -662,6 +682,100 @@ layer(sweepsWith({ ...past, batch: 1 }), realClock)(
           swept: 0,
         });
       })
+    );
+  }
+);
+
+layer(sweepsWith(past), realClock)(
+  "the sweeps of the media store, on a folder another database owns",
+  (it) => {
+    it.effect(
+      "delete nothing until an operator hands the folder to this database",
+      () =>
+        Effect.gen(function* foreign() {
+          const { settings } = yield* Raw.pipe(Effect.scoped);
+          const orphan = yield* freshKey;
+          const other = "019a7b2c-3d4e-7f00-8a1b-0000000d0d0d";
+
+          yield* put(
+            `${settings.keyPrefix}media/.owner`,
+            new TextEncoder().encode(other)
+          ).pipe(Effect.scoped);
+          yield* upload(orphan.key, 100);
+          yield* aSecond;
+
+          assert.deepStrictEqual(
+            yield* MediaSweeps.use((sweeps) => sweeps.orphans),
+            {
+              ...counts({ bytes: 0, left: false, swept: 0 }),
+              refused: Option.some("foreign"),
+            }
+          );
+          assert.isTrue(yield* stored(orphan.key));
+
+          const claimed = yield* claimMediaFolder;
+
+          assert.deepStrictEqual(claimed.previous, Option.some(other));
+          assert.deepStrictEqual(
+            yield* MediaSweeps.use((sweeps) => sweeps.orphans),
+            counts({ bytes: 100, left: false, swept: 1 })
+          );
+          assert.isFalse(yield* stored(orphan.key));
+        })
+    );
+  }
+);
+
+layer(sweepsWith(past, 2), realClock)(
+  "the sweeps of the media store, two keys a page",
+  (it) => {
+    it.effect(
+      "page through the store's listings, and go on where they stopped",
+      () =>
+        Effect.gen(function* paging() {
+          const files = yield* Effect.forEach(
+            Array.from({ length: 25 }, (_, index) => index),
+            () => freshKey,
+            { concurrency: 1 }
+          );
+
+          yield* Effect.forEach(files, ({ key }) => upload(key, 10), {
+            concurrency: 4,
+            discard: true,
+          });
+
+          const shared = yield* freshKey;
+          const alone = yield* freshKey;
+
+          const twice = [
+            yield* openUpload(shared.key),
+            yield* openUpload(shared.key),
+          ];
+
+          const once = yield* openUpload(alone.key);
+
+          yield* aSecond;
+
+          // Ten pages of two a run, the owner marker first of all.
+          assert.deepStrictEqual(
+            yield* MediaSweeps.use((sweeps) => sweeps.orphans),
+            counts({ bytes: 190, left: true, swept: 19 })
+          );
+          assert.deepStrictEqual(
+            yield* MediaSweeps.use((sweeps) => sweeps.orphans),
+            counts({ bytes: 60, left: false, swept: 6 })
+          );
+          assert.deepStrictEqual(
+            yield* MediaSweeps.use((sweeps) => sweeps.uploads),
+            counts({ bytes: 0, left: false, swept: 3 })
+          );
+
+          for (const uploadId of twice) {
+            assert.isFalse(yield* isOpen(shared.key, uploadId));
+          }
+
+          assert.isFalse(yield* isOpen(alone.key, once));
+        })
     );
   }
 );
