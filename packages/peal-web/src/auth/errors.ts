@@ -13,6 +13,9 @@ const KnownErrorSchema = Schema.Literals([
   "USER_ALREADY_EXISTS",
   // The workspace's plan has no room for another member.
   "MEMBER_LIMIT_REACHED",
+  // The owner who pays for the workspace leaves it, is removed or stops
+  // being an owner before handing it over.
+  "PAYER_MUST_STAY",
   // The account already owns its one free workspace.
   "FREE_WORKSPACE_LIMIT_REACHED",
   // The captcha's token was missing, or Turnstile refused it.

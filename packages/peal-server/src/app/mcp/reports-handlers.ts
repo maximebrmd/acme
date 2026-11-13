@@ -21,8 +21,9 @@ import type { RangeAsked } from "#analytics/application/analytics-queries.ts";
 import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
-import { billingView } from "#billing/api/billing-view.ts";
+import { accountShown, billingView } from "#billing/api/billing-view.ts";
 import { usageView } from "#billing/api/usage-view.ts";
+import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -129,6 +130,7 @@ const idAsked = <A>(
 export const ReportToolsLive = ReportTools.toLayer(
   Effect.gen(function* reportTools() {
     const analytics = yield* AnalyticsQueries;
+    const accounts = yield* AccountViews;
     const billing = yield* BillingOverview;
     const usage = yield* UsageReports;
     const activity = yield* ActivityLog;
@@ -247,7 +249,12 @@ export const ReportToolsLive = ReportTools.toLayer(
             })
           );
 
-          return billingView(found);
+          const account = yield* accountShown(
+            found,
+            accounts.of(yield* actor).pipe(Effect.orDie)
+          );
+
+          return billingView(found, account);
         }),
       get_short_link: ({ from, linkId, to }) =>
         Effect.gen(function* getShortLink() {

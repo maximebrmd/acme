@@ -263,10 +263,13 @@ const signedInGroupsLive = (
     ),
     HttpApiBuilder.group(Api, "billingActions", (handlers) =>
       handlers.handleAll({
+        acceptTransfer: () => refusing,
         cancel: () => refusing,
+        offerTransfer: () => refusing,
         order: () => refusing,
         reduce: () => refusing,
         withdraw: () => refusing,
+        withdrawTransfer: () => refusing,
         withdrawal: () => refusing,
       })
     )
@@ -378,6 +381,15 @@ const ContractRequestsLive = Layer.mergeAll(
       apply: () => notStaff,
       close: () => notStaff,
       list: () => notStaff,
+    })
+  ),
+  HttpApiBuilder.group(Api, "billingAccountsDesk", (handlers) =>
+    handlers.handleAll({
+      account: () => notStaff,
+      detach: () => notStaff,
+      merge: () => notStaff,
+      requirePaymentMethod: () => notStaff,
+      sharedChannels: () => notStaff,
     })
   )
 ).pipe(

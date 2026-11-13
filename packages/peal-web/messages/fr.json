@@ -539,6 +539,7 @@
       "PASSWORD_TOO_SHORT": "Le mot de passe doit compter au moins 12 caractères.",
       "USER_ALREADY_EXISTS": "Un compte utilise déjà cette adresse e-mail.",
       "MEMBER_LIMIT_REACHED": "L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.",
+      "PAYER_MUST_STAY": "Ce propriétaire paie l’espace de travail : il le confie à un autre propriétaire depuis sa page Facturation avant de partir, d’être retiré ou de cesser d’être propriétaire.",
       "MISSING_RESPONSE": "Faites d’abord la vérification ci-dessus.",
       "VERIFICATION_FAILED": "La vérification n’a pas abouti. Recommencez-la.",
       "TOO_MANY_REQUESTS": "Trop de tentatives. Patientez une minute, puis réessayez.",
@@ -2105,6 +2106,30 @@
     },
     "keep": "Garder l’abonnement"
   },
+  "BillingAccount": {
+    "title": "Compte de facturation",
+    "youPay": "Vous payez ce compte : ses espaces de travail partagent un abonnement et comptent leurs canaux ensemble.",
+    "otherPays": "Une autre personne paie ce compte : ses espaces de travail partagent un abonnement et comptent leurs canaux ensemble.",
+    "partner": "Cet espace de travail est sur son compte partenaire, qui paie son espace principal et les espaces qu’il possède.",
+    "billedHere": "{workspaces, plural, one {Cet espace de travail facture le compte, dont il est le seul espace.} other {Cet espace de travail facture le compte, pour ses # espaces : leur abonnement se commande ici.}}",
+    "billedElsewhere": "L’abonnement se commande sur <workspace></workspace>, qui facture le compte.",
+    "billedElsewhereUnnamed": "L’abonnement se commande sur un autre espace de travail du compte, qui le facture.",
+    "sharedWith": "Aussi sur ce compte",
+    "offerTo": "Confier cet espace de travail à un autre propriétaire, qui le paiera alors",
+    "chooseOwner": "Choisir un propriétaire",
+    "noOwners": "Seul un autre propriétaire de cet espace de travail peut le reprendre : aucun n’en est encore membre.",
+    "offer": "Proposer",
+    "offering": "Envoi…",
+    "anotherOwner": "un autre propriétaire",
+    "offeredBy": "Proposé à {name} jusqu’au {until} : l’espace de travail rejoint son compte dès qu’il accepte.",
+    "offeredToYou": "Cet espace de travail vous est proposé jusqu’au {until} : acceptez pour le payer depuis votre propre compte de facturation.",
+    "accept": "Accepter",
+    "accepting": "Acceptation…",
+    "decline": "Refuser",
+    "withdraw": "Retirer la proposition",
+    "withdrawing": "Retrait…",
+    "error": "{error, select, forbidden {Seul un propriétaire qui gère la facturation, en personne, peut le faire.} notFound {La proposition n’est plus ouverte : elle a expiré, ou a été acceptée ou retirée.} planLimit {L’abonnement de votre compte n’a pas de place pour les canaux de cet espace de travail : passez d’abord à un abonnement supérieur.} subscribed {Cet espace de travail facture son compte avec un abonnement qui peut encore être prélevé : résiliez-le d’abord, ou confiez un autre espace de travail.} other {Cela n’a pas fonctionné. Réessayez.}}"
+  },
   "Contract": {
     "cancel": {
       "title": "Résilier votre contrat",
@@ -2193,11 +2218,9 @@
     }
   },
   "Upgrade": {
-    "title": "{limit, select, channels {Cet abonnement n’a plus de place pour un canal} members {Cet abonnement n’a plus de place pour un membre} scheduledPosts {Cet abonnement n’a plus de place pour une publication ce mois-là} assistantRequests {Les demandes à l’assistant d’écriture sont épuisées pour aujourd’hui} mediaStorage {Cet abonnement n’a plus de place pour ce fichier} freeWorkspace {Un espace de travail gratuit par compte} other {La limite de l’abonnement est atteinte}}",
+    "title": "{limit, select, channels {Cet abonnement n’a plus de place pour un canal} members {Cet abonnement n’a plus de place pour un membre} scheduledPosts {Cet abonnement n’a plus de place pour une publication ce mois-là} assistantRequests {Les demandes à l’assistant d’écriture sont épuisées pour aujourd’hui} mediaStorage {Cet abonnement n’a plus de place pour ce fichier} other {La limite de l’abonnement est atteinte}}",
     "reached": "{limit, select, channels {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# canal} other {# canaux}}, et il en a {used, number}.} members {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# membre} other {# membres}}, invitations en attente comprises, et il en a {used, number}.} scheduledPosts {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# publication} other {# publications}} par mois, et ce mois-là en a {used, number}.} assistantRequests {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# demande} other {# demandes}} à l’assistant d’écriture par jour, et celles d’aujourd’hui sont épuisées. Elles reprennent à minuit UTC.} other {L’abonnement {plan} de {workspace} ne permet pas d’en ajouter.}}",
     "reachedStorage": "L’abonnement {plan} de {workspace} permet {allowed} de médias, et il en stocke {used}, envois en cours compris.",
-    "freeWorkspace": "Votre compte possède déjà un espace de travail gratuit : {workspace}. Chaque compte en a un ; un autre demande que celui-ci passe à un abonnement payant.",
-    "freeWorkspaceTrial": "Votre compte possède déjà un espace de travail en période d’essai, qui se termine sur l’offre gratuite : {workspace}. Chaque compte a un espace gratuit ; un autre demande que celui-ci passe à un abonnement payant.",
     "offer": "L’abonnement {plan} a de la place :",
     "trial": "{workspace} est en période d’essai : commander fait commencer l’abonnement payant, et met fin à l’essai une fois le paiement reçu. Rien n’est facturé pour l’essai.",
     "comeBack": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page ; l’abonnement change dès que Stripe confirme le paiement, en général en quelques secondes.",
@@ -2216,6 +2239,7 @@
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
     "description": "Son abonnement est désormais {plan}. Rien n’a été supprimé, mais l’espace de travail doit revenir dans son abonnement avant de faire quoi que ce soit d’autre.",
+    "sharedAccount": "Ses canaux comptent avec ceux des autres espaces de travail de son compte de facturation : {workspaces}.",
     "excess": "{limit, select, channels {{used, number} canaux connectés, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
     "excessStorage": "{used} de médias stockés, {allowed} permis : les envois sont refusés tant que des médias ne sont pas supprimés ou que l’abonnement n’est pas supérieur",
     "posts": "{count, plural, =0 {D’ici là, rien n’est programmé ni publié.} one {D’ici là, rien n’est programmé ni publié. La publication programmée ce mois-ci échoue à son heure, avec « limite de l’abonnement » pour motif ; elle garde son texte et ses canaux, et peut être republiée depuis sa page une fois l’espace de travail revenu dans son abonnement.} other {D’ici là, rien n’est programmé ni publié. Les # publications programmées ce mois-ci échouent chacune à leur heure, avec « limite de l’abonnement » pour motif ; elles gardent leur texte et leurs canaux, et peuvent être republiées depuis leur page une fois l’espace de travail revenu dans son abonnement.}}",
@@ -2246,6 +2270,7 @@
       "unknownMember": "Une personne gardée n’est plus membre, ou vous ne l’êtes plus : un autre membre a peut-être choisi entre-temps. Rechargez la page.",
       "selfRequired": "Vous devez rester parmi les membres.",
       "ownerRequired": "Seul un propriétaire retire un propriétaire.",
+      "payerRequired": "Le propriétaire qui paie l’espace de travail reste parmi ses membres : il le confie d’abord à un autre propriétaire depuis sa page Facturation.",
       "generic": "Cela n’a pas fonctionné. Réessayez dans un instant."
     }
   },
@@ -2748,6 +2773,7 @@
       "workspaces": "Espaces de travail",
       "audit": "Journal d’audit",
       "requests": "Demandes sur les contrats",
+      "billingAccounts": "Comptes de facturation",
       "shortLinks": "Liens courts",
       "legal": "Réquisitions"
     },
@@ -2887,10 +2913,15 @@
       }
     },
     "errors": {
+      "accountGone": "Aucun compte de facturation n’a plus cet identifiant : il a peut-être été fusionné.",
       "banned": "On ne peut pas se connecter avec un compte banni. Levez d’abord le bannissement.",
       "expired": "Un bannissement doit prendre fin dans le futur.",
       "gone": "Ce compte n’existe plus.",
       "linkGone": "Plus aucun lien court n’a ce code.",
+      "mergePartner": "Le compte de facturation d’un partenaire n’est jamais fusionné, ni ne reçoit de fusion.",
+      "mergeSame": "Un compte ne peut pas être fusionné avec lui-même.",
+      "mergeStandalone": "Ce compte est un espace de travail qu’un abonnement propre garde seul : fusionnez vers un autre.",
+      "mergeSubscribed": "Le compte fusionné a un abonnement qui peut encore être prélevé : il doit d’abord prendre fin.",
       "notStaff": "Votre session d’équipe a pris fin. Reconnectez-vous.",
       "self": "L’équipe ne fait pas cela à son propre compte.",
       "staff": "L’équipe n’agit jamais à la place d’autres membres de l’équipe.",
@@ -2975,7 +3006,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -3016,6 +3047,47 @@
         "unavailable": "Stripe n’a pas pu être joint : rien n’a changé.",
         "unknown": "Cela n’a pas fonctionné. Réessayez."
       }
+    },
+    "billingAccounts": {
+      "title": "Comptes de facturation",
+      "description": "Une offre gratuite par personne : les comptes de plateforme connectés sous deux comptes de facturation gratuits ou plus, et ce que l’équipe en fait. Chaque action est gardée dans le journal d’audit.",
+      "sharedTitle": "Comptes de plateforme sous plusieurs comptes de facturation gratuits",
+      "sharedEmpty": "Aucun sur cette page.",
+      "platform": "Plateforme",
+      "platformAccount": "Identifiant du compte sur la plateforme",
+      "accounts": "Comptes de facturation gratuits (espaces de travail)",
+      "workspaces": "{count, plural, one {# espace de travail} other {# espaces de travail}}",
+      "more": "Page suivante",
+      "lookup": "Identifiant d’un compte de facturation ou d’un espace de travail",
+      "lookupButton": "Ouvrir",
+      "accountTitle": "Compte de facturation {id}",
+      "payer": "Payeur",
+      "partnerId": "Partenaire",
+      "billingWorkspace": "Espace de facturation",
+      "freeTier": "Offre gratuite",
+      "freeTierValue": "{freeTier, select, true {Oui} other {Non : un moyen de paiement est exigé}}",
+      "subscribed": "Abonné",
+      "subscribedValue": "{subscribed, select, true {Oui} other {Non}}",
+      "standalone": "Gardé seul par un abonnement propre",
+      "standaloneValue": "{standalone, select, true {Oui} other {Non}}",
+      "workspaceList": "Espaces de travail",
+      "none": "Aucun",
+      "mergeTitle": "Fusionner dans un autre compte",
+      "mergeHint": "Chaque espace de travail de ce compte passe dans l’autre, qui compte alors leurs canaux avec les siens, et ce compte est supprimé. Son payeur l’annule en confiant de nouveau chaque espace.",
+      "mergeInto": "Identifiant du compte qui reçoit la fusion",
+      "merge": "Fusionner",
+      "merging": "Fusion…",
+      "merged": "Les comptes ont été fusionnés.",
+      "requireTitle": "Moyen de paiement",
+      "require": "Exiger un moyen de paiement",
+      "restore": "Rendre l’offre gratuite",
+      "requiring": "Enregistrement…",
+      "required": "Enregistré.",
+      "detachTitle": "Détacher un espace de travail",
+      "detachHint": "L’espace de travail quitte ce compte pour celui de son plus ancien propriétaire, ce qui annule une fusion.",
+      "detach": "Détacher",
+      "detached": "L’espace de travail a été détaché.",
+      "mergedMark": "(fusionné par l’équipe)"
     },
     "legal": {
       "title": "Réquisitions",

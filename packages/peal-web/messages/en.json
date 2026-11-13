@@ -539,6 +539,7 @@
       "PASSWORD_TOO_SHORT": "The password needs at least 12 characters.",
       "USER_ALREADY_EXISTS": "An account already uses this email address.",
       "MEMBER_LIMIT_REACHED": "The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.",
+      "PAYER_MUST_STAY": "This owner pays for the workspace: they hand it to another owner on its billing page before they leave, are removed or stop being an owner.",
       "MISSING_RESPONSE": "Complete the check above first.",
       "VERIFICATION_FAILED": "The check did not go through. Try it again.",
       "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
@@ -2105,6 +2106,30 @@
     },
     "keep": "Keep the subscription"
   },
+  "BillingAccount": {
+    "title": "Billing account",
+    "youPay": "You pay for this account: its workspaces share one plan and count their channels together.",
+    "otherPays": "Another person pays for this account: its workspaces share one plan and count their channels together.",
+    "partner": "This workspace is on its partner account, which pays for its home workspace and the workspaces it owns.",
+    "billedHere": "{workspaces, plural, one {This workspace bills the account, and is its only workspace.} other {This workspace bills the account, for its # workspaces: their plan is ordered here.}}",
+    "billedElsewhere": "The plan is ordered on <workspace></workspace>, which bills the account.",
+    "billedElsewhereUnnamed": "The plan is ordered on another workspace of the account, which bills it.",
+    "sharedWith": "Also on this account",
+    "offerTo": "Hand this workspace to another owner, who then pays for it",
+    "chooseOwner": "Choose an owner",
+    "noOwners": "Only another owner of this workspace can take it over: none is a member yet.",
+    "offer": "Offer",
+    "offering": "Offering…",
+    "anotherOwner": "another owner",
+    "offeredBy": "Offered to {name} until {until}: the workspace moves to their account once they accept.",
+    "offeredToYou": "You were offered this workspace until {until}: accept to pay for it from your own billing account.",
+    "accept": "Accept",
+    "accepting": "Accepting…",
+    "decline": "Decline",
+    "withdraw": "Withdraw the offer",
+    "withdrawing": "Withdrawing…",
+    "error": "{error, select, forbidden {Only an owner who manages billing, in person, can do this.} notFound {The offer is no longer open: it expired, or was taken or withdrawn.} planLimit {Your account's plan has no room for this workspace's channels: upgrade it first.} subscribed {This workspace bills its account with a subscription that may still charge: cancel it first, or hand over another workspace.} other {That did not work. Try again.}}"
+  },
   "Contract": {
     "cancel": {
       "title": "Cancel your contract",
@@ -2193,11 +2218,9 @@
     }
   },
   "Upgrade": {
-    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} freeWorkspace {One free workspace per account} other {The plan’s limit is reached}}",
+    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} other {The plan’s limit is reached}}",
     "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
     "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
-    "freeWorkspace": "Your account already owns a workspace on the free plan: {workspace}. Each account has one; another needs that one on a paid plan.",
-    "freeWorkspaceTrial": "Your account already owns a workspace in its trial, which ends on the free plan: {workspace}. Each account has one free workspace; another needs that one on a paid plan.",
     "offer": "The {plan} plan has room:",
     "trial": "{workspace} is in its trial: ordering starts the paid plan, and ends the trial once it is paid for. Nothing is charged for the trial.",
     "comeBack": "Payment is by card, on Stripe’s checkout. You then come back to this page; the plan changes as soon as Stripe confirms the payment, usually within seconds.",
@@ -2216,6 +2239,7 @@
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
     "description": "Its plan is now {plan}. Nothing was deleted, but the workspace must come back within its plan before it does anything else.",
+    "sharedAccount": "Its channels count with those of the other workspaces of its billing account: {workspaces}.",
     "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
     "excessStorage": "{used} of media stored, {allowed} allowed: uploads are refused until media is deleted or the plan is larger",
     "posts": "{count, plural, =0 {Until then, nothing is scheduled or published.} one {Until then, nothing is scheduled or published. The post scheduled this month fails at its time, with “plan limit” as its reason; it keeps its text and channels, and can be posted again from its page once the workspace is within its plan.} other {Until then, nothing is scheduled or published. The # posts scheduled this month each fail at their time, with “plan limit” as their reason; they keep their text and channels, and can be posted again from their page once the workspace is within its plan.}}",
@@ -2246,6 +2270,7 @@
       "unknownMember": "Someone kept is no longer a member, or you no longer are: another member may have chosen meanwhile. Reload the page.",
       "selfRequired": "You must stay among the members.",
       "ownerRequired": "Only an owner removes an owner.",
+      "payerRequired": "The owner who pays for the workspace stays among its members: they hand it to another owner on its billing page first.",
       "generic": "That did not work. Try again in a moment."
     }
   },
@@ -2748,6 +2773,7 @@
       "workspaces": "Workspaces",
       "audit": "Audit log",
       "requests": "Contract requests",
+      "billingAccounts": "Billing accounts",
       "shortLinks": "Short links",
       "legal": "Legal requests"
     },
@@ -2887,10 +2913,15 @@
       }
     },
     "errors": {
+      "accountGone": "No billing account has this id any more: it may have been merged.",
       "banned": "A banned account cannot be signed in as. Lift the ban first.",
       "expired": "A ban must end in the future.",
       "gone": "This account no longer exists.",
       "linkGone": "No short link has this code any more.",
+      "mergePartner": "A partner's billing account is never merged, nor merged into.",
+      "mergeSame": "An account cannot be merged into itself.",
+      "mergeStandalone": "That account is one workspace a plan subscription of its own keeps alone: merge into another.",
+      "mergeSubscribed": "The account merged holds a subscription that may still charge: it must end first.",
       "notStaff": "Your staff session has ended. Sign in again.",
       "self": "Staff do not do this to their own account.",
       "staff": "Staff never act as other staff.",
@@ -2975,7 +3006,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -3016,6 +3047,47 @@
         "unavailable": "Stripe could not be reached: nothing changed.",
         "unknown": "That did not work. Try again."
       }
+    },
+    "billingAccounts": {
+      "title": "Billing accounts",
+      "description": "One free tier per person: platform accounts connected under two free billing accounts or more, and what staff do about it. Each action is kept in the audit log.",
+      "sharedTitle": "Platform accounts under several free billing accounts",
+      "sharedEmpty": "None on this page.",
+      "platform": "Platform",
+      "platformAccount": "Account id on the platform",
+      "accounts": "Free billing accounts (workspaces)",
+      "workspaces": "{count, plural, one {# workspace} other {# workspaces}}",
+      "more": "Next page",
+      "lookup": "Billing account or workspace id",
+      "lookupButton": "Open",
+      "accountTitle": "Billing account {id}",
+      "payer": "Payer",
+      "partnerId": "Partner",
+      "billingWorkspace": "Billing workspace",
+      "freeTier": "Free tier",
+      "freeTierValue": "{freeTier, select, true {Yes} other {No: a payment method is required}}",
+      "subscribed": "Subscribed",
+      "subscribedValue": "{subscribed, select, true {Yes} other {No}}",
+      "standalone": "Kept alone by a plan of its own",
+      "standaloneValue": "{standalone, select, true {Yes} other {No}}",
+      "workspaceList": "Workspaces",
+      "none": "None",
+      "mergeTitle": "Merge into another account",
+      "mergeHint": "Every workspace of this account moves into the other, which then counts their channels with its own, and this account is deleted. Its payer undoes it by handing each workspace back.",
+      "mergeInto": "Id of the account to merge into",
+      "merge": "Merge",
+      "merging": "Merging…",
+      "merged": "The accounts were merged.",
+      "requireTitle": "Payment method",
+      "require": "Require a payment method",
+      "restore": "Give the free tier back",
+      "requiring": "Saving…",
+      "required": "Saved.",
+      "detachTitle": "Detach a workspace",
+      "detachHint": "The workspace leaves this account for its oldest owner's, which undoes a merge.",
+      "detach": "Detach",
+      "detached": "The workspace was detached.",
+      "mergedMark": "(merged by staff)"
     },
     "legal": {
       "title": "Legal requests",

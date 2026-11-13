@@ -2,6 +2,7 @@ import { DateTime, Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
+  BilledElsewhere,
   BillingNotEnabled,
   BillingUnavailable,
   CurrentMember,
@@ -10,20 +11,26 @@ import {
   NothingToCancel,
   PlanTooSmall,
   ReductionRefused,
+  TransferNotFound,
+  TransferRefused,
   TrialUnavailable,
   WithdrawalUnavailable,
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { AccountViews } from "#billing/application/account-views.ts";
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
+import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden, personRequired } from "#shared/api/forbidden.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
+import { UserIdSchema } from "#shared/domain/ids.ts";
 
-import { standingView } from "./billing-view.ts";
+import { accountView, standingView } from "./billing-view.ts";
 
 const notEnabled = () => Effect.fail(new BillingNotEnabled());
 
@@ -48,6 +55,12 @@ const inPerson = (member: Member) =>
     ? Effect.succeed(actorOf(member))
     : personRequired();
 
+const transferRefused = ({
+  reason,
+}: {
+  readonly reason: TransferRefused["reason"];
+}) => Effect.fail(new TransferRefused({ reason }));
+
 export const BillingActionsHandlers = HttpApiBuilder.group(
   Api,
   "billingActions",
@@ -56,6 +69,9 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
     const cancellations = yield* CancelSubscription;
     const withdrawals = yield* Withdraw;
     const reductions = yield* ReduceWorkspace;
+    const transfers = yield* TransferWorkspace;
+    const accounts = yield* AccountViews;
+    const limitReached = yield* limitRefusal;
 
     const withdrawalErrors = {
       BillingOff: notEnabled,
@@ -83,6 +99,8 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
             })
             .pipe(
               Effect.catchTags({
+                BilledElsewhere: ({ billingWorkspaceId }) =>
+                  Effect.fail(new BilledElsewhere({ billingWorkspaceId })),
                 BillingOff: notEnabled,
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
@@ -162,7 +180,12 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
             })
           );
 
-          return { ...reduced, standing: standingView(reduced.standing) };
+          const account = yield* accounts.of(actor).pipe(Effect.orDie);
+
+          return {
+            ...reduced,
+            standing: standingView(reduced.standing, Option.some(account)),
+          };
         })
       )
       .handle("withdraw", () =>
@@ -172,6 +195,64 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
           return yield* withdrawals
             .confirm(actor)
             .pipe(Effect.catchTags(withdrawalErrors));
+        })
+      )
+      .handle("offerTransfer", ({ payload }) =>
+        Effect.gen(function* offerTransfer() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          const offered = yield* transfers
+            .offer(actor, UserIdSchema.make(payload.toUserId))
+            .pipe(
+              Effect.catchTags({
+                BillingOff: notEnabled,
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                PersonRequired: forbidden,
+                TransferRefused: transferRefused,
+              })
+            );
+
+          return {
+            expiresAt: offered.expiresAt,
+            offeredAt: offered.offeredAt,
+            offeredBy: offered.offeredBy,
+            toUserId: offered.toUserId,
+          };
+        })
+      )
+      .handle("acceptTransfer", () =>
+        Effect.gen(function* acceptTransfer() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          yield* transfers.accept(actor).pipe(
+            Effect.catchTags({
+              BillingOff: notEnabled,
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PersonRequired: forbidden,
+              PlanLimitReached: limitReached,
+              TransferNotFound: () => Effect.fail(new TransferNotFound()),
+              TransferRefused: transferRefused,
+            })
+          );
+
+          return accountView(yield* accounts.of(actor).pipe(Effect.orDie));
+        })
+      )
+      .handle("withdrawTransfer", () =>
+        Effect.gen(function* withdrawTransfer() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          yield* transfers.withdraw(actor).pipe(
+            Effect.catchTags({
+              BillingOff: notEnabled,
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PersonRequired: forbidden,
+              TransferNotFound: () => Effect.fail(new TransferNotFound()),
+            })
+          );
         })
       );
   })

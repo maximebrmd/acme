@@ -149,6 +149,10 @@ export class CloseAccount extends Context.Service<
           Effect.gen(function* erase() {
             const erasure = yield* transaction(
               Effect.gen(function* closeInTransaction() {
+                // What the user pays for first, as every other path that
+                // changes it holds the payer before the accounts.
+                yield* records.holdUser(userId);
+
                 // Again, under the workspaces' locks: a workspace someone
                 // joined meanwhile is left rather than deleted.
                 const plan = yield* Effect.fromResult(

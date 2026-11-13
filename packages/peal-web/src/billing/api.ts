@@ -36,3 +36,21 @@ export const usageOf = (
     query: period,
     reactivityKeys: [`billing:${workspaceId}`],
   });
+
+// Handing the workspace to another payer: its payer offers it to another
+// owner, who takes it over or declines; the payer may withdraw it.
+
+export const offerTransfer = PealApi.mutation(
+  "billingActions",
+  "offerTransfer"
+);
+
+export const acceptTransfer = PealApi.mutation(
+  "billingActions",
+  "acceptTransfer"
+);
+
+export const withdrawTransfer = PealApi.mutation(
+  "billingActions",
+  "withdrawTransfer"
+);

@@ -162,6 +162,7 @@ const ActorsNowTest = ActorsNow.layer.pipe(
               )
             ),
           ownersIn: () => Effect.succeed(new Map()),
+          partnersIn: () => Effect.succeed(new Map()),
           poolOf: () => Effect.succeedNone,
           poolsIn: () => Effect.succeed(new Map()),
           presentedAs: () => Effect.succeedNone,

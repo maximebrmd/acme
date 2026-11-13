@@ -29,7 +29,7 @@ import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-dele
 import { engagementChannelEvents } from "#channels/infrastructure/engagement-channel-events.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
 import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
-import { SharedChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
@@ -96,7 +96,7 @@ const AdaptersLive = Layer.mergeAll(
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
   ChannelEventsLive,
-  SharedChannelAllowanceLive,
+  AccountChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
 
@@ -141,6 +141,12 @@ export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 export const ChannelOverviewLive = ChannelOverview.layer.pipe(
   Layer.provide(DrizzleChannelOverviewReads)
 );
+
+/**
+ * The platform accounts connected in several workspaces, for the staff
+ * tools of the billing context. Needs the database (Drizzle).
+ */
+export { DrizzleSharedPlatformAccounts as SharedPlatformAccountsLive } from "#channels/infrastructure/drizzle-shared-platform-accounts.ts";
 
 // The channels endpoints. They need the use cases ChannelsLive provides, and
 // the Authentication and WorkspaceAccess middleware of the workspace context,

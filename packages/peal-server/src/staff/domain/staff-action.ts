@@ -49,6 +49,17 @@ export const StaffActionSchema = Schema.Literals([
   // Turned off every short link of the event's workspace still on: the
   // object ids hold how many (`links`).
   "disableWorkspaceShortLinks",
+  // Moved every workspace of one billing account into another (`billing`
+  // context), the first deleted: the object ids hold both accounts'.
+  "mergeBillingAccounts",
+  // Required a payment method of a billing account, which then has no
+  // free tier: the object ids hold the account's.
+  "requirePaymentMethod",
+  // Gave such an account its free tier back.
+  "restoreFreeTier",
+  // Took a workspace (the event's) out of its billing account, back to
+  // its oldest owner's: undoes a merge.
+  "detachBillingWorkspace",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

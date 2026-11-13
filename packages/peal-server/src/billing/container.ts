@@ -1,5 +1,8 @@
 import { Effect, Layer } from "effect";
 
+import { AccountViews } from "#billing/application/account-views.ts";
+import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts";
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
@@ -18,19 +21,24 @@ import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
+import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
+import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
 import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-billing-mode.ts";
+import { ContextAccountChannelsLive } from "#billing/infrastructure/context-account-channels.ts";
 import { ContextMemberAddressesLive } from "#billing/infrastructure/context-member-addresses.ts";
 import { ContextUsageStatesLive } from "#billing/infrastructure/context-usage-states.ts";
 import { ContextWorkspaceHoldingsLive } from "#billing/infrastructure/context-workspace-holdings.ts";
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
 import { contractRequests } from "#billing/infrastructure/contract-requests-cron.ts";
 import { contractRetention } from "#billing/infrastructure/contract-retention-cron.ts";
+import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
@@ -42,11 +50,11 @@ import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdraw
 import { EmailedRequestMailLive } from "#billing/infrastructure/emailed-request-mail.ts";
 import { KeyedContractReferencesLive } from "#billing/infrastructure/keyed-contract-references.ts";
 import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-billing-notices.ts";
-import { PartnerPlanHoldersLive } from "#billing/infrastructure/partner-plan-holders.ts";
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
+import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
 import { WorkspacePartnerTenancyLive } from "#billing/infrastructure/workspace-partner-tenancy.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
@@ -61,6 +69,35 @@ const RecordsLive = Layer.mergeAll(
   DrizzleMeteredPostLedgerLive,
   DrizzleUsageLedgerLive,
   ConfiguredBillingModeLive
+);
+
+// Who pays for each workspace: its billing account, which the workspace
+// context's PartnerOwnership and WorkspaceOwners decide.
+const AccountStoresLive = Layer.mergeAll(
+  DrizzleBillingAccountStoreLive,
+  WorkspaceAccountPayersLive,
+  DrizzleSubscriptionsLive
+);
+
+const AccountsLive = BillingAccounts.layer.pipe(
+  Layer.provide(Layer.merge(AccountStoresLive, KeyedPseudonymsLive))
+);
+
+// What a workspace's billing page and standing say of its account, and
+// handing a workspace to another payer, which counts the channels the
+// channels context holds.
+const AccountActionsLive = Layer.mergeAll(
+  AccountViews.layer,
+  TransferWorkspace.layer
+).pipe(
+  Layer.provide(
+    Layer.mergeAll(AccountsLive, AccountStoresLive, ContextAccountChannelsLive)
+  )
+);
+
+// Whose plan each workspace is on: its billing account's billing workspace.
+const HoldersLive = AccountPlanHoldersLive.pipe(
+  Layer.provide(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
 );
 
 /**
@@ -90,7 +127,10 @@ export const BillingLive = Layer.mergeAll(
   MeteredPosts.layer,
   RecordedUsage.layer,
   PurgeContractRecords.layer,
-  PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layerShared))
+  PlanUpgradePathsLive.pipe(
+    Layer.provide(WorkspaceEntitlements.layerShared),
+    Layer.provide(HoldersLive)
+  )
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -98,9 +138,15 @@ export const BillingLive = Layer.mergeAll(
       StripeContractsLive,
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
-      PartnerPlanHoldersLive
+      HoldersLive,
+      DrizzleBillingAccountStoreLive,
+      WorkspaceAccountPayersLive
     )
-  )
+  ),
+  // The billing accounts, which the other contexts read too, and whether
+  // the server bills, which the channels context's allowance asks before
+  // counting across a billing account.
+  Layer.provideMerge(Layer.merge(AccountsLive, ConfiguredBillingModeLive))
 );
 
 // Hands the checkout the counts of what each workspace holds, once the
@@ -140,13 +186,16 @@ export const BillingOverviewLive = Layer.mergeAll(
   SendBillingReminders.layer,
   SnapshotUsage.layer,
   UsageReports.layer,
-  UsageAtCheckoutBound
+  UsageAtCheckoutBound,
+  AccountActionsLive
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       RecordsLive,
       ContextUsageStatesLive,
-      PartnerPlanHoldersLive,
+      HoldersLive,
+      AccountsLive,
+      WorkspaceAccountPayersLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,
@@ -203,6 +252,26 @@ export const ContractRequestsLive = Layer.mergeAll(
 );
 
 /**
+ * What staff do about one free tier per person: the platform accounts
+ * under several free billing accounts, merging accounts and requiring a
+ * payment method. The composition root provides the channels context's
+ * SharedPlatformAccounts and ChannelUsage, the workspace context's
+ * PartnerOwnership and WorkspaceOwners, the staff context's
+ * BillingAccountAudit, Ids and the TransactionRunner.
+ */
+export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      AccountsLive,
+      AccountStoresLive,
+      KeyedPseudonymsLive,
+      ContextAccountChannelsLive,
+      AuditedAccountDeskLive
+    )
+  )
+);
+
+/**
  * The billing context's crons: the hourly confirmations and reminders, the
  * daily purge of erased workspaces' contract records, and the daily
  * snapshot of every workspace's usage.
@@ -232,3 +301,7 @@ export { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-c
 // The staff console's requests. They need ContractRequestsLive, and the
 // StaffAccess middleware of the workspace context.
 export { ContractRequestsDeskHandlers as ContractRequestsDeskApiLive } from "#billing/api/contract-requests-desk.ts";
+
+// The staff console's billing accounts. They need BillingAccountsDeskLive,
+// and the StaffAccess middleware of the workspace context.
+export { BillingAccountsDeskHandlers as BillingAccountsDeskApiLive } from "#billing/api/billing-accounts-desk.ts";

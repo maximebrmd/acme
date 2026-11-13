@@ -6,6 +6,7 @@ import { TestClock } from "effect/testing";
 import { Api, Forbidden, Unauthenticated } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -15,6 +16,9 @@ import { BillingApiLive } from "#billing/container.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  aloneAccountId,
+  AloneAccountViewsTest,
+  AloneInAccountsTest,
   NoAddressesTest,
   NoTrialsTest,
   PlainPseudonymsTest,
@@ -75,16 +79,18 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
     Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled }))),
+    Layer.provide(AloneInAccountsTest)
   );
 
 const clientWith = <E, R>(
-  security: Layer.Layer<Layer.Success<typeof anonymousSecurityTest>, E, R>
+  security: Layer.Layer<Layer.Success<typeof anonymousSecurityTest>, E, R>,
+  views: Layer.Layer<AccountViews> = AloneAccountViewsTest
 ) =>
   HttpApiTest.groups(Api, ["billing"]).pipe(
     Effect.provide(
       Layer.mergeAll(
-        BillingApiLive.pipe(Layer.provideMerge(security)),
+        BillingApiLive.pipe(Layer.provideMerge(security), Layer.provide(views)),
         HttpServer.layerServices
       )
     )
@@ -175,6 +181,16 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
       const client = yield* as(permissionsFor("viewer"));
 
       assert.deepStrictEqual(yield* client.billing.standing({ params }), {
+        account: {
+          billingWorkspaceId: workspaceId,
+          billingWorkspaceName: null,
+          id: aloneAccountId,
+          otherWorkspaces: [],
+          partner: false,
+          payer: false,
+          transfer: null,
+          workspaces: 1,
+        },
         mustReduce: false,
         over: [],
         plan: "pro",
@@ -208,10 +224,17 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
 layer(overviewOn(false))(
   "the billing endpoint on a server that does not bill",
   (it) => {
-    it.effect("show no plan, and limit nothing", () =>
+    it.effect("show no plan, limit nothing, and read no billing account", () =>
       Effect.gen(function* unmetered() {
-        const client = yield* as(permissionsFor("owner"));
+        // Any read of the account dies.
+        const client = yield* clientWith(
+          securityTest(memberWith(permissionsFor("owner"))),
+          Layer.mock(AccountViews, {})
+        );
+
         const billing = yield* client.billing.get({ params });
+
+        assert.isUndefined(billing.account);
 
         assert.isFalse(billing.enabled);
         assert.isNull(billing.plan);
@@ -227,6 +250,23 @@ layer(overviewOn(false))(
           scheduledPosts: null,
         });
       })
+    );
+
+    it.effect(
+      "tell where the workspace stands without reading its billing account",
+      () =>
+        Effect.gen(function* standsUnbilled() {
+          // Any read of the account dies.
+          const client = yield* clientWith(
+            securityTest(memberWith(permissionsFor("viewer"))),
+            Layer.mock(AccountViews, {})
+          );
+
+          const standing = yield* client.billing.standing({ params });
+
+          assert.isUndefined(standing.account);
+          assert.isFalse(standing.mustReduce);
+        })
     );
   }
 );

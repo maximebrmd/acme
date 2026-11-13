@@ -55,6 +55,20 @@ export class PartnerOwnership extends Context.Service<
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, WorkspaceOwner>, DatabaseError>;
     /**
+     * The partner of each of these workspaces, the one that owns it or
+     * whose home it is, with the home workspace, in two reads; one no
+     * partner holds is left out. Holds nothing.
+     */
+    readonly partnersIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<
+        WorkspaceId,
+        { readonly home: WorkspaceId; readonly partnerId: PartnerId }
+      >,
+      DatabaseError
+    >;
+    /**
      * The pool each of these workspaces is in, as `poolOf` answers it, in
      * three reads whatever their number; one in no pool is left out. It
      * holds nothing, so what it answers may change before the caller acts:
@@ -191,6 +205,35 @@ export class PartnerOwnership extends Context.Service<
         );
       });
 
+      const partnersIn = Effect.fn("PartnerOwnership.partnersIn")(
+        function* partnersIn(workspaceIds: readonly WorkspaceId[]) {
+          const found = new Map<
+            WorkspaceId,
+            { readonly home: WorkspaceId; readonly partnerId: PartnerId }
+          >();
+
+          if (workspaceIds.length === 0) {
+            return found;
+          }
+
+          const owners = yield* workspaces.ownersIn(workspaceIds);
+
+          for (const [id, { homeWorkspaceId, partnerId }] of owners) {
+            found.set(id, { home: homeWorkspaceId, partnerId });
+          }
+
+          const rest = workspaceIds.filter((id) => !owners.has(id));
+
+          if (rest.length > 0) {
+            for (const [id, partner] of yield* partners.ofWorkspaces(rest)) {
+              found.set(id, { home: id, partnerId: partner.id });
+            }
+          }
+
+          return found;
+        }
+      );
+
       // The partner account behind a workspace: the one that owns it, or
       // whose home workspace it is.
       const partnerOf = Effect.fn("PartnerOwnership.partnerOf")(
@@ -283,6 +326,7 @@ export class PartnerOwnership extends Context.Service<
           partners.ofWorkspace(workspaceId).pipe(Effect.map(Option.isSome)),
         ownerOf: (workspaceId) => workspaces.ownerOf(workspaceId),
         ownersIn: (workspaceIds) => workspaces.ownersIn(workspaceIds),
+        partnersIn,
         poolOf,
         poolsIn,
         presentedAs,
@@ -300,6 +344,7 @@ export class PartnerOwnership extends Context.Service<
       isHome: () => Effect.succeed(false),
       ownerOf: () => Effect.succeedNone,
       ownersIn: () => Effect.succeed(new Map()),
+      partnersIn: () => Effect.succeed(new Map()),
       poolOf: () => Effect.succeedNone,
       poolsIn: () => Effect.succeed(new Map()),
       presentedAs: () => Effect.succeedNone,

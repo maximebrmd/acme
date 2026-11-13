@@ -103,6 +103,12 @@ export const PartnerOwnershipLive = PartnerOwnership.layer.pipe(
   Layer.provide(PartnerStoresLive)
 );
 
+/**
+ * Who owns each workspace, oldest first, which billing decides each
+ * workspace's payer from. Needs the database alone.
+ */
+export { DrizzleWorkspaceOwnersLive as WorkspaceOwnersLive } from "#workspace/infrastructure/drizzle-workspace-owners.ts";
+
 const AdaptersLive = Layer.mergeAll(
   AuthGatewayLive,
   MemberDirectoryLive,

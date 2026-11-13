@@ -6,6 +6,7 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .billing_account import BillingAccount
 from .billing_subscription import BillingSubscription
 from .plan import Plan
 from .plan_allowances import PlanAllowances
@@ -15,6 +16,7 @@ from .usage import Usage
 
 
 class Billing(UniversalBaseModel):
+    account: typing.Optional[BillingAccount] = None
     allowances: PlanAllowances
     currency: str
     enabled: bool

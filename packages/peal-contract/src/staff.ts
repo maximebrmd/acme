@@ -68,7 +68,12 @@ export const StaffReasonSchema = Schema.Trim.check(
  * link turned off or on again (`disableShortLink`, `enableShortLink`), its
  * workspace and its code among the object ids; and every short link of a
  * workspace turned off at once (`disableWorkspaceShortLinks`), with how
- * many among the object ids.
+ * many among the object ids; and a billing account merged into another
+ * (`mergeBillingAccounts`), a payment method required of one
+ * (`requirePaymentMethod`) and its free tier given back
+ * (`restoreFreeTier`), the accounts' ids among the object ids; and a
+ * workspace detached from its billing account (`detachBillingWorkspace`),
+ * the account's id among the object ids and the workspace as the event's.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -87,6 +92,10 @@ export const StaffActionSchema = Schema.Literals([
   "disableShortLink",
   "enableShortLink",
   "disableWorkspaceShortLinks",
+  "mergeBillingAccounts",
+  "requirePaymentMethod",
+  "restoreFreeTier",
+  "detachBillingWorkspace",
 ]).annotate({ identifier: "StaffAction" });
 
 /**

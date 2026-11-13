@@ -26,8 +26,10 @@ import { RoleSchema } from "#workspace/domain/roles.ts";
 import { accessControl, roles } from "./access-control.ts";
 import {
   checkMemberRoom,
+  followOwnersAfterLeaving,
+  keepPayer,
+  keepPayerLeaving,
   refusePersonalSubscriptions,
-  checkFreeWorkspace,
   stripeBilling,
   turnstile,
 } from "./billing.ts";
@@ -323,6 +325,7 @@ const beforeEveryRoute = (hooks: AuthHooks) =>
     await refuseUnadmittedSignUps(ctx, hooks.signUp);
     await refuseImpersonatedChanges(ctx);
     refusePersonalSubscriptions(ctx);
+    await keepPayerLeaving(ctx, hooks);
     await refuseLockedOutMembers(ctx, hooks.twoStep);
     await guardTwoStepChanges(ctx, hooks.twoStep);
     await noteTwoStepSender(ctx);
@@ -450,6 +453,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await recordWorkspaceChange(ctx, hooks.workspaceChange);
         await forgetTrustedBrowsers(ctx);
         await tellTwoStepChange(ctx, hooks.twoStepChanged);
+        await followOwnersAfterLeaving(ctx, hooks);
       }),
       before: beforeEveryRoute(hooks),
     },
@@ -470,6 +474,19 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         invitationExpiresIn: invitationLifetime,
         invitationLimit: pendingInvitationLimit,
         organizationHooks: {
+          // Its creator pays for it: it joins their billing account.
+          afterCreateOrganization: async ({ organization: workspace }) => {
+            await hooks.workspaceCreated(workspace.id);
+          },
+          // Its billing account follows its owners, on a server that
+          // bills or not: a payer who is no longer an owner pays for it no
+          // more.
+          afterRemoveMember: async ({ member }) => {
+            await hooks.ownersChanged(member.organizationId);
+          },
+          afterUpdateMemberRole: async ({ member }) => {
+            await hooks.ownersChanged(member.organizationId);
+          },
           // An invitation is accepted, or a member added, only while the
           // workspace's plan has room for one more.
           beforeAcceptInvitation: async ({ invitation }) => {
@@ -491,10 +508,6 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
               Option.some(invitation.email)
             );
           },
-          // One free workspace per account, on a server that bills.
-          beforeCreateOrganization: async ({ user }) => {
-            await checkFreeWorkspace(hooks, user.id);
-          },
           // A workspace's API keys go with it: they refer to it by id alone,
           // with no foreign key, and would otherwise outlive it. They go
           // first, so that a failure may leave a workspace without its keys,
@@ -513,8 +526,22 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
               where: [{ field: "referenceId", value: workspace.id }],
             });
           },
-          beforeUpdateMemberRole: async ({ newRole }) => {
+          // The workspace's payer stays one of its owners until they hand
+          // it to another payer.
+          beforeRemoveMember: async ({ member }) => {
+            await keepPayer(hooks, {
+              organizationId: member.organizationId,
+              role: Option.none(),
+              userId: member.userId,
+            });
+          },
+          beforeUpdateMemberRole: async ({ member, newRole }) => {
             await oneRole(newRole);
+            await keepPayer(hooks, {
+              organizationId: member.organizationId,
+              role: Option.some(newRole.split(",").map((role) => role.trim())),
+              userId: member.userId,
+            });
           },
         },
         requireEmailVerificationOnInvitation: true,

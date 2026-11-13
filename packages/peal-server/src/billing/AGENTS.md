@@ -105,8 +105,8 @@
   built with the group: handlers take services when the group is built,
   never per request), the assistant's `AssistantQuotaExceeded` carries the
   same plan fields (null on a server that does not bill), Better Auth's
-  `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
-  (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
+  `MEMBER_LIMIT_REACHED` body too (`memberUpgrade` hook; the web app
+  still reads the `FREE_WORKSPACE_LIMIT_REACHED` older servers sent), MCP tools refuse with
   `planRefusal` (`app/mcp/refusals.ts`, after what the call left undone:
   inviting, `import_media`, and every tool that schedules) and the CLI
   explains with `planLimitReason`. Change them together. `securityTest` provides
@@ -150,10 +150,69 @@
   `prices.ts`, tax-exclusive, or the server stops listing what differs
   (`StripePricesMismatch`). Stripe not answering is a warning, and the
   server starts.
-- An account owns one workspace on the free plan at most: Better Auth's
-  `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
-  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
-  or in its trial, which ends on it.
+- Every workspace belongs to one billing account (`BillingAccounts`,
+  `billing.accounts`, `account_workspaces`, `account_transfers`), on a
+  server that bills or not: its creator's, made with their first
+  workspace (`afterCreateOrganization`, the `workspaceCreated` hook), one
+  per person (unique `payer_user_id` but standalone ones); a workspace
+  made before is resolved the first time it is read (`of`, the owners read
+  again under the payer's hold), or by the daily snapshot's sweep
+  (`sweepIn` per batch, one workspace at a time, a failure logged; then
+  `repair`: accounts whose billing workspace is gone, and lapsed offers),
+  to its oldest owner's account, the oldest workspace billing. The partner
+  rule comes first: a partner's home and the workspaces it owns are the
+  partner's account, billed on the home. A workspace a plan subscription
+  of its own entitles is `standalone` until it ends (`subscriptionChanged`).
+- The payer is always one of the workspace's owners. On a server that
+  bills they stay one until they hand it over (`PAYER_MUST_STAY` on Better
+  Auth's leave, remove and role routes, `payerRequired` in a reduction);
+  anywhere, a workspace whose payer left, was removed or stopped being an
+  owner moves to its oldest owner's account (the `ownersChanged` hook
+  after those routes, and `of`, `accountsIn` and the sweep for rows
+  already wrong), unless staff merged it there (`account_workspaces.merged`,
+  which only `BillingAccountDesk.detach` clears).
+- A server that does not bill reads no account to schedule, publish, tell
+  the standing, show the billing page or `get_billing`, or report usage:
+  `AccountChannelAllowanceLive` and `AccountPlanHoldersLive` (the partner
+  rule alone there) read one only when `BillingMode` bills, and
+  `…/billing` and `…/billing/standing` leave `account` out
+  (`accountShown`; optional for older servers too). Where it bills, the
+  account's workspaces share its billing workspace's plan (`PlanHolders`,
+  `AccountPlanHoldersLive`) and count their channels together, under
+  `holdAccount` where the partner's hold is taken. Views read `poolsIn`,
+  holding nothing. Holds go payer, then accounts by id; closing an account
+  holds the payer first (`ContextRecords.holdUser`).
+- Only the billing workspace orders (`BilledElsewhere`); a checkout
+  refuses an order placed before the workspace stopped billing, and a
+  plan's refusal links the billing workspace's page. `GET …/billing`
+  answers `account` (`AccountViews`: the billing workspace named only to
+  its members, an open offer only to its two people, and a partner's
+  account counting only the workspaces the reader belongs to). Handing a
+  workspace over is `TransferWorkspace` (`billingActions`): offered to
+  another owner, taken in person within 7 days into their account,
+  refused into a plan without room or for a billing workspace Stripe may
+  still bill. A reduction is taken when it brings the account within its
+  plan or disconnects every channel of the workspace.
+- Staff's `BillingAccountDesk` (`billingAccountsDesk` under `/api/admin`,
+  the console's `admin/billing-accounts`) lists platform accounts
+  connected under two free accounts or more (the channels context's
+  `SharedPlatformAccounts`, through `AccountChannels`, kept nowhere),
+  merges one account into another (`mergeBillingAccounts`), detaches a
+  workspace back to who paid for it before the merge while they own it
+  (`merged_from_payer`), else to its oldest owner's account
+  (`detachBillingWorkspace`, the way back from a merge; the staff view
+  lists `mergedWorkspaceIds`, the merge's event the workspaces moved). A
+  merged workspace never bills an account: one left with only those
+  goes) and requires a payment method
+  (`requirePaymentMethod`, `restoreFreeTier`), each audited first
+  (`BillingAccountAudit`), ids only. A requirement is the account's
+  `free_tier` and the person's (`billing.payment_requirements`, read
+  whenever an account is made for them, carried by a merge, kept by the
+  closed address's pseudonym for `requirementMemory`, 2 years, then
+  purged by `PurgeContractRecords`; the same `Pseudonyms.ofEmail` value
+  a trial and a ban keep, on purpose: one anti-abuse purpose, and the
+  export reads the requirement by it too). The data is the registry's
+  `billingAccounts` category, and the export's `contracts.billingAccounts`.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
   X, where a post with a link costs about 13 times more), and those with a

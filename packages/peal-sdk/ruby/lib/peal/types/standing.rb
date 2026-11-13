@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class Standing < Internal::Types::Model
+      field :account, -> { Peal::Types::BillingAccount }, optional: true, nullable: false
+
       field :must_reduce, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "mustReduce"
 
       field :over, -> { Internal::Types::Array[Peal::Types::Excess] }, optional: false, nullable: false

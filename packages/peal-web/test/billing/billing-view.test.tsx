@@ -48,6 +48,16 @@ const usage: Billing["usage"] = {
 };
 
 const onFree: Billing = {
+  account: {
+    billingWorkspaceId: "studio",
+    billingWorkspaceName: "Studio",
+    id: "0190f3a0-0000-7000-8000-00000000b001",
+    otherWorkspaces: [],
+    partner: false,
+    payer: true,
+    transfer: null,
+    workspaces: 1,
+  },
   allowances: free,
   currency: "eur",
   enabled: true,

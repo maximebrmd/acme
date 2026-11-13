@@ -41,7 +41,6 @@ const auth = makeAuth({
   hooks: {
     checkout: async () =>
       await Promise.resolve({ _tag: "start", trialDays: null } as const),
-    freeWorkspace: async () => await Promise.resolve(null),
     impersonatedRequest: async () => await Promise.resolve(true),
     invitation: ignore,
     log: ignore,
@@ -52,6 +51,8 @@ const auth = makeAuth({
         plan: "free" as const,
         planWithRoom: null,
       }),
+    ownersChanged: nothing,
+    payerOf: async () => await Promise.resolve(null),
     resetPassword: ignore,
     signUp: async () => await Promise.resolve(true),
     subscriptionChanged: nothing,
@@ -62,6 +63,7 @@ const auth = makeAuth({
     twoStepChanged: ignore,
     verifyEmail: ignore,
     workspaceChange: nothing,
+    workspaceCreated: nothing,
   },
   settings: {
     captcha: Option.none(),

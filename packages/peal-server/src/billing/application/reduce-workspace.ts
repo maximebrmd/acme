@@ -9,6 +9,8 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
+import { AccountPayers } from "./ports/account-payers.ts";
 import { WorkspaceHoldings } from "./ports/workspace-holdings.ts";
 import { WorkspaceStanding } from "./workspace-standing.ts";
 import type { Standing } from "./workspace-standing.ts";
@@ -34,7 +36,11 @@ export interface Reduction {
  * pending invitations revoked. Only what is over the plan is touched: a
  * workspace within its plan's members keeps them all, whatever the choice
  * says of them. The whole choice is checked first, and members go before
- * channels, so a choice refused changes nothing; disconnecting then asks
+ * channels, so a choice refused changes nothing. Channels are counted
+ * across the workspace's billing account: a choice is taken when it brings
+ * the account within its plan, or disconnects every channel of this
+ * workspace. The owner who pays for the workspace stays among the members
+ * kept (`payerRequired`). Disconnecting then asks
  * each platform to forget Peal, one channel at a time, and can be asked
  * again if it stops midway. Posts scheduled on a channel disconnected fail
  * when due, as for any channel disconnected. Needs billing:manage, with
@@ -62,6 +68,24 @@ export class ReduceWorkspace extends Context.Service<
     Effect.gen(function* ReduceWorkspaceLive() {
       const standings = yield* WorkspaceStanding;
       const holdings = yield* WorkspaceHoldings;
+      const accounts = yield* BillingAccounts;
+      const payers = yield* AccountPayers;
+
+      // The owner who pays for the workspace stays among its members until
+      // they hand it to another payer.
+      const keepsPayer = Effect.fn("ReduceWorkspace.keepsPayer")(
+        function* keepsPayer(actor: Actor, kept: readonly string[]) {
+          const { payer } = yield* accounts.of(actor.workspaceId);
+
+          if (Option.isNone(payer) || kept.includes(payer.value)) {
+            return true;
+          }
+
+          return !(yield* payers.ownersOf(actor.workspaceId)).includes(
+            payer.value
+          );
+        }
+      );
 
       const keep = Effect.fn("ReduceWorkspace.keep")(function* keep(
         actor: Actor,
@@ -87,18 +111,24 @@ export class ReduceWorkspace extends Context.Service<
           return yield* new ReductionRefused({ reason: "unknownMember" });
         }
 
-        const allowedOf = (limit: "channels" | "members") =>
+        const excessOf = (limit: "channels" | "members") =>
           Option.fromUndefinedOr(
             before.over.find((excess) => excess.limit === limit)
-          ).pipe(Option.map(({ allowed }) => allowed));
+          );
 
-        const channelsAllowed = allowedOf("channels");
-        const membersAllowed = allowedOf("members");
+        const channelsOver = excessOf("channels");
+
+        const membersAllowed = excessOf("members").pipe(
+          Option.map(({ allowed }) => allowed)
+        );
 
         // The channels to disconnect, once the choice is known to fit.
-        const leaving = yield* Option.match(channelsAllowed, {
+        const leaving = yield* Option.match(channelsOver, {
           onNone: () => Effect.succeed<readonly string[]>([]),
-          onSome: Effect.fnUntraced(function* channelsLeaving(allowed) {
+          onSome: Effect.fnUntraced(function* channelsLeaving({
+            allowed,
+            used,
+          }) {
             yield* Effect.fromResult(authorize(actor, "channel:disconnect"));
 
             const connected = yield* holdings.channels(actor);
@@ -108,7 +138,12 @@ export class ReduceWorkspace extends Context.Service<
               return yield* new ReductionRefused({ reason: "unknownChannel" });
             }
 
-            if (staying.size > allowed) {
+            // The channels the other workspaces of its billing account (or
+            // partner pool) hold count with these: a choice brings the
+            // account within its plan, or disconnects everything here.
+            const elsewhere = Math.max(used - connected.length, 0);
+
+            if (staying.size > 0 && staying.size + elsewhere > allowed) {
               return yield* new ReductionRefused({
                 reason: "tooManyChannels",
               });
@@ -120,10 +155,17 @@ export class ReduceWorkspace extends Context.Service<
 
         const members = yield* Option.match(membersAllowed, {
           onNone: () => Effect.succeed({ removed: 0, revoked: 0 }),
-          onSome: (allowed) =>
-            new Set(kept.keepMemberIds).size > allowed
-              ? Effect.fail(new ReductionRefused({ reason: "tooManyMembers" }))
-              : holdings.keepMembers(actor, kept.keepMemberIds),
+          onSome: Effect.fnUntraced(function* membersKept(allowed) {
+            if (new Set(kept.keepMemberIds).size > allowed) {
+              return yield* new ReductionRefused({ reason: "tooManyMembers" });
+            }
+
+            if (!(yield* keepsPayer(actor, kept.keepMemberIds))) {
+              return yield* new ReductionRefused({ reason: "payerRequired" });
+            }
+
+            return yield* holdings.keepMembers(actor, kept.keepMemberIds);
+          }),
         });
 
         yield* Effect.forEach(

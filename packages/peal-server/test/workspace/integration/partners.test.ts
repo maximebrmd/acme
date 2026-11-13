@@ -797,6 +797,36 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             assert.deepInclude(reply.body, { _tag: tag }, workspaceId);
           }
 
+          // A workspace's billing changes hands only between people in
+          // their own session: a key is refused in its own partner's
+          // workspace, and finds no other.
+          for (const [workspaceId, status] of [
+            [ofAlpha.id, 403],
+            [ofBeta.id, 404],
+            [ordinary, 404],
+          ] as const) {
+            for (const [path, method] of [
+              ["transfer", "POST"],
+              ["transfer/acceptance", "POST"],
+              ["transfer", "DELETE"],
+            ] as const) {
+              const reply = yield* app.request(
+                `/api/workspaces/${workspaceId}/billing/${path}`,
+                {
+                  body: { toUserId: alpha.owner.id },
+                  headers: bearer(alphaKey),
+                  method,
+                }
+              );
+
+              assert.strictEqual(
+                reply.status,
+                status,
+                `${method} ${path} ${workspaceId}`
+              );
+            }
+          }
+
           // The partner API answers a partner's key only its own.
           for (const init of [
             { method: "GET" },

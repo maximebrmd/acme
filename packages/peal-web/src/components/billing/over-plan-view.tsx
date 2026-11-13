@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { Standing } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -40,6 +40,7 @@ export type OverPlanError =
   | "forbidden"
   | "generic"
   | "ownerRequired"
+  | "payerRequired"
   | "selfRequired"
   | "tooManyChannels"
   | "tooManyMembers"
@@ -247,6 +248,10 @@ export const OverPlanView = (props: OverPlanViewProps) => {
 
   const t = useTranslations("OverPlan");
   const billing = useTranslations("Billing");
+  const format = useFormatter();
+  // The account's other workspaces the reader is a member of, on a server
+  // that bills.
+  const shared = standing.account?.otherWorkspaces ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -261,6 +266,16 @@ export const OverPlanView = (props: OverPlanViewProps) => {
         </p>
       </div>
       <ExcessList excesses={standing.over} namespace="OverPlan" />
+      {shared.length === 0 ? null : (
+        <p className="text-sm">
+          {t("sharedAccount", {
+            workspaces: format.list(
+              shared.map(({ name }) => name),
+              { type: "conjunction" }
+            ),
+          })}
+        </p>
+      )}
       <p className="text-sm">
         {t("posts", { count: standing.scheduledPosts })}
       </p>
