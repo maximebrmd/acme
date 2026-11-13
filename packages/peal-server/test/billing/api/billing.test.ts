@@ -67,8 +67,6 @@ const UsageTest = Layer.succeed(
   WorkspaceUsage,
   WorkspaceUsage.of({
     heldIn: () => Effect.die("not read here"),
-    // The workspace's own media, its pool's being 1,250,000 bytes.
-    storedBy: () => Effect.succeed(250_000),
     of: () =>
       Effect.succeed({
         assistantRequests: { resetsAt: midnight, used: 4 },
@@ -427,7 +425,7 @@ layer(
           connected: 1,
           estimate: null,
           nextAccount: null,
-          pooled: 1,
+          pooled: 2,
         });
         assert.isNull(billing.estimate);
         assert.isNull(billing.upcomingInvoice);
@@ -435,7 +433,7 @@ layer(
   );
 
   it.effect(
-    "tell it none of the account's contract, its pool or its payment failing",
+    "tell it the account's pool and limits, as its usage does, but none of its contract or its payment failing",
     () =>
       Effect.gen(function* contract() {
         yield* TestClock.setTime(startedAt.epochMilliseconds);
@@ -448,11 +446,42 @@ layer(
         assert.isNull(billing.subscription);
         assert.isNull(billing.withdrawableUntil);
         assert.isFalse(billing.paymentFailed ?? false);
-        // Its own accounts and media, never the pool's.
-        assert.strictEqual(billing.usage.channels, 1);
-        assert.strictEqual(billing.usage.mediaStorage, 250_000);
-        assert.isNull(billing.allowances.mediaStorage);
+        // The pool's counts and limits, which its uploads and connections
+        // are held to: never "no limit".
+        assert.strictEqual(billing.usage.channels, 2);
+        assert.strictEqual(billing.usage.mediaStorage, 1_250_000);
+        assert.isNotNull(billing.allowances.mediaStorage);
       })
+  );
+});
+
+// A billing account whose per-account contract is past due: it still
+// entitles while Stripe retries, and its payment method needs updating.
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([
+      subscriptionOf({
+        plan: "payAsYouGo",
+        startedAt: Option.some(startedAt),
+        status: "past_due",
+        workspaceId,
+      }),
+    ]),
+    Layer.merge(DaysTest, UpcomingTest)
+  )
+)("the billing endpoint for a past due per-account contract", (it) => {
+  it.effect("say its payment failed to the workspace that bills it", () =>
+    Effect.gen(function* pastDue() {
+      yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+      const client = yield* as(permissionsFor("owner"));
+      const billing = yield* client.billing.get({ params });
+
+      assert.strictEqual(billing.plan, "payAsYouGo");
+      assert.strictEqual(billing.subscription?.status, "past_due");
+      assert.isTrue(billing.paymentFailed);
+    })
   );
 });
 

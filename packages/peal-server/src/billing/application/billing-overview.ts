@@ -18,7 +18,7 @@ import {
 import type { Allowances } from "#billing/domain/plans.ts";
 import { accountsCharge, rateCard } from "#billing/domain/rate-card.ts";
 import type { RateCard } from "#billing/domain/rate-card.ts";
-import { billsAt, entitles } from "#billing/domain/subscription.ts";
+import { billsAt } from "#billing/domain/subscription.ts";
 import type {
   Subscription,
   SubscriptionStatus,
@@ -38,6 +38,12 @@ import { Subscriptions } from "./ports/subscriptions.ts";
 import type { Usage } from "./ports/workspace-usage.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
+
+// The statuses of a contract whose last payment failed.
+const failedPayment: ReadonlySet<SubscriptionStatus> = new Set([
+  "past_due",
+  "unpaid",
+]);
 
 /** A plan, what it allows, and its prices excluding VAT, if it is paid. */
 export interface PlanOffer {
@@ -73,23 +79,20 @@ export interface AccountsThisMonth {
 /** A workspace's plan, what it uses of it, and the plans it can move to. */
 export interface Overview {
   readonly accounts: AccountsThisMonth;
-  /**
-   * What the plan allows: the account's, but the media allowance, which
-   * the pool's size sets, for a workspace that does not bill its account.
-   */
+  /** What the plan allows the billing account, across its workspaces. */
   readonly allowances: Allowances;
   /**
    * Whether the workspace bills its billing account: only then is it told
-   * the account's contract, pool and money.
+   * the account's contract and money.
    */
   readonly billsHere: boolean;
   readonly entitlements: Entitlements;
   /** The month so far, excluding tax; none on a server that does not bill. */
   readonly estimate: Option.Option<Money>;
   /**
-   * Whether the account's per-account subscription went unpaid (Stripe may
-   * still bill it; it no longer entitles), told to the workspace that
-   * bills the account only.
+   * Whether the account's per-account subscription's last payment failed
+   * (past due while Stripe retries, or unpaid once it gave up), told to the
+   * workspace that bills the account only.
    */
   readonly paymentFailed: boolean;
   /** Whether a subscription paid for with a payment method entitles it. */
@@ -178,7 +181,7 @@ export class BillingOverview extends Context.Service<
     BillingOverview,
     Effect.gen(function* BillingOverviewLive() {
       const entitlements = yield* WorkspaceEntitlements;
-      const usageOf = yield* WorkspaceUsage;
+      const usage = yield* WorkspaceUsage;
       const channels = yield* AccountChannels;
       const holders = yield* PlanHolders;
       const days = yield* AccountDays;
@@ -250,7 +253,7 @@ export class BillingOverview extends Context.Service<
         const [current, used, own] = yield* Effect.all(
           [
             entitlements.of(actor.workspaceId),
-            usageOf.of(actor.workspaceId),
+            usage.of(actor.workspaceId),
             channels.ownIn([actor.workspaceId]),
           ],
           { concurrency: "unbounded" }
@@ -260,7 +263,8 @@ export class BillingOverview extends Context.Service<
         const now = yield* DateTime.now;
 
         // The workspace that bills the account (on a server that bills):
-        // only it is told the account's contract, pool and money.
+        // only it is told the account's contract and money. Every workspace
+        // of the account reads its pool and limits, as its usage does.
         const holder = billing
           ? yield* holders.holderOf(actor.workspaceId)
           : actor.workspaceId;
@@ -272,38 +276,27 @@ export class BillingOverview extends Context.Service<
             ? yield* monthOf(holder, current, used.channels, now)
             : noMonth;
 
-        const connected = own.get(actor.workspaceId) ?? 0;
-        const allowed = current.allowancesFor(used.channels);
-
-        // An unpaid contract Stripe may still bill: no order goes through
-        // until its payment method is updated.
+        // A contract whose last payment failed: past due while Stripe
+        // retries, or unpaid once it gave up (Stripe may still bill it, so
+        // nothing is ordered). Paused is left out: Stripe pauses only a
+        // trial that ended without a payment method, which per-account
+        // pricing never has, never for a failed payment.
         const paymentFailed =
           billing && billsHere
             ? livePerAccount(yield* subscriptions.ofWorkspace(holder)).pipe(
-                Option.exists((live) => !entitles(live))
+                Option.exists(({ status }) => failedPayment.has(status))
               )
             : false;
-
-        // Its own media, never the pool's, where it does not bill.
-        const usage: Usage = billsHere
-          ? used
-          : {
-              ...used,
-              channels: connected,
-              mediaStorage: yield* usageOf.storedBy(actor.workspaceId),
-            };
 
         const overview: Overview = {
           accounts: {
             accountDays: month.accountDays,
-            connected,
+            connected: own.get(actor.workspaceId) ?? 0,
             estimate: month.estimate,
             nextAccount: month.nextAccount,
-            pooled: billsHere ? used.channels : connected,
+            pooled: used.channels,
           },
-          allowances: billsHere
-            ? allowed
-            : { ...allowed, mediaStorage: Option.none() },
+          allowances: current.allowancesFor(used.channels),
           billsHere,
           entitlements: current,
           estimate: month.estimate,
@@ -322,7 +315,7 @@ export class BillingOverview extends Context.Service<
             : Option.none(),
           rateCard: billing ? Option.some(rateCard) : Option.none(),
           upcomingInvoice: month.upcomingInvoice,
-          usage,
+          usage: used,
           withdrawableUntil: current.subscription.pipe(
             Option.filter(() => billsHere),
             Option.flatMap((subscription) =>

@@ -43,14 +43,6 @@ export class WorkspaceUsage extends Context.Service<
      * them, as `of` counts them: one read a context, whatever their
      * number, holding nothing.
      */
-    /**
-     * The bytes of media the workspace itself stores, uploads in progress
-     * included, whatever its pool: for a workspace that is told nothing
-     * of its billing account's pool.
-     */
-    readonly storedBy: (
-      workspaceId: WorkspaceId
-    ) => Effect.Effect<number, DatabaseError>;
     readonly heldIn: (
       workspaceIds: readonly WorkspaceId[],
       before?: DateTime.Utc

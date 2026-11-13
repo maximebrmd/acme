@@ -79,7 +79,6 @@ const run = <A, E>(
     const usage = Layer.succeed(
       WorkspaceUsage,
       WorkspaceUsage.of({
-        storedBy: () => Effect.die("not read here"),
         heldIn: (ids, before) =>
           Ref.get(state).pipe(
             Effect.map(
