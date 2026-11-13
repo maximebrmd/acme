@@ -44,7 +44,71 @@ Elle affiche aussi la même politique pour le tableau de bord de Cloudflare R2 (
 
 ### Imports inachevés [#multipart]
 
-Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage : ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés après un jour, si votre stockage le permet.
+Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage jusqu’à ce que quelque chose l’abandonne. Le serveur nettoie le dossier des médias toutes les heures, sur un seul serveur à la fois :
+
+- un import jamais terminé est supprimé, son média et son fichier, un jour après son début (`PEAL_MEDIA_SWEEP_PENDING_AFTER`) ;
+- un envoi en plusieurs parties resté ouvert est abandonné un jour après son début (`PEAL_MEDIA_SWEEP_UPLOADS_AFTER`) ;
+- un fichier sous `media/` qu’aucun média ne détient, comme un fichier envoyé avec un lien signé avant la suppression de son média, est supprimé dès qu’il a un jour (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`) ;
+- les fichiers d’un espace de travail supprimé que le stockage n’a pas supprimés tout de suite le sont de nouveau, jusqu’au dernier.
+
+Chaque passage en supprime 500 de chaque sorte au plus (`PEAL_MEDIA_SWEEP_BATCH`) et laisse le reste au suivant ; un fichier que le stockage refuse de supprimer est compté et laissé. Ils ne touchent que les clés sous `media/` que Peal écrit, sous `PEAL_S3_KEY_PREFIX`, jamais le registre des suppressions ni le préfixe d’une autre instance. Un nettoyage qui échoue sans cesse déclenche l’alerte `peal-media-sweep-failing`.
+
+Les nettoyages ne tournent qu’en production, sauf si `PEAL_MEDIA_SWEEPS` en dit autrement. `off` les arrête tous.
+
+#### À quelle base appartient le dossier [#media-owner]
+
+Les nettoyages des imports jamais terminés et des fichiers orphelins suppriment ce que la base ne connaît pas : il leur faut une base qui soit la vérité la plus récente du bucket. Le marqueur du dossier, `media/.owner`, dit quelle base c’est : l’identifiant aléatoire de la base, l’identifiant système et la timeline du cluster Postgres, et une époque que seuls ces nettoyages font avancer, d’un cran à chaque passage, dans la base et le marqueur ensemble. Le premier passage l’écrit. Dès lors, les deux nettoyages ne suppriment rien, et déclenchent l’alerte `peal-media-sweep-refused`, quand le marqueur :
+
+- nomme une autre base (`foreign`), ou a disparu après que cette base l’a écrit (`unmarked`) ;
+- nomme un autre cluster Postgres ou une autre timeline (`restored`) : toute restauration par pgBackRest se termine sur une nouvelle timeline, et une base chargée depuis un dump tourne sur un nouveau cluster. La timeline est lue dans le journal des écritures en cours, si bien qu’une bascule vers un réplica se voit tout de suite, et `pg_upgrade` donne un nouveau cluster : les nettoyages s’arrêtent après l’une ou l’autre, jusqu’à ce que le dossier soit remis ;
+- compte plus de passages que la base (`rewound`) : la base est revenue en arrière, comme après le retour à un instantané du disque. Un instantané pris après le dernier passage que compte le marqueur passe pour sain : jusqu’à une demi-heure tant que le stockage répond, plus quand le stockage a refusé les écritures du marqueur, et aussi longtemps que les nettoyages étaient arrêtés, puisque seuls leurs passages font avancer l’époque. Arrêtez-les aussi pour revenir à un instantané.
+
+Arrêtez aussi les nettoyages (`PEAL_MEDIA_SWEEPS=off`) avant de démarrer un serveur sur une base restaurée. En dernière garde, le nettoyage des orphelins ne supprime rien sur une page de la liste qui contient plus de fichiers inconnus de la base que `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), ou plus d’un cinquième de 50 fichiers anciens ou plus, et celui des imports jamais terminés rien quand il en trouve dans plus d’espaces de travail que `PEAL_MEDIA_SWEEP_PENDING_LIMIT` (100) : le retard d’un seul espace ne le déclenche jamais. Ces gardes ne voient qu’un grand écart. La remise du dossier ci-dessous ne lève pas un disjoncteur : une fois la base sûre, relevez la limite le temps d’un passage (et redémarrez le serveur), puis remettez-la.
+
+Quand la base doit bien posséder le dossier (une restauration définitive, une bascule ou une mise à niveau faite, une base chargée depuis un dump, un marqueur perdu), remettez-lui le dossier. La commande affiche la base, le bucket et le préfixe, le marqueur actuel et ce qu’elle écrirait, et n’écrit qu’avec `--yes` :
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts --yes
+```
+
+Elle change le marqueur et rien d’autre.
+
+#### Une règle de cycle de vie [#lifecycle]
+
+En seconde garde, ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés, sur le seul dossier des médias. Mettez le préfixe de la règle devant `media/` si vous définissez `PEAL_S3_KEY_PREFIX`, comme `staging/media/`. Avec Cloudflare R2, dont les buckets les abandonnent aussi après sept jours par défaut (ajoutez `--jurisdiction eu` pour un bucket de la juridiction UE) :
+
+```sh
+wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
+```
+
+Avec une API S3, si le stockage prend en charge les règles de cycle de vie, enregistrez la règle dans `lifecycle.json` :
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-unfinished-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "media/" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 2 }
+    }
+  ]
+}
+```
+
+puis posez-la sur le bucket (ajoutez `--endpoint-url` pour un autre stockage qu’AWS) :
+
+```sh
+aws s3api put-bucket-lifecycle-configuration --bucket <bucket> --lifecycle-configuration file://lifecycle.json
+```
+
+<Callout type="warning" title="Une configuration par bucket">
+  Sur une API S3, cela remplace toutes les règles de cycle de vie du bucket,
+  celle du registre des suppressions comprise : mettez-les toutes dans le même
+  fichier. N’ajoutez jamais d’expiration à `media/`, qui supprimerait des médias
+  utilisés.
+</Callout>
 
 ### Lecture des fichiers [#probe]
 

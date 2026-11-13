@@ -133,7 +133,10 @@ Peal's own servers do so with the Ansible in `packages/peal-infra/ansible`, whos
 <Callout type="warning" title="After a restore">
   Apply the erasure ledger before you start the server, or the accounts and
   workspaces deleted since the backup come back ([Deletions and
-  backups](/self-hosting/privacy#erasure-ledger)).
+  backups](/self-hosting/privacy#erasure-ledger)). Start it with
+  `PEAL_MEDIA_SWEEPS=off` until the restore is final: the restored database does
+  not know the files uploaded since, and the media sweeps would delete them
+  ([Unfinished uploads](/self-hosting/storage#multipart)).
 </Callout>
 
 ### Postgres memory [#postgres-memory]

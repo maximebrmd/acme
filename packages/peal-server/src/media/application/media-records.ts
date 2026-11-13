@@ -19,11 +19,19 @@ export class MediaRecords extends Context.Service<
     readonly exportWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly MediaRecord[], DatabaseError>;
-    /** Deletes the workspace's assets, in the caller's transaction if any. */
+    /**
+     * Deletes the workspace's assets, in the caller's transaction if any,
+     * and lists its folder for the store's sweep, until
+     * `removeWorkspaceFiles` empties it.
+     */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
-    /** Deletes the workspace's files from the store, uploads included. */
+    /**
+     * Deletes the workspace's files from the store, uploads included, and
+     * takes its folder off the sweep's list. A store that fails leaves it
+     * there: the sweep empties it later (`MediaSweeps.folders`).
+     */
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, MediaStorageFailed>;

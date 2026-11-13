@@ -220,6 +220,10 @@ peal-ui and its theme: a reference is a starting point, not code to paste.
   no post scheduled or job waiting when a test ends, or the dev server runs
   it. Give each run its own database or `PEAL_S3_KEY_PREFIX` when several run
   at once.
+- A server on a scratch database sets its own `PEAL_S3_KEY_PREFIX`: the
+  bucket's media folder belongs to one database, whose media sweeps delete
+  what it does not know of (off outside production unless
+  `PEAL_MEDIA_SWEEPS=on`).
 - To run a second stack beside another, set `COMPOSE_PROJECT_NAME` and the
   `PEAL_*_PORT` overrides listed in `packages/peal-docker/.env.example`.
 

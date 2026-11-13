@@ -44,7 +44,70 @@ It also prints the same policy for Cloudflare R2's dashboard (R2 › the bucket 
 
 ### Unfinished uploads [#multipart]
 
-Large videos go up in parts. An upload left unfinished keeps its parts in the store, so add a lifecycle rule that aborts incomplete multipart uploads after a day, where your store supports one.
+Large videos go up in parts. An upload left unfinished keeps its parts in the store until something aborts it. The server sweeps the media folder every hour, on one server at a time:
+
+- an upload never completed is deleted, its media and its file, a day after it started (`PEAL_MEDIA_SWEEP_PENDING_AFTER`);
+- a multipart upload left open is aborted a day after it started (`PEAL_MEDIA_SWEEP_UPLOADS_AFTER`);
+- a file under `media/` that no media holds, such as one sent with a link signed before its media was deleted, is deleted once it is a day old (`PEAL_MEDIA_SWEEP_ORPHANS_AFTER`);
+- the files of a deleted workspace that the store did not delete at once are deleted again until none is left.
+
+Each run deletes 500 of each at most (`PEAL_MEDIA_SWEEP_BATCH`) and leaves the rest to the next; a file the store refuses to delete is counted and left. They touch only keys under `media/` that Peal writes, below `PEAL_S3_KEY_PREFIX`, never the erasure ledger or another instance's prefix. A sweep that keeps failing raises the `peal-media-sweep-failing` alert.
+
+The sweeps run in production only, unless `PEAL_MEDIA_SWEEPS` says otherwise. `off` stops them all.
+
+#### Which database the folder belongs to [#media-owner]
+
+The pending and orphan sweeps delete what the database does not know of, so they need the database to be the bucket's newest truth. The folder's owner marker, `media/.owner`, says which database that is: the database's random id, the Postgres cluster's system identifier and timeline, and an epoch that only these sweeps advance, one more at each run, in the database and the marker together. The first run writes it. From then on the two sweeps delete nothing, and raise the `peal-media-sweep-refused` alert, when the marker:
+
+- names another database (`foreign`), or is gone once this database had written it (`unmarked`);
+- names another Postgres cluster or timeline (`restored`): every restore from pgBackRest ends on a new timeline, and a database loaded from a dump runs on a new cluster. The timeline is read from the write-ahead log being written, so a failover to a replica is seen at once, and `pg_upgrade` gives a new cluster: the sweeps stop after either, until the folder is handed over;
+- counts more runs than the database (`rewound`): the database went back in time, as a disk snapshot rolled back does. A snapshot taken after the last run the marker counts reads as sound: that is up to half an hour while the store answers, longer when the store failed the runs' marker writes, and as long as the sweeps were off, since only their runs move the epoch on. Keep them off across a snapshot's roll-back too.
+
+Turn the sweeps off as well (`PEAL_MEDIA_SWEEPS=off`) before starting a server on a restored database. As a last guard, the orphan sweep deletes nothing on a page of the listing with more files the database does not know of than `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100), or than a fifth of 50 old files or more, and the pending sweep nothing when uploads never completed are found in more workspaces than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` (100): one workspace's backlog never trips it. These only catch a large gap. A breaker is not cleared by the claim below: once the database is known sound, raise the limit for a run (and restart the server), then set it back.
+
+Once the database is meant to own the folder (a restore confirmed final, a failover or an upgrade done, a database loaded from a dump, a marker lost), hand the folder over. The command prints the database, the bucket and prefix, the marker there now and what it would write, and writes only with `--yes`:
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts
+docker compose … run --rm --no-deps server packages/peal-server/src/claim-media-folder.ts --yes
+```
+
+It changes the marker and nothing else.
+
+#### A lifecycle rule [#lifecycle]
+
+As a second guard, add a lifecycle rule that aborts incomplete multipart uploads, on the media folder alone. Put the rule's prefix before `media/` when you set `PEAL_S3_KEY_PREFIX`, such as `staging/media/`. With Cloudflare R2, whose buckets also abort them after seven days by default (add `--jurisdiction eu` for a bucket in the EU jurisdiction):
+
+```sh
+wrangler r2 bucket lifecycle add <bucket> abort-unfinished-uploads media/ --abort-multipart-days 2
+```
+
+With an S3 API, where the store supports lifecycle rules, save the rule as `lifecycle.json`:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-unfinished-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "media/" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 2 }
+    }
+  ]
+}
+```
+
+and put it on the bucket (add `--endpoint-url` for a store other than AWS):
+
+```sh
+aws s3api put-bucket-lifecycle-configuration --bucket <bucket> --lifecycle-configuration file://lifecycle.json
+```
+
+<Callout type="warning" title="One configuration per bucket">
+  On an S3 API, this replaces every lifecycle rule the bucket had, the erasure
+  ledger's included: put them all in the same file. Never add an expiration to
+  `media/`, which would delete media in use.
+</Callout>
 
 ### Reading the files [#probe]
 

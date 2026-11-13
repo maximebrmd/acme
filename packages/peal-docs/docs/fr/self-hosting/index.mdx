@@ -136,6 +136,10 @@ Les serveurs de Peal le font avec l’Ansible de `packages/peal-infra/ansible`, 
   Appliquez le registre des effacements avant de démarrer le serveur, sinon les
   comptes et espaces de travail supprimés depuis la sauvegarde reviennent
   ([Suppressions et sauvegardes](/self-hosting/privacy#erasure-ledger)).
+  Démarrez-le avec `PEAL_MEDIA_SWEEPS=off` tant que la restauration n’est pas
+  définitive : la base restaurée ne connaît pas les fichiers envoyés depuis, et
+  les nettoyages des médias les supprimeraient ([Imports
+  inachevés](/self-hosting/storage#multipart)).
 </Callout>
 
 ### Mémoire de Postgres [#postgres-memory]

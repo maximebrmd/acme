@@ -257,6 +257,11 @@ on port 3000 (`PORT` changes it). It answers `GET /api/health` (liveness) and
 `GET /api/ready` (readiness: 503 while the database is unreachable), and
 serves its OpenAPI document at `/openapi.json`.
 
+A server on a database of its own, such as a scratch one for a branch, sets
+its own `PEAL_S3_KEY_PREFIX` too: the media folder of a prefix belongs to one
+database, and its media sweeps, if turned on, delete the files that database
+does not know of.
+
 The web app forwards `/api/*` and the OAuth discovery documents
 (`/.well-known/oauth-*`) to `PEAL_API_URL` (default `http://localhost:3000`),
 read at request time, so browsers, the command line and MCP clients all use
@@ -572,6 +577,7 @@ In development, these are the ones you may want:
 | `TRUSTED_ORIGINS`             | none                             | More origins allowed to send signed-in requests and uploads            |
 | `PEAL_API_URL`                | `http://localhost:3000`          | Where the web app and the command line reach the server                |
 | `PEAL_S3_KEY_PREFIX`          | none                             | A folder for this checkout's media in a shared bucket (`dev/`)         |
+| `PEAL_MEDIA_SWEEPS`           | `off` outside production         | `on` sweeps the media folder of files the database does not know of    |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                            | Exports logs, metrics and traces                                       |
 
 ## Verify
