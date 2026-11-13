@@ -182,7 +182,7 @@ We email account holders at least 30 days before a substantial change to this po
 
 Changes since this policy was first published:
 
-- 13 November 2026: the comments Peal reads on LinkedIn company pages once we turn them on, and the identifier of the LinkedIn member who connects a page; billing accounts: which person pays for each organisation, the offers to hand an organisation to another of its owners, and the checks that keep the free tier to one per person.
+- 13 November 2026: the comments Peal reads on LinkedIn company pages once we turn them on, and the identifier of the LinkedIn member who connects a page; billing accounts: which person pays for each organisation, the offers to hand an organisation to another of its owners, and the checks that keep the free tier to one per person; an organisation's own text provider for the writing assistant, which receives the texts its members send it, with the organisation's key.
 
 ## Contact
 

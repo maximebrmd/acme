@@ -182,7 +182,7 @@ Nous prévenons par e-mail les titulaires de compte au moins 30 jours avant qu�
 
 Modifications depuis la première publication de cette politique :
 
-- 13 novembre 2026 : les commentaires que Peal lit sur les pages d’entreprise LinkedIn une fois que nous les activons, et l’identifiant du membre LinkedIn qui connecte une page ; les comptes de facturation : quelle personne paie chaque organisation, les propositions de confier une organisation à un autre de ses propriétaires, et les vérifications qui réservent l’offre gratuite à une personne.
+- 13 novembre 2026 : les commentaires que Peal lit sur les pages d’entreprise LinkedIn une fois que nous les activons, et l’identifiant du membre LinkedIn qui connecte une page ; les comptes de facturation : quelle personne paie chaque organisation, les propositions de confier une organisation à un autre de ses propriétaires, et les vérifications qui réservent l’offre gratuite à une personne ; le fournisseur de texte propre à une organisation pour l’assistant de rédaction, qui reçoit les textes que ses membres lui envoient, avec la clé de l’organisation.
 
 ## Contact
 
