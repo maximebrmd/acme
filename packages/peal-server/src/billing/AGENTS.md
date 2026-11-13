@@ -181,12 +181,17 @@
   `v1.billing.meter.error_report_triggered` and `no_meter_found`, to an
   event destination of their own: `POST /api/stripe/meter-errors`
   (`src/app/meter-errors/`, no credentials, the signature checked with
-  `STRIPE_METER_WEBHOOK_SECRET`, unset: every event refused), read in full
-  from Stripe (`StripeMeterErrorEventsLive`), counted
+  `STRIPE_METER_WEBHOOK_SECRET`, unset: every event refused before its
+  body is read, and a warning when a server that bills starts; a body of
+  64 KB at most), read in full from Stripe once, without client retries
+  (`StripeMeterErrorEventsLive`; an outage is 503, so Stripe sends it
+  again; a full event Stripe refuses or that cannot be read is counted as
+  one error coded `unreadable` and answered 200), taken once by its id
+  (`StripeEventLedger`, `billing.stripe_events`), counted
   (`peal.billing.meter_errors`, alert `peal-meter-errors`), and the reports
   their samples name kept refused (`stripe:<code>`, sent or not), which
   `refused_kept` and its alert read. Stripe names a sample, not every
-  event: the count is what alerts.
+  event, and may name none: the count is what alerts.
 - Unverified ceiling (D8): per-account pricing on an account none of
   whose subscriptions had an invoice paid connects up to
   `rateCard.unverifiedCeiling` (100) accounts

@@ -15,8 +15,10 @@ import {
   ReceiveMeterErrors,
 } from "#billing/application/receive-meter-errors.ts";
 import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-account-day-store.ts";
+import { DrizzleStripeEventLedgerLive } from "#billing/infrastructure/drizzle-stripe-event-ledger.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { DatabaseTest } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
 
 const holder = WorkspaceIdSchema.make(randomUUID());
 
@@ -39,7 +41,7 @@ const readings = new Map<string, MeterErrorReading>([
           },
           { code: "archived_meter", count: 1, identifiers: [] },
         ],
-        eventId: "evt_synthetic_meter_errors",
+        eventId: `evt_synthetic_meter_errors_${randomUUID()}`,
       },
     },
   ],
@@ -49,6 +51,7 @@ const readings = new Map<string, MeterErrorReading>([
 const EventsTest = Layer.succeed(
   MeterErrorEvents,
   MeterErrorEvents.of({
+    enabled: true,
     read: (_body, signature) =>
       Effect.succeed(readings.get(signature) ?? { _tag: "refused" }),
   })
@@ -58,6 +61,8 @@ const ReceiveTest = ReceiveMeterErrors.layer.pipe(
   Layer.provide(
     Layer.mergeAll(
       EventsTest,
+      DrizzleStripeEventLedgerLive,
+      TransactionsTest,
       Layer.succeed(
         BillingMode,
         BillingMode.of({
@@ -122,6 +127,16 @@ layer(ReceiveTest)("Stripe's meter error events", (it) => {
         ]);
         // What the reporter's alert reads: kept refused, though sent.
         assert.isAtLeast((yield* store.backlog).refused, 1);
+
+        // Delivered again: counted and marked once.
+        assert.strictEqual(
+          yield* receive.receive("{}", "signed-report"),
+          "duplicate"
+        );
+        assert.strictEqual(
+          (yield* Metric.value(meterErrors)).count - before,
+          3
+        );
 
         assert.strictEqual(
           yield* receive.receive("{}", "signed-other"),

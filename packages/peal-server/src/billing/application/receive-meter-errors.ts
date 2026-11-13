@@ -1,10 +1,12 @@
-import { Context, Effect, Layer, Metric } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
 import { AccountDayStore } from "./ports/account-day-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { MeterErrorEvents } from "./ports/meter-error-events.ts";
+import { StripeEventLedger } from "./ports/stripe-event-ledger.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
 /**
@@ -30,18 +32,21 @@ const candidatesOf = (named: string): readonly string[] => {
  * Receives Stripe's meter error events: checks and reads each through
  * `MeterErrorEvents`, counts its errors, logs their codes and keeps the
  * reports its samples name refused (`stripe:<code>`), sent or not, which
- * the reporter's refusal alert then reads. Stripe sends a sample of the
+ * the reporter's refusal alert then reads, once per event (its id kept in
+ * `billing.stripe_events`). Stripe sends a sample of the
  * events an error hit, never all: the count is what alerts. An event not
  * signed is refused; one of another kind is ignored.
  */
 export class ReceiveMeterErrors extends Context.Service<
   ReceiveMeterErrors,
   {
+    /** Whether the endpoint is set up: without it, no body is read. */
+    readonly enabled: boolean;
     readonly receive: (
       body: string,
       signature: string
     ) => Effect.Effect<
-      "ignored" | "recorded" | "refused",
+      "duplicate" | "ignored" | "recorded" | "refused",
       DatabaseError | StripeUnreachable
     >;
   }
@@ -52,6 +57,8 @@ export class ReceiveMeterErrors extends Context.Service<
       const events = yield* MeterErrorEvents;
       const store = yield* AccountDayStore;
       const { enabled } = yield* BillingMode;
+      const ledger = yield* StripeEventLedger;
+      const { transaction } = yield* TransactionRunner;
 
       // Born at 0 on a server that bills, so the first error is an
       // increase.
@@ -70,18 +77,47 @@ export class ReceiveMeterErrors extends Context.Service<
         }
 
         const { errors, eventId } = reading.report;
+        const now = yield* DateTime.now;
 
-        for (const { code, count, identifiers } of errors) {
+        // Once per event: Stripe delivers at least once, and a resend
+        // after a failure here finds what was kept or nothing.
+        const marked = yield* transaction(
+          Effect.gen(function* marking() {
+            if (!(yield* ledger.claim(eventId, now))) {
+              return Option.none<readonly number[]>();
+            }
+
+            return Option.some(
+              yield* Effect.all(
+                errors.map(({ code, identifiers }) =>
+                  store.markDropped(
+                    identifiers.flatMap((named) => candidatesOf(named)),
+                    `stripe:${code}`
+                  )
+                )
+              )
+            );
+          })
+        );
+
+        if (Option.isNone(marked)) {
+          const duplicate = "duplicate" as const;
+
+          return duplicate;
+        }
+
+        for (const [index, { code, count }] of errors.entries()) {
           yield* Metric.update(meterErrors, count);
-
-          const marked = yield* store.markDropped(
-            identifiers.flatMap(candidatesOf),
-            `stripe:${code}`
-          );
-
           yield* Effect.logError(
             "Stripe reported meter events it could not count: their usage is not billed"
-          ).pipe(Effect.annotateLogs({ code, count, eventId, marked }));
+          ).pipe(
+            Effect.annotateLogs({
+              code,
+              count,
+              eventId,
+              marked: marked.value[index] ?? 0,
+            })
+          );
         }
 
         const recorded = "recorded" as const;
@@ -89,7 +125,7 @@ export class ReceiveMeterErrors extends Context.Service<
         return recorded;
       });
 
-      return ReceiveMeterErrors.of({ receive });
+      return ReceiveMeterErrors.of({ enabled: events.enabled, receive });
     })
   );
 }

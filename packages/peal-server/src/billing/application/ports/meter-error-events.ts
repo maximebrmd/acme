@@ -32,9 +32,14 @@ export type MeterErrorReading =
 export class MeterErrorEvents extends Context.Service<
   MeterErrorEvents,
   {
+    /** Whether the endpoint is set up: without it, nothing is read. */
+    readonly enabled: boolean;
     /**
      * Checks the event's signature, then reads the full event from Stripe
-     * (it is delivered thin): not answered, it is to be sent again.
+     * (it is delivered thin), asking once: not answered, or limited, or
+     * Stripe failing (5xx), it is to be sent again. A full event Stripe
+     * refuses, or that cannot be read, is a report of one error coded
+     * `unreadable`, so it is counted all the same.
      */
     readonly read: (
       body: string,

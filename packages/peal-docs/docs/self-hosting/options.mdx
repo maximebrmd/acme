@@ -89,6 +89,15 @@ A limit applies when something is added, so a workspace on a smaller plan than i
     set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to
     Stripe if something guards the rest of `/api/auth`.
   </Step>
+  <Step title="Add the meter errors destination">
+    Add an event destination for `PUBLIC_URL/api/stripe/meter-errors`, with
+    thin events as its payload and the `v1.billing.meter.error_report_triggered`
+    and `v1.billing.meter.no_meter_found` events, and set
+    `STRIPE_METER_WEBHOOK_SECRET` to its signing secret. Stripe sends these when
+    it took meter events it could not count, whose usage is then not billed;
+    without the destination, nobody hears of it. Leave this path open to Stripe
+    too.
+  </Step>
   <Step title="Turn on Stripe Tax and the customer portal">
     Checkout always has Stripe Tax add the VAT, as the prices are
     tax-exclusive and Peal shows them VAT included. Turn on the customer portal,

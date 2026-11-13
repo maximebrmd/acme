@@ -8,12 +8,14 @@ import type { EnvironmentSettings } from "./settings.ts";
 /**
  * The paths that outside services call on an environment behind Access
  * throughout, which a Bypass policy opens: Bluesky reads the OAuth client
- * metadata, Stripe posts its events, Meta its data deletion requests. The
+ * metadata, Stripe posts its events and its meter error events, Meta its
+ * data deletion requests. The
  * Ansible project's peal_access_bypass_paths routes the same paths.
  */
 const publicCallbackPaths = [
   "api/channels/oauth",
   "api/auth/stripe/webhook",
+  "api/stripe/meter-errors",
   "api/data-deletion",
 ] as const;
 
