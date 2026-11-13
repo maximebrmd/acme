@@ -169,6 +169,14 @@ const contentOf = (
 
 type Translate = ReturnType<typeof useTranslations<"Posts.Composer">>;
 
+// Whether the post may be saved: the server's short links known, no
+// option it would refuse, and no channel's media waiting for a text.
+const savableUnless = (
+  linking: Parameters<typeof savableWith>[0],
+  problems: readonly unknown[],
+  blocked: string | undefined
+) => savableWith(linking, problems.length === 0 && blocked === undefined);
+
 // Why the post is neither saved nor scheduled while channels have media
 // of their own and no text to go out with; none otherwise.
 const ownMediaBlock = (
@@ -436,8 +444,7 @@ export const Composer = ({
   // so they are never lost silently, and the actions say why.
   const blocked = ownMediaBlock(t, format.list, selected, waitingForText);
 
-  const optionsTaken =
-    savableWith(linking, optionProblems.length === 0) && blocked === undefined;
+  const optionsTaken = savableUnless(linking, optionProblems, blocked);
 
   // What a save sends, which the previews check too.
   const draft: PostDraft = {

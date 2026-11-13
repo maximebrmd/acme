@@ -218,7 +218,7 @@ describe("a held post that lost a channel, back to draft", () => {
       postId: PostId
     ) => Effect.Effect<unknown, unknown, GateLog | HeldPosts>
   ) =>
-    Effect.gen(function* draftsCleanly() {
+    Effect.gen(function* backToDraft() {
       const scheduling = yield* PostScheduling;
 
       const { editor, held, kept, removed, workspaceId } =
