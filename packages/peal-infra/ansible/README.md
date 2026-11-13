@@ -59,7 +59,8 @@ X-Forwarded-For a reader sends.
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
 `sandbox-grafana.peal.social`, `sandbox.peal.link`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
-Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion and
+Stripe's webhook (`/api/auth/stripe/webhook`) and its meter error events
+(`/api/stripe/meter-errors`), and Meta's data deletion and
 deauthorize requests (`/api/data-deletion/<app>` and
 `/api/data-deletion/<app>/deauthorize`, for its three apps), which the
 server checks the signature of. A test keeps those paths equal to the
@@ -331,7 +332,8 @@ copy run without Pulumi, and for what Pulumi does in their place.
    - Sandbox: its app, site and docs names; an application with a Bypass
      policy for everyone on each path outside services call,
      `sandbox.peal.social/api/channels/oauth` for Bluesky,
-     `sandbox.peal.social/api/auth/stripe/webhook` for Stripe, and
+     `sandbox.peal.social/api/auth/stripe/webhook` and
+     `sandbox.peal.social/api/stripe/meter-errors` for Stripe, and
      `sandbox.peal.social/api/data-deletion` for Meta; and its own Grafana and
      SSH applications. The uptime server's checks of the sandbox need a
      service token and a Service Auth policy on its application too (see
