@@ -77,16 +77,36 @@
   `runCatalogue`, over a Stripe client). It reads meters, products and
   prices (tiers only with `expand: ["data.tiers"]`, every page), plans
   (`planCatalogue`, pure), then creates meters and products before the
-  prices that read them. A price that bills otherwise is replaced by a
-  new one with `transfer_lookup_key`, the old left active for the
-  subscriptions on it; a meter that counts otherwise blocks the run before
-  any change, as Stripe cannot change a meter's aggregation or mappings.
-  `--check` changes nothing and fails on a difference. It prints names and
+  prices that read them. A price that bills otherwise (amounts, currency,
+  interval and its count, usage type, meter, tax behaviour, transform) is
+  replaced by a new one with `transfer_lookup_key`, the old left active for
+  the subscriptions on it. A meter that counts otherwise (aggregation,
+  mappings, or pre-aggregated by `event_time_window`, which keeps only a
+  window's last event) or a price on an archived product blocks the run
+  before any change: Stripe cannot change a meter, nor checkout use an
+  archived product. A product gets its name and `catalogueTaxCode` when it
+  is made, never after: one the operator changed is a note (`--check`
+  passes). `--check` changes nothing and fails on a difference. It prints names and
   ids, and of a refusal Stripe's error type and code only, never its
   message, which may quote the key. The server never creates Stripe
   objects. Tests drive it against `#test/billing/fakes/stripe-account.ts`,
   a stateful stand-in that answers as Stripe does, and against
   stripe-mock, which checks each request against Stripe's API.
+- Stripe's docs do not say whether a deactivated meter keeps its event
+  name: the blocked message gives both ways out (deactivate and run again,
+  or a new `STRIPE_LOOKUP_KEY_PREFIX`), and the sandbox runbook settles
+  it. A meter's event name is 100 characters at most, so the prefix is 81
+  at most (`_assistant_requests` is the longest suffix).
+- Moving a lookup key is one-way for the release before: after a release's
+  `stripe-catalogue` replaced a price, the previous release no longer finds
+  its own under that key, and a rollback runs the previous release's
+  command to move it back (a third price). The self-hosting docs and the
+  infrastructure README ("Stripe catalogue") say so; keep them true when
+  `catalogueAtStart` turns to `stop`.
+- Every line's product has tax code `txcd_10103001` (software as a
+  service, business use). For EU VAT it computes as the personal-use code
+  does; the split matters for US sales tax only, an accountant's question
+  before Peal registers there.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
@@ -177,13 +197,24 @@
 - A server that bills checks Stripe when it starts
   (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
   against stripe-mock, whose one price is none of Peal's): the catalogue
-  (`catalogueProblems`: each line's active meter, and under its key an
-  active price in its currency, monthly, metered on that meter,
-  tax-exclusive, not transformed, at the rate card's tiers or unit amount,
-  decimals compared by value), and each legacy lookup key an active price
-  at the amount, currency and interval of `prices.ts`, tax-exclusive, or
-  the server stops listing what differs (`StripePricesMismatch`). Stripe
-  not answering is a warning, and the server starts. The legacy prices are
+  (`catalogueProblems`: each line's active meter, not pre-aggregated, and
+  under its key an active price in its currency, each month, metered on
+  that meter, tax-exclusive, not transformed, at the rate card's tiers or
+  unit amount, decimals compared by value), and each legacy lookup key an
+  active price at the amount, currency and interval of `prices.ts`,
+  tax-exclusive. A legacy difference stops the server listing it
+  (`StripePricesMismatch`). The catalogue follows the switch
+  `catalogueAtStart` (`domain/catalogue.ts`): `warn` while nothing sells
+  per-account pricing, so an upgrade or a rollback never stops a server
+  for it (a warning listing what differs and `catalogueCommand`, the
+  gauge `peal.billing.stripe_catalogue.problems` and the alert
+  `peal-stripe-catalogue`; meters Stripe refuses or garbles warn too);
+  the change that sells it sets `stop`, before checkout takes the
+  catalogue, and tests it with `stripePricesChecked("stop")`, already
+  covered. Stripe not answering is a warning, and the server starts. A
+  release on Peal's servers runs `stripe-catalogue --check` with the new
+  image before it replaces the server, and reports a difference without
+  failing (`peal_release`). The legacy prices are
   checked whatever the subscriptions while the legacy plans are the ones
   sold: the change that stops selling them checks them only while a legacy
   subscription entitles (read from `billing.subscriptions`), so a fresh
@@ -191,7 +222,10 @@
 - Before per-account pricing is sold, the owner runs this in the
   sandbox's Stripe account (test mode, its key in the sandbox vault,
   never copied), never in tests: `stripe-catalogue`, again (no change),
-  `--check`; with a test clock, a `payAsYouGo` checkout paid with a test
+  `--check`; a meter made by hand with `count`, the command (blocked),
+  that meter deactivated, the command again (does Stripe give the new
+  meter the deactivated one's event name?); with a test clock, a
+  `payAsYouGo` checkout paid with a test
   card (a card asked although nothing is due, the period ending on the
   first of next month at 00:00 UTC, six items); 300 account-days and
   12,000 billable messages reported, the clock past the first and the
