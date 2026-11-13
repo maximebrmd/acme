@@ -2311,7 +2311,7 @@
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
-    "grace": "This workspace holds more connected accounts than the free tier includes. It still schedules and publishes on the accounts it had before billing began, until {until} UTC, and connects no more. After that, nothing is published until a payment method is added on the billing page or 2 accounts are kept.",
+    "grace": "This workspace holds more connected accounts than the free tier includes. It still schedules and publishes on the accounts it had before billing began, until {until} UTC, and connects no more. After that, nothing is published until a payment method is added on the billing page or {free, number} accounts are kept.",
     "description": "Its plan is now {plan}. Nothing was deleted, but the workspace must come back within its plan before it does anything else.",
     "sharedAccount": "Its channels count with those of the other workspaces of its billing account: {workspaces}.",
     "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",

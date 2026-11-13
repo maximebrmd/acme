@@ -2311,7 +2311,7 @@
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
-    "grace": "Cet espace de travail compte plus de comptes connectés que l’offre gratuite n’en inclut. Il continue de programmer et de publier sur les comptes qu’il avait avant le début de la facturation, jusqu’au {until} UTC, et n’en connecte pas d’autre. Ensuite, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation ou que 2 comptes seulement sont gardés.",
+    "grace": "Cet espace de travail compte plus de comptes connectés que l’offre gratuite n’en inclut. Il continue de programmer et de publier sur les comptes qu’il avait avant le début de la facturation, jusqu’au {until} UTC, et n’en connecte pas d’autre. Ensuite, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation ou que {free, number} comptes seulement sont gardés.",
     "description": "Son abonnement est désormais {plan}. Rien n’a été supprimé, mais l’espace de travail doit revenir dans son abonnement avant de faire quoi que ce soit d’autre.",
     "sharedAccount": "Ses canaux comptent avec ceux des autres espaces de travail de son compte de facturation : {workspaces}.",
     "excess": "{limit, select, channels {{used, number} canaux connectés, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
