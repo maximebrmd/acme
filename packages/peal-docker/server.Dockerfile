@@ -56,6 +56,9 @@ COPY packages/peal-server/scripts/bluesky-key.ts packages/peal-server/scripts/
 # Prints the addresses to register with each platform's app for the
 # server's PUBLIC_URL, so operators read them from the server they run.
 COPY packages/peal-server/scripts/platform-addresses.ts packages/peal-server/scripts/
+# Gives the Stripe account the rate card's catalogue, run where
+# STRIPE_SECRET_KEY already is, so the key never leaves the server.
+COPY packages/peal-server/scripts/stripe-catalogue.ts packages/peal-server/scripts/
 
 USER nonroot
 
