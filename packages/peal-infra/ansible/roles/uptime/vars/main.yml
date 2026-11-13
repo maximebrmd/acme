@@ -23,14 +23,16 @@ uptime_heartbeat_tokens: >-
 uptime_packages: "{{ role_path }}/../../../.."
 uptime_geist: "{{ uptime_packages }}/peal-ui/node_modules/geist"
 uptime_brand_files:
-  - { src: "{{ uptime_packages }}/peal-web/src/app/icon.svg", dest: mark.svg }
-  - { src: "{{ uptime_packages }}/peal-web/src/app/apple-icon.png", dest: apple-touch-icon.png }
-  - { src: "{{ uptime_geist }}/dist/fonts/geist-sans/Geist-Variable.woff2", dest: geist.woff2 }
-  - {
-      src: "{{ uptime_geist }}/dist/fonts/geist-mono/GeistMono-Variable.woff2",
-      dest: geist-mono.woff2,
-    }
-  - { src: "{{ uptime_geist }}/LICENSE.txt", dest: geist-license.txt }
+  - src: "{{ uptime_packages }}/peal-web/src/app/icon.svg"
+    dest: mark.svg
+  - src: "{{ uptime_packages }}/peal-web/src/app/apple-icon.png"
+    dest: apple-touch-icon.png
+  - src: "{{ uptime_geist }}/dist/fonts/geist-sans/Geist-Variable.woff2"
+    dest: geist.woff2
+  - src: "{{ uptime_geist }}/dist/fonts/geist-mono/GeistMono-Variable.woff2"
+    dest: geist-mono.woff2
+  - src: "{{ uptime_geist }}/LICENSE.txt"
+    dest: geist-license.txt
 
 # Where Caddy reaches each Gatus: on the stack's network on a server of its
 # own, on the host's loopback on a shared host.
