@@ -118,7 +118,7 @@ const ModeSwitch = ({
   const t = useTranslations("WorkspaceShell");
 
   return (
-    <div className="bg-secondary ring-border flex w-full items-center gap-0.75 rounded-xl p-0.75 ring-1 ring-inset">
+    <div className="bg-secondary ring-border flex w-full items-center gap-0.75 rounded-lg p-0.75 ring-1 ring-inset">
       <span
         className={cn(
           "flex size-7 shrink-0 items-center justify-center rounded-md",

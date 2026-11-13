@@ -227,7 +227,7 @@ export const WorkspaceHome = ({
                 <span
                   key={icon.slug}
                   className={cn(
-                    "bg-card ring-border flex shrink-0 items-center justify-center rounded-xl shadow-md ring-1",
+                    "bg-card ring-border flex shrink-0 items-center justify-center rounded-lg shadow-md ring-1",
                     className
                   )}
                 >

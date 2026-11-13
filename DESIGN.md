@@ -105,8 +105,8 @@ Numbers that line up use `tabular-nums`. Letter spacing is `-0.025em` at
 
 - A 4 px grid. Pages have 16 px of padding inside the content area; cards
   16 to 18 px.
-- Radius: 6 px for controls, cards, tables and menus; 4 px for chips,
-  badges and keys; full for avatars and dots.
+- Radius: 6 px for controls, cards, tables, menus and dialogs; 4 px for
+  chips, badges and keys; full for avatars and dots.
 - Borders before shadows. A shadow lifts only what floats: menus,
   popovers, dialogs, the selected segment of a switch.
 - Heights: controls 34 px (30 small, 38 for a toolbar's search); sidebar
