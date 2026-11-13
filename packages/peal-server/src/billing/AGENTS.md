@@ -152,42 +152,59 @@
   server starts.
 - Every workspace belongs to one billing account (`BillingAccounts`,
   `billing.accounts`, `account_workspaces`, `account_transfers`), on a
-  server that bills or not (nothing refuses by them off): its creator's,
-  made with their first workspace (`afterCreateOrganization`, the
-  `workspaceCreated` hook), one per person (unique `payer_user_id` but
-  standalone ones); a workspace made before is resolved the first time it
-  is read (`of`, under the payer's hold), or by the daily snapshot's sweep
-  (`accountsIn` per batch), to its oldest owner's account, the oldest
-  workspace billing. The partner rule comes first: a partner's home and
-  the workspaces it owns are the partner's account, billed on the home.
-  A workspace a plan subscription of its own entitles is `standalone`
-  until it ends (`subscriptionChanged`, from `RecordSubscription`). The
+  server that bills or not: its creator's, made with their first
+  workspace (`afterCreateOrganization`, the `workspaceCreated` hook), one
+  per person (unique `payer_user_id` but standalone ones); a workspace
+  made before is resolved the first time it is read (`of`, the owners read
+  again under the payer's hold), or by the daily snapshot's sweep
+  (`sweepIn` per batch, one workspace at a time, a failure logged; then
+  `repair`: accounts whose billing workspace is gone, and lapsed offers),
+  to its oldest owner's account, the oldest workspace billing. The partner
+  rule comes first: a partner's home and the workspaces it owns are the
+  partner's account, billed on the home. A workspace a plan subscription
+  of its own entitles is `standalone` until it ends (`subscriptionChanged`).
+- The payer is always one of the workspace's owners. On a server that
+  bills they stay one until they hand it over (`PAYER_MUST_STAY` on Better
+  Auth's leave, remove and role routes, `payerRequired` in a reduction);
+  anywhere, a workspace whose payer left, was removed or stopped being an
+  owner moves to its oldest owner's account (the `ownersChanged` hook
+  after those routes, and `of`, `accountsIn` and the sweep for rows
+  already wrong), unless staff merged it there (`account_workspaces.merged`,
+  which only `BillingAccountDesk.detach` clears).
+- A server that does not bill reads no account to schedule, publish or
+  tell the standing: `AccountChannelAllowanceLive` counts across an
+  account only when `BillingMode` bills, and `…/billing/standing` leaves
+  `account` out (it is optional for older servers). Where it bills, the
   account's workspaces share its billing workspace's plan (`PlanHolders`,
-  `AccountPlanHoldersLive`) and count their channels together
-  (`AccountChannelAllowanceLive`: the partner's pool and hold first, else
-  the account's, `poolOf` holding `holdAccount` where the partner's hold
-  is taken, in the same place of the lock order); reports read
-  `poolsIn`, holding nothing. Holds go payer, then accounts by id. Only the
-  billing workspace orders (`BilledElsewhere`); `GET …/billing` and
-  `…/standing` answer `account` (`AccountViews`: the billing workspace
-  named only to its members). Its payer stays among its owners
-  (`PAYER_MUST_STAY` on Better Auth's leave, remove and role routes,
-  `payerRequired` in a reduction) until they hand it over
-  (`TransferWorkspace`, in `billingActions`: offered to another owner, taken
-  in person within 7 days into their account, refused into a plan without
-  room or for a billing workspace Stripe may still bill). Erasing the
-  billing workspace bills on the oldest left; closing the payer's account
-  forgets its accounts, and the workspaces left go to their oldest owner
-  when next read. A reduction is taken when it brings the account within
-  its plan or disconnects every channel of the workspace. Staff's
-  `BillingAccountDesk` (`billingAccountsDesk` under `/api/admin`, the
-  console's `admin/billing-accounts`) lists platform accounts connected
-  under two free accounts or more (the channels context's
-  `SharedPlatformAccounts`, through `AccountChannels`), merges one account
-  into another (`mergeBillingAccounts`) and requires a payment method
-  (`requirePaymentMethod`, `restoreFreeTier`: `free_tier`, read by the
-  limits once the rate card applies), each audited first
-  (`BillingAccountAudit`), ids only.
+  `AccountPlanHoldersLive`) and count their channels together, under
+  `holdAccount` where the partner's hold is taken. Views read `poolsIn`,
+  holding nothing. Holds go payer, then accounts by id; closing an account
+  holds the payer first (`ContextRecords.holdUser`).
+- Only the billing workspace orders (`BilledElsewhere`); a checkout
+  refuses an order placed before the workspace stopped billing, and a
+  plan's refusal links the billing workspace's page. `GET …/billing`
+  answers `account` (`AccountViews`: the billing workspace named only to
+  its members, an open offer only to its two people, and a partner's
+  account counting only the workspaces the reader belongs to). Handing a
+  workspace over is `TransferWorkspace` (`billingActions`): offered to
+  another owner, taken in person within 7 days into their account,
+  refused into a plan without room or for a billing workspace Stripe may
+  still bill. A reduction is taken when it brings the account within its
+  plan or disconnects every channel of the workspace.
+- Staff's `BillingAccountDesk` (`billingAccountsDesk` under `/api/admin`,
+  the console's `admin/billing-accounts`) lists platform accounts
+  connected under two free accounts or more (the channels context's
+  `SharedPlatformAccounts`, through `AccountChannels`, kept nowhere),
+  merges one account into another (`mergeBillingAccounts`), detaches a
+  workspace back to its oldest owner's account (`detachBillingWorkspace`,
+  the way back from a merge) and requires a payment method
+  (`requirePaymentMethod`, `restoreFreeTier`), each audited first
+  (`BillingAccountAudit`), ids only. A requirement is the account's
+  `free_tier` and the person's (`billing.payment_requirements`, read
+  whenever an account is made for them, carried by a merge, kept by the
+  closed address's pseudonym for `requirementMemory`, 2 years, then
+  purged by `PurgeContractRecords`). The data is the registry's
+  `billingAccounts` category, and the export's `contracts.billingAccounts`.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
   X, where a post with a link costs about 13 times more), and those with a
