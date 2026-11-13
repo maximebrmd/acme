@@ -1,4 +1,8 @@
-import { accountsMonthly, rateCard } from "peal-contract/rate-card";
+import {
+  accountsMonthly,
+  freeAccountsOf,
+  rateCard,
+} from "peal-contract/rate-card";
 import type { AccountBand, Meter } from "peal-contract/rate-card";
 
 import type { Locale } from "./i18n/locales.ts";
@@ -194,21 +198,6 @@ const meterRow = (
   };
 };
 
-/** The accounts the ladder's first bands give for nothing. */
-const freeAccountsOf = (bands: readonly AccountBand[]): number => {
-  let free = 0;
-
-  for (const { monthly, upTo } of bands) {
-    if (monthly !== 0 || upTo === null) {
-      break;
-    }
-
-    free = upTo;
-  }
-
-  return free;
-};
-
 /** Everything the pricing page states, in the reader's language. */
 export interface PricingPage {
   readonly dayRule: string;
@@ -241,7 +230,7 @@ export const pricingPage = (
     ladder: bands.map((band, index) =>
       ladderRow(locale, t, band, (bands[index - 1]?.upTo ?? 0) + 1)
     ),
-    lead: fill(t.lead, { free: count(locale, freeAccountsOf(bands)) }),
+    lead: fill(t.lead, { free: count(locale, freeAccountsOf(rateCard)) }),
     meters: [...pricedMeters, ...comingMeters].map((meter) =>
       meterRow(locale, t, meter)
     ),
