@@ -183,3 +183,32 @@ describe("a first comment", () => {
     })
   );
 });
+
+describe("a first comment on a LinkedIn profile", () => {
+  const profile: ChannelOnPlatform = {
+    channelId: ChannelIdSchema.make("00000000-0000-7000-8000-000000000003"),
+    connection: "linkedinProfile",
+    platform: "linkedin",
+  };
+
+  it.effect("needs no reconnection, as reconnecting would change nothing", () =>
+    Effect.gen(function* profileStanding() {
+      assert.deepStrictEqual(
+        yield* standing(
+          profile,
+          ChannelGrants.granting([]),
+          inboxOf("linkedin")
+        ),
+        { _tag: "unrestricted" }
+      );
+      assert.deepStrictEqual(
+        yield* scheduling(
+          profile,
+          ChannelGrants.granting([]),
+          inboxOf("linkedin")
+        ),
+        []
+      );
+    })
+  );
+});

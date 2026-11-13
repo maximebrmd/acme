@@ -190,24 +190,30 @@ export const delayChoices = (current: number): readonly number[] =>
  * rules in a thread and a comment's where they are comments. Their images
  * and videos are checked where they are shown, and again by the server.
  */
-export const partsFitOn = (
-  channels: readonly { readonly id: string; readonly platform: Platform }[],
+export const partsFitOn = <
+  C extends { readonly id: string; readonly platform: Platform },
+>(
+  channels: readonly C[],
   parts: readonly PartDraft[],
   optionsOn: (channelId: string) => TargetOptions | undefined,
-  offered: (platform: Platform) => boolean
+  offered: (channel: C) => boolean
 ): boolean =>
   channels.every(
-    ({ id, platform }) =>
-      partsTaken(platform, parts.length, optionsOn(id), offered(platform))
-        ._tag === "taken" &&
+    (channel) =>
+      partsTaken(
+        channel.platform,
+        parts.length,
+        optionsOn(channel.id),
+        offered(channel)
+      )._tag === "taken" &&
       parts.every((part) =>
         fits(
           fitOn(
-            platform,
-            partTextOn(part, id),
+            channel.platform,
+            partTextOn(part, channel.id),
             part.media.length,
-            optionsOn(id),
-            partRulesFor(platform, optionsOn(id))
+            optionsOn(channel.id),
+            partRulesFor(channel.platform, optionsOn(channel.id))
           )
         )
       )

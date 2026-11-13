@@ -310,7 +310,7 @@ interface FollowUpPartsProps {
   /** Hears a part's text take the focus: where an emoji chosen goes. */
   readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** Whether this server sends the parts after the first on a platform. */
-  readonly offered: (platform: Channel["platform"]) => boolean;
+  readonly offered: (channel: Channel) => boolean;
   /** The options the post has on its channels. */
   readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
@@ -351,7 +351,7 @@ export const FollowUpParts = ({
       channel.platform,
       parts.length,
       options.find(({ channelId }) => channelId === channel.id)?.options,
-      offered(channel.platform)
+      offered(channel)
     );
 
   const refusing = selected.flatMap((channel) => {

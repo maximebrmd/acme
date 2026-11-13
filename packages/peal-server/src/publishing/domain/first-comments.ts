@@ -14,7 +14,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 import type { AccountRestriction } from "./account-restriction.ts";
 import type { ChannelOnPlatform } from "./content-rules.ts";
 import type { ContentViolation } from "./content-violation.ts";
-import { followUpsOn } from "./platform-rules.ts";
+import { followUpsThrough } from "./platform-rules.ts";
 
 // The scopes a comment takes, by platform, from the channel's way in.
 const commentScopes: Readonly<
@@ -42,13 +42,14 @@ const commentScopes: Readonly<
  * names `w_organization_social_feed` for a comment as a page; its Posts
  * page says `w_organization_social` covers comments too, which Peal does
  * not rely on until it is confirmed. None on a platform whose parts are
- * no comments.
+ * no comments, nor on a LinkedIn profile, which takes none: reconnecting
+ * it would change nothing.
  */
 export const commentScopesOn = (
   platform: Platform,
   connection: Option.Option<ChannelConnection>
 ): readonly string[] =>
-  followUpsOn(platform)?.kind === "comment"
+  followUpsThrough(platform, connection)?.kind === "comment"
     ? (commentScopes[platform]?.(connectionOf(platform, connection)) ?? [])
     : [];
 

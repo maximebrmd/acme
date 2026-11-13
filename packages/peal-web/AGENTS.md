@@ -195,7 +195,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   a first comment, as the contract's `rulesFor` says, but only where this
   server sends them: `usePartsOffered` reads the platforms' capabilities
   (`followUps` null where it sends none: comments the inbox does not
-  read, X threads turned off) and `partsTaken` takes it, so a channel is
+  read, X threads turned off; a LinkedIn profile never) and `partsTaken`
+  takes it, so a channel is
   named as taking a post alone there. A part is counted by
   `partRulesFor` (a comment: text alone, its own limits), in the part's
   counters and in `partsFitOn`. The poll (`PostPoll`, `#posts/poll.ts`)
