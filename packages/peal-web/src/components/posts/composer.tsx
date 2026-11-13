@@ -169,6 +169,25 @@ const contentOf = (
 
 type Translate = ReturnType<typeof useTranslations<"Posts.Composer">>;
 
+// Why the post is neither saved nor scheduled while channels have media
+// of their own and no text to go out with; none otherwise.
+const ownMediaBlock = (
+  t: Translate,
+  list: ReturnType<typeof useFormatter>["list"],
+  selected: readonly Channel[],
+  waiting: readonly string[]
+) =>
+  waiting.length === 0
+    ? undefined
+    : t("ownMediaBlocks", {
+        handles: list(
+          selected.flatMap(({ handle, id }) =>
+            waiting.includes(id) ? [handle] : []
+          ),
+          { type: "conjunction" }
+        ),
+      });
+
 const titleOf = (t: Translate, post: Post | undefined) => {
   if (post === undefined) {
     return t("newTitle");
@@ -413,7 +432,12 @@ export const Composer = ({
 
   // Nothing is saved before the server says whether it shortens links, so
   // a new post takes the workspace's default.
-  const optionsTaken = savableWith(linking, optionProblems.length === 0);
+  // A channel's own media with no text to go out with: nothing is saved,
+  // so they are never lost silently, and the actions say why.
+  const blocked = ownMediaBlock(t, format.list, selected, waitingForText);
+
+  const optionsTaken =
+    savableWith(linking, optionProblems.length === 0) && blocked === undefined;
 
   // What a save sends, which the previews check too.
   const draft: PostDraft = {
@@ -1083,6 +1107,7 @@ export const Composer = ({
           busy={busy}
           canSave={canWrite}
           savable={optionsTaken}
+          blocked={blocked}
           canSchedule={schedulable}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
