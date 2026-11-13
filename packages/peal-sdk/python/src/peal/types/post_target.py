@@ -15,6 +15,7 @@ from .unconfirmed_reason import UnconfirmedReason
 
 class PostTarget(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    dropped: typing.Optional[bool] = None
     edited_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="editedAt"), pydantic.Field(alias="editedAt")
     ] = None

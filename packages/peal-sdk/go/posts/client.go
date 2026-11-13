@@ -706,6 +706,35 @@ func (c *Client) Repost(
 	return response.Body, nil
 }
 
+// Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+//
+// Example:
+//
+//	request := &peal.RemoveTargetPostsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    PostID: "postId",
+//	    TargetID: "targetId",
+//	}
+//	_, err := client.Posts.RemoveTarget(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) RemoveTarget(
+	ctx context.Context,
+	request *peal.RemoveTargetPostsRequest,
+	opts ...option.RequestOption,
+) (*peal.Post, error) {
+	response, err := c.WithRawResponse.RemoveTarget(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
 //
 // Example:

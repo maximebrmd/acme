@@ -51,6 +51,7 @@ import social.peal.resources.posts.requests.PostImport;
 import social.peal.resources.posts.requests.PostTags;
 import social.peal.resources.posts.requests.PostToValidate;
 import social.peal.resources.posts.requests.QueuePost;
+import social.peal.resources.posts.requests.RemoveTargetPostsRequest;
 import social.peal.resources.posts.requests.RepostPostsRequest;
 import social.peal.resources.posts.requests.ReschedulePostsRequest;
 import social.peal.resources.posts.requests.SchedulePost;
@@ -1985,6 +1986,121 @@ public class RawPostsClient {
                 .newBuilder()
                 .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
                 .build();
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Post.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 404:
+                        throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 409:
+                        throw new ConflictError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public PealClientHttpResponse<Post> removeTarget(String workspaceId, String postId, String targetId) {
+        return removeTarget(
+                workspaceId,
+                postId,
+                targetId,
+                RemoveTargetPostsRequest.builder().build());
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public PealClientHttpResponse<Post> removeTarget(
+            String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        return removeTarget(
+                workspaceId,
+                postId,
+                targetId,
+                RemoveTargetPostsRequest.builder().build(),
+                requestOptions);
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public PealClientHttpResponse<Post> removeTarget(
+            String workspaceId, String postId, String targetId, RemoveTargetPostsRequest request) {
+        return removeTarget(workspaceId, postId, targetId, request, null);
+    }
+
+    /**
+     * Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is <code>cancelled</code> with <code>dropped</code>. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear <code>post.cancelled</code> naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+     */
+    public PealClientHttpResponse<Post> removeTarget(
+            String workspaceId,
+            String postId,
+            String targetId,
+            RemoveTargetPostsRequest request,
+            RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("posts")
+                .addPathSegment(PathSegments.validate(postId))
+                .addPathSegments("targets")
+                .addPathSegment(PathSegments.validate(targetId));
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "DELETE",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null, null))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
         try (Response response = client.newCall(okhttpRequest).execute()) {
             ResponseBody responseBody = response.body();
             String responseBodyString = responseBody != null ? responseBody.string() : "{}";

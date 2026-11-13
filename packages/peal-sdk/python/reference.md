@@ -3703,7 +3703,98 @@ client.posts.repost(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1169-L1216">confirm</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1169-L1210">remove_target</a>(...) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.remove_target(
+    workspace_id="workspaceId",
+    post_id="postId",
+    target_id="targetId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**target_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1212-L1259">confirm</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3805,7 +3896,7 @@ client.posts.confirm(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1218-L1264">unpublish_target</a>(...) -> LivePostChange</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1261-L1307">unpublish_target</a>(...) -> LivePostChange</code></summary>
 <dl>
 <dd>
 
@@ -3904,7 +3995,7 @@ client.posts.unpublish_target(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1266-L1319">edit_target</a>(...) -> LivePostChange</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1309-L1362">edit_target</a>(...) -> LivePostChange</code></summary>
 <dl>
 <dd>
 
@@ -4020,7 +4111,7 @@ client.posts.edit_target(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1321-L1354">unpublish</a>(...) -> PostUnpublish</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1364-L1397">unpublish</a>(...) -> PostUnpublish</code></summary>
 <dl>
 <dd>
 
@@ -4102,7 +4193,7 @@ client.posts.unpublish(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1356-L1389">changes</a>(...) -> LivePostChanges</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1399-L1432">changes</a>(...) -> LivePostChanges</code></summary>
 <dl>
 <dd>
 
@@ -4184,7 +4275,7 @@ client.posts.changes(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1391-L1424">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1434-L1467">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 

@@ -1232,6 +1232,61 @@ module Peal
         end
       end
 
+      # Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other
+      # channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its
+      # time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with
+      # an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel
+      # the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts
+      # need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval
+      # keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had.
+      # Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval,
+      # leave to ask for posts to go out.
+      #
+      # @param request_options [Hash]
+      # @param params [Hash]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :post_id
+      # @option params [String] :target_id
+      #
+      # @example
+      #   client.posts.remove_target(
+      #     workspace_id: "workspaceId",
+      #     post_id: "postId",
+      #     target_id: "targetId"
+      #   )
+      #
+      # @return [Peal::Types::Post]
+      def remove_target(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "DELETE",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/posts/#{URI.encode_uri_component(params[:post_id].to_s)}/targets/#{URI.encode_uri_component(params[:target_id].to_s)}",
+          request_options: request_options
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Post.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
       # Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you
       # have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs
       # post:schedule.

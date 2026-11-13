@@ -3298,6 +3298,88 @@ client.posts.repost(
 </dl>
 </details>
 
+<details><summary><code>client.posts.<a href="/lib/peal/posts/client.rb">remove_target</a>(workspace_id:, post_id:, target_id:) -> Peal::Types::Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.posts.remove_target(
+  workspace_id: "workspaceId",
+  post_id: "postId",
+  target_id: "targetId"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**target_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Posts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.<a href="/lib/peal/posts/client.rb">confirm</a>(workspace_id:, post_id:, target_id:, request) -> Peal::Types::Post</code></summary>
 <dl>
 <dd>

@@ -1166,6 +1166,49 @@ class PostsClient:
         _response = self._raw_client.repost(workspace_id, post_id, target_id, request_options=request_options)
         return _response.data
 
+    def remove_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.posts.remove_target(
+            workspace_id="workspaceId",
+            post_id="postId",
+            target_id="targetId",
+        )
+        """
+        _response = self._raw_client.remove_target(workspace_id, post_id, target_id, request_options=request_options)
+        return _response.data
+
     def confirm(
         self,
         workspace_id: str,
@@ -2721,6 +2764,59 @@ class AsyncPostsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.repost(workspace_id, post_id, target_id, request_options=request_options)
+        return _response.data
+
+    async def remove_target(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.posts.remove_target(
+                workspace_id="workspaceId",
+                post_id="postId",
+                target_id="targetId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.remove_target(
+            workspace_id, post_id, target_id, request_options=request_options
+        )
         return _response.data
 
     async def confirm(

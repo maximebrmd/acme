@@ -2229,6 +2229,67 @@ await client.Posts.RepostAsync(
 </dl>
 </details>
 
+<details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">RemoveTargetAsync</a>(RemoveTargetPostsRequest { ... }) -> WithRawResponseTask&lt;Post&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`. The post keeps its time and its queue slot. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel already cancelled (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Posts.RemoveTargetAsync(
+    new RemoveTargetPostsRequest
+    {
+        WorkspaceId = "workspaceId",
+        PostId = "postId",
+        TargetId = "targetId",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RemoveTargetPostsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">ConfirmAsync</a>(ConfirmPostsRequest { ... }) -> WithRawResponseTask&lt;Post&gt;</code></summary>
 <dl>
 <dd>
