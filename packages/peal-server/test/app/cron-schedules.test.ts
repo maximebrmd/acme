@@ -122,7 +122,7 @@ describe("the crons' schedules", () => {
         assert.isDefined(cron);
         assert.deepStrictEqual(
           minutesOf(cron),
-          Array.from({ length: 24 }, (_, hour) => hour * 60 + 19)
+          Array.from({ length: 18 }, (_, hour) => (hour + 6) * 60 + 19)
         );
         assert.deepStrictEqual(daysOf(cron), [0]);
       })

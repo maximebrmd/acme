@@ -4,8 +4,8 @@ import { ClusterCron } from "effect/cluster";
 import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
 
 /**
- * Every hour of Monday, at 19 past (UTC): the weekly digest of the week
- * that ended at midnight to everyone who turned it on and is still to
+ * Every hour of Monday from 06:19 to 23:19 UTC: the weekly digest of the
+ * week that ended at midnight to everyone who turned it on and is still to
  * have it, and only to them; with nobody, the run reads one page of
  * nobody. The first run sends them all; the later ones send what the mail
  * transport refused for now, or a run left. A run more than 50 minutes
@@ -13,7 +13,7 @@ import { SendWeeklyDigests } from "#notifications/application/send-weekly-digest
  * as an error.
  */
 export const WeeklyDigestCron = ClusterCron.make({
-  cron: Cron.parseUnsafe("19 * * * 1", "UTC"),
+  cron: Cron.parseUnsafe("19 6-23 * * 1", "UTC"),
   execute: Effect.gen(function* weeklyDigest() {
     const at = yield* ClusterCron.CurrentScheduledTime;
 
