@@ -2,8 +2,10 @@
 // plan, and coming back within it by choosing what stays. On ports in
 // memory: the channels and members are lists, and what was removed a log.
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref, Schema } from "effect";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceHoldings } from "#billing/application/ports/workspace-holdings.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -13,8 +15,13 @@ import { ReductionRefused } from "#billing/domain/reduction-refused.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { UserId } from "#shared/domain/ids.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
-import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
+import {
+  aloneAccountOf,
+  everyWorkspaceOn,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -24,6 +31,10 @@ const workspaceId = WorkspaceIdSchema.make(
 const userId = UserIdSchema.make("6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c");
 
 const staffId = UserIdSchema.make("7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d");
+
+const payerId = UserIdSchema.make("8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d1e");
+
+const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
 
 const inPerson: Actor["subject"] = {
   _tag: "user",
@@ -43,6 +54,10 @@ const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 interface Held {
   readonly channels: readonly string[];
   readonly members: readonly string[];
+  /** The channels of the account's other workspaces, counted with these. */
+  readonly sharedChannels?: number;
+  /** The owner who pays for the workspace, if not nobody. */
+  readonly payer?: UserId;
 }
 
 // The use cases over a workspace on `plan` (none: a server that does not
@@ -62,9 +77,9 @@ const run = <A, E>(
         heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(state).pipe(
-            Effect.map(({ channels, members }) => ({
+            Effect.map(({ channels, members, sharedChannels = 0 }) => ({
               assistantRequests: { resetsAt, used: 0 },
-              channels: channels.length,
+              channels: channels.length + sharedChannels,
               mediaStorage: 0,
               members: members.length,
               scheduledPosts: { resetsAt, used: 7 },
@@ -129,7 +144,21 @@ const run = <A, E>(
               Layer.succeed(
                 BillingMode,
                 BillingMode.of({ enabled: Option.isSome(plan) })
-              )
+              ),
+              Layer.mock(BillingAccounts, {
+                of: (id) =>
+                  Effect.succeed(
+                    aloneAccountOf(id, Option.fromUndefinedOr(held.payer))
+                  ),
+              }),
+              Layer.mock(AccountPayers, {
+                ownersOf: () =>
+                  Ref.get(state).pipe(
+                    Effect.map(({ members }) =>
+                      members.flatMap((id) => Option.toArray(decodeUserId(id)))
+                    )
+                  ),
+              })
             )
           )
         )
@@ -333,6 +362,80 @@ describe("a workspace over its plan", () => {
       for (const { log } of Object.values(outcomes)) {
         assert.deepStrictEqual(log, []);
       }
+    })
+  );
+
+  it.effect(
+    "counts a choice across its billing account, or lets it disconnect everything here",
+    () =>
+      Effect.gen(function* acrossTheAccount() {
+        // Two of the free plan's three channels are here, two in another
+        // workspace of the account.
+        const shared: Held = {
+          channels: ["c1", "c2"],
+          members: [userId],
+          sharedChannels: 2,
+        };
+
+        const kept = (channels: readonly string[]) =>
+          run(on("free"), shared, reduce({ channels, members: [userId] }));
+
+        const refused = yield* run(
+          on("free"),
+          shared,
+          reduce({ channels: ["c1", "c2"], members: [userId] }).pipe(
+            Effect.flip
+          )
+        );
+
+        assert.deepStrictEqual(
+          refused.result,
+          new ReductionRefused({ reason: "tooManyChannels" })
+        );
+        assert.deepStrictEqual(refused.log, []);
+
+        const within = yield* kept(["c1"]);
+
+        assert.deepStrictEqual(within.log, ["disconnect:c2"]);
+        assert.isFalse(within.result.standing.mustReduce);
+
+        const nothingHere = yield* kept([]);
+
+        assert.deepStrictEqual(nothingHere.log, [
+          "disconnect:c1",
+          "disconnect:c2",
+        ]);
+      })
+  );
+
+  it.effect("keeps the owner who pays for the workspace", () =>
+    Effect.gen(function* payerStays() {
+      const paidFor: Held = {
+        ...afterTrial,
+        members: [userId, "m2", payerId],
+      };
+
+      const refused = yield* run(
+        on("free"),
+        { ...paidFor, payer: payerId },
+        reduce({ channels: ["c1", "c2", "c3"], members: [userId, "m2"] }).pipe(
+          Effect.flip
+        )
+      );
+
+      assert.deepStrictEqual(
+        refused.result,
+        new ReductionRefused({ reason: "payerRequired" })
+      );
+      assert.deepStrictEqual(refused.log, []);
+
+      const kept = yield* run(
+        on("free"),
+        { ...paidFor, payer: payerId },
+        reduce({ channels: ["c1", "c2", "c3"], members: [userId, payerId] })
+      );
+
+      assert.isFalse(kept.result.standing.mustReduce);
     })
   );
 

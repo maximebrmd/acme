@@ -14,6 +14,30 @@ public class GetTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "account": {
+                "billingWorkspaceId": "billingWorkspaceId",
+                "billingWorkspaceName": "billingWorkspaceName",
+                "id": "id",
+                "otherWorkspaces": [
+                  {
+                    "name": "name",
+                    "workspaceId": "workspaceId"
+                  },
+                  {
+                    "name": "name",
+                    "workspaceId": "workspaceId"
+                  }
+                ],
+                "partner": true,
+                "payer": true,
+                "transfer": {
+                  "expiresAt": "expiresAt",
+                  "offeredAt": "offeredAt",
+                  "offeredBy": "offeredBy",
+                  "toUserId": "toUserId"
+                },
+                "workspaces": 1
+              },
               "allowances": {
                 "assistantRequests": 1000000,
                 "channels": 1000000,
@@ -112,6 +136,26 @@ public class GetTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "account": {
+                "billingWorkspaceId": "billingWorkspaceId",
+                "billingWorkspaceName": "billingWorkspaceName",
+                "id": "id",
+                "otherWorkspaces": [
+                  {
+                    "name": "name",
+                    "workspaceId": "workspaceId"
+                  }
+                ],
+                "partner": true,
+                "payer": true,
+                "transfer": {
+                  "expiresAt": "expiresAt",
+                  "offeredAt": "offeredAt",
+                  "offeredBy": "offeredBy",
+                  "toUserId": "toUserId"
+                },
+                "workspaces": 1
+              },
               "allowances": {
                 "assistantRequests": 1000000,
                 "channels": 1000000,

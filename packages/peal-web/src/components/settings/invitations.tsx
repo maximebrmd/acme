@@ -160,10 +160,8 @@ const CopyInvitationLink = ({
   const handleCopy = () => {
     void navigator.clipboard
       .writeText(invitationLink(window.location.origin, locale, invitationId))
-      .then(
-        () => toast.success(t("linkCopied", { email })),
-        () => toast.error(t("copyFailed"))
-      );
+      .then(() => toast.success(t("linkCopied", { email })))
+      .catch(() => toast.error(t("copyFailed")));
   };
 
   return (

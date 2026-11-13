@@ -374,6 +374,37 @@ const ExportedActivitySchema = Schema.Struct({
 // a contract or withdraw from it, kept as the proof of each contract: the
 // workspace is null once it is erased.
 const ExportedContractsSchema = Schema.Struct({
+  // The billing accounts the user pays for, with the workspaces each
+  // holds and the one that bills it, and whether staff required them to
+  // add a payment method. Older servers leave them out.
+  billingAccounts: Schema.optionalKey(
+    Schema.Struct({
+      accounts: Schema.Array(
+        Schema.Struct({
+          billingWorkspaceId: Schema.String,
+          createdAt: instant,
+          // False once staff required a payment method: no free tier.
+          freeTier: Schema.Boolean,
+          id: Schema.String,
+          // A workspace a plan subscription of its own keeps alone.
+          standalone: Schema.Boolean,
+          workspaceIds: Schema.Array(Schema.String),
+        })
+      ),
+      paymentMethodRequired: Schema.Boolean,
+      // The offers to hand a workspace over that the user made or was
+      // made, while they are open.
+      transferOffers: Schema.Array(
+        Schema.Struct({
+          expiresAt: instant,
+          offeredAt: instant,
+          offeredBy: Schema.String,
+          toUserId: Schema.String,
+          workspaceId: Schema.String,
+        })
+      ),
+    })
+  ),
   orders: Schema.Array(
     Schema.Struct({
       // The version of the words they agreed to when ordering.

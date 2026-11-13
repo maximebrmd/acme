@@ -127,11 +127,13 @@ export const unpublish = Command.make(
       yes: input.yes,
     });
 
-    if (Option.isSome(input.wait) && Option.isNone(input.channel)) {
-      yield* new Refused({
-        reason: "--wait goes with --channel: name the channel to wait for.",
-      });
-    }
+    yield* Option.isSome(input.wait) && Option.isNone(input.channel)
+      ? Effect.fail(
+          new Refused({
+            reason: "--wait goes with --channel: name the channel to wait for.",
+          })
+        )
+      : Effect.void;
 
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 

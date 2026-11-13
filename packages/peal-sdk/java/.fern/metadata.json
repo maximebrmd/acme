@@ -1,10 +1,10 @@
 {
-  "cliVersion": "5.201.0",
+  "cliVersion": "5.210.3",
   "generatorName": "fernapi/fern-java-sdk",
   "generatorVersion": "4.37.11",
   "generatorConfig": {
     "client-class-name": "PealClient",
     "package-prefix": "social.peal"
   },
-  "requestedVersion": "0.3.0"
+  "requestedVersion": "0.3.1"
 }

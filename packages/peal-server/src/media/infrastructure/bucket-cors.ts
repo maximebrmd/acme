@@ -118,15 +118,17 @@ export const applyUploadRule = Effect.fn("BucketCors.applyUploadRule")(
     const { bucket } = settings;
 
     const existing = yield* Effect.tryPromise({
-      catch: (cause) => cause,
+      catch: failed("read the bucket's CORS rules"),
       try: async (signal) =>
         await client.send(new GetBucketCorsCommand({ Bucket: bucket }), {
           abortSignal: signal,
         }),
     }).pipe(
       Effect.map((found) => found.CORSRules ?? []),
-      Effect.catchIf(noConfiguration, () => Effect.succeed([])),
-      Effect.mapError(failed("read the bucket's CORS rules"))
+      Effect.catchIf(
+        (error) => noConfiguration(error.cause),
+        () => Effect.succeed([])
+      )
     );
 
     const { changed, rules } = withUploadRule(existing, rule);

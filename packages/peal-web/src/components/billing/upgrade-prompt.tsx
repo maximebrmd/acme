@@ -65,10 +65,7 @@ export const UpgradePromptProvider = ({
     () => (reason, workspaceId) => {
       setAsked({
         reason,
-        workspaceId:
-          reason.limit === "freeWorkspace"
-            ? reason.workspaceId
-            : (workspaceId ?? current),
+        workspaceId: workspaceId ?? current,
       });
     },
     [current]

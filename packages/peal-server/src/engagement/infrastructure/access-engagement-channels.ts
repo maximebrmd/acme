@@ -17,7 +17,11 @@ export const AccessEngagementChannels = Layer.effect(
           .pipe(Effect.map(Option.contains(workspaceId))),
       describe: (channelId) =>
         access.account(channelId).pipe(
-          Effect.map(({ platform, scopes }) => ({ platform, scopes })),
+          Effect.map(({ connection, platform, scopes }) => ({
+            connection,
+            platform,
+            scopes,
+          })),
           Effect.catchTags({
             ChannelUnusable: ({ reason }) =>
               Effect.fail(

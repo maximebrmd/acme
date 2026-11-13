@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { BillingAccountAudit } from "#staff/application/billing-account-audit.ts";
 import { ContractRequestAudit } from "#staff/application/contract-request-audit.ts";
 import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { LegalDisclosureAudit } from "#staff/application/legal-disclosure-audit.ts";
@@ -74,6 +75,15 @@ export const LegalDisclosureAuditLive = LegalDisclosureAudit.layer.pipe(
  * and Ids.
  */
 export const ContractRequestAuditLive = ContractRequestAudit.layer.pipe(
+  Layer.provide(DrizzleAuditLog)
+);
+
+/**
+ * The audit log's record of each billing account staff merge, or require a
+ * payment method of, for the billing context. Needs the database (Drizzle)
+ * and Ids.
+ */
+export const BillingAccountAuditLive = BillingAccountAudit.layer.pipe(
   Layer.provide(DrizzleAuditLog)
 );
 

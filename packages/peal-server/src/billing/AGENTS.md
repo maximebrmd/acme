@@ -23,8 +23,8 @@
   `payAsYouGo` is per-account pricing; nothing records or offers it yet
   (`allowancesOf` holds it to the free plan, and `largerPlan` ranks it
   below every legacy plan so it never takes a legacy plan's place; Better
-  Auth's plans, the price check and the contract's `OrderablePlan` leave
-  it out). The change that wires it computes its allowances from the rate
+  Auth's plans and the contract's `OrderablePlan` leave it out; Stripe
+  holds its catalogue, which the start check reads, below). The change that wires it computes its allowances from the rate
   card and ranks it again, before any Stripe price maps to it, with a test
   of a workspace holding a legacy plan and `payAsYouGo` together; and
   `planToPay` must not offer it a price of 0. The pricing functions refuse
@@ -51,11 +51,62 @@
   100 and 1,000 accounts (`accountsMonthly`) with those of the
   per-account schedulers Peal is measured against. The comparison lives
   outside the repository: never name another product here.
-- Stripe prices are tax-exclusive EUR prices found by lookup key,
-  `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
-  `peal`), never by id: Better Auth's plans carry `lookupKey` and
-  `annualDiscountLookupKey`, and `planOf` reads the plan and interval from
-  the event's `price.lookup_key`. Their amounts must equal `prices.ts`.
+- Stripe prices are found by lookup key under `STRIPE_LOOKUP_KEY_PREFIX`
+  (`peal`), never by id. The legacy plans' are tax-exclusive EUR prices,
+  `<prefix>_<plan>_monthly` and `_yearly`: Better Auth's plans carry
+  `lookupKey` and `annualDiscountLookupKey`, and `planOf` reads the plan
+  and interval from the event's `price.lookup_key`. Their amounts must
+  equal `prices.ts`, and operators make them by hand.
+- Per-account pricing's catalogue (`domain/catalogue.ts`, `catalogueOf`)
+  is derived from the rate card, never written: one line per invoice line
+  (`CatalogueLine`: `accounts`, then each meter), each a Stripe meter, a
+  product (`metadata.peal` its lookup key, tax code `catalogueTaxCode`) and
+  a metered, monthly, tax-exclusive price in `usd` only (no
+  `currency_options`: Stripe converts at checkout), under
+  `StripeSettings.catalogue` (`catalogueKeysOf`: `<prefix>_accounts`,
+  `<prefix>_outbound_messages`…), which is also its meter's event name.
+  The ladder is `stripeTiersOf` (graduated, account-days), a meter's price
+  `stripeUnitAmountOf` (cents a unit, a decimal of 12 places at most).
+  Meters sum the events' `value` for the customer in `stripe_customer_id`
+  (`meterEvents`): every meter event the server sends must carry those
+  keys. A new line is a new
+  `CatalogueLine` and a new key, in the e2e stand-in too.
+- Only the operator makes it: `nx run peal-server:stripe-catalogue`
+  (`scripts/stripe-catalogue.ts`, shipped in the server image so it runs
+  where the key is; logic in `infrastructure/stripe-catalogue.ts`,
+  `runCatalogue`, over a Stripe client). It reads meters, products and
+  prices (tiers only with `expand: ["data.tiers"]`, every page), plans
+  (`planCatalogue`, pure), then creates meters and products before the
+  prices that read them. A price that bills otherwise (amounts, currency,
+  interval and its count, usage type, meter, tax behaviour, transform) is
+  replaced by a new one with `transfer_lookup_key`, the old left active for
+  the subscriptions on it. A meter that counts otherwise (aggregation,
+  mappings, or pre-aggregated by `event_time_window`, which keeps only a
+  window's last event) or a price on an archived product blocks the run
+  before any change: Stripe cannot change a meter, nor checkout use an
+  archived product. A product gets its name and `catalogueTaxCode` when it
+  is made, never after: one the operator changed is a note (`--check`
+  passes). `--check` changes nothing and fails on a difference. It prints names and
+  ids, and of a refusal Stripe's error type and code only, never its
+  message, which may quote the key. The server never creates Stripe
+  objects. Tests drive it against `#test/billing/fakes/stripe-account.ts`,
+  a stateful stand-in that answers as Stripe does, and against
+  stripe-mock, which checks each request against Stripe's API.
+- Stripe's docs do not say whether a deactivated meter keeps its event
+  name: the blocked message gives both ways out (deactivate and run again,
+  or a new `STRIPE_LOOKUP_KEY_PREFIX`), and the sandbox runbook settles
+  it. A meter's event name is 100 characters at most, so the prefix is 81
+  at most (`_assistant_requests` is the longest suffix).
+- Moving a lookup key is one-way for the release before: after a release's
+  `stripe-catalogue` replaced a price, the previous release no longer finds
+  its own under that key, and a rollback runs the previous release's
+  command to move it back (a third price). The self-hosting docs and the
+  infrastructure README ("Stripe catalogue") say so; keep them true when
+  `catalogueAtStart` turns to `stop`.
+- Every line's product has tax code `txcd_10103001` (software as a
+  service, business use). For EU VAT it computes as the personal-use code
+  does; the split matters for US sales tax only, an accountant's question
+  before Peal registers there.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
@@ -105,8 +156,8 @@
   built with the group: handlers take services when the group is built,
   never per request), the assistant's `AssistantQuotaExceeded` carries the
   same plan fields (null on a server that does not bill), Better Auth's
-  `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
-  (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
+  `MEMBER_LIMIT_REACHED` body too (`memberUpgrade` hook; the web app
+  still reads the `FREE_WORKSPACE_LIMIT_REACHED` older servers sent), MCP tools refuse with
   `planRefusal` (`app/mcp/refusals.ts`, after what the call left undone:
   inviting, `import_media`, and every tool that schedules) and the CLI
   explains with `planLimitReason`. Change them together. `securityTest` provides
@@ -143,17 +194,115 @@
   The trial is one per email address too: `trialOffered` (the billing page
   and `PlaceOrder`) checks the pseudonym of the member's address
   (`MemberAddresses`), as checkout does with the session's.
-- A server that bills checks Stripe's prices when it starts
+- A server that bills checks Stripe when it starts
   (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
-  against stripe-mock, whose one price is none of Peal's): each lookup key
-  must name an active price at the amount, currency and interval of
-  `prices.ts`, tax-exclusive, or the server stops listing what differs
-  (`StripePricesMismatch`). Stripe not answering is a warning, and the
-  server starts.
-- An account owns one workspace on the free plan at most: Better Auth's
-  `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
-  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
-  or in its trial, which ends on it.
+  against stripe-mock, whose one price is none of Peal's): the catalogue
+  (`catalogueProblems`: each line's active meter, not pre-aggregated, and
+  under its key an active price in its currency, each month, metered on
+  that meter, tax-exclusive, not transformed, at the rate card's tiers or
+  unit amount, decimals compared by value), and each legacy lookup key an
+  active price at the amount, currency and interval of `prices.ts`,
+  tax-exclusive. A legacy difference stops the server listing it
+  (`StripePricesMismatch`). The catalogue follows the switch
+  `catalogueAtStart` (`domain/catalogue.ts`): `warn` while nothing sells
+  per-account pricing, so an upgrade or a rollback never stops a server
+  for it (a warning listing what differs and `catalogueCommand`, the
+  gauge `peal.billing.stripe_catalogue.problems` and the alert
+  `peal-stripe-catalogue`; meters Stripe refuses or garbles warn too);
+  the change that sells it sets `stop`, before checkout takes the
+  catalogue, and tests it with `stripePricesChecked("stop")`, already
+  covered. Stripe not answering is a warning, and the server starts. A
+  release on Peal's servers runs `stripe-catalogue --check` with the new
+  image before it replaces the server, and reports a difference without
+  failing (`peal_release`). The legacy prices are
+  checked whatever the subscriptions while the legacy plans are the ones
+  sold: the change that stops selling them checks them only while a legacy
+  subscription entitles (read from `billing.subscriptions`), so a fresh
+  Stripe account needs none.
+- Before per-account pricing is sold, the owner runs this in the
+  sandbox's Stripe account (test mode, its key in the sandbox vault,
+  never copied), never in tests: `stripe-catalogue`, again (no change),
+  `--check`; a meter made by hand with `count`, the command (blocked),
+  that meter deactivated, the command again (does Stripe give the new
+  meter the deactivated one's event name?); with a test clock, a
+  `payAsYouGo` checkout paid with a test
+  card (a card asked although nothing is due, the period ending on the
+  first of next month at 00:00 UTC, six items); 300 account-days and
+  12,000 billable messages reported, the clock past the first and the
+  finalisation hour (invoice: $40.00 and $1.20, plus tax for a French
+  address); an event stamped 23:59 on the last day sent at 00:11 on the
+  first (which invoice takes it); cancel, withdraw and delete on three
+  subscriptions (their final invoices); half-unit rounding (50 billable
+  messages, 5 X units, a tier's thirds: is half a cent rounded up, as
+  `meterCharge` and `accountsCharge` assume?); dollars a settlement
+  currency of the account, then Adaptive Pricing on, a metered-only
+  checkout for `test+location_FR@example.com` (euros offered, the
+  presentment currency on the subscription event, the first invoice issued
+  in dollars and paid in euros) and `test+location_US@example.com`
+  (dollars).
+- Every workspace belongs to one billing account (`BillingAccounts`,
+  `billing.accounts`, `account_workspaces`, `account_transfers`), on a
+  server that bills or not: its creator's, made with their first
+  workspace (`afterCreateOrganization`, the `workspaceCreated` hook), one
+  per person (unique `payer_user_id` but standalone ones); a workspace
+  made before is resolved the first time it is read (`of`, the owners read
+  again under the payer's hold), or by the daily snapshot's sweep
+  (`sweepIn` per batch, one workspace at a time, a failure logged; then
+  `repair`: accounts whose billing workspace is gone, and lapsed offers),
+  to its oldest owner's account, the oldest workspace billing. The partner
+  rule comes first: a partner's home and the workspaces it owns are the
+  partner's account, billed on the home. A workspace a plan subscription
+  of its own entitles is `standalone` until it ends (`subscriptionChanged`).
+- The payer is always one of the workspace's owners. On a server that
+  bills they stay one until they hand it over (`PAYER_MUST_STAY` on Better
+  Auth's leave, remove and role routes, `payerRequired` in a reduction);
+  anywhere, a workspace whose payer left, was removed or stopped being an
+  owner moves to its oldest owner's account (the `ownersChanged` hook
+  after those routes, and `of`, `accountsIn` and the sweep for rows
+  already wrong), unless staff merged it there (`account_workspaces.merged`,
+  which only `BillingAccountDesk.detach` clears).
+- A server that does not bill reads no account to schedule, publish, tell
+  the standing, show the billing page or `get_billing`, or report usage:
+  `AccountChannelAllowanceLive` and `AccountPlanHoldersLive` (the partner
+  rule alone there) read one only when `BillingMode` bills, and
+  `…/billing` and `…/billing/standing` leave `account` out
+  (`accountShown`; optional for older servers too). Where it bills, the
+  account's workspaces share its billing workspace's plan (`PlanHolders`,
+  `AccountPlanHoldersLive`) and count their channels together, under
+  `holdAccount` where the partner's hold is taken. Views read `poolsIn`,
+  holding nothing. Holds go payer, then accounts by id; closing an account
+  holds the payer first (`ContextRecords.holdUser`).
+- Only the billing workspace orders (`BilledElsewhere`); a checkout
+  refuses an order placed before the workspace stopped billing, and a
+  plan's refusal links the billing workspace's page. `GET …/billing`
+  answers `account` (`AccountViews`: the billing workspace named only to
+  its members, an open offer only to its two people, and a partner's
+  account counting only the workspaces the reader belongs to). Handing a
+  workspace over is `TransferWorkspace` (`billingActions`): offered to
+  another owner, taken in person within 7 days into their account,
+  refused into a plan without room or for a billing workspace Stripe may
+  still bill. A reduction is taken when it brings the account within its
+  plan or disconnects every channel of the workspace.
+- Staff's `BillingAccountDesk` (`billingAccountsDesk` under `/api/admin`,
+  the console's `admin/billing-accounts`) lists platform accounts
+  connected under two free accounts or more (the channels context's
+  `SharedPlatformAccounts`, through `AccountChannels`, kept nowhere),
+  merges one account into another (`mergeBillingAccounts`), detaches a
+  workspace back to who paid for it before the merge while they own it
+  (`merged_from_payer`), else to its oldest owner's account
+  (`detachBillingWorkspace`, the way back from a merge; the staff view
+  lists `mergedWorkspaceIds`, the merge's event the workspaces moved). A
+  merged workspace never bills an account: one left with only those
+  goes) and requires a payment method
+  (`requirePaymentMethod`, `restoreFreeTier`), each audited first
+  (`BillingAccountAudit`), ids only. A requirement is the account's
+  `free_tier` and the person's (`billing.payment_requirements`, read
+  whenever an account is made for them, carried by a merge, kept by the
+  closed address's pseudonym for `requirementMemory`, 2 years, then
+  purged by `PurgeContractRecords`; the same `Pseudonyms.ofEmail` value
+  a trial and a ban keep, on purpose: one anti-abuse purpose, and the
+  export reads the requirement by it too). The data is the registry's
+  `billingAccounts` category, and the export's `contracts.billingAccounts`.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
   X, where a post with a link costs about 13 times more), and those with a

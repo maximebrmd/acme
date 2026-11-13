@@ -55,6 +55,7 @@ const BillingPage = async ({
         canManage={workspace.permissions.includes("billing:manage")}
         checkedOut={checkout === "done"}
         termsUrl={termsUrl}
+        userId={me.value.user.id}
       />
     </div>
   );

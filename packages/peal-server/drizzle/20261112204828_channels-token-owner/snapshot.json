@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b91387d5-442d-41e3-b4c4-952faec70846",
+  "prevIds": [
+    "03e73592-0b1f-4335-8e88-b821ea219d53"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "channels",
+        "channels",
+        "token_owner"
+      ],
+      "writes": [
+        "s|col|channels.channels.token_owner",
+        "n|col|channels.channels.token_owner",
+        "e|col|channels.channels.token_owner"
+      ],
+      "reads": [
+        "n|tbl|channels.channels",
+        "n|sch|channels"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "channels",
+        "table": "channels",
+        "name": "token_owner",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

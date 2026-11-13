@@ -11,13 +11,17 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { AccountMail } from "#workspace/application/account-mail.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
-import { PartnerOwnershipLive } from "#workspace/container.ts";
+import {
+  PartnerOwnershipLive,
+  WorkspaceOwnersLive,
+} from "#workspace/container.ts";
 import {
   BetterAuth,
   BetterAuthLive,
@@ -96,7 +100,11 @@ const authWith = (env: Record<string, string>) =>
       Layer.mergeAll(
         BillingLive.pipe(
           Layer.provide(
-            Layer.mergeAll(StripeCheckoutsLive, PartnerOwnershipLive)
+            Layer.mergeAll(
+              StripeCheckoutsLive,
+              PartnerOwnershipLive,
+              WorkspaceOwnersLive
+            )
           ),
           // Signing in records no subscription.
           Layer.provide(
@@ -104,7 +112,8 @@ const authWith = (env: Record<string, string>) =>
               TransactionRunner,
               TransactionRunner.of({ transaction: (effect) => effect })
             )
-          )
+          ),
+          Layer.provide(IdsLive)
         ),
         MigrationsLive
       ).pipe(Layer.provide(DatabaseLive))

@@ -12,6 +12,7 @@ import { ConnectLinks } from "#channels/application/connect-links.ts";
 import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
@@ -28,7 +29,7 @@ import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-dele
 import { engagementChannelEvents } from "#channels/infrastructure/engagement-channel-events.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
 import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
-import { SharedChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
@@ -95,7 +96,7 @@ const AdaptersLive = Layer.mergeAll(
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
   ChannelEventsLive,
-  SharedChannelAllowanceLive,
+  AccountChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
 
@@ -115,7 +116,9 @@ const UseCasesLive = Layer.mergeAll(
   DeletePlatformUserData.layer,
   DeauthorizePlatformUser.layer,
   RefreshChannelTokens.layer,
-  WarnChannelsNeedingReconnect.layer
+  WarnChannelsNeedingReconnect.layer,
+  // Where the inbox no longer reads LinkedIn, PEAL_INBOX_PLATFORMS says.
+  ForgetTokenOwners.layer.pipe(Layer.provide(InboxPlatformsLive))
 );
 
 /**
@@ -138,6 +141,12 @@ export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 export const ChannelOverviewLive = ChannelOverview.layer.pipe(
   Layer.provide(DrizzleChannelOverviewReads)
 );
+
+/**
+ * The platform accounts connected in several workspaces, for the staff
+ * tools of the billing context. Needs the database (Drizzle).
+ */
+export { DrizzleSharedPlatformAccounts as SharedPlatformAccountsLive } from "#channels/infrastructure/drizzle-shared-platform-accounts.ts";
 
 // The channels endpoints. They need the use cases ChannelsLive provides, and
 // the Authentication and WorkspaceAccess middleware of the workspace context,
@@ -169,7 +178,10 @@ export { DataDeletionHandlers as DataDeletionApiLive } from "#channels/api/data-
  */
 export { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 
-/** The token refresh sweep and the daily reconnect warnings. */
+/**
+ * The token refresh sweep, the daily reconnect warnings, connect links'
+ * retention and the daily forgetting of LinkedIn pages' token owners.
+ */
 export { ChannelsCronsLive } from "#channels/infrastructure/crons.ts";
 
 /**

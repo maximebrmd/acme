@@ -22,6 +22,7 @@ import { ContractReferences } from "#billing/application/ports/contract-referenc
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { Orders } from "#billing/application/ports/orders.ts";
+import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
@@ -48,7 +49,12 @@ import { Ids } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { PlainPseudonymsTest, subscriptionOf } from "#test/billing/support.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
+import {
+  AloneInAccountsTest,
+  PlainPseudonymsTest,
+  subscriptionOf,
+} from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -332,6 +338,19 @@ const PortsInMemory = Layer.mergeAll(
   )
 );
 
+// The workspace that bills each workspace's account: its own, unless a
+// test hands it to another.
+const billedBy = Ref.makeUnsafe<Option.Option<WorkspaceId>>(Option.none());
+
+const BilledByTest = Layer.succeed(
+  PlanHolders,
+  PlanHolders.of({
+    holderOf: (id) =>
+      Ref.get(billedBy).pipe(Effect.map(Option.getOrElse(() => id))),
+    holdersOf: (ids) => Effect.succeed(new Map(ids.map((id) => [id, id]))),
+  })
+);
+
 const ActionsTest = Layer.mergeAll(
   BillingOverview.layer.pipe(Layer.provide(WorkspaceEntitlements.layer)),
   PlaceOrder.layer,
@@ -359,6 +378,8 @@ const ActionsTest = Layer.mergeAll(
   Layer.provide(UsageTest),
   Layer.provide(AddressesTest),
   Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
+  Layer.provide(AloneInAccountsTest),
+  Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
 );
 
@@ -598,6 +619,27 @@ layer(ActionsTest)("billing's actions", (it) => {
         const twice = yield* checkouts.take(claim).pipe(Effect.flip);
 
         assert.strictEqual(twice._tag, "OrderRequired");
+
+        // Ordered while the workspace billed its account, taken once it no
+        // longer does: refused.
+        const moved = yield* orders.place(actorAs(), {
+          interval: "year",
+          plan: "business",
+          trial: false,
+        });
+
+        yield* Ref.set(
+          billedBy,
+          Option.some(
+            WorkspaceIdSchema.make("00000000-0000-4000-8000-0000000b111e")
+          )
+        );
+
+        const elsewhere = yield* checkouts
+          .take({ ...claim, orderId: moved.id })
+          .pipe(Effect.flip, Effect.ensuring(Ref.set(billedBy, Option.none())));
+
+        assert.strictEqual(elsewhere._tag, "OrderRequired");
 
         const late = yield* orders.place(actorAs(), {
           interval: "month",

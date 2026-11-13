@@ -548,9 +548,13 @@ export const doctor = Command.make(
       ({ status }) => status === "failing"
     );
 
-    if (failed.length > 0) {
-      yield* new DoctorFailed({ failed: failed.map(({ name }) => name) });
-    }
+    yield* failed.length > 0
+      ? Effect.fail(
+          new DoctorFailed({
+            failed: failed.map(({ name }) => name),
+          })
+        )
+      : Effect.void;
   })
 ).pipe(
   Command.withShortDescription(

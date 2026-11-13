@@ -8,13 +8,15 @@ import { authSecretConfig } from "./auth-secret.ts";
 
 const encoder = new TextEncoder();
 
-// Apart from anything else the secret keys.
-const purpose = "peal-pseudonym-v1:email:";
+// Apart from anything else the secret keys, and from each other.
+const emailPurpose = "peal-pseudonym-v1:email:";
+const memberPurpose = "peal-pseudonym-v1:platform-member:";
 
 /**
  * Pseudonyms as the HMAC-SHA256 of the lowercased, trimmed email address,
- * keyed with the server's secret, in hexadecimal. Changing the secret
- * changes every pseudonym, so the records kept forget whom they were about.
+ * or of a platform's member's identifier as the platform gives it, keyed
+ * with the server's secret, in hexadecimal. Changing the secret changes
+ * every pseudonym, so the records kept forget whom they were about.
  */
 export const KeyedPseudonymsLive = Layer.effect(
   Pseudonyms,
@@ -27,16 +29,25 @@ export const KeyedPseudonymsLive = Layer.effect(
       encoder.encode(Redacted.value(secret))
     ).pipe(Effect.orDie);
 
+    const tagOf = (text: string, span: string) =>
+      mac.sign(key, encoder.encode(text)).pipe(
+        Effect.map((tag) => Hex.encode(tag)),
+        // A tag that cannot be computed is a bug.
+        Effect.orDie,
+        Effect.withSpan(span)
+      );
+
     return Pseudonyms.of({
       ofEmail: (email) =>
-        mac
-          .sign(key, encoder.encode(`${purpose}${email.trim().toLowerCase()}`))
-          .pipe(
-            Effect.map((tag) => Hex.encode(tag)),
-            // A tag that cannot be computed is a bug.
-            Effect.orDie,
-            Effect.withSpan("Pseudonyms.ofEmail")
-          ),
+        tagOf(
+          `${emailPurpose}${email.trim().toLowerCase()}`,
+          "Pseudonyms.ofEmail"
+        ),
+      ofPlatformMember: (platform, memberId) =>
+        tagOf(
+          `${memberPurpose}${platform}:${memberId}`,
+          "Pseudonyms.ofPlatformMember"
+        ),
     });
   })
 ).pipe(

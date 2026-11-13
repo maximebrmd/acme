@@ -113,6 +113,10 @@ the backup passphrase, which you kept outside the server.
 
 5. Run `release.yml` again. It sets the restored database's password to the
    new one, then starts the stack.
+   On a server that bills, when its play reports that Stripe's catalogue
+   differs from this release's, as after a later release moved a price's
+   lookup key, give Stripe this release's catalogue (`README.md`, "Stripe
+   catalogue").
 6. Take a full backup (step 8).
 
 What the new secrets cost: everyone signs in again, the command line and MCP

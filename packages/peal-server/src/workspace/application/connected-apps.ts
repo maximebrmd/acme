@@ -62,9 +62,9 @@ export class ConnectedApps extends Context.Service<
           yield* DateTime.now
         );
 
-        if (!revoked) {
-          yield* new ConnectedAppNotFound({ clientId });
-        }
+        yield* revoked
+          ? Effect.void
+          : Effect.fail(new ConnectedAppNotFound({ clientId }));
       });
 
       return ConnectedApps.of({ list, revoke });

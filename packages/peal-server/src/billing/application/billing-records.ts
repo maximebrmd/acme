@@ -12,8 +12,12 @@ import type {
   BillingRecord,
   ContractsRecord,
 } from "#shared/application/personal-data.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
+import { AccountPayers } from "./ports/account-payers.ts";
+import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { ContractRecords } from "./ports/contract-records.ts";
@@ -155,6 +159,11 @@ export class BillingRecords extends Context.Service<
      * they made, the trial they started, which stays the workspace's, and
      * by `pseudonym`, their email address's, for `trialMemory`.
      */
+    /**
+     * Holds back whoever resolves or changes what the user pays for, to the
+     * end of the transaction: the closure takes it first.
+     */
+    readonly holdUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     readonly forgetUser: (
       userId: UserId,
       pseudonym: string
@@ -172,13 +181,55 @@ export class BillingRecords extends Context.Service<
       const contracts = yield* ContractRecords;
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
+      const accounts = yield* BillingAccounts;
+      const accountStore = yield* BillingAccountStore;
+      const payers = yield* AccountPayers;
+      const pseudonyms = yield* Pseudonyms;
 
       const exportUser = Effect.fn("BillingRecords.exportUser")(
         function* exportUser(userId: UserId) {
           const made = yield* contracts.ofUser(userId);
           const asked = yield* requests.ofUser(userId);
+          const paid = yield* accountStore.paidBy(userId);
+
+          const held = yield* accountStore.workspacesOfEach(
+            paid.map(({ id }) => id)
+          );
+
+          const offers = yield* accountStore.transfersFor(userId);
+
+          // By their id, or by their address's pseudonym when they signed
+          // up again with an address one was required of.
+          const email = yield* payers.emailOf(userId);
+
+          const pseudonym = Option.isSome(email)
+            ? Option.some(yield* pseudonyms.ofEmail(email.value))
+            : Option.none<string>();
+
+          const required = yield* accountStore.requiresPayment(
+            userId,
+            pseudonym
+          );
 
           const record: ContractsRecord = {
+            billingAccounts: {
+              accounts: paid.map((account) => ({
+                billingWorkspaceId: account.holder,
+                createdAt: account.createdAt,
+                freeTier: account.freeTier,
+                id: account.id,
+                standalone: account.standalone,
+                workspaceIds: held.get(account.id) ?? [],
+              })),
+              paymentMethodRequired: required,
+              transferOffers: offers.map((offer) => ({
+                expiresAt: offer.expiresAt,
+                offeredAt: offer.offeredAt,
+                offeredBy: offer.offeredBy,
+                toUserId: offer.toUserId,
+                workspaceId: offer.workspaceId,
+              })),
+            },
             orders: made.orders.map((order) => ({
               consentVersion: order.consentVersion,
               createdAt: order.createdAt,
@@ -334,7 +385,7 @@ export class BillingRecords extends Context.Service<
             enabled &&
             (yield* checkouts.atStripe(workspaceId)).some(mayBill)
           ) {
-            yield* new WorkspaceStillBilled({
+            return yield* new WorkspaceStillBilled({
               subscriptions: [undescribed],
               workspaceId,
             });
@@ -347,6 +398,10 @@ export class BillingRecords extends Context.Service<
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);
           yield* references.eraseWorkspace(workspaceId);
+
+          // Its billing account: another of its workspaces bills from now,
+          // or the account goes with its last workspace.
+          return yield* accounts.eraseWorkspace(workspaceId);
         }
       );
 
@@ -356,9 +411,13 @@ export class BillingRecords extends Context.Service<
         exportUser,
         exportWorkspace,
         forgetUser: (userId, pseudonym) =>
-          subscriptions
-            .forgetUser(userId, pseudonym)
-            .pipe(Effect.andThen(requests.forgetUser(userId))),
+          subscriptions.forgetUser(userId, pseudonym).pipe(
+            Effect.andThen(requests.forgetUser(userId)),
+            // The accounts they paid for: the workspaces left go to their
+            // oldest owner left.
+            Effect.andThen(accounts.forgetPayer(userId, pseudonym))
+          ),
+        holdUser: (userId) => accountStore.holdPayer(userId),
         settleWorkspace,
       });
     })

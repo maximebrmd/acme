@@ -12,10 +12,14 @@ import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  isLinkedInError,
+  restCall,
+} from "#shared/infrastructure/platforms/linkedin-rest.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
+import { authorUrnOf } from "./linkedin-author.ts";
 import { commentaryOf } from "./linkedin-post-body.ts";
-import { authorUrnOf, isLinkedInError, restCall } from "./linkedin-rest.ts";
 
 type Http = HttpClient.HttpClient.With<
   HttpClientError.HttpClientError | OutboundRequestRefused

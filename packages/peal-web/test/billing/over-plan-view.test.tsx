@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
-import type { Standing } from "peal-contract";
+import type { BillingAccount, Standing } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { OverPlanView } from "#components/billing/over-plan-view.tsx";
@@ -11,7 +11,19 @@ const nothing = () => {
   // Rendered once: nothing is clicked.
 };
 
+const account: BillingAccount = {
+  billingWorkspaceId: "studio",
+  billingWorkspaceName: "Studio Nord",
+  id: "0190f3a0-0000-7000-8000-00000000b001",
+  otherWorkspaces: [],
+  partner: false,
+  payer: true,
+  transfer: null,
+  workspaces: 1,
+};
+
 const standing: Standing = {
+  account,
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 4 },
@@ -70,6 +82,25 @@ const render = async (
 };
 
 describe(OverPlanView, () => {
+  it("names the account's other workspaces, which count their channels with this one", async () => {
+    const shared = {
+      ...standing,
+      account: {
+        ...account,
+        otherWorkspaces: [{ name: "Studio Sud", workspaceId: "south" }],
+        workspaces: 3,
+      },
+    };
+
+    await expect(render("en", { standing: shared })).resolves.toContain(
+      "Its channels count with those of the other workspaces of its billing account: Studio Sud."
+    );
+    await expect(render("fr", { standing: shared })).resolves.toContain(
+      "Ses canaux comptent avec ceux des autres espaces de travail de son compte de facturation : Studio Sud."
+    );
+    await expect(render("en")).resolves.not.toContain("billing account");
+  });
+
   it("says what the workspace holds beyond its plan, and that nothing was deleted", async () => {
     const html = await render("en");
 

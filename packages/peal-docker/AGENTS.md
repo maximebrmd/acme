@@ -51,6 +51,12 @@ under Development stack.
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
   its own contact point, never to Telegram.
+- A rule queries a server metric by its Prometheus name: dots become
+  underscores, and a counter declared `incremental: true` (a monotonic sum)
+  gains `_total`; Effect exports no unit, so a gauge gains no suffix.
+  `packages/peal-server/test/app/metric-names.test.ts` exports every metric
+  `src/` declares through the server's OTLP export and fails on a rule
+  name none of them takes.
 - The backup and disk rules read gauges the host posts to the collector
   (the Ansible roles `peal_backup` and `peal_disks`), not the stack's own
   telemetry. A self-hoster's server without those roles never posts them:

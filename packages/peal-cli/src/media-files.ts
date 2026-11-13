@@ -85,11 +85,13 @@ const put = (request: SignedRequest, bytes: Uint8Array) =>
         )
       );
 
-    if (response.status < 200 || response.status >= 300) {
-      yield* new Refused({
-        reason: `The media store refused the file (HTTP ${String(response.status)}): nothing was stored.`,
-      });
-    }
+    yield* response.status < 200 || response.status >= 300
+      ? Effect.fail(
+          new Refused({
+            reason: `The media store refused the file (HTTP ${String(response.status)}): nothing was stored.`,
+          })
+        )
+      : Effect.void;
   });
 
 /**

@@ -21,8 +21,11 @@ import {
   accountsMonthly as contractAccountsMonthly,
   meterCharge as contractMeterCharge,
   MeterSchema as ContractMeterSchema,
+  catalogueLookupKeysOf,
   rateCard as contractRateCard,
   RateCardSchema,
+  stripeTiersOf as contractStripeTiersOf,
+  stripeUnitAmountOf as contractStripeUnitAmountOf,
 } from "peal-contract/rate-card";
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
@@ -45,6 +48,8 @@ import {
   meterCharge,
   MeterSchema,
   rateCard,
+  stripeTiersOf,
+  stripeUnitAmountOf,
 } from "#billing/domain/rate-card.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import {
@@ -58,6 +63,7 @@ import {
   PaidPlanSchema,
   PlanSchema,
 } from "#shared/domain/plan.ts";
+import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 
 const decodeObjectSchema = Schema.decodeUnknownSync(
   Schema.Struct({
@@ -144,6 +150,31 @@ describe("the contract", () => {
       rateCard
     );
   });
+
+  // The end-to-end tests' stand-in for Stripe lists the catalogue from the
+  // contract's copy.
+  it("gives the prices at Stripe the server checks", () => {
+    expect(contractStripeTiersOf(contractRateCard)).toStrictEqual(
+      stripeTiersOf(rateCard)
+    );
+
+    for (const meter of MeterSchema.literals) {
+      expect(contractStripeUnitAmountOf(meter, contractRateCard)).toBe(
+        stripeUnitAmountOf(meter, rateCard)
+      );
+    }
+  });
+
+  // The end-to-end tests' stand-in lists the catalogue under the contract's
+  // keys: a server reads the same.
+  it.each(["peal", "peal_sandbox"])(
+    "names the catalogue's lookup keys under %s as the server does",
+    (prefix) => {
+      expect(catalogueLookupKeysOf(prefix)).toStrictEqual(
+        catalogueKeysOf(prefix)
+      );
+    }
+  );
 
   // Clients generated from the API read a plain integer into 32 bits.
   it("states the rate card's storage sizes as 64-bit integers", () => {

@@ -8,7 +8,7 @@ import {
   PlanSchema,
   withDisplayVat,
 } from "peal-contract";
-import type { PaidPlan, Plan } from "peal-contract";
+import type { PaidPlan } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -27,20 +27,8 @@ export const LimitReachedSchema = Schema.Struct({
 
 export type LimitReached = typeof LimitReachedSchema.Type;
 
-/**
- * The account already owns a workspace on the free plan, or in its trial:
- * another needs that one paid for.
- */
-export interface FreeWorkspaceOwned {
-  readonly limit: "freeWorkspace";
-  readonly plan: Plan;
-  readonly planWithRoom: PaidPlan | null;
-  /** The workspace to order a plan for. */
-  readonly workspaceId: string;
-}
-
 /** Why something was refused that a larger plan allows. */
-export type UpgradeReason = FreeWorkspaceOwned | LimitReached;
+export type UpgradeReason = LimitReached;
 
 const isLimit = Schema.is(PlanLimitReached);
 
@@ -102,20 +90,11 @@ const MemberLimitSchema = Schema.Struct({
   used: Schema.Int,
 });
 
-const FreeWorkspaceSchema = Schema.Struct({
-  ...upgrade,
-  code: Schema.Literal("FREE_WORKSPACE_LIMIT_REACHED"),
-  workspaceId: Schema.String,
-});
-
 const decodeMemberLimit = Schema.decodeUnknownOption(MemberLimitSchema);
-
-const decodeFreeWorkspace = Schema.decodeUnknownOption(FreeWorkspaceSchema);
 
 /**
  * The limit an error of the sign-in service's routes names: the members a
- * plan allows, when inviting or joining, or the one free workspace an
- * account owns, when creating another.
+ * plan allows, when inviting or joining.
  */
 export const limitOfAuthError = (
   error: AuthClientError
@@ -129,16 +108,6 @@ export const limitOfAuthError = (
         planWithRoom,
         used,
       })
-    ),
-    Option.orElse(() =>
-      decodeFreeWorkspace(error).pipe(
-        Option.map(({ plan, planWithRoom, workspaceId }): UpgradeReason => ({
-          limit: "freeWorkspace",
-          plan,
-          planWithRoom,
-          workspaceId,
-        }))
-      )
     )
   );
 

@@ -1,0 +1,462 @@
+// Who pays for each workspace, on Postgres: the person who made it, or
+// for a workspace made before billing accounts its oldest owner, one
+// account per person whatever the reads sent together; a partner's pool
+// on the partner's account; a workspace a plan of its own entitles alone
+// until it ends.
+import { randomUUID } from "node:crypto";
+
+import { assert, layer } from "@effect/vitest";
+import { Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
+
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountPayers } from "#billing/application/ports/account-payers.ts";
+import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
+import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
+import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import {
+  accountsTest,
+  cleanUpAccounts,
+  partnerOf,
+  person,
+  PlainPseudonymsTest,
+  subscribe,
+  workspaceOwnedBy,
+} from "#test/billing/support.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
+import {
+  PartnerOwnershipLive,
+  WorkspaceOwnersLive,
+} from "#workspace/container.ts";
+
+// The rows the billing accounts hold for these workspaces.
+const attachmentsOf = (workspaceIds: readonly string[]) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql<{
+        readonly accountId: string;
+        readonly workspaceId: string;
+      }>`SELECT account_id AS "accountId", workspace_id AS "workspaceId" FROM billing.account_workspaces WHERE workspace_id = ANY(string_to_array(${workspaceIds.join(",")}, ',')::uuid[]) ORDER BY workspace_id`
+  ).pipe(Effect.orDie);
+
+const accountsPaidBy = (userId: string) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql<{
+        readonly id: string;
+      }>`SELECT id FROM billing.accounts WHERE payer_user_id = ${userId}`
+  ).pipe(Effect.orDie);
+
+layer(accountsTest)("billing accounts", (it) => {
+  it.effect(
+    "are made with a person's first workspace, which the next joins",
+    () =>
+      Effect.gen(function* firstAndSecond() {
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const first = yield* workspaceOwnedBy([payer]);
+
+        const made = yield* accounts.of(first);
+
+        assert.strictEqual(made.holder, first);
+        assert.deepStrictEqual(made.payer, Option.some(payer));
+        assert.isFalse(made.standalone);
+
+        const second = yield* workspaceOwnedBy([payer]);
+        const joined = yield* accounts.of(second);
+
+        assert.strictEqual(joined.id, made.id);
+        assert.strictEqual(joined.holder, first);
+
+        const pool = yield* accounts.poolOf(second);
+
+        assert.deepStrictEqual(pool.others, [first]);
+
+        yield* cleanUpAccounts([first, second]);
+      })
+  );
+
+  it.effect("end in one account for two workspaces read together", () =>
+    Effect.gen(function* together() {
+      const accounts = yield* BillingAccounts;
+      const payer = yield* person;
+      const first = yield* workspaceOwnedBy([payer]);
+      const second = yield* workspaceOwnedBy([payer]);
+
+      const [a, b] = yield* Effect.all(
+        [accounts.of(first), accounts.of(second)],
+        { concurrency: 2 }
+      );
+
+      assert.strictEqual(a.id, b.id);
+      assert.lengthOf(yield* accountsPaidBy(payer), 1);
+      // The oldest of them bills.
+      assert.strictEqual(a.holder, first);
+
+      yield* cleanUpAccounts([first, second]);
+    })
+  );
+
+  it.effect(
+    "give an existing workspace to its oldest owner once, whatever the reads sent together",
+    () =>
+      Effect.gen(function* existing() {
+        const accounts = yield* BillingAccounts;
+        const oldest = yield* person;
+        const later = yield* person;
+        const workspace = yield* workspaceOwnedBy([oldest, later]);
+
+        const read = yield* Effect.all(
+          Array.from({ length: 6 }, () => accounts.of(workspace)),
+          { concurrency: "unbounded" }
+        );
+
+        assert.lengthOf(new Set(read.map(({ id }) => id)), 1);
+        assert.deepStrictEqual(read[0]?.payer, Option.some(oldest));
+        assert.lengthOf(yield* accountsPaidBy(oldest), 1);
+        assert.lengthOf(yield* accountsPaidBy(later), 0);
+        assert.lengthOf(yield* attachmentsOf([workspace]), 1);
+
+        yield* cleanUpAccounts([workspace]);
+      })
+  );
+
+  it.effect(
+    "bill a person's workspaces on the oldest, whichever is read first",
+    () =>
+      Effect.gen(function* oldestBills() {
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const older = yield* workspaceOwnedBy([payer]);
+        const newer = yield* workspaceOwnedBy([payer]);
+
+        const account = yield* accounts.of(newer);
+
+        assert.strictEqual(account.holder, older);
+
+        // Both joined it at once.
+        const rows = yield* attachmentsOf([older, newer]);
+
+        assert.deepStrictEqual(
+          rows.map(({ accountId }) => accountId),
+          [account.id, account.id]
+        );
+
+        yield* cleanUpAccounts([older, newer]);
+      })
+  );
+
+  it.effect(
+    "put a partner's home and customers on the partner's account, not its owner's",
+    () =>
+      Effect.gen(function* partners() {
+        const accounts = yield* BillingAccounts;
+        const owner = yield* person;
+        const home = yield* workspaceOwnedBy([owner]);
+        const personal = yield* workspaceOwnedBy([owner]);
+
+        // Before the partner account: the owner's, billed on the home.
+        const before = yield* accounts.of(personal);
+
+        assert.strictEqual(before.holder, home);
+
+        const customer = yield* workspaceOwnedBy([]);
+        const partnerId = yield* partnerOf(home, [customer]);
+
+        const ofCustomer = yield* accounts.of(customer);
+        const ofHome = yield* accounts.of(home);
+
+        assert.strictEqual(ofCustomer.id, ofHome.id);
+        assert.deepStrictEqual(ofHome.partnerId, Option.some(partnerId));
+        assert.strictEqual(ofHome.holder, home);
+        assert.isTrue(Option.isNone(ofHome.payer));
+
+        // The owner's account is billed on the workspace left.
+        const after = yield* accounts.of(personal);
+
+        assert.strictEqual(after.id, before.id);
+        assert.strictEqual(after.holder, personal);
+
+        yield* cleanUpAccounts([home, personal, customer]);
+      })
+  );
+
+  it.effect(
+    "keep a workspace a plan of its own entitles alone, until the plan ends",
+    () =>
+      Effect.gen(function* standalone() {
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const free = yield* workspaceOwnedBy([payer]);
+        const paid = yield* workspaceOwnedBy([payer]);
+
+        const subscription = yield* subscribe(paid, "active");
+
+        const alone = yield* accounts.of(paid);
+        const personal = yield* accounts.of(free);
+
+        assert.isTrue(alone.standalone);
+        assert.strictEqual(alone.holder, paid);
+        assert.notStrictEqual(alone.id, personal.id);
+        assert.deepStrictEqual((yield* accounts.poolOf(paid)).others, []);
+
+        yield* SqlClient.SqlClient.use(
+          (sql) =>
+            sql`UPDATE billing.subscriptions SET status = 'canceled' WHERE stripe_subscription_id = ${subscription}`
+        ).pipe(Effect.orDie);
+
+        yield* accounts.subscriptionChanged(paid);
+
+        const joined = yield* accounts.of(paid);
+
+        assert.strictEqual(joined.id, personal.id);
+        assert.strictEqual(joined.holder, free);
+        assert.lengthOf(yield* accountsPaidBy(payer), 1);
+
+        yield* cleanUpAccounts([free, paid]);
+      })
+  );
+  it.effect(
+    "hand a closed account's workspaces to their oldest other owner",
+    () =>
+      Effect.gen(function* closed() {
+        const accounts = yield* BillingAccounts;
+        const leaving = yield* person;
+        const staying = yield* person;
+        const own = yield* workspaceOwnedBy([staying]);
+        const shared = yield* workspaceOwnedBy([leaving, staying]);
+
+        assert.deepStrictEqual(
+          (yield* accounts.of(shared)).payer,
+          Option.some(leaving)
+        );
+
+        // Closing the account: its accounts are forgotten, its memberships
+        // deleted, in one transaction.
+        yield* accounts.forgetPayer(leaving, "pseudonym:synthetic-closed");
+        yield* SqlClient.SqlClient.use(
+          (sql) => sql`DELETE FROM auth.member WHERE user_id = ${leaving}`
+        ).pipe(Effect.orDie);
+
+        const after = yield* accounts.of(shared);
+
+        assert.deepStrictEqual(after.payer, Option.some(staying));
+        assert.strictEqual(after.id, (yield* accounts.of(own)).id);
+        assert.lengthOf(yield* accountsPaidBy(leaving), 0);
+
+        yield* cleanUpAccounts([own, shared]);
+      })
+  );
+
+  it.effect(
+    "bill on the oldest workspace left once the billing workspace is erased",
+    () =>
+      Effect.gen(function* erased() {
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const first = yield* workspaceOwnedBy([payer]);
+        const second = yield* workspaceOwnedBy([payer]);
+        const third = yield* workspaceOwnedBy([payer]);
+        const account = yield* accounts.of(third);
+
+        assert.strictEqual(account.holder, first);
+
+        yield* accounts.eraseWorkspace(first);
+
+        const after = yield* accounts.of(third);
+
+        assert.strictEqual(after.id, account.id);
+        assert.strictEqual(after.holder, second);
+        assert.deepStrictEqual((yield* accounts.poolOf(second)).others, [
+          third,
+        ]);
+
+        // The last one erased takes the account with it.
+        yield* accounts.eraseWorkspace(second);
+        yield* accounts.eraseWorkspace(third);
+
+        assert.lengthOf(yield* accountsPaidBy(payer), 0);
+
+        yield* cleanUpAccounts([first, second, third]);
+      })
+  );
+  it.effect(
+    "move a workspace whose payer left it, was removed or stopped owning it to its oldest owner",
+    () =>
+      Effect.gen(function* repaired() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const first = yield* person;
+        const second = yield* person;
+        const own = yield* workspaceOwnedBy([first]);
+        const left = yield* workspaceOwnedBy([first, second]);
+        const demoted = yield* workspaceOwnedBy([first, second]);
+
+        const before = yield* accounts.of(own);
+
+        assert.strictEqual((yield* accounts.of(left)).id, before.id);
+        assert.strictEqual((yield* accounts.of(demoted)).id, before.id);
+
+        // Left, as Better Auth deletes the member row; demoted to admin.
+        yield* sql`DELETE FROM auth.member WHERE organization_id = ${left} AND user_id = ${first}`.pipe(
+          Effect.orDie
+        );
+        yield* sql`UPDATE auth.member SET role = 'admin' WHERE organization_id = ${demoted} AND user_id = ${first}`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(
+          (yield* accounts.of(left)).payer,
+          Option.some(second)
+        );
+
+        // The sweep repairs the rows nobody read since.
+        const swept = yield* accounts.accountsIn([demoted]);
+
+        assert.deepStrictEqual(swept.get(demoted)?.payer, Option.some(second));
+        assert.deepStrictEqual((yield* accounts.poolOf(own)).others, []);
+        assert.strictEqual(
+          (yield* accounts.of(left)).id,
+          (yield* accounts.of(demoted)).id
+        );
+
+        yield* cleanUpAccounts([own, left, demoted]);
+      })
+  );
+
+  it.effect(
+    "never give a workspace to a payer who left before the hold was taken",
+    () =>
+      Effect.gen(function* raced() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const leaving = yield* person;
+        const staying = yield* person;
+        const workspace = yield* workspaceOwnedBy([leaving, staying]);
+
+        // The payer's hold is taken while the read is on its way: by then
+        // the payer has gone.
+        const read = yield* Effect.all(
+          [
+            sql`DELETE FROM auth.member WHERE organization_id = ${workspace} AND user_id = ${leaving}`.pipe(
+              Effect.orDie
+            ),
+            accounts.of(workspace),
+          ],
+          { concurrency: 2 }
+        );
+
+        const [, account] = read;
+        const now = yield* accounts.of(workspace);
+
+        assert.deepStrictEqual(now.payer, Option.some(staying));
+        assert.isTrue(
+          Option.contains(account.payer, staying) ||
+            Option.contains(account.payer, leaving)
+        );
+        assert.lengthOf(yield* accountsPaidBy(leaving), 0);
+
+        yield* cleanUpAccounts([workspace]);
+      })
+  );
+
+  it.effect(
+    "repair an account whose billing workspace is gone, and delete lapsed offers",
+    () =>
+      Effect.gen(function* repaired() {
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const payer = yield* person;
+        const other = yield* person;
+        const first = yield* workspaceOwnedBy([payer]);
+        const second = yield* workspaceOwnedBy([payer, other]);
+        const account = yield* accounts.of(second);
+
+        // Erased by a release that did not know of billing accounts.
+        yield* sql`DELETE FROM auth.organization WHERE id = ${first}`.pipe(
+          Effect.orDie
+        );
+        yield* sql`INSERT INTO billing.account_transfers (id, workspace_id, from_account_id, to_user_id, offered_by, offered_at, expires_at) VALUES (${randomUUID()}, ${second}, ${account.id}, ${other}, ${payer}, '1969-12-24T00:00:00Z', '1969-12-31T00:00:00Z')`.pipe(
+          Effect.orDie
+        );
+
+        const done = yield* accounts.repair(500);
+
+        assert.isAtLeast(done.repaired, 1);
+        assert.isAtLeast(done.lapsed, 1);
+        assert.strictEqual((yield* accounts.of(second)).holder, second);
+        assert.lengthOf(
+          yield* sql`SELECT 1 FROM billing.account_transfers WHERE workspace_id = ${second}`.pipe(
+            Effect.orDie
+          ),
+          0
+        );
+
+        yield* cleanUpAccounts([first, second]);
+      })
+  );
+});
+
+// The workspace the stand-in below fails for, set by the test.
+const broken = { id: WorkspaceIdSchema.make(randomUUID()) };
+
+// One workspace whose owners cannot be read: the sweep goes on past it.
+const FailingOwnersTest = BillingAccounts.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleBillingAccountStoreLive,
+      DrizzleSubscriptionsLive,
+      PlainPseudonymsTest,
+      Layer.effect(
+        AccountPayers,
+        Effect.gen(function* failingFor() {
+          const payers = yield* AccountPayers;
+
+          return AccountPayers.of({
+            ...payers,
+            ownersOf: (workspaceId) =>
+              workspaceId === broken.id
+                ? Effect.fail(new DatabaseError({ cause: "synthetic" }))
+                : payers.ownersOf(workspaceId),
+          });
+        })
+      ).pipe(
+        Layer.provide(
+          WorkspaceAccountPayersLive.pipe(
+            Layer.provide(
+              Layer.merge(PartnerOwnershipLive, WorkspaceOwnersLive)
+            )
+          )
+        )
+      )
+    )
+  ),
+  Layer.provideMerge(TransactionsTest),
+  Layer.provideMerge(DatabaseTest)
+);
+
+layer(FailingOwnersTest)("the daily sweep", (it) => {
+  it.effect("goes on past a workspace it cannot give an account", () =>
+    Effect.gen(function* past() {
+      const accounts = yield* BillingAccounts;
+      const payer = yield* person;
+      const failing = yield* workspaceOwnedBy([payer]);
+      const fine = yield* workspaceOwnedBy([payer]);
+
+      broken.id = failing;
+
+      const failed = yield* accounts.sweepIn([failing, fine]);
+
+      assert.strictEqual(failed, 1);
+      assert.deepStrictEqual(
+        (yield* accounts.poolOf(fine)).account.payer,
+        Option.some(payer)
+      );
+
+      yield* cleanUpAccounts([failing, fine]);
+    })
+  );
+});

@@ -97,7 +97,7 @@ describe(limitOfAuthError, () => {
     );
   });
 
-  it("reads the one free workspace an account owns, with the workspace to pay for", () => {
+  it("reads no limit in a refusal of a second free workspace, which servers no longer send", () => {
     expect(
       limitOfAuthError(
         answered({
@@ -109,14 +109,7 @@ describe(limitOfAuthError, () => {
           workspaceId: "w",
         })
       )
-    ).toStrictEqual(
-      Option.some({
-        limit: "freeWorkspace",
-        plan: "pro",
-        planWithRoom: "pro",
-        workspaceId: "w",
-      })
-    );
+    ).toStrictEqual(Option.none());
   });
 
   it("reads nothing in another error", () => {

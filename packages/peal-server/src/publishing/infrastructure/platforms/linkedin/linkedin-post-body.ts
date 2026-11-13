@@ -4,7 +4,7 @@ import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import type { LinkedInVisibility } from "#publishing/domain/linkedin-options.ts";
 
-import { authorUrnOf } from "./linkedin-rest.ts";
+import { authorUrnOf } from "./linkedin-author.ts";
 import { littleTextOf } from "./little-text.ts";
 
 /** The post's LinkedIn options, when its target has any. */

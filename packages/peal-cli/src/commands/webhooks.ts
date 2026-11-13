@@ -316,12 +316,14 @@ const create = Command.make(
     const eventTypes = yield* eventsOf(input.events);
     const headers = yield* headersOf(input.headers);
 
-    if (input.workspaceIds.length > 0 && !input.partner) {
-      yield* new Refused({
-        reason:
-          "--workspace-id narrows a partner endpoint: give --partner too, in a partner account's home workspace.",
-      });
-    }
+    yield* input.workspaceIds.length > 0 && !input.partner
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "--workspace-id narrows a partner endpoint: give --partner too, in a partner account's home workspace.",
+          })
+        )
+      : Effect.void;
 
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
@@ -451,21 +453,29 @@ const update = Command.make(
     workspaceIds: workspaceFilterFlag,
   },
   Effect.fn("webhooks.update")(function* update(input) {
-    if (input.enable && input.disable) {
-      yield* new Refused({ reason: "Give --enable or --disable, not both." });
-    }
+    yield* input.enable && input.disable
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --enable or --disable, not both.",
+          })
+        )
+      : Effect.void;
 
-    if (input.clearChannels && input.channels.length > 0) {
-      yield* new Refused({
-        reason: "Give --channel or --clear-channels, not both.",
-      });
-    }
+    yield* input.clearChannels && input.channels.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --channel or --clear-channels, not both.",
+          })
+        )
+      : Effect.void;
 
-    if (input.clearHeaders && input.headers.length > 0) {
-      yield* new Refused({
-        reason: "Give --header or --clear-headers, not both.",
-      });
-    }
+    yield* input.clearHeaders && input.headers.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --header or --clear-headers, not both.",
+          })
+        )
+      : Effect.void;
 
     // Given, they replace every header the endpoint had.
     const headers =
@@ -473,11 +483,13 @@ const update = Command.make(
         ? Option.some(yield* headersOf(input.headers))
         : Option.none();
 
-    if (input.clearWorkspaces && input.workspaceIds.length > 0) {
-      yield* new Refused({
-        reason: "Give --workspace-id or --clear-workspaces, not both.",
-      });
-    }
+    yield* input.clearWorkspaces && input.workspaceIds.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --workspace-id or --clear-workspaces, not both.",
+          })
+        )
+      : Effect.void;
 
     const channelIds = input.clearChannels
       ? Option.some([])
@@ -526,12 +538,14 @@ const update = Command.make(
       }),
     };
 
-    if (Object.keys(payload).length === 0) {
-      yield* new Refused({
-        reason:
-          "Nothing to change: give --url, --events, --description, --channel, --workspace-id, --header, a --clear flag, --enable or --disable.",
-      });
-    }
+    yield* Object.keys(payload).length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Nothing to change: give --url, --events, --description, --channel, --workspace-id, --header, a --clear flag, --enable or --disable.",
+          })
+        )
+      : Effect.void;
 
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
@@ -904,37 +918,43 @@ const checkRedelivery = Effect.fn("webhooks.checkRedelivery")(
     readonly since: Option.Option<string>;
     readonly until: Option.Option<string>;
   }) {
-    if (input.failed && input.deliveryIds.length > 0) {
-      yield* new Refused({
-        reason: "Give --failed with --endpoint, or delivery ids, not both.",
-      });
-    }
+    yield* input.failed && input.deliveryIds.length > 0
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --failed with --endpoint, or delivery ids, not both.",
+          })
+        )
+      : Effect.void;
 
-    if (input.failed && Option.isNone(input.endpoint)) {
-      yield* new Refused({
-        reason:
-          "--failed sends one endpoint's failed deliveries again: give --endpoint too.",
-      });
-    }
+    yield* input.failed && Option.isNone(input.endpoint)
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "--failed sends one endpoint's failed deliveries again: give --endpoint too.",
+          })
+        )
+      : Effect.void;
 
-    if (
-      !input.failed &&
-      (Option.isSome(input.since) ||
-        Option.isSome(input.until) ||
-        Option.isSome(input.event))
-    ) {
-      yield* new Refused({
-        reason:
-          "--since, --until and --event go with --failed, which picks an endpoint's failed deliveries: deliveries named by id are sent again whatever their time or type.",
-      });
-    }
+    yield* !input.failed &&
+    (Option.isSome(input.since) ||
+      Option.isSome(input.until) ||
+      Option.isSome(input.event))
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "--since, --until and --event go with --failed, which picks an endpoint's failed deliveries: deliveries named by id are sent again whatever their time or type.",
+          })
+        )
+      : Effect.void;
 
-    if (!input.failed && input.deliveryIds.length === 0) {
-      yield* new Refused({
-        reason:
-          "Give the deliveries to send again, or --failed --endpoint <id>.",
-      });
-    }
+    yield* !input.failed && input.deliveryIds.length === 0
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give the deliveries to send again, or --failed --endpoint <id>.",
+          })
+        )
+      : Effect.void;
   }
 );
 
@@ -1054,15 +1074,17 @@ const redeliver = Command.make(
       yield* printRedelivered(result, endpointIds);
     }
 
-    if (result.redelivered.length === 0) {
-      yield* new Refused({
-        code: "nothing_redelivered",
-        reason:
-          result.skipped.length === 0
-            ? "Nothing was sent again: no delivery matched."
-            : "Nothing was sent again: every delivery was skipped, as said above.",
-      });
-    }
+    yield* result.redelivered.length === 0
+      ? Effect.fail(
+          new Refused({
+            code: "nothing_redelivered",
+            reason:
+              result.skipped.length === 0
+                ? "Nothing was sent again: no delivery matched."
+                : "Nothing was sent again: every delivery was skipped, as said above.",
+          })
+        )
+      : Effect.void;
   })
 ).pipe(
   Command.withDescription(

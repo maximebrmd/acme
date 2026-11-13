@@ -8,6 +8,7 @@ import {
   OperatorDeclarationSchema,
   undeclared,
 } from "#workspace/domain/operator-declaration.ts";
+import { PrivacyDeclarationUnreadable } from "#workspace/infrastructure/privacy-declaration-unreadable.ts";
 
 const decode = Schema.decodeUnknownEffect(
   Schema.fromJsonString(OperatorDeclarationSchema)
@@ -35,11 +36,7 @@ export const PrivacyDeclarationLive = Layer.effect(
         Effect.tryPromise(async () => await readFile(path, "utf-8")).pipe(
           Effect.flatMap(decode),
           Effect.mapError(
-            (cause) =>
-              new Error(
-                `PEAL_PRIVACY_DECLARATION_FILE names ${path}, which could not be read as a privacy declaration`,
-                { cause }
-              )
+            (cause) => new PrivacyDeclarationUnreadable({ cause, file: path })
           )
         ),
     });

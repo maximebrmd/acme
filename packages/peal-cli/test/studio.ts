@@ -83,6 +83,7 @@ import type {
   ApprovalPolicy,
   ApprovalRequest,
   Billing,
+  BillingAccount,
   WorkspaceUsageReport,
   Channel,
   ChannelOptions,
@@ -642,7 +643,20 @@ const invitation: Invitation = {
   role: "editor",
 };
 
+// The studio's billing account: its own, which its user pays for.
+const account: BillingAccount = {
+  billingWorkspaceId: studioId,
+  billingWorkspaceName: "Studio",
+  id: "0190f3a0-0000-7000-8000-00000000b001",
+  otherWorkspaces: [],
+  partner: false,
+  payer: true,
+  transfer: null,
+  workspaces: 1,
+};
+
 const within: Standing = {
+  account,
   mustReduce: false,
   over: [],
   plan: "free",
@@ -652,6 +666,7 @@ const within: Standing = {
 
 // The studio after a trial: more channels and members than the free plan.
 const over: Standing = {
+  account,
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 8 },
@@ -664,6 +679,7 @@ const over: Standing = {
 };
 
 const billing: Billing = {
+  account,
   allowances: {
     assistantRequests: 3,
     channels: 3,
@@ -3320,9 +3336,9 @@ export const studioGroupsLive = (studio: Studio) =>
               params.postId
             );
 
-            if (post.status !== "draft") {
-              yield* new PostStatusConflict({ status: post.status });
-            }
+            yield* post.status === "draft"
+              ? Effect.void
+              : Effect.fail(new PostStatusConflict({ status: post.status }));
 
             yield* Ref.update(studio.state, (current) => ({
               ...current,
@@ -4757,9 +4773,9 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const { invitations } = yield* Ref.get(studio.state);
 
-            if (!invitations.some(({ id }) => id === params.invitationId)) {
-              yield* new InvitationNotFound();
-            }
+            yield* invitations.some(({ id }) => id === params.invitationId)
+              ? Effect.void
+              : Effect.fail(new InvitationNotFound());
 
             yield* Ref.update(studio.state, (current) => ({
               ...current,

@@ -1,5 +1,3 @@
-// What recording a subscription asks of Stripe: a trial set to end with its
-// trial, a second trial ended, and the trial a paid plan replaces ended.
 import { assert, layer } from "@effect/vitest";
 import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
@@ -12,6 +10,9 @@ import type { SubscriptionEvent } from "#billing/application/record-subscription
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+// What recording a subscription asks of Stripe: a trial set to end with its
+// trial, a second trial ended, and the trial a paid plan replaces ended.
+import { AloneInAccountsTest } from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
   "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
@@ -123,6 +124,7 @@ const PortsInMemory = Layer.mergeAll(
 );
 
 const RecordTest = RecordSubscription.layer.pipe(
+  Layer.provide(AloneInAccountsTest),
   Layer.provideMerge(PortsInMemory),
   Layer.provideMerge(LogLive)
 );

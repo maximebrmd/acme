@@ -545,6 +545,24 @@ export interface ContractsRecord {
     readonly requestedAt: DateTime.Utc;
     readonly workspaceId: string | null;
   }[];
+  readonly billingAccounts: {
+    readonly accounts: readonly {
+      readonly billingWorkspaceId: string;
+      readonly createdAt: DateTime.Utc;
+      readonly freeTier: boolean;
+      readonly id: string;
+      readonly standalone: boolean;
+      readonly workspaceIds: readonly string[];
+    }[];
+    readonly paymentMethodRequired: boolean;
+    readonly transferOffers: readonly {
+      readonly expiresAt: DateTime.Utc;
+      readonly offeredAt: DateTime.Utc;
+      readonly offeredBy: string;
+      readonly toUserId: string;
+      readonly workspaceId: string;
+    }[];
+  };
 }
 
 /** The account a notice is about, as it was then. */

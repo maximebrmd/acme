@@ -320,6 +320,113 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect(
+      "move a workspace's billing to its oldest owner left when its payer leaves, is removed or is demoted, on a server that does not bill",
+      () =>
+        Effect.gen(function* payerGoes() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+
+          const payerOf = (workspaceId: string) =>
+            sql<{
+              readonly payer: string | null;
+            }>`SELECT a.payer_user_id AS payer FROM billing.accounts a JOIN billing.account_workspaces w ON w.account_id = a.id WHERE w.workspace_id = ${workspaceId}`.pipe(
+              Effect.map((rows) => rows[0]?.payer ?? null),
+              Effect.orDie
+            );
+
+          const sharedBy = Effect.fn("sharedBy")(function* sharedBy(
+            name: string
+          ) {
+            const payer = yield* signedUp(`${name}-payer`);
+            const other = yield* signedUp(`${name}-other`);
+            const workspaceId = yield* workspaceOf(payer, name);
+
+            const invited = yield* app.request(
+              "/api/auth/organization/invite-member",
+              {
+                body: {
+                  email: other.email,
+                  organizationId: workspaceId,
+                  role: "owner",
+                },
+                headers: { cookie: payer.cookies },
+              }
+            );
+
+            const accepted = yield* app.request(
+              "/api/auth/organization/accept-invitation",
+              {
+                body: {
+                  invitationId: (yield* bodyOf(InvitationSchema, invited)).id,
+                },
+                headers: { cookie: other.cookies },
+              }
+            );
+
+            assert.strictEqual(accepted.status, 200);
+            assert.strictEqual(yield* payerOf(workspaceId), payer.id);
+
+            const [member] = yield* sql<{
+              readonly id: string;
+            }>`SELECT id FROM auth.member WHERE organization_id = ${workspaceId} AND user_id = ${payer.id}`.pipe(
+              Effect.orDie
+            );
+
+            return { member: member?.id ?? "", other, payer, workspaceId };
+          });
+
+          const left = yield* sharedBy("payer-leaves");
+
+          const leaving = yield* app.request("/api/auth/organization/leave", {
+            body: { organizationId: left.workspaceId },
+            headers: { cookie: left.payer.cookies },
+          });
+
+          assert.strictEqual(leaving.status, 200);
+          assert.strictEqual(yield* payerOf(left.workspaceId), left.other.id);
+
+          const removed = yield* sharedBy("payer-removed");
+
+          const removing = yield* app.request(
+            "/api/auth/organization/remove-member",
+            {
+              body: {
+                memberIdOrEmail: removed.payer.email,
+                organizationId: removed.workspaceId,
+              },
+              headers: { cookie: removed.other.cookies },
+            }
+          );
+
+          assert.strictEqual(removing.status, 200);
+          assert.strictEqual(
+            yield* payerOf(removed.workspaceId),
+            removed.other.id
+          );
+
+          const demoted = yield* sharedBy("payer-demoted");
+
+          const demoting = yield* app.request(
+            "/api/auth/organization/update-member-role",
+            {
+              body: {
+                memberId: demoted.member,
+                organizationId: demoted.workspaceId,
+                role: "admin",
+              },
+              headers: { cookie: demoted.other.cookies },
+            }
+          );
+
+          assert.strictEqual(demoting.status, 200);
+          assert.strictEqual(
+            yield* payerOf(demoted.workspaceId),
+            demoted.other.id
+          );
+        })
+    );
+
     it.effect("create, list and revoke API keys", () =>
       Effect.gen(function* apiKeys() {
         const app = yield* TestApp;

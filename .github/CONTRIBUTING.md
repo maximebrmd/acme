@@ -65,7 +65,22 @@ you change before you change it. The ones contributors meet first:
   package reads is listed on the environment variables page, in both
   languages.
 - **Dependencies are pinned** to the exact latest release, and `bun.lock` (or
-  `packages/peal-infra/ansible/uv.lock`) is committed with them.
+  `packages/peal-infra/ansible/uv.lock`) is committed with them. Dependabot
+  (`.github/dependabot.yml`) opens grouped pull requests each Monday for the
+  Bun workspace, the Ansible toolchain (uv), the workflows' actions, the
+  Dockerfiles and the compose files, a release three days after it ships;
+  an image's major version comes in a pull request of its own. Run the
+  checks on its branch and push the follow-ups it cannot make: a Bun or
+  Node image moves `.bun-version` or CI's `node-version` with it, a compose
+  image moves CI's service image of the same name, TypeScript moves with
+  `@effect/tsgo` (one group), and Effect or Better Auth may need code
+  changes. Upgrade by hand what it is told to leave: the SDKs' generated
+  manifests, `fern-api` (with the generators), Drizzle until 1.0 is npm's
+  `latest`, and the majors of Postgres (its data needs `pg_upgrade`) and
+  Node (kept on LTS). And what it does not read: the SDK generator and
+  toolchain images, CI's service images and Betterleaks, the Dockerfiles'
+  `# syntax=` and ffmpeg images, pgBackRest's apt pin, the Ansible
+  collections and the uptime role's images.
 - **Lint findings are fixed, not suppressed.** `bun run fix` applies what it
   can.
 - **Tests come with the change.** A fix has a test that failed before it; a
@@ -168,6 +183,19 @@ bun run references                  # clone framework sources into .local/refere
 bun nx run peal-docker:up           # start the development stack, wait until healthy
 bun nx run peal-server:media-cors   # let browsers upload to the stack's bucket
 ```
+
+`bun install` also patches the workspace's TypeScript with Effect's language
+service (`effect-tsgo patch`), which reports mistakes in Effect code, such as
+an Effect that is never run, as type errors. `@effect/tsgo` ships a build for
+each TypeScript version it supports: on a TypeScript it does not support,
+`bun install` warns and `bun run typecheck` fails until the two are moved to
+a supported pair. To see them in your editor, use
+the workspace's TypeScript 7 rather than the editor's own. In VS Code or
+Cursor, install the TypeScript 7 extension and pick **Use Workspace Version**
+from the TypeScript version in the status bar, or put in your
+`.vscode/settings.json` (which Git ignores) what `bunx effect-tsgo setup
+--vscode` proposes: `"js/ts.experimental.useTsgo": true` and
+`"js/ts.tsdk.path": "./node_modules/typescript/bin"`.
 
 `media-cors` puts a CORS rule on the bucket for the web app's origin,
 `http://localhost:3001`, and any origins in `TRUSTED_ORIGINS`, and keeps the
@@ -398,11 +426,13 @@ Billing and the captcha are off until the server has their keys. To try
 billing, use a Stripe account in test mode, with a monthly and a yearly
 EUR price for each paid plan, tax-exclusive, whose lookup keys are
 `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`,
-`peal_pro_yearly`…), and forward its webhooks with the Stripe CLI:
+`peal_pro_yearly`…), give it per-account pricing's catalogue with
+`stripe-catalogue`, and forward its webhooks with the Stripe CLI:
 
 ```sh
 stripe listen --forward-to localhost:3001/api/auth/stripe/webhook   # prints the signing secret
 export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_...
+bun nx run peal-server:stripe-catalogue   # its meters, products and prices; --check compares only
 ```
 
 On each workspace's **Billing** page, linked from its card, owners and

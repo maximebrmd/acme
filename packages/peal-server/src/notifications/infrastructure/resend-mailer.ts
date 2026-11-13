@@ -49,16 +49,22 @@ export const resendMailer = (options: {
               )
             );
 
-          if (response.status >= 300) {
-            const body = yield* response.text.pipe(
-              Effect.orElseSucceed(() => "")
-            );
-
-            yield* new MailDeliveryFailed({
-              cause: new Error(`Resend answered ${response.status}: ${body}`),
-              retryable: isRetryableStatus(response.status),
-            });
-          }
+          // A refusal is reported with what Resend answered.
+          yield* response.status < 300
+            ? Effect.void
+            : response.text.pipe(
+                Effect.orElseSucceed(() => ""),
+                Effect.flatMap((body) =>
+                  Effect.fail(
+                    new MailDeliveryFailed({
+                      cause: new Error(
+                        `Resend answered ${response.status}: ${body}`
+                      ),
+                      retryable: isRetryableStatus(response.status),
+                    })
+                  )
+                )
+              );
         }),
       });
     })

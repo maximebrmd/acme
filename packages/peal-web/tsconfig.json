@@ -4,7 +4,10 @@
     "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
     "types": ["node"],
-    "plugins": [{ "name": "next" }]
+    // Next.js's plugin replaces the base's list, so Effect's is listed again:
+    // the language service merges its options with the base's entry, key by
+    // key, and drops them only when the entry is gone.
+    "plugins": [{ "name": "@effect/language-service" }, { "name": "next" }]
   },
   "include": [
     "next-env.d.ts",

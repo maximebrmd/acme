@@ -61,11 +61,16 @@ export interface BillingHooks {
   /** Whether a checkout may start, from the order the member placed. */
   readonly checkout: (start: CheckoutStart) => Promise<CheckoutAnswer>;
   /**
-   * The way out for a workspace on the free plan of a server that bills,
-   * or in its trial, which ends on it: an account owns one such workspace
-   * at most. Null for a workspace that is paid for, or not limited.
+   * The person who pays for the workspace, on a server that bills; null
+   * on one that does not, where nobody's leaving is refused for it.
    */
-  readonly freeWorkspace: (workspaceId: WorkspaceId) => Promise<Upgrade | null>;
+  readonly payerOf: (workspaceId: WorkspaceId) => Promise<UserId | null>;
+  /**
+   * The workspace's owners changed (one left, was removed or changed
+   * role): its billing account follows, its oldest owner paying when its
+   * payer is no longer one. Never throws: the next read repairs it.
+   */
+  readonly ownersChanged: (workspaceId: string) => Promise<void>;
   /** The workspace's member allowance, from its plan. */
   readonly memberAllowance: (workspaceId: WorkspaceId) => Promise<Allowance>;
   /** The way out for a workspace whose members have no room for `needed`. */
@@ -78,6 +83,12 @@ export interface BillingHooks {
    * makes the webhook answer an error, so Stripe sends the event again.
    */
   readonly subscriptionChanged: (event: SubscriptionEvent) => Promise<void>;
+  /**
+   * Gives a workspace just made its billing account: its creator's, made
+   * then if they have none. Never throws: the account is given the next
+   * time the workspace is read otherwise.
+   */
+  readonly workspaceCreated: (workspaceId: string) => Promise<void>;
 }
 
 /**
@@ -919,64 +930,90 @@ export const checkMemberRoom = async (
   }
 };
 
-const FreeWorkspaceError = {
-  code: "FREE_WORKSPACE_LIMIT_REACHED",
+const PayerError = {
+  code: "PAYER_MUST_STAY",
   message:
-    "The account already owns a workspace on the free plan: subscribe it, or use that one",
+    "This owner pays for the workspace: they hand it to another owner on its billing page before they leave it, are removed or stop being an owner",
 } as const;
 
-const OwnedRowSchema = Schema.Struct({ organizationId: Schema.String });
+const LeaveBodySchema = Schema.Struct({ organizationId: Schema.String });
 
-const decodeOwnedRow = Schema.decodeUnknownOption(OwnedRowSchema);
+const decodeLeaveBody = Schema.decodeUnknownOption(LeaveBodySchema);
+
+const ownerRole = "owner";
 
 /**
- * Refuses a new workspace to an account that already owns one on the free
- * plan of a server that bills: one free workspace per account, as each
- * gets the free plan's allowances. A workspace that falls back to the free
- * plan stays; paid ones do not count, and trialing ones do, as the trial
- * puts them back on the free plan when it ends. The refusal names the
- * workspace and the plan that, ordered for it, makes room for another.
+ * Refuses to let a workspace's payer stop being one of its owners, as its
+ * last owner is: they leave, are removed or lose the owner role only once
+ * they handed the workspace to another payer. On a server that bills.
  */
-export const checkFreeWorkspace = async (
+export const keepPayer = async (
   hooks: BillingHooks,
-  userId: string
+  change: {
+    readonly organizationId: string;
+    readonly role: Option.Option<readonly string[]>;
+    readonly userId: string;
+  }
 ): Promise<void> => {
-  const { adapter } = getCurrentAuthEndpointContext().context;
+  // A role that keeps the owner's changes nothing.
+  if (Option.exists(change.role, (roles) => roles.includes(ownerRole))) {
+    return;
+  }
 
-  const owned: unknown[] = await adapter.findMany({
-    model: "member",
-    select: ["organizationId"],
-    where: [
-      { field: "userId", value: userId },
-      { field: "role", value: "owner" },
-    ],
+  const workspaceId = decodeWorkspaceId(change.organizationId);
+
+  if (Option.isNone(workspaceId)) {
+    return;
+  }
+
+  const payer = await hooks.payerOf(workspaceId.value);
+
+  if (payer !== null && payer === change.userId) {
+    throw APIError.from("BAD_REQUEST", PayerError);
+  }
+};
+
+/**
+ * The same for Better Auth's `/organization/leave`, which calls no hook of
+ * its own: the session's user leaving the workspace the body names.
+ */
+export const keepPayerLeaving = async (
+  ctx: GenericEndpointContext,
+  hooks: BillingHooks
+): Promise<void> => {
+  if (ctx.path !== "/organization/leave") {
+    return;
+  }
+
+  const body = decodeLeaveBody(ctx.body);
+  const session = await getSessionFromCtx(ctx);
+
+  if (Option.isNone(body) || session === null) {
+    return;
+  }
+
+  await keepPayer(hooks, {
+    organizationId: body.value.organizationId,
+    role: Option.none(),
+    userId: session.user.id,
   });
+};
 
-  const workspaces = owned.flatMap((row) =>
-    Option.toArray(
-      decodeOwnedRow(row).pipe(
-        Option.flatMap(({ organizationId }) =>
-          decodeWorkspaceId(organizationId)
-        )
-      )
-    )
-  );
+/**
+ * After Better Auth's `/organization/leave`, which calls no hook of its
+ * own: the workspace's billing account follows its owners.
+ */
+export const followOwnersAfterLeaving = async (
+  ctx: GenericEndpointContext,
+  hooks: BillingHooks
+): Promise<void> => {
+  if (ctx.path !== "/organization/leave") {
+    return;
+  }
 
-  const free = await Promise.all(
-    workspaces.map(async (workspaceId) => ({
-      upgrade: await hooks.freeWorkspace(workspaceId),
-      workspaceId,
-    }))
-  );
+  const body = decodeLeaveBody(ctx.body);
 
-  const found = free.find(({ upgrade }) => upgrade !== null);
-
-  if (found !== undefined) {
-    // Names the workspace to pay for, and the plan to order for it.
-    throw new APIError("PAYMENT_REQUIRED", {
-      ...FreeWorkspaceError,
-      ...found.upgrade,
-      workspaceId: found.workspaceId,
-    });
+  if (Option.isSome(body)) {
+    await hooks.ownersChanged(body.value.organizationId);
   }
 };

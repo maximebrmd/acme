@@ -2,7 +2,12 @@ import { Cause, Exit, Option, Schema } from "effect";
 
 /** Why a staff action failed, as the Staff.errors catalogue explains it. */
 export const StaffErrorKeySchema = Schema.Literals([
+  "accountGone",
   "banned",
+  "mergePartner",
+  "mergeSame",
+  "mergeStandalone",
+  "mergeSubscribed",
   "expired",
   "gone",
   "linkGone",
@@ -31,8 +36,23 @@ const RefusedSchema = Schema.Struct({
 
 const decodeRefused = Schema.decodeUnknownOption(RefusedSchema);
 
+const NotMergedSchema = Schema.Struct({
+  _tag: Schema.Literal("AccountsNotMerged"),
+  reason: Schema.Literals(["partner", "same", "standalone", "subscribed"]),
+});
+
+const decodeNotMerged = Schema.decodeUnknownOption(NotMergedSchema);
+
+const mergeKeys = {
+  partner: "mergePartner",
+  same: "mergeSame",
+  standalone: "mergeStandalone",
+  subscribed: "mergeSubscribed",
+} as const;
+
 // The API's other answers, by tag.
 const reasons = new Map<string, StaffErrorKey>([
+  ["BillingAccountNotFound", "accountGone"],
   ["NotFound", "notStaff"],
   ["ShortLinkNotFound", "linkGone"],
   ["UserNotFound", "gone"],
@@ -54,6 +74,11 @@ export const staffErrorKey = <A, E extends { readonly _tag: string }>(
           Option.flatMap((failure) =>
             decodeRefused(failure).pipe(
               Option.map(({ reason }): StaffErrorKey => reason),
+              Option.orElse(() =>
+                decodeNotMerged(failure).pipe(
+                  Option.map(({ reason }): StaffErrorKey => mergeKeys[reason])
+                )
+              ),
               Option.orElse(() =>
                 Option.fromUndefinedOr(reasons.get(failure._tag))
               )

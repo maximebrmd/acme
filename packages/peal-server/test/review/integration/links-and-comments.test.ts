@@ -4,6 +4,7 @@ import { SqlClient } from "effect/sql";
 
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
@@ -355,7 +356,7 @@ describe("a review link", () => {
             drafts.create(editor, {
               channelIds: [channelId],
               content: contentOf(text),
-              options: [{ channelId, options }],
+              options: [new ChannelOptions({ channelId, options })],
             })
           );
 

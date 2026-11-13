@@ -8,6 +8,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
@@ -89,6 +90,7 @@ export class RecordSubscription extends Context.Service<
       const trials = yield* Trials;
       const stripe = yield* StripeContracts;
       const { transaction } = yield* TransactionRunner;
+      const accounts = yield* BillingAccounts;
 
       const record = Effect.fn("RecordSubscription.record")(function* record(
         event: SubscriptionEvent
@@ -219,6 +221,12 @@ export class RecordSubscription extends Context.Service<
               ),
             { discard: true }
           );
+        }
+
+        // A plan of the workspace's own keeps it alone on it; once that
+        // ends it joins its payer's account.
+        if (outcome !== "ignored") {
+          yield* accounts.subscriptionChanged(recorded.workspaceId);
         }
 
         yield* Effect.logInfo("Recorded a subscription event").pipe(

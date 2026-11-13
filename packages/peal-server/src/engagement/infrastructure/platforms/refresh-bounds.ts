@@ -3,6 +3,7 @@ import type { Duration } from "effect";
 
 import { isEngaged } from "#engagement/domain/engagement-abilities.ts";
 import type { EngagedPlatform } from "#engagement/domain/engagement-abilities.ts";
+import { linkedinRefreshWithin } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { youtubeRefreshWithin } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
@@ -12,7 +13,8 @@ import type { Platform } from "#shared/domain/platform.ts";
  * Mastodon and Bluesky (public posts, kept as the inbox keeps them), nor
  * on Facebook Pages and Instagram (Meta's Platform Terms bound what Peal
  * keeps by the purpose, which the retention serves); 29 days on YouTube
- * (`youtubeRefreshWithin`). Every read's batch carries its platform's.
+ * (`youtubeRefreshWithin`), a day on LinkedIn (`linkedinRefreshWithin`).
+ * Every read's batch carries its platform's.
  */
 export const keptWithoutRefresh: Readonly<
   Record<EngagedPlatform, Option.Option<Duration.Duration>>
@@ -20,6 +22,7 @@ export const keptWithoutRefresh: Readonly<
   bluesky: Option.none(),
   facebook: Option.none(),
   instagram: Option.none(),
+  linkedin: Option.some(linkedinRefreshWithin),
   mastodon: Option.none(),
   youtube: Option.some(youtubeRefreshWithin),
 };

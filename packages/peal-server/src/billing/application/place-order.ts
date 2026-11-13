@@ -1,5 +1,6 @@
 import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
+import { BilledElsewhere } from "#billing/domain/billed-elsewhere.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
@@ -19,6 +20,7 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { MemberAddresses } from "./ports/member-addresses.ts";
 import { Orders } from "./ports/orders.ts";
@@ -100,8 +102,9 @@ export const trialOffered = Effect.fn("Billing.trialOffered")(
  * checkout left unfinished loses nothing. An order for a plan that does
  * not hold what the workspace has (its channels, members and media) is
  * refused, listing what to remove first (`PlanTooSmall`): moving down
- * never leaves a workspace over its plan. Needs billing:manage and the
- * member in person.
+ * never leaves a workspace over its plan. A workspace whose billing
+ * account another workspace bills orders nothing (`BilledElsewhere`).
+ * Needs billing:manage and the member in person.
  */
 export class PlaceOrder extends Context.Service<
   PlaceOrder,
@@ -111,6 +114,7 @@ export class PlaceOrder extends Context.Service<
       request: OrderRequest
     ) => Effect.Effect<
       Order,
+      | BilledElsewhere
       | BillingOff
       | DatabaseError
       | MissingPermission
@@ -127,6 +131,7 @@ export class PlaceOrder extends Context.Service<
       const { enabled } = yield* BillingMode;
       const orders = yield* Orders;
       const usage = yield* WorkspaceUsage;
+      const accounts = yield* BillingAccounts;
 
       const context = yield* Effect.context<
         Ids | MemberAddresses | Pseudonyms | Subscriptions | Trials
@@ -143,6 +148,14 @@ export class PlaceOrder extends Context.Service<
 
         if (!enabled) {
           return yield* new BillingOff();
+        }
+
+        // Every workspace of an account shares its billing workspace's
+        // plan, which is ordered there.
+        const { holder } = yield* accounts.of(workspaceId);
+
+        if (holder !== workspaceId) {
+          return yield* new BilledElsewhere({ billingWorkspaceId: holder });
         }
 
         if (request.trial) {

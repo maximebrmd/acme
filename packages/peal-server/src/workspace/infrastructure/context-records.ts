@@ -160,6 +160,7 @@ export const ContextRecordsLive = Layer.effect(
           webhooks: webhooks.exportWorkspace(workspaceId),
         }),
       holdIdentification: (record, closedAt) => legal.hold(record, closedAt),
+      holdUser: (userId) => billing.holdUser(userId),
       legalRemains: (userId) => legal.afterClosure(userId),
       removeWorkspaceFiles: (workspaceId) =>
         media

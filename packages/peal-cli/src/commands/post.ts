@@ -194,19 +194,19 @@ const check = (
       }
     }
 
-    if (!validation.valid) {
-      yield* refuse(
-        [
-          "Checked, and made nothing: Peal would refuse the post.",
-          ...problemsOf(
-            validation,
-            payload.when._tag === "queue"
-              ? "UTC"
-              : (payload.when.timeZone ?? "UTC")
-          ),
-        ].join("\n")
-      );
-    }
+    yield* validation.valid
+      ? Effect.void
+      : refuse(
+          [
+            "Checked, and made nothing: Peal would refuse the post.",
+            ...problemsOf(
+              validation,
+              payload.when._tag === "queue"
+                ? "UTC"
+                : (payload.when.timeZone ?? "UTC")
+            ),
+          ].join("\n")
+        );
   });
 
 // What the flags ask for, once they hold together: where the post goes,

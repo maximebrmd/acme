@@ -26,7 +26,7 @@
     "cn": "0.5.2",
     "frimousse": "0.4.0",
     "geist": "1.9.2",
-    "lucide-react": "1.70.0",
+    "lucide-react": "1.72.0",
     "react-day-picker": "10.0.2",
     "react-is": "19.3.1",
     "recharts": "3.10.1",
@@ -38,14 +38,14 @@
     "@shadcn/lint": "0.2.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "next": "16.4.5",
+    "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "next": "16.4.5",
+    "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.5"

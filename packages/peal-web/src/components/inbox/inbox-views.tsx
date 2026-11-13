@@ -314,20 +314,49 @@ export const ReplyAbilityNotice = ({
 export const handleOf = ({ handle }: InboxAuthor): string =>
   handle.startsWith("@") ? handle : `@${handle}`;
 
+/**
+ * What a comment's author is called where their platform gives neither a
+ * name nor a handle: on LinkedIn, whose commenters Peal keeps by URN and
+ * never by name, a member or a page by the kind of URN; elsewhere,
+ * someone.
+ */
+export const namelessKey = (
+  author: InboxAuthor | null,
+  platform: Platform | null
+): "linkedinMember" | "linkedinPage" | "unknownAuthor" => {
+  if (platform !== "linkedin" || author === null) {
+    return "unknownAuthor";
+  }
+
+  return author.platformId.startsWith("urn:li:organization:")
+    ? "linkedinPage"
+    : "linkedinMember";
+};
+
+/** Whether the platform gives the author neither a name nor a handle. */
+export const isNameless = (author: InboxAuthor | null): boolean =>
+  author === null ||
+  ((author.displayName === null || author.displayName === "") &&
+    author.handle === "");
+
 // Who wrote a comment, as their platform shows them: plain text, each in
 // a `bdi`, so a name written right to left never reorders what stands
 // beside it.
-const AuthorLine = ({ author }: { readonly author: InboxAuthor | null }) => {
+const AuthorLine = ({
+  author,
+  platform,
+}: {
+  readonly author: InboxAuthor | null;
+  readonly platform: Platform | null;
+}) => {
   const t = useTranslations("Inbox.comment");
 
   // A missing author, or one their platform names by neither name nor
   // handle.
-  if (
-    author === null ||
-    ((author.displayName === null || author.displayName === "") &&
-      author.handle === "")
-  ) {
-    return <span className="font-medium">{t("unknownAuthor")}</span>;
+  if (author === null || isNameless(author)) {
+    return (
+      <span className="font-medium">{t(namelessKey(author, platform))}</span>
+    );
   }
 
   return (
@@ -439,7 +468,7 @@ export const CommentView = ({
   return (
     <li className="flex flex-col gap-3 rounded-lg border p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <AuthorLine author={comment.author} />
+        <AuthorLine author={comment.author} platform={platform ?? null} />
         <span className="flex flex-wrap items-center gap-2">
           {comment.liked && !deleted ? (
             <Badge variant="outline">{t("liked")}</Badge>

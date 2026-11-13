@@ -119,7 +119,8 @@
   `r_organization_social`, `rw_organization_admin`, nothing of the member's
   profile). Both redirect to `/connect/linkedin/callback`; the attempt's
   connection picks the authorizer. The pages sign-in lists the member's
-  approved roles (`organizationAcls`) and answers an `AccountChoice` of
+  approved roles (`organizationAcls`, to `paging.total` or an empty page,
+  never a page shorter than asked, which LinkedIn may cap) and answers an `AccountChoice` of
   the pages they administer or write content for (`postingRoles`), each
   with the member's token and `urn:li:organization:<id>` as its account
   id, which no profile's can equal. A page's token is renewed only when
@@ -151,7 +152,23 @@
   it); Google Business Profile's sign-in never changes
   (`youtube-comment-scopes.test.ts`). Peal never sends
   `include_granted_scopes`: a reconnection records what that consent
-  granted.
+  granted. Where it names LinkedIn, the pages' sign-in asks
+  `r_organization_social_feed` and `w_organization_social_feed` after its
+  own (`linkedinPagesScopesFor`); LinkedIn grants all or nothing, so an
+  answer that lists no scope records what was asked. The profile's sign-in
+  never changes (`linkedin-comment-scopes.test.ts`). Where the inbox reads
+  LinkedIn, and only there, the pages' sign-in keeps the member the token
+  is theirs (the ACLs' `roleAssignee`) as `IssuedTokens.tokenOwner`,
+  stored in `channels.token_owner`, never in `granted_by`, which Meta's
+  data deletion requests match; the authorizer's refresh gives the kept
+  one back, a reconnection by another member replaces it, and tokens
+  saved without one (the inbox off) forget it, as does a daily run
+  (`channels.token-owners`, `ForgetTokenOwners`) on a server whose inbox
+  does not read LinkedIn, for tokens that never renew. `ChannelToken.tokenOwner`
+  hands it to the adapters for LinkedIn's limits per member. It is
+  personal data of the member, maybe someone without an account (a
+  connect link): it leaves Peal with the channel (disconnect, workspace
+  erasure) and is in the registry's `channels` category.
 - Instagram has two ways in, one platform with a connection kind
   (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
   copied by the contract): `instagramLogin`, the default, and

@@ -72,10 +72,10 @@ const useCopy = () => {
   const t = useTranslations("WorkspaceHome");
 
   return (text: string) => {
-    void navigator.clipboard.writeText(text).then(
-      () => toast.success(t("copied")),
-      () => toast.error(t("copyFailed"))
-    );
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => toast.success(t("copied")))
+      .catch(() => toast.error(t("copyFailed")));
   };
 };
 

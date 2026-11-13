@@ -9,7 +9,8 @@ import path from "node:path";
 import { assert, layer } from "@effect/vitest";
 import { Config, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
-import { BillingSchema } from "peal-contract";
+import { BillingSchema, ReductionSchema, StandingSchema } from "peal-contract";
+import type { Standing } from "peal-contract";
 import { Stripe } from "stripe";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
@@ -128,6 +129,9 @@ const deliver = Effect.fn("deliver")(function* deliver(
   });
 });
 
+// A standing, but for the account, which each reader is told of.
+const withoutAccount = ({ account: _account, ...rest }: Standing) => rest;
+
 const billingOf = Effect.fn("billingOf")(function* billingOf(
   owner: Person,
   workspaceId: string
@@ -190,10 +194,7 @@ const LimitErrorSchema = Schema.Struct({
   used: Schema.Number,
 });
 
-const FreeWorkspaceErrorSchema = Schema.Struct({
-  ...upgradeFields,
-  workspaceId: Schema.String,
-});
+const CreatedSchema = Schema.Struct({ id: Schema.String });
 
 // The subscriptions a refused deletion lists, as JSON carries them.
 const decodeSubscribed = Schema.decodeUnknownSync(
@@ -220,6 +221,20 @@ const ExportedBillingSchema = Schema.Struct({
       }),
     })
   ),
+});
+
+const ExportedAccountsSchema = Schema.Struct({
+  contracts: Schema.Struct({
+    billingAccounts: Schema.Struct({
+      accounts: Schema.Array(
+        Schema.Struct({ workspaceIds: Schema.Array(Schema.String) })
+      ),
+      paymentMethodRequired: Schema.Boolean,
+      transferOffers: Schema.Array(
+        Schema.Struct({ toUserId: Schema.String, workspaceId: Schema.String })
+      ),
+    }),
+  }),
 });
 
 const CheckoutSchema = Schema.Struct({
@@ -1135,26 +1150,18 @@ layer(BillingIntegration, {
         assert.isNotNull(trying.subscription?.trialEnd);
         assert.isFalse(trying.trial?.available);
 
-        // A workspace in its trial is free once it ends: the account owns
-        // no second free workspace.
+        // Another workspace of the account is on the same account, and
+        // shares the plan the trial gives.
         const another = yield* app.request("/api/auth/organization/create", {
           body: { name: "Another", slug: `another-${randomUUID()}` },
           headers: { cookie: owner.cookies },
         });
 
-        assert.strictEqual(another.status, 402);
+        assert.strictEqual(another.status, 200);
 
-        // Ordering the plan it tries is the way out.
-        assert.deepStrictEqual(
-          yield* bodyOf(FreeWorkspaceErrorSchema, another),
-          {
-            billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
-            code: "FREE_WORKSPACE_LIMIT_REACHED",
-            plan: "pro",
-            planWithRoom: "pro",
-            workspaceId,
-          }
-        );
+        const { id: anotherId } = yield* bodyOf(CreatedSchema, another);
+
+        assert.strictEqual((yield* billingOf(owner, anotherId)).plan, "pro");
 
         // The same account, admin of another workspace: no second trial.
         const colleague = yield* signedUp("trial-colleague");
@@ -1273,29 +1280,40 @@ layer(BillingIntegration, {
       })
   );
 
-  it.effect("lets an account own one workspace on the free plan", () =>
-    Effect.gen(function* oneFree() {
-      const app = yield* TestApp;
-      const owner = yield* signedUp("one-free");
+  it.effect(
+    "puts every workspace an account makes on its billing account, billed on the first",
+    () =>
+      Effect.gen(function* oneAccount() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("one-account");
 
-      const first = yield* workspaceOf(owner, "First");
+        const first = yield* workspaceOf(owner, "First");
 
-      const refused = yield* app.request("/api/auth/organization/create", {
-        body: { name: "Second", slug: `second-${randomUUID()}` },
-        headers: { cookie: owner.cookies },
-      });
+        const made = yield* app.request("/api/auth/organization/create", {
+          body: { name: "Second", slug: `second-${randomUUID()}` },
+          headers: { cookie: owner.cookies },
+        });
 
-      assert.strictEqual(refused.status, 402);
+        assert.strictEqual(made.status, 200);
 
-      // Names the free workspace, and the plan that makes room for another.
-      assert.deepStrictEqual(yield* bodyOf(FreeWorkspaceErrorSchema, refused), {
-        billingUrl: `http://localhost:3001/app/${first}/billing`,
-        code: "FREE_WORKSPACE_LIMIT_REACHED",
-        plan: "free",
-        planWithRoom: "starter",
-        workspaceId: first,
-      });
-    })
+        const { id: second } = yield* bodyOf(CreatedSchema, made);
+
+        const rows = yield* sql<{
+          readonly holder: string;
+          readonly payer: string;
+          readonly workspaceId: string;
+        }>`SELECT a.holder_workspace_id AS holder, a.payer_user_id AS payer, w.workspace_id AS "workspaceId"
+          FROM billing.account_workspaces w JOIN billing.accounts a ON a.id = w.account_id
+          WHERE w.workspace_id IN (${first}, ${second}) ORDER BY w.workspace_id = ${first} DESC`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(rows, [
+          { holder: first, payer: owner.id, workspaceId: first },
+          { holder: first, payer: owner.id, workspaceId: second },
+        ]);
+      })
   );
 
   // Cancelling and withdrawing tell the members by notice and email, which
@@ -1525,26 +1543,150 @@ layer(BillingIntegration, {
       })
   );
 
-  it.effect(
-    "lets one of two workspaces created together be the account's free one",
-    () =>
-      Effect.gen(function* createdTogether() {
-        const app = yield* TestApp;
-        const owner = yield* signedUp("created-together");
+  it.effect("puts two workspaces created together on one billing account", () =>
+    Effect.gen(function* createdTogether() {
+      const app = yield* TestApp;
+      const owner = yield* signedUp("created-together");
 
-        const create = (name: string) =>
-          app.request("/api/auth/organization/create", {
-            body: { name, slug: `${name}-${randomUUID()}` },
-            headers: { cookie: owner.cookies },
-          });
-
-        const replies = yield* Effect.all([create("first"), create("second")], {
-          concurrency: "unbounded",
+      const create = (name: string) =>
+        app.request("/api/auth/organization/create", {
+          body: { name, slug: `${name}-${randomUUID()}` },
+          headers: { cookie: owner.cookies },
         });
 
-        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      const replies = yield* Effect.all([create("first"), create("second")], {
+        concurrency: "unbounded",
+      });
+
+      assert.deepStrictEqual(statusesOf(replies), [200, 200]);
+
+      const sql = yield* SqlClient.SqlClient;
+
+      const accounts = yield* sql<{
+        readonly workspaces: number;
+      }>`SELECT count(w.workspace_id)::int AS workspaces FROM billing.accounts a JOIN billing.account_workspaces w ON w.account_id = a.id WHERE a.payer_user_id = ${owner.id} GROUP BY a.id`.pipe(
+        Effect.orDie
+      );
+
+      assert.deepStrictEqual(accounts, [{ workspaces: 2 }]);
+    })
+  );
+  it.effect(
+    "keeps a workspace's payer among its owners until they hand it over",
+    () =>
+      Effect.gen(function* payerStays() {
+        const app = yield* TestApp;
+        const payer = yield* signedUp("payer");
+        const other = yield* signedUp("other-owner");
+        const workspaceId = yield* workspaceOf(payer, "Handed over");
+
+        const invited = yield* app.request(
+          "/api/auth/organization/invite-member",
+          {
+            body: {
+              email: other.email,
+              organizationId: workspaceId,
+              role: "owner",
+            },
+            headers: { cookie: payer.cookies },
+          }
+        );
+
+        const accepted = yield* app.request(
+          "/api/auth/organization/accept-invitation",
+          {
+            body: {
+              invitationId: (yield* bodyOf(CreatedSchema, invited)).id,
+            },
+            headers: { cookie: other.cookies },
+          }
+        );
+
+        assert.strictEqual(accepted.status, 200);
+
+        const sql = yield* SqlClient.SqlClient;
+
+        const [payerMember] = yield* sql<{
+          readonly id: string;
+        }>`SELECT id FROM auth.member WHERE organization_id = ${workspaceId} AND user_id = ${payer.id}`.pipe(
+          Effect.orDie
+        );
+
+        const refusals = [
+          yield* post(payer, "/api/auth/organization/leave", {
+            organizationId: workspaceId,
+          }),
+          yield* post(other, "/api/auth/organization/remove-member", {
+            memberIdOrEmail: payer.email,
+            organizationId: workspaceId,
+          }),
+          yield* post(other, "/api/auth/organization/update-member-role", {
+            memberId: payerMember?.id ?? "",
+            organizationId: workspaceId,
+            role: "admin",
+          }),
+        ];
+
+        assert.deepStrictEqual(statusesOf(refusals), [400, 400, 400]);
+
+        for (const refused of refusals) {
+          assert.strictEqual(
+            (yield* bodyOf(ErrorSchema, refused)).code,
+            "PAYER_MUST_STAY"
+          );
+        }
+
+        // Handed over: the other owner pays, and the first may leave.
+        const offered = yield* post(
+          payer,
+          `/api/workspaces/${workspaceId}/billing/transfer`,
+          { toUserId: other.id }
+        );
+
+        assert.strictEqual(offered.status, 200);
+
+        // The payer's copy of their data lists the account they pay for and
+        // the offer they made.
+        const exported = yield* bodyOf(
+          ExportedAccountsSchema,
+          yield* app.request("/api/me/export", {
+            headers: { cookie: payer.cookies },
+          })
+        );
+
+        const { billingAccounts } = exported.contracts;
+
+        assert.deepStrictEqual(
+          billingAccounts.accounts.map(({ workspaceIds }) => workspaceIds),
+          [[workspaceId]]
+        );
+        assert.isFalse(billingAccounts.paymentMethodRequired);
+        assert.deepStrictEqual(
+          billingAccounts.transferOffers.map(
+            ({ toUserId, workspaceId: id }) => ({
+              id,
+              toUserId,
+            })
+          ),
+          [{ id: workspaceId, toUserId: other.id }]
+        );
+
+        const taken = yield* post(
+          other,
+          `/api/workspaces/${workspaceId}/billing/transfer/acceptance`
+        );
+
+        assert.strictEqual(taken.status, 200);
+        assert.deepInclude(taken.body, { payer: true });
+
+        const left = yield* post(payer, "/api/auth/organization/leave", {
+          organizationId: workspaceId,
+        });
+
+        assert.strictEqual(left.status, 200);
       })
   );
+
   // A plan that shrinks under a workspace deletes nothing: the workspace
   // says what it holds beyond the plan, and comes back within it by
   // keeping what a member who manages billing chose.
@@ -1603,14 +1745,21 @@ layer(BillingIntegration, {
           assert.strictEqual(accepted.status, 200);
         }
 
-        const standing = (cookies: string) =>
+        const standingWithAccount = (cookies: string) =>
           app
             .request(`/api/workspaces/${workspaceId}/billing/standing`, {
               headers: { cookie: cookies },
             })
-            .pipe(Effect.map(({ body }) => body));
+            .pipe(
+              Effect.flatMap((reply) =>
+                bodyOf(Schema.toCodecJson(StandingSchema), reply)
+              )
+            );
 
-        const within = {
+        const standing = (cookies: string) =>
+          standingWithAccount(cookies).pipe(Effect.map(withoutAccount));
+
+        const within: Omit<Standing, "account"> = {
           mustReduce: false,
           over: [],
           plan: "pro",
@@ -1620,6 +1769,22 @@ layer(BillingIntegration, {
 
         assert.deepStrictEqual(yield* standing(owner.cookies), within);
 
+        // The owner who made the workspace pays for it, alone in its
+        // account; a guest is told whose account it is, not as its payer.
+        assert.deepStrictEqual(
+          (yield* standingWithAccount(owner.cookies)).account,
+          {
+            billingWorkspaceId: workspaceId,
+            billingWorkspaceName: "over-plan",
+            id: (yield* billingOf(owner, workspaceId)).account?.id ?? "",
+            otherWorkspaces: [],
+            partner: false,
+            payer: true,
+            transfer: null,
+            workspaces: 1,
+          }
+        );
+
         // The subscription ends: the workspace is on the free plan, with
         // everything it had.
         assert.strictEqual(
@@ -1627,7 +1792,7 @@ layer(BillingIntegration, {
           200
         );
 
-        const over = {
+        const over: Omit<Standing, "account"> = {
           mustReduce: true,
           over: [
             { allowed: 3, limit: "channels", used: 5 },
@@ -1682,11 +1847,20 @@ layer(BillingIntegration, {
         const reduced = yield* reduce(owner, kept);
 
         assert.strictEqual(reduced.status, 200);
-        assert.deepStrictEqual(reduced.body, {
+
+        const { standing: after, ...done } = yield* bodyOf(
+          Schema.toCodecJson(ReductionSchema),
+          reduced
+        );
+
+        assert.deepStrictEqual(done, {
           disconnectedChannels: 2,
           removedMembers: 1,
           revokedInvitations: 0,
-          standing: { ...within, plan: "free" },
+        });
+        assert.deepStrictEqual(withoutAccount(after), {
+          ...within,
+          plan: "free",
         });
 
         const billing = yield* billingOf(owner, workspaceId);

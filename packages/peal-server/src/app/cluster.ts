@@ -7,6 +7,8 @@ import {
 import type { ShardingConfig } from "effect/cluster";
 import { Digest } from "effect/crypto";
 
+import { workflowShutdownTimeout } from "#app/shutdown.ts";
+
 // The runner never listens: one server runs every shard, with no transport
 // between runners. Its address is only its identity in cluster_runners, which
 // also seeds the ids of the messages it writes, so each process needs its own.
@@ -37,7 +39,7 @@ const runnerLive = (overrides: ShardingSettings) =>
           // storage: this bounds how late a post goes out.
           entityMessagePollInterval: Duration.seconds(2),
           // How long shutdown waits for calls in flight to the platforms.
-          entityTerminationTimeout: Duration.seconds(60),
+          entityTerminationTimeout: workflowShutdownTimeout,
           runnerAddress: Option.some(address),
           ...overrides,
         },

@@ -111,6 +111,19 @@ several:
   with type-aware rules, and oxfmt. Each package has its own
   `oxlint.config.ts`. Parse values with Effect Schema rather than asserting
   types or checking `typeof`.
+- Effect's language service (`@effect/tsgo`) checks Effect code in `tsc`:
+  `scripts/patch-typescript.ts` patches the workspace's TypeScript, from
+  the root `prepare` (a TypeScript it has no build for is a warning there)
+  and from `bun run typecheck` (an error), and its errors and warnings fail
+  typecheck. `typescript` and `@effect/tsgo` move together. Typecheck's
+  cache reads `tsc --version`, which names the patch. The plugin and its
+  options are in `tsconfig.base.json` (a package that sets `plugins` lists
+  it again, and inherits the options); an unstable or experimental Effect
+  module the code starts to use joins `allowedUnstableApis` or
+  `allowedExperimentalApis` there, by module. A
+  guard that fails is `return yield*` when every path returns a value, and
+  otherwise `yield* ok ? Effect.void : Effect.fail(error)`, so
+  `consistent-return` holds too.
 - Type-aware lint reads generated types, so a package with a generator
   (`next typegen`, `astro sync`) gets a `typegen` target: `bun run check` runs
   every `typegen` first, and the package's `typecheck` depends on it.
@@ -137,6 +150,8 @@ several:
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
   dependency changes, `packages/peal-infra/ansible/uv.lock` with Python ones. The
   SDKs' manifests are the exception (see [SDKs](packages/peal-sdk/AGENTS.md)).
+  Dependabot (`.github/dependabot.yml`) proposes the upgrades weekly, grouped;
+  a new package joins its group there.
 - A change to the contract regenerates the SDKs in the same change:
   `bun run sdk:generate` (Docker), then `bun run sdk:build`. CI's `sdks` job
   fails while they are stale.
@@ -155,8 +170,10 @@ several:
 
 ## Read the sources, not memory
 
-Effect 4, Drizzle 1.0, Better Auth, the AT Protocol OAuth client, Tiptap,
-ui-sdk, Blume and Astro move faster than any training data. `bun run references` clones each
+Effect 4 and its language service, Drizzle 1.0, Better Auth, the AT Protocol
+OAuth client, Stripe's SDK, ui-sdk, Tiptap, Blume, Astro, the e2e runner and
+Ultracite's presets move faster than any training data. `bun run references`
+(`scripts/references.ts`, which skips a package not installed) clones each
 one's source, at the version this workspace installs, into
 `.local/references/<name>` (ignored by Git, Nx and the linters). Read the code,
 tests and docs there before using an API, and rerun the command after an

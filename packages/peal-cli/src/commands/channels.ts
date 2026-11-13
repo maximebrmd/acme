@@ -133,16 +133,16 @@ const list = Command.make(
     const text = input.search.pipe(Option.map((written) => written.trim()));
 
     // Text the search would not take is refused before a request leaves.
-    if (
-      Option.exists(
-        text,
-        ({ length }) => length === 0 || length > maxChannelQueryLength
-      )
-    ) {
-      yield* new Refused({
-        reason: `--search takes 1 to ${String(maxChannelQueryLength)} characters.`,
-      });
-    }
+    yield* Option.exists(
+      text,
+      ({ length }) => length === 0 || length > maxChannelQueryLength
+    )
+      ? Effect.fail(
+          new Refused({
+            reason: `--search takes 1 to ${String(maxChannelQueryLength)} characters.`,
+          })
+        )
+      : Effect.void;
 
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 

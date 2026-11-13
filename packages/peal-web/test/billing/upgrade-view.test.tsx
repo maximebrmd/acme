@@ -164,22 +164,6 @@ describe(UpgradeView, () => {
     expect(html).toContain("5 GB of media");
   });
 
-  it("names the workspace to pay for before a second free one", async () => {
-    const html = await render("en", {
-      reason: {
-        limit: "freeWorkspace",
-        plan: "free",
-        planWithRoom: "starter",
-        workspaceId: "w",
-      },
-    });
-
-    expect(html).toContain(
-      "Your account already owns a workspace on the free plan: Studio Nord."
-    );
-    expect(html).toContain("The Starter plan has room:");
-  });
-
   it("lists what to remove before a plan too small", async () => {
     const html = await render("en", {
       tooSmall: [

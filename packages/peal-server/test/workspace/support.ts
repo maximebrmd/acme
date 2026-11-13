@@ -8,7 +8,10 @@ import { assert } from "@effect/vitest";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Effect, Option, Redacted, Schema } from "effect";
 
-import { lookupKeysOf } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  catalogueKeysOf,
+  lookupKeysOf,
+} from "#shared/infrastructure/stripe-settings.ts";
 import {
   bodyOf,
   origin,
@@ -228,7 +231,6 @@ export const authWithoutDatabase = () =>
     hooks: {
       checkout: async () =>
         await Promise.resolve({ _tag: "start", trialDays: null } as const),
-      freeWorkspace: async () => await Promise.resolve(null),
       impersonatedRequest: async () => await Promise.resolve(true),
       invitation: ignore,
       log: ignore,
@@ -239,6 +241,8 @@ export const authWithoutDatabase = () =>
           plan: "free" as const,
           planWithRoom: null,
         }),
+      ownersChanged: nothing,
+      payerOf: async () => await Promise.resolve(null),
       resetPassword: ignore,
       signUp: async () => await Promise.resolve(true),
       subscriptionChanged: nothing,
@@ -249,6 +253,7 @@ export const authWithoutDatabase = () =>
       twoStepChanged: ignore,
       verifyEmail: ignore,
       workspaceChange: nothing,
+      workspaceCreated: nothing,
     },
     settings: {
       captcha: Option.none(),
@@ -261,6 +266,7 @@ export const authWithoutDatabase = () =>
       secret: Redacted.make("synthetic-auth-secret-for-tests-0123456789"),
       stripe: Option.some({
         apiUrl: Option.none(),
+        catalogue: catalogueKeysOf("synthetic"),
         prices: lookupKeysOf("synthetic"),
         secretKey: Redacted.make("sk_test_synthetic_routes"),
         webhookSecret: Redacted.make("whsec_synthetic_routes"),

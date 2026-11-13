@@ -114,12 +114,64 @@ export const TrialOfferSchema = Schema.Struct({
 
 export type TrialOffer = typeof TrialOfferSchema.Type;
 
+/** An offer to hand a workspace to another payer, not yet taken. */
+export const BillingTransferSchema = Schema.Struct({
+  // When the offer lapses: 7 days after it was made.
+  expiresAt: Schema.DateTimeUtc,
+  offeredAt: Schema.DateTimeUtc,
+  // The payer who offered it.
+  offeredBy: Schema.String,
+  // The other owner of the workspace who becomes its payer by accepting.
+  toUserId: Schema.String,
+}).annotate({ identifier: "BillingTransfer" });
+
+export type BillingTransfer = typeof BillingTransferSchema.Type;
+
+/** Another workspace of the same billing account. */
+export const AccountWorkspaceSchema = Schema.Struct({
+  name: Schema.String,
+  workspaceId: Schema.String,
+}).annotate({ identifier: "AccountWorkspace" });
+
+export type AccountWorkspace = typeof AccountWorkspaceSchema.Type;
+
+/**
+ * The billing account a workspace is on: who pays for it, a person (the
+ * one who made it, or who took it over) or a partner, across every
+ * workspace of the account, which share one plan and count their channels
+ * together. The billing workspace holds the subscription.
+ */
+export const BillingAccountSchema = Schema.Struct({
+  // The workspace that bills the account: its plan is ordered there.
+  billingWorkspaceId: Schema.String,
+  // Its name, for a member of it; null for anyone else.
+  billingWorkspaceName: Schema.NullOr(Schema.String),
+  id: Schema.String,
+  // The account's other workspaces that the reader is a member of.
+  otherWorkspaces: Schema.Array(AccountWorkspaceSchema),
+  // Whether the account is a partner's: its home workspace and the
+  // workspaces it owns.
+  partner: Schema.Boolean,
+  // Whether the reader pays for the account.
+  payer: Schema.Boolean,
+  // The open offer to hand this workspace to another payer, shown to the
+  // payer and to the owner it is offered to; null otherwise.
+  transfer: Schema.NullOr(BillingTransferSchema),
+  // How many workspaces the account holds, this one included.
+  workspaces: Schema.Int,
+}).annotate({ identifier: "BillingAccount" });
+
+export type BillingAccount = typeof BillingAccountSchema.Type;
+
 /**
  * A workspace's billing. On a server that does not bill, `enabled` is false,
  * `plan`, `subscription`, `trial` and `withdrawableUntil` are null, every
  * allowance is null and `plans` is empty: nothing is limited.
  */
 export const BillingSchema = Schema.Struct({
+  // The billing account the workspace is on, on a server that does not
+  // bill too. Older servers leave it out.
+  account: Schema.optionalKey(BillingAccountSchema),
   allowances: PlanAllowancesSchema,
   // The currency of every price.
   currency: Schema.String,
@@ -162,6 +214,10 @@ export type Excess = typeof ExcessSchema.Type;
  * deletes nothing, so the workspace can hold more than the plan allows.
  */
 export const StandingSchema = Schema.Struct({
+  // The billing account the workspace is on, whose workspaces count their
+  // channels together, on a server that bills; left out on one that does
+  // not, and by older servers.
+  account: Schema.optionalKey(BillingAccountSchema),
   // Whether the workspace must come back within its plan before anything
   // else: it holds more channels or members than the plan allows, and
   // schedules and publishes nothing until it does. Media over the plan
@@ -181,6 +237,14 @@ export const StandingSchema = Schema.Struct({
 }).annotate({ identifier: "Standing" });
 
 export type Standing = typeof StandingSchema.Type;
+
+/** Whom a workspace's payer offers it to. */
+export const TransferPayloadSchema = Schema.Struct({
+  // Another owner of the workspace, by user id.
+  toUserId: Schema.String,
+}).annotate({ identifier: "TransferPayload" });
+
+export type TransferPayload = typeof TransferPayloadSchema.Type;
 
 /** What stays in a workspace that must come back within its plan. */
 export const ReductionPayloadSchema = Schema.Struct({

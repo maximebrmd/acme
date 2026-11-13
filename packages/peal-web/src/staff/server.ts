@@ -25,12 +25,16 @@ export type StaffClient = ConsoleClient["staff"];
 /** The legal requests' endpoints, for staff who hold the legal role. */
 export type LegalClient = ConsoleClient["legal"];
 
+/** What staff do about one free tier per person. */
+export type AccountsDeskClient = ConsoleClient["billingAccountsDesk"];
+
 /** The requests to cancel or withdraw that wait for staff. */
 export type DeskClient = ConsoleClient["contractRequestsDesk"];
 
 // What the API answers with 404: anyone but staff, and an account or a
 // workspace that is not there.
 const missing: ReadonlySet<string> = new Set([
+  "BillingAccountNotFound",
   "NotFound",
   "UserNotFound",
   "WorkspaceNotFound",
@@ -132,5 +136,17 @@ export const deskRead = async <A, E extends { readonly _tag: string }>(
 ): Promise<A> =>
   Option.getOrElse(
     await consoleRead(({ contractRequestsDesk }) => read(contractRequestsDesk)),
+    () => notFound()
+  );
+
+/**
+ * The same as `staffRead`, for the billing accounts desk, which the
+ * billing context answers behind the same access.
+ */
+export const accountsDeskRead = async <A, E extends { readonly _tag: string }>(
+  read: (desk: AccountsDeskClient) => Effect.Effect<A, E>
+): Promise<A> =>
+  Option.getOrElse(
+    await consoleRead(({ billingAccountsDesk }) => read(billingAccountsDesk)),
     () => notFound()
   );

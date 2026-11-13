@@ -1,4 +1,4 @@
-import { lte, sql } from "drizzle-orm";
+import { lt, lte, sql } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
@@ -37,6 +37,15 @@ export const DrizzlePlatformQuota = Layer.effect(
             target: [quotaUsage.bucket, quotaUsage.day],
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      purge: (before) =>
+        db
+          .delete(quotaUsage)
+          .where(lt(quotaUsage.day, isoDay(before)))
+          .returning({ bucket: quotaUsage.bucket })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
       spend: Effect.fn("PlatformQuota.spend")(function* spend({
         allowance,
         bucket,

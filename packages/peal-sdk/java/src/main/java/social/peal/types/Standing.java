@@ -25,6 +25,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Standing.Builder.class)
 public final class Standing {
+    private final Optional<BillingAccount> account;
+
     private final boolean mustReduce;
 
     private final List<Excess> over;
@@ -38,18 +40,25 @@ public final class Standing {
     private final Map<String, Object> additionalProperties;
 
     private Standing(
+            Optional<BillingAccount> account,
             boolean mustReduce,
             List<Excess> over,
             Optional<Plan> plan,
             Optional<PaidPlan> planWithRoom,
             int scheduledPosts,
             Map<String, Object> additionalProperties) {
+        this.account = account;
         this.mustReduce = mustReduce;
         this.over = over;
         this.plan = plan;
         this.planWithRoom = planWithRoom;
         this.scheduledPosts = scheduledPosts;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("account")
+    public Optional<BillingAccount> getAccount() {
+        return account;
     }
 
     @JsonProperty("mustReduce")
@@ -107,7 +116,8 @@ public final class Standing {
     }
 
     private boolean equalTo(Standing other) {
-        return mustReduce == other.mustReduce
+        return account.equals(other.account)
+                && mustReduce == other.mustReduce
                 && over.equals(other.over)
                 && plan.equals(other.plan)
                 && planWithRoom.equals(other.planWithRoom)
@@ -116,7 +126,8 @@ public final class Standing {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.mustReduce, this.over, this.plan, this.planWithRoom, this.scheduledPosts);
+        return Objects.hash(
+                this.account, this.mustReduce, this.over, this.plan, this.planWithRoom, this.scheduledPosts);
     }
 
     @java.lang.Override
@@ -144,6 +155,10 @@ public final class Standing {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage account(Optional<BillingAccount> account);
+
+        _FinalStage account(BillingAccount account);
 
         _FinalStage over(List<Excess> over);
 
@@ -176,12 +191,15 @@ public final class Standing {
 
         private List<Excess> over = new ArrayList<>();
 
+        private Optional<BillingAccount> account = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(Standing other) {
+            account(other.getAccount());
             mustReduce(other.getMustReduce());
             over(other.getOver());
             plan(other.getPlan());
@@ -279,13 +297,27 @@ public final class Standing {
         }
 
         @java.lang.Override
+        public _FinalStage account(BillingAccount account) {
+            this.account = Optional.ofNullable(account);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "account", nulls = Nulls.SKIP)
+        public _FinalStage account(Optional<BillingAccount> account) {
+            this.account = account;
+            return this;
+        }
+
+        @java.lang.Override
         public Standing build() {
-            return new Standing(mustReduce, over, plan, planWithRoom, scheduledPosts, additionalProperties);
+            return new Standing(account, mustReduce, over, plan, planWithRoom, scheduledPosts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("mustReduce")
+            if (key.equalsIgnoreCase("account")
+                    || key.equalsIgnoreCase("mustReduce")
                     || key.equalsIgnoreCase("over")
                     || key.equalsIgnoreCase("plan")
                     || key.equalsIgnoreCase("planWithRoom")

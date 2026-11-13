@@ -70,18 +70,19 @@ describe("an error report's telemetry", () => {
               Layer.provideMerge(anonymousSecurityTest)
             ),
             HttpServer.layerServices
-          )
-        ),
-        Effect.provide(
-          OtlpExport.pipe(
-            Layer.provide(recordingCollector(exports)),
-            Layer.provide(
-              ConfigProvider.layer(
-                ConfigProvider.fromEnv({
-                  env: {
-                    OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:14318",
-                  },
-                })
+          ).pipe(
+            Layer.provideMerge(
+              OtlpExport.pipe(
+                Layer.provide(recordingCollector(exports)),
+                Layer.provide(
+                  ConfigProvider.layer(
+                    ConfigProvider.fromEnv({
+                      env: {
+                        OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:14318",
+                      },
+                    })
+                  )
+                )
               )
             )
           )

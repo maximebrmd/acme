@@ -243,36 +243,41 @@ const update = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("signatures.update")(function* update(input) {
-    if (input.isDefault && input.notDefault) {
-      yield* new Refused({
-        reason: "Give --default or --no-default, not both.",
-      });
-    }
+    yield* input.isDefault && input.notDefault
+      ? Effect.fail(
+          new Refused({
+            reason: "Give --default or --no-default, not both.",
+          })
+        )
+      : Effect.void;
 
     const narrowed = yield* scopeGiven(input.platform, input.channel);
 
-    if (input.wholeWorkspace && Option.isSome(narrowed)) {
-      yield* new Refused({
-        reason: "Give --whole-workspace, --platform or --channel, not several.",
-      });
-    }
+    yield* input.wholeWorkspace && Option.isSome(narrowed)
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give --whole-workspace, --platform or --channel, not several.",
+          })
+        )
+      : Effect.void;
 
     const scope = input.wholeWorkspace
       ? Option.some<SignatureScope>({ _tag: "workspace" })
       : narrowed;
 
-    if (
-      Option.isNone(input.name) &&
-      Option.isNone(input.text) &&
-      Option.isNone(scope) &&
-      !input.isDefault &&
-      !input.notDefault
-    ) {
-      yield* new Refused({
-        reason:
-          "Give what changes: --name, --text, where it is meant for (--whole-workspace, --platform or --channel), --default or --no-default.",
-      });
-    }
+    yield* Option.isNone(input.name) &&
+    Option.isNone(input.text) &&
+    Option.isNone(scope) &&
+    !input.isDefault &&
+    !input.notDefault
+      ? Effect.fail(
+          new Refused({
+            reason:
+              "Give what changes: --name, --text, where it is meant for (--whole-workspace, --platform or --channel), --default or --no-default.",
+          })
+        )
+      : Effect.void;
 
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;

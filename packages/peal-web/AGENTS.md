@@ -70,7 +70,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `channel-sets`, `queues`, `recycling`, `feeds`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
-  `admin/contract-requests` (through `deskRead`), `admin/audit` and
+  `admin/contract-requests` (through `deskRead`), `admin/billing-accounts`
+  (through `accountsDeskRead`: platform accounts under several free billing
+  accounts, an account by its id or a workspace's, merging and requiring a
+  payment method), `admin/audit` and
   `admin/legal`: its layout and pages read the staff endpoints with the
   visitor's cookies through `staffRead` (`#staff/server.ts`), which shows
   the not-found page for any 404, and its actions are mutations from
@@ -467,7 +470,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Stripe's checkout and customer portal through `billingClient`
   (`#auth/billing-client.ts`, Better Auth's Stripe client), with
   `disableRedirect` and the page as the way back. It links the terms of
-  service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
+  service at `PEAL_TERMS_URL`. Above it, `BillingAccountView` says whose
+  billing account the workspace is on, links the billing workspace and the
+  others for their members (`linkTo`), and holds the offer to hand the
+  workspace over (offer, accept, decline, withdraw); a workspace another
+  bills orders nothing (`canManage` only where it bills). Explain a
+  `PlanLimitReached`, and Better
   Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
   catalogue and `Auth.errors`.
 - Below it, on a server that bills or not, `UsageHistoryScreen` reads

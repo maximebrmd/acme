@@ -23,9 +23,19 @@ The workspace's **Billing** page shows the same prices, its plan, and how much o
 
 ## The free plan and the trial [#trial]
 
-A new workspace is on the free plan. An account owns one workspace on the free plan at most: creating a second answers 402 `FREE_WORKSPACE_LIMIT_REACHED` until the first is subscribed. A workspace in its trial counts as free, as it is once the trial ends. A workspace that falls back to the free plan, after a trial or a cancellation, stays.
+A new workspace is on its [billing account](#accounts)'s plan: the free plan, until a plan is ordered for the account. An account may make as many workspaces as it likes, but they share one plan and count their channels together, so another workspace adds nothing free.
 
 Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method: nothing is charged, and three days before the end the members who manage billing are reminded, in the app and by email. When the trial ends, the workspace is back on the free plan, with its content, even if a payment method was added meanwhile: a trial never turns into a charge. A plan ordered during the trial starts once it is paid for, and the trial ends then; a checkout left unfinished leaves the trial running. An account closed after its trial leaves a keyed pseudonym of its email address for 2 years, so the same address signing up again gets no second trial.
+
+## Billing accounts [#accounts]
+
+Every workspace belongs to one billing account, which pays for it. The person who creates a workspace pays for it: each workspace they create joins their billing account, made with their first. A workspace made before billing accounts is on its oldest owner's. A [partner account](/embedding)'s home workspace and the workspaces it owns are on the partner's billing account, apart from its owners' own.
+
+The workspaces of an account share one plan and count their channels together: a free account holds the free plan's channels across all its workspaces. The plan is ordered, cancelled and withdrawn from on the account's billing workspace, its oldest (a partner's home workspace), which holds the subscription; the Billing page of every other workspace of the account names it, with a link for its members, and orders nothing (409 `billed_elsewhere`). A workspace with a plan subscription of its own from before keeps it alone until it ends, then joins its payer's account. On a server that does not bill, the accounts are kept and limit nothing.
+
+The payer of a workspace hands it to another of its owners on its Billing page: the offer is open for 7 days, and the owner it is made to accepts it there, in person, or declines it. Accepting moves the workspace to their billing account, made if they have none. It is refused when their account's plan has no room for the workspace's channels, and for the billing workspace while its subscription may still charge: cancel it first, or hand over another workspace. The API's `POST …/billing/transfer`, `POST …/billing/transfer/acceptance` and `DELETE …/billing/transfer` answer only a person in their own session.
+
+On a server that bills, the payer stays one of the workspace's owners until they hand it over: leaving it, being removed from it or losing the owner role answers 400 `PAYER_MUST_STAY`, and a reduction that would remove them `payerRequired`. On a server that does not bill nothing is refused: a workspace whose payer is no longer one of its owners moves to its oldest owner's account. When the payer closes their account, each workspace they paid for that others own goes to its oldest other owner's account, over its plan if that account has no room for its channels.
 
 ## What a plan limits [#limits]
 

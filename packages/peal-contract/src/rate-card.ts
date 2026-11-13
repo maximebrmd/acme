@@ -310,3 +310,74 @@ export const meterCharge = (
 
   return roundedHalfUp(counted(billable) * cents, per);
 };
+
+/** A graduated tier of Stripe's account-day price. */
+export const StripeTierSchema = Schema.Struct({
+  /** Cents per account-day, at most 12 decimals, as Stripe takes them. */
+  unitAmountDecimal: Schema.String,
+  /** Account-days up to which the tier applies; none for the last. */
+  upTo: Schema.NullOr(Schema.Int),
+});
+
+export type StripeTier = typeof StripeTierSchema.Type;
+
+const stripeDecimals = 12n;
+
+/** `cents / days`, half up to 12 decimals, without trailing zeros. */
+const decimalOf = (cents: number, days: number): string => {
+  const scale = 10n ** stripeDecimals;
+  const divisor = BigInt(days);
+  const scaled = (BigInt(cents) * scale * 2n + divisor) / (divisor * 2n);
+  const whole = scaled / scale;
+
+  const fraction = (scaled % scale)
+    .toString()
+    .padStart(Number(stripeDecimals), "0")
+    .replace(/0+$/u, "");
+
+  return fraction === "" ? whole.toString() : `${whole}.${fraction}`;
+};
+
+/**
+ * The account ladder as Stripe's graduated tiers on account-days, derived,
+ * never typed: each band's bound times `daysPerMonth`, its rate divided by
+ * it.
+ */
+export const stripeTiersOf = (
+  card: RateCard,
+  currency: PriceCurrency = "usd"
+): readonly StripeTier[] =>
+  card.prices[currency].accounts.bands.map(({ monthly, upTo }) => ({
+    unitAmountDecimal: decimalOf(monthly, card.daysPerMonth),
+    upTo: upTo === null ? null : upTo * card.daysPerMonth,
+  }));
+
+/**
+ * The price at Stripe of one unit of `meter` past its allowance, in cents,
+ * as a decimal of at most 12 places: $1 per 10,000 messages is `0.01`.
+ */
+export const stripeUnitAmountOf = (
+  meter: Meter,
+  card: RateCard,
+  currency: PriceCurrency = "usd"
+): string => {
+  const { cents, per } = card.prices[currency].meters[meter];
+
+  return decimalOf(cents, per);
+};
+
+/**
+ * The lookup keys of per-account pricing's prices at Stripe under
+ * `prefix`, one per line of the invoice, each also its meter's event name,
+ * as a server that bills reads them (`STRIPE_LOOKUP_KEY_PREFIX`).
+ */
+export const catalogueLookupKeysOf = (
+  prefix: string
+): { readonly accounts: string } & { readonly [M in Meter]: string } => ({
+  accounts: `${prefix}_accounts`,
+  assistantImages: `${prefix}_assistant_images`,
+  assistantRequests: `${prefix}_assistant_requests`,
+  managedAds: `${prefix}_managed_ads`,
+  outboundMessages: `${prefix}_outbound_messages`,
+  xApi: `${prefix}_x_api`,
+});

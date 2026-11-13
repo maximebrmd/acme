@@ -1,4 +1,4 @@
-import { Effect, Stdio } from "effect";
+import { Effect, Layer, Stdio } from "effect";
 import { Command } from "effect/cli";
 
 import { PealApi } from "#api.ts";
@@ -97,8 +97,7 @@ export const { version } = manifest;
 // `reporting` decides how a failure is printed: as JSON with --json.
 export const runWith = (args: readonly string[]) =>
   Command.runWith(cli, { version })(args).pipe(
-    Effect.provide(reporting(args)),
-    Effect.provide(printableConsole)
+    Effect.provide(reporting(args).pipe(Layer.provideMerge(printableConsole)))
   );
 
 // Runs the command line with the process arguments.

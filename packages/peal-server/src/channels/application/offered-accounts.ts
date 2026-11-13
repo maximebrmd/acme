@@ -18,6 +18,7 @@ const OfferedAccountSchema = Schema.Struct({
     refreshToken: Schema.Option(Schema.String),
     renewable: Schema.Boolean,
     scopes: Schema.Array(Schema.String),
+    tokenOwner: Schema.optionalKey(Schema.NonEmptyString),
   }),
 });
 
@@ -43,6 +44,10 @@ const offeredOf = (account: AuthorizedAccount): OfferedAccount => ({
     refreshToken: account.tokens.refreshToken.pipe(Option.map(Redacted.value)),
     renewable: account.tokens.renewable,
     scopes: account.tokens.scopes,
+    ...Option.match(Option.fromUndefinedOr(account.tokens.tokenOwner), {
+      onNone: () => ({}),
+      onSome: (tokenOwner) => ({ tokenOwner }),
+    }),
   },
 });
 
@@ -58,6 +63,10 @@ const authorizedOf = ({ tokens, ...account }: OfferedAccount) => {
       ...Option.match(tokens.grantedBy, {
         onNone: () => ({}),
         onSome: (grantedBy) => ({ grantedBy }),
+      }),
+      ...Option.match(Option.fromUndefinedOr(tokens.tokenOwner), {
+        onNone: () => ({}),
+        onSome: (tokenOwner) => ({ tokenOwner }),
       }),
     },
   };

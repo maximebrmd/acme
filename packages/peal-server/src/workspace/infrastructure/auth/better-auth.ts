@@ -10,6 +10,7 @@ import {
 } from "effect";
 import type { LogLevel } from "effect";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
@@ -27,7 +28,7 @@ import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
-import { AuthStartFailed } from "./auth-start-failed.ts";
+import { authStarted } from "./auth-start.ts";
 import type { CheckoutAnswer, Upgrade } from "./billing.ts";
 import { makeAuthDatabase } from "./database.ts";
 import type { ImpersonatedAuthRequest } from "./impersonation.ts";
@@ -58,6 +59,8 @@ const drainTimeout = "10 seconds";
 const decodeUserId = Schema.decodeUnknownEffect(UserIdSchema);
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const decodeWorkspaceIdEffect = Schema.decodeUnknownEffect(WorkspaceIdSchema);
 
 const decodeUser = Schema.decodeUnknownOption(UserIdSchema);
 
@@ -274,6 +277,7 @@ export const BetterAuthLive = Layer.effect(
     const database = yield* makeAuthDatabase(settings.databasePoolMax);
     const emails = yield* SendAuthEmail;
     const entitlements = yield* WorkspaceEntitlements;
+    const accounts = yield* BillingAccounts;
     const upgrades = yield* UpgradePaths;
     const subscriptions = yield* RecordSubscription;
     const checkouts = yield* CheckoutOrders;
@@ -321,23 +325,6 @@ export const BetterAuthLive = Layer.effect(
             })
           )
         ),
-      // Read while a workspace is created. A database failure refuses it.
-      // A workspace in its trial counts as free: it is, once the trial ends.
-      freeWorkspace: async (workspaceId) =>
-        await runPromise(
-          Effect.gen(function* freeWorkspace() {
-            const { plan, subscription } = yield* entitlements.of(workspaceId);
-
-            const free =
-              Option.exists(plan, (current) => current === "free") ||
-              Option.exists(
-                subscription,
-                ({ status }) => status === "trialing"
-              );
-
-            return free ? upgradeOf(yield* upgrades.paid(workspaceId)) : null;
-          })
-        ),
       // Awaited: the route runs only once the request is admitted and
       // recorded. A database failure refuses it.
       impersonatedRequest: async (request) =>
@@ -365,6 +352,39 @@ export const BetterAuthLive = Layer.effect(
           upgrades
             .from(workspaceId, "members", needed)
             .pipe(Effect.map(upgradeOf))
+        ),
+      // Awaited after a member left, was removed or changed role. A failure
+      // is logged: the next read of the workspace repairs it.
+      ownersChanged: async (workspaceId) => {
+        await runPromise(
+          decodeWorkspaceIdEffect(workspaceId).pipe(
+            Effect.flatMap((id) => accounts.of(id)),
+            Effect.asVoid,
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Following a workspace's owners in its billing account failed",
+                cause
+              )
+            ),
+            Effect.withSpan("BetterAuth.ownersChanged")
+          )
+        );
+      },
+      // Read when a member leaves, is removed or changes role. A database
+      // failure refuses it.
+      payerOf: async (workspaceId) =>
+        await runPromise(
+          Effect.gen(function* payerOf() {
+            const { plan } = yield* entitlements.of(workspaceId);
+
+            if (Option.isNone(plan)) {
+              return null;
+            }
+
+            const { payer } = yield* accounts.of(workspaceId);
+
+            return Option.getOrNull(payer);
+          })
         ),
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
@@ -404,18 +424,33 @@ export const BetterAuthLive = Layer.effect(
       workspaceChange: async (change) => {
         await runPromise(keptChange(activity, directory)(change));
       },
+      // Awaited, so the workspace answered is in its creator's billing
+      // account. A failure is logged: the account is given the next time
+      // the workspace is read.
+      workspaceCreated: async (workspaceId) => {
+        await runPromise(
+          decodeWorkspaceIdEffect(workspaceId).pipe(
+            Effect.flatMap((id) => accounts.of(id)),
+            Effect.asVoid,
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Giving a new workspace its billing account failed",
+                cause
+              )
+            ),
+            Effect.withSpan("BetterAuth.workspaceCreated")
+          )
+        );
+      },
     };
 
     const auth = makeAuth({ database, hooks, settings });
 
     yield* Deferred.succeed(made, auth);
 
-    // Checks the secret and options, and fails the server's start if they
-    // are wrong, rather than its first request.
-    yield* Effect.tryPromise({
-      catch: (cause) => new AuthStartFailed({ cause }),
-      try: async () => await auth.$context,
-    });
+    // Checks the secret, the options and the schema, and fails the server's
+    // start if they are wrong, rather than its first request.
+    yield* authStarted(auth);
 
     if (!servesMcp(settings.publicUrl)) {
       yield* Effect.logWarning(
