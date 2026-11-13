@@ -95,7 +95,8 @@ const IdSchema = Schema.Struct({ id: Schema.String });
 // Stripe refusing the request itself: the key, what it may do, or what was
 // asked. Asking again changes nothing, unlike a timeout or a 5xx.
 const RefusalSchema = Schema.Struct({
-  code: Schema.optionalKey(Schema.String),
+  // Stripe's errors carry the key, undefined when there is no code.
+  code: Schema.optional(Schema.String),
   type: Schema.Literals([
     "StripeAuthenticationError",
     "StripePermissionError",

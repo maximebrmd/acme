@@ -3,7 +3,7 @@
 // price with other amounts is replaced, what --check says, and that it
 // never prints the key.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Redacted, Ref } from "effect";
+import { Config, Effect, Layer, Option, Redacted, Ref } from "effect";
 
 import { catalogueOf } from "#billing/domain/catalogue.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
@@ -18,7 +18,8 @@ import {
 } from "#test/billing/fakes/stripe-account.ts";
 import { json } from "#test/publishing/fakes/platform-server.ts";
 
-const secretKey = "sk_test_synthetic_catalogue_key";
+// stripe-mock takes a key that looks like a test key, letters and digits.
+const secretKey = "sk_test_0123456789syntheticcatalogue";
 
 const published = catalogueOf(catalogueKeysOf("peal"), rateCard);
 
@@ -241,6 +242,21 @@ layer(Layer.empty)("the Stripe catalogue command", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  // stripe-mock checks each request against Stripe's API, and answers
+  // canned objects: none is Peal's, so every line is made.
+  it.effect("asks Stripe what its API takes", () =>
+    Effect.gen(function* mock() {
+      const apiUrl = yield* Config.String("STRIPE_MOCK_URL").pipe(
+        Config.withDefault("http://127.0.0.1:12111")
+      );
+
+      const { lines, outcome } = yield* run(apiUrl);
+
+      assert.isTrue(outcome._tag === "Success");
+      assert.lengthOf(lines, 18);
+    })
+  );
+
   it.effect("never prints the key, even when Stripe refuses it", () =>
     Effect.gen(function* secret() {
       const refusing = yield* stripeAccount(emptyAccount, () =>
@@ -265,6 +281,10 @@ layer(Layer.empty)("the Stripe catalogue command", (it) => {
         assert.strictEqual(
           refused.outcome.failure._tag,
           "StripeCatalogueUnread"
+        );
+        assert.include(
+          refused.outcome.failure.message,
+          "Stripe refused it (StripeAuthenticationError)"
         );
         assert.notInclude(refused.outcome.failure.message, secretKey);
         assert.notInclude(refused.outcome.failure.message, "sk_");
