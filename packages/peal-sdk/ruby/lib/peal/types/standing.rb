@@ -7,7 +7,7 @@ module Peal
     class Standing < Internal::Types::Model
       field :account, -> { Peal::Types::BillingAccount }, optional: true, nullable: false
 
-      field :grace_until, -> { String }, optional: false, nullable: true, api_name: "graceUntil"
+      field :grace_until, -> { String }, optional: true, nullable: true, api_name: "graceUntil"
 
       field :must_reduce, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "mustReduce"
 

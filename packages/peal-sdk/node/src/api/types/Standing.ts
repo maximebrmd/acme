@@ -4,7 +4,7 @@ import * as Peal from "../index.js";
 
 export interface Standing {
     account?: Peal.BillingAccount | undefined;
-    graceUntil: string | null;
+    graceUntil?: (string | null) | undefined;
     mustReduce: boolean;
     over: Peal.Excess[];
     plan: Peal.Plan | null;
