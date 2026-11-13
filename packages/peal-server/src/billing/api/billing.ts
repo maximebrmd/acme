@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import { Api, CurrentMember } from "peal-contract";
 
@@ -40,12 +40,17 @@ export const BillingHandlers = HttpApiBuilder.group(
         Effect.gen(function* standing() {
           const actor = actorOf(yield* CurrentMember);
 
-          const [found, account] = yield* Effect.all([
-            standings.of(actor),
-            accounts.of(actor),
-          ]).pipe(Effect.orDie);
+          const found = yield* standings.of(actor).pipe(Effect.orDie);
 
-          return standingView(found, account);
+          // A server that does not bill reads no billing account here: the
+          // standing is read on every page.
+          if (!standings.bills) {
+            return standingView(found, Option.none());
+          }
+
+          const account = yield* accounts.of(actor).pipe(Effect.orDie);
+
+          return standingView(found, Option.some(account));
         })
       );
   })

@@ -53,9 +53,12 @@ export const accountView = ({
 /** What clients see of where a workspace stands against its plan. */
 export const standingView = (
   standing: Standing,
-  account: AccountView
+  account: Option.Option<AccountView>
 ): StandingView => ({
-  account: accountView(account),
+  ...Option.match(account, {
+    onNone: () => ({}),
+    onSome: (view) => ({ account: accountView(view) }),
+  }),
   mustReduce: standing.mustReduce,
   over: standing.over,
   plan: Option.getOrNull(standing.plan),

@@ -249,6 +249,9 @@ export const OverPlanView = (props: OverPlanViewProps) => {
   const t = useTranslations("OverPlan");
   const billing = useTranslations("Billing");
   const format = useFormatter();
+  // The account's other workspaces the reader is a member of, on a server
+  // that bills.
+  const shared = standing.account?.otherWorkspaces ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -263,11 +266,11 @@ export const OverPlanView = (props: OverPlanViewProps) => {
         </p>
       </div>
       <ExcessList excesses={standing.over} namespace="OverPlan" />
-      {standing.account.otherWorkspaces.length === 0 ? null : (
+      {shared.length === 0 ? null : (
         <p className="text-sm">
           {t("sharedAccount", {
             workspaces: format.list(
-              standing.account.otherWorkspaces.map(({ name }) => name),
+              shared.map(({ name }) => name),
               { type: "conjunction" }
             ),
           })}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
-import type { Standing } from "peal-contract";
+import type { BillingAccount, Standing } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { OverPlanView } from "#components/billing/over-plan-view.tsx";
@@ -11,17 +11,19 @@ const nothing = () => {
   // Rendered once: nothing is clicked.
 };
 
+const account: BillingAccount = {
+  billingWorkspaceId: "studio",
+  billingWorkspaceName: "Studio Nord",
+  id: "0190f3a0-0000-7000-8000-00000000b001",
+  otherWorkspaces: [],
+  partner: false,
+  payer: true,
+  transfer: null,
+  workspaces: 1,
+};
+
 const standing: Standing = {
-  account: {
-    billingWorkspaceId: "studio",
-    billingWorkspaceName: "Studio Nord",
-    id: "0190f3a0-0000-7000-8000-00000000b001",
-    otherWorkspaces: [],
-    partner: false,
-    payer: true,
-    transfer: null,
-    workspaces: 1,
-  },
+  account,
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 4 },
@@ -84,7 +86,7 @@ describe(OverPlanView, () => {
     const shared = {
       ...standing,
       account: {
-        ...standing.account,
+        ...account,
         otherWorkspaces: [{ name: "Studio Sud", workspaceId: "south" }],
         workspaces: 3,
       },

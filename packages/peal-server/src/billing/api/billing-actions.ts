@@ -184,7 +184,7 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
 
           return {
             ...reduced,
-            standing: standingView(reduced.standing, account),
+            standing: standingView(reduced.standing, Option.some(account)),
           };
         })
       )

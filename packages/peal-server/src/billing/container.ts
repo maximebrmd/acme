@@ -119,6 +119,9 @@ const HoldersLive = AccountPlanHoldersLive.pipe(Layer.provide(AccountsLive));
  */
 export const BillingLive = Layer.mergeAll(
   AccountsLive,
+  // Whether the server bills, which the channels context's allowance asks
+  // before counting across a billing account.
+  ConfiguredBillingModeLive,
   WorkspaceEntitlements.layerShared,
   RecordSubscription.layer,
   CheckoutOrders.layer,

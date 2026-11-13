@@ -248,36 +248,42 @@ const LoadedBilling = ({
   };
 
   if (AsyncResult.isSuccess(billing)) {
+    // An older server says nothing of the account: the workspace bills
+    // itself.
     const { account } = billing.value;
-    const billedHere = account.billingWorkspaceId === workspaceId;
+
+    const billedHere =
+      account === undefined || account.billingWorkspaceId === workspaceId;
 
     return (
       <div className="flex flex-col gap-8">
-        <BillingAccountView
-          account={account}
-          canManage={canManage}
-          error={accountError}
-          owners={owners}
-          pending={accountPending}
-          userId={userId}
-          workspaceId={workspaceId}
-          linkTo={billingLink}
-          onAccept={() => {
-            runOnAccount("accept", async () => await accept({ params }));
-          }}
-          onOffer={(toUserId) => {
-            runOnAccount(
-              "offer",
-              async () => await offer({ params, payload: { toUserId } })
-            );
-          }}
-          onWithdraw={() => {
-            runOnAccount(
-              "withdraw",
-              async () => await withdrawOffer({ params })
-            );
-          }}
-        />
+        {account === undefined ? null : (
+          <BillingAccountView
+            account={account}
+            canManage={canManage}
+            error={accountError}
+            owners={owners}
+            pending={accountPending}
+            userId={userId}
+            workspaceId={workspaceId}
+            linkTo={billingLink}
+            onAccept={() => {
+              runOnAccount("accept", async () => await accept({ params }));
+            }}
+            onOffer={(toUserId) => {
+              runOnAccount(
+                "offer",
+                async () => await offer({ params, payload: { toUserId } })
+              );
+            }}
+            onWithdraw={() => {
+              runOnAccount(
+                "withdraw",
+                async () => await withdrawOffer({ params })
+              );
+            }}
+          />
+        )}
         <BillingView
           billing={billing.value}
           canManage={canManage && billedHere}

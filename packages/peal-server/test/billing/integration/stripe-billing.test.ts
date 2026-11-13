@@ -1736,7 +1736,7 @@ layer(BillingIntegration, {
           {
             billingWorkspaceId: workspaceId,
             billingWorkspaceName: "over-plan",
-            id: (yield* billingOf(owner, workspaceId)).account.id,
+            id: (yield* billingOf(owner, workspaceId)).account?.id ?? "",
             otherWorkspaces: [],
             partner: false,
             payer: true,

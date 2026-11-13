@@ -5,6 +5,7 @@ import { Base64Url } from "effect/encoding";
 import { Dns } from "effect/net";
 
 import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
@@ -45,6 +46,7 @@ const Neighbours = Layer.mergeAll(
   ),
   UnmeteredTest,
   AloneInAccountsTest,
+  Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
   DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest)),

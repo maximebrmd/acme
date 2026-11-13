@@ -6,6 +6,7 @@ import { TestClock } from "effect/testing";
 import { Api, Forbidden, Unauthenticated } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -83,15 +84,13 @@ const overviewOn = (enabled: boolean) =>
   );
 
 const clientWith = <E, R>(
-  security: Layer.Layer<Layer.Success<typeof anonymousSecurityTest>, E, R>
+  security: Layer.Layer<Layer.Success<typeof anonymousSecurityTest>, E, R>,
+  views: Layer.Layer<AccountViews> = AloneAccountViewsTest
 ) =>
   HttpApiTest.groups(Api, ["billing"]).pipe(
     Effect.provide(
       Layer.mergeAll(
-        BillingApiLive.pipe(
-          Layer.provideMerge(security),
-          Layer.provide(AloneAccountViewsTest)
-        ),
+        BillingApiLive.pipe(Layer.provideMerge(security), Layer.provide(views)),
         HttpServer.layerServices
       )
     )
@@ -244,6 +243,23 @@ layer(overviewOn(false))(
           scheduledPosts: null,
         });
       })
+    );
+
+    it.effect(
+      "tell where the workspace stands without reading its billing account",
+      () =>
+        Effect.gen(function* standsUnbilled() {
+          // Any read of the account dies.
+          const client = yield* clientWith(
+            securityTest(memberWith(permissionsFor("viewer"))),
+            Layer.mock(AccountViews, {})
+          );
+
+          const standing = yield* client.billing.standing({ params });
+
+          assert.isUndefined(standing.account);
+          assert.isFalse(standing.mustReduce);
+        })
     );
   }
 );

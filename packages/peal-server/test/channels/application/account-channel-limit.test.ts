@@ -3,7 +3,10 @@
 // hold, as a partner's pool is under the partner's.
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
@@ -23,6 +26,7 @@ import {
   everyWorkspaceOn,
   partnerOf,
   person,
+  UnmeteredTest,
   workspaceOwnedBy,
 } from "#test/billing/support.ts";
 import {
@@ -52,7 +56,10 @@ const AccountFreePlanTest = Layer.mergeAll(
       SqlChannelLocks,
       AccountChannelAllowanceLive.pipe(
         Layer.provide(everyWorkspaceOn("free")),
-        Layer.provide(PartnerOwnershipLive)
+        Layer.provide(PartnerOwnershipLive),
+        Layer.provide(
+          Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+        )
       ),
       MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
     )
@@ -239,3 +246,66 @@ layer(AccountFreePlanTest)("a person's workspaces on one plan", (it) => {
     })
   );
 });
+
+// A server that does not bill: the count decides nothing, so no billing
+// account is read, made or held. Any call to the accounts dies.
+const UnbilledTest = ChannelUsage.layer.pipe(
+  Layer.provideMerge(
+    Layer.mergeAll(
+      DrizzleChannelRepository,
+      AccountChannelAllowanceLive.pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            UnmeteredTest,
+            PartnerOwnershipLive,
+            Layer.mock(BillingAccounts, {}),
+            Layer.succeed(BillingMode, BillingMode.of({ enabled: false }))
+          )
+        )
+      )
+    )
+  ),
+  Layer.provideMerge(TokenCipherTest),
+  Layer.provideMerge(accountsTest)
+);
+
+layer(UnbilledTest)(
+  "a person's workspaces on a server that does not bill",
+  (it) => {
+    it.effect(
+      "count each workspace's own channels, touching no billing account",
+      () =>
+        Effect.gen(function* unbilled() {
+          const usage = yield* ChannelUsage;
+          const [first, second] = yield* twoOfOne;
+
+          yield* fill(first, 2);
+          yield* fill(second, 1);
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              usage.connected(first),
+              usage.connected(second),
+            ]),
+            [2, 1]
+          );
+
+          const across = yield* usage.connectedAcross([first, second]);
+
+          assert.deepStrictEqual(
+            [across.get(first), across.get(second)],
+            [2, 1]
+          );
+          assert.lengthOf(
+            yield* SqlClient.SqlClient.use(
+              (sql) =>
+                sql`SELECT 1 FROM billing.account_workspaces WHERE workspace_id IN (${first}, ${second})`
+            ).pipe(Effect.orDie),
+            0
+          );
+
+          yield* cleanUpAccounts([first, second]);
+        })
+    );
+  }
+);

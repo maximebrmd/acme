@@ -170,8 +170,8 @@ export type BillingAccount = typeof BillingAccountSchema.Type;
  */
 export const BillingSchema = Schema.Struct({
   // The billing account the workspace is on, on a server that does not
-  // bill too.
-  account: BillingAccountSchema,
+  // bill too. Older servers leave it out.
+  account: Schema.optionalKey(BillingAccountSchema),
   allowances: PlanAllowancesSchema,
   // The currency of every price.
   currency: Schema.String,
@@ -214,9 +214,10 @@ export type Excess = typeof ExcessSchema.Type;
  * deletes nothing, so the workspace can hold more than the plan allows.
  */
 export const StandingSchema = Schema.Struct({
-  // The billing account the workspace is on: its channels are counted
-  // across the account's workspaces.
-  account: BillingAccountSchema,
+  // The billing account the workspace is on, whose workspaces count their
+  // channels together, on a server that bills; left out on one that does
+  // not, and by older servers.
+  account: Schema.optionalKey(BillingAccountSchema),
   // Whether the workspace must come back within its plan before anything
   // else: it holds more channels or members than the plan allows, and
   // schedules and publishes nothing until it does. Media over the plan

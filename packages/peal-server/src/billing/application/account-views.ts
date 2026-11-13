@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { AccountTransfer } from "#billing/domain/account-transfer.ts";
 import type { BillingAccount } from "#billing/domain/billing-account.ts";
@@ -54,7 +54,15 @@ export class AccountViews extends Context.Service<
       const store = yield* BillingAccountStore;
 
       const of = Effect.fn("AccountViews.of")(function* of(actor: Actor) {
-        const pool = yield* accounts.poolOf(actor.workspaceId);
+        // Read without the account's hold: it reports a state, and a page
+        // would queue behind every connection.
+        const pools = yield* accounts.poolsIn([actor.workspaceId]);
+        const pool = pools.get(actor.workspaceId);
+
+        if (pool === undefined) {
+          return yield* Effect.die("A workspace read has no billing account");
+        }
+
         const { account } = pool;
         const { subject } = actor;
 
@@ -80,27 +88,38 @@ export class AccountViews extends Context.Service<
           Option.contains(account.payer, userId)
         );
 
+        const now = yield* DateTime.now;
+
+        // An offer to its two people, while it is open.
         const transfer = (yield* store.transferOf(actor.workspaceId)).pipe(
-          Option.filter((offered) =>
-            Option.exists(
-              reader,
-              (userId) =>
-                userId === offered.offeredBy || userId === offered.toUserId
-            )
+          Option.filter(
+            (offered) =>
+              DateTime.isGreaterThan(offered.expiresAt, now) &&
+              Option.exists(
+                reader,
+                (userId) =>
+                  userId === offered.offeredBy || userId === offered.toUserId
+              )
           )
         );
+
+        const shown = others.flatMap((workspaceId) => {
+          const name = names.get(workspaceId);
+
+          return name === undefined ? [] : [{ name, workspaceId }];
+        });
 
         const view: AccountView = {
           account,
           holderName: Option.fromUndefinedOr(names.get(account.holder)),
-          others: others.flatMap((workspaceId) => {
-            const name = names.get(workspaceId);
-
-            return name === undefined ? [] : [{ name, workspaceId }];
-          }),
+          others: shown,
           payer,
           transfer,
-          workspaces: others.length + 1,
+          // A partner's account tells nobody how many customers it holds:
+          // only the workspaces the reader is a member of.
+          workspaces: Option.isSome(account.partnerId)
+            ? shown.length + 1
+            : others.length + 1,
         };
 
         return view;

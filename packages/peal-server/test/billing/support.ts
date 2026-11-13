@@ -103,7 +103,15 @@ export const AloneInAccountsTest = Layer.mock(BillingAccounts, {
   of: (workspaceId) => Effect.succeed(aloneAccountOf(workspaceId)),
   poolOf: (workspaceId) =>
     Effect.succeed({ account: aloneAccountOf(workspaceId), others: [] }),
-  poolsIn: () => Effect.succeed(new Map()),
+  poolsIn: (workspaceIds) =>
+    Effect.succeed(
+      new Map(
+        workspaceIds.map((id) => [
+          id,
+          { account: aloneAccountOf(id), others: [] },
+        ])
+      )
+    ),
   subscriptionChanged: () => Effect.void,
 });
 
