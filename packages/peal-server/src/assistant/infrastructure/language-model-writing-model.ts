@@ -30,9 +30,11 @@ const answered: ReadonlySet<string> = new Set([
   "StructuredOutputError",
 ]);
 
-// What a provider's failure means for the person who asked: anything but a
-// refusal or an answer that cannot be read means the request did not run.
-const reasonOf = (error: AiError.AiError): WritingFailed["reason"] => {
+/**
+ * What a provider's failure means for the person who asked: anything but a
+ * refusal or an answer that cannot be read means the request did not run.
+ */
+export const reasonOf = (error: AiError.AiError): WritingFailed["reason"] => {
   const kind = error.reason._tag;
 
   if (kind === "ContentPolicyError") {
@@ -93,6 +95,35 @@ const tookTooLong = (identity: ModelIdentity) => () =>
   failWith(identity, "Timeout", "timedOut");
 
 /**
+ * Asks `model` for an answer in the shape of `answer`, the prompt's
+ * instructions as the system message and its message as the user's, with
+ * effect/ai's and the HTTP client's spans off (their errors can quote the
+ * prompt or the answer): the current span gets the token counts and the
+ * finish reason only.
+ */
+export const generateAnswer = <A, I extends Readonly<Record<string, unknown>>>(
+  model: LanguageModel.LanguageModel,
+  prompt: WritingPrompt,
+  answer: Schema.Codec<A, I>
+): Effect.Effect<A, AiError.AiError> =>
+  model
+    .generateObject({
+      objectName: "answer",
+      prompt: promptOf(prompt),
+      schema: answer,
+    })
+    .pipe(
+      Effect.withTracerEnabled(false),
+      Effect.tap((response) =>
+        Effect.annotateCurrentSpan({
+          ...usageOf(response.usage),
+          "gen_ai.response.finish_reasons": [response.finishReason],
+        })
+      ),
+      Effect.map((response) => response.value)
+    );
+
+/**
  * The assistant's WritingModel on the LanguageModel a provider package
  * gives, asking for structured output that the answer's schema decodes,
  * and waiting `answerTimeout` for it at most.
@@ -116,31 +147,17 @@ export const languageModelWritingModel = (identity: ModelIdentity) =>
         prompt: WritingPrompt,
         answer: Schema.Codec<A, I>
       ) =>
-        model
-          .generateObject({
-            objectName: "answer",
-            prompt: promptOf(prompt),
-            schema: answer,
+        generateAnswer(model, prompt, answer).pipe(
+          Effect.catchTag("AiError", fail),
+          // Interrupting the call aborts its HTTP request.
+          Effect.timeoutOrElse({ duration: answerTimeout, orElse: timedOut }),
+          Effect.withSpan("WritingModel.write", {
+            attributes: {
+              "gen_ai.provider.name": identity.provider,
+              "gen_ai.request.model": identity.model,
+            },
           })
-          .pipe(
-            Effect.withTracerEnabled(false),
-            Effect.tap((response) =>
-              Effect.annotateCurrentSpan({
-                ...usageOf(response.usage),
-                "gen_ai.response.finish_reasons": [response.finishReason],
-              })
-            ),
-            Effect.map((response) => response.value),
-            Effect.catchTag("AiError", fail),
-            // Interrupting the call aborts its HTTP request.
-            Effect.timeoutOrElse({ duration: answerTimeout, orElse: timedOut }),
-            Effect.withSpan("WritingModel.write", {
-              attributes: {
-                "gen_ai.provider.name": identity.provider,
-                "gen_ai.request.model": identity.model,
-              },
-            })
-          );
+        );
 
       return WritingModel.of({ available: true, write });
     })
