@@ -424,6 +424,17 @@
   retries: 10
   delay: 3
 
+# The docs server answers now: the tunnel sends the docs' host name to it,
+# where site.yml kept it on the static image until the server was there.
+- name: Send the docs to the docs server
+  ansible.builtin.include_role:
+    name: cloudflared
+    tasks_from: routes.yml
+  when: peal_docs_server | bool
+
+- name: Apply a changed route now
+  ansible.builtin.meta: flush_handlers
+
 # From the machine running Ansible, through Cloudflare. Access guards every
 # page of the sandbox, so only production is checked this way.
 - name: Check the app through the tunnel
