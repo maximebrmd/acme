@@ -66,6 +66,14 @@
   itself, before `explainingPublishing`, which leaves `src/explain.ts` and
   `src/api-error.ts` as they are. The command line has no flag for a
   channel's own text or media: they go through the API or MCP.
+- `peal post` and `peal drafts save` take a poll with `--poll-choice`
+  (repeated, in order), `--poll-minutes` (1440 unless given) and
+  `--poll-multiple` (`pollOf`, `src/post-flags.ts`): a time or several
+  picks without a choice is refused before any request, as is more than
+  `maxPollChoices`; each platform's bounds are the server's to check. A
+  draft that changes keeps its poll unless one is given. `--then` is a
+  first comment where the platform takes comments; `peal channels
+  capabilities` prints the parts and the poll each takes.
 - `peal media describe <id> --text …|--clear` sets a media's
   description; `peal media delete <id>` reads `media.usage` first to say
   which drafts lose it, then asks (`confirmed`, `--yes`; `neverAsksInJson`).

@@ -207,6 +207,8 @@ const restrictionLine = (restriction: AccountRestriction): string =>
       `  ${field} needs the account reconnected in the web app.`,
     optionValues: ({ field, values }) =>
       `  ${field} takes only ${values.join(", ")}.`,
+    partsNeedReconnect: () =>
+      "  A first comment needs the account reconnected in the web app.",
     videoDuration: ({ maximumMs }) =>
       `  Videos last ${seconds(maximumMs)} at most.`,
   });
@@ -246,10 +248,49 @@ const accountLines = (account: AccountStanding): readonly string[] =>
     unrestricted: () => [],
   });
 
+// The parts after the first, where the platform takes any.
+const partsLine = ({ followUps }: PlatformCapabilities): string => {
+  if (followUps === null) {
+    return "Parts: a post alone, with no part after it.";
+  }
+
+  if (followUps.kind === "thread") {
+    return `Parts: a thread of ${String(followUps.maxCount + 1)} parts at most (--then).`;
+  }
+
+  const limits = (followUps.commentTextLimits ?? [])
+    .map(({ maximum, unit }) => `${String(maximum)} ${unit}`)
+    .join(", ");
+
+  return `Parts: a first comment under the post (--then), text alone, at most ${limits}.`;
+};
+
+// The poll, where the platform takes one.
+const pollLines = ({ poll }: PlatformCapabilities): readonly string[] => {
+  if (poll === undefined) {
+    return [];
+  }
+
+  const open =
+    poll.durationMinutes === null
+      ? "open as long as the platform decides"
+      : `open ${String(poll.durationMinutes.minimum)} to ${String(poll.durationMinutes.maximum)} minutes (--poll-minutes)`;
+
+  const several = poll.multipleChoice
+    ? ", several picks allowed (--poll-multiple)"
+    : "";
+
+  return [
+    `Poll: ${String(poll.minChoices)} to ${String(poll.maxChoices)} choices of ${String(poll.choiceLimit.maximum)} ${poll.choiceLimit.unit} at most (--poll-choice), ${open}${several}, no media.`,
+  ];
+};
+
 const platformLines = (
   capabilities: PlatformCapabilities
 ): readonly string[] => [
   ...textLines(capabilities),
+  partsLine(capabilities),
+  ...pollLines(capabilities),
   ...mediaLines(capabilities),
   ...optionLines(capabilities),
   ...(capabilities.lookups.length === 0

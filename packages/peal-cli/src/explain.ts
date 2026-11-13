@@ -197,6 +197,25 @@ const brokenRule = (violation: ContentViolation): string =>
       "options are given for a channel the post is not for",
     overrideWithoutChannel: () =>
       "a text is given for a channel the post is not for",
+    partsNeedReconnect: () =>
+      "the account has not let Peal comment under its posts: reconnect the channel in the web app",
+    pollChoiceCount: ({ count, maximum, minimum }) =>
+      `the poll has ${String(count)} choices, and the platform takes ${String(minimum)} to ${String(maximum)}`,
+    pollChoiceLength: ({ choice, length, maximum, unit }) =>
+      length === 0
+        ? `poll choice ${String(choice)} is empty`
+        : `poll choice ${String(choice)} has ${String(length)} ${units[unit]}, and the platform takes ${String(maximum)}`,
+    pollDurationOutOfRange: ({
+      durationMinutes,
+      maximumMinutes,
+      minimumMinutes,
+    }) =>
+      `the poll stays open ${String(durationMinutes)} minutes, and the platform takes ${String(minimumMinutes)} to ${String(maximumMinutes)}`,
+    pollMultipleChoice: () =>
+      "the platform lets readers pick one choice of a poll, not several",
+    pollNotSupported: () => "Peal sends no poll to this platform",
+    pollWithMedia: () =>
+      "the platform never takes a poll and images or videos in one post",
     sideOutOfRange: ({ height, maximum, minimum, width }) =>
       `it is ${String(width)}×${String(height)}, and the platform takes sides from ${String(minimum)} to ${String(maximum)} pixels`,
     textTooLong: ({ length, maximum, unit }) =>
