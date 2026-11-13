@@ -6,7 +6,7 @@ import { ImportSlots } from "#media/application/ports/import-slots.ts";
 import { RemoteMedia } from "#media/application/ports/remote-media.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import {
-  recordArrived,
+  keepArriving,
   roomIn,
   storeArriving,
 } from "#media/application/use-cases/arrived-file.ts";
@@ -66,46 +66,36 @@ export const importMedia = Effect.fn("Media.importMedia")(
     const room = yield* roomIn(workspaceId, 1);
     const id = yield* newId(MediaAssetIdSchema);
 
-    const { fileName, stored } = yield* RemoteMedia.use((remote) =>
-      remote.open(url)
-    ).pipe(
-      Effect.flatMap((file) =>
-        storeArriving(file, {
-          accepts: (contentType) =>
-            kinds === undefined || kinds.includes(kindOf(contentType)),
-          id,
-          room,
-          workspaceId,
-        }).pipe(
-          // Named after the address that served it, redirects followed.
-          Effect.map((arrived) => ({
-            fileName: nameInAddress(file.address),
-            stored: arrived,
-          }))
-        )
-      ),
-      Effect.scoped,
-      Effect.timeoutOrElse({
-        duration: policy.importTimeout,
-        orElse: () =>
-          Effect.fail(
-            new MediaSourceUnreachable({
-              reason: "tooSlow",
-              status: Option.none(),
-            })
-          ),
-      })
-    );
+    return yield* keepArriving(
+      { aiGenerated: false, altText: description, id, room, workspaceId },
+      RemoteMedia.use((remote) => remote.open(url)).pipe(
+        Effect.flatMap((file) => {
+          // Named after the address that served it, redirects followed,
+          // before a byte is stored: nothing that can fail sits between
+          // the store and the record.
+          const fileName = nameInAddress(file.address);
 
-    return yield* recordArrived({
-      aiGenerated: false,
-      altText: description,
-      fileName,
-      id,
-      room,
-      stored,
-      workspaceId,
-    });
+          return storeArriving(file, {
+            accepts: (contentType) =>
+              kinds === undefined || kinds.includes(kindOf(contentType)),
+            id,
+            room,
+            workspaceId,
+          }).pipe(Effect.map((stored) => ({ fileName, stored })));
+        }),
+        Effect.scoped,
+        Effect.timeoutOrElse({
+          duration: policy.importTimeout,
+          orElse: () =>
+            Effect.fail(
+              new MediaSourceUnreachable({
+                reason: "tooSlow",
+                status: Option.none(),
+              })
+            ),
+        })
+      )
+    );
   },
   // The import's slot goes back when it ends, however it ends.
   Effect.scoped

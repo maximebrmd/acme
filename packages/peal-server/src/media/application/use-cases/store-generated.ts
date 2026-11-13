@@ -2,7 +2,7 @@ import { Effect, Option, Stream } from "effect";
 
 import { GeneratedImageUnusable } from "#media/application/generated-image-unusable.ts";
 import {
-  recordArrived,
+  keepArriving,
   roomIn,
   storeArriving,
 } from "#media/application/use-cases/arrived-file.ts";
@@ -44,36 +44,24 @@ export const storeGenerated = Effect.fn("Media.storeGenerated")(
     const room = yield* roomIn(workspaceId, 1);
     const id = yield* newId(MediaAssetIdSchema);
 
-    const stored = yield* storeArriving(
-      {
-        declaredSize: Option.some(bytes.byteLength),
-        declaredType: Option.none(),
-        rest: Stream.empty,
-        start: bytes,
-      },
-      {
-        accepts: (contentType) => kindOf(contentType) === "image",
-        id,
-        room,
-        workspaceId,
-      }
+    const item = yield* keepArriving(
+      { aiGenerated: true, altText: Option.none(), id, room, workspaceId },
+      storeArriving(
+        {
+          declaredSize: Option.some(bytes.byteLength),
+          declaredType: Option.none(),
+          rest: Stream.empty,
+          start: bytes,
+        },
+        {
+          accepts: (contentType) => kindOf(contentType) === "image",
+          id,
+          room,
+          workspaceId,
+        }
+        // A file the assistant made was never called anything.
+      ).pipe(Effect.map((stored) => ({ fileName: Option.none(), stored })))
     ).pipe(
-      Effect.catchTags({
-        MediaTooLarge: () => Effect.fail(new GeneratedImageUnusable()),
-        UnsupportedMediaType: () => Effect.fail(new GeneratedImageUnusable()),
-      })
-    );
-
-    const item = yield* recordArrived({
-      aiGenerated: true,
-      altText: Option.none(),
-      // A file the assistant made was never called anything.
-      fileName: Option.none(),
-      id,
-      room,
-      stored,
-      workspaceId,
-    }).pipe(
       Effect.catchTags({
         MediaTooLarge: () => Effect.fail(new GeneratedImageUnusable()),
         UnsupportedMediaType: () => Effect.fail(new GeneratedImageUnusable()),

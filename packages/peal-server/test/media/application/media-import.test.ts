@@ -193,8 +193,8 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
         const png = yield* whitePng;
 
         const host = yield* hostServing({
-          "/moved": redirectTo("/picture"),
-          "/picture": whole(png, "text/plain"),
+          "/moved": redirectTo("/picture.png"),
+          "/picture.png": whole(png, "text/plain"),
         });
 
         const imported = yield* importFrom(workspaceId, `${host.url}/moved`);
@@ -211,7 +211,10 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
           Option.some("A synthetic picture.")
         );
         // Named after the address the file came from, after its redirects.
-        assert.deepStrictEqual(imported.asset.fileName, Option.some("picture"));
+        assert.deepStrictEqual(
+          imported.asset.fileName,
+          Option.some("picture.png")
+        );
 
         const { bytes } = yield* fetchBytes(
           Option.getOrElse(imported.url, () => "")
@@ -223,6 +226,45 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
           storage.remove(imported.asset.storageKey)
         );
       })
+    );
+
+    it.effect(
+      "names a file after its address, cut where it must, and never after a query or a token",
+      () =>
+        Effect.gen(function* names() {
+          const workspaceId = yield* freshWorkspace;
+          const png = yield* whitePng;
+          const long = `/${"a".repeat(254)}%20b.png`;
+
+          const host = yield* hostServing({
+            "/download?file=report.png": whole(png, "image/png"),
+            "/s/k3Jd92LmQx7Pz0aB4vW8": whole(png, "image/png"),
+            [long]: whole(png, "image/png"),
+          });
+
+          const cut = yield* importFrom(workspaceId, `${host.url}${long}`);
+
+          const query = yield* importFrom(
+            workspaceId,
+            `${host.url}/download?file=report.png`
+          );
+
+          const token = yield* importFrom(
+            workspaceId,
+            `${host.url}/s/k3Jd92LmQx7Pz0aB4vW8`
+          );
+
+          assert.deepStrictEqual(
+            [cut, query, token].map(({ asset }) =>
+              Option.getOrNull(asset.fileName)
+            ),
+            ["a".repeat(254), null, null]
+          );
+
+          yield* Effect.forEach([cut, query, token], ({ asset }) =>
+            MediaStorage.use((storage) => storage.remove(asset.storageKey))
+          );
+        })
     );
 
     it.effect("stores and probes a PDF document, as an upload of one is", () =>
