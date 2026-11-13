@@ -3,8 +3,9 @@ import { ClusterCron, MachineId, Snowflake } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 import type { SqlError } from "effect/sql";
 
-// Effect's cluster storage keeps every message and reply it writes: nothing in
-// effect/cluster deletes them. This job removes what can no longer matter,
+// Effect's cluster storage keeps every message and reply it writes, unless an
+// entity opts into MessageRetention (since effect 4.1.3), which neither the
+// workflows nor the crons here do. This job removes what can no longer matter,
 // reading Effect's own tables (cluster_messages, cluster_replies), so rerun its
 // tests on every Effect upgrade.
 //

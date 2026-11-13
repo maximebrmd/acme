@@ -27,7 +27,7 @@ import {
 
 // Every Better Auth model's table, by model name. The adapter finds tables
 // with relations through the database, and the others only here; a model
-// missing from both fails Better Auth's schema check on the first request.
+// missing from both fails Better Auth's schema check when the server starts.
 const authTables = {
   account,
   apikey,
