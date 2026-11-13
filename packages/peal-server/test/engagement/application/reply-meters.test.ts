@@ -61,6 +61,12 @@ const replying = (to: number) =>
 
 const ledger = FakeMetersLedger.use(Ref.get);
 
+// A reply to comment 101 under one idempotency key.
+const sent = (text: string) =>
+  EngagementReplies.use((replies) =>
+    replies.reply(editor, commentId(101), text, Option.some("synthetic-key-1"))
+  );
+
 describe("replies on a server that bills", () => {
   it.effect(
     "refuses the reply past the month's messages, and journals nothing",
@@ -94,16 +100,6 @@ describe("replies on a server that bills", () => {
 
       return at(
         Effect.gen(function* again() {
-          const sent = (text: string) =>
-            EngagementReplies.use((replies) =>
-              replies.reply(
-                editor,
-                commentId(101),
-                text,
-                Option.some("synthetic-key-1")
-              )
-            );
-
           const first = yield* sent("Thank you!");
           const replayed = yield* sent("Thank you!");
 
@@ -139,7 +135,7 @@ describe("replies on a server that bills", () => {
     const { layer } = worldWith(5, true);
 
     return at(
-      Effect.gen(function* sent() {
+      Effect.gen(function* wentOut() {
         const reply = yield* replying(101);
 
         yield* SendReply.use((send) => send.run(reply.id));
