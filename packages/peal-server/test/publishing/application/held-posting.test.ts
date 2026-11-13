@@ -220,6 +220,7 @@ describe("a held post that lost a channel, back to draft", () => {
   ) =>
     Effect.gen(function* draftsCleanly() {
       const scheduling = yield* PostScheduling;
+
       const { editor, held, kept, removed, workspaceId } =
         yield* heldWithoutOne;
 

@@ -239,7 +239,11 @@ describe("removing a channel from a scheduled post", () => {
             params: { workspaceId },
             payload: {
               channelIds: [bluesky, mastodon],
-              content: { media: [], overrides: [], text: "A synthetic post" },
+              content: {
+                media: [],
+                overrides: [{ channelId: bluesky, text: "Its own, there" }],
+                text: "A synthetic post",
+              },
               when: { _tag: "at", ...later },
             },
             query: {},
@@ -260,6 +264,8 @@ describe("removing a channel from a scheduled post", () => {
           });
 
           assert.strictEqual(removed.status, "scheduled");
+          // Its text there went with it.
+          assert.deepStrictEqual(removed.content.overrides, []);
           assert.deepStrictEqual(
             removed.targets.map(({ channelId, dropped, status }) => ({
               channelId,
@@ -298,6 +304,23 @@ describe("removing a channel from a scheduled post", () => {
           });
 
           assert.strictEqual(response.status, 409);
+
+          // Back to draft and scheduled again as it is.
+          const draft = yield* client.posts.unschedule({
+            params: { postId: post.id, workspaceId },
+          });
+
+          assert.deepStrictEqual(
+            draft.targets.map(({ channelId }) => channelId),
+            [mastodon]
+          );
+
+          const rescheduled = yield* client.posts.schedule({
+            params: { postId: post.id, workspaceId },
+            payload: { ...later, channelIds: [mastodon] },
+          });
+
+          assert.strictEqual(rescheduled.status, "scheduled");
 
           yield* client.posts.cancel({
             params: { postId: post.id, workspaceId },

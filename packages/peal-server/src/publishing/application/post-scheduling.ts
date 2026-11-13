@@ -50,7 +50,10 @@ import type { Queue } from "#publishing/domain/queue.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
-import { dropTarget as dropTargetOf } from "#publishing/domain/target-removal.ts";
+import {
+  dropTarget as dropTargetOf,
+  withoutChannelOf,
+} from "#publishing/domain/target-removal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -1954,17 +1957,19 @@ export class PostScheduling extends Context.Service<
                 kept.id === dropped.id ? dropped : kept
               );
 
+              // Its texts and media go with the channel.
+              const edited = withoutChannelOf(current.post, dropped.channelId);
+
               // An edit of the post: the gate decides again, as a move
               // does. One that waits keeps its request, which follows it.
               const asked =
-                current.post.status._tag === "awaitingApproval"
-                  ? yield* followed(actor, current.post, left).pipe(
-                      Effect.as(current.post)
-                    )
-                  : yield* throughGate(actor, current.post, left);
+                edited.status._tag === "awaitingApproval"
+                  ? yield* followed(actor, edited, left).pipe(Effect.as(edited))
+                  : yield* throughGate(actor, edited, left);
+
+              yield* applied(yield* posts.update(asked, current.post));
 
               if (asked.status._tag !== current.post.status._tag) {
-                yield* applied(yield* posts.update(asked, current.post));
                 yield* stopJob(current);
               }
 

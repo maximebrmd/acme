@@ -1,12 +1,15 @@
 import { Result } from "effect";
 import type { DateTime } from "effect";
 
+import type { ChannelId } from "#shared/domain/ids.ts";
+
 import { InvalidPostTransition } from "./invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "./invalid-target-transition.ts";
 import { LastTargetLeft } from "./last-target-left.ts";
+import { withoutChannels } from "./post-content.ts";
 import { cancelledFromPost } from "./post-target.ts";
 import type { PostTarget } from "./post-target.ts";
-import type { Post } from "./post.ts";
+import { Post } from "./post.ts";
 
 /**
  * Takes one channel off a post that waits for its time (scheduled, or
@@ -47,3 +50,24 @@ export const dropTarget = (
         )
   );
 };
+
+/**
+ * The post without what its parts had on a channel taken off it: the
+ * channel's texts and media of their own go with it, so nothing names a
+ * channel the post no longer goes to, and the files only it showed are
+ * free again. What every other channel receives is as it was.
+ */
+export const withoutChannelOf = (post: Post, channelId: ChannelId): Post =>
+  new Post({
+    attribution: post.attribution,
+    authorId: post.authorId,
+    content: withoutChannels(post.content, [channelId]),
+    id: post.id,
+    occurrence: post.occurrence,
+    queueId: post.queueId,
+    scheduleRevision: post.scheduleRevision,
+    shortenLinks: post.shortenLinks,
+    status: post.status,
+    tagIds: post.tagIds,
+    workspaceId: post.workspaceId,
+  });
