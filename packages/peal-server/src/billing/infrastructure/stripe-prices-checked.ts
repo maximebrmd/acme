@@ -6,7 +6,7 @@ import {
   catalogueOf,
   catalogueProblems,
 } from "#billing/domain/catalogue.ts";
-import type { CatalogueAtStart } from "#billing/domain/catalogue.ts";
+import type { CatalogueAtStart, HeldMeter } from "#billing/domain/catalogue.ts";
 import { priceProblems, publishedPrices } from "#billing/domain/price-check.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
@@ -121,30 +121,27 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
 
       // Meters Stripe refused or garbled only warn while the catalogue
       // does: what Stripe said of them is the problem then.
-      const asWarning = <A>(
-        read: Effect.Effect<A, StripeCatalogueUnread>
-      ): Effect.Effect<
-        Option.Option<Result.Result<A, string>>,
+      const meterReading: Effect.Effect<
+        Option.Option<Result.Result<readonly HeldMeter[], string>>,
         StripePricesUnchecked
-      > =>
-        read.pipe(
-          Effect.map((found) => Option.some(Result.succeed(found))),
-          Effect.catch((error) =>
-            atStart === "warn" && error.reason !== "unanswered"
-              ? Effect.succeed(
-                  Option.some(
-                    Result.fail(
-                      `the meters could not be read: ${uncheckedReason(error)}`
-                    )
+      > = readMeters(client).pipe(
+        Effect.map((found) => Option.some(Result.succeed(found))),
+        Effect.catch((error) =>
+          atStart === "warn" && error.reason !== "unanswered"
+            ? Effect.succeed(
+                Option.some(
+                  Result.fail(
+                    `the meters could not be read: ${uncheckedReason(error)}`
                   )
                 )
-              : unanswered(error)
-          )
-        );
+              )
+            : unanswered(error)
+        )
+      );
 
       const [meters, prices, products] = yield* Effect.all(
         [
-          asWarning(readMeters(client)),
+          meterReading,
           readPrices(client, [
             ...catalogue.map(({ lookupKey }) => lookupKey),
             ...legacy.map(({ lookupKey }) => lookupKey),

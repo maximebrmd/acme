@@ -20,22 +20,30 @@
   `stripeTiersOf`…), never written by hand. The contract copies it
   (`peal-contract/rate-card`), kept equal by
   `test/billing/api/contract.test.ts`: change both, never one. The plan
-  `payAsYouGo` is per-account pricing; nothing records or offers it yet
-  (`allowancesOf` holds it to the free plan, and `largerPlan` ranks it
-  below every legacy plan so it never takes a legacy plan's place; Better
-  Auth's plans and the contract's `OrderablePlan` leave it out; Stripe
-  holds its catalogue, which the start check reads, below). The change that wires it computes its allowances from the rate
-  card and ranks it again, before any Stripe price maps to it, with a test
-  of a workspace holding a legacy plan and `payAsYouGo` together; and
-  `planToPay` must not offer it a price of 0. The pricing functions refuse
+  `payAsYouGo` is per-account pricing, the only one sold. The pricing functions refuse
   a count that is not a whole number of zero or more (`RangeError`);
   Stripe's rounding of a half cent on a meter is assumed half up until a
   sandbox invoice settles it.
+- Allowances are computed per billing account (`allowancesOf` in
+  `domain/plans.ts`, `Entitlements.allowancesFor(accounts)` and
+  `allowanceOf(limit)`): `free` holds the rate card's free accounts (2;
+  none once staff required a payment method, the account's `freeTier`,
+  which `PlanHolders.heldBy` reads with the holder, in the same reads),
+  `storageAllowance(false)` and no assistant on the server's models;
+  `payAsYouGo` every account, `storageAllowance(true, accounts)` (only the
+  media adapter counts accounts, so no hot path gains a query) and the
+  legacy pro plan's 20 assistant requests a day until its monthly meter;
+  members and posts unlimited on both. `payAsYouGo` ranks above every
+  legacy plan (`largerPlan`); `planWithRoom`, `planHolding` and
+  `planToPay` offer only it, and the web app prices it from the rate card,
+  never as a listed price of 0.
 - The legacy plans are priced by connected channels, in tiers: free,
   starter, pro, business, agency (`LegacyPlan`, `LegacyPaidPlan`), each a
-  monthly and a yearly price (ten months), kept for the subscriptions that
-  still hold one. Their allowances are `billing/domain/plans.ts` and their
-  prices, euro cents excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
+  monthly and a yearly price (ten months), no longer sold, kept for the
+  subscriptions that still hold one. Their allowances and prices, euro
+  cents excluding VAT, are `billing/domain/legacy-plans.ts`, unchanged
+  (`free` there is the old free plan, which only the contract's
+  `planCatalogue` still shows); their ids (`#shared/domain/plan.ts`), the
   limits' names (`plan-limit.ts`: channels, members, scheduledPosts,
   assistantRequests, mediaStorage in decimal bytes), `PlanLimitReached`
   and `roomFor`/`roomForOneMore`/`withinAllowance` (`allowance.ts`) are in
@@ -149,9 +157,11 @@
 - A refusal tells every client the way out. The domain's
   `PlanLimitReached` carries `limit`, `allowed`, `used` and `needed`;
   `UpgradePaths` (`#shared/application/upgrade-paths.ts`, backed by
-  billing's `PlanUpgradePathsLive`) gives the plan, the smallest larger
-  plan with room (`planWithRoom` in `plans.ts`; none on the largest) and
-  the billing page under `PUBLIC_URL`. Handlers answer the contract's
+  billing's `PlanUpgradePathsLive`) gives the plan, the plan with room
+  (`planWithRoom` in `plans.ts`: `payAsYouGo` when it holds what is
+  needed, never a legacy plan; none from `payAsYouGo`) and the billing
+  page under `PUBLIC_URL`; the MCP tools and the CLI say what a payment
+  method gives from the rate card (`perAccountPrice`). Handlers answer the contract's
   `PlanLimitReached` through `limitRefusal` (`#shared/api/limit-reached.ts`,
   built with the group: handlers take services when the group is built,
   never per request), the assistant's `AssistantQuotaExceeded` carries the
@@ -188,39 +198,45 @@
   and channels go through `DisconnectChannel`, with its revocations. Only
   what is over is touched. Over its media, a workspace only uploads
   nothing. The `TrialEnding` notice lists `over` the free plan.
-- `PlaceOrder` refuses a plan that does not hold what the workspace has
-  (`PlanTooSmall`, with what to remove first and the plan that holds it):
-  an order never puts a workspace above its plan, moving down included.
-  The trial is one per email address too: `trialOffered` (the billing page
-  and `PlaceOrder`) checks the pseudonym of the member's address
-  (`MemberAddresses`), as checkout does with the session's.
+- `PlaceOrder` takes `payAsYouGo`, monthly, only: a legacy plan or a
+  year is `PlanNotSold`, a trial `TrialUnavailable` `notOffered`, and
+  `CheckoutOrders.take` refuses an order of either placed before. An order
+  never puts a workspace above its plan (`PlanTooSmall`, for what decides
+  `mustReduce`: per-account pricing holds every account and member, and
+  media over it only refuses uploads). No trial is offered (`Billing.trial`
+  answers `available: false`); the trial code stays for the trials that
+  run, until the last one ended.
+- `PEAL_BILLING_GRACE_UNTIL` (`BillingMode.graceUntil`, a day, read in
+  `configured-billing-mode.ts`): while `inGrace`, a `free` workspace over
+  its accounts still schedules and publishes (`PostAllowance.channels`
+  answers no limit, `WorkspaceStanding` no `mustReduce`, with
+  `graceUntil`, equal in `overPlanIn`) and connects nothing more
+  (`ChannelAllowance` is untouched); `SendBillingReminders` pages the
+  billing accounts (`BillingAccountStore.page`) and tells each holder
+  over its free accounts once (`PaymentMethodNeeded`, keyed by the day).
+  Only the free tier is graced, never a legacy plan.
 - A server that bills checks Stripe when it starts
   (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
   against stripe-mock, whose one price is none of Peal's): the catalogue
   (`catalogueProblems`: each line's active meter, not pre-aggregated, and
   under its key an active price in its currency, each month, metered on
   that meter, tax-exclusive, not transformed, at the rate card's tiers or
-  unit amount, decimals compared by value), and each legacy lookup key an
-  active price at the amount, currency and interval of `prices.ts`,
-  tax-exclusive. A legacy difference stops the server listing it
-  (`StripePricesMismatch`). The catalogue follows the switch
-  `catalogueAtStart` (`domain/catalogue.ts`): `warn` while nothing sells
-  per-account pricing, so an upgrade or a rollback never stops a server
-  for it (a warning listing what differs and `catalogueCommand`, the
-  gauge `peal.billing.stripe_catalogue.problems` and the alert
-  `peal-stripe-catalogue`; meters Stripe refuses or garbles warn too);
-  the change that sells it sets `stop`, before checkout takes the
-  catalogue, and tests it with `stripePricesChecked("stop")`, already
-  covered. Stripe not answering is a warning, and the server starts. A
-  release on Peal's servers runs `stripe-catalogue --check` with the new
-  image before it replaces the server, and reports a difference without
-  failing (`peal_release`). The legacy prices are
-  checked whatever the subscriptions while the legacy plans are the ones
-  sold: the change that stops selling them checks them only while a legacy
-  subscription entitles (read from `billing.subscriptions`), so a fresh
-  Stripe account needs none.
-- Before per-account pricing is sold, the owner runs this in the
-  sandbox's Stripe account (test mode, its key in the sandbox vault,
+  unit amount, decimals compared by value, on a product
+  that is not archived: meters, prices and products are read together),
+  and, only while a legacy subscription entitles (`LegacySubscriptions`),
+  each legacy lookup key an active price at the amount, currency and
+  interval of `prices.ts`, tax-exclusive, so a fresh Stripe account needs
+  none. A difference stops the server listing it (`StripePricesMismatch`):
+  `catalogueAtStart` (`domain/catalogue.ts`) is `stop` since per-account
+  pricing is sold; `warn` (a warning with `catalogueCommand`, the gauge
+  `peal.billing.stripe_catalogue.problems` and the alert
+  `peal-stripe-catalogue`) stays for tests. Stripe not answering is a
+  warning, and the server starts. A release on Peal's servers runs
+  `stripe-catalogue --check` with the new image before it replaces the
+  server, stops on `StripeCatalogueDiffers` and only reports another
+  failure (`peal_release`).
+- Before per-account pricing is turned on anywhere, the owner runs this in
+  the sandbox's Stripe account (test mode, its key in the sandbox vault,
   never copied), never in tests: `stripe-catalogue`, again (no change),
   `--check`; a meter made by hand with `count`, the command (blocked),
   that meter deactivated, the command again (does Stripe give the new
@@ -268,8 +284,9 @@
   `…/billing` and `…/billing/standing` leave `account` out
   (`accountShown`; optional for older servers too). Where it bills, the
   account's workspaces share its billing workspace's plan (`PlanHolders`,
-  `AccountPlanHoldersLive`) and count their channels together, under
-  `holdAccount` where the partner's hold is taken. Views read `poolsIn`,
+  `AccountPlanHoldersLive`) and count their channels and media together
+  (`PlanPools`, `AccountPlanPoolsLive`, the one place a pool's hold is
+  taken: the partner's, else `holdAccount`; channels and media read it). Views read `poolsIn`,
   holding nothing. Holds go payer, then accounts by id; closing an account
   holds the payer first (`ContextRecords.holdUser`).
 - Only the billing workspace orders (`BilledElsewhere`); a checkout
@@ -385,11 +402,19 @@
   active or trialing subscription, which it would change in place (Stripe's
   API or a portal `subscription_update_confirm`), the plugin's before hook
   on `/subscription/upgrade` (`orderedChange`) takes the order first, refuses
-  a request naming a `subscriptionId`, and, during the trial, opens a
-  Checkout Session of its own for the paid plan (`checkoutDuringTrial`), as
-  the trial must not change in place. The trial runs until the paid
-  subscription is recorded: `RecordSubscription` then ends it
-  (`orderedDuringTrial`). The Stripe portal has plan switching and
+  a request naming a `subscriptionId`, and opens a Checkout Session of its
+  own for `payAsYouGo` (`checkoutBeside`), as a live subscription must not
+  change in place. Per-account pricing's checkout (`checkoutParams`, and
+  the plan's `lineItems`: each meter's price by lookup key, kept 5
+  minutes, `catalogueLineItems`) has no quantity on any line, asks for a
+  card always (`payment_method_collection: "always"`) and anchors on the
+  first of next month UTC without proration (`firstOfNextMonth`); it opens
+  none while a meter's price cannot be found (`CHECKOUT_UNAVAILABLE`).
+  `planOf` reads `payAsYouGo` from `<prefix>_accounts` among the items.
+  Once `payAsYouGo` is recorded, `RecordSubscription` ends a trial
+  (`orderedDuringTrial`) and sets a legacy plan to end with its period
+  (`cancelAtPeriodEnd`, key `moved-<subscription>`; the move with a credit
+  is T10's `movedToRateCard`). The Stripe portal has plan switching and
   cancellation turned off (the self-hosting docs say so): plans change and
   end on the billing page only.
 - The trial: Pro for 14 days (`trialPlan`, `trialDays`), once per account
@@ -414,6 +439,10 @@
   OAuth client or staff impersonating them (403; the use cases refuse an
   impersonated actor too, `PersonRequired`). The SDKs leave the group out
   (`ownSessionTags`).
+- A `payAsYouGo` subscription ends with its usage invoiced: withdrawing
+  uses `StripeContracts.endAndInvoice` (`invoice_now`), and deleting the
+  workspace cancels a subscription with a metered price with
+  `invoice_now` (`StripeCheckoutsLive`).
 - Cancelling (`CancelSubscription`) sets `cancel_at_period_end`, ends a
   trial at once, or, for a day asked for after the period paid for
   (D215-2, 4°), sets Stripe's `cancel_at`, which charges the last period
@@ -505,7 +534,9 @@
   terms reproduce L215-1 to L215-3 and L241-3 (L215-4). Each once, by key. A confirmation and a renewal
   quote what Stripe charges, VAT included (the first paid invoice, the
   next invoice's preview, `StripeContracts.upcomingTotal`), never the
-  catalogue: one Stripe cannot price yet waits for the next run.
+  catalogue: one Stripe cannot price yet waits for the next run. A
+  `payAsYouGo` confirmation charges nothing: it states the rate card's
+  rates (`rates`, an optional key older notices lack) with a price of 0.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout always sends Stripe Tax's
