@@ -104,6 +104,7 @@ const feedsDuration = Metric.gauge("peal.publishing.feeds.duration", {
 
 const feedsUnfinished = Metric.counter("peal.publishing.feeds.unfinished", {
   description: "Runs of the feeds that stopped at their budget with feeds due",
+  incremental: true,
 });
 
 /**

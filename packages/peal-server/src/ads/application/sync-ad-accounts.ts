@@ -60,6 +60,7 @@ export const syncLeft = Metric.gauge("peal.ads.sync.left", {
 export const syncsUnfinished = Metric.counter("peal.ads.sync.unfinished", {
   description:
     "Syncs of ad accounts that stopped at their budget with accounts still due",
+  incremental: true,
 });
 
 /** What a run of the sync did. */
