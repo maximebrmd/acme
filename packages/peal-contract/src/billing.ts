@@ -297,8 +297,9 @@ export type Reduction = typeof ReductionSchema.Type;
  */
 export const OrderPayloadSchema = Schema.Struct({
   // The version of the box's words the client showed (`orderConsentVersion`
-  // in `peal-contract/billing-plans`); refused when it is not the
-  // server's (ConsentChanged). Older clients leave it out.
+  // in `peal-contract/billing-plans`); a per-account order without it,
+  // or with another than the server's, is refused (ConsentChanged). Kept
+  // optional for the legacy plans, which answer PlanNotSold as before.
   consentVersion: Schema.optionalKey(Schema.String),
   interval: BillingIntervalSchema,
   plan: OrderablePlanSchema,

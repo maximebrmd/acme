@@ -12,12 +12,12 @@ export class ConsentChanged extends Schema.TaggedError<ConsentChanged>()(
     ...errorEnvelope,
     // The version of the words the server records consent to now.
     current: Schema.String,
-    // The version the order said it showed.
-    shown: Schema.String,
+    // The version the order said it showed; absent when it named none.
+    shown: Schema.optionalKey(Schema.String),
   },
   {
     description:
-      "The order's `consentVersion`, the words of the box the member ticked, is not the server's (`current`): the page is older than the words. Load it again, read the box, and order again. Nothing was ordered.",
+      "The order's `consentVersion`, the words of the box the member ticked, is not the server's (`current`), or the order names none (`shown` absent): the page is older than the words. Load it again, read the box, and order again. Nothing was ordered.",
     httpApiStatus: 409,
   }
 ) {}
