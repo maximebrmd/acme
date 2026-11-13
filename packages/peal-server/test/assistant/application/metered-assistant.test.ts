@@ -173,14 +173,15 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
           Effect.forkChild
         );
 
-        // Move the clock past the answer's time until the request ends:
-        // whenever its timeout's sleep is registered, the next move wakes
-        // it, however long the database took before.
-        for (let round = 0; round < 2000; round += 1) {
-          if (asking.pollUnsafe() !== undefined) {
-            break;
-          }
+        // The clock moves only while no database work is in flight, since
+        // the SQL client's own timeouts read it too: once the model has the
+        // prompt (the claims before it are written), and until the request
+        // is forgiven (in memory, before the day's count is released).
+        while ((yield* prompts).length === 0) {
+          yield* TestClock.withLive(Effect.sleep("5 millis"));
+        }
 
+        while ((yield* ledger).forgiven.length === 0) {
           yield* TestClock.adjust(answerTimeout);
           yield* TestClock.withLive(Effect.sleep("5 millis"));
         }
