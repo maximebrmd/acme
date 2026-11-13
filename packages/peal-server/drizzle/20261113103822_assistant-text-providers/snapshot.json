@@ -1,0 +1,276 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "82e49c30-94ae-4a29-912e-b4df379d2ca9",
+  "prevIds": [
+    "c725e94a-c68f-4284-9a0e-05eef0edfbf5"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "assistant",
+        "own_text_days"
+      ],
+      "writes": [
+        "s|tbl|assistant.own_text_days",
+        "n|tbl|assistant.own_text_days",
+        "e|tbl|assistant.own_text_days",
+        "n|rel|assistant.own_text_days",
+        "n|type|assistant.own_text_days",
+        "n|rel|assistant.own_text_days_pkey"
+      ],
+      "reads": [
+        "n|sch|assistant"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "assistant",
+        "text_providers"
+      ],
+      "writes": [
+        "s|tbl|assistant.text_providers",
+        "n|tbl|assistant.text_providers",
+        "e|tbl|assistant.text_providers",
+        "n|rel|assistant.text_providers",
+        "n|type|assistant.text_providers",
+        "n|rel|assistant.text_providers_pkey"
+      ],
+      "reads": [
+        "n|sch|assistant"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "name": "own_text_days",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "name": "text_providers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_text_days",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_text_days",
+        "name": "requests",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_text_days",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "base_url",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "key_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "model",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "sealed_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_text_days",
+        "name": "own_text_days_pkey",
+        "columns": [
+          "workspace_id",
+          "day"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "text_providers_pkey",
+        "columns": [
+          "workspace_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "own_text_days",
+        "name": "own_text_days_requests",
+        "value": "\"requests\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "text_providers",
+        "name": "text_providers_kind",
+        "value": "\"kind\" IN ('anthropic', 'openai-compatible')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

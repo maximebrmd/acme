@@ -73,6 +73,17 @@ export const imageProviderContext = (
 ): SecretContext =>
   SecretContextSchema.make(`assistant:${workspaceId}:${address}`);
 
+/**
+ * The context of the key a workspace gave for its own text provider: as
+ * the image provider's, named by the workspace and the whole address, and
+ * apart from it, so neither key opens as the other.
+ */
+export const textProviderContext = (
+  workspaceId: string,
+  address: string
+): SecretContext =>
+  SecretContextSchema.make(`assistant:text:${workspaceId}:${address}`);
+
 export type TokenDecryptionError =
   | MalformedEncryptedToken
   | TokenAuthenticationFailed
@@ -87,7 +98,9 @@ export type TokenDecryptionError =
  * an app's client secret on a Mastodon instance, are encrypted the same way,
  * bound to a context of their own (`connect:<state>`, `choice:<selection>`,
  * `app:<origin>`, `webhook:<endpoint id>`, `ads:<grant id>`,
- * `assistant:<workspace id>:<address>`), which never reads as a channel id.
+ * `assistant:<workspace id>:<address>`,
+ * `assistant:text:<workspace id>:<address>`), which never reads as a
+ * channel id.
  *
  * A server may run without keys, as long as it stores no channel: encrypting
  * then fails with MissingTokenKey, and decrypting with UnknownTokenKey.

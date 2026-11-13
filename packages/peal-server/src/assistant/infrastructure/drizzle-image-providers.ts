@@ -54,7 +54,8 @@ export const DrizzleImageProvidersLive = Layer.effect(
       secrets.open(
         row.sealedKey,
         workspaceId,
-        ProviderAddressSchema.make(row.baseUrl)
+        ProviderAddressSchema.make(row.baseUrl),
+        "images"
       );
 
     const open = Effect.fn("ImageProviders.open")(function* open(
@@ -103,7 +104,8 @@ export const DrizzleImageProvidersLive = Layer.effect(
           const { keyId, sealed } = yield* secrets.seal(
             key,
             workspaceId,
-            settings.baseUrl
+            settings.baseUrl,
+            "images"
           );
 
           const values = {
