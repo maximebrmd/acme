@@ -6,6 +6,8 @@ draft: false
 
 Date d’entrée en vigueur : 13 novembre 2026
 
+Dernière mise à jour : 13 novembre 2026
+
 ## À propos de cette politique
 
 Cette politique explique comment Maxime Bourmaud EI (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse app.peal.social et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
@@ -177,6 +179,10 @@ Peal n’est pas destiné aux enfants. Vous devez avoir au moins 18 ans, ou êtr
 ## Modifications de cette politique
 
 Nous prévenons par e-mail les titulaires de compte au moins 30 jours avant qu’une modification substantielle de cette politique ne prenne effet, et indiquons sa date en haut de cette page. Les autres modifications, comme les corrections et les précisions, prennent effet dès leur publication ici.
+
+Modifications depuis la première publication de cette politique :
+
+- 13 novembre 2026 : les commentaires que Peal lit sur les pages d’entreprise LinkedIn une fois que nous les activons, et l’identifiant du membre LinkedIn qui connecte une page ; les comptes de facturation : quelle personne paie chaque organisation, les propositions de confier une organisation à un autre de ses propriétaires, et les vérifications qui réservent l’offre gratuite à une personne.
 
 ## Contact
 

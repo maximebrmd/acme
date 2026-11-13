@@ -6,6 +6,8 @@ draft: false
 
 Effective date: 13 November 2026
 
+Last updated: 13 November 2026
+
 ## About this policy
 
 This policy explains how Maxime Bourmaud EI ("we") processes personal data when you use the hosted Peal service at app.peal.social and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
@@ -177,6 +179,10 @@ Peal is not meant for children. You must be at least 18, or of age where you liv
 ## Changes to this policy
 
 We email account holders at least 30 days before a substantial change to this policy takes effect, and show the change's date at the top of this page. Other changes, such as corrections and clarifications, take effect when they are published here.
+
+Changes since this policy was first published:
+
+- 13 November 2026: the comments Peal reads on LinkedIn company pages once we turn them on, and the identifier of the LinkedIn member who connects a page; billing accounts: which person pays for each organisation, the offers to hand an organisation to another of its owners, and the checks that keep the free tier to one per person.
 
 ## Contact
 
