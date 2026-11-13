@@ -23,6 +23,9 @@ pub struct Media {
     #[serde(rename = "durationMs")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<i64>,
+    #[serde(rename = "fileName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
     #[serde(default)]
     pub id: String,
     pub kind: MediaKind,
@@ -54,6 +57,7 @@ pub struct MediaBuilder {
     created_at: Option<String>,
     dimensions: Option<MediaDimensions>,
     duration_ms: Option<i64>,
+    file_name: Option<String>,
     id: Option<String>,
     kind: Option<MediaKind>,
     page_count: Option<i64>,
@@ -100,6 +104,11 @@ impl MediaBuilder {
 
     pub fn duration_ms(mut self, value: i64) -> Self {
         self.duration_ms = Some(value);
+        self
+    }
+
+    pub fn file_name(mut self, value: impl Into<String>) -> Self {
+        self.file_name = Some(value.into());
         self
     }
 
@@ -161,6 +170,7 @@ impl MediaBuilder {
                 .ok_or_else(|| BuildError::missing_field("created_at"))?,
             dimensions: self.dimensions,
             duration_ms: self.duration_ms,
+            file_name: self.file_name,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             kind: self.kind.ok_or_else(|| BuildError::missing_field("kind"))?,
             page_count: self.page_count,

@@ -8,7 +8,11 @@ module Peal
 
         field :cursor, -> { String }, optional: true, nullable: false
 
+        field :kind, -> { Peal::Types::MediaKind }, optional: true, nullable: false
+
         field :limit, -> { String }, optional: true, nullable: false
+
+        field :q, -> { String }, optional: true, nullable: false
       end
     end
   end

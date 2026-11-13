@@ -24,6 +24,8 @@ export interface GeneratedImage {
     readonly width: number;
   } | null;
   readonly durationMs: null;
+  /** A file the assistant made was never called anything. */
+  readonly fileName: null;
   readonly id: string;
   readonly kind: "image";
   readonly pageCount: null;

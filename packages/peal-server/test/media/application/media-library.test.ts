@@ -8,6 +8,7 @@ import {
   Latch,
   Layer,
   Option,
+  Stream,
 } from "effect";
 import { TestClock } from "effect/testing";
 import sharp from "sharp";
@@ -19,12 +20,21 @@ import {
   CurrentUploadPolicy,
   defaultUploadPolicy,
 } from "#media/application/upload-policy.ts";
+import {
+  keepArriving,
+  roomIn,
+  storeArriving,
+} from "#media/application/use-cases/arrived-file.ts";
 import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
 import { createUpload } from "#media/application/use-cases/create-upload.ts";
 import type { PreparedUpload } from "#media/application/use-cases/create-upload.ts";
 import { MediaLibrary } from "#media/container.ts";
+import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
+import { startUpload } from "#media/domain/media-asset.ts";
 import { MediaMetadata } from "#media/domain/media-metadata.ts";
+import { storageKeyFor } from "#media/domain/storage-key.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
+import { MediaProbeLive } from "#media/infrastructure/media-probe.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -87,6 +97,7 @@ const prepare = Effect.fn("prepare")(function* prepare(
     altText: Option.none(),
     byteSize,
     contentType,
+    fileName: Option.none(),
   });
 
   const { status, storageKey } = prepared.asset;
@@ -198,6 +209,55 @@ layer(LibraryTest)("the media library", (it) => {
 
       assert.deepStrictEqual(bytes, body);
     })
+  );
+
+  it.effect(
+    "keeps the name the file had, without its folders, and none for a blank one",
+    () =>
+      Effect.gen(function* names() {
+        const workspaceId = yield* freshWorkspace;
+        const library = yield* MediaLibrary;
+        const member = memberIn(workspaceId);
+
+        const named = yield* library.createUpload(member, {
+          altText: Option.none(),
+          byteSize: 10,
+          contentType: "image/png",
+          fileName: Option.some(String.raw`C:\Users\someone\Launch day.png`),
+        });
+
+        const blank = yield* library.createUpload(member, {
+          altText: Option.none(),
+          byteSize: 10,
+          contentType: "image/png",
+          fileName: Option.some("   "),
+        });
+
+        assert.deepStrictEqual(
+          named.asset.fileName,
+          Option.some("Launch day.png")
+        );
+        assert.deepStrictEqual(
+          (yield* recorded(named)).pipe(
+            Option.flatMap((asset) => asset.fileName)
+          ),
+          Option.some("Launch day.png")
+        );
+        assert.deepStrictEqual(blank.asset.fileName, Option.none());
+
+        // A name a client sends longer than a device would, cut on a space.
+        const long = yield* library.createUpload(member, {
+          altText: Option.none(),
+          byteSize: 10,
+          contentType: "image/png",
+          fileName: Option.some(`${"a".repeat(254)} b.png`),
+        });
+
+        assert.deepStrictEqual(
+          long.asset.fileName,
+          Option.some("a".repeat(254))
+        );
+      })
   );
 
   it.effect("refuses a type it does not store", () =>
@@ -534,7 +594,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const listed = yield* library.listMedia(member, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 10,
+        text: Option.none(),
       });
 
       assert.strictEqual(completed._tag, "MediaAssetNotFound");
@@ -719,6 +781,7 @@ layer(LibraryTest)("the media library", (it) => {
         altText: Option.none(),
         byteSize: 10,
         contentType: "image/png",
+        fileName: Option.none(),
       };
 
       const refusals = [
@@ -728,7 +791,12 @@ layer(LibraryTest)("the media library", (it) => {
         yield* Effect.flip(library.deleteMedia(viewer, id)),
         yield* Effect.flip(library.getMedia(stranger, id)),
         yield* Effect.flip(
-          library.listMedia(stranger, { after: Option.none(), limit: 10 })
+          library.listMedia(stranger, {
+            after: Option.none(),
+            kind: Option.none(),
+            limit: 10,
+            text: Option.none(),
+          })
         ),
       ];
 
@@ -764,6 +832,7 @@ layer(LibraryTest)("the media library", (it) => {
         altText: Option.some("  A white square  "),
         byteSize: 100,
         contentType: "image/png",
+        fileName: Option.none(),
       });
 
       const { id } = prepared.asset;
@@ -816,7 +885,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const page = yield* library.listMedia(member, {
         after: Option.none(),
+        kind: Option.none(),
         limit: 1,
+        text: Option.none(),
       });
 
       assert.deepStrictEqual(
@@ -826,7 +897,9 @@ layer(LibraryTest)("the media library", (it) => {
 
       const next = yield* library.listMedia(member, {
         after: page.next,
+        kind: Option.none(),
         limit: 1,
+        text: Option.none(),
       });
 
       const [item] = next.items;
@@ -892,6 +965,7 @@ layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
         altText: Option.none(),
         byteSize: body.length,
         contentType: "image/webp",
+        fileName: Option.none(),
         workspaceId,
       }).pipe(Effect.provideService(StorageAllowance, smallStorage));
 
@@ -956,6 +1030,7 @@ layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
         altText: Option.none(),
         byteSize: body.length,
         contentType: "image/webp",
+        fileName: Option.none(),
         workspaceId,
       }).pipe(Effect.provideService(StorageAllowance, smallStorage));
 
@@ -974,5 +1049,79 @@ layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
 
       assert.strictEqual(finished.status._tag, "uploaded");
     })
+  );
+});
+
+layer(LibraryTest)("a file that arrived", (it) => {
+  it.effect(
+    "leaves the store when it cannot be recorded, so no file is kept without an asset",
+    () =>
+      Effect.gen(function* orphan() {
+        const workspaceId = yield* freshWorkspace;
+        const storage = yield* MediaStorage;
+        const assets = yield* MediaAssets;
+        const id = MediaAssetIdSchema.make(yield* (yield* Ids).next);
+        const fillerId = MediaAssetIdSchema.make(yield* (yield* Ids).next);
+        const bytes = damagedPng(5000);
+
+        const kept = Effect.gen(function* keeping() {
+          const room = yield* roomIn(workspaceId, 1);
+
+          return yield* keepArriving(
+            {
+              aiGenerated: false,
+              altText: Option.none(),
+              id,
+              room,
+              workspaceId,
+            },
+            storeArriving(
+              {
+                declaredSize: Option.some(bytes.byteLength),
+                declaredType: Option.none(),
+                rest: Stream.empty,
+                start: bytes,
+              },
+              { id, room, workspaceId }
+            ).pipe(
+              // Another file takes the plan's room while this one is stored.
+              Effect.tap(() =>
+                assets.insert(
+                  startUpload(
+                    {
+                      accepted: {
+                        byteSize: 5000,
+                        contentType: "image/png",
+                        kind: "image",
+                      },
+                      altText: Option.none(),
+                      id: fillerId,
+                      upload: { _tag: "single" },
+                      workspaceId,
+                    },
+                    room.now
+                  )
+                )
+              ),
+              Effect.map((stored) => ({ fileName: Option.none(), stored }))
+            )
+          );
+        }).pipe(
+          Effect.provideService(StorageAllowance, smallStorage),
+          Effect.provide(MediaProbeLive)
+        );
+
+        const refused = yield* Effect.flip(kept);
+
+        assert.strictEqual(refused._tag, "PlanLimitReached");
+        assert.deepStrictEqual(
+          yield* storage.head(storageKeyFor(workspaceId, id, "image/png")),
+          Option.none()
+        );
+        assert.deepStrictEqual(
+          yield* assets.findById(workspaceId, id),
+          Option.none()
+        );
+      })
   );
 });

@@ -58,6 +58,9 @@
   text assistant stays without a command, as an agent writes its own text.
   Its answer says the file is marked as made by AI and that the post's
   options carry the platforms' AI labels.
+- `peal media list` takes `--search` (checked against
+  the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
+  file's name; `peal media upload` sends the file's base name.
 - `peal posts remove-target <post-id> <target-id>` takes a channel off a
   post that waits; it words `LastTargetLeft` and `TargetStatusConflict`
   itself, before `explainingPublishing`, which leaves `src/explain.ts` and

@@ -69,6 +69,10 @@ describe(storableLine, () => {
     );
   });
 
+  it("never ends with a space, even when the cut falls on one", () => {
+    expect(storableLine("ab cd", 3)).toBe("ab");
+  });
+
   it("drops controls and bounds the length like a text", () => {
     expect(storableLine(`a${nul}${escape}b`, 100)).toBe("ab");
     expect(storableLine("abcdef", 4)).toBe("abcd");

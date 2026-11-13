@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import {
+  HttpApi,
   HttpApiEndpoint,
   HttpApiError,
   HttpApiGroup,
@@ -71,6 +72,13 @@ export const MediaSchema = Schema.Struct({
   ),
   // A video's duration in milliseconds, once probed.
   durationMs: Schema.NullOr(Schema.Int),
+  // What the file was called where it came from: the name the client gave
+  // its upload, or the last segment of the address it was imported from,
+  // kept on one line without control characters, at most
+  // `maxMediaFileNameLength` characters. Null for an image the assistant
+  // made, for an upload that gave none, and for every file added before
+  // Peal kept names. Show it as text: it is the member's.
+  fileName: Schema.NullOr(Schema.String),
   id: Schema.String,
   kind: MediaKindSchema,
   // How many pages a document has, once probed, when its bytes tell.
@@ -128,12 +136,22 @@ export const UploadTargetSchema = Schema.Union([
 
 export type UploadTarget = typeof UploadTargetSchema.Type;
 
+/**
+ * The most characters Peal keeps of a file's name: a longer one is cut,
+ * never refused.
+ */
+export const maxMediaFileNameLength = 255;
+
 export const NewUploadSchema = Schema.Struct({
   // What it shows, for people who cannot see it. It can also be written
   // later.
   altText: Schema.optionalKey(Schema.NullOr(Schema.String)),
   byteSize: ByteCountSchema.check(Schema.isGreaterThan(0)),
   contentType: Schema.String,
+  // What the file is called on the device it comes from, to find it by in
+  // the library: kept without any folder before it, on one line, without
+  // control characters, and cut at `maxMediaFileNameLength` characters.
+  fileName: Schema.optionalKey(Schema.NullOr(Schema.String)),
 }).annotate({ identifier: "NewUpload" });
 
 export type NewUpload = typeof NewUploadSchema.Type;
@@ -194,6 +212,18 @@ export const defaultMediaPageSize = 30;
 /** The most media a page holds. */
 export const maxMediaPageSize = 100;
 
+/** The longest text a search of the media library takes. */
+export const maxMediaQueryLength = 100;
+
+/**
+ * Text to find in the library's file names and descriptions: 1 to
+ * `maxMediaQueryLength` characters, without a NUL, which no name holds.
+ */
+export const MediaQuerySchema = Schema.String.check(
+  Schema.isBetweenLength(1, maxMediaQueryLength),
+  Schema.isPattern(/^[^\0]*$/u)
+).annotate({ identifier: "MediaQuery" });
+
 const workspace = { workspaceId: Schema.String };
 
 const media = { ...workspace, mediaId: Schema.String };
@@ -211,19 +241,25 @@ export class MediaApi extends HttpApiGroup.make("media")
       params: workspace,
       query: {
         cursor: Schema.optionalKey(Schema.String),
+        kind: Schema.optionalKey(MediaKindSchema),
         limit: Schema.optionalKey(
           Schema.Int.check(
             Schema.isBetween({ maximum: maxMediaPageSize, minimum: 1 })
           )
         ),
+        q: Schema.optionalKey(MediaQuerySchema),
       },
       success: MediaPageSchema,
-    }).annotateMerge(
-      OpenApi.annotations({
-        description: `Lists the workspace's media, newest first, ${defaultMediaPageSize} a page unless \`limit\` (at most ${maxMediaPageSize}) says otherwise. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Needs media:read.`,
-        summary: "List media",
-      })
-    ),
+    })
+      // The text searched is part of members' file names and descriptions:
+      // the server's span keeps the query without it.
+      .annotate(HttpApi.RedactedNames, { query: ["q"] })
+      .annotateMerge(
+        OpenApi.annotations({
+          description: `Lists the workspace's media, newest first, ${defaultMediaPageSize} a page unless \`limit\` (at most ${maxMediaPageSize}) says otherwise. Every filter given must hold: \`kind\` (\`image\`, \`video\` or \`document\`), and \`q\`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters, for the next one. Needs media:read.`,
+          summary: "List media",
+        })
+      ),
     HttpApiEndpoint.post("create", "/", {
       error: [
         Forbidden,
@@ -239,7 +275,7 @@ export class MediaApi extends HttpApiGroup.make("media")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.",
+          "Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give `fileName`, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.",
         summary: "Start an upload",
       })
     ),
@@ -261,7 +297,7 @@ export class MediaApi extends HttpApiGroup.make("media")
       success: MediaSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within ${mediaImportSeconds} seconds (MediaSourceUnreachable \`tooSlow\`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached \`mediaStorage\`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.`,
+        description: `Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within ${mediaImportSeconds} seconds (MediaSourceUnreachable \`tooSlow\`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached \`mediaStorage\`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.`,
         summary: "Import media from a URL",
       })
     ),

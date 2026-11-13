@@ -85,6 +85,7 @@ export const MediaHandlers = HttpApiBuilder.group(
               altText: Option.fromNullishOr(payload.altText),
               byteSize: payload.byteSize,
               contentType: payload.contentType,
+              fileName: Option.fromNullishOr(payload.fileName),
             })
             .pipe(
               Effect.catchTags({
@@ -221,7 +222,9 @@ export const MediaHandlers = HttpApiBuilder.group(
           const page = yield* library
             .listMedia(actor, {
               after: Option.flatten(after),
+              kind: Option.fromUndefinedOr(query.kind),
               limit: query.limit ?? defaultMediaPageSize,
+              text: Option.fromUndefinedOr(query.q),
             })
             .pipe(
               Effect.catchTags({

@@ -347,6 +347,7 @@ export * from "./MediaInUseEncoded.js";
 export * from "./MediaKind.js";
 export * from "./MediaNotFoundEncoded.js";
 export * from "./MediaPage.js";
+export * from "./MediaQuery.js";
 export * from "./MediaSourceFailure.js";
 export * from "./MediaSourceNotPublicEncoded.js";
 export * from "./MediaSourceUnreachableEncoded.js";

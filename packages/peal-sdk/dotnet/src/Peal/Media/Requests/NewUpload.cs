@@ -18,6 +18,9 @@ public record NewUpload
     [JsonPropertyName("contentType")]
     public required string ContentType { get; set; }
 
+    [JsonPropertyName("fileName")]
+    public string? FileName { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

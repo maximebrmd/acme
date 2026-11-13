@@ -1837,7 +1837,19 @@
       "deleting": "Deleting…",
       "keep": "Keep it",
       "deleteFailed": "The media could not be deleted. Try again.",
-      "deleted": "The media was deleted."
+      "deleted": "The media was deleted.",
+      "search": "Search the library",
+      "searchPlaceholder": "Search by file name or description",
+      "kindFilter": "Kind",
+      "anyKind": "All kinds",
+      "kinds": "{kind, select, image {Images} document {PDF documents} other {Videos}}",
+      "noMatch": "No media matches this search. Files added before Peal kept names are found by their description only.",
+      "clearSearch": "Clear the search",
+      "preview": "Show {name} large",
+      "previewClose": "Close",
+      "previewMissing": "The file is not stored, so there is nothing to show.",
+      "openDocument": "Open the document in a new tab",
+      "resultsShown": "{count, plural, one {# file shown} other {# files shown}}{more, select, true {, and more} other {}}."
     }
   },
   "PostMedia": {

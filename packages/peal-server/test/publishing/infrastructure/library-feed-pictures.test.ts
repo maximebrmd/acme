@@ -81,6 +81,23 @@ const png = Effect.promise(
 );
 
 layer(PicturesTest, { timeout: "120 seconds" })("an item's picture", (it) => {
+  it.effect("is attached whatever length its address's name has", () =>
+    Effect.gen(function* longName() {
+      const workspaceId = yield* freshWorkspace;
+      const path = `/${"a".repeat(254)}%20b.png`;
+
+      const host = yield* feedHost(
+        new Map([[path, serving(yield* png, { "content-type": "image/png" })]])
+      );
+
+      const picture = yield* FeedPictures.use((pictures) =>
+        pictures.attach(memberIn(workspaceId), `${host.url}${path}`, "A title")
+      );
+
+      assert.strictEqual(picture._tag, "attached");
+    })
+  );
+
   it.effect("is imported and attached when it is an image", () =>
     Effect.gen(function* attached() {
       const workspaceId = yield* freshWorkspace;

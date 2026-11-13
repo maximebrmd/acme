@@ -8,6 +8,7 @@ import {
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { pooledRoom } from "#media/application/use-cases/pooled-storage.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
+import { fileNameOf } from "#media/domain/file-name.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import {
   acceptUpload,
@@ -33,6 +34,11 @@ export interface CreateUploadRequest {
   readonly altText: Option.Option<string>;
   readonly byteSize: ByteSize;
   readonly contentType: string;
+  /**
+   * What the file is called on the client's device, as it says, if it
+   * does: kept cleaned (`fileNameOf`).
+   */
+  readonly fileName: Option.Option<string>;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -88,6 +94,10 @@ export const createUpload = Effect.fn("Media.createUpload")(
       altTextOf(Option.getOrElse(request.altText, () => ""))
     );
 
+    const fileName = request.fileName.pipe(
+      Option.flatMap((name) => fileNameOf(name))
+    );
+
     const policy = yield* CurrentUploadPolicy;
     const storage = yield* MediaStorage;
     const assets = yield* MediaAssets;
@@ -116,7 +126,14 @@ export const createUpload = Effect.fn("Media.createUpload")(
 
     if (plan._tag === "single") {
       const asset = startUpload(
-        { accepted, altText, id, upload: { _tag: "single" }, workspaceId },
+        {
+          accepted,
+          altText,
+          fileName,
+          id,
+          upload: { _tag: "single" },
+          workspaceId,
+        },
         now
       );
 
@@ -151,6 +168,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
       {
         accepted,
         altText,
+        fileName,
         id,
         upload: { _tag: "multipart", partSize: plan.partSize, uploadId },
         workspaceId,

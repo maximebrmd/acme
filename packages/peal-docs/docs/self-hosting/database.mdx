@@ -9,7 +9,7 @@ Peal keeps its data and its durable jobs in one Postgres database, which `DATABA
 
 ## Database [#database]
 
-At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`. The migrations create the `pg_trgm` extension, which the media library's search reads: it ships with PostgreSQL, and as a trusted extension the database's owner may create it. On a managed Postgres, connect as the database's owner, or create it once beforehand (`CREATE EXTENSION pg_trgm;`). Its operator classes must be reachable through the search path of the role that migrates: when the provider keeps extensions in a schema of their own (such as `extensions`), put that schema in the role's `search_path` (`ALTER ROLE … SET search_path = "$user", public, extensions;`) before the server starts, or the migration stops with "operator class gin_trgm_ops does not exist".
 
 The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs.
 

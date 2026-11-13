@@ -59,7 +59,12 @@ const generatedPng = Effect.promise(
 
 const assetsOf = (workspaceId: WorkspaceId) =>
   MediaAssets.use((assets) =>
-    assets.list(workspaceId, { after: Option.none(), limit: 10 })
+    assets.list(workspaceId, {
+      after: Option.none(),
+      kind: Option.none(),
+      limit: 10,
+      text: Option.none(),
+    })
   ).pipe(Effect.map(({ assets }) => assets));
 
 const storeIn = (workspaceId: WorkspaceId, bytes: Uint8Array) =>

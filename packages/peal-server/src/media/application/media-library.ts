@@ -10,7 +10,10 @@ import type { MediaSourceNotPublic } from "#media/application/media-source-not-p
 import type { MediaSourceUnreachable } from "#media/application/media-source-unreachable.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import type { ImportSlots } from "#media/application/ports/import-slots.ts";
-import type { MediaAssets } from "#media/application/ports/media-assets.ts";
+import type {
+  MediaAssets,
+  MediaPageRequest,
+} from "#media/application/ports/media-assets.ts";
 import { getAsset } from "#media/application/ports/media-assets.ts";
 import type { MediaProbe } from "#media/application/ports/media-probe.ts";
 import type { MediaStorage } from "#media/application/ports/media-storage.ts";
@@ -74,12 +77,11 @@ export type NewUpload = Omit<CreateUploadRequest, "workspaceId">;
 /** A file to fetch from an address into the actor's workspace. */
 export type MediaImport = Omit<ImportMediaRequest, "workspaceId">;
 
-/** A page of the actor's workspace's media. */
-export interface MediaPageQuery {
-  /** The last asset of the page before, if this is not the first. */
-  readonly after: Option.Option<MediaAssetId>;
-  readonly limit: number;
-}
+/**
+ * A page of the actor's workspace's media: of a kind, and holding a text
+ * in its name or description, when asked.
+ */
+export type MediaPageQuery = MediaPageRequest;
 
 // The asset, looked up in the actor's workspace only.
 const target = (actor: Actor, assetId: MediaAssetId) => ({

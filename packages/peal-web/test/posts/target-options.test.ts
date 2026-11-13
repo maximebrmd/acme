@@ -1057,6 +1057,7 @@ const libraryFile = (id: string, kind: MediaKind): AttachedMedia => ({
     createdAt: created,
     dimensions: null,
     durationMs: null,
+    fileName: null,
     id,
     kind,
     pageCount: null,

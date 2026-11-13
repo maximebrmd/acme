@@ -358,7 +358,8 @@ and no socket, for tests.
   put in a job's history: comments and their authors (`storableReading`),
   what a sign-in says of an account (`storableAuthorized`), what a
   platform answers a publishing call with (`storableResult`,
-  `storableFailure`, in the routed publisher), a file's codec, a webhook
+  `storableFailure`, in the routed publisher), a file's codec and its
+  name (`media/domain/file-name.ts`), a webhook
   receiver's answer (`excerptOf`), what visitors type on a review page
   (`review/domain/plain-text.ts`) and the names an ad network gives an ad
   account, a campaign, an ad set or an ad (`ads/infrastructure/meta/
