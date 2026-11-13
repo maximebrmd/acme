@@ -92,6 +92,23 @@ export interface Overview {
   readonly withdrawableUntil: Option.Option<DateTime.Utc>;
 }
 
+/** The account's month, as its billing workspace's members read it. */
+interface Month {
+  readonly accountDays: Option.Option<number>;
+  readonly estimate: Option.Option<Money>;
+  readonly nextAccount: Option.Option<Money>;
+  readonly upcomingInvoice: Option.Option<Money>;
+}
+
+// Nothing of the account's month: where nothing bills, or for a
+// workspace that does not bill its account.
+const noMonth: Month = {
+  accountDays: Option.none(),
+  estimate: Option.none(),
+  nextAccount: Option.none(),
+  upcomingInvoice: Option.none(),
+};
+
 // Cents of the rate card's currency.
 const dollars = (amount: number): Money => ({ amount, currency: "usd" });
 
@@ -175,22 +192,43 @@ export class BillingOverview extends Context.Service<
           }
         );
 
-      // The billing account's month, on a server that bills: its days on
-      // its billing workspace, priced by the ladder.
+      // The billing account's month, on a server that bills, for the
+      // members of the workspace that bills it only: its days, priced by
+      // the ladder, what Stripe was told of them once it pays (reported
+      // since it was ordered, as the invoice prices them), else what they
+      // would cost; and what Stripe's next invoice takes. Any other of its
+      // workspaces (a partner's customer, a person's other workspaces)
+      // tells nothing of the account's money.
       const monthOf = Effect.fn("BillingOverview.monthOf")(function* monthOf(
         workspaceId: Actor["workspaceId"],
+        current: Entitlements,
         pooled: number,
         now: DateTime.Utc
       ) {
         const holder = yield* holders.holderOf(workspaceId);
-        const counted = accountDaysOf(yield* days.ofMonth([holder], now));
 
-        return {
-          accountDays: Option.some(counted),
-          estimate: Option.some(dollars(accountsCharge(counted))),
-          holder,
+        if (holder !== workspaceId) {
+          return noMonth;
+        }
+
+        const counted = yield* days.ofMonth([holder], now);
+
+        const paying =
+          Option.contains(current.plan, "payAsYouGo") &&
+          Option.isSome(current.subscription);
+
+        const accountDays = paying
+          ? counted.reduce((sum, { reported }) => sum + reported, 0)
+          : accountDaysOf(counted);
+
+        const month: Month = {
+          accountDays: Option.some(accountDays),
+          estimate: Option.some(dollars(accountsCharge(accountDays))),
           nextAccount: Option.some(dollars(nextAccountMonthly(pooled))),
+          upcomingInvoice: yield* upcomingOf(holder, current.subscription),
         };
+
+        return month;
       });
 
       const of = Effect.fn("BillingOverview.of")(function* of(actor: Actor) {
@@ -209,13 +247,8 @@ export class BillingOverview extends Context.Service<
         const now = yield* DateTime.now;
 
         const month = billing
-          ? yield* monthOf(actor.workspaceId, used.channels, now)
-          : {
-              accountDays: Option.none<number>(),
-              estimate: Option.none<Money>(),
-              holder: actor.workspaceId,
-              nextAccount: Option.none<Money>(),
-            };
+          ? yield* monthOf(actor.workspaceId, current, used.channels, now)
+          : noMonth;
 
         const overview: Overview = {
           accounts: {
@@ -240,9 +273,7 @@ export class BillingOverview extends Context.Service<
               })
             : Option.none(),
           rateCard: billing ? Option.some(rateCard) : Option.none(),
-          upcomingInvoice: billing
-            ? yield* upcomingOf(month.holder, current.subscription)
-            : Option.none(),
+          upcomingInvoice: month.upcomingInvoice,
           usage: used,
           withdrawableUntil: current.subscription.pipe(
             Option.flatMap((subscription) =>

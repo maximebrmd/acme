@@ -78,6 +78,18 @@ export const duplicateSubscriptions = Metric.counter(
   }
 );
 
+/**
+ * Per-account subscriptions recorded without the threshold they invoice
+ * at until a first paid invoice, because Stripe refused to set it: the
+ * daily step tries again, and an alert rule reads it
+ * (peal-threshold-unset).
+ */
+export const thresholdsUnset = Metric.counter("peal.billing.threshold_unset", {
+  description:
+    "Per-account subscriptions Stripe refused the unverified billing threshold to, recorded without it",
+  incremental: true,
+});
+
 // Whether Stripe already ends the trial, cancelled, when it ends.
 const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
   Option.exists(event.cancelAt, (at) =>
@@ -151,11 +163,32 @@ export class RecordSubscription extends Context.Service<
             before === undefined ||
             (!paidFor(before.status) && Option.isNone(before.paidInvoiceAt))
           ) {
-            yield* usage.setThreshold(
-              recorded.workspaceId,
-              recorded.stripeSubscriptionId,
-              Option.some(unverifiedThreshold)
-            );
+            // Refused for good, the subscription is recorded all the same:
+            // the account ceiling holds without it, and the daily step
+            // tries again. Not answered, the webhook fails and comes back.
+            yield* usage
+              .setThreshold(
+                recorded.workspaceId,
+                recorded.stripeSubscriptionId,
+                Option.some(unverifiedThreshold)
+              )
+              .pipe(
+                Effect.catchIf(
+                  ({ permanent }) => permanent,
+                  () =>
+                    Metric.update(thresholdsUnset, 1).pipe(
+                      Effect.andThen(
+                        Effect.logError(
+                          "Stripe refused the unverified billing threshold: the subscription is recorded without it"
+                        ).pipe(
+                          Effect.annotateLogs({
+                            workspaceId: recorded.workspaceId,
+                          })
+                        )
+                      )
+                    )
+                )
+              );
           }
         }
       );

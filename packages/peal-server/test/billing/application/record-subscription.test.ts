@@ -10,11 +10,14 @@ import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import {
   duplicateSubscriptions,
   RecordSubscription,
+  thresholdsUnset,
 } from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
+import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 // What recording a subscription asks of Stripe: a trial set to end with its
 // trial, a second trial ended, and the trial a paid plan replaces ended.
 import { AloneInAccountsTest } from "#test/billing/support.ts";
@@ -50,6 +53,20 @@ const LogLive = Layer.effect(
     trials: Ref.make<readonly string[]>([]),
   })
 );
+
+// What Stripe answers a threshold: refused for good, not answered, or
+// taken.
+const refusalOf = (workspace: WorkspaceId, id: string) => {
+  if (id === "sub_synthetic_refused") {
+    return Effect.fail(
+      new StripeUnreachable({ permanent: true, workspaceId: workspace })
+    );
+  }
+
+  return id === "sub_synthetic_unanswered"
+    ? Effect.fail(new StripeUnreachable({ workspaceId: workspace }))
+    : Effect.void;
+};
 
 const PortsInMemory = Layer.mergeAll(
   Layer.effect(
@@ -142,14 +159,14 @@ const PortsInMemory = Layer.mergeAll(
             xApi: "peal_x_api",
           },
           report: () => Effect.die("not asked here"),
-          setThreshold: (_workspace, id, cents) =>
+          setThreshold: (workspace, id, cents) =>
             Ref.update(stripe, (all) => [
               ...all,
               `setThreshold ${id} ${cents.pipe(
                 Option.map((amount) => `${amount}`),
                 Option.getOrElse(() => "none")
               )}`,
-            ]),
+            ]).pipe(Effect.andThen(refusalOf(workspace, id))),
         })
       )
     )
@@ -454,6 +471,32 @@ layer(RecordTest)("recording a subscription", (it) => {
           yield* RecordLog.use(({ days }) => Ref.get(days)),
           [workspaceId, workspaceId]
         );
+      })
+  );
+
+  it.effect(
+    "records a per-account subscription whose threshold Stripe refuses for good, and counts it; fails while Stripe does not answer",
+    () =>
+      Effect.gen(function* thresholdRefused() {
+        const before = (yield* Metric.value(thresholdsUnset)).count;
+
+        yield* reset;
+
+        assert.strictEqual(
+          yield* perAccount("sub_synthetic_refused", "2026-11-09T10:00:00Z"),
+          "recorded"
+        );
+        assert.strictEqual(
+          (yield* Metric.value(thresholdsUnset)).count - before,
+          1
+        );
+
+        const unanswered = yield* perAccount(
+          "sub_synthetic_unanswered",
+          "2026-11-09T10:00:00Z"
+        ).pipe(Effect.flip);
+
+        assert.strictEqual(unanswered._tag, "StripeUnreachable");
       })
   );
 });

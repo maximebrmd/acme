@@ -503,9 +503,17 @@ layer(ReportTest)("the reporter of usage to Stripe", (it) => {
             unpaidSubscription,
           ].toSorted()
         );
-        assert.deepStrictEqual(yield* Ref.get(thresholds), [
-          { cents: Option.none(), id: paidSubscription },
-        ]);
+        // The paid one's threshold lifted; the unpaid one's set again, as
+        // Stripe may have refused it when it was recorded.
+        assert.deepStrictEqual(
+          (yield* Ref.get(thresholds)).toSorted((left, right) =>
+            left.id.localeCompare(right.id)
+          ),
+          [
+            { cents: Option.none(), id: paidSubscription },
+            { cents: Option.some(10_000), id: unpaidSubscription },
+          ]
+        );
         assert.deepStrictEqual(kept, {
           failed: 0,
           itemsAdded: 3,

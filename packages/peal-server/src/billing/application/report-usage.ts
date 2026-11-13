@@ -1,6 +1,6 @@
 import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
-import { stampOf } from "#billing/domain/account-days.ts";
+import { stampOf, unverifiedThreshold } from "#billing/domain/account-days.ts";
 import { entitles } from "#billing/domain/subscription.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -11,6 +11,7 @@ import { BillingMode } from "./ports/billing-mode.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { UsageBilling } from "./ports/usage-billing.ts";
+import { thresholdsUnset } from "./record-subscription.ts";
 
 /** How many reports one page of the reporter reads. */
 export const reportBatchSize = 500;
@@ -202,6 +203,7 @@ export class ReportUsage extends Context.Service<
           yield* Metric.update(refusedKept, 0);
           yield* Metric.update(customersPaused, 0);
           yield* Metric.update(reportedAt, started);
+          yield* Metric.update(thresholdsUnset, 0);
         }
 
         // A run stops asking Stripe after this many attempts in a row it
@@ -427,6 +429,24 @@ export class ReportUsage extends Context.Service<
               yield* billing.setThreshold(workspaceId, id, Option.none());
               yield* subscriptions.markPaidInvoice(id, yield* DateTime.now);
               paid = true;
+            } else {
+              // Until then it invoices at the threshold, set again each
+              // day: Stripe may have refused it when it was recorded.
+              yield* billing
+                .setThreshold(workspaceId, id, Option.some(unverifiedThreshold))
+                .pipe(
+                  Effect.catchIf(
+                    ({ permanent }) => permanent,
+                    () =>
+                      Metric.update(thresholdsUnset, 1).pipe(
+                        Effect.andThen(
+                          Effect.logError(
+                            "Stripe refused the unverified billing threshold again"
+                          ).pipe(Effect.annotateLogs({ workspaceId }))
+                        )
+                      )
+                  )
+                );
             }
           }
 

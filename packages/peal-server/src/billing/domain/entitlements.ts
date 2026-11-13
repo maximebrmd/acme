@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
@@ -26,6 +26,11 @@ export class Entitlements extends Schema.Class<Entitlements>(
   freeTier: Schema.Boolean,
   plan: Schema.Option(PlanSchema),
   subscription: Schema.Option(Subscription),
+  // Whether any of its subscriptions had an invoice paid that took
+  // something: per-account pricing's ceiling is lifted for good then.
+  verified: Schema.Boolean.pipe(
+    Schema.withConstructorDefault(Effect.succeed(false))
+  ),
 }) {
   /**
    * Every limit of its plan, or none, media storage for `accounts`
@@ -47,8 +52,9 @@ export class Entitlements extends Schema.Class<Entitlements>(
 
   /**
    * The accounts its billing account may hold once one more is
-   * connected: its plan's, but per-account pricing whose first invoice was
-   * not paid yet holds the rate card's `unverifiedCeiling`. Only
+   * connected: its plan's, but per-account pricing on an account none of
+   * whose subscriptions had an invoice paid yet holds the rate card's
+   * `unverifiedCeiling`. Only
    * connecting is held to it: what is connected already never makes the
    * account over its plan.
    */
@@ -57,9 +63,7 @@ export class Entitlements extends Schema.Class<Entitlements>(
 
     return Option.isNone(allowed) &&
       Option.contains(this.plan, "payAsYouGo") &&
-      Option.exists(this.subscription, ({ paidInvoiceAt }) =>
-        Option.isNone(paidInvoiceAt)
-      )
+      !this.verified
       ? Option.some(rateCard.unverifiedCeiling)
       : allowed;
   }
@@ -108,6 +112,9 @@ export const entitlementsOf = (
 
   return new Entitlements({
     freeTier,
+    verified: subscriptions.some(({ paidInvoiceAt }) =>
+      Option.isSome(paidInvoiceAt)
+    ),
     plan: Option.some(
       Option.match(giving, {
         onNone: (): Plan => "free",

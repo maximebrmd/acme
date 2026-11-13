@@ -159,6 +159,19 @@ describe(entitlementsOf, () => {
     );
   });
 
+  it("lifts the ceiling for an account that paid an invoice before, as one that subscribes again", () => {
+    const before = subscription("payAsYouGo", "canceled", {
+      paidInvoiceAt: Option.some(DateTime.makeUnsafe("2026-10-01T01:00:00Z")),
+    });
+
+    expect(
+      entitlementsOf([
+        before,
+        subscription("payAsYouGo", "active"),
+      ]).connectableAccounts()
+    ).toStrictEqual(Option.none());
+  });
+
   it("connects what any other plan allows", () => {
     expect(entitlementsOf([]).connectableAccounts()).toStrictEqual(
       Option.some(2)

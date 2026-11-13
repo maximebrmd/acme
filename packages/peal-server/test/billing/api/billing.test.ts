@@ -300,8 +300,9 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
   );
 });
 
-// A billing account on the free tier: no subscription, nothing asked of
-// Stripe, what its days would cost with a payment method.
+// A billing account on the free tier, the workspace billing it: no
+// subscription, nothing asked of Stripe, what its days would cost with a
+// payment method.
 layer(
   overviewWith(
     true,
@@ -330,8 +331,57 @@ layer(
   );
 });
 
-// A partner's customer: its billing account's days are on the partner's
-// home workspace, which bills.
+// Per-account pricing ordered on the 6th: twenty accounts each day since
+// the 1st, reported from the 6th only.
+const orderedDays = Array.from({ length: 10 }, (_, index) => ({
+  day: day(`2026-11-${String(index + 1).padStart(2, "0")}`),
+  holder: workspaceId,
+  peak: 20,
+  reported: index < 5 ? 0 : 20,
+}));
+
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([
+      subscriptionOf({
+        plan: "payAsYouGo",
+        startedAt: Option.some(DateTime.makeUnsafe("2026-11-06T09:00:00Z")),
+        status: "active",
+        workspaceId,
+      }),
+    ]),
+    Layer.merge(
+      Layer.mock(AccountDays, {
+        ofMonth: () => Effect.succeed(orderedDays),
+      }),
+      UpcomingTest
+    )
+  )
+)("the billing endpoint for per-account pricing ordered this month", (it) => {
+  it.effect(
+    "price only the account-days reported since it was ordered, as the invoice will",
+    () =>
+      Effect.gen(function* ordered() {
+        yield* TestClock.setTime(
+          DateTime.makeUnsafe("2026-11-10T12:00:00Z").epochMilliseconds
+        );
+
+        const client = yield* as(permissionsFor("owner"));
+        const billing = yield* client.billing.get({ params });
+
+        assert.strictEqual(billing.accounts.accountDays, 100);
+        assert.deepStrictEqual(billing.accounts.estimate, {
+          amount: 667,
+          currency: "usd",
+        });
+        assert.isTrue(billing.paymentMethod);
+      })
+  );
+});
+
+// A partner's customer, or any workspace of an account that another
+// workspace bills: the account's days are on that billing workspace.
 const home = WorkspaceIdSchema.make("5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81");
 
 layer(
@@ -349,20 +399,26 @@ layer(
     )
   )
 )("the billing endpoint for a partner's customer", (it) => {
-  it.effect("count the month on the partner's home workspace", () =>
-    Effect.gen(function* customer() {
-      yield* TestClock.setTime(startedAt.epochMilliseconds);
+  it.effect(
+    "tell a workspace that does not bill its account nothing of the account's month, its money or its invoice",
+    () =>
+      Effect.gen(function* customer() {
+        yield* TestClock.setTime(startedAt.epochMilliseconds);
 
-      const client = yield* as(permissionsFor("owner"));
-      const billing = yield* client.billing.get({ params });
+        const client = yield* as(permissionsFor("owner"));
+        const billing = yield* client.billing.get({ params });
 
-      // None of the home's days were counted: they are its own.
-      assert.deepStrictEqual(billing.accounts.accountDays, 0);
-      assert.deepStrictEqual(billing.accounts.estimate, {
-        amount: 0,
-        currency: "usd",
-      });
-    })
+        // The partner's figures are its home workspace's members' only.
+        assert.deepStrictEqual(billing.accounts, {
+          accountDays: null,
+          connected: 1,
+          estimate: null,
+          nextAccount: null,
+          pooled: 2,
+        });
+        assert.isNull(billing.estimate);
+        assert.isNull(billing.upcomingInvoice);
+      })
   );
 });
 

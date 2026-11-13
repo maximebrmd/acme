@@ -33,7 +33,10 @@ const watched = [
   "peal_billing_duplicate_subscriptions_total",
   "peal_billing_usage_report_oldest_age",
   "peal_billing_usage_report_ran_at",
-  "peal_billing_usage_report_refused_total",
+  "peal_billing_usage_report_refused_kept",
+  "peal_billing_usage_report_paused",
+  "peal_billing_account_days_started_day",
+  "peal_billing_threshold_unset_total",
 ];
 
 const RuleSchema = Schema.Struct({
@@ -100,7 +103,7 @@ describe("the production alert rules", () => {
       noDataState: "OK",
     });
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
-      "sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)"
+      "sum(peal_billing_duplicate_subscriptions_total) - (sum(peal_billing_duplicate_subscriptions_total offset 1h) or vector(0))"
     );
   });
 
@@ -119,7 +122,25 @@ describe("the production alert rules", () => {
     ],
     [
       "peal-usage-report-refused",
-      "sum(increase(peal_billing_usage_report_refused_total[1h])) or vector(0)",
+      "max(peal_billing_usage_report_refused_kept) or vector(0)",
+      "critical",
+      0,
+    ],
+    [
+      "peal-usage-report-key-refused",
+      "max(peal_billing_usage_report_paused) or vector(0)",
+      "critical",
+      0,
+    ],
+    [
+      "peal-account-days-unstarted",
+      "time() - max(peal_billing_account_days_started_day)",
+      "critical",
+      93_600,
+    ],
+    [
+      "peal-threshold-unset",
+      "sum(peal_billing_threshold_unset_total) - (sum(peal_billing_threshold_unset_total offset 1h) or vector(0))",
       "critical",
       0,
     ],
@@ -139,6 +160,13 @@ describe("the production alert rules", () => {
       expect(rules).toContain(`params: [${threshold}]`);
     }
   );
+
+  it("never tell the operator to report usage by hand", () => {
+    expect(ruleOf("peal-usage-report-refused")?.annotations.summary).toContain(
+      "never report usage again by hand"
+    );
+    expect(rules).not.toMatch(/report the usage again by hand/u);
+  });
 
   it("give every rule its own uid", () => {
     const uids = [...rules.matchAll(/- uid: (?<uid>\S+)/gu)].map(

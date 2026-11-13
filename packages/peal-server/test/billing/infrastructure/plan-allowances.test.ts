@@ -101,11 +101,12 @@ describe("the plan allowances", () => {
         seats: { allowed: Option.none(), taken: 3 },
       });
 
-      // Per-account pricing: every account, and the legacy pro plan's
-      // daily assistant until its monthly meter.
+      // Per-account pricing: every account (connecting held to the
+      // ceiling until a first invoice is paid, as none is here), and the
+      // legacy pro plan's daily assistant until its monthly meter.
       assert.deepStrictEqual(yield* onPlan("payAsYouGo"), {
         assistantRequests: 20,
-        channels: Option.none(),
+        channels: Option.some(100),
         scheduledPosts: Option.none(),
         scheduling: { allowed: Option.none(), connected: 4 },
         seats: { allowed: Option.none(), taken: 3 },
