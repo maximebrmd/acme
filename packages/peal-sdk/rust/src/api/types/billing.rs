@@ -2,8 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct Billing {
-    #[serde(default)]
-    pub account: BillingAccount,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account: Option<BillingAccount>,
     #[serde(default)]
     pub allowances: PlanAllowances,
     #[serde(default)]
@@ -108,7 +108,6 @@ impl BillingBuilder {
 
     /// Consumes the builder and constructs a [`Billing`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`account`](BillingBuilder::account)
     /// - [`allowances`](BillingBuilder::allowances)
     /// - [`currency`](BillingBuilder::currency)
     /// - [`enabled`](BillingBuilder::enabled)
@@ -117,9 +116,7 @@ impl BillingBuilder {
     /// - [`vat_rate`](BillingBuilder::vat_rate)
     pub fn build(self) -> Result<Billing, BuildError> {
         Ok(Billing {
-            account: self
-                .account
-                .ok_or_else(|| BuildError::missing_field("account"))?,
+            account: self.account,
             allowances: self
                 .allowances
                 .ok_or_else(|| BuildError::missing_field("allowances"))?,

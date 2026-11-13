@@ -3,7 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface Billing {
-    account: Peal.BillingAccount;
+    account?: Peal.BillingAccount | undefined;
     allowances: Peal.PlanAllowances;
     currency: string;
     enabled: boolean;

@@ -188,7 +188,7 @@ var billingNullableFields = map[string]*big.Int{
 }
 
 type Billing struct {
-	Account           *BillingAccount      `json:"account" url:"account"`
+	Account           *BillingAccount      `json:"account,omitempty" url:"account,omitempty"`
 	Allowances        *PlanAllowances      `json:"allowances" url:"allowances"`
 	Currency          string               `json:"currency" url:"currency"`
 	Enabled           bool                 `json:"enabled" url:"enabled"`
@@ -1232,7 +1232,7 @@ var standingNullableFields = map[string]*big.Int{
 }
 
 type Standing struct {
-	Account        *BillingAccount `json:"account" url:"account"`
+	Account        *BillingAccount `json:"account,omitempty" url:"account,omitempty"`
 	MustReduce     bool            `json:"mustReduce" url:"mustReduce"`
 	Over           []*Excess       `json:"over" url:"over"`
 	Plan           *Plan           `json:"plan,omitempty" url:"plan,omitempty"`

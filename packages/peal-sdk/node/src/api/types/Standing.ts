@@ -3,7 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface Standing {
-    account: Peal.BillingAccount;
+    account?: Peal.BillingAccount | undefined;
     mustReduce: boolean;
     over: Peal.Excess[];
     plan: Peal.Plan | null;

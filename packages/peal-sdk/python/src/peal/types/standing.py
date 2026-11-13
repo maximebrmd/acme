@@ -13,7 +13,7 @@ from .plan import Plan
 
 
 class Standing(UniversalBaseModel):
-    account: BillingAccount
+    account: typing.Optional[BillingAccount] = None
     must_reduce: typing_extensions.Annotated[
         bool, FieldMetadata(alias="mustReduce"), pydantic.Field(alias="mustReduce")
     ]

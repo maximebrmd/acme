@@ -12,7 +12,7 @@ public record Billing : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("account")]
-    public required BillingAccount Account { get; set; }
+    public BillingAccount? Account { get; set; }
 
     [JsonPropertyName("allowances")]
     public required PlanAllowances Allowances { get; set; }

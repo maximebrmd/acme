@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.NotNull;
 import social.peal.core.Nullable;
 import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
@@ -26,7 +25,7 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Standing.Builder.class)
 public final class Standing {
-    private final BillingAccount account;
+    private final Optional<BillingAccount> account;
 
     private final boolean mustReduce;
 
@@ -41,7 +40,7 @@ public final class Standing {
     private final Map<String, Object> additionalProperties;
 
     private Standing(
-            BillingAccount account,
+            Optional<BillingAccount> account,
             boolean mustReduce,
             List<Excess> over,
             Optional<Plan> plan,
@@ -58,7 +57,7 @@ public final class Standing {
     }
 
     @JsonProperty("account")
-    public BillingAccount getAccount() {
+    public Optional<BillingAccount> getAccount() {
         return account;
     }
 
@@ -136,18 +135,14 @@ public final class Standing {
         return ObjectMappers.stringify(this);
     }
 
-    public static AccountStage builder() {
+    public static MustReduceStage builder() {
         return new Builder();
-    }
-
-    public interface AccountStage {
-        MustReduceStage account(@NotNull BillingAccount account);
-
-        Builder from(Standing other);
     }
 
     public interface MustReduceStage {
         ScheduledPostsStage mustReduce(boolean mustReduce);
+
+        Builder from(Standing other);
     }
 
     public interface ScheduledPostsStage {
@@ -160,6 +155,10 @@ public final class Standing {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage account(Optional<BillingAccount> account);
+
+        _FinalStage account(BillingAccount account);
 
         _FinalStage over(List<Excess> over);
 
@@ -181,9 +180,7 @@ public final class Standing {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements AccountStage, MustReduceStage, ScheduledPostsStage, _FinalStage {
-        private BillingAccount account;
-
+    public static final class Builder implements MustReduceStage, ScheduledPostsStage, _FinalStage {
         private boolean mustReduce;
 
         private int scheduledPosts;
@@ -193,6 +190,8 @@ public final class Standing {
         private Optional<Plan> plan = Optional.empty();
 
         private List<Excess> over = new ArrayList<>();
+
+        private Optional<BillingAccount> account = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -206,13 +205,6 @@ public final class Standing {
             plan(other.getPlan());
             planWithRoom(other.getPlanWithRoom());
             scheduledPosts(other.getScheduledPosts());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("account")
-        public MustReduceStage account(@NotNull BillingAccount account) {
-            this.account = Objects.requireNonNull(account, "account must not be null");
             return this;
         }
 
@@ -301,6 +293,19 @@ public final class Standing {
             if (over != null) {
                 this.over.addAll(over);
             }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage account(BillingAccount account) {
+            this.account = Optional.ofNullable(account);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "account", nulls = Nulls.SKIP)
+        public _FinalStage account(Optional<BillingAccount> account) {
+            this.account = account;
             return this;
         }
 

@@ -5,7 +5,7 @@ require_relative "../../peal"
 module Peal
   module Types
     class Billing < Internal::Types::Model
-      field :account, -> { Peal::Types::BillingAccount }, optional: false, nullable: false
+      field :account, -> { Peal::Types::BillingAccount }, optional: true, nullable: false
 
       field :allowances, -> { Peal::Types::PlanAllowances }, optional: false, nullable: false
 

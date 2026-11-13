@@ -16,7 +16,7 @@ from .usage import Usage
 
 
 class Billing(UniversalBaseModel):
-    account: BillingAccount
+    account: typing.Optional[BillingAccount] = None
     allowances: PlanAllowances
     currency: str
     enabled: bool

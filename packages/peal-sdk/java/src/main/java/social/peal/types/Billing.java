@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Billing.Builder.class)
 public final class Billing {
-    private final BillingAccount account;
+    private final Optional<BillingAccount> account;
 
     private final PlanAllowances allowances;
 
@@ -51,7 +51,7 @@ public final class Billing {
     private final Map<String, Object> additionalProperties;
 
     private Billing(
-            BillingAccount account,
+            Optional<BillingAccount> account,
             PlanAllowances allowances,
             String currency,
             boolean enabled,
@@ -78,7 +78,7 @@ public final class Billing {
     }
 
     @JsonProperty("account")
-    public BillingAccount getAccount() {
+    public Optional<BillingAccount> getAccount() {
         return account;
     }
 
@@ -214,18 +214,14 @@ public final class Billing {
         return ObjectMappers.stringify(this);
     }
 
-    public static AccountStage builder() {
+    public static AllowancesStage builder() {
         return new Builder();
-    }
-
-    public interface AccountStage {
-        AllowancesStage account(@NotNull BillingAccount account);
-
-        Builder from(Billing other);
     }
 
     public interface AllowancesStage {
         CurrencyStage allowances(@NotNull PlanAllowances allowances);
+
+        Builder from(Billing other);
     }
 
     public interface CurrencyStage {
@@ -250,6 +246,10 @@ public final class Billing {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage account(Optional<BillingAccount> account);
+
+        _FinalStage account(BillingAccount account);
 
         _FinalStage plan(Optional<Plan> plan);
 
@@ -284,15 +284,7 @@ public final class Billing {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AccountStage,
-                    AllowancesStage,
-                    CurrencyStage,
-                    EnabledStage,
-                    UsageStage,
-                    VatRateStage,
-                    _FinalStage {
-        private BillingAccount account;
-
+            implements AllowancesStage, CurrencyStage, EnabledStage, UsageStage, VatRateStage, _FinalStage {
         private PlanAllowances allowances;
 
         private String currency;
@@ -313,6 +305,8 @@ public final class Billing {
 
         private Optional<Plan> plan = Optional.empty();
 
+        private Optional<BillingAccount> account = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -330,13 +324,6 @@ public final class Billing {
             usage(other.getUsage());
             vatRate(other.getVatRate());
             withdrawableUntil(other.getWithdrawableUntil());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("account")
-        public AllowancesStage account(@NotNull BillingAccount account) {
-            this.account = Objects.requireNonNull(account, "account must not be null");
             return this;
         }
 
@@ -496,6 +483,19 @@ public final class Billing {
         @JsonSetter(value = "plan", nulls = Nulls.SKIP)
         public _FinalStage plan(Optional<Plan> plan) {
             this.plan = plan;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage account(BillingAccount account) {
+            this.account = Optional.ofNullable(account);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "account", nulls = Nulls.SKIP)
+        public _FinalStage account(Optional<BillingAccount> account) {
+            this.account = account;
             return this;
         }
 

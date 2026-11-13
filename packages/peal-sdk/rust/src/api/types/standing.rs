@@ -2,8 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct Standing {
-    #[serde(default)]
-    pub account: BillingAccount,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account: Option<BillingAccount>,
     #[serde(rename = "mustReduce")]
     #[serde(default)]
     pub must_reduce: bool,
@@ -69,15 +69,12 @@ impl StandingBuilder {
 
     /// Consumes the builder and constructs a [`Standing`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`account`](StandingBuilder::account)
     /// - [`must_reduce`](StandingBuilder::must_reduce)
     /// - [`over`](StandingBuilder::over)
     /// - [`scheduled_posts`](StandingBuilder::scheduled_posts)
     pub fn build(self) -> Result<Standing, BuildError> {
         Ok(Standing {
-            account: self
-                .account
-                .ok_or_else(|| BuildError::missing_field("account"))?,
+            account: self.account,
             must_reduce: self
                 .must_reduce
                 .ok_or_else(|| BuildError::missing_field("must_reduce"))?,
