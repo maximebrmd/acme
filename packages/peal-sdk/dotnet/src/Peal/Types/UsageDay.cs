@@ -14,6 +14,9 @@ public record UsageDay : IJsonOnDeserialized
     [JsonPropertyName("assistantRequests")]
     public int? AssistantRequests { get; set; }
 
+    [JsonPropertyName("billableAccounts")]
+    public int? BillableAccounts { get; set; }
+
     [JsonPropertyName("byPlatform")]
     public IEnumerable<PlatformPosts> ByPlatform { get; set; } = new List<PlatformPosts>();
 

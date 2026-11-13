@@ -156,6 +156,9 @@ describe("the integers of the OpenAPI document", () => {
         ),
       ].toSorted((left, right) => left.localeCompare(right))
     ).toStrictEqual([
+      // A billing account's account-days of a month, or of a usage
+      // report's period: accounts times days, a base the ladder prices.
+      "accountDays",
       // Ads: money in a currency's minor units, which passes 2^31 for a
       // budget in a currency without cents, and what ads did summed over
       // days and campaigns.
@@ -163,6 +166,7 @@ describe("the integers of the OpenAPI document", () => {
       "amountSpent",
       // A plan's allowances, limit by limit; `mediaStorage` among them.
       "assistantRequests",
+      "billableAccountDays",
       "budgetAmount",
       "capRoom",
       "ceiling",
@@ -178,6 +182,9 @@ describe("the integers of the OpenAPI document", () => {
       "impressions",
       "members",
       "monthlyCeiling",
+      // The rate card's media storage, in bytes, per account and without
+      // a payment method.
+      "perAccount",
       // An exported usage count, whose media storage is in bytes.
       "quantity",
       "reach",
@@ -188,6 +195,10 @@ describe("the integers of the OpenAPI document", () => {
       "spend",
       "spendCap",
       "totalBudget",
+      // An exported report of usage to the payment provider: units of a
+      // meter, as messages sent.
+      "value",
+      "withoutPaymentMethod",
     ]);
   });
 });

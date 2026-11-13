@@ -143,6 +143,7 @@ import {
   measureText,
   platformRules,
 } from "peal-contract/post-text";
+import { rateCard } from "peal-contract/rate-card";
 
 import { adsGroupLive, adsWorld } from "./studio-ads.ts";
 import type { AdsWorld } from "./studio-ads.ts";
@@ -687,6 +688,14 @@ const over: Standing = {
 
 const billing: Billing = {
   account,
+  // Two accounts on ten days of November: within the free ones.
+  accounts: {
+    accountDays: 20,
+    connected: 2,
+    estimate: { amount: 0, currency: "usd" },
+    nextAccount: { amount: 500, currency: "usd" },
+    pooled: 2,
+  },
   allowances: {
     assistantRequests: 0,
     channels: 2,
@@ -696,10 +705,14 @@ const billing: Billing = {
   },
   currency: "eur",
   enabled: true,
+  estimate: { amount: 0, currency: "usd" },
+  paymentMethod: false,
   plan: "free",
   plans: [],
+  rateCard,
   subscription: null,
   trial: { available: false, days: 14, plan: "pro" },
+  upcomingInvoice: null,
   usage: {
     assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 2 },
     channels: 2,
@@ -722,6 +735,7 @@ const usageReport = (period: {
   days: [
     {
       assistantRequests: 1,
+      billableAccounts: 2,
       byPlatform: [
         { platform: "bluesky", posts: 1 },
         { platform: "x", posts: 2 },
@@ -734,6 +748,7 @@ const usageReport = (period: {
     },
     {
       assistantRequests: 0,
+      billableAccounts: 2,
       byPlatform: [],
       channels: 2,
       day: "2026-11-02",
@@ -743,6 +758,7 @@ const usageReport = (period: {
     },
     {
       assistantRequests: null,
+      billableAccounts: null,
       byPlatform: [],
       channels: null,
       day: "2026-11-03",
@@ -755,6 +771,7 @@ const usageReport = (period: {
   plan: billing.plan,
   sharedWith: null,
   totals: {
+    billableAccountDays: 4,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
       { platform: "x", posts: 2 },
@@ -1192,6 +1209,7 @@ const partnerUsageReport = (
     totals: later
       ? null
       : {
+          billableAccountDays: null,
           byPlatform: [
             { platform: "bluesky", posts: 3 },
             { platform: "x", posts: 4 },

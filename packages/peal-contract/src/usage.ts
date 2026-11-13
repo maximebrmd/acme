@@ -46,6 +46,11 @@ export const UsageDaySchema = Schema.Struct({
   // snapshot copied them; null for a day without a snapshot, today's
   // included.
   assistantRequests: Schema.NullOr(Schema.Int),
+  // For the workspace that bills its billing account, on a server that
+  // bills per account: the accounts the day bills, the most connected at
+  // once that day across the account's workspaces (0 on the 31st, which
+  // is free). Null for any other workspace, and for a day not counted.
+  billableAccounts: Schema.NullOr(Schema.Int),
   // The day's posts by platform, by the platforms' names.
   byPlatform: Schema.Array(PlatformPostsSchema),
   // The channels the workspace itself had connected when the day's snapshot
@@ -77,6 +82,9 @@ export type MeteredPosts = typeof MeteredPostsSchema.Type;
 
 /** A period's usage, added up. */
 export const UsageTotalsSchema = Schema.Struct({
+  // The days' `billableAccounts` added up: the account-days per-account
+  // pricing bills over the period; null when no day has them.
+  billableAccountDays: Schema.NullOr(Int64Schema),
   byPlatform: Schema.Array(PlatformPostsSchema),
   // The days' `channels` added up, the days without a snapshot left out:
   // the figure a price per connected channel and day would be based on.

@@ -17,6 +17,11 @@
   (connected, `refreshNeeded` to reconnect, `disabled` off) and gives the
   platforms of the channels an agenda names, for the overview across
   workspaces: ids as one `anyUuid` parameter, no permission checked.
+- A channel added (`ConnectChannel.addChannel`, the one path that inserts
+  one) is counted for billing in the same `addingTo` transaction, after
+  the insert: `ChannelAllowance.counted` with the pool's count, which only
+  a server that bills reads (billing's account-days). A new path that adds
+  a channel calls it too; moving or reconnecting one adds none.
 - Channels have their own OAuth flows and token tables. Better Auth's social
   providers are for signing in only.
 - Platform sign-in goes through one `PlatformAuthorizer` per platform

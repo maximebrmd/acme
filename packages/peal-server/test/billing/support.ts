@@ -8,6 +8,7 @@ import { SqlClient } from "effect/sql";
 import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountChannels } from "#billing/application/ports/account-channels.ts";
 import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import type { MeterReport } from "#billing/application/ports/account-day-store.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
@@ -204,6 +205,11 @@ export const AccountDaysInMemory = Layer.effect(
     });
   })
 );
+
+/** No channel connected by any workspace itself, for the billing page. */
+export const NoOwnChannelsTest = Layer.mock(AccountChannels, {
+  ownIn: () => Effect.succeed(new Map()),
+});
 
 /** A server that does not bill: nothing is limited, nothing pooled. */
 export const UnmeteredTest = Layer.mergeAll(

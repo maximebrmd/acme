@@ -5,6 +5,9 @@ pub struct UsageDay {
     #[serde(rename = "assistantRequests")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assistant_requests: Option<i64>,
+    #[serde(rename = "billableAccounts")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub billable_accounts: Option<i64>,
     #[serde(rename = "byPlatform")]
     #[serde(default)]
     pub by_platform: Vec<PlatformPosts>,
@@ -32,6 +35,7 @@ impl UsageDay {
 #[non_exhaustive]
 pub struct UsageDayBuilder {
     assistant_requests: Option<i64>,
+    billable_accounts: Option<i64>,
     by_platform: Option<Vec<PlatformPosts>>,
     channels: Option<i64>,
     day: Option<CalendarDay>,
@@ -43,6 +47,11 @@ pub struct UsageDayBuilder {
 impl UsageDayBuilder {
     pub fn assistant_requests(mut self, value: i64) -> Self {
         self.assistant_requests = Some(value);
+        self
+    }
+
+    pub fn billable_accounts(mut self, value: i64) -> Self {
+        self.billable_accounts = Some(value);
         self
     }
 
@@ -84,6 +93,7 @@ impl UsageDayBuilder {
     pub fn build(self) -> Result<UsageDay, BuildError> {
         Ok(UsageDay {
             assistant_requests: self.assistant_requests,
+            billable_accounts: self.billable_accounts,
             by_platform: self
                 .by_platform
                 .ok_or_else(|| BuildError::missing_field("by_platform"))?,

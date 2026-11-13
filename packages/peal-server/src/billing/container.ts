@@ -240,6 +240,7 @@ export const BillingOverviewLive = Layer.mergeAll(
       NotifiedBillingNoticesLive,
       ContextWorkspaceUsageLive.pipe(Layer.provide(ConfiguredBillingModeLive)),
       ContextMemberAddressesLive,
+      ContextAccountChannelsLive,
       KeyedPseudonymsLive,
       WorkspacePartnerTenancyLive
     )

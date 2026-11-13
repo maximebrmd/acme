@@ -4,6 +4,7 @@ import { PlatformSchema } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { InvalidUsageRange } from "./invalid-usage-range.ts";
+import { billableAccountDays } from "./rate-card.ts";
 
 /**
  * What billing counts of each workspace, day by day (UTC), in its usage
@@ -121,6 +122,13 @@ export interface UsageDay {
    * copied them; none for a day without a snapshot, today's included.
    */
   readonly assistantRequests: Option.Option<number>;
+  /**
+   * The accounts the day bills, for the workspace that bills its billing
+   * account: the most connected at once that day across the account's
+   * workspaces, none on the 31st (`billableAccountDays`); none for any
+   * other workspace, and for a day not counted.
+   */
+  readonly billableAccounts: Option.Option<number>;
   /** The day's posts by platform, in the platforms' order by name. */
   readonly byPlatform: readonly PlatformPosts[];
   /**
@@ -138,6 +146,8 @@ export interface UsageDay {
 
 /** A period's usage, added up. */
 export interface UsageTotals {
+  /** The days' `billableAccounts` added up; none when no day has one. */
+  readonly billableAccountDays: Option.Option<number>;
   readonly byPlatform: readonly PlatformPosts[];
   /**
    * The days' connected channels added up, the base of a price per
@@ -176,14 +186,22 @@ interface DayTally {
   readonly states: Map<UsageState, number>;
 }
 
+/** A day's peak of a billing account's connected accounts. */
+export interface CountedDay {
+  readonly day: DateTime.Utc;
+  readonly peak: number;
+}
+
 /**
  * The report of a period from the ledger's records: one entry per day,
- * oldest first, a day without records included, and the totals. Records
+ * oldest first, a day without records included, and the totals; with the
+ * billing account's counted days for its billing workspace. Records
  * outside the period are left out.
  */
 export const reportOf = (
   records: readonly UsageRecord[],
-  period: UsagePeriod
+  period: UsagePeriod,
+  counted: readonly CountedDay[] = []
 ): UsageReport => {
   const tallies = new Map<number, DayTally>();
   const days = daysIn(period);
@@ -207,9 +225,17 @@ export const reportOf = (
     }
   }
 
+  const peaks = new Map(
+    counted.map(({ day, peak }) => [
+      DateTime.toEpochMillis(usageDayOf(day)),
+      billableAccountDays(usageDayOf(day), peak),
+    ])
+  );
+
   const totalByPlatform = new Map<Platform, number>();
   let channelDays = 0;
   let daysCounted = 0;
+  let billable = Option.none<number>();
 
   const usageDays = [...tallies.entries()].map(([millis, tally]): UsageDay => {
     const channels = Option.fromUndefinedOr(tally.states.get("channels"));
@@ -223,10 +249,19 @@ export const reportOf = (
       daysCounted += 1;
     }
 
+    const billableAccounts = Option.fromUndefinedOr(peaks.get(millis));
+
+    if (Option.isSome(billableAccounts)) {
+      billable = Option.some(
+        Option.getOrElse(billable, () => 0) + billableAccounts.value
+      );
+    }
+
     return {
       assistantRequests: Option.fromUndefinedOr(
         tally.states.get("assistantRequests")
       ),
+      billableAccounts,
       byPlatform: platformPostsOf(tally.byPlatform),
       channels,
       day: DateTime.makeUnsafe(millis),
@@ -244,6 +279,7 @@ export const reportOf = (
   return {
     days: usageDays,
     totals: {
+      billableAccountDays: billable,
       byPlatform,
       channelDays,
       daysCounted,

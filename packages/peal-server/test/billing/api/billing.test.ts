@@ -5,10 +5,16 @@ import { HttpApiTest } from "effect/http-api";
 import { TestClock } from "effect/testing";
 import { Api, Forbidden, Unauthenticated } from "peal-contract";
 import type { Member } from "peal-contract";
+import { rateCard } from "peal-contract/rate-card";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
+import { AccountChannels } from "#billing/application/ports/account-channels.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
+import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
+import type { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
@@ -72,11 +78,54 @@ const UsageTest = Layer.succeed(
   })
 );
 
-const overviewOn = (enabled: boolean) =>
+// The workspace connected one account itself, its billing account two.
+const OwnChannelsTest = Layer.mock(AccountChannels, {
+  ownIn: (workspaceIds) =>
+    Effect.succeed(new Map(workspaceIds.map((id) => [id, 1]))),
+});
+
+// What Stripe's next invoice takes, tax included.
+const UpcomingTest = Layer.mock(StripeContracts, {
+  upcomingTotal: () =>
+    Effect.succeed(Option.some({ amount: 4800, currency: "usd" })),
+});
+
+const day = (written: string) => DateTime.makeUnsafe(`${written}T00:00:00Z`);
+
+// Ten accounts on ten days of November: 100 account-days, of which the
+// ladder's first 60 are free.
+const novemberDays = Array.from({ length: 10 }, (_, index) => ({
+  day: day(`2026-11-${String(index + 1).padStart(2, "0")}`),
+  holder: workspaceId,
+  peak: 10,
+  reported: 10,
+}));
+
+const DaysTest = Layer.mock(AccountDays, {
+  ofMonth: (holders, now) =>
+    Effect.succeed(
+      novemberDays.filter(
+        ({ day: on, holder }) =>
+          holders.includes(holder) &&
+          DateTime.getPartUtc(on, "month") === DateTime.getPartUtc(now, "month")
+      )
+    ),
+});
+
+const overviewWith = (
+  enabled: boolean,
+  subscriptions: Layer.Layer<Subscriptions> = SubscriptionsTest,
+  billed: Layer.Layer<AccountDays | StripeContracts> = Layer.merge(
+    DaysTest,
+    UpcomingTest
+  ),
+  holders: Layer.Layer<PlanHolders> = PlanHolders.layerOwn
+) =>
   Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
     Layer.provide(WorkspaceEntitlements.layer),
-    Layer.provide(SubscriptionsTest),
+    Layer.provide(Layer.mergeAll(holders, OwnChannelsTest, billed)),
+    Layer.provide(subscriptions),
     Layer.provide(NoTrialsTest),
     Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
     Layer.provide(
@@ -91,6 +140,8 @@ const overviewOn = (enabled: boolean) =>
     ),
     Layer.provide(AloneInAccountsTest)
   );
+
+const overviewOn = (enabled: boolean) => overviewWith(enabled);
 
 const clientWith = <E, R>(
   security: Layer.Layer<Layer.Success<typeof anonymousSecurityTest>, E, R>,
@@ -177,6 +228,26 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
           used: 12,
         });
 
+        // The month's accounts, priced by the rate card, and Stripe's
+        // next invoice, tax included.
+        assert.deepStrictEqual(billing.rateCard, rateCard);
+        assert.deepStrictEqual(billing.accounts, {
+          accountDays: 100,
+          connected: 1,
+          estimate: { amount: 667, currency: "usd" },
+          nextAccount: { amount: 500, currency: "usd" },
+          pooled: 2,
+        });
+        assert.deepStrictEqual(billing.estimate, {
+          amount: 667,
+          currency: "usd",
+        });
+        assert.deepStrictEqual(billing.upcomingInvoice, {
+          amount: 4800,
+          currency: "usd",
+        });
+        assert.isTrue(billing.paymentMethod);
+
         // Stripe's ids stay on the server.
         assert.notInclude(JSON.stringify(billing), "cus_synthetic");
         assert.notInclude(JSON.stringify(billing), "sub_synthetic");
@@ -229,6 +300,72 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
   );
 });
 
+// A billing account on the free tier: no subscription, nothing asked of
+// Stripe, what its days would cost with a payment method.
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([]),
+    Layer.merge(DaysTest, Layer.mock(StripeContracts, {}))
+  )
+)("the billing endpoint for a billing account on the free tier", (it) => {
+  it.effect(
+    "show the month's accounts and what they would cost, and no invoice",
+    () =>
+      Effect.gen(function* free() {
+        yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+        const client = yield* as(permissionsFor("owner"));
+        const billing = yield* client.billing.get({ params });
+
+        assert.strictEqual(billing.plan, "free");
+        assert.isFalse(billing.paymentMethod);
+        assert.isNull(billing.upcomingInvoice);
+        assert.deepStrictEqual(billing.accounts.estimate, {
+          amount: 667,
+          currency: "usd",
+        });
+        assert.deepStrictEqual(billing.estimate, billing.accounts.estimate);
+      })
+  );
+});
+
+// A partner's customer: its billing account's days are on the partner's
+// home workspace, which bills.
+const home = WorkspaceIdSchema.make("5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81");
+
+layer(
+  overviewWith(
+    true,
+    subscriptionsHolding([]),
+    Layer.merge(DaysTest, Layer.mock(StripeContracts, {})),
+    Layer.succeed(
+      PlanHolders,
+      PlanHolders.ofHolders({
+        holderOf: () => Effect.succeed(home),
+        holdersOf: (workspaceIds) =>
+          Effect.succeed(new Map(workspaceIds.map((id) => [id, home]))),
+      })
+    )
+  )
+)("the billing endpoint for a partner's customer", (it) => {
+  it.effect("count the month on the partner's home workspace", () =>
+    Effect.gen(function* customer() {
+      yield* TestClock.setTime(startedAt.epochMilliseconds);
+
+      const client = yield* as(permissionsFor("owner"));
+      const billing = yield* client.billing.get({ params });
+
+      // None of the home's days were counted: they are its own.
+      assert.deepStrictEqual(billing.accounts.accountDays, 0);
+      assert.deepStrictEqual(billing.accounts.estimate, {
+        amount: 0,
+        currency: "usd",
+      });
+    })
+  );
+});
+
 layer(overviewOn(false))(
   "the billing endpoint on a server that does not bill",
   (it) => {
@@ -257,6 +394,18 @@ layer(overviewOn(false))(
           members: null,
           scheduledPosts: null,
         });
+        // Nothing priced, counted by day or asked of Stripe.
+        assert.isNull(billing.rateCard);
+        assert.deepStrictEqual(billing.accounts, {
+          accountDays: null,
+          connected: 1,
+          estimate: null,
+          nextAccount: null,
+          pooled: 2,
+        });
+        assert.isNull(billing.estimate);
+        assert.isNull(billing.upcomingInvoice);
+        assert.isFalse(billing.paymentMethod);
       })
     );
 

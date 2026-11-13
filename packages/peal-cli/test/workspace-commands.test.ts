@@ -992,8 +992,14 @@ describe("peal billing, members and invitations", () => {
         assert.match(shown, /Media stored\s+125\.0 MB of 1\.0 GB/u);
         assert.match(shown, /Posts published\s+3: bluesky 1, x 2/u);
         assert.match(shown, /Channel-days\s+4, over 2 days counted/u);
+        // The account-days per-account pricing bills, and each day's.
+        assert.match(shown, /Billable account-days\s+4/u);
+        assert.match(
+          shown,
+          /Day\s+Posts\s+Channels\s+Members\s+Media\s+Assistant\s+Accounts/u
+        );
         assert.match(shown, /Posts on x in 2026-11\s+2, 1 with a link/u);
-        assert.match(shown, /2026-11-01\s+3\s+2\s+2\s+125\.0 MB\s+1/u);
+        assert.match(shown, /2026-11-01\s+3\s+2\s+2\s+125\.0 MB\s+1\s+2/u);
         assert.match(shown, /2026-11-02\s+0\s+2\s+2\s+125\.0 MB\s+0/u);
         // A day without a snapshot or anything done is left out.
         assert.notInclude(shown, "2026-11-03  ");

@@ -46,6 +46,7 @@ const report: WorkspaceUsageReport = {
   days: [
     {
       assistantRequests: 2,
+      billableAccounts: null,
       byPlatform: [
         { platform: "bluesky", posts: 1 },
         { platform: "x", posts: 2 },
@@ -58,6 +59,7 @@ const report: WorkspaceUsageReport = {
     },
     {
       assistantRequests: 0,
+      billableAccounts: null,
       byPlatform: [{ platform: "x", posts: 1 }],
       channels: 3,
       day: "2026-11-10",
@@ -67,6 +69,7 @@ const report: WorkspaceUsageReport = {
     },
     {
       assistantRequests: null,
+      billableAccounts: null,
       byPlatform: [],
       channels: null,
       day: "2026-11-11",
@@ -79,6 +82,7 @@ const report: WorkspaceUsageReport = {
   plan: null,
   sharedWith: null,
   totals: {
+    billableAccountDays: null,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
       { platform: "x", posts: 3 },
@@ -97,6 +101,7 @@ const empty: WorkspaceUsageReport = {
   days: report.days.map((day) => ({
     ...day,
     assistantRequests: null,
+    billableAccounts: null,
     byPlatform: [],
     channels: null,
     mediaStorage: null,
@@ -104,6 +109,7 @@ const empty: WorkspaceUsageReport = {
     publishedPosts: 0,
   })),
   totals: {
+    billableAccountDays: null,
     byPlatform: [],
     channelDays: 0,
     daysCounted: 0,

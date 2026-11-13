@@ -45,6 +45,7 @@ export const usageView = ({
   current,
   days: report.days.map((day) => ({
     assistantRequests: Option.getOrNull(day.assistantRequests),
+    billableAccounts: Option.getOrNull(day.billableAccounts),
     byPlatform: day.byPlatform,
     channels: Option.getOrNull(day.channels),
     day: dayOf(day.day),
@@ -60,6 +61,7 @@ export const usageView = ({
   ),
   totals: {
     ...report.totals,
+    billableAccountDays: Option.getOrNull(report.totals.billableAccountDays),
     meteredPosts: meteredView(meteredPosts),
   },
 });
@@ -105,6 +107,7 @@ export const partnerUsageView = ({
   totals: account.pipe(
     Option.map(({ meteredPosts, totals }) => ({
       ...totals,
+      billableAccountDays: Option.getOrNull(totals.billableAccountDays),
       meteredPosts: meteredView(meteredPosts),
     })),
     Option.getOrNull

@@ -57,6 +57,8 @@ import {
   AloneInAccountsTest,
   PlainPseudonymsTest,
   subscriptionOf,
+  AccountDaysUncountedTest,
+  NoOwnChannelsTest,
 } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -395,6 +397,7 @@ const ActionsTest = Layer.mergeAll(
     )
   ),
   Layer.provide(AloneInAccountsTest),
+  Layer.provide(Layer.merge(AccountDaysUncountedTest, NoOwnChannelsTest)),
   Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
 );

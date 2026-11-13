@@ -14580,6 +14580,108 @@ func (m *MeteredPosts) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
+var (
+	moneyFieldAmount   = big.NewInt(1 << 0)
+	moneyFieldCurrency = big.NewInt(1 << 1)
+)
+
+type Money struct {
+	Amount   int    `json:"amount" url:"amount"`
+	Currency string `json:"currency" url:"currency"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *Money) GetAmount() int {
+	if m == nil {
+		return 0
+	}
+	return m.Amount
+}
+
+func (m *Money) GetCurrency() string {
+	if m == nil {
+		return ""
+	}
+	return m.Currency
+}
+
+func (m *Money) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *Money) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetAmount sets the Amount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Money) SetAmount(amount int) {
+	m.Amount = amount
+	m.require(moneyFieldAmount)
+}
+
+// SetCurrency sets the Currency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Money) SetCurrency(currency string) {
+	m.Currency = currency
+	m.require(moneyFieldCurrency)
+}
+
+func (m *Money) UnmarshalJSON(data []byte) error {
+	type unmarshaler Money
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = Money(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *Money) MarshalJSON() ([]byte, error) {
+	type embed Money
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *Money) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
 // A number JSON cannot hold: infinity, negative infinity or not a number.
 type NonFiniteNumber string
 
@@ -27540,25 +27642,39 @@ func (u *UsagePeriod) String() string {
 }
 
 var (
-	usageTotalsFieldByPlatform     = big.NewInt(1 << 0)
-	usageTotalsFieldChannelDays    = big.NewInt(1 << 1)
-	usageTotalsFieldDaysCounted    = big.NewInt(1 << 2)
-	usageTotalsFieldMeteredPosts   = big.NewInt(1 << 3)
-	usageTotalsFieldPublishedPosts = big.NewInt(1 << 4)
+	usageTotalsFieldBillableAccountDays = big.NewInt(1 << 0)
+	usageTotalsFieldByPlatform          = big.NewInt(1 << 1)
+	usageTotalsFieldChannelDays         = big.NewInt(1 << 2)
+	usageTotalsFieldDaysCounted         = big.NewInt(1 << 3)
+	usageTotalsFieldMeteredPosts        = big.NewInt(1 << 4)
+	usageTotalsFieldPublishedPosts      = big.NewInt(1 << 5)
 )
 
+// usageTotalsNullableFields maps the wire names of UsageTotals's nullable fields (required or optional) to their field bits.
+var usageTotalsNullableFields = map[string]*big.Int{
+	"billableAccountDays": usageTotalsFieldBillableAccountDays,
+}
+
 type UsageTotals struct {
-	ByPlatform     []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
-	ChannelDays    int64            `json:"channelDays" url:"channelDays"`
-	DaysCounted    int              `json:"daysCounted" url:"daysCounted"`
-	MeteredPosts   []*MeteredPosts  `json:"meteredPosts" url:"meteredPosts"`
-	PublishedPosts int              `json:"publishedPosts" url:"publishedPosts"`
+	BillableAccountDays *int64           `json:"billableAccountDays,omitempty" url:"billableAccountDays,omitempty"`
+	ByPlatform          []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
+	ChannelDays         int64            `json:"channelDays" url:"channelDays"`
+	DaysCounted         int              `json:"daysCounted" url:"daysCounted"`
+	MeteredPosts        []*MeteredPosts  `json:"meteredPosts" url:"meteredPosts"`
+	PublishedPosts      int              `json:"publishedPosts" url:"publishedPosts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UsageTotals) GetBillableAccountDays() *int64 {
+	if u == nil {
+		return nil
+	}
+	return u.BillableAccountDays
 }
 
 func (u *UsageTotals) GetByPlatform() []*PlatformPosts {
@@ -27612,6 +27728,13 @@ func (u *UsageTotals) require(field *big.Int) {
 	u.explicitFields = next
 }
 
+// SetBillableAccountDays sets the BillableAccountDays field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageTotals) SetBillableAccountDays(billableAccountDays *int64) {
+	u.BillableAccountDays = billableAccountDays
+	u.require(usageTotalsFieldBillableAccountDays)
+}
+
 // SetByPlatform sets the ByPlatform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (u *UsageTotals) SetByPlatform(byPlatform []*PlatformPosts) {
@@ -27659,6 +27782,13 @@ func (u *UsageTotals) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	u.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, usageTotalsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		u.require(presentFields)
+	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
 }

@@ -11,6 +11,8 @@ import { BillingAccountStore } from "#billing/application/ports/billing-account-
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
+import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
+import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -29,6 +31,7 @@ import {
   AccountDaysInMemory,
   AccountDaysUncountedTest,
   AloneInAccountsTest,
+  NoOwnChannelsTest,
   NoAddressesTest,
   NoContractsTest,
   NoTrialsTest,
@@ -107,6 +110,11 @@ const WorkspacesTest = Layer.mock(Checkouts, {
   holdWorkspace: (id) => Effect.succeed(id !== deletedWorkspace),
 });
 
+// Stripe says nothing of the next invoice; anything else dies.
+const NoUpcomingTest = Layer.mock(StripeContracts, {
+  upcomingTotal: () => Effect.succeedNone,
+});
+
 const billingWith = (enabled: boolean) =>
   BillingOverview.layer.pipe(
     Layer.provide(UsageTest),
@@ -117,12 +125,14 @@ const billingWith = (enabled: boolean) =>
       Layer.mergeAll(
         SubscriptionsInMemory,
         NoTrialsTest,
-        StripeUncalledTest,
+        NoUpcomingTest,
         NoAddressesTest,
         PlainPseudonymsTest,
         AloneInAccountsTest,
         AccountDaysUncountedTest,
-        UsageBillingUncalledTest
+        UsageBillingUncalledTest,
+        NoOwnChannelsTest,
+        PlanHolders.layerOwn
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),

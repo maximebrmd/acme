@@ -115,6 +115,71 @@
   service, business use). For EU VAT it computes as the personal-use code
   does; the split matters for US sales tax only, an accountant's question
   before Peal registers there.
+- Account-days (`AccountDays`, `billing.account_days`, domain
+  `account-days.ts`): each billing account's day (UTC) on its billing
+  workspace (the holder: `PlanHolders`, a partner's home for its pool),
+  `peak` the most accounts connected at once across the pool, raised,
+  never lowered (a disconnection counts the day it was connected in).
+  Raised where a channel is added, inside `addingTo` and the pool's hold
+  (`ChannelAllowance.counted`, its count read only where billing is on),
+  and when the day starts (`StartAccountDays`, run by the 00:11 snapshot
+  after its sweep: accounts by id, three reads and one transaction a
+  batch). For a holder whose `payAsYouGo` subscription entitles it, the
+  same transaction puts `billableAccountDays` not yet `reported` in the
+  outbox (`billing.meter_reports`, identifier
+  `acc:<holder>:<day>:<peak>`, value the rise; none on the 31st);
+  anywhere else the day is kept and nothing sent. `RecordSubscription`
+  reports the day so far of a newly paying holder (`subscribed`). A
+  server that does not bill counts, reads and sends nothing.
+- The reporter (`ReportUsage`, cron `billing.usage-report`, every five
+  minutes from minute 3, and its daily step `billing.usage-items` at
+  01:19; both registered only where billing is on, `usageReporting`)
+  sends unsent reports oldest first by cursor through `UsageBilling`
+  (`StripeUsageBillingLive`: `meterEvents.create` with the identifier as
+  identifier and idempotency key), one customer at a time and in order,
+  eight customers at once. Stamped with the instant described within the
+  last hour, else the sending time (`stampOf`). No answer, 429 or 5xx:
+  that customer waits for the next run; any other refusal is final,
+  kept by Stripe's code (`refusal`), logged and counted. Gauges `.left`,
+  `.oldest_age`, `.ran_at` and the counter `.refused`
+  (`peal.billing.usage_report.*`) feed `peal-usage-report-behind`
+  (6 hours), `-stopped` (30 minutes) and `-refused`. The daily step keeps
+  each `payAsYouGo` subscription's items to the catalogue
+  (`ensureItems`: adds a missing line, moves an item whose price lost
+  its lookup key, without proration) and records its first paid invoice
+  (`paidInvoices`, `subscriptions.paid_invoice_at`), removing the
+  billing threshold first. Account-days and reports are purged 400 days
+  on (the snapshot), go with the workspace's export and erasure
+  (`accountDays`, `usageReports`), and are the registry's `usage`.
+- Unverified ceiling (D8): a `payAsYouGo` subscription without a paid
+  invoice connects up to `rateCard.unverifiedCeiling` (100) accounts
+  (`Entitlements.connectableAccounts`, what `ChannelAllowance.channels`
+  answers); the standing reads `allowanceOf`, so nothing connected is
+  ever over it. First recorded paying, it is set to invoice at
+  `unverifiedThreshold` ($100, `billing_thresholds`, its billing month
+  kept) before the event is recorded; the daily step lifts both.
+- `GET …/billing` answers `accounts` (the workspace's own and the
+  pooled count, the month's account-days on the holder, `estimate` by
+  `accountsCharge`, `nextAccount` by the ladder), `estimate`,
+  `rateCard`, `paymentMethod` (an entitling subscription active or past
+  due) and `upcomingInvoice` (`StripeContracts.upcomingTotal`, none when
+  Stripe does not answer); on a server that does not bill money and the
+  rate card are null and no day or Stripe is read. The usage report's
+  days carry `billableAccounts` for the holder only, its totals
+  `billableAccountDays`.
+- Sandbox runbook for the reporter (the owner, test mode, never in
+  tests): with a `payAsYouGo` subscription on a test clock, connect an
+  account and wait for the reporter: the meter event under
+  `acc:<holder>:<day>:<peak>`; send the same identifier again by hand
+  after a day (what does Stripe answer a duplicate past the idempotency
+  key's 24 hours: an error, which the reporter would keep as a refusal,
+  or nothing?); check the subscription carries `billing_thresholds`
+  `amount_gte` 10000 and its period still ends on the first; pay the
+  first invoice, run the daily step (the threshold gone,
+  `paid_invoice_at` set); move a price's lookup key with
+  `stripe-catalogue` and run the daily step (the item moved, no
+  proration); and read, in the meter's event summaries, that each day
+  bills its peak once.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before

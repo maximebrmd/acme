@@ -14,6 +14,9 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("account")]
     public BillingAccount? Account { get; set; }
 
+    [JsonPropertyName("accounts")]
+    public required BillingAccountsUsage Accounts { get; set; }
+
     [JsonPropertyName("allowances")]
     public required PlanAllowances Allowances { get; set; }
 
@@ -23,17 +26,29 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("enabled")]
     public required bool Enabled { get; set; }
 
+    [JsonPropertyName("estimate")]
+    public Money? Estimate { get; set; }
+
+    [JsonPropertyName("paymentMethod")]
+    public required bool PaymentMethod { get; set; }
+
     [JsonPropertyName("plan")]
     public Plan? Plan { get; set; }
 
     [JsonPropertyName("plans")]
     public IEnumerable<PlanOffer> Plans { get; set; } = new List<PlanOffer>();
 
+    [JsonPropertyName("rateCard")]
+    public RateCard? RateCard { get; set; }
+
     [JsonPropertyName("subscription")]
     public BillingSubscription? Subscription { get; set; }
 
     [JsonPropertyName("trial")]
     public TrialOffer? Trial { get; set; }
+
+    [JsonPropertyName("upcomingInvoice")]
+    public Money? UpcomingInvoice { get; set; }
 
     [JsonPropertyName("usage")]
     public required Usage Usage { get; set; }
