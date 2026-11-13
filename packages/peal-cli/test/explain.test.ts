@@ -174,14 +174,14 @@ describe("a webhook move that keeps headers, explained", () => {
   });
 });
 
+const refusalOf = (failure: UsageAllowanceReached): string => {
+  const explained = explain(url)(failure);
+
+  return explained._tag === "Refused" ? explained.reason : explained._tag;
+};
+
 describe("a meter's refusal, explained", () => {
   const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
-
-  const refusalOf = (failure: UsageAllowanceReached): string => {
-    const explained = explain(url)(failure);
-
-    return explained._tag === "Refused" ? explained.reason : explained._tag;
-  };
 
   it("says a payment method lets the messages go on, at the rate card's price", () => {
     expect(
