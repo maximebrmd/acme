@@ -58,9 +58,11 @@ const requiredSecret = (name: string) =>
   Config.schema(Schema.Redacted(Schema.NonEmptyString), name);
 
 // Letters, digits and underscores, as a lookup key is written in Stripe's
-// dashboard; at most 200 characters with the plan and interval after it.
+// dashboard. At most 81 characters: the prefix also starts each meter's
+// event name, which Stripe takes of 100 characters at most, and the longest
+// is the prefix and "_assistant_requests".
 const LookupKeyPrefixSchema = Schema.String.check(
-  Schema.isPattern(/^[a-z0-9_]{1,160}$/u)
+  Schema.isPattern(/^[a-z0-9_]{1,81}$/u)
 );
 
 /**

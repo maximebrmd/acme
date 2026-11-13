@@ -180,3 +180,32 @@ describe("the Stripe catalogue command's settings", () => {
     })
   );
 });
+
+// Stripe takes a meter's event name of 100 characters at most, and the
+// longest is the prefix and "_assistant_requests".
+describe("the lookup key prefix", () => {
+  it.effect("keeps every meter's event name within 100 characters", () =>
+    Effect.gen(function* prefix() {
+      const longest = "p".repeat(81);
+
+      const settings = yield* settingsFrom({
+        ...billing,
+        STRIPE_LOOKUP_KEY_PREFIX: longest,
+      });
+
+      assert.deepStrictEqual(
+        settings.pipe(
+          Option.map(({ catalogue }) => catalogue.assistantRequests.length)
+        ),
+        Option.some(100)
+      );
+
+      const tooLong = yield* settingsFrom({
+        ...billing,
+        STRIPE_LOOKUP_KEY_PREFIX: `${longest}p`,
+      }).pipe(Effect.flip);
+
+      assert.include(String(tooLong), "STRIPE_LOOKUP_KEY_PREFIX");
+    })
+  );
+});
