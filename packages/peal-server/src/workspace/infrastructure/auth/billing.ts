@@ -421,18 +421,38 @@ export const firstOfNextMonth = (nowMs: number): number => {
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1) / 1000;
 };
 
+// Stripe's shortest and longest checkout sessions, with a minute's margin
+// on the shortest.
+const shortestCheckoutSeconds = 31 * 60;
+
+const longestCheckoutSeconds = 24 * 60 * 60;
+
 // Per-account pricing: a card always, though nothing is due before the
 // month's end, and every subscription billing calendar months (UTC), as
 // the billing page and the allowances count in them. The first, partial
-// month starts its own ladder, free accounts included.
-const payingParams = (nowMs: number) =>
-  ({
+// month starts its own ladder, free accounts included. The anchor is set
+// when the session is made, so the session closes before it passes; when
+// the month ends sooner than Stripe's shortest session, the anchor is the
+// first of the month after. The day's end counts from the hour, so the
+// same order asked again within it sends the same parameters under its
+// idempotency key (`checkoutBeside`).
+export const payingParams = (nowMs: number) => {
+  const now = Math.floor(nowMs / 1000);
+  const hour = now - (now % 3600);
+  const next = firstOfNextMonth(nowMs);
+
+  const anchor =
+    next - now < shortestCheckoutSeconds ? firstOfNextMonth(next * 1000) : next;
+
+  return {
+    expires_at: Math.min(hour + longestCheckoutSeconds, anchor),
     payment_method_collection: "always",
     subscription_data: {
-      billing_cycle_anchor: firstOfNextMonth(nowMs),
+      billing_cycle_anchor: anchor,
       proration_behavior: "none",
     },
-  }) satisfies Stripe.Checkout.SessionCreateParams;
+  } satisfies Stripe.Checkout.SessionCreateParams;
+};
 
 /** A checkout's line item: a price, by its id. */
 export type CatalogueLineItem = Stripe.Checkout.SessionCreateParams.LineItem;
@@ -489,28 +509,54 @@ export const catalogueLineItems = async (
 // (its lookup key moved) reaches checkouts within this.
 const lineItemsLifetimeMs = 5 * 60 * 1000;
 
-/** Each meter's price, found once a while and kept while it is fresh. */
-const keptLineItems = (prices: PriceLister, keys: CatalogueLookupKeys) => {
+// How long a failed lookup is kept: while a price is missing or Stripe is
+// slow, the webhooks and the plugin's routes do not each ask again.
+const lineItemsFailureMs = 10 * 1000;
+
+/**
+ * Each meter's price, found once a while and kept while it is fresh; a
+ * lookup that found none is kept a few seconds.
+ */
+export const keptLineItems = (
+  prices: PriceLister,
+  keys: CatalogueLookupKeys,
+  clock: () => number = Date.now
+) => {
   let kept:
-    | { readonly at: number; readonly items: readonly CatalogueLineItem[] }
+    | {
+        readonly at: number;
+        readonly items: Option.Option<readonly CatalogueLineItem[]>;
+      }
     | undefined;
 
   return async (): Promise<Option.Option<readonly CatalogueLineItem[]>> => {
-    const now = Date.now();
+    const now = clock();
 
-    if (kept !== undefined && now - kept.at < lineItemsLifetimeMs) {
-      return Option.some(kept.items);
+    if (
+      kept !== undefined &&
+      now - kept.at <
+        (Option.isSome(kept.items) ? lineItemsLifetimeMs : lineItemsFailureMs)
+    ) {
+      return kept.items;
     }
 
     const found = await catalogueLineItems(prices, keys);
 
-    if (Option.isSome(found)) {
-      kept = { at: now, items: found.value };
-    }
+    kept = { at: now, items: found };
 
     return found;
   };
 };
+
+// Whether the line items Better Auth read with the plan carry every meter's
+// price found now: the plans may have been read while a lookup failed.
+const carriesEvery = (
+  handed: readonly CatalogueLineItem[] | undefined,
+  items: readonly CatalogueLineItem[]
+) =>
+  items.every(({ price }) =>
+    (handed ?? []).some((item) => item.price === price)
+  );
 
 // How long a trial's checkout stays open: Stripe's shortest, a few minutes
 // more, well within the trial's hold (`trialReservationMinutes`), so a
@@ -564,7 +610,8 @@ const OrderErrors = {
  * page (`metadata.orderId`): refused without one; Stripe Tax's; for
  * per-account pricing a card always and the first of next month as the
  * billing anchor, and none while its meters' prices cannot be found
- * (`lineItems`, which Better Auth's plan adds to the checkout); and, for a
+ * (`lineItems`, which Better Auth's plan adds to the checkout) or the plan
+ * Better Auth read lacks one of them; and, for a
  * legacy trial, its days and no payment method.
  */
 export const checkoutParams =
@@ -578,7 +625,10 @@ export const checkoutParams =
       subscription,
       user,
     }: {
-      readonly plan: { readonly name: string };
+      readonly plan: {
+        readonly lineItems?: readonly CatalogueLineItem[] | undefined;
+        readonly name: string;
+      };
       readonly subscription: { readonly referenceId: string };
       readonly user: { readonly email: string; readonly id: string };
     },
@@ -614,7 +664,9 @@ export const checkoutParams =
     }
 
     if (paidPlan.value === "payAsYouGo") {
-      if (Option.isNone(await lineItems())) {
+      const items = await lineItems();
+
+      if (Option.isNone(items) || !carriesEvery(plan.lineItems, items.value)) {
         throw APIError.from("BAD_REQUEST", ChangeErrors.UNAVAILABLE);
       }
 
@@ -773,6 +825,7 @@ const checkoutBeside = async (
             line_items: [{ price: price.value.id }, ...meters.value],
             metadata,
             mode: "subscription",
+            expires_at: paying.expires_at,
             payment_method_collection: paying.payment_method_collection,
             subscription_data: { ...paying.subscription_data, metadata },
             success_url: order.successUrl,

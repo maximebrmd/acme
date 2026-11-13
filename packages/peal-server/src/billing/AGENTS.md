@@ -233,8 +233,9 @@
   `peal-stripe-catalogue`) stays for tests. Stripe not answering is a
   warning, and the server starts. A release on Peal's servers runs
   `stripe-catalogue --check` with the new image before it replaces the
-  server, stops on `StripeCatalogueDiffers` and only reports another
-  failure (`peal_release`).
+  server, by its exit code (`catalogueExitCode`: 3 differs, 4 refused or
+  unreadable, 5 unanswered): it stops on 3 and 4, and only reports 5
+  (`peal_release`).
 - Before per-account pricing is turned on anywhere, the owner runs this in
   the sandbox's Stripe account (test mode, its key in the sandbox vault,
   never copied), never in tests: `stripe-catalogue`, again (no change),
@@ -247,7 +248,9 @@
   12,000 billable messages reported, the clock past the first and the
   finalisation hour (invoice: $40.00 and $1.20, plus tax for a French
   address); an event stamped 23:59 on the last day sent at 00:11 on the
-  first (which invoice takes it); cancel, withdraw and delete on three
+  first (which invoice takes it); a checkout opened on the last day,
+  before 23:29 UTC, closing at 00:00 (`expires_at`), and one opened after,
+  anchored on the first of the month after; cancel, withdraw and delete on three
   subscriptions (their final invoices); half-unit rounding (50 billable
   messages, 5 X units, a tier's thirds: is half a cent rounded up, as
   `meterCharge` and `accountsCharge` assume?); dollars a settlement
@@ -406,10 +409,15 @@
   own for `payAsYouGo` (`checkoutBeside`), as a live subscription must not
   change in place. Per-account pricing's checkout (`checkoutParams`, and
   the plan's `lineItems`: each meter's price by lookup key, kept 5
-  minutes, `catalogueLineItems`) has no quantity on any line, asks for a
-  card always (`payment_method_collection: "always"`) and anchors on the
-  first of next month UTC without proration (`firstOfNextMonth`); it opens
-  none while a meter's price cannot be found (`CHECKOUT_UNAVAILABLE`).
+  minutes, a failed lookup 10 seconds, `keptLineItems`) has no quantity on
+  any line, asks for a card always (`payment_method_collection:
+  "always"`) and anchors on the first of next month UTC without proration
+  (`payingParams`), the first of the month after within 31 minutes of it;
+  the session closes at the anchor or a day from the hour, whichever
+  comes first (`expires_at`). It opens none while a meter's price cannot
+  be found, or the plan Better Auth read lacks one (`CHECKOUT_UNAVAILABLE`).
+  A withdrawal from `payAsYouGo` credits nothing: what it paid was the
+  month past's usage (`creditsAt`).
   `planOf` reads `payAsYouGo` from `<prefix>_accounts` among the items.
   Once `payAsYouGo` is recorded, `RecordSubscription` ends a trial
   (`orderedDuringTrial`) and sets a legacy plan to end with its period

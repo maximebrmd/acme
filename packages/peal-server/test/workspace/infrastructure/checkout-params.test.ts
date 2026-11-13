@@ -11,6 +11,8 @@ import {
   catalogueLineItems,
   checkoutParams,
   firstOfNextMonth,
+  keptLineItems,
+  payingParams,
 } from "#workspace/infrastructure/auth/billing.ts";
 import type {
   BillingHooks,
@@ -49,14 +51,16 @@ const meterItems: readonly Stripe.Checkout.SessionCreateParams.LineItem[] = [
 const paramsFor = async (
   answer: CheckoutAnswer,
   plan = "payAsYouGo",
-  items: Option.Option<typeof meterItems> = Option.some(meterItems)
+  items: Option.Option<typeof meterItems> = Option.some(meterItems),
+  // The line items Better Auth read with the plan, before this call.
+  handed: typeof meterItems | undefined = meterItems
 ) =>
   await checkoutParams(
     answering(answer),
     async () => await Promise.resolve(items)
   )(
     {
-      plan: { name: plan },
+      plan: { lineItems: handed, name: plan },
       subscription: { referenceId: workspaceId },
       user: { email: "member@example.com", id: userId },
     },
@@ -86,12 +90,32 @@ describe(checkoutParams, () => {
       "subscription_data" in params
         ? params.subscription_data?.billing_cycle_anchor
         : 0
-    ).toBe(firstOfNextMonth(Date.now()));
+    ).toBe(payingParams(Date.now()).subscription_data.billing_cycle_anchor);
   });
 
   it("opens no checkout for per-account pricing while its prices cannot be found", async () => {
     await expect(
       paramsFor({ _tag: "start", trialDays: null }, "payAsYouGo", Option.none())
+    ).rejects.toMatchObject({ body: { code: "CHECKOUT_UNAVAILABLE" } });
+  });
+
+  it("opens no checkout for per-account pricing when the plan it was handed lacks a meter's price", async () => {
+    // The plans were read while a lookup failed, and this one answers.
+    await expect(
+      paramsFor(
+        { _tag: "start", trialDays: null },
+        "payAsYouGo",
+        Option.some(meterItems),
+        []
+      )
+    ).rejects.toMatchObject({ body: { code: "CHECKOUT_UNAVAILABLE" } });
+    await expect(
+      paramsFor(
+        { _tag: "start", trialDays: null },
+        "payAsYouGo",
+        Option.some([...meterItems, { price: "price_synthetic_ads" }]),
+        meterItems
+      )
     ).rejects.toMatchObject({ body: { code: "CHECKOUT_UNAVAILABLE" } });
   });
 });
@@ -154,5 +178,65 @@ describe(catalogueLineItems, () => {
         keys
       )
     ).resolves.toStrictEqual(Option.none());
+  });
+});
+
+describe(keptLineItems, () => {
+  const keys = catalogueKeysOf("peal");
+
+  it("keeps a failed lookup a few seconds, then asks again", async () => {
+    let asked = 0;
+    let now = Date.parse("2026-11-13T12:00:00Z");
+
+    const items = keptLineItems(
+      {
+        list: async () => {
+          asked += 1;
+
+          return await Promise.resolve({ data: [] });
+        },
+      },
+      keys,
+      () => now
+    );
+
+    await expect(items()).resolves.toStrictEqual(Option.none());
+    await expect(items()).resolves.toStrictEqual(Option.none());
+    // One lookup of the five meters' prices, not two.
+    expect(asked).toBe(5);
+
+    now += 11_000;
+
+    await expect(items()).resolves.toStrictEqual(Option.none());
+    expect(asked).toBe(10);
+  });
+});
+
+const seconds = (iso: string) => Date.parse(iso) / 1000;
+
+const anchorAndExpiry = (iso: string) => {
+  const params = payingParams(Date.parse(iso));
+
+  return [params.subscription_data.billing_cycle_anchor, params.expires_at];
+};
+
+describe(payingParams, () => {
+  it("closes the checkout before its anchor passes, and anchors a month on when the month ends within the hour", () => {
+    // Mid-month: Stripe's longest, a day, from the hour.
+    expect(anchorAndExpiry("2026-11-13T12:25:00Z")).toStrictEqual([
+      seconds("2026-12-01T00:00:00Z"),
+      seconds("2026-11-14T12:00:00Z"),
+    ]);
+    // The last day: the checkout closes at the anchor.
+    expect(anchorAndExpiry("2026-11-30T20:00:00Z")).toStrictEqual([
+      seconds("2026-12-01T00:00:00Z"),
+      seconds("2026-12-01T00:00:00Z"),
+    ]);
+    // Within Stripe's shortest checkout of the anchor: the first of the
+    // month after.
+    expect(anchorAndExpiry("2026-11-30T23:40:00Z")).toStrictEqual([
+      seconds("2027-01-01T00:00:00Z"),
+      seconds("2026-12-01T23:00:00Z"),
+    ]);
   });
 });
