@@ -38,6 +38,7 @@ import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
 import { DrizzleMediaRecords } from "#media/infrastructure/drizzle-media-records.ts";
 import { DrizzleMediaSweepStore } from "#media/infrastructure/drizzle-media-sweep-store.ts";
+import { PublishingMediaUsage } from "#media/infrastructure/publishing-media-usage.ts";
 import {
   makeS3MediaBucket,
   makeS3MediaFolders,
@@ -51,6 +52,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { acquireS3Client } from "#shared/infrastructure/s3-store.ts";
 import {
   DatabaseTest,
+  MediaInPostsTest,
   sendSigned,
   storageSettings,
   syntheticBytes,
@@ -193,7 +195,14 @@ const sweepsWith = (policy: Partial<SweepPolicy>) =>
     DrizzleMediaRecords,
     Layer.effectDiscard(Effect.acquireRelease(cleanUp, () => cleanUp))
   ).pipe(
-    Layer.provideMerge(Layer.mergeAll(StoreTest, DrizzleMediaSweepStore)),
+    Layer.provideMerge(
+      Layer.mergeAll(
+        StoreTest,
+        DrizzleMediaSweepStore,
+        // Which posts show an asset, as the publishing context tells.
+        PublishingMediaUsage.pipe(Layer.provide(MediaInPostsTest))
+      )
+    ),
     Layer.provideMerge(TransactionsTest),
     Layer.provideMerge(DatabaseTest),
     Layer.provide(storageSettings)

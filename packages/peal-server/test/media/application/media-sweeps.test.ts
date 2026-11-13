@@ -14,6 +14,7 @@ import {
 } from "effect";
 import { TestClock } from "effect/testing";
 
+import { MediaInUse } from "#media/application/media-in-use.ts";
 import { MediaSweeps } from "#media/application/media-sweeps.ts";
 import { MediaBucket } from "#media/application/ports/media-bucket.ts";
 import type { BucketFile } from "#media/application/ports/media-bucket.ts";
@@ -21,6 +22,7 @@ import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaSweepStore } from "#media/application/ports/media-sweep-store.ts";
 import type { SweepCursor } from "#media/application/ports/media-sweep-store.ts";
+import { MediaUsage } from "#media/application/ports/media-usage.ts";
 import {
   CurrentSweepPolicy,
   defaultSweepPolicy,
@@ -28,7 +30,7 @@ import {
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { storageKeyFor } from "#media/domain/storage-key.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
   "4f6b1c1e-2a8d-4c3b-9f1e-1a2b3c4d5e6f"
@@ -50,11 +52,24 @@ const files: readonly BucketFile[] = Array.from({ length: 12 }, (_, index) => ({
 // The file whose asset is recorded once the listing found it unheld.
 const lateKey = files[11]?.key;
 
+// Two uploads never completed: the first a draft shows, the second a
+// post scheduled to go out, which keeps it.
+const expiredAssets = files.slice(0, 2).map(({ key }) => ({
+  assetId: MediaAssetIdSchema.make(key.slice(-40, -4)),
+  key,
+}));
+
+const scheduledAsset = expiredAssets[1]?.assetId;
+
+const scheduledPost = PostIdSchema.make("019a7b2c-3d4e-7f00-8a1b-0000000000aa");
+
 /** What the fakes saw. */
 class World extends Context.Service<
   World,
   {
     readonly cursor: Ref.Ref<Option.Option<SweepCursor>>;
+    readonly forgotten: Ref.Ref<readonly string[]>;
+    readonly released: Ref.Ref<readonly string[]>;
     readonly removed: Ref.Ref<readonly string[]>;
   }
 >()("test/media/sweeps/World") {}
@@ -65,6 +80,8 @@ const FakesTest = Layer.effectContext(
   Effect.gen(function* fakes() {
     const cursor = yield* Ref.make(Option.none<SweepCursor>());
     const removed = yield* Ref.make<readonly string[]>([]);
+    const forgotten = yield* Ref.make<readonly string[]>([]);
+    const released = yield* Ref.make<readonly string[]>([]);
     // How many times each key was checked.
     const checked = new Map<string, number>();
 
@@ -93,8 +110,17 @@ const FakesTest = Layer.effectContext(
     const store = MediaSweepStore.of({
       cursor: () => Ref.get(cursor),
       erasedFolders: unused,
-      expiredUploads: unused,
-      forgetExpired: unused,
+      expiredUploads: () =>
+        Effect.succeed(
+          expiredAssets.map(({ assetId, key }) => ({
+            assetId,
+            storageKey: key,
+            upload: { _tag: "single" } as const,
+            workspaceId,
+          }))
+        ),
+      forgetExpired: (assetId) =>
+        Ref.update(forgotten, (all) => [...all, assetId]).pipe(Effect.as(true)),
       forgetFolder: unused,
       // The late file is unheld when the page is read, held from its
       // second check on: an upload recorded meanwhile.
@@ -117,7 +143,10 @@ const FakesTest = Layer.effectContext(
       abortMultipartUpload: unused,
       completeMultipartUpload: unused,
       downloadUrl: unused,
-      head: unused,
+      head: () =>
+        Effect.succeed(
+          Option.some({ byteSize: 10, contentType: Option.some("image/png") })
+        ),
       listUploadedParts: unused,
       publicUrl: unused,
       read: () => Stream.die("not used by the sweep"),
@@ -132,7 +161,21 @@ const FakesTest = Layer.effectContext(
       Context.add(MediaSweepStore, store),
       Context.add(MediaStorage, storage),
       Context.add(MediaFolders, MediaFolders.of({ removeWorkspace: unused })),
-      Context.add(World, World.of({ cursor, removed }))
+      Context.add(
+        MediaUsage,
+        MediaUsage.of({
+          of: unused,
+          release: (_, assetId) =>
+            assetId === scheduledAsset
+              ? Effect.fail(
+                  new MediaInUse({ assetId, postIds: [scheduledPost] })
+                )
+              : Ref.update(released, (all) => [...all, assetId]).pipe(
+                  Effect.as([])
+                ),
+        })
+      ),
+      Context.add(World, World.of({ cursor, forgotten, released, removed }))
     );
   })
 );
@@ -180,6 +223,36 @@ layer(SweepsTest)("the sweep of files no asset holds", (it) => {
           files.slice(0, 11).map(({ key }) => key)
         );
         assert.deepStrictEqual(yield* Ref.get(cursor), Option.none());
+      })
+  );
+});
+
+layer(SweepsTest)("the sweep of uploads never completed", (it) => {
+  it.effect(
+    "takes the asset out of the drafts that show it first, and leaves one a scheduled post shows",
+    () =>
+      Effect.gen(function* releasesFirst() {
+        const { forgotten, released, removed } = yield* World;
+        const drafted = expiredAssets.slice(0, 1);
+
+        yield* TestClock.setTime(Duration.toMillis(Duration.days(2)));
+
+        assert.deepStrictEqual(
+          yield* MediaSweeps.use((sweeps) => sweeps.pending),
+          { bytes: 10, left: false, swept: 1 }
+        );
+        assert.deepStrictEqual(
+          yield* Ref.get(released),
+          drafted.map(({ assetId }) => assetId)
+        );
+        assert.deepStrictEqual(
+          yield* Ref.get(forgotten),
+          drafted.map(({ assetId }) => assetId)
+        );
+        assert.deepStrictEqual(
+          yield* Ref.get(removed),
+          drafted.map(({ key }) => key)
+        );
       })
   );
 });

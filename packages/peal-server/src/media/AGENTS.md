@@ -112,7 +112,8 @@
   `infrastructure/crons.ts`), each bounded (`PEAL_MEDIA_SWEEP_BATCH`, 500 a
   run; ten pages of the bucket) and safe to run again: `media.pending-sweep`
   deletes assets pending since `PEAL_MEDIA_SWEEP_PENDING_AFTER` (a day),
-  the row first and only while still pending (`forgetExpired`), so a
+  through `MediaUsage.release` first (drafts lose it; a scheduled post
+  keeps it, and it stays), the row next and only while still pending (`forgetExpired`), so a
   completion that wins keeps it, then the upload and the file;
   `media.upload-sweep` aborts multipart uploads open since
   `PEAL_MEDIA_SWEEP_UPLOADS_AFTER`; `media.orphan-sweep` deletes files the

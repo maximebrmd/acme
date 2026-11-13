@@ -21,6 +21,7 @@ import type {
   ListingSweep,
   SweepCursor,
 } from "./ports/media-sweep-store.ts";
+import { MediaUsage } from "./ports/media-usage.ts";
 import { CurrentSweepPolicy } from "./sweep-policy.ts";
 
 /** The sweeps of the media store, as metrics and logs name them. */
@@ -82,7 +83,9 @@ type SweepFailure = DatabaseError | MediaStorageFailed;
  * it reads: what a run leaves, the next one does.
  *
  * - `pending`: assets whose upload started `pendingAfter` ago and never
- *   completed: the asset goes first, only while still pending, so a
+ *   completed: the drafts that show one lose it, as `deleteMedia` does (a
+ *   post that may still go out keeps it, and it stays), then the asset
+ *   goes, only while still pending, so a
  *   completion that comes first keeps it; then its multipart upload and
  *   its file. A store that fails after leaves them to the two sweeps
  *   below.
@@ -115,6 +118,7 @@ export class MediaSweeps extends Context.Service<
       const bucket = yield* MediaBucket;
       const storage = yield* MediaStorage;
       const folders = yield* MediaFolders;
+      const usage = yield* MediaUsage;
 
       const { batch, orphansAfter, pendingAfter, uploadsAfter } =
         yield* CurrentSweepPolicy;
@@ -125,10 +129,28 @@ export class MediaSweeps extends Context.Service<
         return DateTime.subtractDuration(yield* DateTime.now, age);
       });
 
+      // The drafts that show it lose it, as deleting it takes it from
+      // them; a post that may still go out keeps it, and the asset stays.
+      const released = (expired: ExpiredUpload) =>
+        usage.release(expired.workspaceId, expired.assetId).pipe(
+          Effect.as(true),
+          Effect.catchTag("MediaInUse", () =>
+            Effect.logWarning(
+              "An upload never completed stays: a scheduled post shows it"
+            ).pipe(
+              Effect.annotateLogs({ assetId: expired.assetId }),
+              Effect.as(false)
+            )
+          )
+        );
+
       // The asset goes first, then what the store holds of it.
       const sweepUpload = Effect.fn("MediaSweeps.sweepUpload")(
         function* sweepUpload(expired: ExpiredUpload, before: DateTime.Utc) {
-          if (!(yield* store.forgetExpired(expired.assetId, before))) {
+          if (
+            !(yield* released(expired)) ||
+            !(yield* store.forgetExpired(expired.assetId, before))
+          ) {
             return Option.none<number>();
           }
 
