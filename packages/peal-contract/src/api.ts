@@ -462,6 +462,12 @@ export { NothingToCancel } from "./nothing-to-cancel.ts";
 
 export { ReductionRefused } from "./reduction-refused.ts";
 
+export { AlreadySubscribed } from "./already-subscribed.ts";
+
+export { ConsentChanged } from "./consent-changed.ts";
+
+export { PlanNotSold } from "./plan-not-sold.ts";
+
 export { PlanTooSmall } from "./plan-too-small.ts";
 
 export { TrialUnavailable } from "./trial-unavailable.ts";
@@ -749,6 +755,7 @@ export {
   displayVatRate,
   MoneySchema,
   OrderablePlanSchema,
+  orderConsentVersion,
   PaidPlanSchema,
   planCatalogue,
   PlanLimitSchema,
@@ -761,6 +768,7 @@ export {
   AccountBandSchema,
   accountsCharge,
   accountsMonthly,
+  freeAccountsOf,
   meterCharge,
   MeterSchema,
   MeterTermsSchema,

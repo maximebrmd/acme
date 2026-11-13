@@ -21,9 +21,9 @@ const make = Effect.gen(function* WorkspaceEntitlementsLive() {
       return unmetered;
     }
 
-    const holder = yield* holders.holderOf(workspaceId);
+    const { freeTier, holder } = yield* holders.heldBy(workspaceId);
 
-    return entitlementsOf(yield* subscriptions.ofWorkspace(holder));
+    return entitlementsOf(yield* subscriptions.ofWorkspace(holder), freeTier);
   });
 
   // The same, for a set of workspaces: their holders in one read, then
@@ -37,17 +37,21 @@ const make = Effect.gen(function* WorkspaceEntitlementsLive() {
       );
     }
 
-    const holderOf = yield* holders.holdersOf(workspaceIds);
+    const heldBy = yield* holders.heldByEach(workspaceIds);
 
     const held = yield* subscriptions.ofWorkspaces([
-      ...new Set(holderOf.values()),
+      ...new Set([...heldBy.values()].map(({ holder }) => holder)),
     ]);
 
     return new Map<WorkspaceId, Entitlements>(
-      workspaceIds.map((id) => [
-        id,
-        entitlementsOf(held.get(holderOf.get(id) ?? id) ?? []),
-      ])
+      workspaceIds.map((id) => {
+        const { freeTier, holder } = heldBy.get(id) ?? {
+          freeTier: true,
+          holder: id,
+        };
+
+        return [id, entitlementsOf(held.get(holder) ?? [], freeTier)];
+      })
     );
   });
 
@@ -57,7 +61,8 @@ const make = Effect.gen(function* WorkspaceEntitlementsLive() {
 /**
  * What each workspace's plan allows, for the contexts that check a limit
  * before adding something (a channel, a member, a scheduled post, an
- * assistant request). They act for a member who already passed their own
+ * assistant request, media): its billing account's plan and free tier,
+ * read in the reads that find the account, so a check adds no query. They act for a member who already passed their own
  * permission checks, so this checks none. A workspace a partner owns is on
  * the plan of the partner's home workspace (`PlanHolders`): it has no
  * subscription of its own. On a server that does not bill, every workspace

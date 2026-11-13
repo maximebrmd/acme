@@ -285,7 +285,7 @@ export const readMeters = (
  * The products the catalogue made, by their `metadata.peal`, archived
  * ones too: a price on one is reported.
  */
-const readProducts = (
+export const readProducts = (
   client: Stripe
 ): Effect.Effect<readonly HeldProduct[], StripeCatalogueUnread> =>
   everyPage((after) =>

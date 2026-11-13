@@ -16,7 +16,7 @@ export const PlanSchema = Schema.Literals([
   "payAsYouGo",
 ]).annotate({
   description:
-    "The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no workspace holds yet.",
+    "The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, the only plan sold.",
   identifier: "Plan",
 });
 
@@ -31,7 +31,7 @@ export const PaidPlanSchema = Schema.Literals([
   "payAsYouGo",
 ]).annotate({
   description:
-    "The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no subscription holds yet.",
+    "The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, the only plan sold.",
   identifier: "PaidPlan",
 });
 
@@ -43,13 +43,29 @@ export type LegacyPlan = Exclude<Plan, "payAsYouGo">;
 /** The paid plans priced by tiers of connected channels. Legacy. */
 export type LegacyPaidPlan = Exclude<PaidPlan, "payAsYouGo">;
 
-/** The plans an order may name. */
+/**
+ * The version of the words of the order box (the request to start at once
+ * and the withdrawal information) a client shows, which an order names:
+ * the server records consent to its own, and refuses another. The
+ * server's `consentVersion` (`billing/domain/order.ts`) is kept equal.
+ */
+export const orderConsentVersion = "2026-11-13";
+
+/**
+ * The plans an order may name. Only `payAsYouGo` is sold: the others are
+ * refused (`PlanNotSold`), kept so an older client's request still decodes.
+ */
 export const OrderablePlanSchema = Schema.Literals([
   "starter",
   "pro",
   "business",
   "agency",
-]).annotate({ identifier: "OrderablePlan" });
+  "payAsYouGo",
+]).annotate({
+  description:
+    "The plan an order names: `payAsYouGo`, the only one sold. The plans priced by tiers of connected channels are refused (PlanNotSold).",
+  identifier: "OrderablePlan",
+});
 
 export type OrderablePlan = typeof OrderablePlanSchema.Type;
 

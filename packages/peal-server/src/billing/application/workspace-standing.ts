@@ -1,7 +1,9 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
+import type { Entitlements } from "#billing/domain/entitlements.ts";
 import {
   excessesOf,
+  gracedHolds,
   mustReduce,
   planHolding,
 } from "#billing/domain/standing.ts";
@@ -11,12 +13,22 @@ import type { Actor } from "#shared/domain/access.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
-import { BillingMode } from "./ports/billing-mode.ts";
+import { BillingMode, inGrace } from "./ports/billing-mode.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
 
+// The free accounts the plan allows, for a free tier kept.
+const freeOf = (current: Entitlements): number =>
+  Option.getOrElse(current.allowanceOf("channels"), () => 0);
+
 /** Where a workspace stands against its plan. */
 export interface Standing {
+  /**
+   * Until when a workspace on the free tier over its accounts still
+   * schedules and publishes (PEAL_BILLING_GRACE_UNTIL), while it is; none
+   * otherwise. It connects nothing more meanwhile.
+   */
+  readonly graceUntil: Option.Option<DateTime.Utc>;
   /**
    * Whether it must come back within its plan before anything else: it
    * holds more channels or members than the plan allows, and schedules and
@@ -71,7 +83,21 @@ export class WorkspaceStanding extends Context.Service<
     Effect.gen(function* WorkspaceStandingLive() {
       const entitlements = yield* WorkspaceEntitlements;
       const usage = yield* WorkspaceUsage;
-      const { enabled } = yield* BillingMode;
+      const { enabled, graceSince, graceUntil } = yield* BillingMode;
+
+      // When the grace may keep a workspace on these entitlements, over
+      // them, from having to reduce: only the free tier's that staff did
+      // not take away, and only while it runs; then the instant before
+      // which its channels count as graced.
+      const graceFor = (
+        current: Entitlements,
+        now: DateTime.Utc
+      ): Option.Option<DateTime.Utc> =>
+        Option.contains(current.plan, "free") &&
+        current.freeTier &&
+        inGrace(graceUntil, now)
+          ? graceSince
+          : Option.none();
 
       const of = Effect.fn("WorkspaceStanding.of")(function* of(actor: Actor) {
         const [current, used] = yield* Effect.all(
@@ -79,10 +105,26 @@ export class WorkspaceStanding extends Context.Service<
           { concurrency: "unbounded" }
         );
 
-        const over = excessesOf(current.allowances, used);
+        const over = excessesOf(current.allowancesFor(used.channels), used);
+
+        const since = mustReduce(over)
+          ? graceFor(current, yield* DateTime.now)
+          : Option.none<DateTime.Utc>();
+
+        // Only the channels connected before the grace started are graced.
+        const graced =
+          Option.isSome(since) &&
+          gracedHolds(
+            freeOf(current),
+            used.channels,
+            (yield* usage.heldIn([actor.workspaceId], since.value)).get(
+              actor.workspaceId
+            )?.channels ?? 0
+          );
 
         const standing: Standing = {
-          mustReduce: mustReduce(over),
+          graceUntil: graced ? graceUntil : Option.none(),
+          mustReduce: mustReduce(over) && !graced,
           over,
           plan: current.plan,
           planWithRoom: over.length === 0 ? Option.none() : planHolding(used),
@@ -105,18 +147,53 @@ export class WorkspaceStanding extends Context.Service<
           }
 
           const held = yield* usage.heldIn(metered);
+          const now = yield* DateTime.now;
+
+          const over = metered.filter((id) => {
+            const plan = plans.get(id);
+            const seated = held.get(id);
+
+            return (
+              plan !== undefined &&
+              seated !== undefined &&
+              // Media never decides it, and is not read.
+              mustReduce(
+                excessesOf(plan.allowancesFor(seated.channels), {
+                  ...seated,
+                  mediaStorage: 0,
+                })
+              )
+            );
+          });
+
+          // Those the grace may keep, with what they had connected before
+          // it started, in one more read.
+          const graceable = Option.match(graceSince, {
+            onNone: (): readonly WorkspaceId[] => [],
+            onSome: () =>
+              over.filter((id) => {
+                const plan = plans.get(id);
+
+                return plan !== undefined && Option.isSome(graceFor(plan, now));
+              }),
+          });
+
+          const before =
+            graceable.length === 0 || Option.isNone(graceSince)
+              ? new Map<WorkspaceId, { readonly channels: number }>()
+              : yield* usage.heldIn(graceable, graceSince.value);
 
           return new Set(
-            metered.filter((id) => {
+            over.filter((id) => {
               const plan = plans.get(id);
-              const seated = held.get(id);
 
-              return (
+              return !(
                 plan !== undefined &&
-                seated !== undefined &&
-                // Media never decides it, and is not read.
-                mustReduce(
-                  excessesOf(plan.allowances, { ...seated, mediaStorage: 0 })
+                graceable.includes(id) &&
+                gracedHolds(
+                  freeOf(plan),
+                  held.get(id)?.channels ?? 0,
+                  before.get(id)?.channels ?? 0
                 )
               );
             })

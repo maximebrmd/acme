@@ -207,13 +207,11 @@ export const WorkspacePeopleLive = Layer.effect(
           .where(eq(member.organizationId, workspaceId))
           .pipe(failed);
 
-        const { allowances } = yield* entitlements
-          .of(workspaceId)
-          .pipe(Effect.orDie);
+        const plan = yield* entitlements.of(workspaceId).pipe(Effect.orDie);
 
         const room = roomForOneMore(
           "members",
-          allowances.members,
+          plan.allowanceOf("members"),
           (seats?.taken ?? 0) + pending
         );
 

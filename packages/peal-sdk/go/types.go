@@ -15656,7 +15656,7 @@ func (o *OwnTextLimitReachedEncoded) String() string {
 	return fmt.Sprintf("%#v", o)
 }
 
-// The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no subscription holds yet.
+// The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, the only plan sold.
 type PaidPlan string
 
 const (
@@ -17968,7 +17968,7 @@ func (p *PinterestOptions) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no workspace holds yet.
+// The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, the only plan sold.
 type Plan string
 
 const (

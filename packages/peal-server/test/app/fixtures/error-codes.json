@@ -60,6 +60,11 @@
     "tag": "AlreadyMember"
   },
   {
+    "code": "already_subscribed",
+    "status": 409,
+    "tag": "AlreadySubscribed"
+  },
+  {
     "code": "alt_text_too_long",
     "status": 422,
     "tag": "AltTextTooLong"
@@ -208,6 +213,11 @@
     "code": "connected_app_not_found",
     "status": 404,
     "tag": "ConnectedAppNotFound"
+  },
+  {
+    "code": "consent_changed",
+    "status": 409,
+    "tag": "ConsentChanged"
   },
   {
     "code": "contract_request_not_found",
@@ -508,6 +518,11 @@
     "code": "plan_limit_reached",
     "status": 402,
     "tag": "PlanLimitReached"
+  },
+  {
+    "code": "plan_not_sold",
+    "status": 409,
+    "tag": "PlanNotSold"
   },
   {
     "code": "plan_too_small",

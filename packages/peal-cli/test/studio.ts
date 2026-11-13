@@ -663,6 +663,7 @@ const account: BillingAccount = {
 
 const within: Standing = {
   account,
+  graceUntil: null,
   mustReduce: false,
   over: [],
   plan: "free",
@@ -670,35 +671,36 @@ const within: Standing = {
   scheduledPosts: 7,
 };
 
-// The studio after a trial: more channels and members than the free plan.
+// The studio after its subscription ended: more accounts and media than
+// the free tier allows.
 const over: Standing = {
   account,
+  graceUntil: null,
   mustReduce: true,
   over: [
-    { allowed: 3, limit: "channels", used: 8 },
-    { allowed: 2, limit: "members", used: 5 },
-    { allowed: 500_000_000, limit: "mediaStorage", used: 1_200_000_000 },
+    { allowed: 2, limit: "channels", used: 8 },
+    { allowed: 1_000_000_000, limit: "mediaStorage", used: 1_200_000_000 },
   ],
   plan: "free",
-  planWithRoom: "pro",
+  planWithRoom: "payAsYouGo",
   scheduledPosts: 7,
 };
 
 const billing: Billing = {
   account,
   allowances: {
-    assistantRequests: 3,
-    channels: 3,
-    mediaStorage: 500_000_000,
-    members: 2,
-    scheduledPosts: 30,
+    assistantRequests: 0,
+    channels: 2,
+    mediaStorage: 1_000_000_000,
+    members: null,
+    scheduledPosts: null,
   },
   currency: "eur",
   enabled: true,
   plan: "free",
   plans: [],
   subscription: null,
-  trial: { available: true, days: 14, plan: "pro" },
+  trial: { available: false, days: 14, plan: "pro" },
   usage: {
     assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 2 },
     channels: 2,

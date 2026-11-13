@@ -30,6 +30,7 @@ const watched = [
   "peal_publishing_recycling_overdue",
   "peal_publishing_feeds_overdue",
   "peal_billing_stripe_catalogue_problems",
+  "peal_billing_duplicate_subscriptions_total",
 ];
 
 const RuleSchema = Schema.Struct({
@@ -83,6 +84,20 @@ describe("the production alert rules", () => {
     expect(rule?.annotations.summary).toContain("runbooks/failed-disk.md");
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
       `max(last_over_time(${gauge}[45m]))`
+    );
+  });
+
+  it("alert at once, as critical, on a second per-account subscription ended", () => {
+    const rule = ruleOf("peal-duplicate-subscription");
+
+    expect(rule).toMatchObject({
+      execErrState: "Error",
+      for: "0s",
+      labels: { severity: "critical" },
+      noDataState: "OK",
+    });
+    expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
+      "sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)"
     );
   });
 

@@ -37,28 +37,28 @@ public class RawBillingClient {
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public PealClientHttpResponse<Billing> get(String workspaceId) {
         return get(workspaceId, GetBillingRequest.builder().build());
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public PealClientHttpResponse<Billing> get(String workspaceId, RequestOptions requestOptions) {
         return get(workspaceId, GetBillingRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public PealClientHttpResponse<Billing> get(String workspaceId, GetBillingRequest request) {
         return get(workspaceId, request, null);
     }
 
     /**
-     * Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.
+     * Answers with the workspace's plan (<code>free</code>, <code>payAsYouGo</code>, or a plan priced by tiers of channels a subscription still holds), the subscription that buys it, what each limit allows its billing account, how much of it the workspace uses, and the plans it can be on. On a server that does not bill, nothing is limited. Needs billing:read.
      */
     public PealClientHttpResponse<Billing> get(
             String workspaceId, GetBillingRequest request, RequestOptions requestOptions) {
@@ -128,28 +128,28 @@ public class RawBillingClient {
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public PealClientHttpResponse<Standing> standing(String workspaceId) {
         return standing(workspaceId, StandingBillingRequest.builder().build());
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public PealClientHttpResponse<Standing> standing(String workspaceId, RequestOptions requestOptions) {
         return standing(workspaceId, StandingBillingRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public PealClientHttpResponse<Standing> standing(String workspaceId, StandingBillingRequest request) {
         return standing(workspaceId, request, null);
     }
 
     /**
-     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     * Answers where the workspace stands against its plan: what it holds beyond it, as on the free tier with more than 2 connected accounts across its billing account after a subscription ended, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), until when a grace keeps it publishing (<code>graceUntil</code>), the plan that holds everything (<code>payAsYouGo</code>, with a payment method), and how many posts wait. Those who manage billing add a payment method, or choose what stays, in the web app. For every member of the workspace.
      */
     public PealClientHttpResponse<Standing> standing(
             String workspaceId, StandingBillingRequest request, RequestOptions requestOptions) {

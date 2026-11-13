@@ -5,6 +5,7 @@ import {
   withDisplayVat,
 } from "peal-contract/billing-plans";
 import type { LegacyPlan, PlanLimit } from "peal-contract/billing-plans";
+import { freeAccountsOf, rateCard } from "peal-contract/rate-card";
 
 // The plans' prices and limits as docs variables, `{{starter-month-en}}`
 // and the like, from the contract's catalogue, which the server bills
@@ -87,12 +88,43 @@ const planVariables = (
   ];
 };
 
+const dollars = (locale: Locale, cents: number) =>
+  new Intl.NumberFormat(locale, { currency: "USD", style: "currency" }).format(
+    cents / 100
+  );
+
+// Per-account pricing's figures, from the rate card: the accounts free,
+// the price of the next one excluding tax and with the VAT shown first,
+// the account from which they cost less, and the media each tier stores.
+const rateCardVariables = (locale: Locale): [string, string][] => {
+  const { bands } = rateCard.prices.usd.accounts;
+  const free = freeAccountsOf(rateCard);
+  const paid = bands.find(({ monthly }) => monthly > 0);
+  const monthly = paid?.monthly ?? 0;
+
+  return [
+    [`account-price-${locale}`, dollars(locale, monthly)],
+    [`account-price-vat-${locale}`, dollars(locale, withDisplayVat(monthly))],
+    [
+      `free-storage-${locale}`,
+      size(locale, rateCard.storage.withoutPaymentMethod),
+    ],
+    [
+      `storage-per-account-${locale}`,
+      size(locale, rateCard.storage.perAccount),
+    ],
+    ["account-less-from", String((paid?.upTo ?? free) + 1)],
+    ["free-accounts", String(free)],
+  ];
+};
+
 /** Every plan's prices and limits, in each language, by variable name. */
 export const pricingVariables: Readonly<Record<string, string>> =
   Object.fromEntries([
     ...plans.flatMap((plan) =>
       locales.flatMap((locale) => planVariables(plan, locale))
     ),
+    ...locales.flatMap(rateCardVariables),
     ["trial-days", String(trialOffer.days)],
     ["vat-rate", String(displayVatRate)],
   ]);

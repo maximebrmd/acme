@@ -1,10 +1,12 @@
 // Each context reads its limit from the workspace's plan, through its own
 // port: channels, posts per month and the assistant's daily requests.
 import { assert, describe, it } from "@effect/vitest";
-import { ConfigProvider, Effect, Layer, Option } from "effect";
+import { ConfigProvider, DateTime, Effect, Layer, Option } from "effect";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { PlanAssistantAllowanceLive } from "#assistant/infrastructure/plan-assistant-allowance.ts";
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { Entitlements } from "#billing/domain/entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
@@ -26,20 +28,31 @@ const workspaceId = WorkspaceIdSchema.make(
 );
 
 const allowancesWith = (
-  entitlements: typeof UnmeteredTest,
-  env: Record<string, string> = {}
+  entitlements: Layer.Layer<WorkspaceEntitlements>,
+  env: Record<string, string> = {},
+  graceUntil: Option.Option<DateTime.Utc> = Option.none(),
+  connectedBefore = 4
 ) =>
   Layer.mergeAll(
     PlanAssistantAllowanceLive,
     PlanChannelAllowanceLive,
     PlanPostAllowanceLive
   ).pipe(
+    // The grace given, over any the entitlements' layer brings.
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({ enabled: true, graceSince: graceUntil, graceUntil })
+      )
+    ),
+    Layer.provide(PlanPools.layerAlone),
     Layer.provide(entitlements),
     Layer.provide(
       Layer.succeed(
         ChannelUsage,
         ChannelUsage.of({
-          connected: () => Effect.succeed(4),
+          connected: (_workspaceId, before) =>
+            Effect.succeed(before === undefined ? 4 : connectedBefore),
           connectedAcross: () => Effect.die("not read here"),
           connectedIn: () => Effect.succeed(new Map()),
         })
@@ -78,12 +91,24 @@ const onPlan = (plan: Plan) =>
 describe("the plan allowances", () => {
   it.effect("follow the workspace's plan", () =>
     Effect.gen(function* plans() {
+      // The free tier: 2 accounts, no assistant on the server's models,
+      // members and posts unlimited.
       assert.deepStrictEqual(yield* onPlan("free"), {
-        assistantRequests: 3,
-        channels: Option.some(3),
-        scheduledPosts: Option.some(30),
-        scheduling: { allowed: Option.some(3), connected: 4 },
-        seats: { allowed: Option.some(2), taken: 3 },
+        assistantRequests: 0,
+        channels: Option.some(2),
+        scheduledPosts: Option.none(),
+        scheduling: { allowed: Option.some(2), connected: 4 },
+        seats: { allowed: Option.none(), taken: 3 },
+      });
+
+      // Per-account pricing: every account, and the legacy pro plan's
+      // daily assistant until its monthly meter.
+      assert.deepStrictEqual(yield* onPlan("payAsYouGo"), {
+        assistantRequests: 20,
+        channels: Option.none(),
+        scheduledPosts: Option.none(),
+        scheduling: { allowed: Option.none(), connected: 4 },
+        seats: { allowed: Option.none(), taken: 3 },
       });
 
       assert.deepStrictEqual(yield* onPlan("business"), {
@@ -94,6 +119,94 @@ describe("the plan allowances", () => {
         seats: { allowed: Option.none(), taken: 3 },
       });
     })
+  );
+
+  it.effect(
+    "let the free tier over its accounts schedule until the grace's day, and connect nothing more",
+    () =>
+      Effect.gen(function* grace() {
+        // The tests' clock starts in 1970.
+        const during = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        // Its four were connected before the grace started.
+        assert.deepStrictEqual(during.scheduling, {
+          allowed: Option.some(4),
+          connected: 4,
+        });
+        assert.deepStrictEqual(during.channels, Option.some(2));
+
+        // One connected since is no grace's: the four are over.
+        const since = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z")),
+              3
+            )
+          )
+        );
+
+        assert.deepStrictEqual(since.scheduling, {
+          allowed: Option.some(3),
+          connected: 4,
+        });
+
+        // Nor does it lift staff's requirement of a payment method.
+        const required = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free", false),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(required.scheduling, {
+          allowed: Option.some(0),
+          connected: 4,
+        });
+
+        const after = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("free"),
+              {},
+              Option.some(DateTime.makeUnsafe("1969-12-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(after.scheduling, {
+          allowed: Option.some(2),
+          connected: 4,
+        });
+
+        // A paid plan's own limit is no grace's.
+        const legacy = yield* readAll.pipe(
+          Effect.provide(
+            allowancesWith(
+              everyWorkspaceOn("starter"),
+              {},
+              Option.some(DateTime.makeUnsafe("2027-01-31T00:00:00Z"))
+            )
+          )
+        );
+
+        assert.deepStrictEqual(legacy.scheduling, {
+          allowed: Option.some(5),
+          connected: 4,
+        });
+      })
   );
 
   it.effect(
@@ -140,6 +253,7 @@ describe("the plan allowances", () => {
                     of: () =>
                       Effect.succeed(
                         new Entitlements({
+                          freeTier: true,
                           plan: Option.some("pro"),
                           subscription: Option.some(
                             subscriptionOf({ plan: "pro", status, workspaceId })
@@ -161,6 +275,64 @@ describe("the plan allowances", () => {
           ).pipe(Effect.provide(allowancesWith(UnmeteredTest))),
           100
         );
+      })
+  );
+  it.effect(
+    "count the assistant's day across the billing account on a server that bills, and each workspace alone elsewhere",
+    () =>
+      Effect.gen(function* assistantPool() {
+        const other = WorkspaceIdSchema.make(
+          "7b8c9d0e-1f2a-4b3c-9d4e-5f6a7b8c9d0e"
+        );
+
+        const sharedOn = (enabled: boolean) =>
+          AssistantAllowance.use((allowance) =>
+            Effect.all({
+              held: allowance.sharedWith(workspaceId),
+              pooled: Effect.succeed(allowance.pooled),
+              reported: allowance.sharingWith(workspaceId),
+            })
+          ).pipe(
+            Effect.provide(
+              PlanAssistantAllowanceLive.pipe(
+                Layer.provide(
+                  Layer.succeed(
+                    BillingMode,
+                    BillingMode.of({
+                      enabled,
+                      graceSince: Option.none(),
+                      graceUntil: Option.none(),
+                    })
+                  )
+                ),
+                Layer.provide(
+                  Layer.succeed(
+                    PlanPools,
+                    PlanPools.of({
+                      sharedWith: () => Effect.succeed([other]),
+                      sharingIn: (ids) =>
+                        Effect.succeed(new Map(ids.map((id) => [id, [other]]))),
+                    })
+                  )
+                ),
+                Layer.provide(everyWorkspaceOn("payAsYouGo")),
+                Layer.provide(
+                  ConfigProvider.layer(ConfigProvider.fromUnknown({}))
+                )
+              )
+            )
+          );
+
+        assert.deepStrictEqual(yield* sharedOn(true), {
+          held: [other],
+          pooled: true,
+          reported: [other],
+        });
+        assert.deepStrictEqual(yield* sharedOn(false), {
+          held: [],
+          pooled: false,
+          reported: [],
+        });
       })
   );
 });

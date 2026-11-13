@@ -35,6 +35,21 @@ export const NoticeExcessSchema = Schema.Struct({
 
 export type NoticeExcess = typeof NoticeExcessSchema.Type;
 
+/**
+ * Per-account pricing's rates, as billing states them in a confirmation:
+ * the accounts free, then each band's monthly price per account, in
+ * `currency`'s cents, excluding tax.
+ */
+export const NoticeRatesSchema = Schema.Struct({
+  bands: Schema.Array(
+    Schema.Struct({ monthly: Schema.Int, upTo: Schema.NullOr(Schema.Int) })
+  ),
+  currency: Schema.NonEmptyString,
+  freeAccounts: Schema.Int,
+});
+
+export type NoticeRates = typeof NoticeRatesSchema.Type;
+
 /** Why a post did not go out on a channel, as publishing records it. */
 export const PostFailureReasonSchema = Schema.Literals([
   "contentRejected",
@@ -177,6 +192,9 @@ export const NoticeEventSchema = Schema.Union([
     interval: Schema.Literals(["month", "year"]),
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,
+    // Per-account pricing's rates, with `price` 0: it charges nothing at
+    // the start. Older notices lack them.
+    rates: Schema.optionalKey(NoticeRatesSchema),
     // The contract's number, since contracts have one.
     reference: Schema.optionalKey(Schema.String),
     startedAt: Schema.DateTimeUtc,
@@ -191,6 +209,15 @@ export const NoticeEventSchema = Schema.Union([
       Schema.withDecodingDefault(Effect.succeed([]))
     ),
     plan: PaidPlanSchema,
+  }),
+  // The workspace, on the free tier, holds `accounts` connected accounts,
+  // more than the `allowed` it includes: until `graceUntil` it still
+  // schedules and publishes, then nothing until a payment method is added
+  // or `allowed` accounts are kept.
+  Schema.TaggedStruct("PaymentMethodNeeded", {
+    accounts: Schema.Int,
+    allowed: Schema.Int,
+    graceUntil: Schema.DateTimeUtc,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
@@ -313,6 +340,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionRenewing: () => Option.none<EmailKind>(),
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
+    PaymentMethodNeeded: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
     WebhookDeliveriesFailing: () => Option.some<EmailKind>("webhookFailing"),
     WebhookEndpointDisabled: () => Option.none<EmailKind>(),
@@ -348,6 +376,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionRenewing: (): Permission => "billing:manage",
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
+    PaymentMethodNeeded: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
     WebhookDeliveriesFailing: (): Permission => "webhook:manage",
     WebhookEndpointDisabled: (): Permission => "webhook:manage",
@@ -374,6 +403,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionRenewing: () => false,
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
+    PaymentMethodNeeded: () => false,
     TrialEnding: () => false,
     WebhookDeliveriesFailing: () => false,
     WebhookEndpointDisabled: () => false,
@@ -498,6 +528,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionRenewing: () => `/app/${workspaceId}/billing`,
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
+    PaymentMethodNeeded: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
     WebhookDeliveriesFailing: () => `/app/${workspaceId}/settings/webhooks`,
     WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,

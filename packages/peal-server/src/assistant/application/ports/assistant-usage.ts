@@ -17,12 +17,17 @@ export class AssistantUsage extends Context.Service<
      * within `dailyLimit`, and returns the count after it; none, and
      * nothing counted, when it would not. Requests sent at the same time
      * are counted one after the other, so none slips past the limit.
+     * With `sharedWith`, the other workspaces of its pool, held until the
+     * claim is counted (`AssistantAllowance.sharedWith`), the limit is the
+     * pool's: their requests of the day count with the workspace's own,
+     * which each keeps under its id.
      */
     readonly claim: (
       workspaceId: WorkspaceId,
       day: LocalDate,
       dailyLimit: number,
-      cost: number
+      cost: number,
+      sharedWith?: Effect.Effect<readonly WorkspaceId[]>
     ) => Effect.Effect<Option.Option<number>>;
     /**
      * Takes back a request of `cost` counted on the day that never ran,

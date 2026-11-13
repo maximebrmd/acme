@@ -467,6 +467,7 @@ holds no secret of the servers it watches:
 | Production's Grafana  | A channel for alerts         | `group_vars/production/vault.yml`: `peal_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
 | The sandbox's Grafana | A channel for the sandbox's  | `group_vars/sandbox/vault.yml`: the same two names                                           |
 | The uptime server     | The channel production's use | `group_vars/uptime/vault.yml`: `uptime_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`   |
+| …for the sandbox      | The sandbox's channel        | `group_vars/uptime/vault.yml`: `SANDBOX_TELEGRAM_BOT_TOKEN`, `SANDBOX_TELEGRAM_CHAT_ID`      |
 
 Two bots are the least: one for both Grafanas and one for the uptime
 server. The sandbox then holds the token production's alerts depend on, so
@@ -703,10 +704,12 @@ released. Then, on the server:
 
 1. on a server that bills (`STRIPE_SECRET_KEY` in `credentials.env`), the
    new image compares Stripe's catalogue with the one it gives
-   (`stripe-catalogue --check`, read-only at Stripe), and the play prints
-   what differs, without failing: until per-account pricing is sold, the
-   new server starts on a catalogue that differs, warns and alerts
-   ([Stripe catalogue](#stripe-catalogue));
+   (`stripe-catalogue --check`, read-only at Stripe, read by its exit
+   code): one that differs (3), or a key Stripe refuses or an answer that
+   cannot be read (4), stops the release there, the old server still
+   running, as the new one would refuse to start
+   ([Stripe catalogue](#stripe-catalogue)); Stripe not answering (5), or
+   Compose failing, is reported, and the release goes on;
 2. when Postgres is to restart, because its image or its settings changed,
    the old server stops first, with 75 seconds to finish its calls to the
    platforms;
@@ -719,7 +722,12 @@ released. Then, on the server:
 Release the sandbox first. To roll back, release the previous commit; on
 a server that bills, after a release whose catalogue moved a lookup key,
 then give Stripe the previous release's catalogue too
-([Stripe catalogue](#stripe-catalogue)). Images
+([Stripe catalogue](#stripe-catalogue)). Never roll back past
+per-account standing once a server bills on it: the release before gives
+a `payAsYouGo` subscription the old free plan's allowances (3 channels, 2
+members, 30 posts), so every paying workspace above them stops publishing,
+and it cannot read a stored `PaymentMethodNeeded` notice, so the notices
+list and the data export fail for whoever has one. Images
 no container uses are removed once they are a week old, counted from when
 they were built: an older release's are built and uploaded again. Migrations
 do not run backwards, so write each one so that the release before it still
@@ -743,22 +751,32 @@ sudo peal-compose run --rm --no-deps server packages/peal-server/scripts/stripe-
 
 It prints what it makes, and nothing on a second run; `--check` only
 compares. The key needs write access to meters, products and prices.
-Until per-account pricing is sold, a server whose catalogue differs starts
-all the same, logs what differs and the command, and
-`peal-stripe-catalogue` alerts; once it is sold, the server stops instead,
-so run the command before the release that sells it.
+Per-account pricing is sold: a server whose catalogue differs (a meter or
+price missing or billing otherwise, or a price on an archived product)
+refuses to start, saying what differs and the command, and so does one
+whose key Stripe refuses; a release stops on either before it replaces
+the server. The server reads the catalogue only as it starts: after
+running the command, release again, which is also how the
+`peal-stripe-catalogue` alert of an older release that only warned
+clears (servers change through the playbooks only). The legacy plans'
+prices are checked only while a subscription to one still entitles a
+workspace.
 
-- Turning billing on: put `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
-  in the vault, run `site.yml` so `credentials.env` holds them, run the
-  command above, then release (or restart the server).
-- A release whose rate card changes a price: the command makes a new price
-  that takes the lookup key, and leaves the old one active. The release
-  before it then no longer finds its own price under that key. To roll
-  back, release the previous commit, then run the command above, which now
-  runs the previous image and moves the key back to a third price. Until
-  per-account pricing is sold, the previous server starts meanwhile and
-  only warns; the change that sells it says how to roll back across a
-  price change, as the previous server would then stop.
+- Turning billing on, or upgrading a server that billed on the plans
+  priced by channels to this model: put `STRIPE_SECRET_KEY` and
+  `STRIPE_WEBHOOK_SECRET` in the vault, and `PEAL_BILLING_GRACE_UNTIL` in
+  `peal_settings` (a day a month or so ahead: without it, every workspace
+  on the free tier with more than 2 accounts, those within the old free
+  plan's 3 included, stops publishing at once), run `site.yml` so
+  `credentials.env` holds them, run the command above, then release.
+- A release whose rate card changes a price: it stops at the comparison,
+  with the release's image already the one `peal-compose run` runs; run
+  the command above, which makes a new price that takes the lookup key and
+  leaves the old one active, then release again. The release before it
+  then no longer finds its own price under that key: to roll back, release
+  the previous commit, which stops at the comparison the same way, run the
+  command above, which then runs the previous image and moves the key back
+  to a third price, and release the previous commit again.
 
 ## Backups
 
@@ -884,9 +902,20 @@ the rewrite, the route or the server is missing, and counts no visit.
 A redirect fails a check, so a page that sends people to Cloudflare Access's
 sign-in never passes for the page. The sandbox is behind Access throughout:
 its checks carry a Cloudflare Access service token, which the sandbox's
-Access application lets in with a Service Auth policy. Telegram hears of a
-page or the API after 3 failures in a row, and that it is back after 2
-successes; of a certificate, a host name or a heartbeat at once.
+Access application lets in with a Service Auth policy.
+
+Telegram hears of incidents, not blips: of a page or the API after 5
+failures in a row (5 minutes), of a host name after 3 failed lookups (15
+minutes), of a certificate after 3 hourly failures, and of a heartbeat
+once it has been silent for 15 minutes; and that each is back after 2
+successes (1 for a certificate or a heartbeat). The role's defaults hold
+the thresholds (`uptime_failure_threshold`, `uptime_dns_failure_threshold`,
+`uptime_certificate_failure_threshold`). Each environment's alerts go to
+the default chat, `TELEGRAM_CHAT_ID`, unless it has a chat of its own
+(`telegram: true` in `uptime_environments`): the sandbox's go to the
+sandbox's chat, with the bot that writes there,
+`SANDBOX_TELEGRAM_BOT_TOKEN` and `SANDBOX_TELEGRAM_CHAT_ID`. The uptime
+server's own checks (its certificates) stay in the default chat.
 
 ### Set it up
 
@@ -909,6 +938,11 @@ resource. Then:
    - its Telegram bot, and the id of the channel it writes to, which may be
      the one production's alerts go to ([Telegram](#telegram)):
      `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`;
+   - the bot and chat id the sandbox's alerts go to,
+     `SANDBOX_TELEGRAM_BOT_TOKEN` and `SANDBOX_TELEGRAM_CHAT_ID`: the
+     sandbox's own chat, with a bot that may write there (the sandbox's
+     Grafana's bot, or one of the uptime server's own made an administrator
+     of that channel);
    - the Cloudflare Access service token of the sandbox's checks,
      `SANDBOX_ACCESS_CLIENT_ID` and `SANDBOX_ACCESS_CLIENT_SECRET`, named
      after the environment. The sandbox's Pulumi stack makes it, valid a
@@ -1010,6 +1044,18 @@ certificate and DNS checks and the heartbeats stay on the private
 dashboard. The uptime Gatus checks the page's certificate hourly, as it
 does `uptime_hostname`'s.
 
+The page is in Peal's design ([`DESIGN.md`](../../../DESIGN.md)), light
+only: the status Gatus's `ui` settings and `status.css`, its stylesheet
+over Gatus's own, give it the mark, Geist and the tokens, and name each
+check by its `title`. Caddy serves the mark, the icon and the fonts under
+`/peal/`, and at the icons' fixed paths, from `/srv/uptime-brand`
+(`uptime_brand_root`), which `uptime.yml` fills from the repository: the
+web app's `icon.svg` and `apple-icon.png`, and peal-ui's Geist from its
+`node_modules`, so run `bun install --frozen-lockfile` before it. Caddy
+also sets Gatus's theme cookie to `light` on every answer, so the page
+never follows a visitor's dark setting. Change the mark or the tokens in
+the web app and `DESIGN.md`, then run `uptime.yml`.
+
 It needs one DNS record in the `peal.social` zone, made before `uptime.yml`
 runs, or Caddy gets no certificate for it. The account's Pulumi stack
 makes it, `status-cname`, with the server's own (step 1 of [Set it
@@ -1037,7 +1083,8 @@ record can go.
 | `/srv/uptime/status/`         | The status page's Gatus's configuration: public checks alone, no secret          |
 | `/srv/uptime/status-data/`    | The status page's history, which the `gatus` user owns                           |
 | `/srv/uptime/secrets.env`     | The heartbeat tokens, generated there                                            |
-| `/srv/uptime/credentials.env` | What outside services issued: the Telegram bot and the Access service token      |
+| `/srv/uptime/credentials.env` | What outside services issued: the Telegram bots and the Access service token     |
+| `/srv/uptime-brand/`          | The status page's mark, icon and fonts, which Caddy serves under `/peal/`        |
 
 `uptime-compose` runs Docker Compose on the stack: `sudo uptime-compose ps`,
 `sudo uptime-compose logs --tail 50 gatus`.
@@ -1063,6 +1110,9 @@ them, and `bootstrap.yml` refuses the host. The role:
   of its own, as the Compose project `uptime` in `/srv/uptime`, with the
   `gatus` system user, and publishes each on 127.0.0.1 alone: the stack has
   no Caddy, and publishes nothing to the world;
+- copies the status page's mark, icon and fonts to `/srv/uptime-brand`
+  (`uptime_brand_root`), readable by anyone, as a site's files are, which
+  the host's Caddy serves under `/peal/` on `uptime_status_hostname`;
 - writes `/etc/caddy/sites/peal-uptime.caddy` (`uptime_caddy_site_file`),
   with a block for `uptime_hostname` and one for `uptime_status_hostname`,
   the same routes as on a server of its own, sent to those loopback ports,

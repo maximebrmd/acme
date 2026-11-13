@@ -12,7 +12,10 @@ import { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import { LibraryFeedPictures } from "#publishing/infrastructure/library-feed-pictures.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { UnmeteredTest } from "#test/billing/support.ts";
+import {
+  NoAccountsConnectedTest,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { syntheticPdf } from "#test/media/pdf.ts";
 import {
@@ -43,6 +46,7 @@ const PicturesTest = LibraryFeedPictures.pipe(
           Layer.mergeAll(
             MediaInPostsTest,
             UnmeteredTest,
+            NoAccountsConnectedTest,
             NoWebhooks,
             TransactionsTest
           )

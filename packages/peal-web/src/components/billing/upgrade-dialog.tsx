@@ -77,7 +77,8 @@ const ManagedOffer = ({
 
     startOrder(async () => {
       const failed = await checkout({
-        interval: billingInterval,
+        // Per-account pricing is monthly only.
+        interval: plan === "payAsYouGo" ? "month" : billingInterval,
         plan,
         returnDone: here,
         returnTo: here,

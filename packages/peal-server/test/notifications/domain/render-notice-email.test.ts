@@ -140,10 +140,10 @@ describe(renderNoticeEmail, () => {
     } as const;
 
     expect(render(ending, "en").text).toContain(
-      "Today it holds more than the free plan allows: 8 channels (3 allowed), 5 members (2 allowed), 1.2 GB of media (500 MB allowed). From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page."
+      "Today it holds more than the free plan allows: 8 channels (3 allowed), 5 members (2 allowed), 1.2 GB of media (500 MB allowed). From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Add a payment method, or choose which accounts stay, on the billing page."
     );
     expect(render(ending, "fr").text).toContain(
-      "Aujourd’hui, il dépasse ce que permet l’offre gratuite : 8 canaux (3 permis), 5 membres (2 permis), 1,2\u202FGo de médias (500\u202FMo permis). À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Commandez un abonnement, ou choisissez les canaux et les membres qui restent, sur la page de facturation."
+      "Aujourd’hui, il dépasse ce que permet l’offre gratuite : 8 canaux (3 permis), 5 membres (2 permis), 1,2\u202FGo de médias (500\u202FMo permis). À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Ajoutez un moyen de paiement, ou choisissez les comptes qui restent, sur la page de facturation."
     );
 
     const within = render({ ...ending, over: [] }, "en").text;
@@ -152,6 +152,59 @@ describe(renderNoticeEmail, () => {
       "It holds nothing beyond what the free plan allows, and keeps its content."
     );
     expect(within).not.toContain("Today it holds more");
+  });
+
+  it("confirms per-account pricing with its rates, charging nothing now", () => {
+    const started = {
+      _tag: "SubscriptionStarted",
+      interval: "month",
+      plan: "payAsYouGo",
+      price: { amount: 0, currency: "usd" },
+      rates: {
+        bands: [
+          { monthly: 0, upTo: 2 },
+          { monthly: 500, upTo: 10 },
+          { monthly: 300, upTo: 100 },
+          { monthly: 100, upTo: null },
+        ],
+        currency: "usd",
+        freeAccounts: 2,
+      },
+      reference: "7K3M-9QXD-42TN",
+      startedAt: DateTime.makeUnsafe("2026-11-13T10:00:00Z"),
+      trialEnd: Option.none(),
+    } as const;
+
+    const english = render(started, "en");
+
+    expect(english.subject).toBe("Per-account pricing has started");
+    expect(english.text).toContain(
+      "accounts 1 to 2 free, accounts 3 to 10 at $5.00 a month each, accounts 11 to 100 at $3.00 a month each, accounts 101 and up at $1.00 a month each, excluding tax"
+    );
+    expect(english.text).toContain("Nothing is charged now");
+    expect(english.text).toContain("Contract number: 7K3M-9QXD-42TN");
+    expect(render(started, "fr").text).toContain(
+      "comptes 1 à 2 gratuits, comptes 3 à 10 à 5,00\u00A0$US par mois chacun"
+    );
+  });
+
+  it("asks for a payment method before the grace's day", () => {
+    const needed = {
+      _tag: "PaymentMethodNeeded",
+      accounts: 5,
+      allowed: 2,
+      graceUntil: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
+    } as const;
+
+    expect(render(needed, "en").subject).toBe(
+      "Add a payment method to Studio Nord before January 31, 2027 at 12:00 AM UTC"
+    );
+    expect(render(needed, "en").text).toContain(
+      "Studio Nord holds 5 connected accounts, more than the 2 the free tier includes"
+    );
+    expect(render(needed, "fr").text).toContain(
+      "Studio Nord compte 5 comptes connectés, plus que les 2 de l’offre gratuite"
+    );
   });
 
   it("tells a trial's end and a cancellation's", () => {

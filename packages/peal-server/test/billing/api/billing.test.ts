@@ -79,7 +79,16 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
     Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled }))),
+    Layer.provide(
+      Layer.succeed(
+        BillingMode,
+        BillingMode.of({
+          enabled,
+          graceSince: Option.none(),
+          graceUntil: Option.none(),
+        })
+      )
+    ),
     Layer.provide(AloneInAccountsTest)
   );
 
@@ -143,12 +152,10 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         });
         assert.deepStrictEqual(
           billing.plans.map(({ plan, price }) => [plan, price]),
+          // The plans a workspace can be on, which the rate card prices.
           [
             ["free", null],
-            ["starter", { month: 750, year: 7500 }],
-            ["pro", { month: 1250, year: 12_500 }],
-            ["business", { month: 2500, year: 25_000 }],
-            ["agency", { month: 5000, year: 50_000 }],
+            ["payAsYouGo", null],
           ]
         );
         assert.strictEqual(billing.currency, "eur");
@@ -191,6 +198,7 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
           transfer: null,
           workspaces: 1,
         },
+        graceUntil: null,
         mustReduce: false,
         over: [],
         plan: "pro",

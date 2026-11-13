@@ -683,6 +683,12 @@ export type NoticeEventRecord =
       readonly withdrawnAt: DateTime.Utc;
     }
   | {
+      readonly _tag: "PaymentMethodNeeded";
+      readonly accounts: number;
+      readonly allowed: number;
+      readonly graceUntil: DateTime.Utc;
+    }
+  | {
       readonly _tag: "TrialEnding";
       readonly endsAt: DateTime.Utc;
       /** What the workspace held beyond the free plan when it was told. */

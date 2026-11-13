@@ -789,11 +789,11 @@ layer(ImagesTest, { timeout: "60 seconds" })(
         const id = MediaAssetIdSchema.make(yield* Ids.use((ids) => ids.next));
         const at = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 
-        // A video that leaves the free plan less room than an image takes.
+        // A video that leaves the free tier less room than an image takes.
         const video = startUpload(
           {
             accepted: {
-              byteSize: 490_000_000,
+              byteSize: 990_000_000,
               contentType: "video/mp4",
               kind: "video",
             },

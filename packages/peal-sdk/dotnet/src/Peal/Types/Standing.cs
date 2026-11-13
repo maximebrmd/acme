@@ -14,6 +14,9 @@ public record Standing : IJsonOnDeserialized
     [JsonPropertyName("account")]
     public BillingAccount? Account { get; set; }
 
+    [JsonPropertyName("graceUntil")]
+    public string? GraceUntil { get; set; }
+
     [JsonPropertyName("mustReduce")]
     public required bool MustReduce { get; set; }
 

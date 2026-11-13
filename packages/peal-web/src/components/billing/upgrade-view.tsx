@@ -12,6 +12,7 @@ import type { UpgradeReason } from "#billing/upgrade.ts";
 import { Consent, IntervalSwitch } from "#components/billing/billing-view.tsx";
 import type { BillingError } from "#components/billing/billing-view.tsx";
 import { ExcessList } from "#components/billing/excess-list.tsx";
+import { PerAccountPrice } from "#components/billing/per-account-price.tsx";
 
 export interface UpgradeViewProps {
   /** Whether the member may order a plan (billing:manage). */
@@ -117,7 +118,30 @@ const Offer = ({
   const billing = useTranslations("Billing");
   const money = useMoney(billingCurrency);
   const room = useRoom();
-  const price = offerOf(plan)[interval];
+
+  // Per-account pricing, the only plan sold, is monthly: no period to
+  // choose. A legacy plan's price is no longer offered, but read as it was.
+  const priceLines =
+    plan === "payAsYouGo" ? (
+      <PerAccountPrice />
+    ) : (
+      <>
+        <p className="text-2xl font-semibold tabular-nums">
+          {billing("prices.included", {
+            interval,
+            price: money(offerOf(plan)[interval].included),
+          })}
+        </p>
+        <p className="text-muted-foreground text-sm tabular-nums">
+          {billing("prices.excluded", {
+            price: money(offerOf(plan)[interval].excluded),
+          })}
+        </p>
+        <p className="text-muted-foreground text-xs">
+          {billing("prices.vat", { rate: displayVatRate })}
+        </p>
+      </>
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -125,20 +149,11 @@ const Offer = ({
         <p className="font-medium">
           {t("offer", { plan: billing("plan", { plan }) })} {room(plan, reason)}
         </p>
-        <p className="text-2xl font-semibold tabular-nums">
-          {billing("prices.included", {
-            interval,
-            price: money(price.included),
-          })}
-        </p>
-        <p className="text-muted-foreground text-sm tabular-nums">
-          {billing("prices.excluded", { price: money(price.excluded) })}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {billing("prices.vat", { rate: displayVatRate })}
-        </p>
+        {priceLines}
       </div>
-      <IntervalSwitch interval={interval} onInterval={onInterval} />
+      {plan === "payAsYouGo" ? null : (
+        <IntervalSwitch interval={interval} onInterval={onInterval} />
+      )}
       <Consent
         consented={consented}
         onConsent={onConsent}
@@ -155,7 +170,9 @@ const Offer = ({
           {ordering ? billing("plans.ordering") : billing("plans.order")}
         </Button>
         <p className="text-muted-foreground text-xs">
-          {billing("plans.renewal", { interval })}
+          {billing("plans.renewal", {
+            interval: plan === "payAsYouGo" ? "month" : interval,
+          })}
         </p>
         <p className="text-muted-foreground text-xs">{t("comeBack")}</p>
       </div>
@@ -228,6 +245,18 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       </div>
       {trialing && canManage && planWithRoom !== null ? (
         <p>{t("trial", { workspace: workspaceName })}</p>
+      ) : null}
+      {canManage &&
+      planWithRoom === "payAsYouGo" &&
+      !trialing &&
+      reason.plan !== "free" &&
+      reason.plan !== "payAsYouGo" ? (
+        <p>
+          {t("legacyMove", {
+            plan: billing("plan", { plan: reason.plan }),
+            workspace: workspaceName,
+          })}
+        </p>
       ) : null}
       {error === null ? null : (
         <Alert variant="destructive" aria-live="assertive">

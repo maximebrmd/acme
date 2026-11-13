@@ -13,6 +13,11 @@ uptime_credentials:
   # be the one production's Grafana writes to.
   TELEGRAM_BOT_TOKEN: REPLACE
   TELEGRAM_CHAT_ID: REPLACE
+  # The sandbox's alerts go to the sandbox's chat instead (telegram: true in
+  # uptime_environments): the bot that writes there, and its chat id. The
+  # names follow the environment's, in upper case.
+  SANDBOX_TELEGRAM_BOT_TOKEN: REPLACE
+  SANDBOX_TELEGRAM_CHAT_ID: REPLACE
   # The Cloudflare Access service token the sandbox's Pulumi stack makes,
   # which the sandbox's Access application lets in with a Service Auth
   # policy for that token alone: its client id, which ends in .access, and

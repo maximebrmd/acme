@@ -90,3 +90,6 @@ uptime_environments:
     # Behind Cloudflare Access throughout: each check carries the service
     # token SANDBOX_ACCESS_CLIENT_ID and SANDBOX_ACCESS_CLIENT_SECRET.
     access: true
+    # Its alerts go to the sandbox's chat, not production's: with the bot
+    # SANDBOX_TELEGRAM_BOT_TOKEN, to SANDBOX_TELEGRAM_CHAT_ID.
+    telegram: true

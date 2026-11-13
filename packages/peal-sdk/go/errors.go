@@ -193,7 +193,7 @@ func (n *NotFoundError) GetBody() any {
 	return n.Body
 }
 
-// The workspace's plan (`plan`) allows `allowed` of `limit`, and the workspace holds `used`: nothing was changed. `planWithRoom` is the smallest plan with room for what was refused, which an owner or an admin orders on the billing page (`billingUrl`); it is null on the largest plan, where more is asked for by writing to Peal. Removing some makes room too. A workspace holding more than its plan allows, as after a trial, adds nothing until it is back within it.
+// The workspace's plan (`plan`) allows `allowed` of `limit`, across every workspace of its billing account, and holds `used`: nothing was changed. `planWithRoom` is `payAsYouGo` when a payment method gives room (as for a third connected account on the free tier), which an owner or an admin adds by ordering on the billing page (`billingUrl`); it is null when no plan holds that much. Removing some makes room too. A workspace holding more than its plan allows, as after a subscription ended, adds nothing until it is back within it.
 type PaymentRequiredError struct {
 	*core.APIError
 	Body *PlanLimitReachedEncoded
