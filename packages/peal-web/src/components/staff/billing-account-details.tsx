@@ -60,6 +60,7 @@ export const BillingAccountDetails = async ({
       <BillingAccountActions
         accountId={account.id}
         freeTier={account.freeTier}
+        workspaceIds={account.workspaceIds}
       />
     </section>
   );

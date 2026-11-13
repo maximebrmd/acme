@@ -346,4 +346,62 @@ layer(DeskTest)("the billing accounts desk", (it) => {
       yield* cleanUp([into, from, later]);
     })
   );
+
+  it.effect(
+    "keep merged workspaces whoever owns them, until staff detach them back",
+    () =>
+      Effect.gen(function* undone() {
+        const desk = yield* BillingAccountDesk;
+        const accounts = yield* BillingAccounts;
+        const sql = yield* SqlClient.SqlClient;
+        const staff = yield* person;
+        const kept = yield* person;
+        const merged = yield* person;
+        const into = yield* workspaceOwnedBy([kept]);
+        const from = yield* workspaceOwnedBy([merged]);
+
+        const [target, source] = yield* Effect.all([
+          accounts.of(into),
+          accounts.of(from),
+        ]);
+
+        yield* desk.merge({
+          from: source.id,
+          into: target.id,
+          reason: "Synthetic reason",
+          staffId: staff,
+        });
+
+        // Its payer owns none of it, yet it stays: staff put it there.
+        assert.strictEqual((yield* accounts.of(from)).id, target.id);
+        assert.strictEqual(
+          (yield* accounts.accountsIn([from])).get(from)?.id,
+          target.id
+        );
+
+        const back = yield* desk.detach({
+          reason: "Synthetic undo",
+          staffId: staff,
+          workspaceId: from,
+        });
+
+        assert.deepStrictEqual(back.account.payer, Option.some(merged));
+        assert.deepStrictEqual(back.workspaceIds, [from]);
+        assert.deepStrictEqual((yield* accounts.poolOf(into)).others, []);
+
+        const [event] = yield* sql<{
+          readonly action: string;
+          readonly workspaceId: string;
+        }>`SELECT action, workspace_id AS "workspaceId" FROM staff.audit_events WHERE object_ids->>'accountId' = ${target.id} AND action = 'detachBillingWorkspace'`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(event, {
+          action: "detachBillingWorkspace",
+          workspaceId: from,
+        });
+
+        yield* cleanUp([into, from]);
+      })
+  );
 });

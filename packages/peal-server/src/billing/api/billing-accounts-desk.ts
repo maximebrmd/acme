@@ -171,6 +171,33 @@ export const BillingAccountsDeskHandlers = HttpApiBuilder.group(
           );
         })
       )
+      .handle("detach", ({ payload }) =>
+        Effect.gen(function* detach() {
+          const staff = yield* CurrentStaff;
+          const workspaceId = decodeWorkspaceId(payload.workspaceId);
+
+          if (Option.isNone(workspaceId)) {
+            return yield* notFound();
+          }
+
+          return deskView(
+            yield* desk
+              .detach({
+                reason: payload.reason,
+                staffId: UserIdSchema.make(staff.userId),
+                workspaceId: workspaceId.value,
+              })
+              .pipe(
+                Effect.catchTags({
+                  AccountsNotMerged: ({ reason }) =>
+                    Effect.fail(new AccountsNotMerged({ reason })),
+                  BillingAccountNotFound: notFound,
+                  DatabaseError: Effect.die,
+                })
+              )
+          );
+        })
+      )
       .handle("requirePaymentMethod", ({ payload }) =>
         Effect.gen(function* requirePaymentMethod() {
           const staff = yield* CurrentStaff;

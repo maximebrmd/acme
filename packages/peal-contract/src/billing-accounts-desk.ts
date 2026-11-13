@@ -59,7 +59,7 @@ export type SharedPlatformAccountPage =
  * What staff do about one free tier per person: the platform accounts
  * connected under several free billing accounts, the one cheap signal of
  * free tiers multiplied; merging one account into another, which
- * transfers undo; and requiring a payment method of an account, which
+ * detaching each workspace undoes; and requiring a payment method of an account, which
  * takes its free tier away, and its undo. Each action is in the audit log,
  * by id only. It answers 404 to anyone but staff in their own session.
  */
@@ -113,8 +113,24 @@ export class BillingAccountsDeskApi extends HttpApiGroup.make(
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Moves every workspace of one billing account into another, which then counts their channels with its own, and deletes the first: its payer offers each back by transfer to undo it. Refused while the first holds a subscription Stripe may still charge. Recorded in the audit log first.",
+          "Moves every workspace of one billing account into another, which then counts their channels with its own, and deletes the first. The workspaces stay there whoever owns them, until staff detach each one (`detach`), which undoes it. A payment method required of the first carries to the other. Refused while the first holds a subscription Stripe may still charge. Recorded in the audit log first.",
         summary: "Merge one billing account into another",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post("detach", "/billing/accounts/detach", {
+      error: [AccountsNotMerged, BillingAccountNotFound],
+      payload: Schema.Struct({
+        reason: StaffReasonSchema,
+        workspaceId: Schema.String,
+      }),
+      success: StaffBillingAccountSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Takes a workspace out of its billing account and puts it on its oldest owner's, as if it had never been merged: the way back from a merge, one workspace at a time. Answers the account it is on now. Refused for a partner's workspace, and for an account's billing workspace while its subscription may still charge. Recorded in the audit log first.",
+        summary: "Detach a workspace from its billing account",
       })
     )
   )

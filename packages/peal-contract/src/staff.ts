@@ -71,7 +71,9 @@ export const StaffReasonSchema = Schema.Trim.check(
  * many among the object ids; and a billing account merged into another
  * (`mergeBillingAccounts`), a payment method required of one
  * (`requirePaymentMethod`) and its free tier given back
- * (`restoreFreeTier`), the accounts' ids among the object ids.
+ * (`restoreFreeTier`), the accounts' ids among the object ids; and a
+ * workspace detached from its billing account (`detachBillingWorkspace`),
+ * the account's id among the object ids and the workspace as the event's.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -93,6 +95,7 @@ export const StaffActionSchema = Schema.Literals([
   "mergeBillingAccounts",
   "requirePaymentMethod",
   "restoreFreeTier",
+  "detachBillingWorkspace",
 ]).annotate({ identifier: "StaffAction" });
 
 /**

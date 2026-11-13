@@ -3,11 +3,15 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { UserId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /** What a staff member did to a billing account, and why. */
 export interface HandledAccount {
-  readonly action: "merge" | "requirePaymentMethod" | "restoreFreeTier";
+  readonly action:
+    | "detach"
+    | "merge"
+    | "requirePaymentMethod"
+    | "restoreFreeTier";
   /** The account acted on: the one merged, for a merge. */
   readonly accountId: BillingAccountId;
   readonly at: DateTime.Utc;
@@ -16,6 +20,8 @@ export interface HandledAccount {
   /** Why, in the staff member's words. */
   readonly reason: string;
   readonly staffId: UserId;
+  /** The workspace detached, for a detachment. */
+  readonly workspaceId: Option.Option<WorkspaceId>;
 }
 
 /**

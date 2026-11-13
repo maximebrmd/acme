@@ -13,21 +13,29 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { usePathname, useRouter } from "#i18n/navigation.ts";
-import { mergeBillingAccounts, requirePaymentMethod } from "#staff/atoms.ts";
+import {
+  detachBillingWorkspace,
+  mergeBillingAccounts,
+  requirePaymentMethod,
+} from "#staff/atoms.ts";
 import { staffErrorKey } from "#staff/errors.ts";
 import type { StaffErrorKey } from "#staff/errors.ts";
 
 /**
  * What staff do to a billing account, each with the reason the audit log
- * keeps: merge it into another, or require a payment method of it, or
- * give its free tier back. The page then shows where things stand.
+ * keeps: merge it into another, detach one of its workspaces back to its
+ * oldest owner's account (which undoes a merge), or require a payment
+ * method of it, or give its free tier back. The page then shows where
+ * things stand.
  */
 export const BillingAccountActions = ({
   accountId,
   freeTier,
+  workspaceIds,
 }: {
   readonly accountId: string;
   readonly freeTier: boolean;
+  readonly workspaceIds: readonly string[];
 }) => {
   const t = useTranslations("Staff.billingAccounts");
   const actions = useTranslations("Staff.actions");
@@ -38,6 +46,7 @@ export const BillingAccountActions = ({
   const intoId = useId();
   const merge = useAtomSet(mergeBillingAccounts, { mode: "promiseExit" });
   const require = useAtomSet(requirePaymentMethod, { mode: "promiseExit" });
+  const detach = useAtomSet(detachBillingWorkspace, { mode: "promiseExit" });
   const [reason, setReason] = useState("");
   const [into, setInto] = useState("");
   const [error, setError] = useState<StaffErrorKey | null>(null);
@@ -73,6 +82,18 @@ export const BillingAccountActions = ({
       settle(exit, t("merged"), () => {
         // This account is gone: open the one it was merged into.
         router.push({ pathname, query: { query: into.trim() } });
+      });
+    });
+  };
+
+  const handleDetach = (workspaceId: string) => {
+    startTransition(async () => {
+      const exit = await detach({
+        payload: { reason: reason.trim(), workspaceId },
+      });
+
+      settle(exit, t("detached"), () => {
+        router.push({ pathname, query: { query: workspaceId } });
       });
     });
   };
@@ -125,6 +146,30 @@ export const BillingAccountActions = ({
           </Button>
         </div>
       </div>
+      {workspaceIds.length < 2 ? null : (
+        <div className="flex flex-col gap-2">
+          <h3 className="font-medium">{t("detachTitle")}</h3>
+          <p className="text-muted-foreground text-sm">{t("detachHint")}</p>
+          <ul className="flex flex-col gap-2">
+            {workspaceIds.map((workspaceId) => (
+              <li key={workspaceId} className="flex items-center gap-2">
+                <code className="text-sm">{workspaceId}</code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!ready}
+                  focusableWhenDisabled
+                  onClick={() => {
+                    handleDetach(workspaceId);
+                  }}
+                >
+                  {t("detach")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         <h3 className="font-medium">{t("mergeTitle")}</h3>
         <p className="text-muted-foreground text-sm">{t("mergeHint")}</p>

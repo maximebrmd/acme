@@ -3006,7 +3006,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -3082,7 +3082,11 @@
       "require": "Require a payment method",
       "restore": "Give the free tier back",
       "requiring": "Saving…",
-      "required": "Saved."
+      "required": "Saved.",
+      "detachTitle": "Detach a workspace",
+      "detachHint": "The workspace leaves this account for its oldest owner's, which undoes a merge.",
+      "detach": "Detach",
+      "detached": "The workspace was detached."
     },
     "legal": {
       "title": "Legal requests",

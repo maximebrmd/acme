@@ -4,7 +4,7 @@ import type { DateTime } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
-import type { UserId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { AuditEventIdSchema } from "#staff/domain/audit-event-id.ts";
 import { AuditEvent } from "#staff/domain/audit-event.ts";
 import { objectIdsOf } from "#staff/domain/audit-operation.ts";
@@ -18,6 +18,7 @@ import { AuditLog } from "./ports/audit-log.ts";
 /** What a staff member did to a billing account, and why. */
 export interface HandledBillingAccount {
   readonly action:
+    | "detachBillingWorkspace"
     | "mergeBillingAccounts"
     | "requirePaymentMethod"
     | "restoreFreeTier";
@@ -28,6 +29,8 @@ export interface HandledBillingAccount {
   readonly intoAccountId: Option.Option<string>;
   readonly reason: string;
   readonly staffId: UserId;
+  /** The workspace detached, for a detachment. */
+  readonly workspaceId: Option.Option<WorkspaceId>;
 }
 
 const decodeReason = Schema.decodeUnknownOption(StaffReasonSchema);
@@ -66,7 +69,7 @@ export class BillingAccountAudit extends Context.Service<
               reason: decodeReason(entry.reason.slice(0, maxReasonLength)),
               staffId: Option.some(entry.staffId),
               targetId: Option.none(),
-              workspaceId: Option.none(),
+              workspaceId: entry.workspaceId,
             })
           );
         },

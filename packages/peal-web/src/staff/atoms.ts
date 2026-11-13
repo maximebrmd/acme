@@ -60,3 +60,9 @@ export const requirePaymentMethod = PealApi.mutation(
   "billingAccountsDesk",
   "requirePaymentMethod"
 );
+
+// Takes a workspace out of its billing account, back on its oldest owner's.
+export const detachBillingWorkspace = PealApi.mutation(
+  "billingAccountsDesk",
+  "detach"
+);

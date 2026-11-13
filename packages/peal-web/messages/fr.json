@@ -3006,7 +3006,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -3082,7 +3082,11 @@
       "require": "Exiger un moyen de paiement",
       "restore": "Rendre l’offre gratuite",
       "requiring": "Enregistrement…",
-      "required": "Enregistré."
+      "required": "Enregistré.",
+      "detachTitle": "Détacher un espace de travail",
+      "detachHint": "L’espace de travail quitte ce compte pour celui de son plus ancien propriétaire, ce qui annule une fusion.",
+      "detach": "Détacher",
+      "detached": "L’espace de travail a été détaché."
     },
     "legal": {
       "title": "Réquisitions",

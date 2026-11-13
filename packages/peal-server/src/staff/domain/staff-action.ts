@@ -57,6 +57,9 @@ export const StaffActionSchema = Schema.Literals([
   "requirePaymentMethod",
   // Gave such an account its free tier back.
   "restoreFreeTier",
+  // Took a workspace (the event's) out of its billing account, back to
+  // its oldest owner's: undoes a merge.
+  "detachBillingWorkspace",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

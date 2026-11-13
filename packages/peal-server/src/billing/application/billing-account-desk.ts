@@ -79,6 +79,16 @@ export class BillingAccountDesk extends Context.Service<
       DeskAccount,
       AccountsNotMerged | BillingAccountNotFound | DatabaseError
     >;
+    /**
+     * Takes the workspace out of its account, back on its oldest owner's:
+     * undoes a merge, one workspace at a time.
+     */
+    readonly detach: (
+      detaching: Acting & { readonly workspaceId: WorkspaceId }
+    ) => Effect.Effect<
+      DeskAccount,
+      AccountsNotMerged | BillingAccountNotFound | DatabaseError
+    >;
     readonly requirePaymentMethod: (
       requiring: Acting & {
         readonly accountId: BillingAccountId;
@@ -281,6 +291,7 @@ export class BillingAccountDesk extends Context.Service<
               intoAccountId: Option.some(target.id),
               reason,
               staffId,
+              workspaceId: Option.none(),
             });
 
             yield* Effect.forEach(
@@ -327,6 +338,7 @@ export class BillingAccountDesk extends Context.Service<
               intoAccountId: Option.none(),
               reason,
               staffId,
+              workspaceId: Option.none(),
             });
 
             yield* store.setFreeTier(accountId, !required);
@@ -348,8 +360,59 @@ export class BillingAccountDesk extends Context.Service<
         return yield* described(changed);
       });
 
+      const detach = Effect.fn("BillingAccountDesk.detach")(function* detach({
+        reason,
+        staffId,
+        workspaceId,
+      }: Acting & { readonly workspaceId: WorkspaceId }) {
+        yield* transaction(
+          Effect.gen(function* detaching() {
+            const current = yield* store.accountOf(workspaceId);
+
+            if (Option.isNone(current)) {
+              return yield* new BillingAccountNotFound();
+            }
+
+            const held = current.value;
+
+            if (Option.isSome(held.partnerId)) {
+              return yield* new AccountsNotMerged({ reason: "partner" });
+            }
+
+            if (
+              held.holder === workspaceId &&
+              (yield* subscriptions.ofWorkspace(workspaceId)).some(stillBills)
+            ) {
+              return yield* new AccountsNotMerged({ reason: "subscribed" });
+            }
+
+            yield* audit.handled({
+              accountId: held.id,
+              action: "detach",
+              at: yield* DateTime.now,
+              intoAccountId: Option.none(),
+              reason,
+              staffId,
+              workspaceId: Option.some(workspaceId),
+            });
+
+            yield* Option.match(held.payer, {
+              onNone: () => Effect.void,
+              onSome: (payer) => store.holdPayer(payer),
+            });
+
+            return yield* accounts.leave(workspaceId, held);
+          })
+        );
+
+        // Given its oldest owner's account, as a workspace read for the
+        // first time is.
+        return yield* described(yield* accounts.of(workspaceId));
+      });
+
       return BillingAccountDesk.of({
         account,
+        detach,
         merge,
         requirePaymentMethod,
         sharedChannels,
