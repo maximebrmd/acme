@@ -8,6 +8,7 @@ import type { Money } from "#billing/domain/billing-notice.ts";
 import type { Entitlements } from "#billing/domain/entitlements.ts";
 import { planAllowances, planPrices } from "#billing/domain/legacy-plans.ts";
 import type { PlanPrice } from "#billing/domain/legacy-plans.ts";
+import { livePerAccount } from "#billing/domain/live-per-account.ts";
 import {
   allowancesOf,
   legacyPlans,
@@ -17,7 +18,7 @@ import {
 import type { Allowances } from "#billing/domain/plans.ts";
 import { accountsCharge, rateCard } from "#billing/domain/rate-card.ts";
 import type { RateCard } from "#billing/domain/rate-card.ts";
-import { billsAt } from "#billing/domain/subscription.ts";
+import { billsAt, entitles } from "#billing/domain/subscription.ts";
 import type {
   Subscription,
   SubscriptionStatus,
@@ -33,6 +34,7 @@ import { AccountDays } from "./account-days.ts";
 import { AccountChannels } from "./ports/account-channels.ts";
 import { PlanHolders } from "./ports/plan-holders.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
+import { Subscriptions } from "./ports/subscriptions.ts";
 import type { Usage } from "./ports/workspace-usage.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "./workspace-entitlements.ts";
@@ -71,9 +73,25 @@ export interface AccountsThisMonth {
 /** A workspace's plan, what it uses of it, and the plans it can move to. */
 export interface Overview {
   readonly accounts: AccountsThisMonth;
+  /**
+   * What the plan allows: the account's, but the media allowance, which
+   * the pool's size sets, for a workspace that does not bill its account.
+   */
+  readonly allowances: Allowances;
+  /**
+   * Whether the workspace bills its billing account: only then is it told
+   * the account's contract, pool and money.
+   */
+  readonly billsHere: boolean;
   readonly entitlements: Entitlements;
   /** The month so far, excluding tax; none on a server that does not bill. */
   readonly estimate: Option.Option<Money>;
+  /**
+   * Whether the account's per-account subscription went unpaid (Stripe may
+   * still bill it; it no longer entitles), told to the workspace that
+   * bills the account only.
+   */
+  readonly paymentFailed: boolean;
   /** Whether a subscription paid for with a payment method entitles it. */
   readonly paymentMethod: boolean;
   /** Every plan, from the smallest; none on a server that does not bill. */
@@ -160,11 +178,12 @@ export class BillingOverview extends Context.Service<
     BillingOverview,
     Effect.gen(function* BillingOverviewLive() {
       const entitlements = yield* WorkspaceEntitlements;
-      const usage = yield* WorkspaceUsage;
+      const usageOf = yield* WorkspaceUsage;
       const channels = yield* AccountChannels;
       const holders = yield* PlanHolders;
       const days = yield* AccountDays;
       const stripe = yield* StripeContracts;
+      const subscriptions = yield* Subscriptions;
 
       // What Stripe's next invoice of the subscription takes: none when it
       // cannot say, which the page tells as no figure.
@@ -200,17 +219,11 @@ export class BillingOverview extends Context.Service<
       // workspaces (a partner's customer, a person's other workspaces)
       // tells nothing of the account's money.
       const monthOf = Effect.fn("BillingOverview.monthOf")(function* monthOf(
-        workspaceId: Actor["workspaceId"],
+        holder: Actor["workspaceId"],
         current: Entitlements,
         pooled: number,
         now: DateTime.Utc
       ) {
-        const holder = yield* holders.holderOf(workspaceId);
-
-        if (holder !== workspaceId) {
-          return noMonth;
-        }
-
         const counted = yield* days.ofMonth([holder], now);
 
         const paying =
@@ -237,7 +250,7 @@ export class BillingOverview extends Context.Service<
         const [current, used, own] = yield* Effect.all(
           [
             entitlements.of(actor.workspaceId),
-            usage.of(actor.workspaceId),
+            usageOf.of(actor.workspaceId),
             channels.ownIn([actor.workspaceId]),
           ],
           { concurrency: "unbounded" }
@@ -246,20 +259,55 @@ export class BillingOverview extends Context.Service<
         const billing = Option.isSome(current.plan);
         const now = yield* DateTime.now;
 
-        const month = billing
-          ? yield* monthOf(actor.workspaceId, current, used.channels, now)
-          : noMonth;
+        // The workspace that bills the account (on a server that bills):
+        // only it is told the account's contract, pool and money.
+        const holder = billing
+          ? yield* holders.holderOf(actor.workspaceId)
+          : actor.workspaceId;
+
+        const billsHere = holder === actor.workspaceId;
+
+        const month =
+          billing && billsHere
+            ? yield* monthOf(holder, current, used.channels, now)
+            : noMonth;
+
+        const connected = own.get(actor.workspaceId) ?? 0;
+        const allowed = current.allowancesFor(used.channels);
+
+        // An unpaid contract Stripe may still bill: no order goes through
+        // until its payment method is updated.
+        const paymentFailed =
+          billing && billsHere
+            ? livePerAccount(yield* subscriptions.ofWorkspace(holder)).pipe(
+                Option.exists((live) => !entitles(live))
+              )
+            : false;
+
+        // Its own media, never the pool's, where it does not bill.
+        const usage: Usage = billsHere
+          ? used
+          : {
+              ...used,
+              channels: connected,
+              mediaStorage: yield* usageOf.storedBy(actor.workspaceId),
+            };
 
         const overview: Overview = {
           accounts: {
             accountDays: month.accountDays,
-            connected: own.get(actor.workspaceId) ?? 0,
+            connected,
             estimate: month.estimate,
             nextAccount: month.nextAccount,
-            pooled: used.channels,
+            pooled: billsHere ? used.channels : connected,
           },
+          allowances: billsHere
+            ? allowed
+            : { ...allowed, mediaStorage: Option.none() },
+          billsHere,
           entitlements: current,
           estimate: month.estimate,
+          paymentFailed,
           paymentMethod: Option.exists(current.subscription, ({ status }) =>
             paidWith(status)
           ),
@@ -274,8 +322,9 @@ export class BillingOverview extends Context.Service<
             : Option.none(),
           rateCard: billing ? Option.some(rateCard) : Option.none(),
           upcomingInvoice: month.upcomingInvoice,
-          usage: used,
+          usage,
           withdrawableUntil: current.subscription.pipe(
+            Option.filter(() => billsHere),
             Option.flatMap((subscription) =>
               Result.getSuccess(mayWithdraw(subscription, now))
             )

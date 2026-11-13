@@ -103,6 +103,10 @@ export const ContextWorkspaceUsageLive = Layer.effect(
       );
     });
 
-    return WorkspaceUsage.of({ heldIn, of });
+    return WorkspaceUsage.of({
+      heldIn,
+      of,
+      storedBy: (workspaceId) => media.stored(workspaceId),
+    });
   })
 );

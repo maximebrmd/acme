@@ -82,6 +82,7 @@ const SubscriptionsInMemory = Layer.effect(
 const UsageTest = Layer.succeed(
   WorkspaceUsage,
   WorkspaceUsage.of({
+    storedBy: () => Effect.die("not read here"),
     heldIn: () => Effect.die("not read here"),
     of: () =>
       Effect.succeed({

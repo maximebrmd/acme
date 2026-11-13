@@ -214,8 +214,13 @@
   it pays or of what the days would bill, `nextAccount` by the ladder),
   `estimate`, `rateCard`, `paymentMethod` and `upcomingInvoice`
   (`StripeContracts.upcomingTotal`, billing workspace only, none when
-  Stripe does not answer). A partner's customer or a person's other
-  workspace reads none of the account's money. On a server that does not
+  Stripe does not answer), and `paymentFailed` (an unpaid per-account
+  contract Stripe may still bill: the page sends to the portal, not to an
+  order). A partner's customer or a person's other workspace reads none
+  of the account's money, contract or pool (`Overview.billsHere`): no
+  `subscription` or `withdrawableUntil`, `pooled`, `usage.channels` and
+  `usage.mediaStorage` its own (`WorkspaceUsage.storedBy`), and no media
+  allowance, which the pool's size sets. On a server that does not
   bill money and the rate card are null and no day or Stripe is read. The
   usage report's days carry `billableAccounts` for the holder only, its
   totals `billableAccountDays`. These fields are required: a newer client

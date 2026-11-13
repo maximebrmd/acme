@@ -142,6 +142,7 @@ const UsageTest = Layer.effect(
   BillingLog.use(({ holdings }) =>
     Effect.succeed(
       WorkspaceUsage.of({
+        storedBy: () => Effect.die("not read here"),
         heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(holdings).pipe(

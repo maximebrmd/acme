@@ -200,7 +200,12 @@ export type BillingAccountsUsage = typeof BillingAccountsUsageSchema.Type;
  * priced by tiers of channels keeps its plan until it ends. On a server
  * that does not bill, `enabled` is false, `plan`, `subscription`, `trial`
  * and `withdrawableUntil` are null, every allowance is null and `plans` is
- * empty: nothing is limited.
+ * empty: nothing is limited. A workspace whose billing account another of
+ * its workspaces bills (a partner's customer, a person's other workspaces)
+ * shares that account's plan but is told none of its contract or pool:
+ * `subscription` and `withdrawableUntil` are null, `accounts.pooled`,
+ * `usage.channels` and `usage.mediaStorage` count that workspace alone,
+ * and `allowances.mediaStorage`, which the pool's size sets, is null.
  */
 export const BillingSchema = Schema.Struct({
   // The billing account the workspace is on, on a server that does not
@@ -217,6 +222,12 @@ export const BillingSchema = Schema.Struct({
   // counts and the rate card (the connected accounts for now); null on a
   // server that does not bill. The invoice is the one that counts.
   estimate: Schema.NullOr(MoneySchema),
+  // Whether the billing account's per-account subscription went unpaid:
+  // it no longer entitles, yet Stripe may still bill it, so nothing is
+  // ordered until its payment method is updated in the customer portal.
+  // Told to the workspace that bills the account only (false elsewhere);
+  // older servers leave it out.
+  paymentFailed: Schema.optionalKey(Schema.Boolean),
   // Whether the billing account pays with a payment method: its
   // per-account subscription is active or past due.
   paymentMethod: Schema.Boolean,
