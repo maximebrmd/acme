@@ -837,6 +837,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       weeklyDigest: false,
     },
     everyPost: false,
+    lastWeeklyDigest: null,
   },
   replies: [],
   review: { approvals: [], comments: [] },
