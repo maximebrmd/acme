@@ -1,7 +1,7 @@
 import { Context, DateTime, Effect, Layer, Match, Option } from "effect";
 
 import type { BillingNotice, Money } from "#billing/domain/billing-notice.ts";
-import { planAllowances } from "#billing/domain/plans.ts";
+import { allowancesOf } from "#billing/domain/plans.ts";
 import { currency, listedPriceOf } from "#billing/domain/prices.ts";
 import {
   confirmationOf,
@@ -55,13 +55,20 @@ const chargedFor = (reminder: Reminder) =>
     });
   });
 
-// What the workspace holds beyond the free plan, which it moves to when
+// What the workspace holds beyond the free tier, which it moves to when
 // its trial ends: nothing for the other reminders, which read nothing.
 const overFreePlan = (reminder: Reminder) =>
   reminder._tag === "trialEnding"
     ? WorkspaceUsage.use((usage) =>
         usage.of(reminder.subscription.workspaceId)
-      ).pipe(Effect.map((held) => excessesOf(planAllowances.free, held)))
+      ).pipe(
+        Effect.map((held) =>
+          excessesOf(
+            allowancesOf("free", { accounts: held.channels, freeTier: true }),
+            held
+          )
+        )
+      )
     : Effect.succeed<readonly Excess[]>([]);
 
 const noticeOf = (

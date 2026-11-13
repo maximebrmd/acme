@@ -17,11 +17,14 @@ import type { Allowance } from "#shared/domain/allowance.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
-import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
-import type { LegacyPaidPlan, PaidPlan, Plan } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema, PaidPlanSchema } from "#shared/domain/plan.ts";
+import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 import type { CaptchaSettings } from "#shared/infrastructure/captcha-settings.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
-import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
+import type {
+  CatalogueLookupKeys,
+  StripeSettings,
+} from "#shared/infrastructure/stripe-settings.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 /** A checkout about to start, for the order it needs. */
@@ -30,7 +33,7 @@ export interface CheckoutStart {
   readonly email: string;
   readonly interval: "month" | "year";
   readonly orderId: string;
-  readonly plan: LegacyPaidPlan;
+  readonly plan: PaidPlan;
   readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
 }
@@ -111,9 +114,9 @@ const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
 
-// Better Auth's plans are the legacy ones: per-account pricing is not
-// offered at checkout yet.
-const decodeLegacyPlan = Schema.decodeUnknownOption(LegacyPaidPlanSchema);
+// Better Auth's plans: per-account pricing, the only one sold, and the
+// legacy plans, kept so their subscriptions' events are still recognised.
+const decodePaidPlan = Schema.decodeUnknownOption(PaidPlanSchema);
 
 const stripeInstant = Schema.optionalKey(Schema.NullOr(Schema.Number));
 
@@ -190,10 +193,23 @@ const workspaceOfCustomer = async (
 // plan's, by its lookup key.
 interface PricedPlan {
   readonly interval: "month" | "year";
-  readonly plan: LegacyPaidPlan;
+  readonly plan: PaidPlan;
 }
 
-const planOf = (
+/**
+ * The plan a subscription's prices buy: per-account pricing, monthly,
+ * when the connected accounts' price is among them; else a legacy plan's,
+ * by its lookup key.
+ */
+export const planOf = (
+  { catalogue, prices }: Pick<StripeSettings, "catalogue" | "prices">,
+  lookupKeys: readonly (string | null | undefined)[]
+): Option.Option<PricedPlan> =>
+  lookupKeys.includes(catalogue.accounts)
+    ? Option.some({ interval: "month", plan: "payAsYouGo" })
+    : legacyPlanOf(prices, lookupKeys);
+
+const legacyPlanOf = (
   prices: StripeSettings["prices"],
   lookupKeys: readonly (string | null | undefined)[]
 ): Option.Option<PricedPlan> =>
@@ -246,7 +262,7 @@ const subscriptionEventOf = async (
   const customerId = subscription.customer;
 
   const plan = planOf(
-    settings.prices,
+    settings,
     subscription.items.data.map(({ price }) => price.lookup_key)
   );
 
@@ -374,8 +390,124 @@ const automaticTax = {
   tax_id_collection: { enabled: true },
 } satisfies Stripe.Checkout.SessionCreateParams;
 
+const PriceListSchema = Schema.Struct({
+  data: Schema.Array(Schema.Struct({ id: Schema.NonEmptyString })),
+});
+
+const decodePriceList = Schema.decodeUnknownOption(PriceListSchema);
+
+const ChangeErrors = {
+  NAMED_SUBSCRIPTION: {
+    code: "SUBSCRIPTION_CHOICE_REFUSED",
+    message:
+      "A workspace's subscription is changed from its billing page, which names none",
+  },
+  UNAVAILABLE: {
+    code: "CHECKOUT_UNAVAILABLE",
+    message: "Stripe could not open the checkout. Try again in a moment.",
+  },
+} as const;
+
 // Nothing to add to the checkout.
 const noParams = {} satisfies Stripe.Checkout.SessionCreateParams;
+
+/** The first of the month after `nowMs`, 00:00 UTC, in Stripe's seconds. */
+export const firstOfNextMonth = (nowMs: number): number => {
+  const now = new Date(nowMs);
+
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1) / 1000;
+};
+
+// Per-account pricing: a card always, though nothing is due before the
+// month's end, and every subscription billing calendar months (UTC), as
+// the billing page and the allowances count in them. The first, partial
+// month starts its own ladder, free accounts included.
+const payingParams = (nowMs: number) =>
+  ({
+    payment_method_collection: "always",
+    subscription_data: {
+      billing_cycle_anchor: firstOfNextMonth(nowMs),
+      proration_behavior: "none",
+    },
+  }) satisfies Stripe.Checkout.SessionCreateParams;
+
+/** A checkout's line item: a price, by its id. */
+export type CatalogueLineItem = Stripe.Checkout.SessionCreateParams.LineItem;
+
+/** What lists Stripe's prices, as `stripe.prices` does. */
+export interface PriceLister {
+  readonly list: (params: {
+    readonly active: boolean;
+    readonly limit: number;
+    readonly lookup_keys: string[];
+  }) => Promise<{ readonly data: readonly { readonly id: string }[] }>;
+}
+
+/**
+ * The line items per-account pricing's checkout adds to the connected
+ * accounts' price: each meter's price, found by its lookup key, metered,
+ * so without a quantity. None when one cannot be found, or Stripe does not
+ * answer: no checkout then opens without them.
+ */
+export const catalogueLineItems = async (
+  prices: PriceLister,
+  keys: CatalogueLookupKeys
+): Promise<Option.Option<readonly CatalogueLineItem[]>> => {
+  const meterKeys = [
+    keys.outboundMessages,
+    keys.managedAds,
+    keys.assistantRequests,
+    keys.assistantImages,
+    keys.xApi,
+  ];
+
+  const found = await Promise.all(
+    meterKeys.map(async (key) => {
+      const listed = await prices.list({
+        active: true,
+        limit: 1,
+        lookup_keys: [key],
+      });
+
+      return Option.fromUndefinedOr(listed.data[0]);
+    })
+  ).catch(() => [Option.none()]);
+
+  const ids = found.flatMap((price) =>
+    Option.match(price, { onNone: () => [], onSome: ({ id }) => [id] })
+  );
+
+  return ids.length === meterKeys.length
+    ? Option.some(ids.map((price) => ({ price })))
+    : Option.none();
+};
+
+// How long the meters' prices found are kept: a price replaced at Stripe
+// (its lookup key moved) reaches checkouts within this.
+const lineItemsLifetimeMs = 5 * 60 * 1000;
+
+/** Each meter's price, found once a while and kept while it is fresh. */
+const keptLineItems = (prices: PriceLister, keys: CatalogueLookupKeys) => {
+  let kept:
+    | { readonly at: number; readonly items: readonly CatalogueLineItem[] }
+    | undefined;
+
+  return async (): Promise<Option.Option<readonly CatalogueLineItem[]>> => {
+    const now = Date.now();
+
+    if (kept !== undefined && now - kept.at < lineItemsLifetimeMs) {
+      return Option.some(kept.items);
+    }
+
+    const found = await catalogueLineItems(prices, keys);
+
+    if (Option.isSome(found)) {
+      kept = { at: now, items: found.value };
+    }
+
+    return found;
+  };
+};
 
 // How long a trial's checkout stays open: Stripe's shortest, a few minutes
 // more, well within the trial's hold (`trialReservationMinutes`), so a
@@ -421,11 +553,17 @@ const OrderErrors = {
 
 /**
  * The checkout's parameters for the order the member placed on the billing
- * page (`metadata.orderId`): refused without one, with the trial's days and
- * no payment method for the trial, and Stripe Tax's.
+ * page (`metadata.orderId`): refused without one; Stripe Tax's; for
+ * per-account pricing a card always and the first of next month as the
+ * billing anchor, and none while its meters' prices cannot be found
+ * (`lineItems`, which Better Auth's plan adds to the checkout); and, for a
+ * legacy trial, its days and no payment method.
  */
 export const checkoutParams =
-  (hooks: BillingHooks) =>
+  (
+    hooks: BillingHooks,
+    lineItems: () => Promise<Option.Option<readonly CatalogueLineItem[]>>
+  ) =>
   async (
     {
       plan,
@@ -442,7 +580,7 @@ export const checkoutParams =
     const body = decodeUpgradeBody(ctx?.body).pipe(Option.getOrUndefined);
     const workspaceId = decodeWorkspaceId(subscription.referenceId);
     const userId = decodeUserId(user.id);
-    const paidPlan = decodeLegacyPlan(plan.name);
+    const paidPlan = decodePaidPlan(plan.name);
     const orderId = body?.metadata?.orderId;
 
     if (
@@ -465,6 +603,14 @@ export const checkoutParams =
 
     if (answer._tag === "refused") {
       throw APIError.from("BAD_REQUEST", OrderErrors[answer.code]);
+    }
+
+    if (paidPlan.value === "payAsYouGo") {
+      if (Option.isNone(await lineItems())) {
+        throw APIError.from("BAD_REQUEST", ChangeErrors.UNAVAILABLE);
+      }
+
+      return { params: { ...automaticTax, ...payingParams(Date.now()) } };
     }
 
     const trial =
@@ -505,27 +651,9 @@ const CustomerRowSchema = Schema.Struct({
 
 const decodeCustomerRow = Schema.decodeUnknownOption(CustomerRowSchema);
 
-const PriceListSchema = Schema.Struct({
-  data: Schema.Array(Schema.Struct({ id: Schema.NonEmptyString })),
-});
-
-const decodePriceList = Schema.decodeUnknownOption(PriceListSchema);
-
 const SessionUrlSchema = Schema.Struct({ url: Schema.NonEmptyString });
 
 const decodeSessionUrl = Schema.decodeUnknownOption(SessionUrlSchema);
-
-const ChangeErrors = {
-  NAMED_SUBSCRIPTION: {
-    code: "SUBSCRIPTION_CHOICE_REFUSED",
-    message:
-      "A workspace's subscription is changed from its billing page, which names none",
-  },
-  UNAVAILABLE: {
-    code: "CHECKOUT_UNAVAILABLE",
-    message: "Stripe could not open the checkout. Try again in a moment.",
-  },
-} as const;
 
 // The status of the subscription Better Auth would change in place rather
 // than open a checkout for: the workspace's active or trialing one.
@@ -567,21 +695,23 @@ const trustedUrl = (
 };
 
 /**
- * Opens a checkout for a paid plan ordered during the workspace's trial:
- * a new subscription, beside the trial, which runs until the paid one is
- * recorded (`RecordSubscription` then ends it). Better Auth would rather
- * change the trialing subscription in place, which buys nothing and takes
- * no payment.
+ * Opens a checkout of its own for per-account pricing, ordered by a
+ * workspace that already has a live subscription (a legacy plan, or a
+ * trial): a new subscription beside it, which runs until the new one is
+ * recorded (`RecordSubscription` then ends the trial, or sets the legacy
+ * plan to end with its period). Better Auth would rather change the live
+ * subscription in place, which would swap its plan's price and leave the
+ * meters out. Its line items are the connected accounts' price and each
+ * meter's, metered, so without a quantity.
  */
-const checkoutDuringTrial = async (
+const checkoutBeside = async (
   client: Stripe,
   settings: StripeSettings,
+  lineItems: () => Promise<Option.Option<readonly CatalogueLineItem[]>>,
   order: {
     readonly cancelUrl: string;
-    readonly interval: "month" | "year";
     readonly locale: Option.Option<"en" | "fr">;
     readonly orderId: string;
-    readonly plan: LegacyPaidPlan;
     readonly successUrl: string;
     readonly userId: UserId;
     readonly workspaceId: WorkspaceId;
@@ -596,15 +726,18 @@ const checkoutDuringTrial = async (
   });
 
   const customer = decodeCustomerRow(found);
+  const meters = await lineItems();
 
-  if (Option.isNone(customer)) {
+  if (Option.isNone(customer) || Option.isNone(meters)) {
     throw APIError.from("BAD_REQUEST", ChangeErrors.UNAVAILABLE);
   }
 
-  const lookupKey = settings.prices[order.plan][order.interval];
-
   const session = await client.prices
-    .list({ active: true, limit: 1, lookup_keys: [lookupKey] })
+    .list({
+      active: true,
+      limit: 1,
+      lookup_keys: [settings.catalogue.accounts],
+    })
     .then(async (prices) => {
       const price = decodePriceList(prices).pipe(
         Option.flatMap(({ data }) => Option.fromUndefinedOr(data[0]))
@@ -620,6 +753,8 @@ const checkoutDuringTrial = async (
         userId: order.userId,
       };
 
+      const paying = payingParams(Date.now());
+
       return decodeSessionUrl(
         await client.checkout.sessions.create(
           {
@@ -627,10 +762,11 @@ const checkoutDuringTrial = async (
             cancel_url: order.cancelUrl,
             client_reference_id: order.workspaceId,
             customer: customer.value.stripeCustomerId,
-            line_items: [{ price: price.value.id, quantity: 1 }],
+            line_items: [{ price: price.value.id }, ...meters.value],
             metadata,
             mode: "subscription",
-            subscription_data: { metadata },
+            payment_method_collection: paying.payment_method_collection,
+            subscription_data: { ...paying.subscription_data, metadata },
             success_url: order.successUrl,
             ...Option.match(order.locale, {
               onNone: () => ({}),
@@ -656,6 +792,7 @@ const checkoutInstead = async (
   client: Stripe,
   settings: StripeSettings,
   hooks: BillingHooks,
+  lineItems: () => Promise<Option.Option<readonly CatalogueLineItem[]>>,
   ctx: GenericEndpointContext
 ): Promise<
   Option.Option<{ readonly redirect: boolean; readonly url: string }>
@@ -671,7 +808,7 @@ const checkoutInstead = async (
   }
 
   const workspaceId = decodeWorkspaceId(request.value.referenceId);
-  const plan = decodeLegacyPlan(request.value.plan);
+  const plan = decodePaidPlan(request.value.plan);
 
   if (Option.isNone(workspaceId) || Option.isNone(plan)) {
     return Option.none();
@@ -721,16 +858,16 @@ const checkoutInstead = async (
     throw APIError.from("BAD_REQUEST", OrderErrors[answer.code]);
   }
 
-  if (live.value !== "trialing") {
+  // A legacy plan changed in place: no order for one is taken any more,
+  // so only one placed before is.
+  if (plan.value !== "payAsYouGo") {
     return Option.none();
   }
 
-  const url = await checkoutDuringTrial(client, settings, {
+  const url = await checkoutBeside(client, settings, lineItems, {
     cancelUrl: trustedUrl(ctx, request.value.cancelUrl),
-    interval,
     locale: decodeLocale(request.value.locale),
     orderId,
-    plan: plan.value,
     successUrl: trustedUrl(ctx, request.value.successUrl),
     userId: userId.value,
     workspaceId: workspaceId.value,
@@ -754,9 +891,20 @@ const checkoutInstead = async (
  * itself, as from someone who may not bill, are left to it.
  */
 const orderedChange =
-  (client: Stripe, settings: StripeSettings, hooks: BillingHooks) =>
+  (
+    client: Stripe,
+    settings: StripeSettings,
+    hooks: BillingHooks,
+    lineItems: () => Promise<Option.Option<readonly CatalogueLineItem[]>>
+  ) =>
   async (ctx: GenericEndpointContext) => {
-    const checkout = await checkoutInstead(client, settings, hooks, ctx);
+    const checkout = await checkoutInstead(
+      client,
+      settings,
+      hooks,
+      lineItems,
+      ctx
+    );
 
     // Null lets Better Auth's route go on.
     return Option.isSome(checkout) ? await ctx.json(checkout.value) : null;
@@ -775,11 +923,32 @@ export const stripeBilling = (
 ) => {
   const client = stripeClientOf(settings);
 
-  const plans: StripePlan[] = LegacyPaidPlanSchema.literals.map((name) => ({
+  const lineItems = keptLineItems(client.prices, settings.catalogue);
+
+  // The legacy plans, whose subscriptions' events must still be read, and
+  // per-account pricing: the connected accounts' price, metered (so Better
+  // Auth gives it no quantity), and each meter's price as a line item.
+  const legacy: StripePlan[] = LegacyPaidPlanSchema.literals.map((name) => ({
     annualDiscountLookupKey: settings.prices[name].year,
     lookupKey: settings.prices[name].month,
     name,
   }));
+
+  const plans = async (): Promise<StripePlan[]> => {
+    const meters = await lineItems();
+
+    return [
+      ...legacy,
+      {
+        lookupKey: settings.catalogue.accounts,
+        name: "payAsYouGo",
+        ...Option.match(meters, {
+          onNone: () => ({}),
+          onSome: (items) => ({ lineItems: [...items] }),
+        }),
+      },
+    ];
+  };
 
   const plugin = stripe({
     onEvent: async (event) => {
@@ -795,7 +964,7 @@ export const stripeBilling = (
     subscription: {
       authorizeReference: mayBill,
       enabled: true,
-      getCheckoutSessionParams: checkoutParams(hooks),
+      getCheckoutSessionParams: checkoutParams(hooks, lineItems),
       plans,
       requireEmailVerification: true,
     },
@@ -806,7 +975,9 @@ export const stripeBilling = (
     hooks: {
       before: [
         {
-          handler: createAuthMiddleware(orderedChange(client, settings, hooks)),
+          handler: createAuthMiddleware(
+            orderedChange(client, settings, hooks, lineItems)
+          ),
           matcher: (ctx: { readonly path?: string }) =>
             ctx.path === "/subscription/upgrade",
         },

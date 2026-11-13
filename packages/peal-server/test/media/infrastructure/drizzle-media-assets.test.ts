@@ -14,8 +14,12 @@ import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-asse
 import { mediaAssets } from "#media/infrastructure/schema.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DatabaseTest } from "#test/media/support.ts";
+
+// A workspace that shares its storage with no other.
+const alone = Effect.succeed<readonly WorkspaceId[]>([]);
 
 const RepositoryTest = DrizzleMediaAssetsLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -88,7 +92,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         const since = DateTime.makeUnsafe("2026-06-15T06:00:00Z");
         const allowance = Option.some(5_000_000_000);
 
-        yield* assets.insertWithin(first, allowance, since);
+        yield* assets.insertWithin(first, allowance, since, alone);
 
         assert.strictEqual(
           yield* assets.storedBytes(workspaceId, since),
@@ -112,7 +116,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         });
 
         const refused = yield* assets
-          .insertWithin(second, allowance, since)
+          .insertWithin(second, allowance, since, alone)
           .pipe(Effect.flip);
 
         assert.deepInclude(refused, {
@@ -124,7 +128,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         // An upload too old to arrive counts for nothing; no limit takes it.
         assert.strictEqual(yield* assets.storedBytes(workspaceId, later), 0);
 
-        yield* assets.insertWithin(second, Option.none(), since);
+        yield* assets.insertWithin(second, Option.none(), since, alone);
 
         assert.strictEqual(
           yield* assets.storedBytes(workspaceId, since),

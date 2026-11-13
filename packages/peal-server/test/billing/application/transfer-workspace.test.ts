@@ -68,7 +68,7 @@ const TransferTest = TransferWorkspace.layer.pipe(
 );
 
 // The free plan's channels.
-const freeChannels = 3;
+const freeChannels = 2;
 
 /** The person, as an owner of the workspace in their own session. */
 const ownerIn = (workspaceId: WorkspaceId, userId: UserId) =>

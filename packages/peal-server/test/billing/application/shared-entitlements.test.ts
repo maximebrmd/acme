@@ -18,7 +18,7 @@ const alone = WorkspaceIdSchema.make("0d3f6b1a-2c4e-4f5a-8b6c-7d8e9f0a1b2c");
 // The partner's home workspace holds the plan of the workspace it owns.
 const HoldersTest = Layer.succeed(
   PlanHolders,
-  PlanHolders.of({
+  PlanHolders.ofHolders({
     holderOf: (workspaceId) =>
       Effect.succeed(workspaceId === owned ? home : workspaceId),
     holdersOf: (workspaceIds) =>

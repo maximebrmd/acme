@@ -480,7 +480,7 @@ const fill = Effect.fn("test.fill")(function* fill(
   }
 });
 
-// The free plan, which allows 3 channels.
+// The free plan, which allows 2 accounts.
 const FreePlanTest = Layer.mergeAll(
   connectAdaptersOn(everyWorkspaceOn("free")),
   RecordedNotices.layer
@@ -497,7 +497,7 @@ layer(FreePlanTest)(
           const workspaceId = yield* freshWorkspace;
           const location = locationOf(workspaceId);
 
-          yield* fill(workspaceId, 2);
+          yield* fill(workspaceId, 1);
 
           on.google.setBusinessAccounts([
             { ...businessAccount, locations: [location] },
@@ -515,7 +515,7 @@ layer(FreePlanTest)(
             ({ accountId }) => accountId
           );
 
-          // Two channels and two locations would make four.
+          // One channel and two locations would make three.
           assert.deepStrictEqual(
             yield* Effect.flip(
               on.connect.choose(manager(workspaceId), "googleBusiness", {
@@ -524,10 +524,10 @@ layer(FreePlanTest)(
               })
             ),
             new PlanLimitReached({
-              allowed: 3,
+              allowed: 2,
               limit: "channels",
-              needed: 4,
-              used: 2,
+              needed: 3,
+              used: 1,
             })
           );
 

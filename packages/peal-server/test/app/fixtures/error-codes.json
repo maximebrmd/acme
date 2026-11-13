@@ -505,6 +505,11 @@
     "tag": "PlanLimitReached"
   },
   {
+    "code": "plan_not_sold",
+    "status": 409,
+    "tag": "PlanNotSold"
+  },
+  {
     "code": "plan_too_small",
     "status": 409,
     "tag": "PlanTooSmall"

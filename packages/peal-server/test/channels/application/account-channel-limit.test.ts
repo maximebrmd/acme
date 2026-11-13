@@ -7,6 +7,7 @@ import { SqlClient } from "effect/sql";
 
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
@@ -42,7 +43,7 @@ import {
 } from "#test/channels/support.ts";
 import { PartnerOwnershipLive } from "#workspace/container.ts";
 
-// The free plan, which allows 3 channels, shared across billing accounts.
+// The free plan, which allows 2 accounts, shared across billing accounts.
 const AccountFreePlanTest = Layer.mergeAll(
   ConnectChannel.layer,
   ChannelUsage.layer
@@ -55,11 +56,15 @@ const AccountFreePlanTest = Layer.mergeAll(
       DrizzleConnectChoices,
       SqlChannelLocks,
       AccountChannelAllowanceLive.pipe(
-        Layer.provide(everyWorkspaceOn("free")),
-        Layer.provide(PartnerOwnershipLive),
         Layer.provide(
-          Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
-        )
+          AccountPlanPoolsLive.pipe(
+            Layer.provide(PartnerOwnershipLive),
+            Layer.provide(
+              Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))
+            )
+          )
+        ),
+        Layer.provide(everyWorkspaceOn("free"))
       ),
       MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
     )
@@ -68,7 +73,7 @@ const AccountFreePlanTest = Layer.mergeAll(
   Layer.provideMerge(accountsTest)
 );
 
-const freeChannels = 3;
+const freeChannels = 2;
 
 const manager = (workspaceId: WorkspaceId) =>
   actorIn(workspaceId, ["channel:read", "channel:connect"]);
@@ -107,14 +112,14 @@ const twoOfOne = Effect.gen(function* twoOfOne() {
 });
 
 layer(AccountFreePlanTest)("a person's workspaces on one plan", (it) => {
-  it.effect("refuse a fourth account in either, three taken across them", () =>
+  it.effect("refuse a third account in either, two taken across them", () =>
     Effect.gen(function* full() {
       const instance = yield* mastodonInstance();
       const connect = yield* ConnectChannel;
       const usage = yield* ChannelUsage;
       const [first, second] = yield* twoOfOne;
 
-      yield* fill(first, 2);
+      yield* fill(first, 1);
       yield* fill(second, 1);
 
       for (const workspaceId of [first, second]) {
@@ -154,7 +159,7 @@ layer(AccountFreePlanTest)("a person's workspaces on one plan", (it) => {
   );
 
   it.effect(
-    "add three in all when four of them connect at once, while one schedules",
+    "add two in all when three of them connect at once, while one schedules",
     () =>
       Effect.gen(function* raced() {
         const instance = yield* mastodonInstance();
@@ -164,10 +169,10 @@ layer(AccountFreePlanTest)("a person's workspaces on one plan", (it) => {
         const payer = yield* person;
 
         const workspaces = yield* Effect.all(
-          Array.from({ length: 4 }, () => workspaceOwnedBy([payer]))
+          Array.from({ length: 3 }, () => workspaceOwnedBy([payer]))
         );
 
-        // Each started while the plan's three were free.
+        // Each started while the free tier's two were free.
         const started = yield* Effect.all(
           workspaces.map((workspaceId) =>
             connect
@@ -206,7 +211,7 @@ layer(AccountFreePlanTest)("a person's workspaces on one plan", (it) => {
             .slice(0, workspaces.length)
             .map(({ _tag }) => _tag)
             .toSorted(),
-          ["Failure", "Success", "Success", "Success"]
+          ["Failure", "Success", "Success"]
         );
 
         const own = yield* usage.connectedIn(workspaces);
@@ -255,13 +260,17 @@ const UnbilledTest = ChannelUsage.layer.pipe(
       DrizzleChannelRepository,
       AccountChannelAllowanceLive.pipe(
         Layer.provide(
-          Layer.mergeAll(
-            UnmeteredTest,
-            PartnerOwnershipLive,
-            Layer.mock(BillingAccounts, {}),
-            Layer.succeed(BillingMode, BillingMode.of({ enabled: false }))
+          AccountPlanPoolsLive.pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                PartnerOwnershipLive,
+                Layer.mock(BillingAccounts, {}),
+                Layer.succeed(BillingMode, BillingMode.of({ enabled: false }))
+              )
+            )
           )
-        )
+        ),
+        Layer.provide(UnmeteredTest)
       )
     )
   ),

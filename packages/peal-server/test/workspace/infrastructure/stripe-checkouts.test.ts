@@ -50,13 +50,19 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
       return json({
         data: (
           [
-            [customer, "active"],
-            [customer, "canceled"],
-            ["cus_someone_else", "past_due"],
+            [customer, "active", "licensed"],
+            [customer, "canceled", "licensed"],
+            ["cus_someone_else", "past_due", "licensed"],
+            // Per-account pricing's: its prices are metered.
+            [customer, "past_due", "metered"],
           ] as const
-        ).map(([owner, status], index) => ({
+        ).map(([owner, status, usage], index) => ({
           customer: owner,
           id: `sub_test_${customer}_${String(index)}`,
+          items: {
+            data: [{ price: { recurring: { usage_type: usage } } }],
+            object: "list",
+          },
           object: "subscription",
           status,
         })),
@@ -192,7 +198,7 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
 
         assert.sameMembers(
           [...(yield* checkouts.atStripe(workspaceId))],
-          ["active", "canceled", "active", "canceled"]
+          ["active", "canceled", "past_due", "active", "canceled", "past_due"]
         );
         assert.sameDeepMembers(
           stripe
@@ -212,7 +218,7 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
   );
 
   it.effect(
-    "cancel at once, unprorated, every subscription that may bill the workspace",
+    "cancel at once, unprorated, every subscription that may bill the workspace, one that bills usage invoiced to now",
     () =>
       Effect.gen(function* cancels() {
         const stripe = yield* fakeStripe();
@@ -226,7 +232,7 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
           mayBill: (status) => status !== "canceled",
         });
 
-        assert.strictEqual(cancelled, 3);
+        assert.strictEqual(cancelled, 5);
 
         const deletes = stripe
           .requests()
@@ -237,6 +243,8 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
           [
             `/v1/subscriptions/sub_test_${customer}_0`,
             `/v1/subscriptions/sub_test_${customer}b_0`,
+            `/v1/subscriptions/sub_test_${customer}_3`,
+            `/v1/subscriptions/sub_test_${customer}b_3`,
             "/v1/subscriptions/sub_known",
             "/v1/subscriptions/sub_missing",
           ]
@@ -249,7 +257,10 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
           const sent = body === "" ? request.query : new URLSearchParams(body);
 
           assert.strictEqual(sent.get("prorate"), "false");
-          assert.strictEqual(sent.get("invoice_now"), "false");
+          assert.strictEqual(
+            sent.get("invoice_now"),
+            request.path.endsWith("_3") ? "true" : "false"
+          );
           assert.isNotNull(sent.get("cancellation_details[comment]"));
           // A deletion tried again cancels each one once.
           assert.strictEqual(

@@ -190,7 +190,7 @@ layer(billingWith(true))("billing on a server that bills", (it) => {
 
       assert.deepStrictEqual(
         found.plans.map(({ plan }) => plan),
-        ["free", "starter", "pro", "business", "agency"]
+        ["free", "payAsYouGo"]
       );
       assert.strictEqual(found.usage.channels, 2);
 
@@ -214,7 +214,7 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
 
       assert.isTrue(Option.isNone(entitlements.plan));
       assert.isTrue(
-        Object.values(entitlements.allowances).every(Option.isNone)
+        Object.values(entitlements.allowancesFor(0)).every(Option.isNone)
       );
 
       const found = yield* BillingOverview.use((billing) =>

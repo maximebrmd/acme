@@ -2,6 +2,7 @@ import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
+import { entitles } from "#billing/domain/subscription.ts";
 import type { SubscriptionStatus } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
@@ -218,6 +219,34 @@ export class RecordSubscription extends Context.Service<
                 recorded.workspaceId,
                 stripeSubscriptionId,
                 "orderedDuringTrial"
+              ),
+            { discard: true }
+          );
+        }
+
+        // Per-account pricing now runs: a legacy plan the workspace still
+        // pays for ends with the period it paid for (it is not ended at
+        // once: no credit is made for its unused time here).
+        if (
+          outcome !== "ignored" &&
+          recorded.plan === "payAsYouGo" &&
+          paidFor(recorded.status)
+        ) {
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          yield* Effect.forEach(
+            held.filter(
+              (legacy) =>
+                legacy.plan !== "payAsYouGo" &&
+                legacy.status !== "trialing" &&
+                !legacy.cancelAtPeriodEnd &&
+                entitles(legacy)
+            ),
+            ({ stripeSubscriptionId }) =>
+              stripe.cancelAtPeriodEnd(
+                recorded.workspaceId,
+                stripeSubscriptionId,
+                `moved-${recorded.stripeSubscriptionId}`
               ),
             { discard: true }
           );

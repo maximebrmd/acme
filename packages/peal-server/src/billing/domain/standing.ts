@@ -1,9 +1,8 @@
 import { Option, Schema } from "effect";
 
 import type { PaidPlan } from "#shared/domain/plan.ts";
-import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
 
-import { planAllowances } from "./plans.ts";
+import { allowancesOf } from "./plans.ts";
 import type { Allowances } from "./plans.ts";
 
 /**
@@ -59,12 +58,14 @@ export const mustReduce = (excesses: readonly Excess[]): boolean =>
   excesses.some(({ limit }) => limit !== "mediaStorage");
 
 /**
- * The smallest paid plan that holds everything the workspace has, to offer
- * a workspace over its plan; none past the largest.
+ * The plan that holds everything the workspace has, to offer a workspace
+ * over its plan: `payAsYouGo`, the only one sold, unless its media is
+ * beyond even what per-account pricing stores for its accounts.
  */
 export const planHolding = (held: Holdings): Option.Option<PaidPlan> =>
-  Option.fromUndefinedOr(
-    LegacyPaidPlanSchema.literals.find(
-      (plan) => excessesOf(planAllowances[plan], held).length === 0
-    )
-  );
+  excessesOf(
+    allowancesOf("payAsYouGo", { accounts: held.channels, freeTier: true }),
+    held
+  ).length === 0
+    ? Option.some("payAsYouGo")
+    : Option.none();

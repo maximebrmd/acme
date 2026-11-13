@@ -460,6 +460,8 @@ export { NothingToCancel } from "./nothing-to-cancel.ts";
 
 export { ReductionRefused } from "./reduction-refused.ts";
 
+export { PlanNotSold } from "./plan-not-sold.ts";
+
 export { PlanTooSmall } from "./plan-too-small.ts";
 
 export { TrialUnavailable } from "./trial-unavailable.ts";

@@ -1,10 +1,17 @@
 // The parameters Peal adds to Better Auth's Stripe Checkout: Stripe Tax
-// always, as prices are tax-exclusive at Stripe and shown VAT included,
-// and, for the trial, its days, no payment method, and a short life.
+// always, as prices are tax-exclusive at Stripe; for per-account pricing, a
+// card always, the period anchored on the first of the month (UTC), and the
+// catalogue's other prices as line items, without a quantity.
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
+import type { Stripe } from "stripe";
 
-import { checkoutParams } from "#workspace/infrastructure/auth/billing.ts";
+import { catalogueKeysOf } from "#shared/infrastructure/stripe-settings.ts";
+import {
+  catalogueLineItems,
+  checkoutParams,
+  firstOfNextMonth,
+} from "#workspace/infrastructure/auth/billing.ts";
 import type {
   BillingHooks,
   CheckoutAnswer,
@@ -35,10 +42,21 @@ const answering = (answer: CheckoutAnswer): BillingHooks => ({
   },
 });
 
-const paramsFor = async (answer: CheckoutAnswer) =>
-  await checkoutParams(answering(answer))(
+const meterItems: readonly Stripe.Checkout.SessionCreateParams.LineItem[] = [
+  { price: "price_synthetic_messages" },
+];
+
+const paramsFor = async (
+  answer: CheckoutAnswer,
+  plan = "payAsYouGo",
+  items: Option.Option<typeof meterItems> = Option.some(meterItems)
+) =>
+  await checkoutParams(
+    answering(answer),
+    async () => await Promise.resolve(items)
+  )(
     {
-      plan: { name: "pro" },
+      plan: { name: plan },
       subscription: { referenceId: workspaceId },
       user: { email: "member@example.com", id: userId },
     },
@@ -57,17 +75,84 @@ describe(checkoutParams, () => {
     });
   });
 
-  it("opens the trial's checkout for 35 minutes, within its hold", async () => {
-    const before = Math.floor(Date.now() / 1000);
-    const { params } = await paramsFor({ _tag: "start", trialDays: 14 });
+  it("asks for a card and bills calendar months for per-account pricing", async () => {
+    const { params } = await paramsFor({ _tag: "start", trialDays: null });
 
     expect(params).toMatchObject({
-      automatic_tax: { enabled: true },
-      payment_method_collection: "if_required",
-      subscription_data: { trial_period_days: 14 },
+      payment_method_collection: "always",
+      subscription_data: { proration_behavior: "none" },
     });
     expect(
-      "expires_at" in params ? params.expires_at : 0
-    ).toBeGreaterThanOrEqual(before + 35 * 60);
+      "subscription_data" in params
+        ? params.subscription_data?.billing_cycle_anchor
+        : 0
+    ).toBe(firstOfNextMonth(Date.now()));
+  });
+
+  it("opens no checkout for per-account pricing while its prices cannot be found", async () => {
+    await expect(
+      paramsFor({ _tag: "start", trialDays: null }, "payAsYouGo", Option.none())
+    ).rejects.toMatchObject({ body: { code: "CHECKOUT_UNAVAILABLE" } });
+  });
+});
+
+describe(firstOfNextMonth, () => {
+  it("anchors on the next first of the month, at midnight UTC", () => {
+    expect(firstOfNextMonth(Date.parse("2026-11-13T15:30:00Z"))).toBe(
+      Date.parse("2026-12-01T00:00:00Z") / 1000
+    );
+    expect(firstOfNextMonth(Date.parse("2026-12-31T23:59:59Z"))).toBe(
+      Date.parse("2027-01-01T00:00:00Z") / 1000
+    );
+    expect(firstOfNextMonth(Date.parse("2026-12-01T00:00:00Z"))).toBe(
+      Date.parse("2027-01-01T00:00:00Z") / 1000
+    );
+  });
+});
+
+describe(catalogueLineItems, () => {
+  const keys = catalogueKeysOf("peal");
+
+  it("lists each meter's price by its lookup key, without a quantity", async () => {
+    const asked: string[] = [];
+
+    const items = await catalogueLineItems(
+      {
+        list: async ({ lookup_keys: lookupKeys }) => {
+          asked.push(...(lookupKeys ?? []));
+
+          return await Promise.resolve({
+            data: (lookupKeys ?? []).map((key) => ({ id: `price_${key}` })),
+          });
+        },
+      },
+      keys
+    );
+
+    expect(asked).toStrictEqual([
+      keys.outboundMessages,
+      keys.managedAds,
+      keys.assistantRequests,
+      keys.assistantImages,
+      keys.xApi,
+    ]);
+    expect(items).toStrictEqual(
+      Option.some(asked.map((key) => ({ price: `price_${key}` })))
+    );
+  });
+
+  it("finds none when a price is missing or Stripe does not answer", async () => {
+    await expect(
+      catalogueLineItems(
+        { list: async () => await Promise.resolve({ data: [] }) },
+        keys
+      )
+    ).resolves.toStrictEqual(Option.none());
+    await expect(
+      catalogueLineItems(
+        { list: async () => await Promise.reject(new Error("synthetic")) },
+        keys
+      )
+    ).resolves.toStrictEqual(Option.none());
   });
 });

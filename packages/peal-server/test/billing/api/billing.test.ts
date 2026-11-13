@@ -143,12 +143,10 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         });
         assert.deepStrictEqual(
           billing.plans.map(({ plan, price }) => [plan, price]),
+          // The plans a workspace can be on, which the rate card prices.
           [
             ["free", null],
-            ["starter", { month: 750, year: 7500 }],
-            ["pro", { month: 1250, year: 12_500 }],
-            ["business", { month: 2500, year: 25_000 }],
-            ["agency", { month: 5000, year: 50_000 }],
+            ["payAsYouGo", null],
           ]
         );
         assert.strictEqual(billing.currency, "eur");

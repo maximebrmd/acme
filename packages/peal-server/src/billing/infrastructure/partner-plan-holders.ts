@@ -9,7 +9,7 @@ export const PartnerPlanHoldersLive = Layer.effect(
   Effect.gen(function* PartnerPlanHoldersLive() {
     const ownership = yield* PartnerOwnership;
 
-    return PlanHolders.of({
+    return PlanHolders.ofHolders({
       holderOf: (workspaceId) =>
         ownership.ownerOf(workspaceId).pipe(
           Effect.map(

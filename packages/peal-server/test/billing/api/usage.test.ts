@@ -81,7 +81,7 @@ const reportsOn = (entitlements: typeof UnmeteredTest) =>
         ),
         Layer.succeed(
           PlanHolders,
-          PlanHolders.of({
+          PlanHolders.ofHolders({
             holderOf: (id) => Effect.succeed(id === tenantId ? homeId : id),
             holdersOf: () => Effect.die("not read here"),
           })

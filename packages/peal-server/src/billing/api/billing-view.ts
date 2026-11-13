@@ -87,7 +87,7 @@ export const billingView = (
     onNone: () => ({}),
     onSome: (view) => ({ account: accountView(view) }),
   }),
-  allowances: allowancesView(entitlements.allowances),
+  allowances: allowancesView(entitlements.allowancesFor(usage.channels)),
   currency,
   enabled: Option.isSome(entitlements.plan),
   plan: Option.getOrNull(entitlements.plan),

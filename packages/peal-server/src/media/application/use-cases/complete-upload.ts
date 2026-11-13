@@ -135,15 +135,19 @@ export const completeUpload = Effect.fn("Media.completeUpload")(
       return yield* settled(yield* assets.update(uploaded, "pending"));
     }
 
-    const allowance = yield* StorageAllowance.use((allowed) =>
-      allowed.bytes(workspaceId)
-    );
+    const allowed = yield* StorageAllowance;
+    const allowance = yield* allowed.bytes(workspaceId);
 
     // Past it, others may have taken the room: it is counted again, and a
     // file the plan no longer holds goes, the asset left pending.
     return yield* settled(
       yield* assets
-        .updateWithin(uploaded, allowance, pendingSince)
+        .updateWithin(
+          uploaded,
+          allowance,
+          pendingSince,
+          allowed.sharedWith(workspaceId)
+        )
         .pipe(
           Effect.tapErrorTag("PlanLimitReached", () =>
             storage.remove(asset.storageKey)

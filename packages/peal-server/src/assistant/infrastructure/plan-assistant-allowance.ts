@@ -20,13 +20,13 @@ export const PlanAssistantAllowanceLive = Layer.effect(
     // The day's requests, and whether the plan is on trial.
     const dayOf = (workspaceId: Parameters<typeof entitlements.of>[0]) =>
       entitlements.of(workspaceId).pipe(
-        Effect.map(({ allowances, subscription }) => ({
+        Effect.map((plan) => ({
           daily: Option.getOrElse(
-            allowances.assistantRequests,
+            plan.allowanceOf("assistantRequests"),
             () => configured
           ),
           trial: Option.exists(
-            subscription,
+            plan.subscription,
             ({ status }) => status === "trialing"
           ),
         })),

@@ -26,7 +26,7 @@ const workspaceId = WorkspaceIdSchema.make(
 );
 
 const allowancesWith = (
-  entitlements: typeof UnmeteredTest,
+  entitlements: Layer.Layer<WorkspaceEntitlements>,
   env: Record<string, string> = {}
 ) =>
   Layer.mergeAll(
@@ -78,12 +78,24 @@ const onPlan = (plan: Plan) =>
 describe("the plan allowances", () => {
   it.effect("follow the workspace's plan", () =>
     Effect.gen(function* plans() {
+      // The free tier: 2 accounts, no assistant on the server's models,
+      // members and posts unlimited.
       assert.deepStrictEqual(yield* onPlan("free"), {
-        assistantRequests: 3,
-        channels: Option.some(3),
-        scheduledPosts: Option.some(30),
-        scheduling: { allowed: Option.some(3), connected: 4 },
-        seats: { allowed: Option.some(2), taken: 3 },
+        assistantRequests: 0,
+        channels: Option.some(2),
+        scheduledPosts: Option.none(),
+        scheduling: { allowed: Option.some(2), connected: 4 },
+        seats: { allowed: Option.none(), taken: 3 },
+      });
+
+      // Per-account pricing: every account, and the legacy pro plan's
+      // daily assistant until its monthly meter.
+      assert.deepStrictEqual(yield* onPlan("payAsYouGo"), {
+        assistantRequests: 20,
+        channels: Option.none(),
+        scheduledPosts: Option.none(),
+        scheduling: { allowed: Option.none(), connected: 4 },
+        seats: { allowed: Option.none(), taken: 3 },
       });
 
       assert.deepStrictEqual(yield* onPlan("business"), {
@@ -140,6 +152,7 @@ describe("the plan allowances", () => {
                     of: () =>
                       Effect.succeed(
                         new Entitlements({
+                          freeTier: true,
                           plan: Option.some("pro"),
                           subscription: Option.some(
                             subscriptionOf({ plan: "pro", status, workspaceId })

@@ -23,14 +23,14 @@ export const PlanPostAllowanceLive = Layer.effect(
         Effect.all({
           allowed: entitlements
             .of(workspaceId)
-            .pipe(Effect.map(({ allowances }) => allowances.channels)),
+            .pipe(Effect.map((plan) => plan.allowanceOf("channels"))),
           connected: usage.connected(workspaceId),
         }),
       members: (workspaceId) =>
         Effect.all({
           allowed: entitlements
             .of(workspaceId)
-            .pipe(Effect.map(({ allowances }) => allowances.members)),
+            .pipe(Effect.map((plan) => plan.allowanceOf("members"))),
           taken: seats
             .taken(workspaceId)
             .pipe(Effect.mapError(({ cause }) => new DatabaseError({ cause }))),
@@ -38,7 +38,7 @@ export const PlanPostAllowanceLive = Layer.effect(
       scheduledPerMonth: (workspaceId) =>
         entitlements
           .of(workspaceId)
-          .pipe(Effect.map(({ allowances }) => allowances.scheduledPosts)),
+          .pipe(Effect.map((plan) => plan.allowanceOf("scheduledPosts"))),
     });
   })
 );

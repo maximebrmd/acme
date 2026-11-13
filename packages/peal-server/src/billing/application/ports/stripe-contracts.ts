@@ -99,6 +99,17 @@ export class StripeContracts extends Context.Service<
       trialEnd: DateTime.Utc
     ) => Effect.Effect<void, StripeUnreachable>;
     /**
+     * Ends the subscription now and invoices the usage it has not billed
+     * yet, to this moment, without proration: how per-account pricing,
+     * billed for the month past, ends at once. Asked twice, Stripe ends it
+     * once.
+     */
+    readonly endAndInvoice: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      reason: EndReason
+    ) => Effect.Effect<void, StripeUnreachable>;
+    /**
      * Ends the subscription now, without proration or final invoice. Asked
      * twice, Stripe ends it once.
      */

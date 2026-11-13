@@ -650,7 +650,7 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
   );
 });
 
-// The free plan, which allows 3 channels.
+// The free plan, which allows 2 accounts.
 const FreePlanMetaTest = connectChannelWith(
   MetaAuthorizersTest,
   everyWorkspaceOn("free")
@@ -687,7 +687,7 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
         assert.deepStrictEqual(
           refused,
           new PlanLimitReached({
-            allowed: 3,
+            allowed: 2,
             limit: "channels",
             needed: 4,
             used: 1,
@@ -697,15 +697,15 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
 
         // The choice is still there, for fewer accounts.
         const chosen = yield* connect.choose(manager(workspaceId), "facebook", {
-          accountIds: ["701", "702"],
+          accountIds: ["701"],
           selection: offered.selection,
         });
 
         assert.deepStrictEqual(
           chosen.map(({ accountId }) => accountId),
-          ["701", "702"]
+          ["701"]
         );
-        assert.lengthOf(yield* repository.list(workspaceId), 3);
+        assert.lengthOf(yield* repository.list(workspaceId), 2);
       })
   );
 
@@ -728,7 +728,7 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
           Effect.flatMap(choiceOf)
         );
 
-        for (const added of [1, 2]) {
+        for (const added of [1]) {
           const channel = yield* freshChannel(workspaceId, {
             accountId: `synthetic-${added}`,
           });
@@ -752,7 +752,7 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
         );
 
         assert.strictEqual(results.filter(Result.isSuccess).length, 1);
-        assert.lengthOf(yield* repository.list(workspaceId), 3);
+        assert.lengthOf(yield* repository.list(workspaceId), 2);
       })
   );
 });
@@ -771,6 +771,7 @@ const DowngradingTest = Layer.succeed(
           left > 0
             ? unmetered
             : new Entitlements({
+                freeTier: true,
                 plan: Option.some("free"),
                 subscription: Option.none(),
               })
@@ -798,7 +799,7 @@ layer(DowngradingMetaTest)(
           const repository = yield* ChannelRepository;
 
           // As many channels as the free plan allows.
-          for (const added of [1, 2, 3]) {
+          for (const added of [1, 2]) {
             const channel = yield* freshChannel(workspaceId, {
               accountId: `synthetic-${added}`,
             });
@@ -825,13 +826,13 @@ layer(DowngradingMetaTest)(
           assert.deepStrictEqual(
             refused,
             new PlanLimitReached({
-              allowed: 3,
+              allowed: 2,
               limit: "channels",
-              needed: 4,
-              used: 3,
+              needed: 3,
+              used: 2,
             })
           );
-          assert.lengthOf(yield* repository.list(workspaceId), 3);
+          assert.lengthOf(yield* repository.list(workspaceId), 2);
 
           // Room for one more, then none: the first goes, and the choice with
           // it.
@@ -845,7 +846,7 @@ layer(DowngradingMetaTest)(
           );
 
           assert.strictEqual(partly._tag, "PlanLimitReached");
-          assert.lengthOf(yield* repository.list(workspaceId), 4);
+          assert.lengthOf(yield* repository.list(workspaceId), 3);
 
           yield* Ref.set(unmeteredReads, Number.POSITIVE_INFINITY);
 

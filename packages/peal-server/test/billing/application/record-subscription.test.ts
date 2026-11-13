@@ -108,6 +108,8 @@ const PortsInMemory = Layer.mergeAll(
           credit: (_workspace, id) => asked(`credit ${id}`),
           endAtTrialEnd: (_workspace, id, end) =>
             asked(`endAtTrialEnd ${id} ${DateTime.formatIso(end)}`),
+          endAndInvoice: (_workspace, id, reason) =>
+            asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
           isBusiness: () => Effect.succeed(false),
           paidInvoices: () => Effect.succeed([]),
@@ -229,6 +231,49 @@ layer(RecordTest)("recording a subscription", (it) => {
 
         assert.deepStrictEqual(yield* askedOfStripe, [
           "endNow sub_synthetic_trial orderedDuringTrial",
+        ]);
+      })
+  );
+
+  it.effect(
+    "ends a trial at once, and a legacy plan at its period's end, once per-account pricing is recorded",
+    () =>
+      Effect.gen(function* moved() {
+        yield* reset;
+        yield* record({ cancelAt: Option.some(trialEnd) });
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
+        yield* record({
+          plan: "payAsYouGo",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        });
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "endNow sub_synthetic_trial orderedDuringTrial",
+          "cancelAtPeriodEnd sub_synthetic_legacy",
+        ]);
+
+        // Recorded again, Stripe is asked again under the same keys.
+        const entitlements = (yield* RecordLog.use(({ held }) =>
+          Ref.get(held)
+        )).map(({ plan, stripeSubscriptionId }) => [
+          stripeSubscriptionId,
+          plan,
+        ]);
+
+        assert.deepInclude(entitlements, [
+          "sub_synthetic_accounts",
+          "payAsYouGo",
         ]);
       })
   );

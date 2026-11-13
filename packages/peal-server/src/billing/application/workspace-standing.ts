@@ -79,7 +79,7 @@ export class WorkspaceStanding extends Context.Service<
           { concurrency: "unbounded" }
         );
 
-        const over = excessesOf(current.allowances, used);
+        const over = excessesOf(current.allowancesFor(used.channels), used);
 
         const standing: Standing = {
           mustReduce: mustReduce(over),
@@ -116,7 +116,10 @@ export class WorkspaceStanding extends Context.Service<
                 seated !== undefined &&
                 // Media never decides it, and is not read.
                 mustReduce(
-                  excessesOf(plan.allowances, { ...seated, mediaStorage: 0 })
+                  excessesOf(plan.allowancesFor(seated.channels), {
+                    ...seated,
+                    mediaStorage: 0,
+                  })
                 )
               );
             })

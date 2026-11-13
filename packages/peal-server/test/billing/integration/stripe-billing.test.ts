@@ -162,6 +162,36 @@ const billedWorkspace = Effect.fn("billedWorkspace")(function* billedWorkspace(
   return { owner, workspaceId };
 });
 
+// The created event on a legacy plan, as a subscription bought before
+// per-account pricing holds it: the only plans that still limit members.
+const onLegacyPlan = (payload: string, plan: "business" | "starter") =>
+  payload
+    .replaceAll(
+      '"lookup_key": "peal_pro_monthly"',
+      `"lookup_key": "peal_${plan}_monthly"`
+    )
+    .replaceAll("price_synthetic_pro", `price_synthetic_${plan}`);
+
+// A workspace on the legacy starter plan: 5 channels and 3 members.
+const starterWorkspace = Effect.fn("starterWorkspace")(
+  function* starterWorkspace(label: string) {
+    const delivery = newDelivery();
+    const billed = yield* billedWorkspace(label, delivery.customerId);
+
+    assert.strictEqual(
+      yield* deliver(
+        onLegacyPlan(
+          payloadOf("customer.subscription.created", delivery),
+          "starter"
+        )
+      ),
+      200
+    );
+
+    return { ...billed, delivery };
+  }
+);
+
 const recordedEvents = Effect.fn("recordedEvents")(function* recordedEvents(
   eventId: string
 ) {
@@ -326,23 +356,25 @@ layer(BillingIntegration, {
       assert.isTrue(billing.enabled);
       assert.strictEqual(billing.plan, "free");
       assert.isNull(billing.subscription);
+      // The rate card's free tier: 2 accounts, 1 GB, no assistant on the
+      // server's models, members and posts unlimited.
       assert.deepStrictEqual(billing.allowances, {
-        assistantRequests: 3,
-        channels: 3,
-        mediaStorage: 500_000_000,
-        members: 2,
-        scheduledPosts: 30,
+        assistantRequests: 0,
+        channels: 2,
+        mediaStorage: 1_000_000_000,
+        members: null,
+        scheduledPosts: null,
       });
       assert.strictEqual(billing.usage.members, 1);
       assert.strictEqual(billing.usage.channels, 0);
       assert.strictEqual(billing.usage.mediaStorage, 0);
       assert.deepStrictEqual(
         billing.plans.map(({ plan }) => plan),
-        ["free", "starter", "pro", "business", "agency"]
+        ["free", "payAsYouGo"]
       );
-      // A new workspace of a new account may try the paid plan.
+      // No trial: the free accounts replace it.
       assert.deepStrictEqual(billing.trial, {
-        available: true,
+        available: false,
         days: 14,
         plan: "pro",
       });
@@ -371,7 +403,7 @@ layer(BillingIntegration, {
               cancelUrl: `/app/${workspaceId}/billing`,
               disableRedirect: true,
               locale: "fr",
-              plan: "pro",
+              plan: "payAsYouGo",
               successUrl: `/app/${workspaceId}/billing?checkout=done`,
               ...body,
             },
@@ -391,13 +423,14 @@ layer(BillingIntegration, {
         );
 
         const order = yield* ordered(owner, workspaceId, {
-          interval: "year",
-          plan: "pro",
+          interval: "month",
+          plan: "payAsYouGo",
           trial: false,
         });
 
         // An order is for its plan and interval only.
         const otherInterval = yield* upgrade(owner, {
+          annual: true,
           customerType: "organization",
           metadata: { orderId: order.id },
           referenceId: workspaceId,
@@ -406,7 +439,6 @@ layer(BillingIntegration, {
         assert.strictEqual(otherInterval.status, 400);
 
         const started = yield* upgrade(owner, {
-          annual: true,
           customerType: "organization",
           metadata: { orderId: order.id },
           referenceId: workspaceId,
@@ -417,7 +449,6 @@ layer(BillingIntegration, {
 
         // An order is used once.
         const again = yield* upgrade(owner, {
-          annual: true,
           customerType: "organization",
           metadata: { orderId: order.id },
           referenceId: workspaceId,
@@ -891,42 +922,70 @@ layer(BillingIntegration, {
     })
   );
 
-  it.effect("refuses an invitation the plan's members have no room for", () =>
-    Effect.gen(function* members() {
-      const app = yield* TestApp;
-      const owner = yield* signedUp("crowded");
-      const workspaceId = yield* workspaceOf(owner, "Crowded");
+  it.effect(
+    "lets a workspace on the free tier invite any number of members",
+    () =>
+      Effect.gen(function* unlimited() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("roomy");
+        const workspaceId = yield* workspaceOf(owner, "Roomy");
 
-      const invite = (email: string) =>
-        app.request("/api/auth/organization/invite-member", {
-          body: { email, organizationId: workspaceId, role: "editor" },
-          headers: { cookie: owner.cookies },
+        const replies = yield* Effect.forEach([1, 2, 3, 4, 5], (index) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: {
+              email: newEmail(`roomy-${String(index)}`),
+              organizationId: workspaceId,
+              role: "editor",
+            },
+            headers: { cookie: owner.cookies },
+          })
+        );
+
+        // The sixth member is invited as the second was.
+        assert.deepStrictEqual(statusesOf(replies), [200, 200, 200, 200, 200]);
+      })
+  );
+
+  it.effect(
+    "refuses an invitation a legacy plan's members have no room for",
+    () =>
+      Effect.gen(function* members() {
+        const app = yield* TestApp;
+        const { owner, workspaceId } = yield* starterWorkspace("crowded");
+
+        const invite = (email: string) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: { email, organizationId: workspaceId, role: "editor" },
+            headers: { cookie: owner.cookies },
+          });
+
+        const first = newEmail("first");
+
+        // The starter plan has three members: the owner, and two invited.
+        assert.strictEqual((yield* invite(first)).status, 200);
+        assert.strictEqual((yield* invite(newEmail("second"))).status, 200);
+
+        const third = yield* invite(newEmail("third"));
+
+        assert.strictEqual(third.status, 402);
+
+        // With what a client needs to offer the way out: per-account
+        // pricing, the only plan sold.
+        assert.deepStrictEqual(yield* bodyOf(LimitErrorSchema, third), {
+          allowed: 3,
+          billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+          code: "MEMBER_LIMIT_REACHED",
+          limit: "members",
+          plan: "starter",
+          planWithRoom: "payAsYouGo",
+          used: 3,
         });
 
-      const first = newEmail("first");
-
-      // The free plan has two members: the owner, and one invited.
-      assert.strictEqual((yield* invite(first)).status, 200);
-
-      const second = yield* invite(newEmail("second"));
-
-      assert.strictEqual(second.status, 402);
-
-      // With what a client needs to offer the way out.
-      assert.deepStrictEqual(yield* bodyOf(LimitErrorSchema, second), {
-        allowed: 2,
-        billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
-        code: "MEMBER_LIMIT_REACHED",
-        limit: "members",
-        plan: "free",
-        planWithRoom: "starter",
-        used: 2,
-      });
-
-      // Inviting the same person again replaces their invitation.
-      assert.strictEqual((yield* invite(first)).status, 200);
-    })
+        // Inviting the same person again replaces their invitation.
+        assert.strictEqual((yield* invite(first)).status, 200);
+      })
   );
+
   it.effect(
     "keeps a member when two owners each choose to keep only themselves, at once",
     () =>
@@ -935,16 +994,29 @@ layer(BillingIntegration, {
         const first = yield* signedUp("keeper-a");
         const second = yield* signedUp("keeper-b");
         const editor = yield* signedUp("keeper-c");
+        const other = yield* signedUp("keeper-d");
 
         const outcomes = yield* Effect.forEach(
           Array.from({ length: 8 }),
           Effect.fnUntraced(function* once() {
-            // Over the free plan's two members, as after a trial: put
-            // there directly, since no route lets a workspace get there.
+            // Over the legacy starter plan's three members, as after a
+            // plan shrank: put there directly, since no route lets a
+            // workspace get there.
             const workspaceId = randomUUID();
+            const delivery = newDelivery();
 
-            yield* sql`INSERT INTO auth.organization (id, name, slug, created_at) VALUES (${workspaceId}, 'Keepers', ${`keepers-${workspaceId}`}, now())`;
-            yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${first.id}, 'owner', now()), (${workspaceId}, ${second.id}, 'owner', now()), (${workspaceId}, ${editor.id}, 'editor', now())`;
+            yield* sql`INSERT INTO auth.organization (id, name, slug, created_at, stripe_customer_id) VALUES (${workspaceId}, 'Keepers', ${`keepers-${workspaceId}`}, now(), ${delivery.customerId})`;
+            yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${first.id}, 'owner', now()), (${workspaceId}, ${second.id}, 'owner', now()), (${workspaceId}, ${editor.id}, 'editor', now()), (${workspaceId}, ${other.id}, 'editor', now())`;
+
+            assert.strictEqual(
+              yield* deliver(
+                onLegacyPlan(
+                  payloadOf("customer.subscription.created", delivery),
+                  "starter"
+                )
+              ),
+              200
+            );
 
             const keepOnly = (who: typeof first) =>
               post(who, `/api/workspaces/${workspaceId}/billing/reduction`, {
@@ -1100,7 +1172,7 @@ layer(BillingIntegration, {
   );
 
   it.effect(
-    "starts one trial per account and per workspace, without a payment method, then falls back to the free plan",
+    "starts no trial, and keeps one already running until it ends, then the free tier",
     () =>
       Effect.gen(function* trial() {
         const app = yield* TestApp;
@@ -1111,27 +1183,19 @@ layer(BillingIntegration, {
           delivery.customerId
         );
 
-        const order = yield* ordered(owner, workspaceId, {
-          interval: "month",
-          plan: "pro",
-          trial: true,
+        const refused = yield* post(
+          owner,
+          `/api/workspaces/${workspaceId}/billing/orders`,
+          { interval: "month", plan: "pro", startNow: true, trial: true }
+        );
+
+        assert.strictEqual(refused.status, 409);
+        assert.deepInclude(refused.body, {
+          _tag: "TrialUnavailable",
+          reason: "notOffered",
         });
 
-        const checkout = yield* app.request("/api/auth/subscription/upgrade", {
-          body: {
-            cancelUrl: `/app/${workspaceId}/billing`,
-            customerType: "organization",
-            disableRedirect: true,
-            metadata: { orderId: order.id },
-            plan: "pro",
-            referenceId: workspaceId,
-            successUrl: `/app/${workspaceId}/billing?checkout=done`,
-          },
-          headers: { cookie: owner.cookies },
-        });
-
-        assert.strictEqual(checkout.status, 200);
-
+        // A trial started before, as Stripe reports it.
         assert.strictEqual(
           yield* deliver(
             trialFor(
@@ -1147,7 +1211,6 @@ layer(BillingIntegration, {
 
         assert.strictEqual(trying.plan, "pro");
         assert.strictEqual(trying.subscription?.status, "trialing");
-        assert.isNotNull(trying.subscription?.trialEnd);
         assert.isFalse(trying.trial?.available);
 
         // Another workspace of the account is on the same account, and
@@ -1163,40 +1226,77 @@ layer(BillingIntegration, {
 
         assert.strictEqual((yield* billingOf(owner, anotherId)).plan, "pro");
 
-        // The same account, admin of another workspace: no second trial.
-        const colleague = yield* signedUp("trial-colleague");
-        const second = yield* workspaceOf(colleague, "Second");
-        const sql = yield* SqlClient.SqlClient;
-
-        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${second}, ${owner.id}, 'admin', now())`;
-
-        const refused = yield* post(
-          owner,
-          `/api/workspaces/${second}/billing/orders`,
-          { interval: "month", plan: "pro", startNow: true, trial: true }
-        );
-
-        assert.strictEqual(refused.status, 409);
-        assert.deepInclude(refused.body, {
-          _tag: "TrialUnavailable",
-          reason: "used",
-        });
-
         // Ended without a payment method, Stripe cancels it.
         assert.strictEqual(
           yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
           200
         );
 
-        const after = yield* billingOf(owner, workspaceId);
-
-        assert.strictEqual(after.plan, "free");
-        assert.isFalse(after.trial?.available);
+        assert.strictEqual((yield* billingOf(owner, workspaceId)).plan, "free");
       })
   );
 
   it.effect(
-    "changes a workspace's subscription only for an order, and opens a checkout of its own for a paid plan during the trial",
+    "puts a workspace on per-account pricing from a signed event, and back on the free tier when it ends or is unpaid",
+    () =>
+      Effect.gen(function* perAccount() {
+        for (const ending of ["deleted", "unpaid"] as const) {
+          const delivery = newDelivery();
+
+          const { owner, workspaceId } = yield* billedWorkspace(
+            `per-account-${ending}`,
+            delivery.customerId
+          );
+
+          const created = payloadOf(
+            "customer.subscription.created.pay-as-you-go",
+            delivery
+          );
+
+          assert.strictEqual(yield* deliver(created), 200);
+
+          const paying = yield* billingOf(owner, workspaceId);
+
+          assert.strictEqual(paying.plan, "payAsYouGo");
+          assert.deepInclude(paying.subscription, {
+            interval: "month",
+            plan: "payAsYouGo",
+            status: "active",
+          });
+          assert.deepStrictEqual(paying.allowances, {
+            assistantRequests: 20,
+            channels: null,
+            mediaStorage: 5_000_000_000,
+            members: null,
+            scheduledPosts: null,
+          });
+
+          const ended =
+            ending === "deleted"
+              ? payloadOf("customer.subscription.deleted", delivery)
+              : created
+                  .replace('"status": "active"', '"status": "unpaid"')
+                  .replace(
+                    `"${delivery.eventId("created")}"`,
+                    `"${delivery.eventId("unpaid")}"`
+                  )
+                  .replace(
+                    '"type": "customer.subscription.created"',
+                    '"type": "customer.subscription.updated"'
+                  );
+
+          assert.strictEqual(yield* deliver(ended), 200);
+
+          const after = yield* billingOf(owner, workspaceId);
+
+          assert.strictEqual(after.plan, "free");
+          assert.strictEqual(after.allowances.channels, 2);
+        }
+      })
+  );
+
+  it.effect(
+    "changes a workspace's subscription only for an order, and opens a checkout of its own for per-account pricing beside a trial or a legacy plan",
     () =>
       Effect.gen(function* inPlace() {
         const app = yield* TestApp;
@@ -1224,7 +1324,7 @@ layer(BillingIntegration, {
               cancelUrl: `/app/${workspaceId}/billing`,
               customerType: "organization",
               disableRedirect: true,
-              plan: "agency",
+              plan: "payAsYouGo",
               referenceId: workspaceId,
               successUrl: `/app/${workspaceId}/billing?checkout=done`,
               ...body,
@@ -1232,7 +1332,7 @@ layer(BillingIntegration, {
             headers: { cookie: owner.cookies },
           });
 
-        // Agency for the trial's price, without an order: refused.
+        // Per-account pricing changed in place, without an order: refused.
         const unordered = yield* upgrade({});
 
         assert.strictEqual(unordered.status, 400);
@@ -1253,7 +1353,7 @@ layer(BillingIntegration, {
 
         const order = yield* ordered(owner, workspaceId, {
           interval: "month",
-          plan: "agency",
+          plan: "payAsYouGo",
           trial: false,
         });
 
@@ -1267,7 +1367,8 @@ layer(BillingIntegration, {
 
         assert.strictEqual(again.status, 400);
 
-        // A paid plan changes in place for an order only, too.
+        // A legacy plan paid for gets a checkout of its own for an order
+        // only, too.
         yield* sql`UPDATE auth.subscription SET status = 'active' WHERE reference_id = ${workspaceId}`;
 
         const paidUnordered = yield* upgrade({});
@@ -1277,6 +1378,17 @@ layer(BillingIntegration, {
           (yield* bodyOf(ErrorSchema, paidUnordered)).code,
           "CHECKOUT_ORDER_REQUIRED"
         );
+
+        const moving = yield* ordered(owner, workspaceId, {
+          interval: "month",
+          plan: "payAsYouGo",
+          trial: false,
+        });
+
+        const moved = yield* upgrade({ metadata: { orderId: moving.id } });
+
+        assert.strictEqual(moved.status, 200);
+        assert.match((yield* bodyOf(CheckoutSchema, moved)).url, /^https:/u);
       })
   );
 
@@ -1433,20 +1545,21 @@ layer(BillingIntegration, {
         owner,
         `/api/workspaces/${workspaceId}/media`,
         {
-          byteSize: 600_000_000,
+          byteSize: 1_050_000_000,
           contentType: "video/mp4",
         }
       );
 
+      // The free tier stores 1 GB across its account.
       assert.strictEqual(refused.status, 402);
       assert.deepInclude(refused.body, {
         _tag: "PlanLimitReached",
-        allowed: 500_000_000,
+        allowed: 1_000_000_000,
         billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
         code: "plan_limit_reached",
         limit: "mediaStorage",
         plan: "free",
-        planWithRoom: "starter",
+        planWithRoom: "payAsYouGo",
         used: 0,
       });
     })
@@ -1458,8 +1571,9 @@ layer(BillingIntegration, {
     () =>
       Effect.gen(function* invitedTogether() {
         const app = yield* TestApp;
-        const owner = yield* signedUp("invited-together");
-        const workspaceId = yield* workspaceOf(owner, "Together");
+
+        const { owner, workspaceId } =
+          yield* starterWorkspace("invited-together");
 
         const invite = (email: string) =>
           app.request("/api/auth/organization/invite-member", {
@@ -1467,7 +1581,10 @@ layer(BillingIntegration, {
             headers: { cookie: owner.cookies },
           });
 
-        // The free plan has two members: the owner, and one invited.
+        // The starter plan has three members: the owner, one invited, and
+        // one more.
+        assert.strictEqual((yield* invite(newEmail("first"))).status, 200);
+
         const replies = yield* Effect.all(
           [invite(newEmail("one")), invite(newEmail("two"))],
           { concurrency: "unbounded" }
@@ -1482,24 +1599,17 @@ layer(BillingIntegration, {
     () =>
       Effect.gen(function* acceptedTogether() {
         const app = yield* TestApp;
-        const delivery = newDelivery();
+        const sql = yield* SqlClient.SqlClient;
 
-        const { owner, workspaceId } = yield* billedWorkspace(
-          "accepted-together",
-          delivery.customerId
-        );
-
-        // On a paid plan, which has room for both invitations.
-        assert.strictEqual(
-          yield* deliver(payloadOf("customer.subscription.updated", delivery)),
-          200
-        );
+        const { owner, workspaceId } =
+          yield* starterWorkspace("accepted-together");
 
         const guests = [
           yield* signedUp("guest-one"),
           yield* signedUp("guest-two"),
         ];
 
+        // The owner and two invited fill the starter plan's three.
         const invitations = yield* Effect.all(
           guests.map((guest) =>
             app
@@ -1519,11 +1629,10 @@ layer(BillingIntegration, {
           )
         );
 
-        // Back on the free plan, which has one seat left.
-        assert.strictEqual(
-          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
-          200
-        );
+        // A member put there meanwhile: one seat left.
+        const joined = yield* signedUp("guest-joined");
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${joined.id}, 'editor', now())`;
 
         const replies = yield* Effect.all(
           guests.map((guest, index) =>
@@ -1538,7 +1647,7 @@ layer(BillingIntegration, {
         assert.deepStrictEqual(statusesOf(replies), [200, 402]);
         assert.strictEqual(
           (yield* billingOf(owner, workspaceId)).usage.members,
-          2
+          3
         );
       })
   );
@@ -1792,15 +1901,12 @@ layer(BillingIntegration, {
           200
         );
 
+        // Members never make the free tier over: its 2 accounts do.
         const over: Omit<Standing, "account"> = {
           mustReduce: true,
-          over: [
-            { allowed: 3, limit: "channels", used: 5 },
-            { allowed: 2, limit: "members", used: 3 },
-          ],
+          over: [{ allowed: 2, limit: "channels", used: 5 }],
           plan: "free",
-          // Starter holds five channels and three members.
-          planWithRoom: "starter",
+          planWithRoom: "payAsYouGo",
           scheduledPosts: 0,
         };
 
@@ -1820,8 +1926,10 @@ layer(BillingIntegration, {
             keepMemberIds: keep.members,
           });
 
+        // The members are within the free tier: whatever is said of them,
+        // they all stay.
         const kept = {
-          channels: channelIds.slice(0, 3),
+          channels: channelIds.slice(0, 2),
           members: [owner.id, guests[0]?.id ?? ""],
         };
 
@@ -1834,7 +1942,7 @@ layer(BillingIntegration, {
         // A choice the plan cannot hold changes nothing.
         const tooMany = yield* reduce(owner, {
           ...kept,
-          channels: channelIds.slice(0, 4),
+          channels: channelIds.slice(0, 3),
         });
 
         assert.strictEqual(tooMany.status, 409);
@@ -1854,8 +1962,8 @@ layer(BillingIntegration, {
         );
 
         assert.deepStrictEqual(done, {
-          disconnectedChannels: 2,
-          removedMembers: 1,
+          disconnectedChannels: 3,
+          removedMembers: 0,
           revokedInvitations: 0,
         });
         assert.deepStrictEqual(withoutAccount(after), {
@@ -1865,16 +1973,16 @@ layer(BillingIntegration, {
 
         const billing = yield* billingOf(owner, workspaceId);
 
-        assert.strictEqual(billing.usage.channels, 3);
-        assert.strictEqual(billing.usage.members, 2);
+        assert.strictEqual(billing.usage.channels, 2);
+        assert.strictEqual(billing.usage.members, 3);
 
-        // Whoever was removed no longer reaches the workspace.
+        // Every member still reaches the workspace.
         assert.strictEqual(
           (yield* app.request(
             `/api/workspaces/${workspaceId}/billing/standing`,
             { headers: { cookie: guests[1]?.cookies ?? "" } }
           )).status,
-          404
+          200
         );
       })
   );

@@ -345,7 +345,7 @@ export const BetterAuthLive = Layer.effect(
         await runPromise(
           entitlements
             .of(workspaceId)
-            .pipe(Effect.map(({ allowances }) => allowances.members))
+            .pipe(Effect.map((plan) => plan.allowanceOf("members")))
         ),
       memberUpgrade: async (workspaceId, needed) =>
         await runPromise(

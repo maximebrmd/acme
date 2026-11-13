@@ -316,7 +316,11 @@ export class Withdraw extends Context.Service<
           );
         }
 
-        yield* stripe.endNow(workspaceId, id, "withdrawn");
+        // Per-account pricing bills the month past: its usage to now is
+        // invoiced as it ends, and nothing paid ahead is refunded.
+        yield* subscription.plan === "payAsYouGo"
+          ? stripe.endAndInvoice(workspaceId, id, "withdrawn")
+          : stripe.endNow(workspaceId, id, "withdrawn");
 
         const done: ReceivedWithdrawal = {
           plan: subscription.plan,

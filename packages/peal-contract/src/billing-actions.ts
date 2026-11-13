@@ -27,6 +27,7 @@ import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 import { Forbidden } from "./forbidden.ts";
 import { NothingToCancel } from "./nothing-to-cancel.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
+import { PlanNotSold } from "./plan-not-sold.ts";
 import { PlanTooSmall } from "./plan-too-small.ts";
 import { ReductionRefused } from "./reduction-refused.ts";
 import { TransferNotFound } from "./transfer-not-found.ts";
@@ -52,6 +53,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
         BillingNotEnabled,
         BillingUnavailable,
         Forbidden,
+        PlanNotSold,
         PlanTooSmall,
         TrialUnavailable,
       ],
@@ -61,7 +63,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records the order a checkout then needs: the plan and interval, or the trial, and the member's request to start now, knowing their right to withdraw. Ordering a paid plan during the trial ends the trial once the plan is paid for, without charge for the trial. A plan too small for what the workspace holds, as when moving down, is refused with what to remove first (PlanTooSmall). A workspace whose billing account another of its workspaces bills orders nothing: the plan is ordered there (BilledElsewhere).",
+          "Records the order a checkout then needs: `payAsYouGo`, monthly, the only plan sold (each connected account past the free ones and each use past its allowance, billed each month for the month past), and the member's request to start now, knowing their right to withdraw. Another plan or a yearly interval is refused (PlanNotSold), and no trial is offered (TrialUnavailable, `notOffered`). Ordering during a trial or on an older plan ends that one once the new subscription is recorded. A workspace whose billing account another of its workspaces bills orders nothing: the plan is ordered there (BilledElsewhere).",
         summary: "Order a plan",
       })
     )

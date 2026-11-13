@@ -13,6 +13,7 @@ import { ContractRecords } from "#billing/application/ports/contract-records.ts"
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
+import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
@@ -29,6 +30,7 @@ import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
+import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { newId } from "#shared/application/ids.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import {
@@ -46,30 +48,51 @@ import {
 } from "#workspace/container.ts";
 
 const entitlementsOn = (plan: Plan) =>
-  new Entitlements({ plan: Option.some(plan), subscription: Option.none() });
+  new Entitlements({
+    freeTier: true,
+    plan: Option.some(plan),
+    subscription: Option.none(),
+  });
 
-/** Every workspace on `plan`, without a subscription. */
+/**
+ * Every workspace on `plan`, without a subscription, each alone in its
+ * pool.
+ */
 export const everyWorkspaceOn = (plan: Plan) =>
+  Layer.merge(
+    Layer.succeed(
+      WorkspaceEntitlements,
+      WorkspaceEntitlements.of({
+        of: () => Effect.succeed(entitlementsOn(plan)),
+        ofEach: (workspaceIds) =>
+          Effect.succeed(
+            new Map(workspaceIds.map((id) => [id, entitlementsOn(plan)]))
+          ),
+      })
+    ),
+    PlanPools.layerAlone
+  );
+
+/** A server that does not bill: nothing is limited, nothing pooled. */
+export const UnmeteredTest = Layer.merge(
   Layer.succeed(
     WorkspaceEntitlements,
     WorkspaceEntitlements.of({
-      of: () => Effect.succeed(entitlementsOn(plan)),
+      of: () => Effect.succeed(unmetered),
       ofEach: (workspaceIds) =>
-        Effect.succeed(
-          new Map(workspaceIds.map((id) => [id, entitlementsOn(plan)]))
-        ),
+        Effect.succeed(new Map(workspaceIds.map((id) => [id, unmetered]))),
     })
-  );
-
-/** A server that does not bill: nothing is limited. */
-export const UnmeteredTest = Layer.succeed(
-  WorkspaceEntitlements,
-  WorkspaceEntitlements.of({
-    of: () => Effect.succeed(unmetered),
-    ofEach: (workspaceIds) =>
-      Effect.succeed(new Map(workspaceIds.map((id) => [id, unmetered]))),
-  })
+  ),
+  PlanPools.layerAlone
 );
+
+/**
+ * No channel connected anywhere, for the media context's storage
+ * allowance, which grows with them on per-account pricing.
+ */
+export const NoAccountsConnectedTest = Layer.mock(ChannelUsage, {
+  connected: () => Effect.succeed(0),
+});
 
 /** The id of every account `AloneInAccountsTest` answers. */
 export const aloneAccountId = BillingAccountIdSchema.make(

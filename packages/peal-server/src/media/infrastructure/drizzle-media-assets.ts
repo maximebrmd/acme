@@ -206,17 +206,38 @@ export const DrizzleMediaAssetsLive = Layer.effect(
       }
     );
 
+    // What the workspace and the others of its pool store, the pool held
+    // from here to the end of the transaction, after the workspace's lock.
+    const pooledBytes = (
+      workspaceId: WorkspaceId,
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
+    ) =>
+      Effect.gen(function* pooled() {
+        yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${workspaceId}))`;
+
+        const others = yield* sharedWith;
+        const own = yield* storedBytes(workspaceId, pendingSince);
+
+        const elsewhere = yield* storedBytesIn(others, pendingSince);
+
+        return [...elsewhere.values()].reduce((sum, bytes) => sum + bytes, own);
+      });
+
     const insertWithin = (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) =>
       client
         .withTransaction(
           Effect.gen(function* insertHeld() {
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
-
-            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+            const used = yield* pooledBytes(
+              asset.workspaceId,
+              pendingSince,
+              sharedWith
+            );
 
             yield* Effect.fromResult(
               roomFor("mediaStorage", allowance, used, asset.byteSize)
@@ -282,14 +303,17 @@ export const DrizzleMediaAssetsLive = Layer.effect(
     const updateWithin = (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) =>
       client
         .withTransaction(
           Effect.gen(function* updateHeld() {
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
-
-            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+            const used = yield* pooledBytes(
+              asset.workspaceId,
+              pendingSince,
+              sharedWith
+            );
 
             yield* Effect.fromResult(
               roomFor("mediaStorage", allowance, used, asset.byteSize)

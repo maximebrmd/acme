@@ -199,7 +199,15 @@ const mustReduceOneByOne = (ids: readonly WorkspaceId[]) =>
 const everyStanding = Effect.gen(function* everyStanding() {
   const within = yield* workspaceWith({ channels: 2, members: 1 });
   const overChannels = yield* workspaceWith({ channels: 4, members: 1 });
-  const overMembers = yield* workspaceWith({ channels: 1, members: 3 });
+  // Members never make the free tier over: only a legacy plan limits them.
+  const manyMembers = yield* workspaceWith({ channels: 1, members: 3 });
+
+  const overMembers = yield* workspaceWith({
+    channels: 1,
+    members: 4,
+    subscription: { plan: "starter", status: "active" },
+  });
+
   const overMediaOnly = yield* workspaceWith({ channels: 1, members: 1 });
 
   const trial = yield* workspaceWith({
@@ -222,9 +230,9 @@ const everyStanding = Effect.gen(function* everyStanding() {
 
   const unlisted = yield* workspaceWith({ channels: 5, members: 5 });
 
-  // A pool on the free plan: 3 channels across it, one each, so no
-  // workspace is over on its own channels, and the pool is over with
-  // the one customer left out of the list.
+  // A pool on the free tier: 4 accounts across it, so no workspace is
+  // over on its own channels, and the pool is over with the one customer
+  // left out of the list.
   const home = yield* workspaceWith({ channels: 1, members: 1 });
   const customer = yield* workspaceWith({ channels: 1 });
   const quiet = yield* workspaceWith({});
@@ -285,9 +293,14 @@ const everyStanding = Effect.gen(function* everyStanding() {
     ],
   });
 
-  // A home over on its own members while its pool's channels fit, and its
-  // customer, which has no member, within.
-  const crowdedHome = yield* workspaceWith({ channels: 1, members: 3 });
+  // A home on a legacy plan over on its own members while its pool's
+  // channels fit, and its customer, which has no member, within.
+  const crowdedHome = yield* workspaceWith({
+    channels: 1,
+    members: 4,
+    subscription: { plan: "starter", status: "active" },
+  });
+
   const crowdedCustomer = yield* workspaceWith({ channels: 1 });
 
   yield* partnerOf(crowdedHome, [crowdedCustomer]);
@@ -298,6 +311,7 @@ const everyStanding = Effect.gen(function* everyStanding() {
     within,
     overChannels,
     overMembers,
+    manyMembers,
     overMediaOnly,
     trial,
     paid,

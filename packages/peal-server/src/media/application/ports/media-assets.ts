@@ -41,14 +41,17 @@ export class MediaAssets extends Context.Service<
     ) => Effect.Effect<MediaPage>;
     readonly insert: (asset: MediaAsset) => Effect.Effect<void>;
     /**
-     * Inserts the asset if its bytes fit the workspace's storage allowance
-     * with what it stores (`storedBytes`), under the workspace's lock, so
-     * uploads started together never pass it: PlanLimitReached otherwise.
+     * Inserts the asset if its bytes fit the storage allowance with what
+     * the workspace and the others of its pool store (`storedBytes`),
+     * under the workspace's lock and then the pool's (`sharedWith`, run in
+     * the transaction), so uploads started together, in one workspace or
+     * across its pool, never pass it: PlanLimitReached otherwise.
      */
     readonly insertWithin: (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) => Effect.Effect<void, PlanLimitReached>;
     /**
      * The bytes the workspace stores: its uploaded and ready files, and the
@@ -91,13 +94,15 @@ export class MediaAssets extends Context.Service<
      * Saves an asset whose file arrived after the room held for it lapsed
      * (it was started before `pendingSince`, so `storedBytes` no longer
      * counts it), if it is still pending and its bytes fit the allowance
-     * with what the workspace stores, under the workspace's lock:
-     * PlanLimitReached otherwise. Answers as `update` does.
+     * with what the workspace and its pool store, under the workspace's
+     * lock and the pool's, as `insertWithin`: PlanLimitReached otherwise.
+     * Answers as `update` does.
      */
     readonly updateWithin: (
       asset: MediaAsset,
       allowance: Allowance,
-      pendingSince: DateTime.Utc
+      pendingSince: DateTime.Utc,
+      sharedWith: Effect.Effect<readonly WorkspaceId[]>
     ) => Effect.Effect<MediaAsset, MediaAssetNotFound | PlanLimitReached>;
     /** Deletes the asset's record. Succeeds if it is gone. */
     readonly remove: (

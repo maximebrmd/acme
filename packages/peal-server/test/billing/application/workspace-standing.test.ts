@@ -168,9 +168,11 @@ const run = <A, E>(
     return { log: yield* Ref.get(log), result, state: yield* Ref.get(state) };
   });
 
+// Over the legacy starter plan's 5 channels and 3 members, as after a
+// legacy plan shrank: the only plans that still limit members.
 const afterTrial: Held = {
-  channels: ["c1", "c2", "c3", "c4", "c5"],
-  members: [userId, "m2", "m3"],
+  channels: ["c1", "c2", "c3", "c4", "c5", "c6", "c7"],
+  members: [userId, "m2", "m3", "m4"],
 };
 
 const standing = WorkspaceStanding.use((workspaces) =>
@@ -194,19 +196,47 @@ const reduce = (
 describe("a workspace over its plan", () => {
   it.effect("says what it holds beyond the plan, to every member", () =>
     Effect.gen(function* over() {
-      const { result } = yield* run(on("free"), afterTrial, standing);
+      const { result } = yield* run(on("starter"), afterTrial, standing);
 
       assert.deepStrictEqual(result, {
         mustReduce: true,
         over: [
-          { allowed: 3, limit: "channels", used: 5 },
-          { allowed: 2, limit: "members", used: 3 },
+          { allowed: 5, limit: "channels", used: 7 },
+          { allowed: 3, limit: "members", used: 4 },
         ],
-        plan: on("free"),
-        planWithRoom: Option.some<PaidPlan>("starter"),
+        plan: on("starter"),
+        planWithRoom: Option.some<PaidPlan>("payAsYouGo"),
         scheduledPosts: 7,
       });
     })
+  );
+
+  it.effect(
+    "is over the free tier past its 2 accounts, never for its members",
+    () =>
+      Effect.gen(function* overFree() {
+        const { result } = yield* run(
+          on("free"),
+          { channels: ["c1", "c2", "c3"], members: afterTrial.members },
+          standing
+        );
+
+        assert.deepStrictEqual(result, {
+          mustReduce: true,
+          over: [{ allowed: 2, limit: "channels", used: 3 }],
+          plan: on("free"),
+          planWithRoom: Option.some<PaidPlan>("payAsYouGo"),
+          scheduledPosts: 7,
+        });
+
+        const within = yield* run(
+          on("free"),
+          { channels: ["c1", "c2"], members: afterTrial.members },
+          standing
+        );
+
+        assert.isFalse(within.result.mustReduce);
+      })
   );
 
   it.effect(
@@ -236,20 +266,23 @@ describe("a workspace over its plan", () => {
   it.effect("comes back within its plan by keeping what someone chose", () =>
     Effect.gen(function* chosen() {
       const { log, result, state } = yield* run(
-        on("free"),
+        on("starter"),
         afterTrial,
-        reduce({ channels: ["c2", "c4", "c5"], members: [userId, "m3"] })
+        reduce({
+          channels: ["c2", "c4", "c5", "c6", "c7"],
+          members: [userId, "m3", "m4"],
+        })
       );
 
       // Members first: a choice refused there disconnects nothing.
       assert.deepStrictEqual(log, [
-        `keep:${userId},m3`,
+        `keep:${userId},m3,m4`,
         "disconnect:c1",
         "disconnect:c3",
       ]);
       assert.deepStrictEqual(state, {
-        channels: ["c2", "c4", "c5"],
-        members: [userId, "m3"],
+        channels: ["c2", "c4", "c5", "c6", "c7"],
+        members: [userId, "m3", "m4"],
       });
       assert.deepStrictEqual(result, {
         disconnectedChannels: 2,
@@ -258,7 +291,7 @@ describe("a workspace over its plan", () => {
         standing: {
           mustReduce: false,
           over: [],
-          plan: on("free"),
+          plan: on("starter"),
           planWithRoom: Option.none(),
           scheduledPosts: 7,
         },
@@ -269,14 +302,20 @@ describe("a workspace over its plan", () => {
   it.effect("touches only what is over the plan", () =>
     Effect.gen(function* onlyOver() {
       const { log, state } = yield* run(
-        on("free"),
-        { channels: ["c1", "c2", "c3", "c4"], members: [userId, "m2"] },
+        on("starter"),
+        {
+          channels: ["c1", "c2", "c3", "c4", "c5", "c6"],
+          members: [userId, "m2"],
+        },
         // The members are within the plan: whatever is said of them, they
         // all stay.
-        reduce({ channels: ["c1", "c2", "c3"], members: [userId] })
+        reduce({
+          channels: ["c1", "c2", "c3", "c4", "c5"],
+          members: [userId],
+        })
       );
 
-      assert.deepStrictEqual(log, ["disconnect:c4"]);
+      assert.deepStrictEqual(log, ["disconnect:c6"]);
       assert.deepStrictEqual(state.members, [userId, "m2"]);
     })
   );
@@ -289,11 +328,12 @@ describe("a workspace over its plan", () => {
         // members are back within the plan, and this one is no longer
         // among them, though the request was let in while they were.
         const { log, result, state } = yield* run(
-          on("free"),
-          { channels: ["c1", "c2", "c3", "c4"], members: ["m2"] },
-          reduce({ channels: ["c1", "c2", "c3"], members: [userId] }).pipe(
-            Effect.flip
-          )
+          on("starter"),
+          { channels: ["c1", "c2", "c3", "c4", "c5", "c6"], members: ["m2"] },
+          reduce({
+            channels: ["c1", "c2", "c3", "c4", "c5"],
+            members: [userId],
+          }).pipe(Effect.flip)
         );
 
         assert.deepStrictEqual(
@@ -301,7 +341,14 @@ describe("a workspace over its plan", () => {
           new ReductionRefused({ reason: "unknownMember" })
         );
         assert.deepStrictEqual(log, []);
-        assert.deepStrictEqual(state.channels, ["c1", "c2", "c3", "c4"]);
+        assert.deepStrictEqual(state.channels, [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5",
+          "c6",
+        ]);
       })
   );
 
@@ -312,7 +359,7 @@ describe("a workspace over its plan", () => {
         actor = actorAs()
       ) =>
         run(
-          on("free"),
+          on("starter"),
           afterTrial,
           reduce(keep, actor).pipe(
             Effect.flip,
@@ -324,10 +371,13 @@ describe("a workspace over its plan", () => {
           )
         );
 
-      const fit = { channels: ["c1", "c2", "c3"], members: [userId, "m2"] };
+      const fit = {
+        channels: ["c1", "c2", "c3", "c4", "c5"],
+        members: [userId, "m2", "m3"],
+      };
 
       const outcomes = yield* Effect.all({
-        byAdminWithoutSelf: reasonOf({ ...fit, members: ["m2", "m3"] }),
+        byAdminWithoutSelf: reasonOf({ ...fit, members: ["m2", "m3", "m4"] }),
         byEditor: reasonOf(fit, actorAs(permissionsFor("editor"))),
         byStaff: reasonOf(
           fit,
@@ -339,10 +389,16 @@ describe("a workspace over its plan", () => {
         ),
         tooManyChannels: reasonOf({
           ...fit,
-          channels: ["c1", "c2", "c3", "c4"],
+          channels: ["c1", "c2", "c3", "c4", "c5", "c6"],
         }),
-        tooManyMembers: reasonOf({ ...fit, members: [userId, "m2", "m3"] }),
-        unknownChannel: reasonOf({ ...fit, channels: ["c1", "c2", "c9"] }),
+        tooManyMembers: reasonOf({
+          ...fit,
+          members: [userId, "m2", "m3", "m4"],
+        }),
+        unknownChannel: reasonOf({
+          ...fit,
+          channels: ["c1", "c2", "c3", "c4", "c9"],
+        }),
       });
 
       assert.deepStrictEqual(
@@ -369,12 +425,12 @@ describe("a workspace over its plan", () => {
     "counts a choice across its billing account, or lets it disconnect everything here",
     () =>
       Effect.gen(function* acrossTheAccount() {
-        // Two of the free plan's three channels are here, two in another
-        // workspace of the account.
+        // Two accounts are here, one in another workspace of the
+        // account: one more than the free tier's two.
         const shared: Held = {
           channels: ["c1", "c2"],
           members: [userId],
-          sharedChannels: 2,
+          sharedChannels: 1,
         };
 
         const kept = (channels: readonly string[]) =>
@@ -412,13 +468,15 @@ describe("a workspace over its plan", () => {
     Effect.gen(function* payerStays() {
       const paidFor: Held = {
         ...afterTrial,
-        members: [userId, "m2", payerId],
+        members: [userId, "m2", "m3", payerId],
       };
 
+      const within = ["c1", "c2", "c3", "c4", "c5"];
+
       const refused = yield* run(
-        on("free"),
+        on("starter"),
         { ...paidFor, payer: payerId },
-        reduce({ channels: ["c1", "c2", "c3"], members: [userId, "m2"] }).pipe(
+        reduce({ channels: within, members: [userId, "m2", "m3"] }).pipe(
           Effect.flip
         )
       );
@@ -430,9 +488,9 @@ describe("a workspace over its plan", () => {
       assert.deepStrictEqual(refused.log, []);
 
       const kept = yield* run(
-        on("free"),
+        on("starter"),
         { ...paidFor, payer: payerId },
-        reduce({ channels: ["c1", "c2", "c3"], members: [userId, payerId] })
+        reduce({ channels: within, members: [userId, "m2", payerId] })
       );
 
       assert.isFalse(kept.result.standing.mustReduce);

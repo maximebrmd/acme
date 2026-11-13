@@ -53,7 +53,8 @@ const expireFor = (
     Effect.map((expired) => expired.length)
   );
 
-// Every subscription Stripe holds for the customer, with its status, those
+// Every subscription Stripe holds for the customer, with its status and
+// whether it bills usage (a metered price, as per-account pricing's), those
 // its events have not reported yet included. Kept to the customer's own,
 // which is all Stripe lists.
 const subscriptionsOf = (
@@ -70,7 +71,17 @@ const subscriptionsOf = (
   }).pipe(
     Effect.map((subscriptions) =>
       subscriptions.flatMap((held) =>
-        held.customer === customer ? [{ id: held.id, status: held.status }] : []
+        held.customer === customer
+          ? [
+              {
+                id: held.id,
+                metered: held.items.data.some(
+                  ({ price }) => price.recurring?.usage_type === "metered"
+                ),
+                status: held.status,
+              },
+            ]
+          : []
       )
     )
   );
@@ -83,13 +94,15 @@ const isMissing = Schema.is(
 // Why Stripe ended it, in its dashboard and its events.
 const cancellationComment = "Workspace deleted on Peal";
 
-// Cancels the subscription at once: no proration credit, no final invoice,
-// so the period paid for stays paid and nothing more is charged. Says
-// whether Stripe had it to cancel.
+// Cancels the subscription at once: no proration credit, so the period
+// paid for stays paid; one that bills usage gets its final invoice now,
+// for the usage to this moment, and nothing more is charged. Says whether
+// Stripe had it to cancel.
 const cancelAtStripe = (
   stripe: Stripe,
   subscriptionId: string,
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  metered: boolean
 ) =>
   Effect.tryPromise({
     // Whether Stripe answered that it does not know the subscription.
@@ -99,7 +112,7 @@ const cancelAtStripe = (
         subscriptionId,
         {
           cancellation_details: { comment: cancellationComment },
-          invoice_now: false,
+          invoice_now: metered,
           prorate: false,
         },
         // A deletion tried again asks Stripe once.
@@ -251,6 +264,10 @@ export const StripeCheckoutsLive = Layer.effect(
           held.flat().map(({ id, status }) => [id, status])
         );
 
+        const metered = new Set(
+          held.flat().flatMap(({ id, metered: usage }) => (usage ? [id] : []))
+        );
+
         const named = [
           ...known,
           ...started.flatMap(({ id, status }) =>
@@ -270,7 +287,9 @@ export const StripeCheckoutsLive = Layer.effect(
         ];
 
         const cancelled = yield* Effect.all(
-          billing.map((id) => cancelAtStripe(stripe, id, workspaceId))
+          billing.map((id) =>
+            cancelAtStripe(stripe, id, workspaceId, metered.has(id))
+          )
         );
 
         return cancelled.filter(Boolean).length;

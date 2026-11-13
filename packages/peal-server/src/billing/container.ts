@@ -27,6 +27,7 @@ import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
+import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
@@ -121,6 +122,7 @@ const HoldersLive = AccountPlanHoldersLive.pipe(
  */
 export const BillingLive = Layer.mergeAll(
   WorkspaceEntitlements.layerShared,
+  AccountPlanPoolsLive,
   RecordSubscription.layer,
   CheckoutOrders.layer,
   BillingRecords.layer,
