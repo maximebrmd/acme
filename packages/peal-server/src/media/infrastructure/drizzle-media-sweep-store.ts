@@ -234,6 +234,39 @@ export const DrizzleMediaSweepStore = Layer.effect(
       return ids;
     });
 
+    const expiredWorkspaces = Effect.fn("MediaSweepStore.expiredWorkspaces")(
+      function* expiredWorkspaces(before: DateTime.Utc, limit: number) {
+        const rows = yield* db
+          .selectDistinct({ workspaceId: mediaAssets.workspaceId })
+          .from(mediaAssets)
+          .where(
+            and(
+              eq(mediaAssets.status, "pending"),
+              lt(mediaAssets.createdAt, DateTime.toDate(before))
+            )
+          )
+          .limit(limit)
+          .pipe(Effect.mapError(failed));
+
+        return rows.length;
+      }
+    );
+
+    const peekIdentity = Effect.gen(function* peekIdentity() {
+      const [row] = yield* db
+        .select()
+        .from(storeIdentity)
+        .pipe(Effect.mapError(failed));
+
+      return Option.fromUndefinedOr(row).pipe(
+        Option.map((found): StoreIdentity => ({
+          claimed: found.claimedAt !== null,
+          epoch: found.epoch,
+          id: found.id,
+        }))
+      );
+    }).pipe(Effect.withSpan("MediaSweepStore.peekIdentity"));
+
     const holdsAssets = Effect.fn("MediaSweepStore.holdsAssets")(
       function* holdsAssets(workspaceId: WorkspaceId) {
         const rows = yield* db
@@ -300,10 +333,12 @@ export const DrizzleMediaSweepStore = Layer.effect(
       return row.epoch;
     }).pipe(Effect.withSpan("MediaSweepStore.advanceEpoch"));
 
-    // Any role may read them: no privilege needed.
+    // Any role may call these on stock PostgreSQL. The timeline is read
+    // from the WAL file being written, which a promotion changes at once;
+    // the control file's names the old one until the next checkpoint.
     const cluster = Effect.gen(function* cluster() {
       const rows =
-        yield* client`SELECT (SELECT system_identifier::text FROM pg_control_system()) AS system, (SELECT timeline_id FROM pg_control_checkpoint()) AS timeline`.pipe(
+        yield* client`SELECT (SELECT system_identifier::text FROM pg_control_system()) AS system, ('x' || substr(pg_walfile_name(pg_current_wal_lsn()), 1, 8))::bit(32)::int AS timeline`.pipe(
           Effect.mapError(failed)
         );
 
@@ -333,12 +368,14 @@ export const DrizzleMediaSweepStore = Layer.effect(
       cursor,
       erasedFolders: erased,
       expiredUploads,
+      expiredWorkspaces,
       forgetExpired,
       forgetFolder,
       holdsAssets,
       identity,
       keptKeys,
       markClaimed,
+      peekIdentity,
       saveCursor,
     });
   })

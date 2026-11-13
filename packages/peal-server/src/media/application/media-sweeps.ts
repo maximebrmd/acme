@@ -18,6 +18,7 @@ import type {
   BucketFile,
   BucketPage,
   MarkerRead,
+  OwnerMarker,
 } from "./ports/media-bucket.ts";
 import { MediaFolders } from "./ports/media-folders.ts";
 import { MediaStorage } from "./ports/media-storage.ts";
@@ -130,6 +131,19 @@ const nothing: SweepReport = {
 };
 
 type SweepFailure = DatabaseError | MediaStorageFailed;
+
+// What the owner marker says of this run: refused, or owned, holding the
+// marker it wrote.
+type Verdict =
+  | { readonly _tag: "refused"; readonly reason: SweepRefusal }
+  | { readonly _tag: "owned"; readonly marker: OwnerMarker };
+
+const refusedBy = (reason: SweepRefusal): Verdict => ({
+  _tag: "refused",
+  reason,
+});
+
+const ownedAs = (marker: OwnerMarker): Verdict => ({ _tag: "owned", marker });
 
 // One thing the store would not let go: counted, named, left to the
 // next run, and the run goes on.
@@ -252,14 +266,15 @@ export class MediaSweeps extends Context.Service<
       });
 
       // What the marker says of this database, read as `read`: refused,
-      // or this database's, the marker then moved on to the next epoch.
+      // or this database's, the marker then moved on to the next epoch,
+      // which this run holds.
       const judged = Effect.fn("MediaSweeps.judged")(function* judged(
         read: MarkerRead,
         self: StoreIdentity,
         cluster: DatabaseCluster
       ) {
         if (Option.isNone(read.marker) || read.marker.value.id !== self.id) {
-          return Option.some<SweepRefusal>("foreign");
+          return refusedBy("foreign");
         }
 
         const marker = read.marker.value;
@@ -268,25 +283,20 @@ export class MediaSweeps extends Context.Service<
           marker.system !== cluster.system ||
           marker.timeline !== cluster.timeline
         ) {
-          return Option.some<SweepRefusal>("restored");
+          return refusedBy("restored");
         }
 
         if (marker.epoch > self.epoch) {
-          return Option.some<SweepRefusal>("rewound");
+          return refusedBy("rewound");
         }
 
         // Committed before the marker moves: a crash between the two
         // leaves the database one ahead, which the next run passes.
         const epoch = yield* store.advanceEpoch;
+        const held: OwnerMarker = { ...cluster, epoch, id: self.id };
+        const moved = yield* bucket.replace(held, read.version);
 
-        const moved = yield* bucket.replace(
-          { ...cluster, epoch, id: self.id },
-          read.version
-        );
-
-        return moved
-          ? Option.none<SweepRefusal>()
-          : Option.some<SweepRefusal>("contended");
+        return moved ? ownedAs(held) : refusedBy("contended");
       });
 
       // Whether the media folder is this database's now: its owner marker
@@ -301,7 +311,7 @@ export class MediaSweeps extends Context.Service<
         if (Option.isSome(read)) {
           const verdict = yield* judged(read.value, self, cluster);
 
-          if (Option.isNone(verdict) && !self.claimed) {
+          if (verdict._tag === "owned" && !self.claimed) {
             yield* store.markClaimed;
           }
 
@@ -309,19 +319,20 @@ export class MediaSweeps extends Context.Service<
         }
 
         if (self.claimed) {
-          return Option.some<SweepRefusal>("unmarked");
+          return refusedBy("unmarked");
         }
 
         // Written only if none is there: one another server wrote
         // meanwhile is judged as found, never replaced.
         const epoch = yield* store.advanceEpoch;
-        const wrote = yield* bucket.claim({ ...cluster, epoch, id: self.id });
+        const held: OwnerMarker = { ...cluster, epoch, id: self.id };
+        const wrote = yield* bucket.claim(held);
 
         if (!wrote) {
           const written = yield* bucket.owner;
 
           return yield* Option.match(written, {
-            onNone: () => Effect.succeed(Option.some<SweepRefusal>("unmarked")),
+            onNone: () => Effect.succeed(refusedBy("unmarked")),
             onSome: (found) => judged(found, { ...self, epoch }, cluster),
           });
         }
@@ -331,19 +342,41 @@ export class MediaSweeps extends Context.Service<
           "The media folder's owner marker now names this database"
         );
 
-        return Option.none<SweepRefusal>();
+        return ownedAs(held);
       });
 
+      // Whether the marker is still the one this run wrote: read again
+      // before each page of a long run, so a hand-over meanwhile stops it.
+      const stillHeld = (held: OwnerMarker) =>
+        bucket.owner.pipe(
+          Effect.map((read) =>
+            read.pipe(
+              Option.flatMap(({ marker }) => marker),
+              Option.match({
+                onNone: () => false,
+                onSome: (found) =>
+                  found.id === held.id &&
+                  found.epoch === held.epoch &&
+                  found.system === held.system &&
+                  found.timeline === held.timeline,
+              })
+            )
+          )
+        );
+
       const owned = (
-        sweep: Effect.Effect<SweepReport, SweepFailure>
+        sweep: (
+          held: Effect.Effect<boolean, SweepFailure>
+        ) => Effect.Effect<SweepReport, SweepFailure>
       ): Effect.Effect<SweepReport, SweepFailure> =>
         ownership.pipe(
-          Effect.flatMap(
-            Option.match({
-              onNone: () => sweep,
-              onSome: (reason) =>
-                Effect.succeed({ ...nothing, refused: Option.some(reason) }),
-            })
+          Effect.flatMap((verdict) =>
+            verdict._tag === "owned"
+              ? sweep(stillHeld(verdict.marker))
+              : Effect.succeed({
+                  ...nothing,
+                  refused: Option.some(verdict.reason),
+                })
           )
         );
 
@@ -406,79 +439,87 @@ export class MediaSweeps extends Context.Service<
         }
       );
 
-      const pending = Effect.gen(function* pendingSweep() {
-        const before = yield* since(pendingAfter);
+      const pending = (held: Effect.Effect<boolean, SweepFailure>) =>
+        Effect.gen(function* pendingSweep() {
+          const before = yield* since(pendingAfter);
 
-        // More than a sound database leaves at once: it likely lost the
-        // completions it once had (restored, or another's).
-        const found = yield* store.expiredUploads(
-          before,
-          pendingLimit + 1,
-          Option.none()
-        );
+          // Uploads never completed in more workspaces than a sound
+          // database leaves at once: it likely lost the completions it once
+          // had (restored, or another's). One workspace's backlog, however
+          // large, never trips it.
+          const workspaces = yield* store.expiredWorkspaces(
+            before,
+            pendingLimit + 1
+          );
 
-        if (found.length > pendingLimit) {
-          yield* Effect.logError(
-            "A sweep of the media store stopped: more uploads never completed than a sound database leaves"
-          ).pipe(Effect.annotateLogs({ found: found.length }));
+          if (workspaces > pendingLimit) {
+            yield* Effect.logError(
+              "A sweep of the media store stopped: uploads never completed in more workspaces than a sound database leaves"
+            ).pipe(Effect.annotateLogs({ workspaces }));
 
-          const refused: SweepReport = {
-            ...nothing,
-            left: true,
-            refused: Option.some("breaker"),
-          };
+            const refused: SweepReport = {
+              ...nothing,
+              left: true,
+              refused: Option.some("breaker"),
+            };
 
-          return refused;
-        }
-
-        let after = Option.none<ExpiredPosition>();
-        let swept = 0;
-        let bytes = 0;
-        let failed = 0;
-        let pages = 0;
-        let more = true;
-
-        // Assets kept are paged past, so they never hold up the batch.
-        while (more && swept < batch && pages < pagesPerRun) {
-          const expired = yield* store.expiredUploads(before, batch, after);
-          const room = batch - swept;
-          const tried = expired.slice(0, room);
-
-          for (const upload of tried) {
-            const done = yield* sweepUpload(upload, before).pipe(
-              Effect.catchTag(
-                "MediaStorageFailed",
-                skipped("pending", upload.storageKey)
-              )
-            );
-
-            if (done === "failed") {
-              failed += 1;
-            } else if (done !== "kept") {
-              swept += 1;
-              bytes += done;
-            }
-
-            after = Option.some({
-              assetId: upload.assetId,
-              createdAt: upload.createdAt,
-            });
+            return refused;
           }
 
-          pages += 1;
-          more = expired.length === batch || tried.length < expired.length;
-        }
+          let after = Option.none<ExpiredPosition>();
+          let swept = 0;
+          let bytes = 0;
+          let failed = 0;
+          let pages = 0;
+          let more = true;
+          let refused = Option.none<SweepRefusal>();
 
-        const report: SweepReport = {
-          ...nothing,
-          bytes,
-          failed,
-          left: more,
-          swept,
-        };
+          // Assets kept are paged past, so they never hold up the batch.
+          while (more && swept < batch && pages < pagesPerRun) {
+            if (pages > 0 && !(yield* held)) {
+              refused = Option.some("contended");
+              break;
+            }
 
-        return report;
-      }).pipe(Effect.withSpan("MediaSweeps.pending"));
+            const expired = yield* store.expiredUploads(before, batch, after);
+            const room = batch - swept;
+            const tried = expired.slice(0, room);
+
+            for (const upload of tried) {
+              const done = yield* sweepUpload(upload, before).pipe(
+                Effect.catchTag(
+                  "MediaStorageFailed",
+                  skipped("pending", upload.storageKey)
+                )
+              );
+
+              if (done === "failed") {
+                failed += 1;
+              } else if (done !== "kept") {
+                swept += 1;
+                bytes += done;
+              }
+
+              after = Option.some({
+                assetId: upload.assetId,
+                createdAt: upload.createdAt,
+              });
+            }
+
+            pages += 1;
+            more = expired.length === batch || tried.length < expired.length;
+          }
+
+          const report: SweepReport = {
+            bytes,
+            failed,
+            left: more,
+            refused,
+            swept,
+          };
+
+          return report;
+        }).pipe(Effect.withSpan("MediaSweeps.pending"));
 
       // Lists the bucket from where the sweep stopped, a page at a time,
       // deleting what `take` picks, until the batch is spent, the run's
@@ -495,7 +536,8 @@ export class MediaSweeps extends Context.Service<
         take: (
           items: readonly A[],
           room: number
-        ) => Effect.Effect<Taken, SweepFailure>
+        ) => Effect.Effect<Taken, SweepFailure>,
+        held: Effect.Effect<boolean, SweepFailure>
       ) =>
         Effect.gen(function* listingSweep() {
           const saved = yield* store.cursor(sweep);
@@ -509,6 +551,11 @@ export class MediaSweeps extends Context.Service<
           let refused = Option.none<SweepRefusal>();
 
           while (!ended && !stop && pages < pagesPerRun) {
+            if (pages > 0 && !(yield* held)) {
+              refused = Option.some("contended");
+              break;
+            }
+
             const page = yield* list(after);
             const done = yield* take(page.items, batch - swept);
 
@@ -585,7 +632,8 @@ export class MediaSweeps extends Context.Service<
               };
 
               return result;
-            })
+            }),
+          Effect.succeed(true)
         );
       }).pipe(Effect.withSpan("MediaSweeps.uploads"));
 
@@ -607,71 +655,73 @@ export class MediaSweeps extends Context.Service<
           Effect.catchTag("MediaStorageFailed", skipped("orphans", file.key))
         );
 
-      const orphans = Effect.gen(function* orphansSweep() {
-        const before = yield* since(orphansAfter);
+      const orphans = (held: Effect.Effect<boolean, SweepFailure>) =>
+        Effect.gen(function* orphansSweep() {
+          const before = yield* since(orphansAfter);
 
-        return yield* listing(
-          "orphans",
-          bucket.listFiles,
-          (key) => ({ key, uploadId: Option.none() }),
-          ({ key }) => key,
-          (files, room) =>
-            Effect.gen(function* deleteOrphans() {
-              const old = files.filter(({ modifiedAt }) =>
-                DateTime.isLessThan(modifiedAt, before)
-              );
-
-              const kept = yield* store.keptKeys(old.map(({ key }) => key));
-              const unheld = old.filter(({ key }) => !kept.has(key));
-
-              const tripped =
-                unheld.length > orphansLimit ||
-                (old.length >= orphanShareFloor &&
-                  unheld.length > old.length * orphanShareLimit);
-
-              if (tripped) {
-                yield* Effect.logError(
-                  "A sweep of the media store stopped: a page of the bucket holds more files this database does not know of than a sound one leaves"
-                ).pipe(
-                  Effect.annotateLogs({
-                    old: old.length,
-                    orphans: unheld.length,
-                  })
+          return yield* listing(
+            "orphans",
+            bucket.listFiles,
+            (key) => ({ key, uploadId: Option.none() }),
+            ({ key }) => key,
+            (files, room) =>
+              Effect.gen(function* deleteOrphans() {
+                const old = files.filter(({ modifiedAt }) =>
+                  DateTime.isLessThan(modifiedAt, before)
                 );
 
-                const refusal: Taken = {
-                  bytes: 0,
-                  failed: 0,
-                  full: false,
-                  refused: Option.some("breaker"),
-                  swept: 0,
+                const kept = yield* store.keptKeys(old.map(({ key }) => key));
+                const unheld = old.filter(({ key }) => !kept.has(key));
+
+                const tripped =
+                  unheld.length > orphansLimit ||
+                  (old.length >= orphanShareFloor &&
+                    unheld.length > old.length * orphanShareLimit);
+
+                if (tripped) {
+                  yield* Effect.logError(
+                    "A sweep of the media store stopped: a page of the bucket holds more files this database does not know of than a sound one leaves"
+                  ).pipe(
+                    Effect.annotateLogs({
+                      old: old.length,
+                      orphans: unheld.length,
+                    })
+                  );
+
+                  const refusal: Taken = {
+                    bytes: 0,
+                    failed: 0,
+                    full: false,
+                    refused: Option.some("breaker"),
+                    swept: 0,
+                  };
+
+                  return refusal;
+                }
+
+                const taken = unheld.slice(0, room);
+
+                const done = yield* Effect.forEach(taken, deleteOrphan, {
+                  concurrency: 1,
+                });
+
+                const gone = done.flatMap((end) =>
+                  end === "failed" ? [] : Option.toArray(end)
+                );
+
+                const result: Taken = {
+                  bytes: gone.reduce((total, size) => total + size, 0),
+                  failed: done.filter((end) => end === "failed").length,
+                  full: taken.length === room && room > 0,
+                  refused: Option.none(),
+                  swept: gone.length,
                 };
 
-                return refusal;
-              }
-
-              const taken = unheld.slice(0, room);
-
-              const done = yield* Effect.forEach(taken, deleteOrphan, {
-                concurrency: 1,
-              });
-
-              const gone = done.flatMap((end) =>
-                end === "failed" ? [] : Option.toArray(end)
-              );
-
-              const result: Taken = {
-                bytes: gone.reduce((total, size) => total + size, 0),
-                failed: done.filter((end) => end === "failed").length,
-                full: taken.length === room && room > 0,
-                refused: Option.none(),
-                swept: gone.length,
-              };
-
-              return result;
-            })
-        );
-      }).pipe(Effect.withSpan("MediaSweeps.orphans"));
+                return result;
+              }),
+            held
+          );
+        }).pipe(Effect.withSpan("MediaSweeps.orphans"));
 
       // One erased workspace's folder, emptied, then forgotten; one whose
       // workspace still has assets is left alone, and counted.

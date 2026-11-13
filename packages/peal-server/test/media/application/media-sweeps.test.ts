@@ -96,7 +96,13 @@ interface Setup {
   readonly cluster: DatabaseCluster;
   /** Uploads never completed, and which of them a scheduled post shows. */
   readonly expired: readonly BucketFile[];
+  /** The workspace of each, in order: all `workspaceId` if left out. */
+  readonly expiredIn: readonly WorkspaceId[];
   readonly scheduled: ReadonlySet<string>;
+  /** Another database takes the marker once the first page is listed. */
+  readonly handOverAfterFirstPage: boolean;
+  /** The store holds another marker than the one replaced. */
+  readonly replaceLost: boolean;
   /** Erased workspaces listed for the sweep. */
   readonly erased: readonly WorkspaceId[];
   /** Those of them that still have assets. */
@@ -119,12 +125,15 @@ const blank: Setup = {
   epoch: 3,
   erased: [],
   expired: [],
+  expiredIn: [],
+  handOverAfterFirstPage: false,
   files: [],
   held: new Set(),
   heldLate: Option.none(),
   marker: Option.some(ownMarker(3)),
   pageSize: 1,
   refused: new Set(),
+  replaceLost: false,
   scheduled: new Set(),
   stuck: new Set(),
   withAssets: new Set(),
@@ -178,25 +187,35 @@ const fakesWith = (setup: Setup) =>
             )
           ),
         listFiles: (after) =>
-          Effect.sync(() => {
-            const start = Option.match(after, {
-              onNone: () => 0,
-              onSome: (key) =>
-                setup.files.findIndex((file) => file.key === key) + 1,
-            });
+          (setup.handOverAfterFirstPage && Option.isNone(after)
+            ? Ref.set(
+                marker,
+                Option.some({ ...setup.cluster, epoch: 99, id: otherId })
+              )
+            : Effect.void
+          ).pipe(
+            Effect.andThen(
+              Effect.sync(() => {
+                const start = Option.match(after, {
+                  onNone: () => 0,
+                  onSome: (key) =>
+                    setup.files.findIndex((file) => file.key === key) + 1,
+                });
 
-            const page = setup.files.slice(start, start + setup.pageSize);
-            const last = page.at(-1);
+                const page = setup.files.slice(start, start + setup.pageSize);
+                const last = page.at(-1);
 
-            return {
-              items: page,
-              next:
-                last === undefined ||
-                start + setup.pageSize >= setup.files.length
-                  ? Option.none()
-                  : Option.some<string>(last.key),
-            };
-          }),
+                return {
+                  items: page,
+                  next:
+                    last === undefined ||
+                    start + setup.pageSize >= setup.files.length
+                      ? Option.none()
+                      : Option.some<string>(last.key),
+                };
+              })
+            )
+          ),
         listUploads: unused,
         owner: Effect.all([Ref.get(marker), Ref.get(version)]).pipe(
           Effect.map(([found, at]) =>
@@ -211,7 +230,8 @@ const fakesWith = (setup: Setup) =>
         replace: (body, expected) =>
           Ref.get(version).pipe(
             Effect.flatMap((at) =>
-              Option.isSome(expected) && expected.value !== String(at)
+              setup.replaceLost ||
+              (Option.isSome(expected) && expected.value !== String(at))
                 ? Effect.succeed(false)
                 : Ref.set(marker, Option.some(body)).pipe(
                     Effect.andThen(Ref.set(version, at + 1)),
@@ -242,6 +262,17 @@ const fakesWith = (setup: Setup) =>
               workspaceId,
             }));
           }),
+        expiredWorkspaces: (_, limit) =>
+          Effect.succeed(
+            Math.min(
+              limit,
+              new Set(
+                setup.expired.map(
+                  (_file, index) => setup.expiredIn[index] ?? workspaceId
+                )
+              ).size
+            )
+          ),
         forgetExpired: (assetId) =>
           log(`forget:${assetId}`).pipe(Effect.as(true)),
         forgetFolder: (id) => log(`forget-folder:${id}`),
@@ -267,7 +298,14 @@ const fakesWith = (setup: Setup) =>
 
             return new Set<StorageKey>(held);
           }),
-        markClaimed: Ref.set(claimed, true),
+        markClaimed: Ref.set(claimed, true).pipe(
+          Effect.andThen(log("claimed"))
+        ),
+        peekIdentity: Effect.all([Ref.get(claimed), Ref.get(epoch)]).pipe(
+          Effect.map(([was, at]) =>
+            Option.some({ claimed: was, epoch: at, id: selfId })
+          )
+        ),
         saveCursor: (_, position) => Ref.set(cursor, position),
       });
 
@@ -563,12 +601,14 @@ const OffTest = MediaSweeps.layer.pipe(
           cursor: unused,
           erasedFolders: unused,
           expiredUploads: unused,
+          expiredWorkspaces: unused,
           forgetExpired: unused,
           forgetFolder: unused,
           holdsAssets: unused,
           identity: unused,
           keptKeys: unused,
           markClaimed: Effect.die("not used when off"),
+          peekIdentity: Effect.die("not used when off"),
           saveCursor: unused,
         })
       ),
@@ -782,18 +822,77 @@ layer(
   );
 });
 
-layer(sweepsWith({ expired: filesUpTo(4) }, { pendingLimit: 3 }))(
-  "the sweep of uploads never completed, past its count",
+const workspaceAt = (index: number) =>
+  WorkspaceIdSchema.make(
+    `4f6b1c1e-2a8d-4c3b-9f1e-${String(index).padStart(12, "0")}`
+  );
+
+layer(sweepsWith({ expired: filesUpTo(150) }))(
+  "the sweep of uploads never completed, one workspace's backlog",
   (it) => {
-    it.effect("deletes none when a run finds more than its limit", () =>
-      Effect.gen(function* tripped() {
+    it.effect("sweeps 150 a single workspace left, past the limit", () =>
+      Effect.gen(function* backlog() {
         yield* twoDaysOn;
 
         assert.deepStrictEqual(
           yield* MediaSweeps.use((sweeps) => sweeps.pending),
-          report({ left: true, refused: Option.some("breaker") })
+          report({ bytes: 1500, swept: 150 })
         );
-        assert.deepStrictEqual(yield* eventsOf, []);
+      })
+    );
+  }
+);
+
+layer(
+  sweepsWith({
+    expired: filesUpTo(150),
+    expiredIn: Array.from({ length: 150 }, (_, index) => workspaceAt(index)),
+  })
+)("the sweep of uploads never completed, across many workspaces", (it) => {
+  it.effect("deletes none when more workspaces than the limit have some", () =>
+    Effect.gen(function* spread() {
+      yield* twoDaysOn;
+
+      assert.deepStrictEqual(
+        yield* MediaSweeps.use((sweeps) => sweeps.pending),
+        report({ left: true, refused: Option.some("breaker") })
+      );
+      assert.deepStrictEqual(yield* eventsOf, []);
+    })
+  );
+});
+
+layer(sweepsWith({ files: filesUpTo(3), handOverAfterFirstPage: true }))(
+  "the sweep of files no asset holds, handed over in the middle of a run",
+  (it) => {
+    it.effect("stops at the next page, deleting nothing more", () =>
+      Effect.gen(function* handedOver() {
+        yield* twoDaysOn;
+
+        assert.deepStrictEqual(
+          yield* MediaSweeps.use((sweeps) => sweeps.orphans),
+          report({
+            bytes: 10,
+            left: true,
+            refused: Option.some("contended"),
+            swept: 1,
+          })
+        );
+        assert.deepStrictEqual(yield* eventsOf, [`remove:${fileAt(0).key}`]);
+      })
+    );
+  }
+);
+
+layer(sweepsWith({ replaceLost: true }))(
+  "the claim of a media folder another writer takes meanwhile",
+  (it) => {
+    it.effect("fails, and notes nothing as claimed", () =>
+      Effect.gen(function* lost() {
+        const failure = yield* claimMediaFolder.pipe(Effect.flip);
+
+        assert.strictEqual(failure._tag, "MediaFolderNotClaimed");
+        assert.notInclude(yield* eventsOf, "claimed");
       })
     );
   }

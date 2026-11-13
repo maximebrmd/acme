@@ -732,7 +732,10 @@ layer(sweepsWith(past), realClock)(
           const claimed = yield* claimMediaFolder;
           const bucket = yield* MediaBucket;
 
-          assert.strictEqual(claimed.id, plan.self.id);
+          assert.deepStrictEqual(
+            Option.some(claimed.id),
+            plan.self.pipe(Option.map(({ id }) => id))
+          );
           assert.deepStrictEqual(claimed.system, plan.cluster.system);
           assert.deepStrictEqual(
             (yield* bucket.owner).pipe(Option.flatMap(({ marker }) => marker)),
@@ -754,11 +757,11 @@ layer(sweepsWith(past), realClock)(
             ),
             Option.some(claimed.epoch + 1)
           );
-          assert.strictEqual(
-            (yield* MediaSweepStore.use((store) =>
-              store.identity(plan.self.id)
-            )).epoch,
-            claimed.epoch + 1
+          assert.deepStrictEqual(
+            (yield* MediaSweepStore.use((store) => store.peekIdentity)).pipe(
+              Option.map(({ epoch }) => epoch)
+            ),
+            Option.some(claimed.epoch + 1)
           );
 
           // A create-only write never replaces the marker there.

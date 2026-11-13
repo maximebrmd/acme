@@ -98,6 +98,22 @@ export class MediaSweepStore extends Context.Service<
       before: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly WorkspaceId[], DatabaseError>;
+    /**
+     * How many workspaces hold assets still pending that started before,
+     * counted up to `limit`.
+     */
+    readonly expiredWorkspaces: (
+      before: DateTime.Utc,
+      limit: number
+    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * This database's id, if it has one yet: read only, for an operator
+     * to look at before anything is written.
+     */
+    readonly peekIdentity: Effect.Effect<
+      Option.Option<StoreIdentity>,
+      DatabaseError
+    >;
     /** Whether any asset of the workspace is recorded. */
     readonly holdsAssets: (
       workspaceId: WorkspaceId
