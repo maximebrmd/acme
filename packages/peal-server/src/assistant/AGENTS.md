@@ -93,7 +93,9 @@
   (`ImageProviderKeyRequired` otherwise); without a keyring nothing is stored
   (`ProviderSecretsNotConfigured`, 503). `assistant:configure` (owners,
   admins, keys and partner keys given it; withheld from staff
-  impersonating) reads, sets and removes it; no MCP tool does. Staff
+  impersonating, and from every OAuth client but Peal's command line:
+  `commandLineOnlyPermissions`) reads, sets and removes it; no MCP tool
+  does. Staff
   impersonating a member make no image with it either: the workspace's
   account pays.
 - With a provider, `generateImage` asks `OwnImageModel` only

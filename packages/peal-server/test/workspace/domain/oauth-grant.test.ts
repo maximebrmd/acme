@@ -6,6 +6,8 @@ import { actorFor, userPermissions } from "#workspace/domain/membership.ts";
 import type { Membership } from "#workspace/domain/membership.ts";
 import {
   adsPermissions,
+  commandLineClientId,
+  commandLineOnlyPermissions,
   grantedPermissions,
   personOnlyPermissions,
   publishingPermissions,
@@ -48,10 +50,13 @@ const through = (oauth: OAuthGrant) =>
 const ownerPermissions = permissionsFor("owner");
 
 // What an owner holds less what reaches an ad network, which takes the ads
-// scope, and less what no application does.
+// scope, less what no application does, and less what only Peal's own
+// command line does.
 const withoutAds = ownerPermissions.filter(
   (permission) =>
-    !adsPermissions.has(permission) && !personOnlyPermissions.has(permission)
+    !adsPermissions.has(permission) &&
+    !personOnlyPermissions.has(permission) &&
+    !commandLineOnlyPermissions.has(permission)
 );
 
 describe(grantedPermissions, () => {
@@ -207,6 +212,62 @@ describe("an OAuth client acting for a user", () => {
     assert.deepStrictEqual(
       userPermissions(principal, studio, "owner"),
       withoutAds
+    );
+  });
+});
+
+describe("the assistant's providers through an OAuth client", () => {
+  const writing = ["workspace:read", "workspace:write", "workspace:publish"];
+
+  it("never lets another application choose where the workspace's prompts go", () => {
+    assert.notInclude(
+      grantedPermissions(grant(writing), studio, ownerPermissions),
+      "assistant:configure"
+    );
+  });
+
+  it("lets Peal's command line, which the user signed in at their terminal, set them", () => {
+    assert.include(
+      grantedPermissions(
+        {
+          clientId: commandLineClientId,
+          scopes: writing,
+          workspaceId: Option.none(),
+        },
+        studio,
+        ownerPermissions
+      ),
+      "assistant:configure"
+    );
+  });
+
+  it("leaves the command line without them on a read-only grant", () => {
+    assert.notInclude(
+      grantedPermissions(
+        {
+          clientId: commandLineClientId,
+          scopes: ["workspace:read"],
+          workspaceId: Option.none(),
+        },
+        studio,
+        ownerPermissions
+      ),
+      "assistant:configure"
+    );
+  });
+
+  it("refuses them to a client named as the command line but bound to a workspace", () => {
+    assert.notInclude(
+      grantedPermissions(
+        {
+          clientId: commandLineClientId,
+          scopes: writing,
+          workspaceId: Option.some(studio),
+        },
+        studio,
+        ownerPermissions
+      ),
+      "assistant:configure"
     );
   });
 });
