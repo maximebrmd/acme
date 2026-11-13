@@ -121,22 +121,25 @@ export const stripePricesChecked = (atStart: CatalogueAtStart) =>
 
       // Meters Stripe refused or garbled only warn while the catalogue
       // does: what Stripe said of them is the problem then.
-      const meterReading: Effect.Effect<
+      const meterProblem = (
+        unread: StripeCatalogueUnread
+      ): Effect.Effect<
         Option.Option<Result.Result<readonly HeldMeter[], string>>,
         StripePricesUnchecked
-      > = readMeters(client).pipe(
-        Effect.map((found) => Option.some(Result.succeed(found))),
-        Effect.catch((error) =>
-          atStart === "warn" && error.reason !== "unanswered"
-            ? Effect.succeed(
-                Option.some(
-                  Result.fail(
-                    `the meters could not be read: ${uncheckedReason(error)}`
-                  )
+      > =>
+        atStart === "warn" && unread.reason !== "unanswered"
+          ? Effect.succeed(
+              Option.some(
+                Result.fail(
+                  `the meters could not be read: ${uncheckedReason(unread)}`
                 )
               )
-            : unanswered(error)
-        )
+            )
+          : unanswered(unread);
+
+      const meterReading = readMeters(client).pipe(
+        Effect.map((found) => Option.some(Result.succeed(found))),
+        Effect.catch(meterProblem)
       );
 
       const [meters, prices, products] = yield* Effect.all(
