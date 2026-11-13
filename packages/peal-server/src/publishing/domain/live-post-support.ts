@@ -38,7 +38,7 @@ const blockedBy = (blocker: LivePostBlocker) => Option.some(blocker);
 /**
  * Per platform, whether Peal deletes a published post there, and whether
  * it replaces its text, or what stops it: the one table the capabilities,
- * the use cases and the docs' tables read (`docs/scheduling.mdx`, kept
+ * the use cases and the docs' tables read (`docs/guides/posts/published.mdx`, kept
  * equal by a test). A platform deletes, or edits, only when its adapter
  * is in `LivePostClientsLive`'s registry, which a test compares with this
  * table. Each line cites the page it was read from, on 2026-11-11 (the

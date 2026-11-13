@@ -149,6 +149,7 @@ describe("usage reports", () => {
     // requests either: never a zero it did not count.
     expect(report.days[0]).toStrictEqual({
       assistantRequests: Option.none(),
+      billableAccounts: Option.none(),
       byPlatform: [],
       channels: Option.none(),
       day: day("2026-10-30"),
@@ -157,6 +158,7 @@ describe("usage reports", () => {
       publishedPosts: 0,
     });
     expect(report.totals).toStrictEqual({
+      billableAccountDays: Option.none(),
       byPlatform: [],
       channelDays: 0,
       daysCounted: 0,
@@ -224,10 +226,30 @@ describe("usage reports", () => {
     );
 
     expect(report.totals).toStrictEqual({
+      billableAccountDays: Option.none(),
       byPlatform: [],
       channelDays: 0,
       daysCounted: 0,
       publishedPosts: 0,
     });
+  });
+
+  it("give the billing workspace's days their billable accounts, the 31st none, and the period's sum", () => {
+    const report = reportOf([], period, [
+      { day: day("2026-10-30"), peak: 4 },
+      { day: day("2026-10-31"), peak: 6 },
+      { day: day("2026-11-02"), peak: 5 },
+      { day: day("2026-11-03"), peak: 9 },
+    ]);
+
+    expect(
+      report.days.map(({ billableAccounts }) => billableAccounts)
+    ).toStrictEqual([
+      Option.some(4),
+      Option.some(0),
+      Option.none(),
+      Option.some(5),
+    ]);
+    expect(report.totals.billableAccountDays).toStrictEqual(Option.some(9));
   });
 });

@@ -1,0 +1,110 @@
+---
+title: API conventions
+description: "What every endpoint has in common: request ids, the answers' shape and authentication."
+sidebar:
+  icon: book-open
+---
+
+Every endpoint of the [API](/developers) follows the rules on this page, so a client written for one handles them all. The [API reference](/reference) says what each endpoint takes and answers; this page says what they share.
+
+<CardGroup cols={2}>
+  <Card
+    title="Errors"
+    href="/developers/conventions/errors"
+    icon="circle-alert"
+  >
+    The error format, what to do with each kind, and every code.
+  </Card>
+  <Card
+    title="Ids and instants"
+    href="/developers/conventions/ids"
+    icon="fingerprint"
+  >
+    How ids, instants and time zones are written.
+  </Card>
+  <Card title="Paging" href="/developers/conventions/paging" icon="list">
+    Read a list one page at a time.
+  </Card>
+  <Card
+    title="Idempotency"
+    href="/developers/conventions/idempotency"
+    icon="repeat"
+  >
+    Send a request again without posting twice.
+  </Card>
+  <Card
+    title="Rate limits"
+    href="/developers/conventions/rate-limits"
+    icon="gauge"
+  >
+    How many requests a key may send.
+  </Card>
+  <Card
+    title="Versions and changes"
+    href="/developers/conventions/versioning"
+    icon="git-branch"
+  >
+    How the API changes, deprecations and the changelog.
+  </Card>
+  <Card title="Discovery" href="/developers/conventions/discovery" icon="radar">
+    The documents that tell a program where the API is.
+  </Card>
+</CardGroup>
+
+## Requests and answers [#requests]
+
+Requests go to the address you open Peal at, under `/api`. Bodies are JSON, sent with `Content-Type: application/json`, and so are answers, apart from those with no body (204).
+
+Every answer carries an `X-Request-Id` header, whatever answered it and whether or not it succeeded:
+
+- Send your own `X-Request-Id` and Peal keeps it, when it is 8 to 128 characters out of letters, digits, `.`, `_`, `:` and `-`. Otherwise the server issues one, a UUIDv7.
+- The id is on every line the server logs for the request (`peal.request_id`), in the body of every error (`requestId`) and in the workspace's [activity log](/guides/workspace#activity).
+- Log it on your side, and quote it when you ask for help.
+
+```bash
+curl -i https://api.example.com/api/workspaces/$WORKSPACE_ID/channels \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "X-Request-Id: nightly-sync:2026-11-16:0042"
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Request-Id: nightly-sync:2026-11-16:0042
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=599;t=42
+```
+
+The API only adds to what it answers ([Versioning](/developers/conventions/versioning#versioning)): ignore the fields, the values and the errors your client does not know.
+
+## Authentication [#authentication]
+
+Every endpoint of the API needs a credential, sent as `Authorization: Bearer …`, apart from the health checks, the changelog and the [discovery documents](/developers/conventions/discovery#discovery). A few other endpoints answer someone who is no member, by other means:
+
+- the pages of a [connect link](/developers/embedding) or a [review link](/guides/posts/review), which answer the link's token;
+- the platforms' data deletion callbacks, which the platform signs;
+- what the web app's own pages send before anyone signs in: its error reports, the captcha's site key, the sign-in routes under `/api/auth`.
+
+The credentials:
+
+| Credential            | Acts as                                            | Allowed                                                                                                                     |
+| --------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| An API key, `peal_…`  | The key itself, in the one workspace it belongs to | The permissions chosen when it was created, such as `post:read` or `post:schedule` ([API keys](/guides/workspace#api-keys)) |
+| An OAuth access token | The member who signed the application in           | What the member's role allows, within the scopes they granted ([What each permission allows](/developers/agents#scopes))    |
+
+The web app's session cookie is for the web app. [Authentication](/developers#authentication), in the overview, describes each credential.
+
+Each endpoint's reference names the permission it needs. An OAuth token needs the scope that carries it too:
+
+| Scope               | Needed for                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace:read`    | Reading                                                                                                                                              |
+| `workspace:write`   | Changing something                                                                                                                                   |
+| `workspace:publish` | Whatever needs `post:schedule`                                                                                                                       |
+| `workspace:ads`     | What reaches an ad network: beside `workspace:write` for `ads:manage`, beside `workspace:publish` for `ads:spend` ([Ads](/guides/engage/ads#access)) |
+
+| Status | Code              | When                                                                                                                        |
+| ------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 401    | `unauthenticated` | No credential, or one that no longer works: a key revoked or expired, a token past its time.                                |
+| 403    | `forbidden`       | The credential works but does not allow the request. `reason` says why ([below](/developers/conventions/errors#forbidden)). |
+| 404    | `not_found`       | No such resource, or a workspace the caller does not belong to.                                                             |

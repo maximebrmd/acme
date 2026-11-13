@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gt, lte, sql } from "drizzle-orm";
 import { Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -24,8 +24,8 @@ const today = (workspaceId: WorkspaceId, day: LocalDate) =>
  * statement, an insert that adds the request's cost to the day's count
  * while the sum stays within the limit, so Postgres serializes requests sent at the same time on the
  * day's row. A workspace that shares its pool claims in a transaction
- * instead: the pool's hold (`sharedWith`), then each of its workspaces'
- * lock in their order, then the pool's day counted with the request. A
+ * instead: the pool's hold (`sharedWith`), which its claims take in turn,
+ * then the pool's day counted with the request, in one count. A
  * database failure is a defect here: no caller can do better than report
  * it.
  */
@@ -91,10 +91,6 @@ export const DrizzleAssistantUsageLive = Layer.effect(
             if (others.length === 0) {
               return yield* add(workspaceId, day, dailyLimit, cost);
             }
-
-            const members = [workspaceId, ...others].toSorted();
-
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/assistant/usage'), hashtext(id)) FROM unnest(string_to_array(${members.join(",")}, ',')) AS id ORDER BY id`;
 
             const sent = yield* sentBy(others, day);
 
@@ -163,7 +159,7 @@ export const DrizzleAssistantUsageLive = Layer.effect(
           .from(dailyUsage)
           .where(
             and(
-              inArray(dailyUsage.workspaceId, [...workspaceIds]),
+              anyUuid(dailyUsage.workspaceId, workspaceIds),
               eq(dailyUsage.day, isoDay(day)),
               gt(dailyUsage.requests, 0)
             )

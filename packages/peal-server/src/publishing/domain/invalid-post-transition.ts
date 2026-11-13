@@ -16,6 +16,7 @@ export const PostActionSchema = Schema.Literals([
   "cancel",
   "discard",
   "reopen",
+  "dropTarget",
 ]);
 
 export type PostAction = typeof PostActionSchema.Type;

@@ -5,11 +5,14 @@ import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
+import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import { AccountPayers } from "#billing/application/ports/account-payers.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
+import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
+import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -25,12 +28,16 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  AccountDaysInMemory,
+  AccountDaysUncountedTest,
   AloneInAccountsTest,
+  NoOwnChannelsTest,
   NoAddressesTest,
   NoContractsTest,
   NoTrialsTest,
   PlainPseudonymsTest,
   StripeUncalledTest,
+  UsageBillingUncalledTest,
 } from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -61,6 +68,8 @@ const SubscriptionsInMemory = Layer.effect(
       forgetUser: () => Effect.void,
       ofWorkspace: () => Ref.get(saved),
       ofWorkspaces: () => Effect.die("not read here"),
+      markPaidInvoice: () => Effect.void,
+      perAccount: () => Effect.succeed([]),
       record: (change) =>
         Ref.update(saved, (all) => [...all, change.subscription]).pipe(
           Effect.as("recorded" as const)
@@ -101,6 +110,11 @@ const WorkspacesTest = Layer.mock(Checkouts, {
   holdWorkspace: (id) => Effect.succeed(id !== deletedWorkspace),
 });
 
+// Stripe says nothing of the next invoice; anything else dies.
+const NoUpcomingTest = Layer.mock(StripeContracts, {
+  upcomingTotal: () => Effect.succeedNone,
+});
+
 const billingWith = (enabled: boolean) =>
   BillingOverview.layer.pipe(
     Layer.provide(UsageTest),
@@ -111,10 +125,14 @@ const billingWith = (enabled: boolean) =>
       Layer.mergeAll(
         SubscriptionsInMemory,
         NoTrialsTest,
-        StripeUncalledTest,
+        NoUpcomingTest,
         NoAddressesTest,
         PlainPseudonymsTest,
-        AloneInAccountsTest
+        AloneInAccountsTest,
+        AccountDaysUncountedTest,
+        UsageBillingUncalledTest,
+        NoOwnChannelsTest,
+        PlanHolders.layerOwn
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
@@ -385,10 +403,13 @@ const recordsWith = (enabled: boolean) =>
         StripeUncalledTest,
         NoContractsTest,
         AloneInAccountsTest,
-        PlainPseudonymsTest
+        PlainPseudonymsTest,
+        AccountDaysUncountedTest,
+        UsageBillingUncalledTest
       )
     ),
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
+    Layer.provideMerge(AccountDaysInMemory),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(
@@ -478,10 +499,57 @@ layer(recordsWith(false))("posts on platforms that bill per post", (it) => {
           ]
         );
 
+        // Its billing account's days, as their billing workspace, and the
+        // usage reported of them.
+        const days = yield* AccountDayStore;
+        const on = DateTime.makeUnsafe("2026-11-09T10:00:00Z");
+
+        yield* days.raise(DateTime.startOf(on, "day"), [
+          { count: 3, holder: workspaceId },
+        ]);
+        yield* days.enqueue(
+          [
+            {
+              createdAt: on,
+              eventName: "peal_accounts",
+              holder: workspaceId,
+              identifier: `acc:${workspaceId}:2026-11-09:3`,
+              occurredAt: on,
+              stripeCustomerId: "cus_synthetic",
+              value: 3,
+            },
+          ],
+          [
+            {
+              day: DateTime.startOf(on, "day"),
+              holder: workspaceId,
+              reported: 3,
+            },
+          ]
+        );
+
+        const exported = yield* records.exportWorkspace(workspaceId);
+
+        assert.deepStrictEqual(exported.accountDays, [
+          { day: "2026-11-09", peak: 3, reported: 3 },
+        ]);
+        assert.deepStrictEqual(exported.usageReports, [
+          {
+            eventName: "peal_accounts",
+            occurredAt: on,
+            sentAt: null,
+            value: 3,
+          },
+        ]);
+
         yield* erase();
 
         assert.lengthOf(yield* metered.ofWorkspace(workspaceId), 0);
         assert.lengthOf((yield* records.exportWorkspace(workspaceId)).usage, 0);
+        assert.deepStrictEqual(yield* days.allOf(workspaceId), {
+          days: [],
+          reports: [],
+        });
       })
   );
 });
@@ -498,6 +566,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         );
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "business",
           subscriptions: [
@@ -509,6 +578,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
             },
           ],
           usage: [],
+          usageReports: [],
         });
 
         const refused = yield* erase().pipe(Effect.flip);
@@ -554,10 +624,12 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         // Its open checkouts went first, so none starts another.
         assert.strictEqual(yield* Ref.get(log.expired), 1);
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
       })
   );
@@ -713,10 +785,12 @@ layer(recordsWith(true))(
         yield* erase();
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          accountDays: [],
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
       })
     );
@@ -767,6 +841,7 @@ const UnreadTest = Layer.mergeAll(
           graceUntil: Option.none(),
         })
       ),
+      AccountDaysInMemory,
       Layer.succeed(
         Checkouts,
         Checkouts.of({
@@ -784,6 +859,8 @@ const UnreadTest = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Effect.die("read while billing is off"),
           ofWorkspaces: () => Effect.die("read while billing is off"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: () => Effect.die("not used"),
           remindable: () => Effect.die("not used"),
         })
@@ -821,6 +898,7 @@ const RememberedTest = BillingRecords.layer.pipe(
       NoContractsTest,
       MeteredPostsInMemory,
       UsageInMemory,
+      AccountDaysInMemory,
       CheckoutsInMemory,
       PlainPseudonymsTest,
       Layer.mock(BillingAccounts, {}),

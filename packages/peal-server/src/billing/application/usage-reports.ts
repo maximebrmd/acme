@@ -17,9 +17,11 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { AccountDays } from "./account-days.ts";
 import type { InvalidTenantCursor } from "./invalid-tenant-cursor.ts";
 import type { NoPartnerAccount } from "./no-partner-account.ts";
 import type { PartnerScopeMissing } from "./partner-scope-missing.ts";
+import { BillingMode } from "./ports/billing-mode.ts";
 import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import type { WorkspaceMeteredPosts } from "./ports/metered-post-ledger.ts";
 import { PartnerTenancy } from "./ports/partner-tenancy.ts";
@@ -181,8 +183,13 @@ interface PartnerDays {
 }
 
 // The partner's days: its daily counts, and the posts of the workspaces
-// that still exist; the totals' channel-days from those counts.
-const partnerDaysOf = (kept: readonly PartnerDay[], posts: UsageReport) => {
+// that still exist; the totals' channel-days from those counts, and its
+// billable account-days from the home's counted days.
+const partnerDaysOf = (
+  kept: readonly PartnerDay[],
+  posts: UsageReport,
+  billable: Option.Option<number>
+) => {
   const counted = new Map(
     kept.map((day) => [DateTime.toEpochMillis(day.day), day])
   );
@@ -208,6 +215,7 @@ const partnerDaysOf = (kept: readonly PartnerDay[], posts: UsageReport) => {
   const partnerDays: PartnerDays = {
     days,
     totals: {
+      billableAccountDays: billable,
       byPlatform: posts.totals.byPlatform,
       channelDays: withCounts.reduce((sum, channels) => sum + channels, 0),
       daysCounted: withCounts.length,
@@ -300,6 +308,8 @@ export class UsageReports extends Context.Service<
       const metered = yield* MeteredPostLedger;
       const holders = yield* PlanHolders;
       const tenancies = yield* PartnerTenancy;
+      const accountDays = yield* AccountDays;
+      const { enabled: bills } = yield* BillingMode;
 
       const ofWorkspace = Effect.fn("UsageReports.ofWorkspace")(
         function* ofWorkspace(actor: Actor, asked: UsageRangeAsked) {
@@ -322,12 +332,19 @@ export class UsageReports extends Context.Service<
             { concurrency: "unbounded" }
           );
 
+          // The billing account's days, kept on its billing workspace, on
+          // a server that bills.
+          const days =
+            Option.isSome(found.entitled.plan) && found.holder === workspaceId
+              ? yield* accountDays.ofDays([workspaceId], period)
+              : [];
+
           const report: WorkspaceUsageReport = {
             current: found.current,
             entitlements: found.entitled,
             meteredPosts: found.counted.filter(touches(period)),
             period,
-            report: reportOf(found.records, period),
+            report: reportOf(found.records, period, days),
             sharedWith:
               found.holder === workspaceId
                 ? Option.none()
@@ -350,6 +367,9 @@ export class UsageReports extends Context.Service<
       ) {
         const found = yield* Effect.all(
           {
+            counted: bills
+              ? accountDays.ofDays([tenancy.homeWorkspaceId], period)
+              : Effect.succeed([]),
             days: tenancies.daysOf(tenancy.partnerId, period),
             metered: metered.ofWorkspaces(account.workspaceIds, period),
             posts: ledger.postsAcross(account.workspaceIds, period),
@@ -359,7 +379,8 @@ export class UsageReports extends Context.Service<
 
         const { days, totals } = partnerDaysOf(
           found.days,
-          reportOf(found.posts, period)
+          reportOf(found.posts, period),
+          reportOf([], period, found.counted).totals.billableAccountDays
         );
 
         const whole: PartnerAccountUsage = {

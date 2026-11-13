@@ -23,9 +23,13 @@ import {
   preferencesKeys,
 } from "#notices/atoms.ts";
 
-type EmailKind = keyof NotificationPreferences["email"];
+type EmailKind = Exclude<
+  keyof NotificationPreferences["email"],
+  "weeklyDigest"
+>;
 
-// Most pressing first: what needs the reader, then what went as planned.
+// Most pressing first: what needs the reader, then what went as planned;
+// the weekly digest after them.
 const kinds: readonly EmailKind[] = [
   "postFailed",
   "postUnconfirmed",
@@ -106,6 +110,15 @@ export const PreferencesFields = ({
             }}
           />
         ))}
+        <PreferenceRow
+          label={t("weeklyDigest")}
+          hint={t("weeklyDigestHint")}
+          checked={preferences.email.weeklyDigest}
+          disabled={saving}
+          onChange={(checked) => {
+            onChange({ email: { weeklyDigest: checked } });
+          }}
+        />
       </fieldset>
       <fieldset className="flex flex-col gap-4">
         <legend className="mb-2 font-medium">{t("postsLegend")}</legend>

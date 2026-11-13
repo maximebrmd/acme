@@ -20,7 +20,10 @@ const optionsLine = (page: string): string => {
   );
 };
 
-describe.each(["docs/cli.mdx", "docs/fr/cli.mdx"])("%s", (page) => {
+describe.each([
+  "docs/developers/cli/posts.mdx",
+  "docs/fr/developers/cli/posts.mdx",
+])("%s", (page) => {
   it("names every option of every platform that takes some", () => {
     const line = optionsLine(page);
 

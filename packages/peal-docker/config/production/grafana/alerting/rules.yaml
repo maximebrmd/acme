@@ -545,6 +545,70 @@ groups:
                     type: gt
                     params: [5.5]
 
+      - uid: peal-weekly-digest-failing
+        title: Weekly digests keep failing
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Ten or more weekly digests did not go in two hours (peal.notifications.weekly_digest.failures), each refused for good by the mail transport or for a reader that could not be read. The digests run every hour of Monday from 06:19 UTC. The server's errors name each reader by id.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 7200
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A counter born at its first failure has no sample before it.
+              expr: (sum(increase(peal_notifications_weekly_digest_failures_total{reason!="deferred"}[2h])) or vector(0)) + (sum(peal_notifications_weekly_digest_failures_total{reason!="deferred"} unless peal_notifications_weekly_digest_failures_total{reason!="deferred"} offset 2h) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [9.5]
+
+      - uid: peal-weekly-digest-deferred
+        title: The mail transport keeps refusing weekly digests for now
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more weekly digests were refused for now in three hours (peal.notifications.weekly_digest.failures, reason deferred), after their retries. Each is left to the next hourly run, the last at 23:19 UTC on Monday; three in a row stop a run, as the transport is then down. Check the mail transport (Resend or SMTP) and the server's warnings, which name each reader by id.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A counter born at its first deferral has no sample before it.
+              expr: (sum(increase(peal_notifications_weekly_digest_failures_total{reason="deferred"}[3h])) or vector(0)) + (sum(peal_notifications_weekly_digest_failures_total{reason="deferred"} unless peal_notifications_weekly_digest_failures_total{reason="deferred"} offset 3h) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-comments-forget-failing
         title: Comments past their platform's bound are not forgotten
         condition: B
@@ -676,6 +740,41 @@ groups:
                     type: gt
                     params: [0]
 
+      - uid: peal-duplicate-subscription
+        title: A billing account paid for per-account pricing twice
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two checkouts of one billing account finished before either was recorded, and the server ended the newer per-account subscription at once, without a charge (peal.billing.duplicate_subscriptions). The customer holds two confirmations. The server's error log names the workspace, the subscription kept and the one ended; check the ended one at Stripe and tell the customer which contract stands.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Rare: any in the hour is one too many; the hour's increase, a
+              # restart's included, and a series born in the last five minutes
+              # counted whole (one present five minutes ago is not new, so a
+              # gap in the telemetry an hour ago is not read as a birth).
+              expr: (sum(increase(peal_billing_duplicate_subscriptions_total[1h])) or vector(0)) + (sum(peal_billing_duplicate_subscriptions_total unless peal_billing_duplicate_subscriptions_total offset 1h unless peal_billing_duplicate_subscriptions_total offset 5m) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-stripe-catalogue
         title: Stripe's catalogue differs from the rate card
         condition: B
@@ -698,6 +797,233 @@ groups:
               # Set once when the server starts, and exported from then on;
               # a server that does not bill never sets it.
               expr: max(peal_billing_stripe_catalogue_problems) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
+      - uid: peal-usage-report-behind
+        title: Usage waits to reach Stripe
+        condition: B
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The oldest meter event in the outbox to Stripe was written more than 6 hours ago (peal.billing.usage_report.oldest_age, with peal.billing.usage_report.left the events waiting), so per-account pricing's usage is billed late, and may land on the next month's invoice. Look at the billing.usage-report cron's logs, which say how many events each run sent, deferred and left; Stripe not answering, or limiting the rate, defers a customer's events to the next run. Nothing is to be reported by hand; each event goes once Stripe takes it.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Set by each run on a server that bills; one that does not never sets it.
+              expr: max(peal_billing_usage_report_oldest_age) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [21600]
+
+      - uid: peal-usage-report-stopped
+        title: The reporter of usage to Stripe stopped
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The reporter of usage to Stripe (the billing.usage-report cron, every five minutes) has not ended a run for 30 minutes since the server started or since its last run (peal.billing.usage_report.ran_at), so nothing of per-account pricing's usage reaches Stripe. Look at the server's logs for the cron's failures ("Reporting usage to Stripe failed") and at the cluster's runners.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Set when a server that bills starts, then by each run: no data where nothing bills.
+              expr: time() - max(peal_billing_usage_report_ran_at)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1800]
+
+      - uid: peal-usage-report-refused
+        title: Stripe refused usage for good
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The outbox to Stripe keeps meter events Stripe refused for the event's own fault, its value, timestamp or customer (peal.billing.usage_report.refused_kept above 0); their usage is not billed. The server's error log ("Stripe refused a meter event for good") gives Stripe's error code, the event name and its identifier, and billing.meter_reports keeps the event with its refusal. Read the event in Stripe's dashboard before anything else; never report usage again by hand, as Stripe may hold it already. Fix the cause with the owner, then clear the row's refusal so the reporter sends it under its identifier.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A state, not an event: it fires on the first refusal and while one is kept.
+              expr: max(peal_billing_usage_report_refused_kept) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
+      - uid: peal-usage-report-key-refused
+        title: Stripe refuses the server's meter events
+        condition: B
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe refused meter events for what is not the event's own (peal.billing.usage_report.paused customers left by the last runs); the server's key, its permissions, a restricted account, a meter missing or an idempotency key reused otherwise. Nothing is lost; the events wait and go once Stripe takes them. Check STRIPE_SECRET_KEY and its permissions (meter events), the account's state in Stripe's dashboard, and stripe-catalogue --check; the server's warnings name the event.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Customers paused by the last run; 0 once Stripe takes them.
+              expr: max(peal_billing_usage_report_paused) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
+      - uid: peal-account-days-unstarted
+        title: Today's account-days are not started
+        condition: B
+        for: 65m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Today's account-days were not started for every billing account by 02:00 UTC, nor by the hourly run after it (peal.billing.account_days.started_day, with peal.billing.account_days.started of peal.billing.account_days.accounts); a paying account whose day is not started is not billed for it unless it connects something. The 00:11 snapshot starts the day and billing.account-days starts it again every hour at minute 49; their warnings ("Starting a batch of the day's account-days failed") say why.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The last day started whole, set to the day before when a server that bills starts: past 26 hours from its first second, today is not started at 02:00.
+              expr: time() - max(peal_billing_account_days_started_day)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [93600]
+
+      - uid: peal-threshold-unset
+        title: A per-account subscription has no billing threshold
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe refused the unverified billing threshold to a per-account subscription (peal.billing.threshold_unset); it is recorded and entitled without it, held to 100 accounts, and its usage is invoiced only at the end of the month. The server's error log names the workspace; billing.usage-items sets it again every day. Check the subscription in Stripe's dashboard, and the sandbox runbook's threshold step.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The hour's increase, a restart's included, and a series born in the last five minutes counted whole: one present five minutes ago is not new, so a gap in the telemetry an hour ago is not read as a birth.
+              expr: (sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h unless peal_billing_threshold_unset_total offset 5m) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
+      - uid: peal-meter-errors
+        title: Stripe could not count meter events it took
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe reported meter events it took and could not count, a meter archived or missing, a customer unknown, a value it cannot read (peal.billing.meter_errors, from its meter error events at /api/stripe/meter-errors); their usage is not billed. The server's error log ("Stripe reported meter events it could not count") gives each code and count, and the reports Stripe named are kept refused in billing.meter_reports (stripe:<code>). Read the meter and the customer in Stripe's dashboard and stripe-catalogue --check; never report usage by hand before Stripe's own summaries say what it holds.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The hour's increase, a restart's included, and a series born in
+              # the last five minutes counted whole: one present five minutes
+              # ago is not new, so a gap in the telemetry an hour ago is not
+              # read as a birth.
+              expr: (sum(increase(peal_billing_meter_errors_total[1h])) or vector(0)) + (sum(peal_billing_meter_errors_total unless peal_billing_meter_errors_total offset 1h unless peal_billing_meter_errors_total offset 5m) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:

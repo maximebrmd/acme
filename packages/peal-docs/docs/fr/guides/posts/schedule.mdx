@@ -1,0 +1,162 @@
+---
+title: Programmer une publication
+description: Programmer une publication dans votre fuseau horaire, la déplacer ou l’annuler sur le calendrier, et suivre comment elle s’est passée sur chaque canal.
+sidebar:
+  icon: calendar-days
+---
+
+Donnez son heure à une publication, déplacez-la ou annulez-la, et suivez comment elle s’est passée sur chacun de ses canaux.
+
+## La programmer [#schedule]
+
+<Tabs>
+  <Tab title="Application web">
+    <Steps>
+      <Step title="Choisissez l’heure">
+        Sous **Quand**, choisissez la **Date**, l’**Heure** et le **Fuseau horaire**, qui part de celui de votre navigateur.
+      </Step>
+      <Step title="Programmez">
+        Choisissez **Programmer**. Le bouton reste inactif tant que la publication dépasse une limite sur l’un de ses canaux, et l’éditeur liste ce qu’il faut corriger. Les [options des plateformes](/guides/posts#options) qui manquent à un canal sont listées une fois le bouton choisi, et montrées sous leurs champs.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+```
+
+Voyez [Les publications en ligne de commande](/developers/cli/posts#posts).
+
+  </Tab>
+</Tabs>
+
+L’heure est celle de l’horloge dans ce fuseau, changements d’heure compris :
+
+- une heure que l’horloge saute, comme 02:30 la nuit où elle avance, passe au moment du saut, 03:00 ;
+- une heure qui revient deux fois, la nuit où l’horloge recule, est la première des deux : la publication part une seule fois.
+
+Une heure passée depuis moins d’une minute compte comme maintenant. Une heure plus ancienne est refusée : choisissez une heure à venir.
+
+### Publier maintenant [#publish-now]
+
+**Publier maintenant** envoie la publication tout de suite. Le bouton se trouve à côté de **Programmer** sur un brouillon, et de **Déplacer à cette heure** sur une publication programmée.
+
+<Callout type="warning">
+  La publication devient publique et ne peut pas être reprise depuis l’éditeur :
+  **Publier maintenant** demande donc une confirmation, en nommant les canaux.
+</Callout>
+
+- Il programme la publication au moment où vous confirmez, dans le fuseau horaire de votre navigateur, comme **Programmer** : les mêmes vérifications s’appliquent.
+- Il nomme à part un canal désactivé ou à reconnecter, où la publication ne peut pas partir.
+- Il n’est pas proposé là où vos publications attendent une approbation, ni tant que l’éditeur ne sait pas si elles en attendent une : une approbation après l’heure de la publication ne publie rien.
+
+## La déplacer, la repasser en brouillon ou l’annuler [#move-cancel]
+
+Une fois une publication programmée, son texte est verrouillé ; son heure ne l’est pas.
+
+<Tabs>
+  <Tab title="Application web">
+    - Dans l’éditeur, changez la date, l’heure ou le fuseau, puis choisissez **Déplacer à cette heure**.
+    - Sur le calendrier, faites glisser la publication par sa poignée vers une autre heure ou un autre jour. Elle garde le fuseau horaire où elle a été programmée.
+    - Pour changer ce qu’elle dit, choisissez **Repasser en brouillon**. Elle quitte le calendrier et ne part plus à aucune heure : modifiez-la, puis **Programmez**-la à nouveau, ce qui la revérifie auprès de ses canaux.
+    - Pour l’arrêter, choisissez **Annuler la publication** dans l’éditeur et confirmez. Elle ne part sur aucun canal, et ne peut plus être programmée.
+    - Pour qu’elle ne parte pas sur un seul canal, choisissez **Retirer** à côté de ce canal sous **Canaux où elle part**. Elle part sur les autres à son heure, et le canal indique **Retiré de la publication**. Le dernier canal reste : annulez plutôt la publication.
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
+peal posts unschedule <post-id>
+peal posts cancel <post-id>
+peal posts remove-target <post-id> <target-id>
+```
+
+  </Tab>
+</Tabs>
+
+Déplacer une publication ne revérifie ni son texte ni ses médias auprès de ses canaux.
+
+Retirer un canal d’une publication est une modification de celle-ci :
+
+- Dans un espace de travail qui demande des [approbations](/guides/posts/review#policy), quand vos publications en demandent une, l’approbation donnée ne couvre plus la publication, et elle attend de nouveau une approbation.
+- Repassée en brouillon (par vous, par une relecture ou par une approbation venue trop tard), la publication garde les canaux qu’elle avait encore. Le canal retiré perd son propre texte et ses images. Coché de nouveau, il repart de zéro.
+
+## Le calendrier [#calendar]
+
+Sur la carte d’un espace de travail, choisissez **Calendrier**. Il montre les publications programmées par **Jour**, par **Semaine** ou par **Mois**, à leur heure dans le fuseau horaire de votre navigateur, avec l’état de chacune.
+
+- La vue par jour a une ligne pour chaque heure qui porte une publication ou un créneau d’une [file d’attente](/guides/posts/queues#queues), chaque créneau libre nommé par sa file ; un créneau pris par une publication que les filtres masquent le dit, et n’offre pas de nouvelle publication. Un jour de changement d’heure, chaque heure indique son décalage.
+- Dans la vue par mois, un jour qui a plus de publications qu’il n’en montre s’ouvre dans la vue par jour.
+- Choisissez une publication pour l’ouvrir dans l’éditeur.
+- Un jour, ou une heure de la semaine qui n’a pas commencé, porte un lien **Nouvelle publication** qui ouvre l’éditeur à cette date et à cette heure.
+- Au-dessus du calendrier, filtrez les publications par [étiquette](/guides/posts/organise#tags) et par canal.
+- Les heures suivent l’usage de votre langue. Pour les lire sur 12 ou sur 24 heures, choisissez **Format de l’heure** sur la page de votre compte : ce choix est gardé dans votre navigateur.
+- Pour ouvrir le calendrier sur une semaine donnée, ajoutez à son adresse `?date=` suivi d’un jour de cette semaine, comme `?date=2026-11-09`.
+
+## À l’heure de la publication [#publishing]
+
+À l’heure prévue, Peal envoie la publication à chacun de ses canaux séparément, une publication à la fois par compte, et note comment chacun s’est terminé :
+
+| Sur un canal | Ce qui s’est passé                                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Publié       | La plateforme a pris la publication, et a donné son adresse quand elle en a une.                                              |
+| Échec        | La plateforme a refusé la publication, le compte est à reconnecter, ou la publication est partie trop tard, comme ci-dessous. |
+| À vérifier   | Peal ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier.                          |
+| Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                    |
+
+La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**. Son auteur, et les membres qui ont choisi d’être prévenus pour toutes les publications, apprennent comment elle s’est passée sur chaque canal : voyez [Notifications](/guides/workspace/notifications).
+
+## Suivre une publication [#follow-up]
+
+Ouvrez une publication partie, depuis le calendrier ou une notification. Sa page montre son texte et, pour chaque canal :
+
+- son état, et pourquoi elle a échoué ou est à vérifier ;
+- l’adresse de la publication sur la plateforme ;
+- chaque tentative de Peal, avec l’heure du nouvel essai.
+
+Elle indique aussi comment la publication a été créée et comment elle a été programmée : dans l’application web, avec une clé d’API, ou par une application comme la ligne de commande ou un client MCP, désignée par son nom. Pendant l’envoi, la page se met à jour d’elle-même.
+
+Les membres qui peuvent programmer des publications peuvent alors :
+
+- **Republier** sur un canal où elle a échoué ou est à vérifier. Peal l’envoie maintenant, en un nouvel envoi avec ses propres tentatives, et la publication indique **En cours de publication** jusqu’à son départ. Quand elle est à vérifier, regardez d’abord sur la plateforme, car elle est peut-être déjà en ligne.
+- **Indiquer ce que vous avez trouvé** sur un canal à vérifier : **Elle est en ligne**, avec l’adresse de la publication si vous l’avez, ou **Elle n’y est pas**, qui la fait échouer sur ce canal pour qu’elle puisse être republiée. Les deux réponses la retirent des publications à vérifier, et marquent ses notifications comme lues.
+
+### Nouveaux essais [#retries]
+
+Peal patiente plutôt que d’abandonner quand une plateforme est occupée :
+
+- une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, puis la publication y échoue ;
+- une plateforme qui limite le rythme des publications de Peal est relancée au moment qu’elle indique, jusqu’à 8 fois et au plus tard un jour après l’heure de la publication ;
+- une plateforme qui n’accepte plus l’accès du compte fait échouer la publication chez elle, et le canal est à [reconnecter](/guides/channels#reconnect).
+
+Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos. Peal les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
+
+<Callout type="warning">
+  Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue,
+  par exemple parce que le serveur était arrêté, est marquée manquée et ne part
+  pas.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="Quand une plateforme ne répond pas à la requête qui publie">
+    Peal ne redemande que de façons qui ne peuvent pas publier deux fois :
+
+    | Plateforme                  | Comment Peal vérifie                                                                                                                       |
+    | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+    | Bluesky                     | Il relit la publication.                                                                                                                   |
+    | Mastodon                    | Il la renvoie sous la même clé, ce à quoi Mastodon répond avec la publication qu’il a déjà faite.                                          |
+    | X                           | Il la cherche parmi les publications récentes du compte, par son texte, ses liens et ses fichiers, sans jamais la renvoyer à X.            |
+    | Threads et Instagram        | Il leur demande si la publication qui leur a été remise a été publiée.                                                                     |
+    | Pages Facebook              | Il la cherche parmi les publications récentes de la Page, par son texte.                                                                   |
+    | TikTok                      | Il suit la publication que TikTok a déjà prise par l’identifiant qu’il a donné.                                                            |
+    | YouTube                     | Il demande à la mise en ligne où elle en est, sans jamais envoyer la vidéo deux fois.                                                      |
+    | Pinterest                   | Il cherche l’épingle parmi celles de son tableau créées depuis, par son titre, sa description, son lien et son type de média, sans jamais la créer de nouveau. |
+    | Google Business Profile     | Il cherche une publication parmi celles de l’établissement, par son type, son texte et le titre de son événement.                          |
+    | Page d’entreprise LinkedIn  | Il la cherche parmi les publications les plus récentes de la page, par son texte.                                                          |
+    | Profil LinkedIn             | LinkedIn ne laisse Peal ni lire les publications d’un membre ni en envoyer une deux fois sans risque : la publication indique **À vérifier** tout de suite. |
+
+    Il essaie trois fois, sur environ deux minutes et demie. Si le serveur s’arrête au milieu d’une publication, il vérifie de la même façon à son redémarrage. Ce n’est que si rien de cela ne tranche que la publication indique **À vérifier** : Peal ne la republie jamais de lui-même.
+
+  </AccordionItem>
+</Accordion>

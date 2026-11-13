@@ -1,0 +1,89 @@
+---
+title: Delivery and retries
+description: When Peal retries a delivery, in what order events arrive, and the delivery log.
+sidebar:
+  icon: refresh-cw
+---
+
+Peal tries each delivery until your server takes it, or for about a day. This page tells when it tries again, what your server must expect, and how to find and resend deliveries from the log.
+
+## Delivery and retries [#delivery]
+
+Your server has 15 seconds to answer. Any answer in the 200s is a success. Anything else is a failure: another status, the 300s included, no answer in time, or a connection that could not be made or broke.
+
+A failed delivery is tried again, 8 attempts in all, over about a day:
+
+| Attempt | When                              |
+| ------- | --------------------------------- |
+| 1       | At once                           |
+| 2       | 5 seconds after the first failed  |
+| 3       | 5 minutes after the second failed |
+| 4       | 30 minutes after the third failed |
+| 5       | 2 hours after the fourth failed   |
+| 6       | 5 hours after the fifth failed    |
+| 7       | 8 hours after the sixth failed    |
+| 8       | 8 hours after the seventh failed  |
+
+After the eighth, the delivery has failed for good, and you can still [send it again](#log) by hand. While the endpoint stays on, the members who manage webhooks are told so with a [notification](/guides/workspace/notifications#events), and an email unless they turned it off, once a day at most for each endpoint.
+
+### When Peal turns an endpoint off [#auto-disable]
+
+Peal turns an endpoint off on its own in two cases, and then tells the members who manage webhooks, with a notification and an email:
+
+| Case                                | What happens                                                                                                                |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| It answers `410 Gone`               | The delivery fails at once, without another attempt, and the endpoint is turned off: the answer says it wants nothing more. |
+| Every attempt has failed for 5 days | The endpoint is turned off. One success in between starts the count again.                                                  |
+
+Turn the endpoint back on once it answers: it gets its 5 days again.
+
+## Order and duplicates [#ordering]
+
+Deliveries can arrive out of order, and more than once. Each event is delivered on its own, with its own retries, so an event whose first attempt failed arrives after the ones that came later. An attempt your server answered too late, or whose answer was lost, is made again.
+
+- Deduplicate on `webhook-id`. Keep the ids you have handled, and answer a success for one you already have.
+- Do not rely on arrival order. Use the instants in `data` (`publishedAt`, `failedAt`, `scheduledAt` and the like) and the event's `timestamp`, and read the post or the channel through the API when you need its current state.
+
+## The delivery log [#log]
+
+Each endpoint has a log of its deliveries, newest first, kept 30 days. For each one it shows:
+
+| Column   | What it shows                                                                                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Event    | The event's type and id                                                                                                                                                                                                  |
+| Status   | Pending, succeeded or failed. For a failed one, why: every attempt failed, the endpoint answered `410 Gone`, the endpoint was turned off before it got through, or the instance can no longer read the endpoint's secret |
+| Answer   | The status your server answered the last attempt with, or why no answer came: none in time, a connection that failed, or an address Peal no longer sends to                                                              |
+| Attempts | How long the last attempt took, how many attempts were made, and when the next one is                                                                                                                                    |
+
+For an answer that was not a success, the log keeps the start of what your server said, to help you tell what went wrong: one line, 256 characters at most. Peal keeps nothing else of an answer, and nothing of a successful one.
+
+### Across endpoints [#log-workspace]
+
+The workspace's log across its endpoints lists every delivery, newest first, filtered by status, endpoint, event type and when it was made (from `since`, before `until`). A delivery sent again names the one it repeats (`redeliveryOf`).
+
+A `partner` endpoint's deliveries are in its home workspace's log, those of the partner's other workspaces included. Each names the workspace the event happened in (`workspaceId`) and the partner's id for it (`workspaceExternalId`).
+
+After an outage, look at the deliveries that failed for good (status `failed`): the web app shows them in the **Failed** tab, with the receiver's last answer, for 30 days.
+
+### Test and send again [#resend]
+
+These actions help while you build, and after an outage:
+
+| Action                    | What it does                                                                                                                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Send a test event**     | Sends the endpoint a [`webhook.test`](/developers/webhooks/events#webhook-test) event, or a [sample](/developers/webhooks/events#samples) of the type you choose.                                                             |
+| **Send again**            | Sends a delivery's event to the endpoint once more, as a new delivery of the same event: same `webhook-id`, same body, a new timestamp and a new signature. A server that deduplicates will see it as one it already handled. |
+| **Send all failed again** | Sends an endpoint's failed deliveries once more, oldest first, 100 a call at most, the last delivery of each event only. Over the API you can name up to 100 deliveries instead.                                              |
+
+Test events and single sends need the endpoint to be on.
+
+When you send many again, a delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through (`alreadySent`). Calling again after a partial run therefore sends nothing twice. The answer lists what was sent and skipped, and how many failed deliveries the selection still holds (`remaining`). An endpoint's new deliveries start a quarter of a second apart, so a server that just came back is not sent them all at once.
+
+<Callout type="info" title="Hourly limits">
+  A workspace sends 30 test events and single deliveries again an hour at most,
+  counted together, and 1,000 deliveries again by the many, counted apart. Past
+  either, the call answers `TooManyWebhookSends` (429), with `retryAfterSeconds`
+  and a `Retry-After` header saying when the hour ends. A call to send many
+  again is taken whole or not at all. The counts hold for every server of an
+  instance.
+</Callout>

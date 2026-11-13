@@ -6,10 +6,14 @@ import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
 import { NotificationSettings } from "#notifications/application/notification-settings.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
+import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
+import { UnsubscribeWeeklyDigest } from "#notifications/application/unsubscribe-weekly-digest.ts";
+import { ContextDigestSources } from "#notifications/infrastructure/context-digest-sources.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
 import { DrizzleNoticeRecords } from "#notifications/infrastructure/drizzle-notice-records.ts";
 import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
 import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
+import { HmacDigestLinks } from "#notifications/infrastructure/hmac-digest-links.ts";
 import { mailSettingsConfig } from "#notifications/infrastructure/mail-settings.ts";
 import type { MailSettings } from "#notifications/infrastructure/mail-settings.ts";
 import { PublicAppLinks } from "#notifications/infrastructure/public-app-links.ts";
@@ -47,6 +51,7 @@ export const NotificationsLive = SendAuthEmail.layer.pipe(
 // The adapters behind the notices' ports.
 const NoticeAdaptersLive = Layer.mergeAll(
   DrizzleNoticeLog,
+  HmacDigestLinks,
   DrizzleNoticeStore,
   DrizzlePreferenceStore,
   PublicAppLinks,
@@ -71,8 +76,30 @@ export const NoticesLive = Layer.mergeAll(
   DeliverNoticeEmails.layer,
   NoticeInbox.layer,
   NotificationSettings.layer,
+  UnsubscribeWeeklyDigest.layer,
   DrizzleNoticeRecords
 ).pipe(Layer.provide(NoticeAdaptersLive));
+
+/**
+ * The weekly digest (SendWeeklyDigests), for its cron: the preferences
+ * that say who wants it, and what it tells, read through the workspace
+ * context's MemberDirectory and ActorsNow, publishing's PostAttention and
+ * analytics' AnalyticsQueries, which the composition root brings with the
+ * Mailer (from NotificationsLive) and the database.
+ */
+export const WeeklyDigestsLive = SendWeeklyDigests.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzlePreferenceStore,
+      PublicAppLinks,
+      ContextDigestSources,
+      HmacDigestLinks
+    )
+  )
+);
+
+/** Every Monday's weekly digest. Needs WeeklyDigestsLive and the cluster. */
+export { WeeklyDigestCron as NotificationsCronsLive } from "#notifications/infrastructure/crons.ts";
 
 /** Registers the workflow that sends notices' emails. Needs NoticesLive. */
 export { DeliverNoticeV1Live as NotificationsWorkersLive } from "#notifications/infrastructure/workflows/deliver-notice.ts";

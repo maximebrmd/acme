@@ -11,6 +11,7 @@ import {
 } from "./billing-plans.ts";
 import { Forbidden } from "./forbidden.ts";
 import { ByteCountSchema, Int64Schema } from "./int64.ts";
+import { RateCardSchema } from "./rate-card.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 // Null for no limit.
@@ -167,6 +168,30 @@ export const BillingAccountSchema = Schema.Struct({
 export type BillingAccount = typeof BillingAccountSchema.Type;
 
 /**
+ * The connected accounts of a workspace's billing account this calendar
+ * month (UTC), which per-account pricing bills: each day counts the most
+ * accounts connected at once across the account's workspaces, for days 1
+ * to 30 (the 31st is free), and the month's account-days go through the
+ * rate card's ladder. The money is US dollar cents excluding tax, null on
+ * a server that does not bill.
+ */
+export const BillingAccountsUsageSchema = Schema.Struct({
+  // The month's account-days so far, today's included; null on a server
+  // that does not bill, which counts none.
+  accountDays: Schema.NullOr(Int64Schema),
+  // The accounts this workspace connected itself.
+  connected: Schema.Int,
+  // What the month's account-days cost so far, by the ladder.
+  estimate: Schema.NullOr(MoneySchema),
+  // What one more account would cost a month, at the band it falls in.
+  nextAccount: Schema.NullOr(MoneySchema),
+  // The accounts connected across the billing account's workspaces.
+  pooled: Schema.Int,
+}).annotate({ identifier: "BillingAccountsUsage" });
+
+export type BillingAccountsUsage = typeof BillingAccountsUsageSchema.Type;
+
+/**
  * A workspace's billing. On a server that bills, a workspace is on the
  * free tier (`free`: 2 connected accounts across its billing account, no
  * payment method) or on per-account pricing (`payAsYouGo`: a payment
@@ -181,18 +206,33 @@ export const BillingSchema = Schema.Struct({
   // The billing account the workspace is on, on a server that does not
   // bill too. Older servers leave it out.
   account: Schema.optionalKey(BillingAccountSchema),
+  // The billing account's connected accounts this month, and their cost.
+  accounts: BillingAccountsUsageSchema,
   allowances: PlanAllowancesSchema,
   // The currency of the prices of the plans priced by tiers of channels.
   // Per-account pricing is in US dollars (`peal-contract/rate-card`).
   currency: Schema.String,
   enabled: Schema.Boolean,
+  // What the month so far costs, excluding tax, from the server's own
+  // counts and the rate card (the connected accounts for now); null on a
+  // server that does not bill. The invoice is the one that counts.
+  estimate: Schema.NullOr(MoneySchema),
+  // Whether the billing account pays with a payment method: its
+  // per-account subscription is active or past due.
+  paymentMethod: Schema.Boolean,
   plan: Schema.NullOr(PlanSchema),
   // The plans a workspace can be on, from the smallest: `free` and
   // `payAsYouGo`, which the rate card prices (`price` null for both), with
   // what each allows the billing account.
   plans: Schema.Array(PlanOfferSchema),
+  // Per-account pricing's rates, as `peal-contract/rate-card` holds them;
+  // null on a server that does not bill.
+  rateCard: Schema.NullOr(RateCardSchema),
   subscription: Schema.NullOr(BillingSubscriptionSchema),
   trial: Schema.NullOr(TrialOfferSchema),
+  // What the payment provider's next invoice of the subscription takes,
+  // tax included, when it can say; null without one.
+  upcomingInvoice: Schema.NullOr(MoneySchema),
   usage: UsageSchema,
   // The VAT rate, in percent, prices are shown with first.
   vatRate: Schema.Int,
@@ -297,8 +337,9 @@ export type Reduction = typeof ReductionSchema.Type;
  */
 export const OrderPayloadSchema = Schema.Struct({
   // The version of the box's words the client showed (`orderConsentVersion`
-  // in `peal-contract/billing-plans`); refused when it is not the
-  // server's (ConsentChanged). Older clients leave it out.
+  // in `peal-contract/billing-plans`); a per-account order without it,
+  // or with another than the server's, is refused (ConsentChanged). Kept
+  // optional for the legacy plans, which answer PlanNotSold as before.
   consentVersion: Schema.optionalKey(Schema.String),
   interval: BillingIntervalSchema,
   plan: OrderablePlanSchema,

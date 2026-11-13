@@ -256,8 +256,10 @@ const PortsLive = Layer.mergeAll(
                 postUnconfirmed: true,
                 recyclingEnded: true,
                 webhookFailing: true,
+                weeklyDigest: false,
               },
               everyPost: false,
+              lastWeeklyDigest: null,
             },
             replies: [],
             review: { approvals: [], comments: [] },
@@ -285,6 +287,7 @@ const PortsLive = Layer.mergeAll(
             },
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
+              accountDays: [],
               meteredPosts: [
                 {
                   month: at,
@@ -310,6 +313,7 @@ const PortsLive = Layer.mergeAll(
                   quantity: 3,
                 },
               ],
+              usageReports: [],
             },
             channels: [],
             media: [],

@@ -34,6 +34,8 @@ export const resendMailer = (options: {
             ),
             HttpClientRequest.bodyJsonUnsafe({
               from: options.from,
+              // Its own, as the weekly digest's `List-Unsubscribe`.
+              headers: message.headers ?? {},
               html: message.html,
               subject: message.subject,
               text: message.text,

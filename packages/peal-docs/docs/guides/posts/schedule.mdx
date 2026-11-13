@@ -1,0 +1,161 @@
+---
+title: Schedule a post
+description: Schedule a post in your time zone, move or cancel it on the calendar, and follow how it went on each channel.
+sidebar:
+  icon: calendar-days
+---
+
+Give a post its time, move or cancel it, and follow how it went on each of its channels.
+
+## Schedule it [#schedule]
+
+<Tabs>
+  <Tab title="Web app">
+    <Steps>
+      <Step title="Pick the time">
+        Under **When**, pick the **Date**, the **Time** and the **Time zone**, which starts as your browser's.
+      </Step>
+      <Step title="Schedule">
+        Choose **Schedule**. It stays off while the post breaks a limit on one of its channels, and the composer lists what to fix. The [platform options](/guides/posts#options) a channel lacks are listed once you choose it, and shown under their fields.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+```
+
+See [Posts on the command line](/developers/cli/posts#posts).
+
+  </Tab>
+</Tabs>
+
+The time is the wall-clock time in that zone, daylight saving included:
+
+- a time the clocks skip, such as 02:30 on the night they go forward, moves to the moment they jump, 03:00;
+- a time that happens twice, on the night they go back, is the first one, so the post goes out once.
+
+A time up to a minute ago counts as now. An earlier one is refused: pick a time to come.
+
+### Publish now [#publish-now]
+
+**Publish now** sends the post at once. It sits beside **Schedule** on a draft, and beside **Move to this time** on a scheduled post.
+
+<Callout type="warning">
+  The post becomes public and cannot be taken back from the composer, so
+  **Publish now** asks once, naming the channels.
+</Callout>
+
+- It schedules the post for the moment you confirm, in your browser's time zone, the way **Schedule** does, so the same checks apply.
+- It names apart a channel turned off or to reconnect, where the post cannot go out.
+- It is not offered where your posts wait for an approval, nor until the composer knows whether they do: an approval after the post's time publishes nothing.
+
+## Move, unschedule or cancel it [#move-cancel]
+
+Once a post is scheduled, its text is locked; its time is not.
+
+<Tabs>
+  <Tab title="Web app">
+    - In the composer, change the date, the time or the zone, then choose **Move to this time**.
+    - On the calendar, drag the post by its handle to another hour or day. It keeps the time zone it was scheduled in.
+    - To change what it says, choose **Back to draft**. It leaves the calendar and goes out at no time: edit it, then **Schedule** it again, when it is checked against its channels once more.
+    - To stop it, choose **Cancel the post** in the composer and confirm. It goes out on no channel, and cannot be scheduled again.
+    - To keep it from going out on one channel only, choose **Remove** beside that channel under **Channels it goes to**. It goes out on the others at its time, and the channel reads **Taken off the post**. The last channel stays: cancel the post instead.
+  </Tab>
+  <Tab title="CLI">
+
+```sh
+peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
+peal posts unschedule <post-id>
+peal posts cancel <post-id>
+peal posts remove-target <post-id> <target-id>
+```
+
+  </Tab>
+</Tabs>
+
+Moving a post does not check its text or its media against its channels again.
+
+Taking a channel off a post is an edit of it:
+
+- In a workspace that asks for [approvals](/guides/posts/review#policy), when your posts need one, the approval given no longer covers the post, and it waits for an approval again.
+- Taken back to draft (by you, a reviewer, or an approval that came too late), the post keeps the channels it still had. The channel taken off it loses its own text and images there. Ticked again, it starts afresh.
+
+## The calendar [#calendar]
+
+From a workspace's card, choose **Calendar**. It shows the scheduled posts by **Day**, **Week** or **Month**, at their times in your browser's time zone, with each post's status.
+
+- The day view has a row for each time that holds a post or a [queue](/guides/posts/queues#queues)'s slot, each free slot named by its queue; a slot taken by a post the filters hide says so, and offers no new post. On a day the clocks change, each time shows its offset.
+- In the month view, a day with more posts than it shows opens in the day view.
+- Choose a post to open it in the composer.
+- A day, or an hour of the week that has not started, has a **New post** link that opens the composer with that date and time.
+- Above the calendar, filter the posts by [tag](/guides/posts/organise#tags) and by channel.
+- Times follow your language's clock. To read them on a 12-hour or a 24-hour clock instead, choose **Time format** on your account page: the choice is kept in your browser.
+- To open the calendar on a given week, add `?date=` with a day of that week to its address, as in `?date=2026-11-09`.
+
+## When a post comes due [#publishing]
+
+At its time, Peal sends the post to each of its channels on its own, one post at a time per account, and records how each one ended:
+
+| On a channel | What happened                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| Published    | The platform took the post, and gave its address when it has one.                                       |
+| Failed       | The platform refused the post, the account needs reconnecting, or the post went out too late, as below. |
+| To check     | Peal cannot tell whether the platform published it. Check the platform before posting again.            |
+| Cancelled    | The post was cancelled before it went out there.                                                        |
+
+The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**. Its author, and the members who chose to hear about every post, are told how it went on each channel: see [Notifications](/guides/workspace/notifications).
+
+## Follow up on a post [#follow-up]
+
+Open a post that went out, from the calendar or a notification. Its page shows its text, and for each channel:
+
+- its status, and why it failed or is to check;
+- the address of the post on the platform;
+- every attempt Peal made, with when it tried again.
+
+It also says how the post was created and how it was scheduled: in the web app, with an API key, or by an application such as the command line or an MCP client, by name. While the post is going out, the page updates on its own.
+
+Members who may schedule posts can then:
+
+- **Post again** on a channel where it failed or is to check. Peal sends it now, as a new send with its own attempts, and the post reads **Publishing** until it has gone. When the post is to check, look on the platform first, as it may be live already.
+- **Say what you found** on a channel to check: **It is live**, with the post's address if you have it, or **It is not there**, which fails it there so it can be posted again. Either answer clears it from the posts to check, and marks its notifications as read.
+
+### Retries [#retries]
+
+Peal waits rather than gives up when a platform is busy:
+
+- a platform that does not answer is tried again after 1, 5, 15, 60 and 60 minutes, then the post fails there;
+- a platform that limits how often Peal posts is tried again when it says, up to 8 times and no later than a day after the post's time;
+- a platform that no longer accepts the account's access fails the post there, and the channel must be [reconnected](/guides/channels#reconnect).
+
+An image or video is sent as the platform needs it, and some platforms process videos first. Peal waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
+
+<Callout type="warning">
+  A post that could not start within an hour of its time, for example because
+  the server was down, is marked missed and does not go out.
+</Callout>
+
+<Accordion>
+  <AccordionItem title="When a platform does not answer the publishing request">
+    Peal asks again only in ways that cannot post it twice:
+
+    | Platform                    | How Peal checks                                                                                                       |
+    | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+    | Bluesky                     | Reads the post back.                                                                                                  |
+    | Mastodon                    | Sends it again under the same key, which Mastodon answers with the post it already made.                             |
+    | X                           | Looks for it among the account's recent posts, by its text, its links and its files, without ever sending it to X again. |
+    | Threads and Instagram       | Asks whether the post they were handed was published.                                                                 |
+    | Facebook Pages              | Looks for it among the Page's recent posts, by its text.                                                              |
+    | TikTok                      | Follows the post TikTok already took by the id it gave.                                                               |
+    | YouTube                     | Asks the upload how far it got, never uploading the video twice.                                                      |
+    | Pinterest                   | Looks for the Pin among those of its board made since, by its title, description, link and kind of media, without ever creating it again. |
+    | Google Business Profile     | Looks for a post among the location's posts, by its type, its text and its event's title.                             |
+    | LinkedIn company page       | Looks for the post among the page's newest, by its text.                                                              |
+    | LinkedIn profile            | LinkedIn lets Peal neither read a member's posts nor send one twice safely: the post reads **To check** at once.      |
+
+    It tries three times, over about two and a half minutes. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Peal never posts it again on its own.
+
+  </AccordionItem>
+</Accordion>

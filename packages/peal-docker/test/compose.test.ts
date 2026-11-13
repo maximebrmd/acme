@@ -76,6 +76,7 @@ const documentedServerSettings = (() => {
     "..",
     "peal-docs",
     "docs",
+    "self-hosting",
     "environment-variables.mdx"
   );
 
@@ -402,6 +403,7 @@ const dockerfiles = [
   "server.Dockerfile",
   "web.Dockerfile",
   "static.Dockerfile",
+  "docs.Dockerfile",
   "postgres.Dockerfile",
 ];
 
@@ -509,5 +511,39 @@ describe("web.Dockerfile", () => {
         copy.endsWith(" packages/peal-web/.next/static")
       )
     ).toBeTruthy();
+  });
+});
+
+describe("docs.Dockerfile", () => {
+  // The rate limit counts readers by the address serve.ts puts in
+  // X-Forwarded-For, from the header the edge sets.
+  it("loads serve.ts, which sets the reader's address, before the docs", () => {
+    expect(instructionsOf(read("..", "docs.Dockerfile"))("CMD")).toStrictEqual([
+      '["node", "--import", "./packages/peal-docs/serve.ts", "packages/peal-docs/dist/server/entry.mjs"]',
+    ]);
+  });
+});
+
+const productionService = (name: string): Service | undefined =>
+  production.find(([other]) => other === name)?.[1];
+
+describe("the docs", () => {
+  // A model would make Blume build a server, which nginx cannot serve.
+  it("stay static files in the static image", () => {
+    expect(
+      instructionsOf(read("..", "static.Dockerfile"))("ARG").filter((arg) =>
+        arg.startsWith("DOCS_ASSISTANT_MODEL")
+      )
+    ).toStrictEqual([]);
+  });
+
+  it("run as a server in a profile of their own", () => {
+    const docs = productionService("docs");
+
+    expect(docs?.environment).toHaveProperty("AUTH_IP_HEADERS");
+    expect(docs?.ports).toHaveLength(1);
+    expect(docs?.ports?.[0]).toMatch(
+      /^127\.0\.0\.1:\$\{PEAL_DOCS_SERVER_PORT:-4323\}:4323$/u
+    );
   });
 });

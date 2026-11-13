@@ -860,6 +860,11 @@ describe("peal media", () => {
           ?.altText,
         "A synthetic cover"
       );
+      // The file's own name goes with it, never the folders it is in.
+      assert.deepStrictEqual(
+        state.media.map(({ fileName }) => fileName).slice(0, 2),
+        ["clip.mp4", "cover.jpg"]
+      );
       assert.deepStrictEqual(
         state.stored
           .filter(({ mediaId }) => mediaId === uploaded.id)

@@ -1,15 +1,23 @@
 import { assert, layer } from "@effect/vitest";
-import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
-import { RecordSubscription } from "#billing/application/record-subscription.ts";
+import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
+import {
+  duplicateSubscriptions,
+  RecordSubscription,
+  thresholdsUnset,
+} from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
+import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 // What recording a subscription asks of Stripe: a trial set to end with its
 // trial, a second trial ended, and the trial a paid plan replaces ended.
 import { AloneInAccountsTest } from "#test/billing/support.ts";
@@ -29,6 +37,7 @@ const trialEnd = at("2026-11-23T10:00:00Z");
 class RecordLog extends Context.Service<
   RecordLog,
   {
+    readonly days: Ref.Ref<readonly string[]>;
     readonly held: Ref.Ref<readonly Subscription[]>;
     readonly stripe: Ref.Ref<readonly string[]>;
     readonly trials: Ref.Ref<readonly string[]>;
@@ -38,11 +47,26 @@ class RecordLog extends Context.Service<
 const LogLive = Layer.effect(
   RecordLog,
   Effect.all({
+    days: Ref.make<readonly string[]>([]),
     held: Ref.make<readonly Subscription[]>([]),
     stripe: Ref.make<readonly string[]>([]),
     trials: Ref.make<readonly string[]>([]),
   })
 );
+
+// What Stripe answers a threshold: refused for good, not answered, or
+// taken.
+const refusalOf = (workspace: WorkspaceId, id: string) => {
+  if (id === "sub_synthetic_refused") {
+    return Effect.fail(
+      new StripeUnreachable({ permanent: true, workspaceId: workspace })
+    );
+  }
+
+  return id === "sub_synthetic_unanswered"
+    ? Effect.fail(new StripeUnreachable({ workspaceId: workspace }))
+    : Effect.void;
+};
 
 const PortsInMemory = Layer.mergeAll(
   Layer.effect(
@@ -54,6 +78,8 @@ const PortsInMemory = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Ref.get(held),
           ofWorkspaces: () => Effect.die("not read here"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: (change) =>
             Ref.update(held, (all) => [
               ...all.filter(
@@ -118,6 +144,49 @@ const PortsInMemory = Layer.mergeAll(
       );
     })
   ),
+  Layer.effect(
+    UsageBilling,
+    RecordLog.use(({ stripe }) =>
+      Effect.succeed(
+        UsageBilling.of({
+          ensureItems: () => Effect.die("not asked here"),
+          eventNames: {
+            accounts: "peal_accounts",
+            assistantImages: "peal_assistant_images",
+            assistantRequests: "peal_assistant_requests",
+            managedAds: "peal_managed_ads",
+            outboundMessages: "peal_outbound_messages",
+            xApi: "peal_x_api",
+          },
+          report: () => Effect.die("not asked here"),
+          setThreshold: (workspace, id, cents) =>
+            Ref.update(stripe, (all) => [
+              ...all,
+              `setThreshold ${id} ${cents.pipe(
+                Option.map((amount) => `${amount}`),
+                Option.getOrElse(() => "none")
+              )}`,
+            ]).pipe(Effect.andThen(refusalOf(workspace, id))),
+        })
+      )
+    )
+  ),
+  // The holders whose day so far was reported.
+  Layer.effect(
+    AccountDays,
+    RecordLog.use(({ days }) =>
+      Effect.succeed(
+        AccountDays.of({
+          bindPool: () => Effect.void,
+          counted: () => Effect.die("not counted here"),
+          ofDays: () => Effect.succeed([]),
+          ofMonth: () => Effect.succeed([]),
+          raise: () => Effect.succeed([]),
+          subscribed: (holder) => Ref.update(days, (all) => [...all, holder]),
+        })
+      )
+    )
+  ),
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
@@ -133,6 +202,7 @@ const RecordTest = RecordSubscription.layer.pipe(
 
 const reset = RecordLog.use((log) =>
   Effect.all([
+    Ref.set(log.days, []),
     Ref.set(log.held, []),
     Ref.set(log.stripe, []),
     Ref.set(log.trials, []),
@@ -270,6 +340,7 @@ layer(RecordTest)("recording a subscription", (it) => {
         });
 
         assert.deepStrictEqual(yield* askedOfStripe, [
+          "setThreshold sub_synthetic_accounts 10000",
           "endNow sub_synthetic_trial orderedDuringTrial",
           "cancelAtPeriodEnd sub_synthetic_legacy",
         ]);
@@ -293,11 +364,15 @@ layer(RecordTest)("recording a subscription", (it) => {
     "ends at once, without a charge, a second per-account subscription of the account, keeping the older",
     () =>
       Effect.gen(function* duplicate() {
+        const before = (yield* Metric.value(duplicateSubscriptions)).count;
+
         yield* reset;
         yield* perAccount("sub_synthetic_first", "2026-11-09T10:00:00Z");
         yield* perAccount("sub_synthetic_second", "2026-11-09T10:05:00Z");
 
         assert.deepStrictEqual(yield* askedOfStripe, [
+          "setThreshold sub_synthetic_first 10000",
+          "setThreshold sub_synthetic_second 10000",
           "endNow sub_synthetic_second duplicateSubscription",
         ]);
 
@@ -307,8 +382,15 @@ layer(RecordTest)("recording a subscription", (it) => {
         yield* perAccount("sub_synthetic_early", "2026-11-09T10:00:00Z");
 
         assert.deepStrictEqual(yield* askedOfStripe, [
+          "setThreshold sub_synthetic_late 10000",
+          "setThreshold sub_synthetic_early 10000",
           "endNow sub_synthetic_late duplicateSubscription",
         ]);
+        // Each counted, for the alert (peal-duplicate-subscription).
+        assert.strictEqual(
+          (yield* Metric.value(duplicateSubscriptions)).count - before,
+          2
+        );
       })
   );
 
@@ -354,6 +436,67 @@ layer(RecordTest)("recording a subscription", (it) => {
         });
 
         assert.strictEqual(unknown, "ignored");
+      })
+  );
+
+  it.effect(
+    "sets a new per-account subscription to invoice at the unverified threshold, and reports its holder's day so far",
+    () =>
+      Effect.gen(function* firstRecorded() {
+        yield* reset;
+        yield* record({
+          plan: "payAsYouGo",
+          startedBy: Option.none(),
+          status: "incomplete",
+          stripeSubscriptionId: "sub_synthetic_new",
+          trialEnd: Option.none(),
+        });
+
+        // Not paid yet: nothing asked, nothing reported.
+        assert.deepStrictEqual(yield* askedOfStripe, []);
+        assert.deepStrictEqual(
+          yield* RecordLog.use(({ days }) => Ref.get(days)),
+          []
+        );
+
+        yield* perAccount("sub_synthetic_new", "2026-11-09T10:00:00Z");
+        // Recorded again, paying: the threshold is not asked again, the
+        // day is (it reports only what is left).
+        yield* perAccount("sub_synthetic_new", "2026-11-09T10:00:00Z");
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "setThreshold sub_synthetic_new 10000",
+        ]);
+        assert.deepStrictEqual(
+          yield* RecordLog.use(({ days }) => Ref.get(days)),
+          [workspaceId, workspaceId]
+        );
+      })
+  );
+
+  it.effect(
+    "records a per-account subscription whose threshold Stripe refuses for good, and counts it; fails while Stripe does not answer",
+    () =>
+      Effect.gen(function* thresholdRefused() {
+        const before = (yield* Metric.value(thresholdsUnset)).count;
+
+        yield* reset;
+
+        assert.strictEqual(
+          yield* perAccount("sub_synthetic_refused", "2026-11-09T10:00:00Z"),
+          "recorded"
+        );
+        assert.strictEqual(
+          (yield* Metric.value(thresholdsUnset)).count - before,
+          1
+        );
+
+        const unanswered = yield* perAccount(
+          "sub_synthetic_unanswered",
+          "2026-11-09T10:00:00Z"
+        ).pipe(Effect.flip);
+
+        assert.strictEqual(unanswered._tag, "StripeUnreachable");
       })
   );
 });

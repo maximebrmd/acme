@@ -46,12 +46,27 @@ const everyCron = Effect.promise(async () => {
   return read.flatMap(cronsIn);
 });
 
-// The minutes of a day a cron runs on, from 0 to 1439.
+// The minutes of a day a cron runs on, from 0 to 1439, on any day of a
+// week (from Monday 9 November 2026), so a weekly cron is read too.
 const minutesOf = ({ expression }: Scheduled): readonly number[] => {
   const cron = Cron.parseUnsafe(expression, "UTC");
 
   return Array.from({ length: 24 * 60 }, (_, minute) => minute).filter(
-    (minute) => Cron.match(cron, new Date(Date.UTC(2026, 10, 10, 0, minute)))
+    (minute) =>
+      Array.from({ length: 7 }, (_, day) => day).some((day) =>
+        Cron.match(cron, new Date(Date.UTC(2026, 10, 9 + day, 0, minute)))
+      )
+  );
+};
+
+// The days of that week a cron runs on, from 0 (Monday) to 6.
+const daysOf = ({ expression }: Scheduled): readonly number[] => {
+  const cron = Cron.parseUnsafe(expression, "UTC");
+
+  return Array.from({ length: 7 }, (_, day) => day).filter((day) =>
+    Array.from({ length: 24 * 60 }, (_, minute) => minute).some((minute) =>
+      Cron.match(cron, new Date(Date.UTC(2026, 10, 9 + day, 0, minute)))
+    )
   );
 };
 
@@ -96,6 +111,23 @@ describe("the crons' schedules", () => {
       })
   );
 
+  it.effect(
+    "send the weekly digest on Mondays only, at 19 past each hour",
+    () =>
+      Effect.gen(function* weekly() {
+        const cron = (yield* everyCron).find(
+          ({ name }) => name === "notifications.weekly-digest"
+        );
+
+        assert.isDefined(cron);
+        assert.deepStrictEqual(
+          minutesOf(cron),
+          Array.from({ length: 18 }, (_, hour) => (hour + 6) * 60 + 19)
+        );
+        assert.deepStrictEqual(daysOf(cron), [0]);
+      })
+  );
+
   it.effect("read the feeds every ten minutes from minute 6", () =>
     Effect.gen(function* feeds() {
       const cron = (yield* everyCron).find(
@@ -107,6 +139,53 @@ describe("the crons' schedules", () => {
         [6, 16, 26]
       );
     })
+  );
+
+  it.effect(
+    "report usage to Stripe every five minutes from minute 3, never with a job that uses the gates",
+    () =>
+      Effect.gen(function* reporter() {
+        const crons = yield* everyCron;
+
+        const report = crons.find(
+          ({ name }) => name === "billing.usage-report"
+        );
+
+        const reported = report === undefined ? [] : minutesOf(report);
+
+        assert.deepStrictEqual(reported.slice(0, 4), [3, 8, 13, 18]);
+        assert.lengthOf(reported, 24 * 12);
+
+        const gates = new Set(
+          crons.filter(({ name }) => gated.includes(name)).flatMap(minutesOf)
+        );
+
+        assert.isFalse(reported.some((minute) => gates.has(minute)));
+      })
+  );
+
+  it.effect(
+    "start the day's account-days again every hour at minute 49, a minute no collection and no reporter run takes",
+    () =>
+      Effect.gen(function* hourlyStart() {
+        const crons = yield* everyCron;
+        const start = crons.find(({ name }) => name === "billing.account-days");
+        const minutes = start === undefined ? [] : minutesOf(start);
+
+        assert.deepStrictEqual(minutes.slice(0, 2), [49, 109]);
+        assert.lengthOf(minutes, 24);
+
+        const taken = new Set(
+          crons
+            .filter(
+              ({ name }) =>
+                gated.includes(name) || name === "billing.usage-report"
+            )
+            .flatMap(minutesOf)
+        );
+
+        assert.isFalse(minutes.some((minute) => taken.has(minute)));
+      })
   );
 
   it.effect("never start two jobs that use the gates on the same minute", () =>

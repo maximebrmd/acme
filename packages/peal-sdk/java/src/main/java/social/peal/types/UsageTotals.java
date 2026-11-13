@@ -5,6 +5,7 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,11 +17,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UsageTotals.Builder.class)
 public final class UsageTotals {
+    private final Optional<Long> billableAccountDays;
+
     private final List<PlatformPosts> byPlatform;
 
     private final long channelDays;
@@ -34,18 +40,28 @@ public final class UsageTotals {
     private final Map<String, Object> additionalProperties;
 
     private UsageTotals(
+            Optional<Long> billableAccountDays,
             List<PlatformPosts> byPlatform,
             long channelDays,
             int daysCounted,
             List<MeteredPosts> meteredPosts,
             int publishedPosts,
             Map<String, Object> additionalProperties) {
+        this.billableAccountDays = billableAccountDays;
         this.byPlatform = byPlatform;
         this.channelDays = channelDays;
         this.daysCounted = daysCounted;
         this.meteredPosts = meteredPosts;
         this.publishedPosts = publishedPosts;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonIgnore
+    public Optional<Long> getBillableAccountDays() {
+        if (billableAccountDays == null) {
+            return Optional.empty();
+        }
+        return billableAccountDays;
     }
 
     @JsonProperty("byPlatform")
@@ -73,6 +89,12 @@ public final class UsageTotals {
         return publishedPosts;
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("billableAccountDays")
+    private Optional<Long> _getBillableAccountDays() {
+        return billableAccountDays;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -85,7 +107,8 @@ public final class UsageTotals {
     }
 
     private boolean equalTo(UsageTotals other) {
-        return byPlatform.equals(other.byPlatform)
+        return billableAccountDays.equals(other.billableAccountDays)
+                && byPlatform.equals(other.byPlatform)
                 && channelDays == other.channelDays
                 && daysCounted == other.daysCounted
                 && meteredPosts.equals(other.meteredPosts)
@@ -95,7 +118,12 @@ public final class UsageTotals {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.byPlatform, this.channelDays, this.daysCounted, this.meteredPosts, this.publishedPosts);
+                this.billableAccountDays,
+                this.byPlatform,
+                this.channelDays,
+                this.daysCounted,
+                this.meteredPosts,
+                this.publishedPosts);
     }
 
     @java.lang.Override
@@ -128,6 +156,12 @@ public final class UsageTotals {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage billableAccountDays(Optional<Long> billableAccountDays);
+
+        _FinalStage billableAccountDays(Long billableAccountDays);
+
+        _FinalStage billableAccountDays(Nullable<Long> billableAccountDays);
+
         _FinalStage byPlatform(List<PlatformPosts> byPlatform);
 
         _FinalStage addByPlatform(PlatformPosts byPlatform);
@@ -153,12 +187,15 @@ public final class UsageTotals {
 
         private List<PlatformPosts> byPlatform = new ArrayList<>();
 
+        private Optional<Long> billableAccountDays = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(UsageTotals other) {
+            billableAccountDays(other.getBillableAccountDays());
             byPlatform(other.getByPlatform());
             channelDays(other.getChannelDays());
             daysCounted(other.getDaysCounted());
@@ -237,14 +274,46 @@ public final class UsageTotals {
         }
 
         @java.lang.Override
+        public _FinalStage billableAccountDays(Nullable<Long> billableAccountDays) {
+            if (billableAccountDays.isNull()) {
+                this.billableAccountDays = null;
+            } else if (billableAccountDays.isEmpty()) {
+                this.billableAccountDays = Optional.empty();
+            } else {
+                this.billableAccountDays = Optional.of(billableAccountDays.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billableAccountDays(Long billableAccountDays) {
+            this.billableAccountDays = Optional.ofNullable(billableAccountDays);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "billableAccountDays", nulls = Nulls.SKIP)
+        public _FinalStage billableAccountDays(Optional<Long> billableAccountDays) {
+            this.billableAccountDays = billableAccountDays;
+            return this;
+        }
+
+        @java.lang.Override
         public UsageTotals build() {
             return new UsageTotals(
-                    byPlatform, channelDays, daysCounted, meteredPosts, publishedPosts, additionalProperties);
+                    billableAccountDays,
+                    byPlatform,
+                    channelDays,
+                    daysCounted,
+                    meteredPosts,
+                    publishedPosts,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("byPlatform")
+            if (key.equalsIgnoreCase("billableAccountDays")
+                    || key.equalsIgnoreCase("byPlatform")
                     || key.equalsIgnoreCase("channelDays")
                     || key.equalsIgnoreCase("daysCounted")
                     || key.equalsIgnoreCase("meteredPosts")

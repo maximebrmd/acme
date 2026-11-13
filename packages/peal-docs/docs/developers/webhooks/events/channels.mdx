@@ -1,0 +1,165 @@
+---
+title: Channel events
+description: "The events of a channel: connected, disconnected, to reconnect, turned off or on, and expiring."
+sidebar:
+  icon: cable
+  label: "Channels"
+---
+
+The events of a channel, each with its fields and an example payload. An endpoint [filtered on channels](/developers/webhooks#filters) hears them when the channel is listed.
+
+## channel.connected [#channel-connected]
+
+An account was connected to the workspace, or a channel the workspace had was authorized again.
+
+| Field         | Type    | What it holds                                                                   |
+| ------------- | ------- | ------------------------------------------------------------------------------- |
+| `workspaceId` | string  | The workspace                                                                   |
+| `channelId`   | string  | The channel                                                                     |
+| `platform`    | string  | The channel's platform                                                          |
+| `reconnected` | boolean | True when a channel the workspace had was authorized again; false for a new one |
+
+```json title="channel.connected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-08T10:15:30.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "reconnected": false
+  }
+}
+```
+
+## channel.disconnected [#channel-disconnected]
+
+A channel was disconnected from the workspace.
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.disconnected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e08",
+  "type": "channel.disconnected",
+  "version": 1,
+  "timestamp": "2026-11-12T14:02:09.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.reconnect_needed [#channel-reconnect-needed]
+
+The channel's authorization stopped working: nothing is posted there until someone [reconnects it](/guides/channels#reconnect).
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.reconnect_needed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e09",
+  "type": "channel.reconnect_needed",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.disabled [#channel-disabled]
+
+A member turned the channel off: nothing is posted there until someone turns it back on. A post that reaches its time on it fails there (`channelDisabled`). The channel keeps its authorization, its posts and its analytics.
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.disabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "channel.disabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.enabled [#channel-enabled]
+
+A member turned the channel back on: it posts again. When its authorization stopped working or ran out meanwhile, `channel.reconnect_needed` follows.
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.enabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "channel.enabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+## channel.expiring [#channel-expiring]
+
+The channel's authorization cannot be renewed, and ends at `expiresAt`, as a LinkedIn profile's does after 60 days: someone [reconnects it](/guides/channels#reconnect) before then, or nothing is posted there after.
+
+It is sent once for each expiry, a week ahead at most: schedule your own reminders from `expiresAt`.
+
+| Field         | Type   | What it holds                                     |
+| ------------- | ------ | ------------------------------------------------- |
+| `workspaceId` | string | The workspace                                     |
+| `channelId`   | string | The channel                                       |
+| `platform`    | string | The channel's platform                            |
+| `expiresAt`   | string | When its authorization ends, as an instant in UTC |
+
+```json title="channel.expiring"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "channel.expiring",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "linkedin",
+    "expiresAt": "2026-11-18T06:00:00.000Z"
+  }
+}
+```

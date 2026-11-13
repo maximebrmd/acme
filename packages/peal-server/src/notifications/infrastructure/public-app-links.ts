@@ -13,6 +13,8 @@ export const PublicAppLinks = Layer.effect(
     const publicUrl = yield* publicUrlConfig;
 
     return AppLinks.of({
+      // The web app forwards `/api/*` to the server, so both share it.
+      api: (path) => new URL(path, publicUrl).href,
       url: (path, locale) =>
         new URL(locale === "en" ? path : `/${locale}${path}`, publicUrl).href,
     });

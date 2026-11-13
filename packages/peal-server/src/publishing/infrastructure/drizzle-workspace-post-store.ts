@@ -58,7 +58,11 @@ const MediaSchema = Schema.Array(
 const decodeMedia = Schema.decodeUnknownEffect(MediaSchema);
 
 const OverridesSchema = Schema.Array(
-  Schema.Struct({ channelId: Schema.String, text: Schema.String })
+  Schema.Struct({
+    channelId: Schema.String,
+    media: Schema.optionalKey(MediaSchema),
+    text: Schema.String,
+  })
 );
 
 const decodeOverrides = Schema.decodeUnknownEffect(OverridesSchema);
@@ -87,6 +91,14 @@ const exportedMedia = (media: typeof MediaSchema.Type) =>
     altText: altText === "" ? null : altText,
     mediaId,
   }));
+
+// The texts by channel, with the media one gives its channel, if any.
+const exportedOverrides = (overrides: typeof OverridesSchema.Type) =>
+  overrides.map(({ channelId, media, text }) =>
+    media === undefined
+      ? { channelId, text }
+      : { channelId, media: exportedMedia(media), text }
+  );
 
 // How a post was created or scheduled, as the post repository writes it.
 const decodeOrigin = Schema.decodeUnknownEffect(
@@ -144,6 +156,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
               Effect.orDie,
               Effect.map((live) => ({
                 channelId: target.channelId,
+                dropped: target.dropped,
                 editedAt: utcOrNull(target.editedAt),
                 finishedAt: utcOrNull(target.finishedAt),
                 keptPrivate: target.keptPrivate,
@@ -170,7 +183,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
       delaySeconds: part.delaySeconds,
       media: exportedMedia(part.media),
       text: part.text,
-      textOverrides: part.overrides,
+      textOverrides: exportedOverrides(part.overrides),
     })),
     id: row.id,
     liveChanges: changeRows.flatMap((change) =>
@@ -195,7 +208,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     tagIds: row.tagIds,
     targets,
     text: row.text,
-    textOverrides: overrides,
+    textOverrides: exportedOverrides(overrides),
     timeZone: row.scheduleZone,
   };
 

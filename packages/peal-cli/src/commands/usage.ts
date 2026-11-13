@@ -59,6 +59,10 @@ const totalLines = ({ totals }: WorkspaceUsageReport): string[] =>
       "  Channel-days",
       `${String(totals.channelDays)}, over ${String(totals.daysCounted)} days counted`,
     ],
+    // Only for the workspace that bills per-account pricing.
+    ...(totals.billableAccountDays === null
+      ? []
+      : [["  Billable account-days", String(totals.billableAccountDays)]]),
     ...totals.meteredPosts.map(({ month, platform, posts, postsWithLinks }) => [
       `  Posts on ${platform} in ${month.slice(0, 7)}`,
       `${String(posts)}, ${String(postsWithLinks)} with a link`,
@@ -67,6 +71,7 @@ const totalLines = ({ totals }: WorkspaceUsageReport): string[] =>
 
 // A day with nothing done and no state taken says nothing.
 const hasAnything = (entry: UsageDay): boolean =>
+  entry.billableAccounts !== null ||
   entry.publishedPosts > 0 ||
   (entry.assistantRequests ?? 0) > 0 ||
   entry.channels !== null ||
@@ -75,11 +80,22 @@ const hasAnything = (entry: UsageDay): boolean =>
 
 const dayLines = (days: readonly UsageDay[]): string[] => {
   const shown = days.filter(hasAnything);
+  // The accounts each day bills, for the workspace that bills its billing
+  // account: a column only then.
+  const billed = days.some(({ billableAccounts }) => billableAccounts !== null);
 
   return shown.length === 0
     ? []
     : columns([
-        ["  Day", "Posts", "Channels", "Members", "Media", "Assistant"],
+        [
+          "  Day",
+          "Posts",
+          "Channels",
+          "Members",
+          "Media",
+          "Assistant",
+          ...(billed ? ["Accounts"] : []),
+        ],
         ...shown.map((entry) => [
           `  ${entry.day}`,
           String(entry.publishedPosts),
@@ -87,6 +103,7 @@ const dayLines = (days: readonly UsageDay[]): string[] => {
           count(entry.members),
           entry.mediaStorage === null ? count(null) : bytes(entry.mediaStorage),
           count(entry.assistantRequests),
+          ...(billed ? [count(entry.billableAccounts)] : []),
         ]),
       ]);
 };
@@ -167,6 +184,6 @@ export const usage = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show what the workspace uses of its plan now, then over a period of UTC days (the last 30 by default, 92 at most): the posts that went out, one per channel, by platform, the channel-days, the posts on platforms that bill per post, and each day's posts, channels, members, media and assistant requests. Counts only: nothing is priced. It changes nothing. With --json, the API's answer as it came."
+    "Show what the workspace uses of its plan now, then over a period of UTC days (the last 30 by default, 92 at most): the posts that went out, one per channel, by platform, the channel-days, the posts on platforms that bill per post, and each day's posts, channels, members, media and assistant requests; for the workspace that bills its billing account on a server that bills per account, the accounts each day bills and their sum, the billable account-days. Counts only: nothing is priced. It changes nothing. With --json, the API's answer as it came."
   )
 );

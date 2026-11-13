@@ -35,6 +35,11 @@ peal_credentials:
   # heartbeat carries, which the uptime server generated, from its
   # /srv/uptime/secrets.env (PRODUCTION_HEARTBEAT_TOKEN; README.md, "Uptime").
   PEAL_HEARTBEAT_TOKEN: REPLACE
+  # Where the docs have their assistant (peal_static_build_args names a
+  # model: production and the sandbox): the Anthropic API key it answers
+  # with, a key of its own, apart from the writing assistant's
+  # (PEAL_AI_API_KEY), with a spending limit at Anthropic.
+  DOCS_ANTHROPIC_API_KEY: REPLACE
   # Optional, each turning a feature on (the docs' environment variables
   # page): the writing assistant's provider key; Stripe's, with
   # STRIPE_LOOKUP_KEY_PREFIX in peal_settings when its prices' lookup keys
@@ -56,6 +61,7 @@ peal_credentials:
   # PEAL_AI_IMAGE_API_KEY: REPLACE
   # STRIPE_SECRET_KEY: REPLACE
   # STRIPE_WEBHOOK_SECRET: REPLACE
+  # STRIPE_METER_WEBHOOK_SECRET: REPLACE
   # TURNSTILE_SECRET_KEY: REPLACE
   # LINKEDIN_CLIENT_SECRET: REPLACE
   # LINKEDIN_PAGES_CLIENT_SECRET: REPLACE

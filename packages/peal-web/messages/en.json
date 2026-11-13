@@ -927,6 +927,20 @@
     "unavailable": "The status could not be read. Try again later."
   },
   "Posts": {
+    "Channels": {
+      "title": "Channels it goes to",
+      "hint": "Take a channel off the post to keep it from going out there: it goes out on the others at its time.",
+      "remove": "Remove",
+      "removeLabel": "Remove {handle} from the post",
+      "removing": "Removing…",
+      "removed": "Taken off the post",
+      "notGoing": "Not going out",
+      "gone": "A channel no longer connected",
+      "lastOne": "The last channel it goes to stays: to keep it from going out at all, cancel the post.",
+      "removedDone": "Channel removed: the post goes out on the others at its time.",
+      "removedWaits": "Channel removed: the post now waits for an approval again.",
+      "failed": "The channel could not be removed: read the post again, as it may have gone out or changed."
+    },
     "Live": {
       "unpublish": "Unpublish",
       "confirmTitle": "Delete this post from {platform}?",
@@ -1004,6 +1018,12 @@
       "overridePlaceholder": "Leave empty to use the text for all channels.",
       "usesCommonText": "Uses the text for all channels.",
       "resetOverride": "Use the text for all channels",
+      "ownMedia": "Images and videos of its own on {handle}",
+      "ownMediaOff": "Off, it shows the post's images and videos.",
+      "ownMediaOn": "It shows these instead of the post's, and is checked with them. Turn it off to show the post's again.",
+      "ownMediaList": "Images and videos on {handle}",
+      "ownMediaBlocks": "Images and videos of its own on {handles} need a text to go out with: write one there, or for all channels, before you save or schedule.",
+      "ownMediaNeedsText": "Write a text for this channel, or for all channels: its own images and videos go out with a text, and the post is not saved without one.",
       "countersLegend": "Length on each channel",
       "countersEmpty": "Pick channels to see how the text fits each one.",
       "count": "{length} of {maximum} {unit, select, utf8Bytes {bytes} other {characters}}",
@@ -1486,7 +1506,15 @@
       "hiddenByFilters": "{count, plural, =0 {No post hidden by filters} one {# post hidden by filters} other {# posts hidden by filters}}",
       "queueMark": "Queue: {name}",
       "filterQueues": "{count, plural, =0 {Queues} other {Queues (#)}}",
-      "filterQueuesLabel": "Show the posts these queues placed"
+      "filterQueuesLabel": "Show the posts these queues placed",
+      "day": "Day",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "dayRows": "The day's posts and queue slots, by time",
+      "emptyDay": "Nothing on this day: no post, and no queue slot.",
+      "openSlot": "Free slot of {queue}",
+      "openDay": "Open {date} in the day view",
+      "heldSlot": "Slot of {queue}, taken by a post the filters hide"
     },
     "Links": {
       "suspicious": "This does not look like a working link: {link}"
@@ -1681,6 +1709,7 @@
     "unconfirmed": "Peal cannot tell whether it went out: {reason}. Check {platform} before you post it again, then say what you found.",
     "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Peal failed during the call} stillProcessing {the platform was still processing it when Peal stopped checking} other {{reason}}}",
     "cancelled": "It was cancelled before it went out.",
+    "dropped": "This channel was taken off the post before it went out: the post went out on its other channels.",
     "pending": "It waits for its turn.",
     "sending": "It is going out.",
     "rounds": "Sent {count, plural, one {once} other {# times}}",
@@ -1816,7 +1845,19 @@
       "deleting": "Deleting…",
       "keep": "Keep it",
       "deleteFailed": "The media could not be deleted. Try again.",
-      "deleted": "The media was deleted."
+      "deleted": "The media was deleted.",
+      "search": "Search the library",
+      "searchPlaceholder": "Search by file name or description",
+      "kindFilter": "Kind",
+      "anyKind": "All kinds",
+      "kinds": "{kind, select, image {Images} document {PDF documents} other {Videos}}",
+      "noMatch": "No media matches this search. Files added before Peal kept names are found by their description only.",
+      "clearSearch": "Clear the search",
+      "preview": "Show {name} large",
+      "previewClose": "Close",
+      "previewMissing": "The file is not stored, so there is nothing to show.",
+      "openDocument": "Open the document in a new tab",
+      "resultsShown": "{count, plural, one {# file shown} other {# files shown}}{more, select, true {, and more} other {}}."
     }
   },
   "PostMedia": {
@@ -2031,7 +2072,9 @@
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again",
       "recyclingEnded": "A post stops repeating",
-      "feedStopped": "A feed stops making posts"
+      "feedStopped": "A feed stops making posts",
+      "weeklyDigest": "A week starts: what went out last week and what is planned, each Monday",
+      "weeklyDigestHint": "Counts and the start of each post’s text, for the workspaces whose posts you may read, with days in UTC."
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
@@ -2311,7 +2354,7 @@
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
-    "grace": "This workspace holds more connected accounts than the free tier includes. It still schedules and publishes on the accounts it had before billing began, until {until} UTC, and connects no more. After that, nothing is published until a payment method is added on the billing page or 2 accounts are kept.",
+    "grace": "This workspace holds more connected accounts than the free tier includes. It still schedules and publishes on the accounts it had before billing began, until {until} UTC, and connects no more. After that, nothing is published until a payment method is added on the billing page or {free, number} accounts are kept.",
     "description": "Its plan is now {plan}. Nothing was deleted, but the workspace must come back within its plan before it does anything else.",
     "sharedAccount": "Its channels count with those of the other workspaces of its billing account: {workspaces}.",
     "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
@@ -3486,6 +3529,8 @@
       "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
       "noText": "No text on this channel.",
       "mediaLabel": "Images, videos and documents",
+      "channelMediaLabel": "Images, videos and documents on {handle}",
+      "noChannelMedia": "No image, video or document on this channel.",
       "mediaUnavailable": "This file cannot be shown.",
       "video": "Video",
       "document": "A PDF document, shown page by page on LinkedIn.",

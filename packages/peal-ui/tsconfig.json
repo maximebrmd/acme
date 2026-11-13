@@ -7,5 +7,5 @@
     // folders; the sources import each other relatively.
     "paths": { "peal-ui/*": ["./src/*"] }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "vitest.config.ts"]
 }

@@ -429,23 +429,24 @@ const longestCheckoutSeconds = 24 * 60 * 60;
 
 // Per-account pricing: a card always, though nothing is due before the
 // month's end, and every subscription billing calendar months (UTC), as
-// the billing page and the allowances count in them. The first, partial
-// month starts its own ladder, free accounts included. The anchor is set
-// when the session is made, so the session closes before it passes; when
-// the month ends sooner than Stripe's shortest session, the anchor is the
-// first of the month after. The day's end counts from the hour, so the
-// same order asked again within it sends the same parameters under its
-// idempotency key (`checkoutBeside`).
+// the billing page and the allowances count in them: anchored on the first
+// of next month, always. The first, partial month starts its own ladder,
+// free accounts included. The anchor is set when the session is made, so
+// the session closes by it; in the month's last half hour, Stripe's
+// shortest session outlives it, and Stripe then bills the full period from
+// the anchor (the sandbox runbook checks it). The day's end counts from the
+// hour, so the same order asked again within it sends the same parameters
+// under its idempotency key (`checkoutBeside`).
 export const payingParams = (nowMs: number) => {
   const now = Math.floor(nowMs / 1000);
   const hour = now - (now % 3600);
-  const next = firstOfNextMonth(nowMs);
-
-  const anchor =
-    next - now < shortestCheckoutSeconds ? firstOfNextMonth(next * 1000) : next;
+  const anchor = firstOfNextMonth(nowMs);
 
   return {
-    expires_at: Math.min(hour + longestCheckoutSeconds, anchor),
+    expires_at: Math.max(
+      now + shortestCheckoutSeconds,
+      Math.min(hour + longestCheckoutSeconds, anchor)
+    ),
     payment_method_collection: "always",
     subscription_data: {
       billing_cycle_anchor: anchor,

@@ -1,0 +1,81 @@
+---
+title: Google Business Profile
+description: "Connecter Google Business Profile à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/google-business.svg
+---
+
+Comment connecter des établissements Google Business Profile, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                         |
+| ---------------- | --------------------------------------- |
+| Texte            | {{platform-google-business-text-fr}}    |
+| Images et vidéos | {{platform-google-business-media-fr}}   |
+| Parties          | {{platform-google-business-parts-fr}}   |
+| Formats          | {{platform-google-business-formats-fr}} |
+| Texte alternatif | {{platform-google-business-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+<Steps>
+  <Step title="Se connecter avec Google">
+    Sous **Google Business Profile**, choisissez **Connecter Google Business
+    Profile**, connectez-vous avec Google, et autorisez Peal à gérer votre fiche
+    d’établissement. Google n’a qu’une autorisation pour tout ce qui touche à
+    une fiche, et Peal s’en sert pour lister vos établissements et y publier,
+    rien d’autre.
+  </Step>
+  <Step title="Choisir les établissements">
+    Une connexion qui atteint un seul établissement le connecte. Une connexion
+    qui en atteint plusieurs les liste, chacun avec son adresse, pour que vous
+    choisissiez ceux où cet espace de travail publie. Chaque établissement est
+    un canal.
+  </Step>
+</Steps>
+
+- Seuls les établissements que Google a validés sont listés : Google n’accepte aucune publication pour les autres. Faites d’abord valider l’établissement dans votre fiche, puis connectez-vous à nouveau.
+- Une connexion propose 200 établissements au plus.
+
+<Callout type="warning" title="Quand un établissement change de mains">
+  Un canal garde le compte par lequel son établissement a été atteint. Si
+  l’établissement passe à un autre compte ou groupe d’établissements, ou si la
+  personne qui l’a connecté ne le gère plus, ses publications échouent :
+  déconnectez-le, et connectez à nouveau l’établissement.
+</Callout>
+
+**Canaux** propose Google Business Profile une fois le serveur Peal configuré pour lui (voir [Sur votre propre serveur](#self-hosting)).
+
+## Options [#options]
+
+L’éditeur propose ces options. **Nom dans l’API** est le nom de l’option par l’API.
+
+| Option                            | Nom dans l’API    | Dans l’éditeur                                                     |
+| --------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| **Type de publication**           | `postType`        | Une actualité, sauf si vous choisissez un événement ou une offre   |
+| **Titre**                         | `title`           | 58 caractères au plus ; obligatoire pour un événement ou une offre |
+| **Début**                         | `startsAt`        | Obligatoire pour un événement ou une offre                         |
+| **Fin**                           | `endsAt`          | Obligatoire pour un événement ou une offre                         |
+| **Bouton**                        | `callToAction`    | Sur une actualité ou un événement                                  |
+| **Lien du bouton**                | `callToActionUrl` | Sur une actualité ou un événement                                  |
+| **Code promotionnel**             | `couponCode`      | Sur une offre                                                      |
+| **Lien pour profiter de l’offre** | `redeemUrl`       | Sur une offre                                                      |
+| **Conditions générales**          | `terms`           | Sur une offre                                                      |
+
+Ce qu’en fait Google Business Profile :
+
+- Le texte de la publication en est la description.
+- Les dates d’un événement ou d’une offre sont à l’heure de l’établissement, quel que soit votre fuseau horaire, et la fin vient après le début.
+- Chaque bouton ouvre son lien, qui commence par `https://` ou `http://`, sauf **Appeler**, qui compose le numéro de la fiche et ne prend aucun lien.
+- Une offre affiche le bouton de Google.
+
+## Commentaires [#comments]
+
+Peal ne lit pas encore les commentaires sur Google Business Profile.
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Google Business Profile une fois son application enregistrée, avec un projet Google auquel Google a donné accès à ses API Business Profile : voir [Google Business Profile](/self-hosting/platforms#google-business). D’ici là, **Canaux** ne le propose pas.

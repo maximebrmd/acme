@@ -1,0 +1,89 @@
+---
+title: Livraison et nouvelles tentatives
+description: Quand Peal retente une livraison, dans quel ordre arrivent les événements, et le journal des livraisons.
+sidebar:
+  icon: refresh-cw
+---
+
+Peal tente chaque livraison jusqu’à ce que votre serveur la prenne, ou pendant environ une journée. Cette page dit quand il retente, à quoi votre serveur doit s’attendre, et comment retrouver et renvoyer des livraisons depuis le journal.
+
+## Livraison et nouvelles tentatives [#delivery]
+
+Votre serveur a 15 secondes pour répondre. Toute réponse 2xx est un succès. Tout le reste est un échec : un autre code, les 3xx compris, pas de réponse à temps, ou une connexion impossible ou interrompue.
+
+Une livraison en échec est retentée, 8 tentatives en tout, sur environ une journée :
+
+| Tentative | Quand                                    |
+| --------- | ---------------------------------------- |
+| 1         | Aussitôt                                 |
+| 2         | 5 secondes après l’échec de la première  |
+| 3         | 5 minutes après l’échec de la deuxième   |
+| 4         | 30 minutes après l’échec de la troisième |
+| 5         | 2 heures après l’échec de la quatrième   |
+| 6         | 5 heures après l’échec de la cinquième   |
+| 7         | 8 heures après l’échec de la sixième     |
+| 8         | 8 heures après l’échec de la septième    |
+
+Après la huitième, la livraison a échoué pour de bon, et vous pouvez encore [la renvoyer](#log) à la main. Tant que le point de terminaison reste actif, les membres qui gèrent les webhooks en sont prévenus par une [notification](/guides/workspace/notifications#events), et un e-mail sauf s’ils l’ont désactivé, au plus une fois par jour pour chaque point de terminaison.
+
+### Quand Peal désactive un point de terminaison [#auto-disable]
+
+Peal désactive de lui-même un point de terminaison dans deux cas, et prévient alors les membres qui gèrent les webhooks, par une notification et un e-mail :
+
+| Cas                                              | Ce qui se passe                                                                                                                                 |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Il répond `410 Gone`                             | La livraison échoue aussitôt, sans autre tentative, et le point de terminaison est désactivé : la réponse dit qu’il ne veut plus rien recevoir. |
+| Toutes les tentatives ont échoué pendant 5 jours | Le point de terminaison est désactivé. Un seul succès entre-temps remet le compte à zéro.                                                       |
+
+Réactivez le point de terminaison une fois qu’il répond : il retrouve ses 5 jours.
+
+## Ordre et doublons [#ordering]
+
+Les livraisons peuvent arriver dans le désordre, et plus d’une fois. Chaque événement est livré de son côté, avec ses propres tentatives : un événement dont la première tentative a échoué arrive après ceux qui l’ont suivi. Une tentative à laquelle votre serveur a répondu trop tard, ou dont la réponse s’est perdue, est refaite.
+
+- Dédupliquez sur `webhook-id`. Gardez les identifiants déjà traités, et répondez un succès pour celui que vous avez déjà.
+- Ne comptez pas sur l’ordre d’arrivée. Servez-vous des instants de `data` (`publishedAt`, `failedAt`, `scheduledAt` et les autres) et du `timestamp` de l’événement, et lisez la publication ou le canal par l’API quand il vous faut son état actuel.
+
+## Le journal des livraisons [#log]
+
+Chaque point de terminaison a un journal de ses livraisons, les plus récentes d’abord, gardé 30 jours. Pour chacune, il montre :
+
+| Colonne    | Ce qu’elle montre                                                                                                                                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Événement  | Le type et l’identifiant de l’événement                                                                                                                                                                                       |
+| État       | En attente, réussie ou en échec. Pour un échec, pourquoi : toutes les tentatives ont échoué, le point de terminaison a répondu `410 Gone`, il a été désactivé avant qu’elle passe, ou l’instance ne peut plus lire son secret |
+| Réponse    | Le code que votre serveur a répondu à la dernière tentative, ou pourquoi aucune réponse n’est venue : aucune à temps, une connexion en échec, ou une adresse à laquelle Peal n’envoie plus                                    |
+| Tentatives | La durée de la dernière tentative, le nombre de tentatives faites, et le moment de la prochaine                                                                                                                               |
+
+Pour une réponse qui n’est pas un succès, le journal garde le début de ce que votre serveur a dit, pour vous aider à comprendre ce qui n’a pas marché : une ligne, 256 caractères au plus. Peal ne garde rien d’autre d’une réponse, et rien d’une réponse réussie.
+
+### Tous points de terminaison confondus [#log-workspace]
+
+Le journal de l’espace de travail, tous points de terminaison confondus, liste chaque livraison, les plus récentes d’abord, filtrées par statut, point de terminaison, type d’événement et date (à partir de `since`, avant `until`). Une livraison renvoyée nomme celle qu’elle répète (`redeliveryOf`).
+
+Les livraisons d’un point de terminaison `partner` sont dans le journal de son espace de travail principal, y compris celles des autres espaces de travail du partenaire. Chacune nomme l’espace de travail où l’événement s’est produit (`workspaceId`) et l’identifiant que le partenaire lui donne (`workspaceExternalId`).
+
+Après une panne, regardez les livraisons échouées pour de bon (statut `failed`) : l’application web les montre dans l’onglet **Échouées**, avec la dernière réponse du destinataire, pendant 30 jours.
+
+### Tester et renvoyer [#resend]
+
+Ces actions aident pendant la mise au point, et après une panne :
+
+| Action                                      | Ce qu’elle fait                                                                                                                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Envoyer un événement de test**            | Envoie au point de terminaison un événement [`webhook.test`](/developers/webhooks/events#webhook-test), ou un [exemple](/developers/webhooks/events#samples) du type choisi.                                                                                       |
+| **Renvoyer**                                | Envoie de nouveau l’événement d’une livraison au point de terminaison, comme une nouvelle livraison du même événement : même `webhook-id`, même corps, un nouvel horodatage et une nouvelle signature. Un serveur qui déduplique y verra un événement déjà traité. |
+| **Renvoyer toutes les livraisons échouées** | Renvoie les livraisons échouées d’un point de terminaison, les plus anciennes d’abord, 100 par appel au plus, la dernière livraison de chaque événement seulement. Par l’API, vous pouvez à la place nommer jusqu’à 100 livraisons.                                |
+
+Les tests et les renvois un à un demandent que le point de terminaison soit activé.
+
+Dans un renvoi en nombre, une livraison est ignorée quand son point de terminaison est désactivé, quand elle n’est pas à l’espace de travail, et quand son événement a été renvoyé depuis et que cette livraison est en attente ou a réussi (`alreadySent`). Rappeler après un passage partiel ne renvoie donc rien deux fois. La réponse liste ce qui a été renvoyé et ignoré, et combien de livraisons échouées la sélection contient encore (`remaining`). Les nouvelles livraisons d’un point de terminaison partent à un quart de seconde d’intervalle, pour ne pas toutes arriver d’un coup sur un serveur qui vient de revenir.
+
+<Callout type="info" title="Limites par heure">
+  Un espace de travail envoie au plus 30 événements de test et renvois un à un
+  par heure, comptés ensemble, et 1 000 renvois en nombre, comptés à part.
+  Au-delà de l’un ou l’autre, l’appel répond `TooManyWebhookSends` (429), avec
+  `retryAfterSeconds` et un en-tête `Retry-After` qui disent quand l’heure se
+  termine. Un renvoi en nombre est pris en entier ou pas du tout. Les comptes
+  valent pour tous les serveurs d’une instance.
+</Callout>

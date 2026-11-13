@@ -34,9 +34,20 @@ under Development stack.
   docs tell operators to move it to the variable. Keep `shm_size` above
   `maintenance_work_mem`, which a parallel vacuum may take in `/dev/shm`. Every service
   runs `read_only` with `no-new-privileges`, writing to its volumes and tmpfs
-  mounts only. The same test covers it, the web, static and
+  mounts only. The same test covers it, the web, static, docs and
   Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and
   `compose.self-host.yaml`, where Caddy alone publishes ports to the world.
+- The docs are static files in the `static` image unless
+  `DOCS_ASSISTANT_MODEL` is set: their assistant then needs a server, the
+  `docs` image (`docs.Dockerfile`, profile `docs`, 127.0.0.1:4323), and the
+  docs' host name goes to it. The static image never takes that setting.
+  Blume's rate limit counts readers by the first X-Forwarded-For entry, so
+  `config/docs/serve.ts` sets that header to the address the header
+  `AUTH_IP_HEADERS` names carries (`cf-connecting-ip` behind the tunnel,
+  which appends to a reader's own X-Forwarded-For; Caddy replaces it), and
+  removes it otherwise. It hands Blume `DOCS_TURNSTILE_SECRET_KEY` as
+  `TURNSTILE_SECRET_KEY`, which the stack cannot pass under that name: the
+  server stops on `TURNSTILE_SECRET_KEY` without `TURNSTILE_SITE_KEY`.
 - Keep `MP_SMTP_DISABLE_RDNS` on Mailpit, in compose and CI: its reverse DNS
   lookup otherwise stalls each SMTP greeting for about 10 seconds, and the
   email tests time out.
@@ -57,6 +68,14 @@ under Development stack.
   `packages/peal-server/test/app/metric-names.test.ts` exports every metric
   `src/` declares through the server's OTLP export and fails on a rule
   name none of them takes.
+- A counter born at its first event has no earlier sample, so
+  `increase` never sees it: alert on a state (a gauge the job sets each
+  run), or on `(sum(increase(c[1h])) or vector(0)) + (sum(c unless c
+  offset 1h unless c offset 5m) or vector(0))` (a restart's increase, and
+  a series born in the last five minutes, not one back after a telemetry
+  gap), and set the job's gauges when the server starts. The billing rules are run through
+  promtool in the production image (`test/alerting-promtool.test.ts`,
+  skipped without Docker): add a case with a rule.
 - The backup and disk rules read gauges the host posts to the collector
   (the Ansible roles `peal_backup` and `peal_disks`), not the stack's own
   telemetry. A self-hoster's server without those roles never posts them:

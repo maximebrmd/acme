@@ -1,0 +1,142 @@
+---
+title: Après la publication
+description: Dépublier une publication, la modifier là où elle a été publiée, et raccourcir ses liens.
+sidebar:
+  icon: send
+---
+
+Supprimez une publication partie de ses plateformes, changez son texte là où elle est en ligne, ou faites raccourcir ses liens, par l’API, les SDK ou la ligne de commande.
+
+## Dépublier une publication [#unpublish]
+
+Dépublier supprime une publication partie de la plateforme d’un canal, pour tout le monde, toutes les parties d’un fil, la dernière d’abord ([Dépublier une publication](/guides/posts/published#unpublish)).
+
+| Requête                                              | Ce qu’elle fait                                                                                                                                                                                                                                      |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST …/posts/{postId}/targets/{targetId}/unpublish` | Supprime la publication de la plateforme d’un canal.                                                                                                                                                                                                 |
+| `POST …/posts/{postId}/unpublish`                    | Le demande pour chaque canal de la publication, et répond le changement de chaque canal (`changes`) à côté de la raison pour laquelle les autres n’ont pas pu l’être (`refused`) : un canal qui ne peut pas ne fait jamais échouer toute la requête. |
+| `GET …/posts/{postId}/changes`                       | Liste les changements d’une publication, du plus récent au plus ancien, avec post:read.                                                                                                                                                              |
+
+Les deux requêtes de dépublication demandent post:publish, et un client OAuth le scope `workspace:publish`.
+
+<Callout type="warning" title="C’est définitif">
+  La publication est supprimée sur la plateforme, pour tout le monde.
+</Callout>
+
+La requête est acceptée (202) avec le changement, et une tâche supprime la publication, un appel à la fois avec les autres appels du canal. `?wait=<secondes>` (60 au plus) attend qu’il se termine et le répond tel qu’il est alors.
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/unpublish?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```ts TypeScript
+const change = await peal.posts.unpublishTarget({
+  workspaceId,
+  postId,
+  targetId,
+  wait: "30",
+});
+```
+
+```bash CLI
+peal posts unpublish <post-id> --channel <channel-id> --wait 30 --yes
+```
+
+</CodeGroup>
+
+```json
+{
+  "id": "019a7b10-0c21-7d3e-8f41-2a6b5c4d3e10",
+  "kind": "unpublish",
+  "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+  "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+  "status": "done",
+  "partsLeft": 0,
+  "requestedAt": "2026-11-10T09:00:00.000Z",
+  "finishedAt": "2026-11-10T09:00:01.000Z",
+  "code": null
+}
+```
+
+| `status`  | Signification                                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pending` | Il reste des parties (`partsLeft`).                                                                                                                                     |
+| `done`    | Il n’en reste plus. La cible garde `status: published` et reçoit `removedAt` ; `GET …/posts/search?removed=true` liste les publications supprimées d’au moins un canal. |
+| `failed`  | Peal a renoncé, avec son `code` (`unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme) : redemander supprime les parties restantes.            |
+
+`alreadyGone: true` indique que la plateforme n’avait déjà plus une partie.
+
+- Avant tout appel, une requête impossible répond 409 `live_post_not_changeable`, avec `reason` : `notPublished`, `alreadyRemoved`, `noPlatformId` (une publication confirmée à la main), `notSupported` (les capacités de la plateforme disent pourquoi, dans `livePost`), `changeInProgress`, `channelUnavailable` ou `boostRunning`.
+- Les webhooks reçoivent `post.unpublished` ou `post.unpublish_failed` ([Webhooks](/developers/webhooks/events/posts#post-unpublished)).
+- `GET …/platforms/capabilities` dit d’avance où Peal supprime des publications : `livePost.unpublish`, et `livePost.unpublishBlockedBy` (`noApi`, `permission` ou `unverified`) là où il ne le fait pas.
+
+## Modifier une publication en ligne [#edit-live]
+
+`POST …/posts/{postId}/targets/{targetId}/edit` remplace le texte d’une partie d’une publication en ligne sur la plateforme d’un canal, pour tout le monde ([Modifier une publication en ligne](/guides/posts/published#edit-live)). Peal modifie sur Mastodon et Google Business Profile.
+
+| Champ  | Ce qu’il contient                                                                          |
+| ------ | ------------------------------------------------------------------------------------------ |
+| `text` | Le nouveau texte                                                                           |
+| `part` | La partie, comptée depuis 0, la publication elle-même, ce qu’elle est quand elle est omise |
+
+Seul le texte change, jamais les médias, les options ni l’heure. Il faut post:publish, pour un client OAuth la portée `workspace:publish`, et c’est refusé à qui doit faire approuver ses publications ([approbations](/guides/posts/review)).
+
+<CodeGroup>
+
+```sh curl
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/edit?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Ouverture des portes à 19 h, pas 18 h."}'
+```
+
+```ts TypeScript
+const change = await peal.posts.editTarget({
+  workspaceId,
+  postId,
+  targetId,
+  wait: "30",
+  text: "Ouverture des portes à 19 h, pas 18 h.",
+});
+```
+
+```bash CLI
+peal posts edit <post-id> --channel <channel-id> --text "Ouverture des portes à 19 h, pas 18 h." --wait 30
+```
+
+</CodeGroup>
+
+- Le texte est vérifié comme le texte de ce canal l’est quand une publication est programmée, avertissement de contenu Mastodon compris : un texte que la plateforme refuserait répond 422 `post_content_invalid` avec chaque violation, tout comme un texte fait seulement d’espaces ; un `text` vide répond 400 `invalid_request`.
+- La demande est acceptée (202) avec le changement (`kind: "edit"`), et une tâche fait la modification, relancée comme une suppression ; `?wait=<secondes>` attend qu’elle se termine. Le changement ne garde jamais le texte.
+- Un changement `failed` a son `code` (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied` pour un canal Mastodon à reconnecter, ou celui de la plateforme), et peut être redemandé.
+- Une fois fait, le texte est celui de cette partie sur ce canal (`content.overrides`, ou celui de la partie dans `content.followUps`), les autres canaux gardent le leur, et la cible a son `editedAt`. Peal ne garde aucun texte précédent.
+- Avant tout appel, 409 `live_post_not_changeable` dit pourquoi pas, comme pour une suppression, avec aussi `approvalRequired` ; une partie que la publication n’a pas en ligne là est `noPlatformId`.
+- Les webhooks reçoivent `post.edited` ou `post.edit_failed` ([Webhooks](/developers/webhooks/events/posts#post-edited)), avec la partie, jamais le texte. `livePost.edit` et `livePost.editBlockedBy` des capacités disent d’avance où Peal modifie.
+
+## Liens courts [#short-links]
+
+`shortenLinks` demande que les liens de la publication partent [raccourcis](/guides/posts/published#short-links), sur un serveur qui a des liens courts. `GET …/short-links/status` l’indique, avec le début et la longueur d’une adresse courte.
+
+| `shortenLinks` | Sur `POST …/posts`, `PUT …/posts/{postId}`, `send` et chaque élément de `bulk`                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `true`         | Les liens partent raccourcis.                                                                                                                                             |
+| `false`        | Les liens partent tels qu’écrits.                                                                                                                                         |
+| Omis           | Une nouvelle publication prend le choix par défaut de l’espace de travail (`byDefault` dans le statut) à sa création, et le garde ; un brouillon modifié garde son choix. |
+
+Chaque publication porte `shortenLinks` dans sa réponse.
+
+<Callout type="warning" title="Un changement de comportement">
+  Omettre le champ valait `false` pour toute publication sauf celles de
+  l’application web, et vaut désormais le choix par défaut de l’espace de
+  travail. Un espace de travail qui l’active voit aussi raccourcis les liens des
+  publications faites par l’API, MCP, la ligne de commande et les flux. Envoyez
+  `shortenLinks: false` quand les liens d’une publication doivent partir tels
+  qu’écrits.
+</Callout>
+
+- `validate` le prend et vérifie le texte tel qu’écrit, qu’une adresse courte n’allonge jamais.
+- Un import CSV n’a pas de colonne pour lui : chaque ligne prend le choix par défaut de l’espace de travail.
+- Les liens et leurs clics se lisent par `GET …/short-links` ([Clics sur les liens courts](/guides/engage/analytics#short-links)) ; aucun point d’accès ne raccourcit une adresse hors d’une publication.

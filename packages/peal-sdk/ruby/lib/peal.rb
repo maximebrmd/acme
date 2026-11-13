@@ -79,6 +79,7 @@ require_relative "peal/posts/types/reschedule_posts_request"
 require_relative "peal/posts/types/queue_post"
 require_relative "peal/posts/types/unschedule_posts_request"
 require_relative "peal/posts/types/repost_posts_request"
+require_relative "peal/posts/types/remove_target_posts_request"
 require_relative "peal/posts/types/confirm_posts_request"
 require_relative "peal/posts/types/unpublish_target_posts_request"
 require_relative "peal/posts/types/live_post_edit"
@@ -350,6 +351,7 @@ module Peal
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
     autoload :PartnerAccountsClosedEncoded, ::File.join(__dir__, "peal/types/partner_accounts_closed_encoded")
     autoload :ForbiddenErrorBody, ::File.join(__dir__, "peal/types/forbidden_error_body")
+    autoload :AccountBand, ::File.join(__dir__, "peal/types/account_band")
     autoload :MediaContentType, ::File.join(__dir__, "peal/types/media_content_type")
     autoload :AccountRestrictionMediaTypesRefused, ::File.join(__dir__, "peal/types/account_restriction_media_types_refused")
     autoload :AccountRestrictionOptionFixed, ::File.join(__dir__, "peal/types/account_restriction_option_fixed")
@@ -484,13 +486,28 @@ module Peal
     autoload :BestTimes, ::File.join(__dir__, "peal/types/best_times")
     autoload :BillingTransfer, ::File.join(__dir__, "peal/types/billing_transfer")
     autoload :BillingAccount, ::File.join(__dir__, "peal/types/billing_account")
+    autoload :Money, ::File.join(__dir__, "peal/types/money")
+    autoload :BillingAccountsUsage, ::File.join(__dir__, "peal/types/billing_accounts_usage")
     autoload :BillingInterval, ::File.join(__dir__, "peal/types/billing_interval")
     autoload :SubscriptionStatus, ::File.join(__dir__, "peal/types/subscription_status")
     autoload :BillingSubscription, ::File.join(__dir__, "peal/types/billing_subscription")
+    autoload :MeterTerms, ::File.join(__dir__, "peal/types/meter_terms")
     autoload :PeriodUsage, ::File.join(__dir__, "peal/types/period_usage")
     autoload :PlanAllowances, ::File.join(__dir__, "peal/types/plan_allowances")
     autoload :PlanPrice, ::File.join(__dir__, "peal/types/plan_price")
     autoload :PlanOffer, ::File.join(__dir__, "peal/types/plan_offer")
+    autoload :PricesAccounts, ::File.join(__dir__, "peal/types/prices_accounts")
+    autoload :UnitPrice, ::File.join(__dir__, "peal/types/unit_price")
+    autoload :PricesMeters, ::File.join(__dir__, "peal/types/prices_meters")
+    autoload :Prices, ::File.join(__dir__, "peal/types/prices")
+    autoload :RateCardAPIRequestsPerMinute, ::File.join(__dir__, "peal/types/rate_card_api_requests_per_minute")
+    autoload :RateCardAssistant, ::File.join(__dir__, "peal/types/rate_card_assistant")
+    autoload :RateCardMeters, ::File.join(__dir__, "peal/types/rate_card_meters")
+    autoload :RateCardPrices, ::File.join(__dir__, "peal/types/rate_card_prices")
+    autoload :RateCardStorage, ::File.join(__dir__, "peal/types/rate_card_storage")
+    autoload :RateCardXRates, ::File.join(__dir__, "peal/types/rate_card_x_rates")
+    autoload :RateCardX, ::File.join(__dir__, "peal/types/rate_card_x")
+    autoload :RateCard, ::File.join(__dir__, "peal/types/rate_card")
     autoload :TrialOffer, ::File.join(__dir__, "peal/types/trial_offer")
     autoload :Usage, ::File.join(__dir__, "peal/types/usage")
     autoload :Billing, ::File.join(__dir__, "peal/types/billing")
@@ -798,6 +815,7 @@ module Peal
     autoload :InvalidTimeRangeEncoded, ::File.join(__dir__, "peal/types/invalid_time_range_encoded")
     autoload :Invitation, ::File.join(__dir__, "peal/types/invitation")
     autoload :InvitationNotFoundEncoded, ::File.join(__dir__, "peal/types/invitation_not_found_encoded")
+    autoload :LastTargetLeftEncoded, ::File.join(__dir__, "peal/types/last_target_left_encoded")
     autoload :LinkedInOrganization, ::File.join(__dir__, "peal/types/linked_in_organization")
     autoload :LivePostChangeKind, ::File.join(__dir__, "peal/types/live_post_change_kind")
     autoload :LivePostChangeStatus, ::File.join(__dir__, "peal/types/live_post_change_status")
@@ -844,6 +862,7 @@ module Peal
     autoload :MediaInUseEncoded, ::File.join(__dir__, "peal/types/media_in_use_encoded")
     autoload :MediaNotFoundEncoded, ::File.join(__dir__, "peal/types/media_not_found_encoded")
     autoload :MediaPage, ::File.join(__dir__, "peal/types/media_page")
+    autoload :MediaQuery, ::File.join(__dir__, "peal/types/media_query")
     autoload :MediaSourceFailure, ::File.join(__dir__, "peal/types/media_source_failure")
     autoload :MediaSourceNotPublicEncoded, ::File.join(__dir__, "peal/types/media_source_not_public_encoded")
     autoload :MediaSourceUnreachableEncoded, ::File.join(__dir__, "peal/types/media_source_unreachable_encoded")
@@ -852,7 +871,6 @@ module Peal
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
     autoload :MeteredPosts, ::File.join(__dir__, "peal/types/metered_posts")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")
-    autoload :Money, ::File.join(__dir__, "peal/types/money")
     autoload :SpecialAdCategory, ::File.join(__dir__, "peal/types/special_ad_category")
     autoload :NewBoost, ::File.join(__dir__, "peal/types/new_boost")
     autoload :NoticeChannel, ::File.join(__dir__, "peal/types/notice_channel")

@@ -596,6 +596,8 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         yield* uploadedFile(lee, atelier);
         yield* seedUsage(atelier, 7);
         yield* seedNotice(lee.id, studio, "@studio@social.example");
+        // A weekly digest went out for the week of 9 November.
+        yield* sql`INSERT INTO notifications.notification_preferences (user_id, email_channel_reconnect, email_post_failed, email_post_published, email_post_unconfirmed, email_weekly_digest, weekly_digest_week, updated_at) VALUES (${lee.id}, true, true, false, true, true, '2026-11-09', now())`;
 
         const studioChannel = yield* seedChannel(
           studio,
@@ -661,6 +663,11 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           ["ChannelReconnectRequired"]
         );
         assert.isFalse(exported.notificationPreferences.email.postPublished);
+        assert.isTrue(exported.notificationPreferences.email.weeklyDigest);
+        assert.strictEqual(
+          exported.notificationPreferences.lastWeeklyDigest,
+          "2026-11-09"
+        );
 
         // Atelier is Lee's alone; Studio's content is the team's.
         assert.deepStrictEqual(
@@ -751,7 +758,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
 
         // Once the store holds the file, the copy links to it, as the
         // user provided it.
-        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending', page_count = 12 WHERE workspace_id = ${atelier}`;
+        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending', page_count = 12, file_name = 'Synthetic atelier.pdf' WHERE workspace_id = ${atelier}`;
 
         const withFile = yield* decodeExport(
           (yield* app.request("/api/me/export", {
@@ -767,6 +774,12 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         // What the probe counted of a document goes with it.
         assert.strictEqual(file?.pageCount, 12);
         assert.isNull(own?.media[0]?.pageCount);
+        // So does the name the file had, which a file stored before names
+        // were kept has none of.
+        assert.deepStrictEqual(
+          [file, own?.media[0]].map((media) => media?.fileName),
+          ["Synthetic atelier.pdf", null]
+        );
 
         const downloaded = yield* Effect.promise(async () => {
           const response = await fetch(link);
@@ -792,10 +805,12 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         );
         // This server does not bill: no plan, no subscription.
         assert.deepStrictEqual(own?.billing, {
+          accountDays: [],
           meteredPosts: [],
           plan: null,
           subscriptions: [],
           usage: [],
+          usageReports: [],
         });
         assert.notInclude(text, "A synthetic draft of Studio.");
         assert.deepStrictEqual(

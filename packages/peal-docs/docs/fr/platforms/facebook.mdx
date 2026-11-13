@@ -1,0 +1,56 @@
+---
+title: Pages Facebook
+description: "Connecter Pages Facebook à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/facebook.svg
+---
+
+Comment connecter des Pages Facebook, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                  |
+| ---------------- | -------------------------------- |
+| Texte            | {{platform-facebook-text-fr}}    |
+| Images et vidéos | {{platform-facebook-media-fr}}   |
+| Parties          | {{platform-facebook-parts-fr}}   |
+| Formats          | {{platform-facebook-formats-fr}} |
+| Texte alternatif | {{platform-facebook-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+<Steps>
+  <Step title="Se connecter avec Facebook">
+    Sous **Pages Facebook**, choisissez **Connecter des Pages Facebook**,
+    connectez-vous avec Facebook, et autorisez Peal à lister vos Pages et à y
+    publier.
+  </Step>
+  <Step title="Choisir les Pages">
+    De retour dans Peal, cochez les Pages où l’espace de travail publie, puis
+    **Connecter** : chacune devient un canal. Choisissez dans les 15 minutes.
+  </Step>
+</Steps>
+
+- Une connexion qui n’atteint qu’une Page la connecte aussitôt.
+- Seules les Pages où vous pouvez créer du contenu sont listées. Celles que l’espace de travail a déjà sont signalées : en choisir une la reconnecte.
+- Quand la connexion échoue avant qu’une Page soit connectée, Peal dit pourquoi, et vous pouvez choisir à nouveau, ou **Se reconnecter avec Facebook** pour une nouvelle liste.
+- Une fois le choix expiré ou fait, seule une nouvelle connexion ramène les Pages.
+
+## Options [#options]
+
+Chaque option n’est envoyée que si vous la choisissez. Certaines ne valent que pour certains médias : l’éditeur les montre pour ceux-là, et la programmation les refuse sur une autre publication. Dans l’éditeur, une vidéo a son **Titre de la vidéo**. **Nom dans l’API** est le nom de l’option par l’API.
+
+| Option                | Nom dans l’API | Valeurs                                                                       | Par défaut             |
+| --------------------- | -------------- | ----------------------------------------------------------------------------- | ---------------------- |
+| **Format**            | `format`       | `story` ou `reel` (voir [stories et reels](/guides/posts#formats)), ou `feed` | Une publication du fil |
+| **Titre de la vidéo** | `videoTitle`   | Une vidéo ou un reel : une ligne, 255 caractères au plus                      | Pas de titre           |
+
+## Commentaires [#comments]
+
+Peal lit les commentaires sous vos publications en ligne, et vous y répondez depuis Peal : voir [Boîte de réception](/guides/engage/inbox#meta).
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Pages Facebook une fois son application Meta enregistrée : voir [Threads, Instagram et Pages Facebook](/self-hosting/platforms#meta).

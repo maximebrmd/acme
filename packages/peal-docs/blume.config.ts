@@ -1,8 +1,12 @@
 import { defineConfig } from "blume";
+import { anthropic } from "blume/ai";
 import { plausible } from "blume/analytics";
 import type { PlausibleAdapter, PlausibleOptions } from "blume/analytics";
+import { turnstile } from "blume/captcha";
+import { node } from "blume/deploy";
 import { openapi } from "blume/reference";
 
+import { platformVariables } from "./platform-variables.ts";
 import { pricingVariables } from "./pricing-variables.ts";
 import { retentionVariables } from "./retention-variables.ts";
 
@@ -40,6 +44,94 @@ const analytics = (): PlausibleAdapter[] => {
 // images; without it the site still builds, with relative links.
 const site = fromEnvironment("DOCS_SITE_URL");
 
+// The assistant, a chat that answers from these pages, is on when a model is
+// named, such as claude-haiku-5-5. It needs a server route, so the docs then
+// build as a Node server rather than static files; the key is read when a
+// question comes, from DOCS_ANTHROPIC_API_KEY, and never written into the
+// build. Behind the proxy that answers for DOCS_SITE_URL, the rate limit
+// counts each reader by the X-Forwarded-For that proxy sets.
+const assistantModel = fromEnvironment("DOCS_ASSISTANT_MODEL");
+
+// Turnstile asks a reader's browser, before a question, whether it is a
+// script; the route checks the answer with TURNSTILE_SECRET_KEY.
+const turnstileSiteKey = fromEnvironment("DOCS_TURNSTILE_SITE_KEY");
+
+const deployment = () => {
+  if (assistantModel === undefined) {
+    return site === undefined ? {} : { site };
+  }
+
+  return node(
+    site === undefined
+      ? {}
+      : { allowedDomains: [{ hostname: new URL(site).hostname }], site }
+  );
+};
+
+const assistant = () => {
+  if (assistantModel === undefined) {
+    return { enabled: false };
+  }
+
+  const settings = {
+    enabled: true,
+    instructions:
+      "You are Peal's documentation assistant. Peal is a social media scheduling platform. Answer in the language of the question, in a few short paragraphs or a list, with the exact names the app and the API use. Name no other product or company. When the pages do not cover something, say so and point to the closest page.",
+    provider: anthropic({
+      apiKeyEnv: "DOCS_ANTHROPIC_API_KEY",
+      model: assistantModel,
+      // The pages carry the answer: little thinking, a quicker reply.
+      reasoning: "low",
+    }),
+    suggestions: [
+      { icon: "cable", label: "How do I connect an Instagram account?" },
+      { icon: "calendar-days", label: "How do I schedule a post?" },
+      { icon: "code-xml", label: "How do I publish a post with the API?" },
+      { icon: "server", label: "What does a self-hosted Peal need?" },
+    ],
+  };
+
+  return turnstileSiteKey === undefined
+    ? settings
+    : { ...settings, captcha: turnstile({ siteKey: turnstileSiteKey }) };
+};
+
+// The pages' addresses before the tabs (old, new), so links already out
+// there still land, in both languages; the browser keeps the #anchor.
+const moved: [string, string][] = [
+  ["/channels", "/guides/channels"],
+  ["/scheduling", "/guides/posts"],
+  ["/organise", "/guides/posts/organise"],
+  ["/review", "/guides/posts/review"],
+  ["/media", "/guides/media"],
+  ["/notifications", "/guides/workspace/notifications"],
+  ["/inbox", "/guides/engage/inbox"],
+  ["/analytics", "/guides/engage/analytics"],
+  ["/ads", "/guides/engage/ads"],
+  ["/settings", "/guides/workspace"],
+  ["/billing", "/guides/workspace/billing"],
+  ["/api-overview", "/developers"],
+  ["/api-conventions", "/developers/conventions"],
+  ["/posting-api", "/developers/posting"],
+  ["/sdks", "/developers/sdks"],
+  ["/webhooks", "/developers/webhooks"],
+  ["/cli", "/developers/cli"],
+  ["/mcp", "/developers/mcp"],
+  ["/agents", "/developers/agents"],
+  ["/embedding", "/developers/embedding"],
+  ["/environment-variables", "/self-hosting/environment-variables"],
+  ["/staff", "/self-hosting/staff"],
+  [
+    "/deployment",
+    "https://github.com/peal-social/peal/blob/main/packages/peal-infra/DEPLOYMENT.md",
+  ],
+];
+
+const redirects = moved.flatMap(([from, to]) => [
+  { from, to },
+  { from: `/fr${from}`, to: to.startsWith("/") ? `/fr${to}` : to },
+]);
+
 export default defineConfig({
   agents: {
     llmsTxt: {
@@ -48,8 +140,9 @@ export default defineConfig({
       enabled: true,
     },
   },
+  ai: { assistant: assistant() },
   analytics: analytics(),
-  deployment: site === undefined ? {} : { site },
+  deployment: deployment(),
   description:
     "Schedule social media posts across platforms, from one place. Guides, self-hosting and the HTTP API reference.",
   // The public repository, which the footer links to, and each page's
@@ -65,15 +158,46 @@ export default defineConfig({
   // The mark shows beside the title. Blume finds the favicon and the Apple
   // touch icon in public/ by their file names.
   logo: "/favicon.svg",
+  // One tab per reader, each a folder of docs/ (DESIGN.md, Docs): the
+  // loose pages at the root are Get started.
   navigation: {
+    // A section with pages of its own drills down, as the app's sidebar
+    // does: its pages replace the list, under a link back.
+    sidebar: { display: "page" },
     tabs: [
-      { label: { en: "Guides", fr: "Guides" }, path: "/" },
+      {
+        label: { en: "Get started", fr: "Démarrer" },
+        path: "/",
+        icon: "house",
+      },
+      {
+        label: { en: "Guides", fr: "Guides" },
+        path: "/guides",
+        icon: "square-pen",
+      },
+      {
+        label: { en: "Platforms", fr: "Plateformes" },
+        path: "/platforms",
+        icon: "layout-grid",
+      },
+      {
+        label: { en: "Developers", fr: "Développeurs" },
+        path: "/developers",
+        icon: "code-xml",
+      },
       {
         label: { en: "API reference", fr: "Référence de l’API" },
         path: "/reference",
+        icon: "braces",
+      },
+      {
+        label: { en: "Self-hosting", fr: "Auto-hébergement" },
+        path: "/self-hosting",
+        icon: "server",
       },
     ],
   },
+  redirects,
   reference: [
     // Written by `nx run peal-contract:openapi`, which every docs target
     // depends on, so the reference always matches the contract. The overlay
@@ -96,5 +220,9 @@ export default defineConfig({
   title: "Peal",
   // The plans' prices and limits, from the contract's catalogue, and the
   // retention periods, from its registry of what Peal does with data.
-  variables: { ...pricingVariables, ...retentionVariables },
+  variables: {
+    ...platformVariables,
+    ...pricingVariables,
+    ...retentionVariables,
+  },
 });

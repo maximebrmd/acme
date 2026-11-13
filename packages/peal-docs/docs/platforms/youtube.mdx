@@ -1,0 +1,81 @@
+---
+title: YouTube
+description: "Connect YouTube to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/youtube.svg
+---
+
+How to connect a YouTube channel, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                 |
+| ----------------- | ------------------------------- |
+| Text              | {{platform-youtube-text-en}}    |
+| Images and videos | {{platform-youtube-media-en}}   |
+| Parts             | {{platform-youtube-parts-en}}   |
+| Formats           | {{platform-youtube-formats-en}} |
+| Alt text          | {{platform-youtube-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+<Steps>
+  <Step title="Sign in with Google">
+    Under **YouTube**, choose **Connect YouTube** and sign in with Google.
+  </Step>
+  <Step title="Pick the channel">
+    A Google account that manages several channels, its brand accounts'
+    included, lists them on Google's account chooser. Each connection is one
+    channel.
+  </Step>
+  <Step title="Allow Peal">
+    Allow Peal to upload videos and to see your YouTube account: it reads the
+    channel's name and picture, its videos' processing and their counts, and
+    changes nothing else. Untick either, and the connection is refused.
+  </Step>
+</Steps>
+
+A Google account without a channel connects nothing: create the channel on YouTube first.
+
+**Channels** offers YouTube once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+## Options [#options]
+
+The composer shows these first. **API name** is the option's name through the API.
+
+| Option                       | API name                 | In the composer                                      |
+| ---------------------------- | ------------------------ | ---------------------------------------------------- |
+| **Title**                    | `title`                  | Required: 100 characters at most, without `<` or `>` |
+| **Made for kids**            | `madeForKids`            | Required, with no default                            |
+| **Visibility**               | `privacy`                | Public unless you choose otherwise                   |
+| **Tags**                     | `tags`                   | 500 characters in all                                |
+| **Category number**          | `categoryId`             |                                                      |
+| **Notify subscribers**       | `notifySubscribers`      | On                                                   |
+| Altered or synthetic content | `containsSyntheticMedia` |                                                      |
+
+The others are each sent only when you choose them. Some apply only to some media: the composer shows them for those, and scheduling refuses them on another post.
+
+| Option                                    | API name              | Values                                                             | Left out                |
+| ----------------------------------------- | --------------------- | ------------------------------------------------------------------ | ----------------------- |
+| **Thumbnail**                             | `thumbnailMediaId`    | A JPEG or PNG image of the [library](/guides/media), 8 MiB at most | The frame YouTube picks |
+| **License**                               | `license`             | `youtube` or `creativeCommon`                                      | The channel's default   |
+| **Embedding allowed**                     | `embeddable`          | Yes or no                                                          | The channel's default   |
+| **Public statistics**                     | `publicStatsViewable` | Yes or no                                                          | The channel's default   |
+| **Language of the title and description** | `defaultLanguage`     | A language tag, such as `en` or `pt-BR`                            | None named              |
+| **Recording date**                        | `recordingDate`       | A day, as `2026-11-27`                                             | None                    |
+
+### Thumbnails [#thumbnails]
+
+- YouTube sets a thumbnail once the video is uploaded, and only on a channel it allows custom thumbnails.
+- When it does not, or refuses the image, the video is published all the same, with its own thumbnail. The post's page says **The thumbnail was not set**, and through the API its target holds `thumbnailNotSet: true`.
+- Peal sets up to `YOUTUBE_DAILY_THUMBNAILS` thumbnails a day for the whole server (see [environment variables](/self-hosting/environment-variables)), as each draws on the Google project's general quota. Past them, a video goes out with YouTube's.
+
+## Comments [#comments]
+
+Peal reads the comments under your published posts there, and you answer them from Peal: see [Inbox](/guides/engage/inbox#youtube).
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers YouTube once its app is registered: see [YouTube](/self-hosting/platforms#youtube). Until then, **Channels** does not offer it.

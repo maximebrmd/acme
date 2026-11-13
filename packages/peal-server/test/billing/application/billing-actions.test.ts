@@ -57,6 +57,8 @@ import {
   AloneInAccountsTest,
   PlainPseudonymsTest,
   subscriptionOf,
+  AccountDaysUncountedTest,
+  NoOwnChannelsTest,
 } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -179,6 +181,8 @@ const PortsInMemory = Layer.mergeAll(
           forgetUser: () => Effect.void,
           ofWorkspace: () => Ref.get(held),
           ofWorkspaces: () => Effect.die("not read here"),
+          markPaidInvoice: () => Effect.void,
+          perAccount: () => Effect.succeed([]),
           record: () => Effect.succeed("recorded" as const),
           remindable: () => Ref.get(held),
         })
@@ -393,6 +397,7 @@ const ActionsTest = Layer.mergeAll(
     )
   ),
   Layer.provide(AloneInAccountsTest),
+  Layer.provide(Layer.merge(AccountDaysUncountedTest, NoOwnChannelsTest)),
   Layer.provide(BilledByTest),
   Layer.provideMerge(LogLive)
 );
@@ -476,6 +481,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         const orders = yield* PlaceOrder;
 
         const order = yield* orders.place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -506,6 +512,7 @@ layer(ActionsTest)("billing's actions", (it) => {
 
         const yearly = yield* orders
           .place(actorAs(), {
+            consentVersion,
             interval: "year",
             plan: "payAsYouGo",
             trial: false,
@@ -530,6 +537,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         const orders = yield* PlaceOrder;
 
         const request = {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -563,6 +571,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* setNow("2026-11-09T10:00:00Z");
 
         const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -606,6 +615,18 @@ layer(ActionsTest)("billing's actions", (it) => {
             .place(actorAs(), { ...request, consentVersion: "2026-11-10" })
             .pipe(Effect.flip),
           new ConsentChanged({ current: consentVersion, shown: "2026-11-10" })
+        );
+        // A page older than the version itself names none.
+        assert.deepStrictEqual(
+          yield* orders.place(actorAs(), request).pipe(Effect.flip),
+          new ConsentChanged({ current: consentVersion })
+        );
+        // The legacy plans answer as they did.
+        assert.strictEqual(
+          (yield* orders
+            .place(actorAs(), { ...request, plan: "starter" })
+            .pipe(Effect.flip))._tag,
+          "PlanNotSold"
         );
         assert.strictEqual(
           (yield* orders.place(actorAs(), { ...request, consentVersion }))
@@ -676,6 +697,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         );
 
         yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -742,6 +764,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         const checkouts = yield* CheckoutOrders;
 
         const order = yield* orders.place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -773,6 +796,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         // Ordered while the workspace billed its account, taken once it no
         // longer does: refused.
         const moved = yield* orders.place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -792,6 +816,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         assert.strictEqual(elsewhere._tag, "OrderRequired");
 
         const late = yield* orders.place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -1117,6 +1142,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid({ plan: "agency" }));
 
         const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          consentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,

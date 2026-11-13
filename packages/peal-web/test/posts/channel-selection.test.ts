@@ -65,6 +65,27 @@ describe(connectedTargets, () => {
     ).toStrictEqual(["a"]);
   });
 
+  it("leaves out a channel taken off the post", () => {
+    const post = draftFor("b", "a");
+    const [first, second] = post.targets;
+
+    expect(
+      connectedTargets(
+        {
+          ...post,
+          status: "scheduled",
+          targets: [
+            ...(first === undefined
+              ? []
+              : [{ ...first, dropped: true, status: "cancelled" as const }]),
+            ...(second === undefined ? [] : [second]),
+          ],
+        },
+        [channel("a"), channel("b")]
+      )
+    ).toStrictEqual(["a"]);
+  });
+
   it("starts a new post on no channel", () => {
     expect(connectedTargets(undefined, [channel("a")])).toStrictEqual([]);
   });

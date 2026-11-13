@@ -109,7 +109,11 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
                   Effect.fail(new BilledElsewhere({ billingWorkspaceId })),
                 BillingOff: notEnabled,
                 ConsentChanged: ({ current, shown }) =>
-                  Effect.fail(new ConsentChanged({ current, shown })),
+                  Effect.fail(
+                    shown === undefined
+                      ? new ConsentChanged({ current })
+                      : new ConsentChanged({ current, shown })
+                  ),
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
                 PersonRequired: forbidden,

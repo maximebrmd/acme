@@ -1,0 +1,86 @@
+---
+title: Versions et changements
+description: Comment l’API change sans casser ses clients, comment une dépréciation est annoncée, et où trouver le journal des modifications.
+sidebar:
+  icon: git-branch
+---
+
+## Versions [#versioning]
+
+L’API n’a pas de version dans son chemin, et n’en a qu’une : elle ne fait que grandir. Des champs, des opérations, des valeurs d’énumération et des erreurs s’ajoutent ; rien n’est renommé, retiré ni rendu plus strict. Un client écrit aujourd’hui continue de fonctionner, pourvu qu’il ignore ce qu’il ne connaît pas :
+
+| Ce que le client rencontre                                                                                                              | Ce qu’il fait                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Un champ qu’il ne lit pas, dans une réponse ou dans la charge utile d’un webhook                                                        | Il l’ignore.                                                           |
+| Une valeur qu’il ne connaît pas, là où un champ énumère ses valeurs, comme un nouveau statut de publication ou un nouveau motif d’échec | Il la traite comme « autre chose », jamais comme un échec de décodage. |
+| Un code d’erreur qu’il ne connaît pas                                                                                                   | Il se rabat sur le statut HTTP, et affiche `message`.                  |
+
+<Callout type="info" title="Comment l’API s’y tient">
+  Chaque changement du contrat est comparé au dernier document OpenAPI publié,
+  celui dont les SDK ont été générés (leur version 0.3.0 aujourd’hui), et les
+  tests du projet échouent sur tout changement qui pourrait casser un client :
+  une opération, un champ ou une valeur retirés ou renommés, un paramètre devenu
+  obligatoire, un type qui a changé.
+</Callout>
+
+Une rupture ne se fait que sur décision. Elle est alors consignée avec sa raison, listée dans le [journal des modifications](#changelog) sous `breaking`, et annoncée d’abord par une [dépréciation](#deprecations) quand un point d’accès disparaît.
+
+Les charges utiles des webhooks suivent la même règle, avec leur propre `version` ([Versions](/developers/webhooks/requests#versions)).
+
+## Dépréciations [#deprecations]
+
+Un point d’accès déprécié continue de répondre comme il l’a toujours fait. Il le dit à trois endroits :
+
+- le document OpenAPI marque son opération `deprecated`, ce que montrent les clients générés et les éditeurs ;
+- chacune de ses réponses porte les en-têtes ci-dessous ;
+- le [journal des modifications](#changelog) le liste, par opération, dans la version qui l’a déprécié.
+
+| En-tête       | Ce qu’il dit                                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Deprecation` | Depuis quand le point d’accès est déprécié, comme l’écrit la RFC 9745 : `@` suivi des secondes écoulées depuis 1970, comme `@1803859200`. |
+| `Sunset`      | Quand il cessera de répondre, une fois que c’est décidé, sous forme de date HTTP (RFC 8594), comme `Wed, 01 Sep 2027 00:00:00 GMT`.       |
+| `Link`        | Où la dépréciation est expliquée, avec ce qu’il faut appeler à la place, quand une telle page existe : `rel="deprecation"`.               |
+
+`Sunset` et `Link` ne sont là que s’il y a quelque chose à dire : un point d’accès déprécié sans `Sunset` n’a pas de fin décidée. Faites journaliser par votre client toute réponse qui porte `Deprecation`.
+
+Aucun point d’accès n’est déprécié aujourd’hui.
+
+## Journal des modifications [#changelog]
+
+`GET /api/changelog` liste les versions de l’API, la plus récente d’abord, sans authentification : un client le lit pour savoir ce que sait faire le serveur qu’il a trouvé.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.example.com/api/changelog
+```
+
+```ts TypeScript
+const changelog = await peal.system.changelog();
+```
+
+</CodeGroup>
+
+```json
+{
+  "entries": [
+    {
+      "date": "2026-11-09",
+      "title": "The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it.",
+      "operations": [],
+      "deprecations": [],
+      "breaking": [],
+      "additions": 0
+    }
+  ]
+}
+```
+
+| Champ          | Ce qu’il contient                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `date`         | Le jour de la version.                                                                                                                |
+| `title`        | Ce qu’est la version, en une phrase.                                                                                                  |
+| `operations`   | Les opérations qu’elle a ajoutées, par identifiant d’opération, comme `activity.list`.                                                |
+| `deprecations` | Les opérations qu’elle a dépréciées, par identifiant d’opération.                                                                     |
+| `breaking`     | Les changements qui pourraient casser un client, chacun avec le changement (`change`) et sa raison (`reason`). Presque toujours vide. |
+| `additions`    | Le nombre total d’ajouts : opérations, champs, valeurs et erreurs.                                                                    |

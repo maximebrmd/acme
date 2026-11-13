@@ -1,0 +1,169 @@
+---
+title: Webhooks
+description: "Have Peal tell your own server what happens in a workspace, without polling: who manages endpoints and how to add one."
+sidebar:
+  icon: webhook
+---
+
+A webhook is a request Peal sends to an address of yours when something happens in a workspace: a post went out or failed, a channel must be reconnected, a file is ready. A product that publishes through the [API](/developers), or an automation, learns it at once instead of asking again and again.
+
+Peal signs every request as the [Standard Webhooks](https://www.standardwebhooks.com) specification says ([its text](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)), so the libraries written for it verify Peal's deliveries as they are.
+
+## Who manages them [#access]
+
+| Where            | How                                                                                                                                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The web app      | **Settings**, then **Webhooks**                                                                                                                                                                                                                     |
+| The API          | The `webhooks` group, [below](#api)                                                                                                                                                                                                                 |
+| The command line | `peal webhooks` ([command line](/developers/cli))                                                                                                                                                                                                   |
+| MCP              | The [MCP](/developers/mcp) tools `list_webhooks` and `list_webhook_deliveries`, which read; `create_webhook` and `update_webhook`, which add and change an endpoint; `send_test_webhook` and `redeliver_webhooks`, which make Peal call your server |
+
+| Permission       | What it allows                                                              | Who holds it      |
+| ---------------- | --------------------------------------------------------------------------- | ----------------- |
+| `webhook:read`   | List the endpoints and read their deliveries                                | Owners and admins |
+| `webhook:manage` | Add, change, turn off and delete endpoints, rotate secrets, send and resend | Owners and admins |
+
+An API key does what its permissions allow, and an OAuth client what you let it do: a client allowed to read only lists endpoints and deliveries, and changes nothing. Staff acting as a member cannot change a workspace's webhooks.
+
+Every plan includes webhooks, and an instance that does not bill has them too.
+
+## Endpoints [#endpoints]
+
+An endpoint is an address, the events it wants, a description, whether it is on, and, if you choose, the channels and workspaces it listens to. A workspace has 10 endpoints at most, whatever its plan.
+
+| Setting                                | Rules                                                                                                                                                                                                                                                                                         |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Address                                | An HTTPS URL on the default port (443), on a public host, without a user name or a password, 2048 characters at most.                                                                                                                                                                         |
+| Events                                 | The [event types](/developers/webhooks/events#events) the endpoint subscribes to, one at least. It is sent those, and nothing else.                                                                                                                                                           |
+| Description                            | What the endpoint is for, up to 200 characters.                                                                                                                                                                                                                                               |
+| On or off                              | While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.                                                                                                                     |
+| Scope, over the API                    | `workspace`, the default, hears this workspace. `partner`, on the home workspace of a [partner account](/developers/embedding/operate#webhooks) only, hears every workspace the account owns too; elsewhere it answers 404 `PartnerNotFound`. Set when the endpoint is created, and it stays. |
+| Only these channels (`channelIds`)     | 50 at most. No list means every channel ([Filters](#filters)).                                                                                                                                                                                                                                |
+| Only these workspaces (`workspaceIds`) | 200 at most, on a `partner` endpoint only. No list means every workspace it hears ([Filters](#filters)).                                                                                                                                                                                      |
+
+<Callout type="warning" title="The address must stay public">
+  Peal checks that the host resolves to public addresses when you save it, and
+  again before every request: an address that later points inside a private
+  network is sent nothing. Peal follows no redirect, so an answer in the 300s is
+  a failure: give the final address.
+</Callout>
+
+### Filters [#filters]
+
+With `channelIds`, the endpoint is sent the events about those channels only. Which events pass depends on what they are about:
+
+| The event is about | Events                                                                                                                     | Sent when                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| One channel        | `post.published`, `post.failed`, `post.unconfirmed`, `post.unpublished`, `post.unpublish_failed`, `channel.*`, `comment.*` | Its channel is listed                                                                              |
+| A whole post       | `post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events                                                | One of the post's channels is listed. The payload is unchanged.                                    |
+| No channel         | `media.*`, `boost.*`                                                                                                       | Always, whatever the endpoint lists: leave those types out of its events when you do not want them |
+
+With `workspaceIds`, a `partner` endpoint hears those workspaces alone, and its home workspace only if it is listed. An endpoint of the `workspace` scope refuses the field (`WebhookFilterRefused`, or `InvalidRequest` when it is created).
+
+Filters apply when each event happens, with the endpoint as it is then. [Sending a delivery again](/developers/webhooks/delivery#log) sends it to its endpoint whatever the filters say now.
+
+Filters are checked for the shape of their ids only: an id that names nothing matches nothing. A filter stays as you saved it when a channel is disconnected or a workspace leaves the partner account. The endpoint's form lists such a channel apart, ticked, as **A channel no longer connected**: untick it to take it off.
+
+### Headers of your own [#headers]
+
+An endpoint may carry up to 5 headers of your choosing, sent with every delivery beside Peal's own: a token a gateway in front of your server asks for, say, or a header to route on. They are static: the same on every delivery and every attempt.
+
+- A name is an HTTP token (letters, digits and ``!#$%&'*+.^_`|~-``), 64 characters at most, once per endpoint whatever its case. `Authorization` is allowed.
+- A value is visible ASCII on one line, spaces inside it but at neither end, 1,024 characters at most.
+
+Peal refuses the names it sets, or that describe the body or change how the request is delivered or its answer encoded: any name starting with `webhook-` or `Content-`, `Host`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding`, `Upgrade`, `Expect` and `Accept-Encoding`. None of yours ever replaces one of Peal's.
+
+Values are write-only. Peal stores them encrypted, as it does the secret, and never shows them again: the endpoint lists their names (`headerNames`). Peal never writes them in its logs, nor in the delivery log. To change them, send the endpoint's whole list with `headers`:
+
+| In `headers`                 | Result                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| A header with its `value`    | Sets it                                                                                         |
+| A header by its `name` alone | Keeps the value the endpoint has under that name (422 `WebhookHeadersRefused` when it has none) |
+| A header left out            | Goes                                                                                            |
+| `[]`                         | Removes them all                                                                                |
+| No `headers` field           | Keeps them                                                                                      |
+
+Values stay with their origin. Peal sends a value only to the origin (scheme, host and port) of the address it was given with, and keeps it sealed to that origin. A change of `url` to another path on the same host keeps the values. A change to another host needs `headers` in the same request, each header with its `value`, or `[]` to remove them (422 `WebhookHeaderValuesRequired` otherwise, and nothing is saved). Whoever moves the endpoint must know the values again: the address alone never carries them elsewhere.
+
+<Callout type="warning" title="Headers are not signed">
+  The [signature](/developers/webhooks/requests#verify) covers the event's id,
+  timestamp and body, as the specification says: verify it whatever headers you
+  get.
+</Callout>
+
+## Through the API [#api]
+
+| Endpoint                                                                                     | What it does                                                                                        |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                                                   |
+| `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                                                     |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                                                           |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events, filters or headers, or turns it on or off                 |
+| `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                                                             |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                                                    |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                                                   |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Lists its deliveries, newest first, 30 a page, by `status` and `eventType`                          |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Sends a delivery's event again                                                                      |
+| `GET /api/workspaces/{workspaceId}/webhooks/deliveries`                                      | Lists the deliveries of every endpoint, by `status`, `endpointId`, `eventType`, `since` and `until` |
+| `POST /api/workspaces/{workspaceId}/webhooks/deliveries/redeliver`                           | Sends many deliveries again: `deliveryIds`, or `endpointId` with `since`, `until` and `eventType`   |
+
+The `GET` lists and the endpoint itself need `webhook:read`; everything else needs `webhook:manage`.
+
+Add an endpoint:
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://hooks.example.com/peal",
+    "description": "Order system",
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <your gateway token>" }]
+  }'
+```
+
+The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again, nor a header's value: the endpoint names its [headers](#headers) in `headerNames`.
+
+Send an endpoint's deliveries again since an instant:
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks/deliveries/redeliver \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f", "since": "2026-11-10T00:00:00Z" }'
+```
+
+### Errors [#errors]
+
+Errors come in the API's format, each with a `code` in snake case beside its name, such as `webhook_url_refused` for `WebhookUrlRefused` ([Errors](/developers/conventions/errors#errors)). An API key's requests count towards its [rate limit](/developers/conventions/rate-limits#rate-limits).
+
+| Status | Error                         | When                                                                                                     |
+| ------ | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 404    | `WebhookEndpointNotFound`     | The workspace has no endpoint with this id.                                                              |
+| 404    | `WebhookDeliveryNotFound`     | The endpoint has no delivery with this id, or its log no longer keeps it.                                |
+| 409    | `TooManyWebhookEndpoints`     | The workspace already has 10 endpoints.                                                                  |
+| 409    | `WebhookEndpointDisabled`     | A test or a resend was asked of an endpoint that is off.                                                 |
+| 422    | `WebhookFilterRefused`        | `workspaceIds` on an endpoint of the `workspace` scope; `field` names it.                                |
+| 422    | `WebhookHeadersRefused`       | A header given without `value` that the endpoint does not have.                                          |
+| 422    | `WebhookHeaderValuesRequired` | A new `url` on another origin, on an endpoint with headers, without every header's `value` or `[]`.      |
+| 422    | `WebhookUrlRefused`           | Peal does not deliver to the address. `reason` says why, below.                                          |
+| 429    | `TooManyWebhookSends`         | The hour's test events and resends are spent: see [the delivery log](/developers/webhooks/delivery#log). |
+| 503    | `WebhooksNotConfigured`       | The instance cannot keep a signing secret: see [Self-hosting](#self-hosting).                            |
+
+| `reason`      | The address                                                        |
+| ------------- | ------------------------------------------------------------------ |
+| `malformed`   | is not a URL.                                                      |
+| `notHttps`    | is not HTTPS, or names another port than 443.                      |
+| `credentials` | carries a user name or a password.                                 |
+| `tooLong`     | is longer than 2048 characters.                                    |
+| `notPublic`   | has a host that is, or resolves to, an address that is not public. |
+| `unknownHost` | has a host name that does not resolve.                             |
+
+The [API reference](/reference) lists each endpoint's parameters and answers.
+
+## Self-hosting [#self-hosting]
+
+Webhooks need no setting of their own. Signing secrets are encrypted with the keys in [`PEAL_TOKEN_KEYS`](/self-hosting/environment-variables#channels), as the tokens of connected channels are. Without it, the instance starts, and adding an endpoint or rotating a secret answers 503 `WebhooksNotConfigured`.
+
+Deliveries leave from the server, so it must be able to reach your receivers over HTTPS. They only go to public addresses: an endpoint on `localhost` or inside your private network is refused, on your own instance too.

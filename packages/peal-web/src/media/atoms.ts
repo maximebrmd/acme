@@ -3,6 +3,13 @@ import { Atom, Reactivity } from "effect/reactivity";
 import type { Media } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
+import {
+  everything,
+  pageKeyOf,
+  pageOfKey,
+  queryOf,
+} from "#media/library-search.ts";
+import type { LibrarySearch } from "#media/library-search.ts";
 import { browserTransfer, Transfer } from "#media/transfer.ts";
 import { uploadApiOf } from "#media/upload-api.ts";
 import { uploadFile } from "#media/upload-file.ts";
@@ -10,23 +17,25 @@ import { uploadFile } from "#media/upload-file.ts";
 /** What lists a workspace's media, which uploads and deletions refresh. */
 export const mediaKey = (workspaceId: string): string => `media:${workspaceId}`;
 
-// Media ids and cursors are UUIDs, so a slash cannot appear in either.
-const pageKey = (workspaceId: string, cursor: Option.Option<string>) =>
-  `${workspaceId}/${Option.getOrElse(cursor, () => "")}`;
-
 const pages = Atom.family((key: string) => {
-  const [workspaceId = "", cursor = ""] = key.split("/");
+  const { cursor, search, workspaceId } = pageOfKey(key);
 
   return PealApi.query("media", "list", {
     params: { workspaceId },
-    query: cursor === "" ? {} : { cursor },
+    query: queryOf(search, cursor),
     reactivityKeys: [mediaKey(workspaceId)],
   });
 });
 
-/** A page of a workspace's media, newest first: the first, or the one at `cursor`. */
-export const mediaPage = (workspaceId: string, cursor: Option.Option<string>) =>
-  pages(pageKey(workspaceId, cursor));
+/**
+ * A page of a workspace's media, newest first: the first, or the one at
+ * `cursor`, of the whole library or of what a search narrows it to.
+ */
+export const mediaPage = (
+  workspaceId: string,
+  cursor: Option.Option<string>,
+  search: LibrarySearch = everything
+) => pages(pageKeyOf(workspaceId, search, cursor));
 
 /** Deletes media, then lists the workspace's media again. */
 export const deleteMedia = PealApi.mutation("media", "delete");

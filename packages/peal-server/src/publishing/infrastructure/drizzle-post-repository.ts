@@ -26,6 +26,7 @@ import { ExecutionIdSchema } from "#publishing/application/publication-scheduler
 import type { ExecutionId } from "#publishing/application/publication-scheduler.ts";
 import { LivePartSchema } from "#publishing/domain/live-part.ts";
 import type { LivePart } from "#publishing/domain/live-part.ts";
+import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { withTextOn } from "#publishing/domain/post-content.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
@@ -37,6 +38,7 @@ import {
   mediaOptionFields,
   TargetOptionsSchema,
 } from "#publishing/domain/target-options.ts";
+import type { TextOverride } from "#publishing/domain/text-override.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -132,14 +134,19 @@ const targetStatusOf = (row: TargetRow) => {
     startedAt: utc(row.startedAt),
   };
 
-  // A published target's notes, each only when it holds: a status is
+  // A target's notes, each only when it holds: a status is
   // decoded from this, and keeps no note it lacks.
   let noted: typeof status & {
+    readonly dropped?: true;
     readonly editedAt?: DateTime.Utc;
     readonly keptPrivate?: true;
     readonly removedAt?: DateTime.Utc;
     readonly thumbnailNotSet?: true;
   } = status;
+
+  if (row.dropped) {
+    noted = { ...noted, dropped: true };
+  }
 
   if (row.editedAt !== null) {
     noted = { ...noted, editedAt: DateTime.fromDateUnsafe(row.editedAt) };
@@ -193,23 +200,26 @@ const scheduleColumns = (schedule: Option.Option<Schedule>) =>
     }),
   });
 
+const mediaColumn = (media: readonly MediaAttachment[]) =>
+  media.map(({ altText, mediaId }) => ({ altText, mediaId }));
+
+// An override as its column holds it: its media only when it gives some.
+const overrideColumn = ({ channelId, media, text }: TextOverride) =>
+  media === undefined
+    ? { channelId, text }
+    : { channelId, media: mediaColumn(media), text };
+
 // What the post says, as its columns hold it.
 const contentColumns = ({ content }: Post) => ({
   followUps: content.followUps.map((part) => ({
     delaySeconds: part.delaySeconds,
-    media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
-    overrides: part.overrides.map(({ channelId, text }) => ({
-      channelId,
-      text,
-    })),
+    media: mediaColumn(part.media),
+    overrides: part.overrides.map(overrideColumn),
     text: part.text,
   })),
-  media: content.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+  media: mediaColumn(content.media),
   text: content.text,
-  textOverrides: content.overrides.map(({ channelId, text }) => ({
-    channelId,
-    text,
-  })),
+  textOverrides: content.overrides.map(overrideColumn),
 });
 
 // How the post was created and scheduled, as its columns hold it.
@@ -269,6 +279,7 @@ const postColumns = (post: Post) => {
 const targetColumns = (status: PostTargetStatus) => {
   const cleared = {
     cancelRequested: false,
+    dropped: false,
     editedAt: null,
     failureCode: null,
     failureReason: null,
@@ -285,8 +296,9 @@ const targetColumns = (status: PostTargetStatus) => {
   };
 
   return Match.valueTags(status, {
-    cancelled: ({ cancelledAt }) => ({
+    cancelled: ({ cancelledAt, dropped }) => ({
       ...cleared,
+      dropped: dropped === true,
       finishedAt: date(cancelledAt),
     }),
     failed: ({ code, failedAt, reason }) => ({
@@ -413,6 +425,9 @@ const showingMedia = (mediaId: MediaAssetId) =>
   or(
     sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`,
     sql`${posts.followUps} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`,
+    // The media a part gives one channel of its own.
+    sql`${posts.textOverrides} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`,
+    sql`${posts.followUps} @> ${JSON.stringify([{ overrides: [{ media: [{ mediaId }] }] }])}::jsonb`,
     sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND (${or(
       ...mediaOptionFields.map(
         (field) =>
@@ -507,7 +522,12 @@ export const DrizzlePostRepository = Layer.effect(
           .selectDistinct({ channelId: postTargets.channelId })
           .from(postTargets)
           .innerJoin(posts, eq(posts.id, postTargets.postId))
-          .where(eq(posts.workspaceId, workspaceId))
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              eq(postTargets.dropped, false)
+            )
+          )
           .pipe(
             Effect.mapError(failed),
             Effect.map((rows) =>

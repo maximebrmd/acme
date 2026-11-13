@@ -55,6 +55,20 @@ describe(matchesFilter, () => {
     expect(matchesFilter(filter, untagged)).toBeTruthy();
   });
 
+  it("leaves out a post on a chosen channel taken off it", () => {
+    const filter = { channelIds: ["bluesky"], queueIds: [], tagIds: [] };
+
+    expect(
+      matchesFilter(filter, {
+        ...launch,
+        targets: [
+          { channelId: "mastodon" },
+          { channelId: "bluesky", dropped: true },
+        ],
+      })
+    ).toBeFalsy();
+  });
+
   it("asks for both a chosen tag and a chosen channel when both are chosen", () => {
     const filter = {
       channelIds: ["mastodon"],

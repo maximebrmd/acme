@@ -1,0 +1,86 @@
+---
+title: Instagram
+description: "Connecter Instagram à Peal, ce qu’une publication peut y contenir, et les options qu’elle prend."
+sidebar:
+  icon: /platform-marks/instagram.svg
+---
+
+Comment connecter un compte Instagram, ce qu’une publication peut y contenir, et les options qu’elle prend.
+
+## En bref [#at-a-glance]
+
+|                  |                                   |
+| ---------------- | --------------------------------- |
+| Texte            | {{platform-instagram-text-fr}}    |
+| Images et vidéos | {{platform-instagram-media-fr}}   |
+| Parties          | {{platform-instagram-parts-fr}}   |
+| Formats          | {{platform-instagram-formats-fr}} |
+| Texte alternatif | {{platform-instagram-alt-fr}}     |
+
+Ce que doit être chaque type de fichier est dans [Images et vidéos](/guides/media#platforms).
+
+## Connecter [#connect]
+
+Peal publie sur les comptes professionnels Instagram, entreprise ou créateur. Il les atteint de l’une de deux façons, que **Instagram** propose en deux boutons quand le serveur a les deux.
+
+<Tabs>
+  <Tab title="Connexion Instagram">
+    **Se connecter avec Instagram** est la façon par défaut. Connectez-vous au
+    compte professionnel lui-même sur Instagram, et autorisez Peal à lire son
+    profil, à publier et à lire ses statistiques.
+
+    - Le compte n’a besoin d’aucune Page Facebook.
+    - Son accès dure 60 jours, et Peal le renouvelle de lui-même une semaine avant sa fin.
+    - Vous pouvez refuser les statistiques : le compte publie alors, sans chiffres dans les **Statistiques**.
+
+  </Tab>
+  <Tab title="Facebook Login">
+    **Passer par une Page Facebook** : connectez-vous avec Facebook, comme pour
+    les Pages, puis cochez les comptes Instagram liés à vos Pages.
+
+    - Un compte publie avec l’accès de sa Page, qui n’expire pas : il reste connecté tant que vous gérez la Page.
+    - Choisissez cette façon pour un compte géré depuis une Page, ou pour ce que seule l’API Facebook Login de Meta donne, comme l’identification de produits, les collaborateurs et la recherche de hashtags, dont Peal ne se sert pas encore.
+
+  </Tab>
+</Tabs>
+
+Les deux façons publient de la même manière images, reels et carrousels, et relèvent les mêmes chiffres.
+
+- La liste des canaux indique par où chaque canal Instagram est passé, et le reconnecter repasse par là.
+- Connecter avec Instagram un compte que l’espace de travail a via une Page y déplace son canal, avec ses publications et sa programmation : l’espace de travail garde un canal par compte.
+
+## Options [#options]
+
+Chaque option n’est envoyée que si vous la choisissez. Certaines ne valent que pour certains médias : l’éditeur les montre pour ceux-là, et la programmation les refuse sur une autre publication. Dans l’éditeur, ce sont les réglages d’un reel et les **Collaborateurs**. **Nom dans l’API** est le nom de l’option par l’API.
+
+| Option                                               | Nom dans l’API  | Valeurs                                                               | Par défaut                  |
+| ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | --------------------------- |
+| **Format**                                           | `format`        | `story` (voir [stories et reels](/guides/posts#formats)), ou `feed`   | Une publication du fil      |
+| **Partager aussi dans le fil**                       | `shareToFeed`   | Un reel : oui ou non                                                  | Comme Instagram le décide   |
+| **Image de couverture**                              | `coverMediaId`  | Un reel : une image JPEG de la médiathèque, de 8 Mio au plus          | L’image prise dans la vidéo |
+| **Couverture prise dans la vidéo, en millisecondes** | `thumbOffsetMs` | Un reel : son image, en millisecondes depuis son début, dans sa durée | La première image           |
+| **Nom de l’audio**                                   | `audioName`     | Un reel : une ligne, 100 caractères au plus                           | Le nom d’Instagram          |
+| **Reel d’essai**                                     | `trialReel`     | Un reel : `manual` ou `performance`                                   | Pas un essai                |
+| **Collaborateurs**                                   | `collaborators` | Un à trois noms d’utilisateur Instagram                               | Aucun                       |
+
+- Sur Instagram, un reel est une publication du fil d’une seule vidéo. Une story ne prend aucune de ces options.
+- Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée.
+- Instagram ne renomme l’audio d’un reel qu’une fois.
+- Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre. Il atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`).
+- Instagram montre le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
+
+<Callout type="warning" title="Les collaborateurs reçoivent une invitation">
+  Chaque collaborateur est un autre compte, qui reçoit une invitation à être
+  nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram
+  ne documente pas les collaborateurs pour les comptes connectés avec Instagram
+  Login : quand Instagram refuse une telle publication, le canal indique
+  **Échec** avec le code de Meta.
+</Callout>
+
+## Commentaires [#comments]
+
+Peal lit les commentaires sous vos publications en ligne, et vous y répondez depuis Peal : voir [Boîte de réception](/guides/engage/inbox#meta).
+
+## Sur votre propre serveur [#self-hosting]
+
+Un serveur auto-hébergé propose Instagram une fois son application Meta enregistrée : voir [Threads, Instagram et Pages Facebook](/self-hosting/platforms#meta).

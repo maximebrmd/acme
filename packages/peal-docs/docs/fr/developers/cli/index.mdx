@@ -1,0 +1,296 @@
+---
+title: Ligne de commande
+description: Obtenir la ligne de commande peal, se connecter ou utiliser une clé d’API, choisir l’espace de travail, et lire ses réponses en JSON.
+sidebar:
+  icon: terminal
+---
+
+`peal` travaille avec une instance Peal depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail. Un script ou un agent que personne ne surveille la lance avec la [clé d’API](#api-key) d’un espace de travail à la place d’une connexion, et lit ses réponses en [JSON](#json). Ses messages sont en anglais.
+
+Depuis la ligne de commande, vous pouvez :
+
+- écrire et supprimer des brouillons, importer et récupérer des médias ;
+- programmer, publier, déplacer et annuler des publications, et assurer le suivi de celles qui sont parties ;
+- lire les statistiques, la facturation, les membres et les invitations, et inviter des personnes ;
+- enregistrer une copie de vos données.
+
+Connecter des canaux et changer des rôles se font dans l’application web.
+
+## L’obtenir [#install]
+
+Il n’y a pas encore de version publiée. Construisez-le depuis un clone du dépôt, avec Bun installé :
+
+```sh
+bun install --frozen-lockfile
+bun nx run peal-cli:build
+packages/peal-cli/dist/peal --help
+```
+
+`packages/peal-cli/dist/peal` est un seul fichier qui embarque Bun : copiez-le n’importe où dans votre `PATH`.
+
+## Choisir l’instance [#instance]
+
+Pointez `peal` vers l’adresse où vous ouvrez Peal, comme `https://peal.example.com`, avec `--api-url` ou `PEAL_API_URL`. L’option l’emporte. Sans l’une ni l’autre, `peal` utilise `http://localhost:3000`, un serveur lancé depuis les sources.
+
+```sh
+export PEAL_API_URL=https://peal.example.com
+peal health
+```
+
+<Callout type="warning" title="HTTPS seulement">
+  `peal` n’envoie votre connexion ou une clé d’API qu’en HTTPS, ou à cette
+  machine (`localhost`). En HTTP simple ailleurs, tout ce qui se trouve sur le
+  trajet pourrait les lire : la commande est donc refusée avant d’en envoyer, et
+  `peal doctor` le dit. Pour un serveur auto-hébergé sans TLS sur un réseau de
+  confiance, passez `--insecure-http`, ou définissez `PEAL_INSECURE_HTTP=true`.
+</Callout>
+
+`peal health` dit si l’instance répond, pour qu’un script puisse l’attendre :
+
+| Code de sortie | Quand                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| 0              | L’instance répond                                                      |
+| 1              | Elle est injoignable (après 5 secondes), ou elle répond par une erreur |
+
+`peal health --json` affiche ce qu’il a mesuré, `{"healthy": true, "milliseconds": 12, "url": "https://peal.example.com"}`. [`peal doctor`](#doctor) vérifie le reste de la configuration.
+
+## Se connecter [#login]
+
+```sh
+peal login
+```
+
+`peal login` affiche une adresse et un code de huit lettres et chiffres :
+
+```text
+To sign in to https://peal.example.com, open https://peal.example.com/device in a browser and enter the code WDJB-MJHT.
+Or open https://peal.example.com/device?user_code=WDJBMJHT, where the code is filled in.
+Waiting for you to approve the sign-in (the code works for 10m)…
+```
+
+<Steps>
+  <Step title="Ouvrez l’adresse">
+    Connectez-vous à Peal si ce n’est pas déjà fait.
+  </Step>
+  <Step title="Vérifiez le code et autorisez">
+    Vérifiez que le code est celui de votre terminal, puis choisissez
+    **Autoriser**.
+  </Step>
+  <Step title="Revenez dans le terminal">
+    `peal login` indique où il a enregistré la connexion.
+  </Step>
+</Steps>
+
+<Callout type="warning">
+  N’approuvez qu’un code que vous avez demandé vous-même : la personne qui a
+  lancé la connexion reçoit votre accès.
+</Callout>
+
+Le code reste valable 10 minutes. **Refuser** rejette la connexion, et `peal login` s’arrête.
+
+`peal` demande à faire ce que votre rôle permet dans vos espaces de travail, à programmer et publier des publications, et à rester connecté. Il enregistre la connexion à cette instance dans `credentials.json`, que vous seul pouvez lire, dans le premier de ces dossiers qui est défini :
+
+| Dossier                 | Utilisé quand                |
+| ----------------------- | ---------------------------- |
+| `PEAL_CONFIG_DIR`       | Il est défini                |
+| `$XDG_CONFIG_HOME/peal` | `XDG_CONFIG_HOME` est défini |
+| `%APPDATA%\peal`        | Sous Windows                 |
+| `~/.config/peal`        | Sinon                        |
+
+Chaque instance a sa propre connexion, rangée sous son adresse : vous pouvez être connecté à plusieurs. `peal` renouvelle son accès de lui-même, et n’affiche jamais ses jetons.
+
+<Accordion>
+  <AccordionItem title="Validation en deux étapes">
+    Quand votre compte a activé la [validation en deux étapes](/guides/workspace/account#two-step), le navigateur demande le code de votre application d’authentification, ou un code de secours, quand vous vous y connectez. La commande ne change pas.
+
+    Dans un espace de travail qui l’[exige](/guides/workspace#require-two-step) alors que votre compte ne l’a pas activée, chaque commande est refusée, et le dit. Activez-la dans les paramètres de compte de l’application web, puis relancez la commande, avec la même connexion. `peal doctor` nomme un tel espace.
+
+    Aucune commande ne gère la validation en deux étapes. Avec `PEAL_API_KEY`, rien ne change : les clés ne sont pas concernées.
+
+  </AccordionItem>
+  <AccordionItem title="Une connexion faite avant que la publication soit demandée">
+    Une connexion faite avant que `peal` demande la publication ne l’a pas. Les commandes qui font partir des publications le disent alors, et vous demandent de relancer `peal login` et de l’approuver.
+  </AccordionItem>
+</Accordion>
+
+## Qui suis-je [#whoami]
+
+```sh
+peal whoami
+```
+
+```text
+Signed in to https://peal.example.com as Sam Example <sam@example.com>.
+Workspaces:
+  Studio (owner)    studio   7c9e6679-7425-40de-944b-e07fc1f90ae7
+  Clients (editor)  clients  3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b
+```
+
+Chaque espace de travail vient avec son slug et son identifiant, que prend `--workspace`.
+
+Une clé n’étant personne, avec une [clé d’API](#api-key) `peal whoami` dit plutôt de quelle clé il s’agit, par `GET /api/credential` : son nom, le nom et l’identifiant de son espace de travail, ses permissions et sa date d’expiration, jamais la clé.
+
+```text
+The API key in PEAL_API_KEY is "nightly" (peal_AbCd…), of the workspace Studio (7c9e6679-7425-40de-944b-e07fc1f90ae7), on https://peal.example.com.
+Permissions: channel:read, post:read, post:create.
+It never expires.
+```
+
+Quand la connexion ne fonctionne plus, parce qu’elle a été révoquée ou que votre compte a été banni, `peal whoami` le dit et vous demande de relancer `peal login`. Avant toute connexion, il répond que vous n’êtes pas connecté.
+
+## Dans tous les espaces [#across-workspaces]
+
+```sh
+peal overview
+peal agenda --from 2026-11-20T00:00 --to 2026-11-27T00:00 --workspace clients
+peal report --days 90 --csv rapport.csv
+```
+
+| Commande        | Ce qu’elle montre                                                                                                                                                                                                                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `peal overview` | Ce qui demande votre attention dans chaque espace de travail auquel vous appartenez : les publications qui ont échoué ou sont à vérifier, les approbations en attente, les canaux à reconnecter ou désactivés, les commentaires qui attendent une réponse, un espace au-delà de son offre, ou une fois que rien ne demande votre attention        |
+| `peal agenda`   | Ce qui part dans ces espaces, les 14 prochains jours sauf si `--from` et `--to` disent autre chose (31 jours au plus), chaque publication avec son heure en UTC, son espace, ses plateformes, son état et le début de son texte. `--workspace`, répété, en garde certains, par slug ou identifiant                                                |
+| `peal report`   | Les publications, l’engagement, les impressions et les abonnés de chaque espace sur les 7, 30 ou 90 derniers jours (`--days`, 30 par défaut ; `--time-zone`), chacun à côté des jours d’avant, là où votre rôle lit les statistiques. `--csv` enregistre le rapport en fichier CSV, une ligne par espace, jamais par-dessus un fichier qui existe |
+
+Chaque espace montre ce que votre rôle y permet de lire. Un espace qui exige la validation en deux étapes que votre compte n’a pas activée est nommé sans aucun chiffre.
+
+Les trois prennent `--json`, `--limit` et `--cursor`. Elles sont pour une personne connectée : une clé d’API appartient à un seul espace ([Dans tous vos espaces de travail](/guides/workspace#across-workspaces)).
+
+## Se déconnecter [#logout]
+
+```sh
+peal logout
+```
+
+`peal logout` demande à l’instance de révoquer la connexion, puis l’oublie, même si l’instance ne répond pas dans les 5 secondes.
+
+## La lancer avec une clé d’API [#api-key]
+
+Pour un lancement que personne ne surveille, comme une tâche planifiée ou un agent sur un serveur, mettez dans `PEAL_API_KEY` la [clé d’API](/guides/workspace#api-keys) d’un espace de travail, et nommez cet espace par son identifiant :
+
+```sh
+export PEAL_API_URL=https://peal.example.com
+export PEAL_API_KEY=peal_…
+export PEAL_WORKSPACE=7c9e6679-7425-40de-944b-e07fc1f90ae7
+peal doctor
+peal drafts list --json
+```
+
+- La clé n’est lue que dans l’environnement. Aucune option ne la prend, car une option finit dans l’historique du shell et dans la liste des processus. `peal` ne l’affiche jamais.
+- Tant que `PEAL_API_KEY` est définie, elle l’emporte sur une connexion enregistrée. Une valeur vide n’est pas une clé.
+- `--workspace` ou `PEAL_WORKSPACE` doit donner l’identifiant de l’espace de travail, pas son slug, et il n’y a pas de valeur par défaut : une clé ne peut pas chercher les espaces de travail. L’identifiant figure dans l’adresse des pages de l’espace de travail dans l’application web (`/app/<id>/settings`), et `peal whoami`, connecté en tant que personne, le liste. Sinon la commande s’arrête avec `workspace_id_required`.
+- La clé fait ce que ses permissions permettent, et rien de plus : sans `post:schedule`, elle écrit tout au plus des brouillons. Un refus arrive dans les mots du serveur, avec la permission qui manque.
+- Ce que seule une personne fait est refusé avant toute requête (`person_required`) : `peal login`, `peal account export` et `peal account apps`, `peal members list`, et toutes les commandes `peal invitations`.
+- Une clé que le serveur n’accepte plus (révoquée, expirée ou venue d’un autre serveur) est signalée comme telle (`api_key_refused`), et non comme une connexion à renouveler.
+
+## Vérifier la configuration [#doctor]
+
+```sh
+peal doctor
+peal doctor --workspace studio --json
+```
+
+`peal doctor` vérifie ce qu’un lancement utiliserait, et ne change rien. Lancez-le d’abord, avant qu’un script ou un agent ne fasse quoi que ce soit.
+
+```text
+ok  api-url        https://peal.example.com, from PEAL_API_URL.
+ok  health         The server answers.
+ok  ready          The server and its database both answer.
+ok  changelog      The API's latest release is of 2026-11-09: The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it.
+ok  credential     The sign-in saved for https://peal.example.com. PEAL_API_KEY is not set.
+ok  access         Signed in as Sam Example <sam@example.com>, in 2 workspaces: Studio (studio, 7c9e6679-7425-40de-944b-e07fc1f90ae7, owner); Clients (clients, 3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b, editor).
+ok  publish-scope  The sign-in has workspace:publish: it can schedule and publish, where your role allows it.
+ok  workspace      Commands act in Studio (studio, 7c9e6679-7425-40de-944b-e07fc1f90ae7, owner), from --workspace.
+ok  mcp            MCP clients connect to https://peal.example.com/api/mcp: peal mcp shows how.
+```
+
+| Vérification    | Ce qu’elle regarde                                                                                                                                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api-url`       | L’adresse de l’instance, et d’où elle vient : `--api-url`, `PEAL_API_URL` ou la valeur par défaut. Échoue pour du HTTP simple hors de cette machine, sauf si `--insecure-http` l’autorise.                                        |
+| `health`        | Que le serveur répond, en 5 secondes au plus.                                                                                                                                                                                     |
+| `ready`         | Qu’il joint sa base de données.                                                                                                                                                                                                   |
+| `changelog`     | Qu’il répond à `GET /api/changelog`, avec la dernière version de l’API ([Journal des modifications](/developers/conventions/versioning#changelog)) : un serveur qui n’y répond pas est plus ancien, ou n’est pas un serveur Peal. |
+| `credential`    | Ce qu’un lancement utilise pour s’authentifier : la clé de `PEAL_API_KEY`, ou la connexion enregistrée. Jamais affiché.                                                                                                           |
+| `access`        | Que ce moyen fonctionne : qui est connecté et où, ou, pour une clé, qu’elle lit les canaux de l’espace de travail.                                                                                                                |
+| `publish-scope` | Si la connexion peut programmer et publier. Ignorée pour une clé, qui a des permissions et pas de scope. Une connexion qui ne l’a pas est `ok` : elle écrit des brouillons, et il ne faut pas chercher à contourner cela.         |
+| `workspace`     | Dans quel espace de travail agissent les commandes, et d’où vient ce choix.                                                                                                                                                       |
+| `mcp`           | L’adresse à laquelle se connectent les clients MCP.                                                                                                                                                                               |
+
+Chaque vérification est `ok`, `failing` (en échec) ou `skipped` (ignorée). Une vérification est ignorée quand elle ne peut pas se faire, comme lorsque le serveur ne répond pas, ou quand elle ne s’applique pas. Une vérification en échec vient avec ce qu’il faut faire, sur une ligne qui commence par `To do:`. `peal doctor` se termine avec le code 1 dès qu’une vérification échoue.
+
+Avec `--json`, il affiche `{"checks": [{"name", "status", "detail", "fix"}], "ok"}` sur la sortie standard, `fix` seulement là où il y a quelque chose à faire. Quand une vérification échoue, il affiche aussi l’[échec](#json) `checks_failed` sur la sortie d’erreur, avec le nom des vérifications en échec dans `failed`.
+
+## Connecter un client MCP [#mcp]
+
+```sh
+peal mcp
+```
+
+`peal mcp` affiche le point d’accès MCP de l’instance et une configuration que la plupart des clients MCP acceptent, et prévient quand l’instance ne laisse pas les clients MCP s’enregistrer eux-mêmes. [Connecter un client MCP](/developers/mcp) explique la suite.
+
+## Choisir l’espace de travail [#workspace]
+
+Chaque commande ci-dessous agit dans un espace de travail. Nommez-le avec `--workspace` (ou `-w`), par son identifiant court (slug) ou son identifiant, ou définissez `PEAL_WORKSPACE` une fois pour les commandes qui suivent.
+
+```sh
+export PEAL_WORKSPACE=studio
+peal drafts list
+peal drafts list --workspace clients
+```
+
+Si vous n’appartenez qu’à un espace de travail, `peal` le prend. Si vous appartenez à plusieurs sans en nommer aucun, il liste leurs slugs et s’arrête. Avec une [clé d’API](#api-key), donnez l’identifiant de l’espace de travail.
+
+Chaque commande fait ce que votre rôle y permet, comme l’application web : un lecteur lit, un éditeur écrit, programme, publie et assure le suivi, un propriétaire ou un administrateur invite. Quand l’instance refuse, `peal` dit pourquoi (votre rôle, le statut de la publication, la formule) et se termine avec le code 1. Le refus finit par l’identifiant de la requête et le code de l’erreur, comme `Request 019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68 (forbidden).` : citez cet identifiant quand vous demandez de l’aide ([Requêtes et réponses](/developers/conventions#requests)).
+
+## Sortie pour les scripts [#json]
+
+`--json` affiche la réponse de l’API en un seul document JSON sur la sortie standard, et rien d’autre, avec les instants en ISO 8601, en UTC. Toutes les commandes qui lisent ou changent quelque chose par l’API la prennent, ainsi que `peal health` et `peal doctor`. `peal login`, `peal logout` et `peal mcp` ne la prennent pas.
+
+```sh
+peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --json
+peal posts show <post-id> --json
+```
+
+- Le document est la réponse du point d’accès que la commande appelle, telle que la [référence de l’API](/reference) la décrit : une publication, une page avec `items` et `nextCursor`, un tableau.
+- Une commande dont le point d’accès répond sans corps, comme `peal drafts discard`, `peal invitations revoke` ou `peal webhooks delete`, affiche `null`.
+- `peal billing --json` contient les deux réponses qu’il lit, sous `billing` et `standing`. `peal health --json` et `peal doctor --json` affichent des documents qui leur sont propres ([Choisir l’instance](#instance), [Vérifier la configuration](#doctor)).
+
+Sous `--json`, un échec est lui aussi un seul document JSON, sur la sortie d’erreur, avec le code de sortie 1, et la sortie standard reste vide :
+
+```json
+{
+  "error": {
+    "code": "forbidden",
+    "message": "This API key does not have the permission post:schedule. An owner or an admin of the workspace gives it to the key, or creates a key that has it.",
+    "permission": "post:schedule",
+    "reason": "missingPermission",
+    "requestId": "019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68"
+  }
+}
+```
+
+Pour un refus de l’API, `error` est l’erreur telle que le serveur l’a envoyée : son `code`, son `message`, le `requestId` et ses propres champs ([Codes d’erreur](/developers/conventions/errors#error-codes) liste tous les codes). Décidez d’après `code`, jamais d’après `message`.
+
+La ligne de commande a ses propres codes pour ce qui l’arrête avant une réponse de l’API, ou à sa place :
+
+| Code                      | Quand                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `invalid_usage`           | Les arguments sont illisibles : une option inconnue, un argument manquant.                                                                 |
+| `unreachable`             | L’instance n’a rien répondu : connexion refusée, hôte inconnu, délai dépassé.                                                              |
+| `unhealthy`               | `peal health` a reçu une réponse qui n’est pas celle d’un serveur en bonne santé.                                                          |
+| `unexpected_answer`       | L’instance a répondu quelque chose que le contrat de l’API ne décrit pas : elle est peut-être plus ancienne, ou n’est pas un serveur Peal. |
+| `not_signed_in`           | Aucune connexion n’est enregistrée pour l’instance, et `PEAL_API_KEY` n’est pas définie.                                                   |
+| `sign_in_expired`         | La connexion enregistrée ne fonctionne plus : relancez `peal login`.                                                                       |
+| `api_key_refused`         | L’instance a refusé la clé de `PEAL_API_KEY` : révoquée, expirée, ou venue d’un autre serveur.                                             |
+| `person_required`         | La commande s’adresse à une personne connectée, et `PEAL_API_KEY` est définie.                                                             |
+| `workspace_id_required`   | Avec une clé d’API, aucun espace de travail n’est nommé, ou il l’est autrement que par son identifiant.                                    |
+| `workspace_required`      | Vous appartenez à plusieurs espaces de travail et n’en avez nommé aucun.                                                                   |
+| `workspace_unknown`       | Vous n’appartenez à aucun espace de travail de ce slug ou de cet identifiant.                                                              |
+| `no_workspace`            | Vous n’appartenez encore à aucun espace de travail.                                                                                        |
+| `credential_store_failed` | La connexion n’a pas pu être lue dans `credentials.json`, ou y être enregistrée.                                                           |
+| `checks_failed`           | `peal doctor` a trouvé des vérifications en échec, nommées dans `failed`.                                                                  |
+| `refused`, `failed`       | Tout autre refus ou échec de la ligne de commande, avec la raison dans `message`.                                                          |
+
+Une réponse au statut d’erreur qui ne porte aucune erreur de l’API a le code général de l’API pour ce statut, comme `internal_error`, et le `requestId` quand le serveur en a donné un.
+
+Un agent qui lance des commandes plutôt que des outils MCP travaille de la même façon : [Publier depuis un agent IA](/developers/agents#cli).

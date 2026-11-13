@@ -10,6 +10,7 @@ import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { AccountChannels } from "#billing/application/ports/account-channels.ts";
 import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { PersonRequired } from "#billing/domain/person-required.ts";
 import { TransferNotFound } from "#billing/domain/transfer-not-found.ts";
@@ -52,9 +53,20 @@ const ChannelsCountedTest = Layer.succeed(
   })
 );
 
+// The accounts whose day was raised.
+const raisedAccounts: string[] = [];
+
+const DaysRaisedTest = Layer.mock(StartAccountDays, {
+  raiseAccount: (accountId) =>
+    Effect.sync(() => {
+      raisedAccounts.push(accountId);
+    }),
+});
+
 const TransferTest = TransferWorkspace.layer.pipe(
   Layer.provideMerge(
     Layer.mergeAll(
+      DaysRaisedTest,
       DrizzleBillingAccountStoreLive,
       WorkspaceAccountPayersLive.pipe(
         Layer.provide(Layer.merge(PartnerOwnershipLive, WorkspaceOwnersLive))
@@ -212,6 +224,59 @@ layer(TransferTest)("handing a workspace to another payer", (it) => {
 
         yield* cleanUp([theirs, handed]);
       })
+  );
+
+  it.effect(
+    "is held, into per-account pricing whose first invoice is not paid, to its ceiling",
+    () =>
+      Effect.gen(function* unverified() {
+        const transfers = yield* TransferWorkspace;
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const other = yield* person;
+        const theirs = yield* workspaceOwnedBy([other]);
+        const handed = yield* workspaceOwnedBy([payer, other]);
+
+        yield* holding(theirs, 99);
+        yield* holding(handed, 2);
+        yield* accounts.of(theirs);
+        yield* subscribe(theirs, "active", "payAsYouGo");
+
+        yield* transfers.offer(ownerIn(handed, payer), other);
+
+        assert.deepStrictEqual(
+          yield* transfers.accept(ownerIn(handed, other)).pipe(Effect.flip),
+          new PlanLimitReached({
+            allowed: 100,
+            limit: "channels",
+            needed: 101,
+            used: 99,
+          })
+        );
+
+        yield* cleanUp([theirs, handed]);
+      })
+  );
+
+  it.effect("raises the day of the account that takes the workspace", () =>
+    Effect.gen(function* raised() {
+      const transfers = yield* TransferWorkspace;
+      const accounts = yield* BillingAccounts;
+      const payer = yield* person;
+      const other = yield* person;
+      const theirs = yield* workspaceOwnedBy([other]);
+      const handed = yield* workspaceOwnedBy([payer, other]);
+
+      yield* holding(handed, 1);
+      yield* accounts.of(theirs);
+      yield* transfers.offer(ownerIn(handed, payer), other);
+
+      const taken = yield* transfers.accept(ownerIn(handed, other));
+
+      assert.include(raisedAccounts, taken.id);
+
+      yield* cleanUp([theirs, handed]);
+    })
   );
 
   it.effect(

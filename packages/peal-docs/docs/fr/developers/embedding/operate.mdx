@@ -1,0 +1,228 @@
+---
+title: Gérer les espaces de vos clients
+description: Publier pour vos clients, savoir ce qui s’est passé, voir qui demande de l’attention, suivre la consommation et retirer un client.
+sidebar:
+  icon: briefcase
+---
+
+## Publier pour eux [#post]
+
+Dans l’espace de travail d’un client, votre clé utilise les mêmes points d’accès que tout autre client : [médias](/guides/media), [publications](/guides/posts), [statistiques](/guides/engage/analytics). Pour publier en un appel, maintenant ou à un instant donné :
+
+```typescript
+const post = await peal.posts.send({
+  workspaceId: workspace.id,
+  "idempotency-key": "campaign-881-cus_42",
+  channelIds: [channelId],
+  content: { text: "Pain frais dès 7 h.", media: [], overrides: [] },
+  when: { _tag: "at", at: "2026-11-12T06:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+Peal vérifie la publication auprès de la plateforme de chaque canal avant de l’accepter, et répond toutes les violations d’un coup ([Comment se lisent les refus](/developers/agents#refusals)).
+
+<Callout type="warning">
+  Ce qui part est public sur les plateformes : Peal ne peut pas le reprendre.
+</Callout>
+
+## Apprendre ce qui s’est passé [#webhooks]
+
+Ajoutez un point de terminaison à votre espace de travail principal avec `scope: "partner"`. Il entend les événements de chaque espace de travail que possède votre compte partenaire, et ceux de votre espace principal.
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$HOME_WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $HOME_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://hooks.example.com/peal", "eventTypes": ["channel.connected", "channel.reconnect_needed", "post.published", "post.failed", "post.unconfirmed"], "scope": "partner"}'
+```
+
+Une clé partenaire n’agit pas dans votre espace de travail principal : créez donc le point de terminaison dans l’application web, sous **Paramètres**, puis **Webhooks**, en étant connecté, ou avec une [clé d’API](/guides/workspace#api-keys) de l’espace principal qui détient `webhook:manage`. Un point de terminaison avec `scope: "partner"` dans un espace de travail sans compte partenaire répond 404 `PartnerNotFound`.
+
+Chaque corps nomme son espace de travail deux fois : `data.workspaceId`, l’identifiant de Peal, et `workspaceExternalId`, le vôtre, tel qu’il était quand l’événement s’est produit (null quand vous n’en avez pas donné).
+
+```json
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-10T09:14:02.000Z",
+  "workspaceExternalId": "cus_42",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6f40-11aa-7c3d-8e21-9f0b6a5d4c33",
+    "platform": "linkedin",
+    "reconnected": false
+  }
+}
+```
+
+[Webhooks](/developers/webhooks) dit comment les envois sont signés, vérifiés, relancés et journalisés. Un point de terminaison de l’espace de travail d’un client, avec la portée par défaut, n’entend que cet espace.
+
+- Pour marquer une seule fois comme terminée la publication d’un client dans votre produit, abonnez-vous à [`post.finished`](/developers/webhooks/events/posts#post-finished). Il arrive quand chaque canal de la publication a son résultat, avec celui de chacun.
+- [`channel.expiring`](/developers/webhooks/events/channels#channel-expiring) prévient, une semaine avant au plus, que la connexion d’un canal ne peut pas être renouvelée : envoyez à votre client un [lien de connexion](/developers/embedding#reconnect) avant qu’elle expire.
+- Quand votre destinataire est derrière une passerelle qui demande un jeton, donnez au point de terminaison [des en-têtes à lui](/developers/webhooks#headers) (`headers`). Leurs valeurs ne se relisent pas.
+
+### La préproduction à part, avec un filtre d’espaces de travail [#webhooks-staging]
+
+Pour séparer les clients de votre préproduction de ceux de la production, donnez à chaque environnement son propre point de terminaison partenaire et listez, dans `workspaceIds` (200 au plus), les espaces de travail qu’il doit entendre. Votre point de terminaison de préproduction entend vos clients de test, et celui de production, sans liste, tous les espaces de travail. Votre espace de travail principal n’est entendu que s’il est listé.
+
+Changez la liste au fil de vos clients de test avec `PATCH …/webhooks/{endpointId}`. Les livraisons de chaque point de terminaison, avec l’espace de travail de chacune et l’identifiant que vous lui donnez, sont dans le [journal de tous les points de terminaison](/developers/webhooks/delivery#log) de votre espace de travail principal, où celles qui ont échoué se renvoient ensemble.
+
+## Voir quels clients demandent votre attention [#health]
+
+Les webhooks vous disent chaque changement au moment où il arrive. `GET /api/partner/overview` dit où en est chaque client maintenant, en un appel par page : votre produit peut montrer sa propre liste de clients à suivre, ou vérifier leur état après une panne de son destinataire.
+
+```bash
+curl "https://api.example.com/api/partner/overview?limit=100" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```json
+{
+  "account": { "overPlan": false },
+  "next": "eyJjcmVhdGVkQXQiOjE3OTQzMDEyMDMwMDAsImlkIjoiN2IxZiJ9",
+  "total": 412,
+  "workspaces": [
+    {
+      "id": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+      "externalId": "cus_42",
+      "name": "Garage Dupont",
+      "channels": { "connected": 3, "toReconnect": 1, "off": 0 },
+      "posts": {
+        "scheduledNext7Days": 4,
+        "awaitingApproval": 0,
+        "failedLast7Days": 1,
+        "unconfirmedLast7Days": 0,
+        "mayApprove": true
+      },
+      "inbox": { "unanswered": 2 }
+    }
+  ]
+}
+```
+
+| Chiffre                      | Ce qu’il compte                                                                                                          | Ouvert par        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| `channels.connected`         | Les canaux connectés dans l’espace de travail                                                                            | `channel:read`    |
+| `channels.toReconnect`       | Ceux à [reconnecter](/developers/embedding#reconnect), comme l’a dit `channel.reconnect_needed`                          | `channel:read`    |
+| `channels.off`               | Ceux désactivés, sur lesquels rien ne part                                                                               | `channel:read`    |
+| `posts.scheduledNext7Days`   | Les publications qui partent dans les 7 prochains jours                                                                  | `post:read`       |
+| `posts.awaitingApproval`     | Les publications qui attendent une [approbation](/guides/posts/review) ; `mayApprove` dit si la clé porte `post:approve` | `post:read`       |
+| `posts.failedLast7Days`      | Les publications terminées dans les 7 derniers jours avec un canal en échec, comme l’a dit `post.failed`                 | `post:read`       |
+| `posts.unconfirmedLast7Days` | Les publications des 7 derniers jours avec un canal peut-être en ligne, à vérifier, comme l’a dit `post.unconfirmed`     | `post:read`       |
+| `inbox.unanswered`           | Les fils de la [boîte de réception](/guides/engage/inbox) avec un commentaire qui attend une réponse                     | `engagement:read` |
+
+Une section vaut `null` là où la clé n’a pas reçu la permission qui la lit, ce qui n’est pas la même chose que rien à suivre : un espace de travail sans rien répond des zéros. La clé a besoin de la portée `workspaces:read`.
+
+`account.overPlan`, sur la première page seulement, dit si vos espaces de travail, qui partagent une offre et un compte de canaux, détiennent plus de canaux que l’offre n’en permet, et ne programment ni ne publient donc rien tant qu’on n’en retire pas ([Abonnements et limites](#limits)) ; avant votre premier client, c’est la situation de votre espace de travail principal. Il vaut `null` sur un serveur qui ne facture pas.
+
+Les pages suivent la liste de vos espaces de travail : du plus récent au plus ancien, 50 par page sauf si `limit` (100 au plus) dit autrement, `next` passé comme `before`. Votre espace de travail principal n’est pas listé : ce n’est pas un client. Rien ne filtre la liste sur les espaces qui demandent votre attention. Parcourez-la, ce qui pour 1 000 clients fait 10 à 20 appels, bien en deçà de la [limite de débit](/developers/conventions/rate-limits#rate-limits).
+
+Les propriétaires et administrateurs de votre espace principal lisent la même chose à `GET /api/workspaces/{homeWorkspaceId}/partner/overview` (`partner:read`), dans **Paramètres**, puis **Partenaire**, et avec `peal partner overview` ([ligne de commande](/developers/cli/workspace#partner)). Ils voient chaque section là où ils en détiennent la permission dans l’espace principal (l’équipe qui agit à leur place ne lit pas la boîte de réception), et `mayApprove` vaut toujours faux, car ils ne sont membres d’aucun espace de client.
+
+## Retirer un client [#offboard]
+
+```typescript
+await peal.partner.deleteWorkspace({ workspaceId: workspace.id });
+```
+
+<Callout type="warning" title="Supprimer un espace de travail est définitif">
+  La suppression efface, définitivement, tout ce que contient l’espace de
+  travail : ses canaux et leurs jetons (révoqués chez les plateformes qui le
+  permettent), ses publications, programmées comprises, qui ne partent alors
+  nulle part, ses médias et leurs fichiers, ses statistiques, ses points de
+  terminaison de webhook et ses liens de connexion.
+</Callout>
+
+La requête répond 409 `WorkspaceBusy` tant qu’une de ses publications est en cours d’envoi : renvoyez-la un instant plus tard. Son identifiant externe redevient libre ensuite.
+
+Votre compte partenaire ne se ferme, et votre espace de travail principal ne se supprime, qu’une fois que le compte ne possède plus aucun espace de travail : les deux répondent 409 `PartnerOwnsWorkspaces` jusque-là.
+
+## Abonnements et limites [#limits]
+
+Sur une instance qui facture, les espaces de travail que possède votre compte partenaire n’ont pas d’abonnement propre : avec votre espace principal, ils forment le compte de facturation de votre compte partenaire, que paie un seul abonnement, sur l’espace principal, sur une facture par mois.
+
+| Limite                                                       | Comment elle se compte                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canaux                                                       | Ensemble. Les comptes gratuits et le barème du [tarif par compte](/guides/workspace/billing#pricing) comptent comme un tout les canaux de votre espace principal et de chaque espace que vous possédez. Sur l’offre gratuite, en connecter un de plus qu’elle n’en comprend répond 402 `PlanLimitReached`, et une page hébergée dit qu’aucun compte de plus ne peut être connecté pour le moment ; avec un moyen de paiement, chacun est facturé selon le barème. |
+| Compteurs d’usage                                            | Ensemble : la franchise mensuelle de chaque [compteur](/guides/workspace/billing#meters) couvre tous vos espaces de travail.                                                                                                                                                                                                                                                                                                                                      |
+| Médias stockés, demandes à l’assistant de rédaction par jour | Ensemble aussi. Ils couvrent votre espace principal et chaque espace que vous possédez, comme ceux d’un seul payeur : un client qui épuise les demandes du jour n’en laisse aucune aux autres jusqu’à minuit UTC. Les images du fournisseur d’images propre à un client, et les demandes à son propre fournisseur de texte, n’en décomptent aucune.                                                                                                               |
+| Publications programmées dans le mois                        | Illimitées ; sur un abonnement par paliers de canaux qui les limite, pour chaque espace de travail, telles qu’il les donne.                                                                                                                                                                                                                                                                                                                                       |
+
+<Callout type="warning" title="Au-delà de l’abonnement">
+  Si votre abonnement devient plus petit que ce que vous détenez, rien n’est
+  supprimé, mais tant que les canaux détenus n’y sont pas revenus, en en
+  déconnectant ou en ajoutant un moyen de paiement, vos espaces de travail ne
+  programment et ne publient rien ([Un espace de travail au-delà de son
+  abonnement](/guides/workspace/billing#over)).
+</Callout>
+
+Un Peal auto-hébergé sans facturation ne limite rien. `GET /api/partner` répond ce que le compte détient chaque jour, et [son utilisation par client](#usage) ce que chaque espace de travail a utilisé : ce que compterait un prix à l’espace de travail ou au canal connecté.
+
+## Utilisation par client [#usage]
+
+Un seul appel répond ce que votre compte partenaire a utilisé dans les espaces de travail qu’il détient, par client avec votre propre identifiant pour chacun, sur une période de jours UTC : pour votre propre facturation et vos tableaux de bord.
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.example.com/api/partner/usage?from=2026-11-01&to=2026-11-30&limit=50" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```typescript TypeScript
+const usage = await peal.partnerUsage.get({
+  from: "2026-11-01",
+  to: "2026-11-30",
+});
+// usage.workspaces.workspaces : votre espace principal d’abord, puis celui de chaque client
+```
+
+</CodeGroup>
+
+Une clé partenaire avec la portée `workspaces:read` le lit sur `GET /api/partner/usage`. Les propriétaires et administrateurs de votre espace principal (`partner:read`) le lisent sur `GET /api/workspaces/{workspaceId}/usage/partner`, qui répond la même chose ; tout autre espace de travail répond 404 `PartnerNotFound`.
+
+`from` et `to` sont des jours UTC, tous deux inclus, 92 jours au plus ; par défaut les 30 jours qui se terminent aujourd’hui.
+
+| Champ        | Ce qu’il contient                                                                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `current`    | Les espaces de travail que vous possédez aujourd’hui et les canaux connectés dans ceux-ci et dans votre espace principal, que compte la limite de canaux de votre abonnement            |
+| `days`       | Pour chaque jour, les espaces de travail et les canaux tels que le décompte quotidien les a trouvés à 23 h 41 UTC (null pour un jour sans décompte), et les publications mises en ligne |
+| `totals`     | Les publications de la période par plateforme, ses jours-canal et, pour chaque mois civil qu’elle touche, les publications sur les plateformes qui facturent chaque publication         |
+| `workspaces` | Une page d’espaces de travail, [ci-dessous](#usage-workspaces)                                                                                                                          |
+
+`current`, `days` et `totals`, qui couvrent tout le compte, viennent avec la première page seulement, et valent `null` sur les pages suivantes, qui ne lisent que leurs propres espaces de travail.
+
+### Par espace de travail [#usage-workspaces]
+
+`workspaces` en est une page, du plus récent au plus ancien, dans l’ordre et avec le curseur de [`GET /api/partner/workspaces`](/developers/embedding#workspaces), 50 par page sauf si `limit` (au plus 100) en dit autrement : passez `next` comme `before` pour la page suivante. Votre espace principal vient en premier, sur la première page seulement, un de plus que demandé, avec `home: true`.
+
+Chacun donne son `externalId`, les canaux qu’il a lui-même connectés aujourd’hui, et sur la période ses jours-canal, ses publications par plateforme, ses demandes à l’assistant de rédaction, son dernier stockage de médias et ses publications décomptées.
+
+Un client retiré pendant la période n’est plus listé, et ses publications quittent les sommes, puisque ses décomptes ont été effacés avec lui. Les `workspaces` et `channels` quotidiens le comptent encore pour les jours où il existait.
+
+Les décomptes quotidiens sont conservés {{keep-partner-usage-fr}}. Des comptes seulement : rien n’est facturé ici, et un Peal auto-hébergé sans facturation répond `plan` et `allowances` à null.
+
+## Où sont les choses [#surfaces]
+
+| Pour                                                      | Utilisez                                                                                                                                                                                 |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Configurer le compte, créer et révoquer des clés          | L’application web : **Paramètres**, puis **Partenaire**                                                                                                                                  |
+| Créer, retrouver, modifier et supprimer des espaces       | `/api/partner`, avec une clé partenaire ; `partner` dans les SDK                                                                                                                         |
+| Agir dans un espace de travail                            | `/api/workspaces/{workspaceId}/…`, avec la même clé ; `connectLinks`, `channels`, `media`, `posts`, `analytics` dans les SDK                                                             |
+| Lire le compte et ses espaces en tant que personne        | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([ligne de commande](/developers/cli/workspace#partner))                                                             |
+| Lire l’utilisation par client                             | `GET /api/partner/usage`, avec la clé ; `partnerUsage` dans les SDK ; `peal partner usage`, l’outil MCP `get_partner_usage` et **Paramètres**, puis **Partenaire**, en tant que personne |
+| Voir quels clients demandent votre attention              | `GET /api/partner/overview`, avec la clé ; `partner.overview` dans les SDK ; `peal partner overview` et **Paramètres**, puis **Partenaire**, en tant que personne ([Santé](#health))     |
+| Créer un lien à la main pour un de vos espaces de travail | `peal links create` ([ligne de commande](/developers/cli/workspace#links)), ou l’outil MCP `create_connect_link` ([MCP](/developers/mcp/tools#tools))                                    |
+
+La [référence de l’API](/reference) liste chaque point d’accès avec ses erreurs. Les [SDK](/developers/sdks) sont générés depuis le même contrat, dans huit langages ; une clé partenaire se vérifie avec `GET /api/credential` (`credential.get`), qui nomme son partenaire, ses portées et ses permissions, jamais ses espaces de travail.
+
+### Sans compte partenaire [#agencies]
+
+Les liens de connexion fonctionnent dans n’importe quel espace de travail : un membre qui peut connecter des canaux, ou une clé d’API avec `channel:connect`, en crée un à remettre au propriétaire d’un compte, comme le client d’une agence. Un tel lien ne prend pas de `returnUrl` : sa page se termine en disant que le compte est connecté.
+
+## Pas encore là [#later]
+
+- Votre propre sélecteur de comptes : le choix parmi plusieurs comptes se fait sur la page hébergée de Peal.
+- Vos propres applications de plateforme : vos clients autorisent l’application de Peal sur chaque plateforme, dont l’écran de consentement de la plateforme montre le nom.
+- Votre propre domaine pour les pages hébergées, et des pages sans le nom de Peal.

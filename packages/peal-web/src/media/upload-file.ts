@@ -62,6 +62,8 @@ export const uploadFile = Effect.fn("uploadFile")(function* uploadFile(
     altText: altText === "" ? null : altText,
     byteSize: file.size,
     contentType: file.type,
+    // A file the person chose has a name, which the library finds it by.
+    fileName: file instanceof File ? file.name : null,
   });
 
   const mediaId = prepared.media.id;

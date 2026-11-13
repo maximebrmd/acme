@@ -19,6 +19,7 @@ import { AccountDeskAudit } from "./ports/account-desk-audit.ts";
 import { AccountPayers } from "./ports/account-payers.ts";
 import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
+import { StartAccountDays } from "./start-account-days.ts";
 
 /** A billing account, as staff see it: ids and counts only. */
 export interface DeskAccount {
@@ -108,6 +109,22 @@ export class BillingAccountDesk extends Context.Service<
       const channels = yield* AccountChannels;
       const audit = yield* AccountDeskAudit;
       const { transaction } = yield* TransactionRunner;
+      const days = yield* StartAccountDays;
+
+      // The account a workspace moved into holds its accounts from today;
+      // a raise that fails is made good by the next hourly start.
+      const raisedDay = (accountId: BillingAccountId) =>
+        days
+          .raiseAccount(accountId)
+          .pipe(
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Raising the day of the account a workspace moved into failed",
+                cause
+              )
+            )
+          );
+
       const payers = yield* AccountPayers;
       const pseudonyms = yield* Pseudonyms;
 
@@ -326,6 +343,8 @@ export class BillingAccountDesk extends Context.Service<
           })
         );
 
+        yield* raisedDay(merged.id);
+
         return yield* described(merged);
       });
 
@@ -440,7 +459,11 @@ export class BillingAccountDesk extends Context.Service<
 
         // The account it is on now: its previous payer's, or its oldest
         // owner's, given as to a workspace read for the first time.
-        return yield* described(yield* accounts.of(workspaceId));
+        const now = yield* accounts.of(workspaceId);
+
+        yield* raisedDay(now.id);
+
+        return yield* described(now);
       });
 
       return BillingAccountDesk.of({

@@ -286,6 +286,44 @@ export interface EmailCatalog {
   };
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;
+  /**
+   * The weekly digest. `subject` and `intro` name the week, `{from}` to
+   * `{to}`, and the week after, to `{until}`, each a day in UTC; each
+   * workspace has its counts (`counts`, joined), engagement where the
+   * reader may read analytics (`engagement`, `{engagement}`;
+   * `impressions`, `{impressions}`), the first posts under
+   * `wentOutHeading` and `plannedHeading` (`noText` for one without
+   * text), how many more (`more`), and a link to its calendar
+   * (`calendar`, `{workspaceName}`). `ignore` says why it comes and how
+   * to stop it, `{preferences}` standing for `preferences`, linked.
+   */
+  readonly weeklyDigest: {
+    readonly action: string;
+    readonly calendar: string;
+    readonly counts: {
+      readonly awaitingApproval: PluralWords;
+      readonly failed: PluralWords;
+      readonly scheduled: PluralWords;
+      readonly unconfirmed: PluralWords;
+      readonly wentOut: PluralWords;
+    };
+    readonly engagement: string;
+    readonly ignore: string;
+    readonly impressions: string;
+    readonly intro: string;
+    readonly more: PluralWords;
+    readonly noText: string;
+    readonly plannedHeading: string;
+    readonly preferences: string;
+    readonly subject: string;
+    readonly wentOutHeading: string;
+  };
+}
+
+/** Words that change with a count, `{count}`: one, or more. */
+export interface PluralWords {
+  readonly one: string;
+  readonly other: string;
 }
 
 export interface EmailMessages {

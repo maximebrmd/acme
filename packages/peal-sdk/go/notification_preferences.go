@@ -121,6 +121,7 @@ var (
 	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
 	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
 	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 8)
+	notificationPreferencesEmailFieldWeeklyDigest     = big.NewInt(1 << 9)
 )
 
 type NotificationPreferencesEmail struct {
@@ -133,6 +134,7 @@ type NotificationPreferencesEmail struct {
 	PostUnconfirmed  bool `json:"postUnconfirmed" url:"postUnconfirmed"`
 	RecyclingEnded   bool `json:"recyclingEnded" url:"recyclingEnded"`
 	WebhookFailing   bool `json:"webhookFailing" url:"webhookFailing"`
+	WeeklyDigest     bool `json:"weeklyDigest" url:"weeklyDigest"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -202,6 +204,13 @@ func (n *NotificationPreferencesEmail) GetWebhookFailing() bool {
 		return false
 	}
 	return n.WebhookFailing
+}
+
+func (n *NotificationPreferencesEmail) GetWeeklyDigest() bool {
+	if n == nil {
+		return false
+	}
+	return n.WeeklyDigest
 }
 
 func (n *NotificationPreferencesEmail) GetExtraProperties() map[string]interface{} {
@@ -283,6 +292,13 @@ func (n *NotificationPreferencesEmail) SetWebhookFailing(webhookFailing bool) {
 	n.require(notificationPreferencesEmailFieldWebhookFailing)
 }
 
+// SetWeeklyDigest sets the WeeklyDigest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetWeeklyDigest(weeklyDigest bool) {
+	n.WeeklyDigest = weeklyDigest
+	n.require(notificationPreferencesEmailFieldWeeklyDigest)
+}
+
 func (n *NotificationPreferencesEmail) UnmarshalJSON(data []byte) error {
 	type unmarshaler NotificationPreferencesEmail
 	var value unmarshaler
@@ -335,6 +351,7 @@ var (
 	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
 	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
 	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 8)
+	notificationPreferencesChangeEmailFieldWeeklyDigest     = big.NewInt(1 << 9)
 )
 
 type NotificationPreferencesChangeEmail struct {
@@ -347,6 +364,7 @@ type NotificationPreferencesChangeEmail struct {
 	PostUnconfirmed  *bool `json:"postUnconfirmed,omitempty" url:"postUnconfirmed,omitempty"`
 	RecyclingEnded   *bool `json:"recyclingEnded,omitempty" url:"recyclingEnded,omitempty"`
 	WebhookFailing   *bool `json:"webhookFailing,omitempty" url:"webhookFailing,omitempty"`
+	WeeklyDigest     *bool `json:"weeklyDigest,omitempty" url:"weeklyDigest,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -416,6 +434,13 @@ func (n *NotificationPreferencesChangeEmail) GetWebhookFailing() *bool {
 		return nil
 	}
 	return n.WebhookFailing
+}
+
+func (n *NotificationPreferencesChangeEmail) GetWeeklyDigest() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.WeeklyDigest
 }
 
 func (n *NotificationPreferencesChangeEmail) GetExtraProperties() map[string]interface{} {
@@ -495,6 +520,13 @@ func (n *NotificationPreferencesChangeEmail) SetRecyclingEnded(recyclingEnded *b
 func (n *NotificationPreferencesChangeEmail) SetWebhookFailing(webhookFailing *bool) {
 	n.WebhookFailing = webhookFailing
 	n.require(notificationPreferencesChangeEmailFieldWebhookFailing)
+}
+
+// SetWeeklyDigest sets the WeeklyDigest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetWeeklyDigest(weeklyDigest *bool) {
+	n.WeeklyDigest = weeklyDigest
+	n.require(notificationPreferencesChangeEmailFieldWeeklyDigest)
 }
 
 func (n *NotificationPreferencesChangeEmail) UnmarshalJSON(data []byte) error {

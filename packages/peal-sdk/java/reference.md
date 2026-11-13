@@ -3184,6 +3184,83 @@ client.posts().repost(
 </dl>
 </details>
 
+<details><summary><code>client.posts.removeTarget(workspaceId, postId, targetId) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes one channel off a post that waits for its time (scheduled, or awaiting approval): it goes out on its other channels, at its time, and never on this one, whose target is `cancelled` with `dropped`, and the texts and media its parts had there go with it. The post keeps its time and its queue slot. A channel already taken off answers the post as it is, so sending the request again is safe. Refused for a post that is publishing or done, or a draft, whose channels change with an update (PostStatusConflict), for a channel cancelled with its post (TargetStatusConflict), and for the last channel the post still goes out on (LastTargetLeft: cancel the post instead). It is an edit of the post: when your posts need an approval, the approval given no longer covers it, and it waits for one again; a post awaiting approval keeps its request, which covers what it now is. A post taken back to draft keeps the channels it still had. Webhooks hear `post.cancelled` naming this channel alone. Needs post:schedule, or, for a post awaiting approval, leave to ask for posts to go out.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().removeTarget(
+    "workspaceId",
+    "postId",
+    "targetId",
+    RemoveTargetPostsRequest
+        .builder()
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetId:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.confirm(workspaceId, postId, targetId, request) -> Post</code></summary>
 <dl>
 <dd>
@@ -3683,7 +3760,7 @@ client.posts().cancel(
 <dl>
 <dd>
 
-Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Pass the page's `nextCursor` as `cursor` for the next one. Needs media:read.
+Lists the workspace's media, newest first, 30 a page unless `limit` (at most 100) says otherwise. Every filter given must hold: `kind` (`image`, `video` or `document`), and `q`, text the file's name or its description holds, whatever its case (a file added before Peal kept names is found by its description only). Pass the page's `nextCursor` as `cursor`, with the same filters, for the next one. Needs media:read.
 </dd>
 </dl>
 </dd>
@@ -3734,7 +3811,23 @@ client.media().list(
 <dl>
 <dd>
 
+**kind:** `Optional<MediaKind>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **limit:** `Optional<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**q:** `Optional<String>` 
     
 </dd>
 </dl>
@@ -3758,7 +3851,7 @@ client.media().list(
 <dl>
 <dd>
 
-Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. Give `fileName`, what the file is called on the device, so members find it in the library by its name. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
 </dd>
 </dl>
 </dd>
@@ -3823,6 +3916,14 @@ client.media().create(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**fileName:** `Optional<String>` 
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -3843,7 +3944,7 @@ client.media().create(
 <dl>
 <dd>
 
-Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The media is named after the last segment of the address's path, once redirects are followed, never its query. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
 </dd>
 </dl>
 </dd>
@@ -4477,7 +4578,7 @@ client.notices().markAllRead();
 <dl>
 <dd>
 
-Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed; and they hear only about the posts they wrote.
+Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed, and no weekly digest; and they hear only about the posts they wrote.
 </dd>
 </dl>
 </dd>

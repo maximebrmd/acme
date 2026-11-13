@@ -9,7 +9,12 @@ import path from "node:path";
 import { assert, layer } from "@effect/vitest";
 import { Config, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
-import { BillingSchema, ReductionSchema, StandingSchema } from "peal-contract";
+import {
+  BillingSchema,
+  orderConsentVersion,
+  ReductionSchema,
+  StandingSchema,
+} from "peal-contract";
 import type { Standing } from "peal-contract";
 import { Stripe } from "stripe";
 
@@ -279,6 +284,7 @@ const ordered = Effect.fn("ordered")(function* ordered(
   person: Person,
   workspaceId: string,
   order: {
+    readonly consentVersion?: string;
     readonly interval: "month" | "year";
     readonly plan: string;
     readonly trial: boolean;
@@ -423,6 +429,7 @@ layer(BillingIntegration, {
         );
 
         const order = yield* ordered(owner, workspaceId, {
+          consentVersion: orderConsentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -1264,6 +1271,7 @@ layer(BillingIntegration, {
         });
 
         const before = yield* ordered(owner, workspaceId, {
+          consentVersion: orderConsentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -1277,6 +1285,7 @@ layer(BillingIntegration, {
         );
 
         const again = yield* post(owner, ordersRoute, {
+          consentVersion: orderConsentVersion,
           interval: "month",
           plan: "payAsYouGo",
           startNow: true,
@@ -1427,6 +1436,7 @@ layer(BillingIntegration, {
         );
 
         const order = yield* ordered(owner, workspaceId, {
+          consentVersion: orderConsentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,
@@ -1455,6 +1465,7 @@ layer(BillingIntegration, {
         );
 
         const moving = yield* ordered(owner, workspaceId, {
+          consentVersion: orderConsentVersion,
           interval: "month",
           plan: "payAsYouGo",
           trial: false,

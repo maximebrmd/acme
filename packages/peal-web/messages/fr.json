@@ -927,6 +927,20 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
+    "Channels": {
+      "title": "Canaux où elle part",
+      "hint": "Retirez un canal de la publication pour qu’elle n’y parte pas : elle part sur les autres à son heure.",
+      "remove": "Retirer",
+      "removeLabel": "Retirer {handle} de la publication",
+      "removing": "Retrait…",
+      "removed": "Retiré de la publication",
+      "notGoing": "Ne part pas",
+      "gone": "Un canal qui n’est plus connecté",
+      "lastOne": "Le dernier canal où elle part reste : pour qu’elle ne parte nulle part, annulez la publication.",
+      "removedDone": "Canal retiré : la publication part sur les autres à son heure.",
+      "removedWaits": "Canal retiré : la publication attend de nouveau une approbation.",
+      "failed": "Le canal n’a pas pu être retiré : relisez la publication, elle est peut-être partie ou a changé."
+    },
     "Live": {
       "unpublish": "Dépublier",
       "confirmTitle": "Supprimer ce post de {platform} ?",
@@ -1004,6 +1018,12 @@
       "overridePlaceholder": "Laissez vide pour reprendre le texte de tous les canaux.",
       "usesCommonText": "Reprend le texte de tous les canaux.",
       "resetOverride": "Reprendre le texte de tous les canaux",
+      "ownMedia": "Images et vidéos propres sur {handle}",
+      "ownMediaOff": "Désactivé, il montre les images et vidéos de la publication.",
+      "ownMediaOn": "Il montre celles-ci à la place de celles de la publication, et est vérifié avec elles. Désactivez-le pour reprendre celles de la publication.",
+      "ownMediaList": "Images et vidéos sur {handle}",
+      "ownMediaBlocks": "Les images et vidéos propres sur {handles} ont besoin d’un texte pour partir : écrivez-en un sur ce canal, ou pour tous les canaux, avant d’enregistrer ou de programmer.",
+      "ownMediaNeedsText": "Écrivez un texte pour ce canal, ou pour tous les canaux : ses images et vidéos propres partent avec un texte, et la publication n’est pas enregistrée sans lui.",
       "countersLegend": "Longueur sur chaque canal",
       "countersEmpty": "Choisissez des canaux pour voir si le texte leur convient.",
       "count": "{length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}",
@@ -1486,7 +1506,15 @@
       "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}",
       "queueMark": "File d’attente : {name}",
       "filterQueues": "{count, plural, =0 {Files} other {Files (#)}}",
-      "filterQueuesLabel": "Afficher les publications placées par ces files"
+      "filterQueuesLabel": "Afficher les publications placées par ces files",
+      "day": "Jour",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "dayRows": "Les publications et créneaux de file du jour, par heure",
+      "emptyDay": "Rien ce jour-là : aucune publication, et aucun créneau de file.",
+      "openSlot": "Créneau libre de {queue}",
+      "openDay": "Ouvrir le {date} dans la vue par jour",
+      "heldSlot": "Créneau de {queue}, pris par une publication que les filtres masquent"
     },
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
@@ -1681,6 +1709,7 @@
     "unconfirmed": "Peal ne sait pas si elle est partie : {reason}. Vérifiez sur {platform} avant de la republier, puis indiquez ce que vous avez trouvé.",
     "unconfirmedReason": "{reason, select, noResponse {la plateforme n’a pas répondu} unreadableResponse {sa réponse n’a pas pu être lue} interrupted {le serveur s’est arrêté pendant l’envoi} adapterFailure {Peal a échoué pendant l’envoi} stillProcessing {la plateforme la traitait encore quand Peal a cessé de vérifier} other {{reason}}}",
     "cancelled": "Elle a été annulée avant de partir.",
+    "dropped": "Ce canal a été retiré de la publication avant son départ : elle est partie sur ses autres canaux.",
     "pending": "Elle attend son tour.",
     "sending": "Elle est en train de partir.",
     "rounds": "Envoyée {count, plural, one {une fois} other {# fois}}",
@@ -1816,7 +1845,19 @@
       "deleting": "Suppression…",
       "keep": "Le garder",
       "deleteFailed": "Le média n’a pas pu être supprimé. Réessayez.",
-      "deleted": "Le média a été supprimé."
+      "deleted": "Le média a été supprimé.",
+      "search": "Rechercher dans la bibliothèque",
+      "searchPlaceholder": "Rechercher par nom de fichier ou description",
+      "kindFilter": "Type",
+      "anyKind": "Tous les types",
+      "kinds": "{kind, select, image {Images} document {Documents PDF} other {Vidéos}}",
+      "noMatch": "Aucun média ne correspond à cette recherche. Les fichiers ajoutés avant que Peal garde les noms ne se trouvent que par leur description.",
+      "clearSearch": "Effacer la recherche",
+      "preview": "Afficher {name} en grand",
+      "previewClose": "Fermer",
+      "previewMissing": "Le fichier n’est pas stocké : il n’y a rien à afficher.",
+      "openDocument": "Ouvrir le document dans un nouvel onglet",
+      "resultsShown": "{count, plural, one {# fichier affiché} other {# fichiers affichés}}{more, select, true {, et d’autres} other {}}."
     }
   },
   "PostMedia": {
@@ -2031,7 +2072,9 @@
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
       "reload": "Réessayer",
       "recyclingEnded": "Une publication cesse de se répéter",
-      "feedStopped": "Un flux cesse de créer des publications"
+      "feedStopped": "Un flux cesse de créer des publications",
+      "weeklyDigest": "Une semaine commence : ce qui est parti la semaine passée et ce qui est prévu, chaque lundi",
+      "weeklyDigestHint": "Des nombres et le début du texte de chaque publication, pour les espaces de travail dont vous pouvez lire les publications, avec les jours en UTC."
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
@@ -2311,7 +2354,7 @@
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
-    "grace": "Cet espace de travail compte plus de comptes connectés que l’offre gratuite n’en inclut. Il continue de programmer et de publier sur les comptes qu’il avait avant le début de la facturation, jusqu’au {until} UTC, et n’en connecte pas d’autre. Ensuite, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation ou que 2 comptes seulement sont gardés.",
+    "grace": "Cet espace de travail compte plus de comptes connectés que l’offre gratuite n’en inclut. Il continue de programmer et de publier sur les comptes qu’il avait avant le début de la facturation, jusqu’au {until} UTC, et n’en connecte pas d’autre. Ensuite, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté sur la page de facturation ou que {free, number} comptes seulement sont gardés.",
     "description": "Son abonnement est désormais {plan}. Rien n’a été supprimé, mais l’espace de travail doit revenir dans son abonnement avant de faire quoi que ce soit d’autre.",
     "sharedAccount": "Ses canaux comptent avec ceux des autres espaces de travail de son compte de facturation : {workspaces}.",
     "excess": "{limit, select, channels {{used, number} canaux connectés, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
@@ -3486,6 +3529,8 @@
       "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
       "noText": "Pas de texte sur ce canal.",
       "mediaLabel": "Images, vidéos et documents",
+      "channelMediaLabel": "Images, vidéos et documents sur {handle}",
+      "noChannelMedia": "Aucune image, vidéo ni aucun document sur ce canal.",
       "mediaUnavailable": "Ce fichier ne peut pas être affiché.",
       "video": "Vidéo",
       "document": "Un document PDF, affiché page par page sur LinkedIn.",

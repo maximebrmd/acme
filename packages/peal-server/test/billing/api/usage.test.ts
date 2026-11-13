@@ -6,6 +6,7 @@ import { TestClock } from "effect/testing";
 import { Api } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { AccountDays } from "#billing/application/account-days.ts";
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
 import { PartnerTenancy } from "#billing/application/ports/partner-tenancy.ts";
 import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
@@ -64,12 +65,30 @@ const MeteredTest = Layer.mock(MeteredPostLedger, {
   ofWorkspaces: () => Effect.succeed([]),
 });
 
+// The workspace bills its billing account: 3 accounts on 1 November.
+const DaysTest = Layer.mock(AccountDays, {
+  ofDays: (holders) =>
+    Effect.succeed(
+      holders.includes(workspaceId)
+        ? [
+            {
+              day: day("2026-11-01"),
+              holder: workspaceId,
+              peak: 3,
+              reported: 3,
+            },
+          ]
+        : []
+    ),
+});
+
 const reportsOn = (entitlements: typeof UnmeteredTest) =>
   Layer.mergeAll(UsageReports.layer, RecordedUsage.layer).pipe(
     Layer.provideMerge(UsageLedgerInMemory),
     Layer.provide(
       Layer.mergeAll(
         entitlements,
+        DaysTest,
         MeteredTest,
         PartnerTenancy.layerNone,
         Layer.succeed(
@@ -193,6 +212,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
           assert.deepStrictEqual(report.days, [
             {
               assistantRequests: 0,
+              billableAccounts: null,
               byPlatform: [{ platform: "x", posts: 1 }],
               channels: 2,
               day: "2026-10-31",
@@ -202,6 +222,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
             },
             {
               assistantRequests: 6,
+              billableAccounts: 3,
               byPlatform: [{ platform: "bluesky", posts: 2 }],
               channels: 3,
               day: "2026-11-01",
@@ -212,6 +233,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
             {
               // No snapshot yet: nothing counted, not zero.
               assistantRequests: null,
+              billableAccounts: null,
               byPlatform: [],
               channels: null,
               day: "2026-11-02",
@@ -221,6 +243,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
             },
           ]);
           assert.deepStrictEqual(report.totals, {
+            billableAccountDays: 3,
             byPlatform: [
               { platform: "bluesky", posts: 2 },
               { platform: "x", posts: 1 },
@@ -328,6 +351,8 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
           assert.deepStrictEqual(report.sharedWith, {
             partnerWorkspaceId: homeId,
           });
+          // Its billing account's days are the home's.
+          assert.isNull(report.totals.billableAccountDays);
           assert.strictEqual(report.totals.publishedPosts, 0);
         })
     );
@@ -351,6 +376,9 @@ layer(reportsOn(UnmeteredTest))(
         assert.isNull(report.plan);
         assert.isNull(report.allowances);
         assert.strictEqual(report.totals.publishedPosts, 2);
+        // Nothing is counted by day where nothing bills.
+        assert.isNull(report.totals.billableAccountDays);
+        assert.isNull(report.days[0]?.billableAccounts);
         assert.deepStrictEqual(report.current, current);
       })
     );

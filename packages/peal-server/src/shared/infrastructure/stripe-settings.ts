@@ -102,6 +102,16 @@ export const lookupKeysOf = (
 };
 
 /**
+ * STRIPE_METER_WEBHOOK_SECRET: the signing secret of the event destination
+ * that sends Stripe's meter error events (thin events) to
+ * `${PUBLIC_URL}/api/stripe/meter-errors`. Unset or empty, that endpoint
+ * refuses every event.
+ */
+export const meterWebhookSecretConfig = optionalSecret(
+  "STRIPE_METER_WEBHOOK_SECRET"
+);
+
+/**
  * What the operator's `stripe-catalogue` command reads: STRIPE_SECRET_KEY,
  * which it needs, STRIPE_API_URL and STRIPE_LOOKUP_KEY_PREFIX. No webhook
  * secret: it only reads and writes the catalogue.

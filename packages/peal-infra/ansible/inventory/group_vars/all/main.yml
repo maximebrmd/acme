@@ -57,14 +57,21 @@ peal_compose_project: peal
 peal_short_link_hostname: ""
 # Docker Compose on the release that runs (peal_runtime writes it).
 peal_compose_bin: /usr/local/bin/peal-compose
-# Compose profiles the stack runs with: the marketing site and the docs.
-peal_compose_profiles: [static]
+# The docs run as a Node server, for their assistant, when the build
+# arguments name its model (peal_static_build_args.DOCS_ASSISTANT_MODEL):
+# release.yml builds the docs image, Compose runs its profile, and the
+# tunnel sends the docs' host name to it rather than to the static image.
+peal_docs_server: "{{ peal_static_build_args.DOCS_ASSISTANT_MODEL | default('') | length > 0 }}"
+# Compose profiles the stack runs with: the marketing site and the docs, and
+# the docs server.
+peal_compose_profiles: "{{ ['static'] + (['docs'] if peal_docs_server | bool else []) }}"
 # Loopback ports the tunnel reaches (compose.production.yaml).
 peal_ports:
   server: 3000
   web: 3001
   site: 4321
   docs: 4322
+  docs_server: 4323
   grafana: 13000
   otlp_http: 14318
 
@@ -86,6 +93,8 @@ peal_required_credentials:
   - PGBACKREST_REPO1_CIPHER_PASS
   - TELEGRAM_BOT_TOKEN
   - TELEGRAM_CHAT_ID
+# With the docs server (peal_docs_server), its assistant's Anthropic key,
+# DOCS_ANTHROPIC_API_KEY, too (peal_runtime's vars).
 peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
 # Peal is a host established in France: the law has it keep what identifies
@@ -149,7 +158,7 @@ peal_access_paths:
 # outside services call, which stay open, each with an Access application of
 # its own that bypasses Access (README.md): Bluesky reads the client metadata
 # and keys under /api/channels/oauth/, Stripe posts its events to the
-# webhook, and Meta its data deletion and deauthorize requests, for each of
+# webhook and its meter error events to /api/stripe/meter-errors, and Meta its data deletion and deauthorize requests, for each of
 # its three apps. Each request to the last two is signed, and the server
 # checks the signature. tests/test_cloudflared.py checks them against the
 # addresses the server lists as called by the platforms' servers
@@ -158,6 +167,8 @@ peal_access_bypass_paths:
   - path: ^/+api/+channels/+oauth/
     to: server
   - path: ^/+api/+auth/+stripe/+webhook/*$
+    to: server
+  - path: ^/+api/+stripe/+meter-errors/*$
     to: server
   - path: ^/+api/+data-deletion/+(facebook|instagram|threads)(/+deauthorize)?/*$
     to: server

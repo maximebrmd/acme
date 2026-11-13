@@ -44,6 +44,7 @@ import {
   MediaTooLarge,
   PostContentInvalid,
   PostNotFound,
+  LastTargetLeft,
   PostStatusConflict,
   PartnerNotFound,
   QueueHasNoRoom,
@@ -143,6 +144,7 @@ import {
   measureText,
   platformRules,
 } from "peal-contract/post-text";
+import { rateCard } from "peal-contract/rate-card";
 
 import { adsGroupLive, adsWorld } from "./studio-ads.ts";
 import type { AdsWorld } from "./studio-ads.ts";
@@ -687,6 +689,14 @@ const over: Standing = {
 
 const billing: Billing = {
   account,
+  // Two accounts on ten days of November: within the free ones.
+  accounts: {
+    accountDays: 20,
+    connected: 2,
+    estimate: { amount: 0, currency: "usd" },
+    nextAccount: { amount: 500, currency: "usd" },
+    pooled: 2,
+  },
   allowances: {
     assistantRequests: 0,
     channels: 2,
@@ -696,10 +706,14 @@ const billing: Billing = {
   },
   currency: "eur",
   enabled: true,
+  estimate: { amount: 0, currency: "usd" },
+  paymentMethod: false,
   plan: "free",
   plans: [],
+  rateCard,
   subscription: null,
   trial: { available: false, days: 14, plan: "pro" },
+  upcomingInvoice: null,
   usage: {
     assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 2 },
     channels: 2,
@@ -722,6 +736,7 @@ const usageReport = (period: {
   days: [
     {
       assistantRequests: 1,
+      billableAccounts: 2,
       byPlatform: [
         { platform: "bluesky", posts: 1 },
         { platform: "x", posts: 2 },
@@ -734,6 +749,7 @@ const usageReport = (period: {
     },
     {
       assistantRequests: 0,
+      billableAccounts: 2,
       byPlatform: [],
       channels: 2,
       day: "2026-11-02",
@@ -743,6 +759,7 @@ const usageReport = (period: {
     },
     {
       assistantRequests: null,
+      billableAccounts: null,
       byPlatform: [],
       channels: null,
       day: "2026-11-03",
@@ -755,6 +772,7 @@ const usageReport = (period: {
   plan: billing.plan,
   sharedWith: null,
   totals: {
+    billableAccountDays: 4,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
       { platform: "x", posts: 2 },
@@ -816,8 +834,10 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postUnconfirmed: true,
       recyclingEnded: true,
       webhookFailing: true,
+      weeklyDigest: false,
     },
     everyPost: false,
+    lastWeeklyDigest: null,
   },
   replies: [],
   review: { approvals: [], comments: [] },
@@ -846,7 +866,8 @@ export const storeHost = "store.example.test";
 /** The instant the studio takes for now: the tests' clock. */
 export const studioNow = at("2026-11-09T12:00:00Z");
 
-const image = (id: string, overrides: Partial<Media> = {}): Media => ({
+/** A ready image of the studio, as the server describes one. */
+export const image = (id: string, overrides: Partial<Media> = {}): Media => ({
   aiGenerated: false,
   altText: null,
   byteSize: 2048,
@@ -855,6 +876,7 @@ const image = (id: string, overrides: Partial<Media> = {}): Media => ({
   createdAt: at("2026-11-05T10:00:00Z"),
   dimensions: { height: 600, width: 800 },
   durationMs: null,
+  fileName: null,
   id,
   kind: "image",
   pageCount: null,
@@ -1192,6 +1214,7 @@ const partnerUsageReport = (
     totals: later
       ? null
       : {
+          billableAccountDays: null,
           byPlatform: [
             { platform: "bluesky", posts: 3 },
             { platform: "x", posts: 4 },
@@ -3621,6 +3644,59 @@ export const studioGroupsLive = (studio: Studio) =>
             Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
             Effect.flatMap((post) => afterWaiting(studio, post, query.wait))
           ),
+        removeTarget: ({ params }) =>
+          Effect.gen(function* removeTarget() {
+            yield* publishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            if (
+              post.status !== "scheduled" &&
+              post.status !== "awaitingApproval"
+            ) {
+              return yield* new PostStatusConflict({ status: post.status });
+            }
+
+            const others = post.targets.filter(
+              ({ id, status }) => id !== params.targetId && status === "pending"
+            );
+
+            if (
+              others.length === 0 &&
+              post.targets.some(
+                ({ id, status }) =>
+                  id === params.targetId && status === "pending"
+              )
+            ) {
+              return yield* new LastTargetLeft();
+            }
+
+            const already = post.targets.find(
+              ({ dropped, id }) => id === params.targetId && dropped === true
+            );
+
+            if (already !== undefined) {
+              return post;
+            }
+
+            const removed = yield* changingTarget(studio, params, (target) =>
+              target.status === "pending"
+                ? Option.some({
+                    ...target,
+                    dropped: true,
+                    status: "cancelled" as const,
+                  })
+                : Option.none()
+            );
+
+            yield* record(studio, `remove-target:${params.targetId}`);
+
+            return removed;
+          }),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(
@@ -4346,6 +4422,7 @@ export const studioGroupsLive = (studio: Studio) =>
                 contentType,
                 createdAt: studioNow,
                 dimensions: null,
+                fileName: payload.fileName ?? null,
                 kind,
                 status: { _tag: "pending" },
                 updatedAt: studioNow,
@@ -4476,7 +4553,18 @@ export const studioGroupsLive = (studio: Studio) =>
             yield* allowed("media:read");
 
             const { media: all } = yield* Ref.get(studio.state);
-            const listed = params.workspaceId === studioId ? all : [];
+            const text = query.q?.toLowerCase();
+
+            // As the server searches: the kind, and text in the name or
+            // the description, whatever its case.
+            const listed = (params.workspaceId === studioId ? all : []).filter(
+              (media) =>
+                (query.kind === undefined || media.kind === query.kind) &&
+                (text === undefined ||
+                  [media.fileName, media.altText].some(
+                    (written) => written?.toLowerCase().includes(text) === true
+                  ))
+            );
 
             const start =
               query.cursor === undefined

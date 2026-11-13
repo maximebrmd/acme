@@ -1,0 +1,93 @@
+---
+title: TikTok
+description: "Connect TikTok to Peal, what a post there may hold, and the options it takes."
+sidebar:
+  icon: /platform-marks/tiktok.svg
+---
+
+How to connect a TikTok account, what a post there may hold, and the options it takes.
+
+## At a glance [#at-a-glance]
+
+|                   |                                |
+| ----------------- | ------------------------------ |
+| Text              | {{platform-tiktok-text-en}}    |
+| Images and videos | {{platform-tiktok-media-en}}   |
+| Parts             | {{platform-tiktok-parts-en}}   |
+| Formats           | {{platform-tiktok-formats-en}} |
+| Alt text          | {{platform-tiktok-alt-en}}     |
+
+What each file type must be is in [Images and videos](/guides/media#platforms).
+
+## Connect [#connect]
+
+Under **TikTok**, choose **Connect TikTok**, sign in on TikTok and allow Peal. It asks:
+
+- for your profile and username;
+- to post videos and photos on your account;
+- to read your videos, for their counts in [analytics](/guides/engage/analytics). You may turn this one off on TikTok's page: the channel then posts without analytics.
+
+**Channels** offers TikTok once the Peal server is set up for it (see [On your own server](#self-hosting)).
+
+<Callout type="warning" title="Until TikTok audits the server's app">
+  TikTok takes only private posts from an app it has not audited: the account
+  must be private when the post goes out, and the post visible to you only
+  (**Only me**). Any other post fails with "the platform takes only private
+  posts from this server's app". Ask the server's operator whether TikTok
+  audited it.
+</Callout>
+
+## Options [#options]
+
+The composer shows these first. **API name** is the option's name through the API.
+
+| Option                        | API name            | In the composer                                                                                  |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
+| **Who can view this post**    | `privacyLevel`      | Required, with no default: one of the audiences the account has ([see below](#account-settings)) |
+| **Allow comments**            | `disableComment`    | Off until you turn it on. Through the API it reads the other way: `true` turns it off            |
+| **Allow Duet**                | `disableDuet`       | Off until you turn it on. Through the API it reads the other way: `true` turns it off            |
+| **Allow Stitch**              | `disableStitch`     | Off until you turn it on. Through the API it reads the other way: `true` turns it off            |
+| Commercial content disclosure | `commercialContent` | See [Commercial content](#commercial-content)                                                    |
+| AI-generated content          | `aiGenerated`       | Says the post holds AI-generated content                                                         |
+
+The others are each sent only when you choose them. Some apply only to some media: the composer shows them for those, and scheduling refuses them on another post.
+
+| Option                           | API name                | Values                                                     | Left out        |
+| -------------------------------- | ----------------------- | ---------------------------------------------------------- | --------------- |
+| **Cover frame, in milliseconds** | `videoCoverTimestampMs` | A video's frame, in milliseconds from its start, within it | The first frame |
+| **Photo post title**             | `photoTitle`            | Photos: 90 characters at most, as TikTok counts them       | No title        |
+| **Add music automatically**      | `autoAddMusic`          | Photos: yes or no                                          | No              |
+| **Cover photo**                  | `photoCoverIndex`       | Photos: the cover's place, from 0 for the first            | The first photo |
+
+A photo post's text is its description, and its title is apart.
+
+### Commercial content [#commercial-content]
+
+To disclose commercial content on TikTok, turn on **Disclose commercial content**, then say whose brand the post promotes:
+
+| Choice              | API name       | For            | TikTok's label        |
+| ------------------- | -------------- | -------------- | --------------------- |
+| **Your brand**      | `brandOrganic` | Your own brand | "Promotional content" |
+| **Branded content** | `brandContent` | A third party  | "Paid partnership"    |
+
+You may choose both. Branded content cannot be visible to you only.
+
+### What the composer reads from TikTok [#account-settings]
+
+On a TikTok channel, the composer reads the account's settings on TikTok, as TikTok's guidelines ask. It:
+
+- names the account the post goes out as;
+- offers only the audiences the account has (a public account: everyone, friends, only me; a private one: followers, friends, only me);
+- greys out the interactions its owner turned off in TikTok;
+- leaves out Duet and Stitch on photo posts;
+- says how a disclosure labels the post.
+
+Scheduling checks those settings again, with the longest video the account may post. TikTok's consent line sits under the options, and posting agrees to it.
+
+## Comments [#comments]
+
+Peal does not read comments on TikTok yet.
+
+## On your own server [#self-hosting]
+
+A self-hosted server offers TikTok once its app is registered: see [TikTok](/self-hosting/platforms#tiktok). Until then, **Channels** does not offer it.

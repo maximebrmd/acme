@@ -38,6 +38,8 @@ public final class NotificationPreferencesChangeEmail {
 
     private final Optional<Boolean> webhookFailing;
 
+    private final Optional<Boolean> weeklyDigest;
+
     private final Map<String, Object> additionalProperties;
 
     private NotificationPreferencesChangeEmail(
@@ -50,6 +52,7 @@ public final class NotificationPreferencesChangeEmail {
             Optional<Boolean> postUnconfirmed,
             Optional<Boolean> recyclingEnded,
             Optional<Boolean> webhookFailing,
+            Optional<Boolean> weeklyDigest,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
         this.comments = comments;
@@ -60,6 +63,7 @@ public final class NotificationPreferencesChangeEmail {
         this.postUnconfirmed = postUnconfirmed;
         this.recyclingEnded = recyclingEnded;
         this.webhookFailing = webhookFailing;
+        this.weeklyDigest = weeklyDigest;
         this.additionalProperties = additionalProperties;
     }
 
@@ -108,6 +112,11 @@ public final class NotificationPreferencesChangeEmail {
         return webhookFailing;
     }
 
+    @JsonProperty("weeklyDigest")
+    public Optional<Boolean> getWeeklyDigest() {
+        return weeklyDigest;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -129,7 +138,8 @@ public final class NotificationPreferencesChangeEmail {
                 && postReview.equals(other.postReview)
                 && postUnconfirmed.equals(other.postUnconfirmed)
                 && recyclingEnded.equals(other.recyclingEnded)
-                && webhookFailing.equals(other.webhookFailing);
+                && webhookFailing.equals(other.webhookFailing)
+                && weeklyDigest.equals(other.weeklyDigest);
     }
 
     @java.lang.Override
@@ -143,7 +153,8 @@ public final class NotificationPreferencesChangeEmail {
                 this.postReview,
                 this.postUnconfirmed,
                 this.recyclingEnded,
-                this.webhookFailing);
+                this.webhookFailing,
+                this.weeklyDigest);
     }
 
     @java.lang.Override
@@ -175,6 +186,8 @@ public final class NotificationPreferencesChangeEmail {
 
         private Optional<Boolean> webhookFailing = Optional.empty();
 
+        private Optional<Boolean> weeklyDigest = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -189,6 +202,7 @@ public final class NotificationPreferencesChangeEmail {
             postUnconfirmed(other.getPostUnconfirmed());
             recyclingEnded(other.getRecyclingEnded());
             webhookFailing(other.getWebhookFailing());
+            weeklyDigest(other.getWeeklyDigest());
             return this;
         }
 
@@ -291,6 +305,17 @@ public final class NotificationPreferencesChangeEmail {
             return this;
         }
 
+        @JsonSetter(value = "weeklyDigest", nulls = Nulls.SKIP)
+        public Builder weeklyDigest(Optional<Boolean> weeklyDigest) {
+            this.weeklyDigest = weeklyDigest;
+            return this;
+        }
+
+        public Builder weeklyDigest(Boolean weeklyDigest) {
+            this.weeklyDigest = Optional.ofNullable(weeklyDigest);
+            return this;
+        }
+
         public NotificationPreferencesChangeEmail build() {
             return new NotificationPreferencesChangeEmail(
                     channelReconnect,
@@ -302,6 +327,7 @@ public final class NotificationPreferencesChangeEmail {
                     postUnconfirmed,
                     recyclingEnded,
                     webhookFailing,
+                    weeklyDigest,
                     additionalProperties);
         }
 
@@ -315,7 +341,8 @@ public final class NotificationPreferencesChangeEmail {
                     || key.equalsIgnoreCase("postReview")
                     || key.equalsIgnoreCase("postUnconfirmed")
                     || key.equalsIgnoreCase("recyclingEnded")
-                    || key.equalsIgnoreCase("webhookFailing")) {
+                    || key.equalsIgnoreCase("webhookFailing")
+                    || key.equalsIgnoreCase("weeklyDigest")) {
                 return;
             }
             this.additionalProperties.put(key, value);

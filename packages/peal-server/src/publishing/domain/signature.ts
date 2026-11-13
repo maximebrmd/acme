@@ -11,7 +11,7 @@ import { PostPart } from "./post-part.ts";
 import { isWithoutNul, maxPostTextLength } from "./post-text.ts";
 import { SignatureIdSchema } from "./signature-id.ts";
 import type { SignatureId } from "./signature-id.ts";
-import { TextOverride } from "./text-override.ts";
+import { changedOverride, TextOverride } from "./text-override.ts";
 
 /** The longest name a signature has. */
 export const maxSignatureNameLength = 60;
@@ -223,9 +223,10 @@ export const withSignature = (
   const last = lastPartOf(content);
 
   return withLastPart(content, {
-    overrides: last.overrides.map(
-      ({ channelId, text }) =>
-        new TextOverride({ channelId, text: signed(text, signature.text) })
+    overrides: last.overrides.map((override) =>
+      changedOverride(override, {
+        text: signed(override.text, signature.text),
+      })
     ),
     text: signed(last.text, signature.text),
   });
@@ -264,6 +265,15 @@ export const withDefaultSignatures = (
     last.overrides.map(({ channelId, text }) => [channelId, text])
   );
 
+  // The media an override gives its channel, which signing keeps.
+  const mediaOf = (channelId: ChannelId) => {
+    const media = last.overrides.find(
+      (override) => override.channelId === channelId
+    )?.media;
+
+    return media === undefined ? {} : { media };
+  };
+
   const known = new Set<ChannelId>(channels.map(({ channelId }) => channelId));
 
   const onChannels = channels.flatMap((channel) => {
@@ -279,7 +289,11 @@ export const withDefaultSignatures = (
       return Option.match(written, {
         onNone: () => [],
         onSome: (text) => [
-          new TextOverride({ channelId: channel.channelId, text }),
+          new TextOverride({
+            ...mediaOf(channel.channelId),
+            channelId: channel.channelId,
+            text,
+          }),
         ],
       });
     }
@@ -288,6 +302,7 @@ export const withDefaultSignatures = (
 
     return [
       new TextOverride({
+        ...mediaOf(channel.channelId),
         channelId: channel.channelId,
         text: signed(
           own.value.scope._tag === "workspace" ? base : plain(base),

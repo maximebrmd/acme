@@ -3,7 +3,10 @@ import { Effect, Layer, Option } from "effect";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { plainOptions } from "#publishing/application/plain-options.ts";
-import { postOnChannel } from "#publishing/application/post-parts.ts";
+import {
+  keptTargets,
+  postOnChannel,
+} from "#publishing/application/post-parts.ts";
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import { ReviewedPosts } from "#review/application/ports/reviewed-posts.ts";
 import type {
@@ -33,7 +36,7 @@ const scheduleOf = (status: PostStatus): ReviewedPost["schedule"] =>
 // The post on a channel, as it will receive it: its text there, then the
 // parts that follow, each with its files.
 const partsFor = (post: PostWithTargets["post"], channelId: ChannelId) => {
-  const { followUps, text } = postOnChannel(post, channelId);
+  const { followUps, ownMedia, text } = postOnChannel(post, channelId);
 
   return {
     followUps: followUps.map((part) => ({
@@ -41,6 +44,11 @@ const partsFor = (post: PostWithTargets["post"], channelId: ChannelId) => {
       media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
       text: part.text,
     })),
+    media: ownMedia.pipe(
+      Option.map((files) =>
+        files.map(({ altText, mediaId }) => ({ altText, mediaId }))
+      )
+    ),
     text,
   };
 };
@@ -72,8 +80,10 @@ export const PublishingReviewedPosts = Layer.effect(
 
       const { post, targets } = found.value;
 
+      // A channel taken off the post is none of those it goes to, as the
+      // approval subject has it.
       const shown = yield* Effect.all(
-        targets.map((target) =>
+        keptTargets(targets).map((target) =>
           channels.get(target.channelId).pipe(
             // Only a channel of the post's workspace is named.
             Effect.map(

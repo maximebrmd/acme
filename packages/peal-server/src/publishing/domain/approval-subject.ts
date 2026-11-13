@@ -4,6 +4,7 @@ import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
 import type { PostContent } from "./post-content.ts";
+import { isDropped } from "./post-target.ts";
 import type { PostTarget } from "./post-target.ts";
 import { TargetOptionsSchema } from "./target-options.ts";
 
@@ -28,16 +29,26 @@ const saidBy = ({
   text,
 }: Pick<PostContent, "media" | "overrides" | "text">) => ({
   media: media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+  // An override's media are written only when it gives some, so a
+  // subject without any is written as it was before overrides had media.
   overrides: overrides
-    .map(({ channelId, text: override }) => ({ channelId, text: override }))
+    .map(({ channelId, media: own, text: override }) =>
+      own === undefined
+        ? { channelId, text: override }
+        : {
+            channelId,
+            media: own.map(({ altText, mediaId }) => ({ altText, mediaId })),
+            text: override,
+          }
+    )
     .toSorted((left, right) => left.channelId.localeCompare(right.channelId)),
   text,
 });
 
 /**
  * What an approval of a post covers, written the same way whenever it is
- * the same: its text, its media in order with their alt text, the text it
- * has instead on some channels, the channels it goes to and the options it
+ * the same: its text, its media in order with their alt text, the text
+ * and the media it has instead on some channels, the channels it goes to and the options it
  * has on each, and every part that follows the first, in order, with its
  * text, media, texts by channel and wait. Changing any of these makes
  * another subject, so an approval given for the first no longer stands. Its
@@ -50,11 +61,13 @@ export const approvalSubject = (
   content: PostContent,
   targets: readonly PostTarget[]
 ): string => {
+  // A channel taken off the post is none of the channels it goes to.
   const channels = targets
-    .map((target) => ({
-      channelId: target.channelId,
-      options: optionsOf(target),
-    }))
+    .flatMap((target) =>
+      isDropped(target)
+        ? []
+        : [{ channelId: target.channelId, options: optionsOf(target) }]
+    )
     .toSorted((left, right) => left.channelId.localeCompare(right.channelId));
 
   const first = { channels, ...saidBy(content) };

@@ -115,17 +115,6 @@ export class PlaceOrder extends Context.Service<
           return yield* new BilledElsewhere({ billingWorkspaceId: holder });
         }
 
-        // The words the member ticked are the ones recorded.
-        if (
-          request.consentVersion !== undefined &&
-          request.consentVersion !== consentVersion
-        ) {
-          return yield* new ConsentChanged({
-            current: consentVersion,
-            shown: request.consentVersion,
-          });
-        }
-
         // The rate card's free accounts replace the trial.
         if (request.trial) {
           return yield* new TrialUnavailable({ reason: "notOffered" });
@@ -135,6 +124,19 @@ export class PlaceOrder extends Context.Service<
           return yield* new PlanNotSold({
             interval: request.interval,
             plan: request.plan,
+          });
+        }
+
+        // The words the member ticked are the ones recorded: a page that
+        // names none is older than them.
+        if (request.consentVersion === undefined) {
+          return yield* new ConsentChanged({ current: consentVersion });
+        }
+
+        if (request.consentVersion !== consentVersion) {
+          return yield* new ConsentChanged({
+            current: consentVersion,
+            shown: request.consentVersion,
           });
         }
 

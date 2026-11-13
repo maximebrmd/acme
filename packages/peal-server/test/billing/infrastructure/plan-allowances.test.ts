@@ -101,11 +101,12 @@ describe("the plan allowances", () => {
         seats: { allowed: Option.none(), taken: 3 },
       });
 
-      // Per-account pricing: every account, and the legacy pro plan's
-      // daily assistant until its monthly meter.
+      // Per-account pricing: every account (connecting held to the
+      // ceiling until a first invoice is paid, as none is here), and the
+      // legacy pro plan's daily assistant until its monthly meter.
       assert.deepStrictEqual(yield* onPlan("payAsYouGo"), {
         assistantRequests: 20,
-        channels: Option.none(),
+        channels: Option.some(100),
         scheduledPosts: Option.none(),
         scheduling: { allowed: Option.none(), connected: 4 },
         seats: { allowed: Option.none(), taken: 3 },
@@ -287,7 +288,11 @@ describe("the plan allowances", () => {
 
         const sharedOn = (enabled: boolean) =>
           AssistantAllowance.use((allowance) =>
-            allowance.sharedWith(workspaceId)
+            Effect.all({
+              held: allowance.sharedWith(workspaceId),
+              pooled: Effect.succeed(allowance.pooled),
+              reported: allowance.sharingWith(workspaceId),
+            })
           ).pipe(
             Effect.provide(
               PlanAssistantAllowanceLive.pipe(
@@ -306,7 +311,8 @@ describe("the plan allowances", () => {
                     PlanPools,
                     PlanPools.of({
                       sharedWith: () => Effect.succeed([other]),
-                      sharingIn: () => Effect.succeed(new Map()),
+                      sharingIn: (ids) =>
+                        Effect.succeed(new Map(ids.map((id) => [id, [other]]))),
                     })
                   )
                 ),
@@ -318,8 +324,16 @@ describe("the plan allowances", () => {
             )
           );
 
-        assert.deepStrictEqual(yield* sharedOn(true), [other]);
-        assert.deepStrictEqual(yield* sharedOn(false), []);
+        assert.deepStrictEqual(yield* sharedOn(true), {
+          held: [other],
+          pooled: true,
+          reported: [other],
+        });
+        assert.deepStrictEqual(yield* sharedOn(false), {
+          held: [],
+          pooled: false,
+          reported: [],
+        });
       })
   );
 });

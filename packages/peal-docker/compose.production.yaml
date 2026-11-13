@@ -1,5 +1,6 @@
 # The production stack: Postgres with pgBackRest, the server, the web app, the
-# static site and docs, and the telemetry stack (the OpenTelemetry Collector,
+# static site and docs, the docs server for their assistant, and the
+# telemetry stack (the OpenTelemetry Collector,
 # Loki, Tempo, Prometheus and Grafana with its alerts). peal-infra runs it on
 # Peal's servers behind a Cloudflare Tunnel; self-hosters add Caddy in front
 # with compose.self-host.yaml.
@@ -11,6 +12,7 @@
 #   Web app         127.0.0.1:3001    everything else on the app's host name
 #   Marketing site  127.0.0.1:4321    profile "static"
 #   Docs            127.0.0.1:4322    profile "static"
+#   Docs server     127.0.0.1:4323    profile "docs", with the assistant
 #   Grafana         127.0.0.1:13000
 #   OTLP HTTP       127.0.0.1:14318   where the backup timer reports
 #
@@ -211,6 +213,7 @@ services:
       PEAL_INBOX_PLATFORMS:
       STRIPE_SECRET_KEY:
       STRIPE_WEBHOOK_SECRET:
+      STRIPE_METER_WEBHOOK_SECRET:
       STRIPE_LOOKUP_KEY_PREFIX:
       PEAL_BILLING_GRACE_UNTIL:
       STRIPE_API_URL:
@@ -306,6 +309,7 @@ services:
         SITE_PLAUSIBLE_DOMAIN: ${SITE_PLAUSIBLE_DOMAIN:-}
         SITE_PLAUSIBLE_HOST: ${SITE_PLAUSIBLE_HOST:-}
         DOCS_SITE_URL: ${DOCS_SITE_URL:-}
+        DOCS_APP_URL: ${DOCS_APP_URL:-}
         DOCS_PLAUSIBLE_DOMAIN: ${DOCS_PLAUSIBLE_DOMAIN:-}
         DOCS_PLAUSIBLE_HOST: ${DOCS_PLAUSIBLE_HOST:-}
     ports:
@@ -314,6 +318,45 @@ services:
     healthcheck:
       <<: *healthcheck
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/, http://127.0.0.1:8081/]
+
+  # The docs as a Node server, with the assistant that answers from their
+  # pages: the docs' host name goes here instead of to the static image's
+  # docs. Built only with DOCS_ASSISTANT_MODEL set; the docs' environment
+  # variables page says what each setting does.
+  docs:
+    <<: *service
+    profiles: [docs]
+    image: peal-docs:${PEAL_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: packages/peal-docker/docs.Dockerfile
+      args:
+        DOCS_ASSISTANT_MODEL: ${DOCS_ASSISTANT_MODEL:-}
+        DOCS_TURNSTILE_SITE_KEY: ${DOCS_TURNSTILE_SITE_KEY:-}
+        DOCS_SITE_URL: ${DOCS_SITE_URL:-}
+        DOCS_APP_URL: ${DOCS_APP_URL:-}
+        DOCS_PLAUSIBLE_DOMAIN: ${DOCS_PLAUSIBLE_DOMAIN:-}
+        DOCS_PLAUSIBLE_HOST: ${DOCS_PLAUSIBLE_HOST:-}
+    # Node runs as PID 2 under an init, so it stops on SIGTERM.
+    init: true
+    environment:
+      # Read with each question; the assistant answers that it is not set
+      # up until it is.
+      DOCS_ANTHROPIC_API_KEY:
+      # Read only when the image was built with DOCS_TURNSTILE_SITE_KEY.
+      DOCS_TURNSTILE_SECRET_KEY:
+      # The header the edge gives each reader's address in, as for the
+      # server: the rate limit counts each reader by it.
+      AUTH_IP_HEADERS: ${AUTH_IP_HEADERS:?Set AUTH_IP_HEADERS}
+    ports:
+      - 127.0.0.1:${PEAL_DOCS_SERVER_PORT:-4323}:4323
+    healthcheck:
+      <<: *healthcheck
+      test:
+        - CMD
+        - node
+        - --eval
+        - 'fetch("http://127.0.0.1:4323/").then((response) => process.exit(response.ok ? 0 : 1), () => process.exit(1));'
 
   # The collector's image has no shell or HTTP client, so its health check
   # runs busybox's static wget, which this service copies into a volume at

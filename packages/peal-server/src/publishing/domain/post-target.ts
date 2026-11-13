@@ -30,6 +30,9 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * | failed      | pending again, reposted                        |
  * | cancelled   | nothing                                        |
  *
+ * A pending target taken off its post (`cancelledFromPost`) is cancelled
+ * and `dropped`: the post goes out on its other channels.
+ *
  * `round` counts the times it was sent: a repost after an unconfirmed or
  * failed round starts the next one, so a job left from an earlier round
  * cannot act on it.
@@ -301,6 +304,29 @@ export const cancelTarget = (
 
   return rejected(target, "cancel");
 };
+
+/**
+ * Takes a pending target off its post before it went out: it is cancelled,
+ * marked `dropped`, while the post goes out on its other channels
+ * (`./target-removal.ts` decides when). Any other target stays as it is.
+ */
+export const cancelledFromPost = (
+  target: PostTarget,
+  now: DateTime.Utc
+): Transition =>
+  target.status._tag === "pending"
+    ? Result.succeed(
+        withStatus(target, {
+          _tag: "cancelled",
+          cancelledAt: now,
+          dropped: true,
+        })
+      )
+    : rejected(target, "drop");
+
+/** Whether someone took the target off its post before it went out. */
+export const isDropped = ({ status }: PostTarget): boolean =>
+  status._tag === "cancelled" && status.dropped === true;
 
 /**
  * The user found an unconfirmed part on the platform. It went live during

@@ -6,7 +6,7 @@ import { checkPublishable } from "#publishing/domain/content-rules.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
-import { shownMedia } from "#publishing/domain/post-content.ts";
+import { sentTo, shownMedia } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 
 import { AccountRules } from "./account-rules.ts";
@@ -36,20 +36,26 @@ export const violationsOf = Effect.fn("Publishing.violationsOf")(
 
     const rules = yield* AccountRules;
 
-    // An account's rules are about the media the post shows, never a file
-    // an option names (a thumbnail is not one of a TikTok post's photos).
-    const shown = new Set<string>(
-      shownMedia(content).map(({ mediaId }) => mediaId)
-    );
+    // An account's rules are about the media the post shows on its
+    // channel (its own there, when an override gives it some), never a
+    // file an option names (a thumbnail is not one of a TikTok post's
+    // photos).
+    const shownOn = (channel: ChannelOnPlatform) => {
+      const shown = new Set<string>(
+        shownMedia(sentTo(content, channel.channelId)).map(
+          ({ mediaId }) => mediaId
+        )
+      );
 
-    const shownFiles = files.filter(({ mediaId }) => shown.has(mediaId));
+      return files.filter(({ mediaId }) => shown.has(mediaId));
+    };
 
     const refused = yield* Effect.forEach(
       channels,
       (channel) =>
         rules.violationsOn({
           channel,
-          files: shownFiles,
+          files: shownOn(channel),
           followUps: content.followUps.length,
           options: optionsOn(options, channel.channelId),
         }),

@@ -6,6 +6,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AltTextSchema } from "./alt-text.ts";
 import type { AltText } from "./alt-text.ts";
+import { FileNameSchema } from "./file-name.ts";
+import type { FileName } from "./file-name.ts";
 import { InvalidMediaTransition } from "./invalid-media-transition.ts";
 import type { MediaAction } from "./invalid-media-transition.ts";
 import { MediaAssetIdSchema } from "./media-asset-id.ts";
@@ -54,6 +56,13 @@ export class MediaAsset extends Schema.Class<MediaAsset>(
   byteSize: ByteSizeSchema,
   contentType: MediaContentTypeSchema,
   createdAt: Schema.DateTimeUtc,
+  /**
+   * What the file was called where it came from: the member's device, or
+   * the address it was imported from. None for a file the assistant made,
+   * for one whose client gave no name, and for every file added before
+   * names were kept. Set when the asset is created, never changed.
+   */
+  fileName: Schema.Option(FileNameSchema),
   id: MediaAssetIdSchema,
   metadata: MediaMetadata,
   status: MediaStatusSchema,
@@ -105,6 +114,8 @@ export interface NewUpload {
   /** True only for a file the writing assistant made; false by default. */
   readonly aiGenerated?: boolean;
   readonly altText: Option.Option<AltText>;
+  /** What the file was called where it came from; none by default. */
+  readonly fileName?: Option.Option<FileName>;
   readonly id: MediaAssetId;
   readonly upload: UploadMethod;
   readonly workspaceId: WorkspaceId;
@@ -116,6 +127,7 @@ export const startUpload = (
     accepted,
     aiGenerated = false,
     altText,
+    fileName = Option.none(),
     id,
     upload,
     workspaceId,
@@ -128,6 +140,7 @@ export const startUpload = (
     byteSize: accepted.byteSize,
     contentType: accepted.contentType,
     createdAt: now,
+    fileName,
     id,
     metadata: MediaMetadata.unknown,
     status: { _tag: "pending", upload },
@@ -176,6 +189,7 @@ const withChange = (
     byteSize: asset.byteSize,
     contentType: asset.contentType,
     createdAt: asset.createdAt,
+    fileName: asset.fileName,
     id: asset.id,
     metadata,
     status,
@@ -266,6 +280,7 @@ export const describe = (
     byteSize: asset.byteSize,
     contentType: asset.contentType,
     createdAt: asset.createdAt,
+    fileName: asset.fileName,
     id: asset.id,
     metadata: asset.metadata,
     status: asset.status,

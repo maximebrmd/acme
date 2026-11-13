@@ -28,6 +28,8 @@ import social.peal.core.ObjectMappers;
 public final class UsageDay {
     private final Optional<Integer> assistantRequests;
 
+    private final Optional<Integer> billableAccounts;
+
     private final List<PlatformPosts> byPlatform;
 
     private final Optional<Integer> channels;
@@ -44,6 +46,7 @@ public final class UsageDay {
 
     private UsageDay(
             Optional<Integer> assistantRequests,
+            Optional<Integer> billableAccounts,
             List<PlatformPosts> byPlatform,
             Optional<Integer> channels,
             String day,
@@ -52,6 +55,7 @@ public final class UsageDay {
             int publishedPosts,
             Map<String, Object> additionalProperties) {
         this.assistantRequests = assistantRequests;
+        this.billableAccounts = billableAccounts;
         this.byPlatform = byPlatform;
         this.channels = channels;
         this.day = day;
@@ -67,6 +71,14 @@ public final class UsageDay {
             return Optional.empty();
         }
         return assistantRequests;
+    }
+
+    @JsonIgnore
+    public Optional<Integer> getBillableAccounts() {
+        if (billableAccounts == null) {
+            return Optional.empty();
+        }
+        return billableAccounts;
     }
 
     @JsonProperty("byPlatform")
@@ -115,6 +127,12 @@ public final class UsageDay {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("billableAccounts")
+    private Optional<Integer> _getBillableAccounts() {
+        return billableAccounts;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("channels")
     private Optional<Integer> _getChannels() {
         return channels;
@@ -145,6 +163,7 @@ public final class UsageDay {
 
     private boolean equalTo(UsageDay other) {
         return assistantRequests.equals(other.assistantRequests)
+                && billableAccounts.equals(other.billableAccounts)
                 && byPlatform.equals(other.byPlatform)
                 && channels.equals(other.channels)
                 && day.equals(other.day)
@@ -157,6 +176,7 @@ public final class UsageDay {
     public int hashCode() {
         return Objects.hash(
                 this.assistantRequests,
+                this.billableAccounts,
                 this.byPlatform,
                 this.channels,
                 this.day,
@@ -197,6 +217,12 @@ public final class UsageDay {
 
         _FinalStage assistantRequests(Nullable<Integer> assistantRequests);
 
+        _FinalStage billableAccounts(Optional<Integer> billableAccounts);
+
+        _FinalStage billableAccounts(Integer billableAccounts);
+
+        _FinalStage billableAccounts(Nullable<Integer> billableAccounts);
+
         _FinalStage byPlatform(List<PlatformPosts> byPlatform);
 
         _FinalStage addByPlatform(PlatformPosts byPlatform);
@@ -236,6 +262,8 @@ public final class UsageDay {
 
         private List<PlatformPosts> byPlatform = new ArrayList<>();
 
+        private Optional<Integer> billableAccounts = Optional.empty();
+
         private Optional<Integer> assistantRequests = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -245,6 +273,7 @@ public final class UsageDay {
         @java.lang.Override
         public Builder from(UsageDay other) {
             assistantRequests(other.getAssistantRequests());
+            billableAccounts(other.getBillableAccounts());
             byPlatform(other.getByPlatform());
             channels(other.getChannels());
             day(other.getDay());
@@ -368,6 +397,31 @@ public final class UsageDay {
         }
 
         @java.lang.Override
+        public _FinalStage billableAccounts(Nullable<Integer> billableAccounts) {
+            if (billableAccounts.isNull()) {
+                this.billableAccounts = null;
+            } else if (billableAccounts.isEmpty()) {
+                this.billableAccounts = Optional.empty();
+            } else {
+                this.billableAccounts = Optional.of(billableAccounts.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billableAccounts(Integer billableAccounts) {
+            this.billableAccounts = Optional.ofNullable(billableAccounts);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "billableAccounts", nulls = Nulls.SKIP)
+        public _FinalStage billableAccounts(Optional<Integer> billableAccounts) {
+            this.billableAccounts = billableAccounts;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage assistantRequests(Nullable<Integer> assistantRequests) {
             if (assistantRequests.isNull()) {
                 this.assistantRequests = null;
@@ -396,6 +450,7 @@ public final class UsageDay {
         public UsageDay build() {
             return new UsageDay(
                     assistantRequests,
+                    billableAccounts,
                     byPlatform,
                     channels,
                     day,
@@ -408,6 +463,7 @@ public final class UsageDay {
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("assistantRequests")
+                    || key.equalsIgnoreCase("billableAccounts")
                     || key.equalsIgnoreCase("byPlatform")
                     || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("day")

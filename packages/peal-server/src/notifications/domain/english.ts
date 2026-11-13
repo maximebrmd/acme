@@ -465,6 +465,42 @@ export const english: EmailCatalog = {
     failing: "every delivery to it failed for 5 days.",
     gone: "it answered 410 Gone, which asks for no more deliveries.",
   },
+  weeklyDigest: {
+    action: "Open my agenda",
+    calendar: "Open the calendar of {workspaceName}",
+    counts: {
+      awaitingApproval: {
+        one: "{count} waiting for approval",
+        other: "{count} waiting for approval",
+      },
+      failed: { one: "{count} failed", other: "{count} failed" },
+      scheduled: {
+        one: "{count} scheduled this week",
+        other: "{count} scheduled this week",
+      },
+      unconfirmed: {
+        one: "{count} to check on its platform",
+        other: "{count} to check on their platforms",
+      },
+      wentOut: {
+        one: "{count} post went out",
+        other: "{count} posts went out",
+      },
+    },
+    engagement:
+      "Engagement with the week’s posts, as last counted: {engagement}.",
+    ignore:
+      "You receive this email because you turned on the weekly digest on Peal. To stop it, turn it off in {preferences}.",
+    impressions: "Impressions: {impressions}.",
+    intro:
+      "What went out from {from} to {to}, and what is planned until {until}, in the workspaces whose posts you may read. Days and times are in UTC.",
+    more: { one: "and {count} more", other: "and {count} more" },
+    noText: "No text",
+    plannedHeading: "Planned",
+    preferences: "your notification preferences",
+    subject: "Your week on Peal: {from} to {to}",
+    wentOutHeading: "Went out",
+  },
   withinFreePlan:
     "It holds nothing beyond what the free plan allows, and keeps its content.",
   workspaceDeleted: {

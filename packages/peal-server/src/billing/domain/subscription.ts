@@ -42,6 +42,13 @@ export class Subscription extends Schema.Class<Subscription>(
   currentPeriodStart: Schema.Option(Schema.DateTimeUtc),
   // How often it is paid for.
   interval: BillingIntervalSchema,
+  // When an invoice of it was first found paid that took something:
+  // per-account pricing's account ceiling lifts from then. Webhook events
+  // never say it; the reporter's daily step keeps it.
+  paidInvoiceAt: Schema.Option(Schema.DateTimeUtc).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeedNone),
+    Schema.withConstructorDefault(Effect.succeedNone)
+  ),
   plan: PaidPlanSchema,
   // When the contract started: the trial's first day, for a trial. The
   // consumer's 14 days to withdraw count from it.

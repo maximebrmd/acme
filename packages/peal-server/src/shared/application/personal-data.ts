@@ -52,6 +52,11 @@ export interface PostRecord {
     readonly text: string;
     readonly textOverrides: readonly {
       readonly channelId: string;
+      /** The media it shows on that channel instead, when it gives some. */
+      readonly media?: readonly {
+        readonly altText: string | null;
+        readonly mediaId: string;
+      }[];
       readonly text: string;
     }[];
   }[];
@@ -81,6 +86,8 @@ export interface PostRecord {
   readonly tagIds: readonly string[];
   readonly targets: readonly {
     readonly channelId: string;
+    /** Someone took the channel off the post before it went out. */
+    readonly dropped: boolean;
     /** When Peal last replaced a part's text on that channel's platform. */
     readonly editedAt: DateTime.Utc | null;
     readonly finishedAt: DateTime.Utc | null;
@@ -100,6 +107,11 @@ export interface PostRecord {
   readonly text: string;
   readonly textOverrides: readonly {
     readonly channelId: string;
+    /** The media it shows on that channel instead, when it gives some. */
+    readonly media?: readonly {
+      readonly altText: string | null;
+      readonly mediaId: string;
+    }[];
     readonly text: string;
   }[];
   readonly timeZone: string | null;
@@ -209,6 +221,8 @@ export interface MediaRecord {
    */
   readonly downloadUrl: string | null;
   readonly durationMs: number | null;
+  /** What the file was called where it came from, if anything. */
+  readonly fileName: string | null;
   readonly height: number | null;
   readonly id: string;
   /** A document's pages, as the probe counted them; null for other files. */
@@ -499,6 +513,16 @@ export interface UsageRecord {
  */
 export interface BillingRecord {
   /**
+   * The accounts its billing account had connected at most each day (UTC,
+   * YYYY-MM-DD), kept on it as the account's billing workspace, and how
+   * many of those account-days were reported to the payment provider.
+   */
+  readonly accountDays: readonly {
+    readonly day: string;
+    readonly peak: number;
+    readonly reported: number;
+  }[];
+  /**
    * The posts it made on platforms that bill the server per post, and how
    * many held a link, by month (its first instant).
    */
@@ -524,6 +548,17 @@ export interface BillingRecord {
     readonly dimension: string;
     readonly meter: string;
     readonly quantity: number;
+  }[];
+  /**
+   * The usage reported of it to the payment provider: each event's meter,
+   * the units, the instant they describe and when it was sent (null while
+   * it waits, or if it was refused).
+   */
+  readonly usageReports: readonly {
+    readonly eventName: string;
+    readonly occurredAt: DateTime.Utc;
+    readonly sentAt: DateTime.Utc | null;
+    readonly value: number;
   }[];
 }
 
@@ -754,8 +789,11 @@ export interface PreferencesRecord {
     readonly postUnconfirmed: boolean;
     readonly recyclingEnded: boolean;
     readonly webhookFailing: boolean;
+    readonly weeklyDigest: boolean;
   };
   readonly everyPost: boolean;
+  /** The first day (UTC) of the week of the last weekly digest sent. */
+  readonly lastWeeklyDigest: string | null;
 }
 
 /**

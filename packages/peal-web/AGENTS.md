@@ -378,12 +378,52 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`
   (`#posts/start-time.ts`), which the composer reads on the viewer's clock
   and ignores when malformed or past.
+- The calendar has a day, a week and a month view. The day view
+  (`CalendarDayView`, links passed in, rows from `#posts/day-rows.ts`,
+  tested) has a row per instant that holds a post or a queue's slot, each
+  queue's slots read on its own clock with `instantOf`'s daylight saving
+  policy over the queue's dates two before to two after, a slot held by
+  a post of its queue (scheduled, waiting or going out, or any at a time
+  past; a filtered one too: `slotHolders`) never shown free; on a day the clocks change, times
+  carry their zone's name, and a free slot at the second of a repeated
+  time has no new post link (`slotStartOf`), as the composer reads the
+  earlier. A month cell's "more"
+  opens its day. A tag's colour shows only in its dots (`ChipTags`), as a
+  post's state is the one colour a chip carries (DESIGN.md).
 - Times of day follow the browser's own preference (`#i18n/hour-cycle.ts`,
   in `localStorage`, chosen on the account page): `ViewerHourCycle`, in the
   locale layout, gives every message's `{at, time, short}` the clock
   chosen, and code that formats a time itself adds `useTimeOptions()` to
   its options. The server renders the language's clock; the preference
   applies after hydration.
+- The media library (`components/media/media-library.tsx`) narrows its
+  pages with `LibraryToolbarView` (text and kind, `#media/library-search.ts`:
+  `queryOf`, and the atoms' `pageKeyOf`), asking once the person pauses
+  (`useDebounced`, `searchDelayMs`): never a request per key. A file's name
+  is the member's text, rendered as text; one without a name is called by
+  its kind (`useMediaName`). A thumbnail, a button of the card's own
+  with an inset focus ring, opens `MediaPreviewDialog`: no taller than
+  the window (`max-h-[90dvh]`), its title and close button fixed, the
+  file and its text scrolling below them, the focus back on the
+  thumbnail once closed; an image whole, a video muted with controls, a
+  document as a link to a tab of its own, never embedded. The toolbar is
+  a `search` landmark, `SearchStatus` (an `output` that stays mounted)
+  says what a search found, and clearing a search focuses the field.
+- A channel's tab in `TextTabs` takes `renderChannelMedia`: the composer
+  puts `ChannelMediaField` there, a channel's own media (`MediaAttachments`
+  with a `label` of its own), started from the post's. `#posts/channel-media.ts`
+  (tested) turns the texts and media by channel into overrides: a channel
+  with media and no text of its own sends the post's text, and reads back
+  as following it (`channelTextsOf`); with no text at all its media are
+  not sent: the composer neither saves nor schedules, and
+  `ComposerActions` says why beside its buttons (`blocked`). Counters and
+  media checks read each channel's own (`attachedOn`). A scheduled or held
+  post's page lists its channels in `PostChannels`
+  (`components/posts/post-channels.tsx`, through `posts.removeTarget`,
+  for those who may cancel it), every one removable but the last;
+  `connectedTargets`, the list's channel names and the calendar's channel
+  filter leave a `dropped` target out, and the composer is keyed by the
+  count of them so it starts again after a removal.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

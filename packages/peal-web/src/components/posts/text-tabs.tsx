@@ -11,12 +11,18 @@ import {
   TabsTrigger,
 } from "peal-ui/components/tabs";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";
 
 const allChannels = "all";
 
 interface TextTabsProps {
+  /**
+   * What a channel's tab shows under its text of its own: its media of its
+   * own, when the composer offers them.
+   */
+  readonly renderChannelMedia?: ((channel: Channel) => ReactNode) | undefined;
   /** Hears a text's editor take the focus. */
   readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** Hears the editor of the text for all channels made. */
@@ -96,7 +102,7 @@ const OverrideEditor = ({
 };
 
 // The post's text for all channels, and a tab per selected channel for a
-// text of its own there.
+// text, and media, of its own there.
 export const TextTabs = ({
   onEditorFocus,
   onMainEditor,
@@ -105,6 +111,7 @@ export const TextTabs = ({
   onText,
   overrides,
   readOnly,
+  renderChannelMedia,
   selected,
   text,
 }: TextTabsProps) => {
@@ -153,14 +160,17 @@ export const TextTabs = ({
       </TabsContent>
       {selected.map((channel) => (
         <TabsContent key={channel.id} value={channel.id}>
-          <OverrideEditor
-            channel={channel}
-            onEditorFocus={onEditorFocus}
-            onPasteFiles={onPasteFiles}
-            onOverride={onOverride}
-            readOnly={readOnly}
-            value={overrides[channel.id] ?? ""}
-          />
+          <div className="flex flex-col gap-4">
+            <OverrideEditor
+              channel={channel}
+              onEditorFocus={onEditorFocus}
+              onPasteFiles={onPasteFiles}
+              onOverride={onOverride}
+              readOnly={readOnly}
+              value={overrides[channel.id] ?? ""}
+            />
+            {renderChannelMedia?.(channel)}
+          </div>
         </TabsContent>
       ))}
     </Tabs>

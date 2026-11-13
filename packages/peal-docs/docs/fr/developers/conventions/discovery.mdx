@@ -1,0 +1,80 @@
+---
+title: Découverte
+description: Les documents qui indiquent à un programme où sont l’API, son document OpenAPI et sa connexion.
+sidebar:
+  icon: radar
+---
+
+## Découverte [#discovery]
+
+Un programme qui ne connaît que l’adresse d’un serveur Peal trouve le reste à partir de ces documents. Aucun ne demande d’authentification.
+
+| Adresse                                     | Ce que c’est                                                                                                                                                                                 |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/.well-known/api-catalog`                  | Le catalogue d’API (RFC 9727), en `application/linkset+json` : l’API et le point d’accès MCP, chacun avec sa description, sa documentation et l’endroit où obtenir de quoi s’y authentifier. |
+| `/api/openapi.json`                         | Le document OpenAPI 3.1 de l’API : chaque point d’accès, ses paramètres, ses réponses et ses erreurs.                                                                                        |
+| `/api/mcp/server-card`                      | La fiche du point d’accès MCP (server card), en `application/mcp-server-card+json` : son adresse, les révisions du protocole qu’il parle et l’en-tête qui porte le moyen d’authentification. |
+| `/llms.txt`                                 | Les mêmes adresses en Markdown, pour un modèle de langage.                                                                                                                                   |
+| `/.well-known/oauth-protected-resource/api` | Où un client OAuth obtient un jeton pour l’API, et les scopes (RFC 9728). `…/api/mcp` est celui du point d’accès MCP.                                                                        |
+| `/api/changelog`                            | Ce que chaque version de l’API a ajouté ([Journal des modifications](/developers/conventions/versioning#changelog)).                                                                         |
+| `/api/health`                               | Répond 204 tant que le serveur fonctionne.                                                                                                                                                   |
+
+```bash
+curl https://api.example.com/.well-known/api-catalog
+```
+
+```json
+{
+  "linkset": [
+    {
+      "anchor": "https://api.example.com/api",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/openapi.json",
+          "type": "application/openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://docs.example.com/api-overview",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api",
+          "type": "application/json"
+        }
+      ],
+      "status": [{ "href": "https://api.example.com/api/health" }]
+    },
+    {
+      "anchor": "https://api.example.com/api/mcp",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/mcp/server-card",
+          "type": "application/mcp-server-card+json"
+        }
+      ],
+      "service-doc": [
+        { "href": "https://docs.example.com/mcp", "type": "text/html" }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api/mcp",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+<Callout type="info">
+  Les liens vers la documentation (`service-doc`, et une section de `llms.txt`)
+  n’existent que sur un serveur qui sait où se trouve sa documentation :
+  `PEAL_DOCS_URL` ([Variables
+  d’environnement](/self-hosting/environment-variables#core)).
+</Callout>
+
+Cette documentation a son propre `llms.txt`, à sa racine, avec chaque page en Markdown.

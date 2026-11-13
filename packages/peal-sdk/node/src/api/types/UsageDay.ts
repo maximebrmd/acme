@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface UsageDay {
     assistantRequests: number | null;
+    billableAccounts: number | null;
     byPlatform: Peal.PlatformPosts[];
     channels: number | null;
     day: Peal.CalendarDay;

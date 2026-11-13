@@ -46,6 +46,10 @@
   which would otherwise call a platform for them. Update them when
   `analytics.tracked_posts` or `engagement.threads` change. Mark a comment
   answered rather than reply: a reply's job would call the platform.
+- A part of a page that loads after it moves what is below it, and an
+  open list follows its field off the screen ("element is outside of the
+  viewport"): wait for that part (the post's review shows "Your comment")
+  before opening a list beneath it.
 - `tests/tags.e2e.ts` signs up a member of its own, adds a tag in the
   settings, schedules a tagged post and another, filters the calendar by
   the tag and clears the filter, then cancels both. The calendar names a
@@ -69,6 +73,14 @@
   test's weekday), adds two posts to it from the composer's **Add to
   queue**, reads that they took 23:57 then 23:58, swaps the 23:57 slot
   for 23:59 and moves both posts onto the new slots, then cancels both.
+- `tests/media-library.e2e.ts` seeds named images and a video
+  (`seedImage`, `seedVideo`: rows only, no file), finds one by its name
+  whatever its case, narrows the search by kind and clears it (the focus
+  goes back to the search field), then opens a tall image's preview at
+  320 × 640 (`browser.setViewport`) and checks the dialog, its title and
+  its close button fit the window, and that closing it gives the focus
+  back to the thumbnail. A seeded description has no surrounding spaces,
+  which the server refuses to read.
 - `tests/two-step.e2e.ts` turns two-step verification on from the account
   page, reading the key written beside the QR code and computing the codes
   an authenticator app would (`tests/support/totp.ts`, RFC 6238), signs in

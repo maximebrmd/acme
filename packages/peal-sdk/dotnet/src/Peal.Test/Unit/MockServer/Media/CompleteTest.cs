@@ -25,6 +25,7 @@ public class CompleteTest : BaseMockServerTest
                 "width": 1
               },
               "durationMs": 1,
+              "fileName": "fileName",
               "id": "id",
               "kind": "image",
               "pageCount": 1,
@@ -72,6 +73,7 @@ public class CompleteTest : BaseMockServerTest
                 "width": 1
               },
               "durationMs": 1,
+              "fileName": "fileName",
               "id": "id",
               "kind": "image",
               "pageCount": 1,

@@ -808,6 +808,78 @@ describe("a queue reshuffled where contributors wait", () => {
   );
 });
 
+describe("a channel taken off a post that waits for an approval", () => {
+  it.effect(
+    "keeps it waiting under its request, which then covers what it now is",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* dropsWhileWaiting() {
+          const scheduling = yield* PostScheduling;
+          const review = yield* PostReview;
+          const requests = yield* ApprovalStore;
+          const { channelId, contributor, editor, workspaceId } = yield* team;
+          const other = yield* connect(workspaceId, "bluesky");
+
+          yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+          const { post, targets } = yield* scheduling.send(contributor, {
+            channelIds: [channelId, other],
+            content: contentOf("A synthetic post on two channels."),
+            idempotency: Option.none(),
+            placement: { _tag: "at", at: at8.at },
+            timeZone: at8.timeZone,
+          });
+
+          const before = yield* shown(post);
+          const target = targets.find((kept) => kept.channelId === other);
+
+          assert(target !== undefined);
+
+          const dropped = yield* scheduling.dropTarget(
+            contributor,
+            post.id,
+            target.id
+          );
+
+          assert.strictEqual(dropped.post.status._tag, "awaitingApproval");
+
+          // One request still, the contributor's, for what the post says
+          // now: a page read before is looked at again.
+          const after = yield* shown(post);
+
+          assert.strictEqual(after.requestId, before.requestId);
+          assert.notStrictEqual(after.subjectHash, before.subjectHash);
+          assert.lengthOf(yield* requests.ofPost(workspaceId, post.id), 1);
+
+          // Its reviewers are shown the channels it goes to, as the
+          // approval covers them.
+          assert.deepStrictEqual(
+            (yield* review.thread(editor, post.id)).post.channels.map(
+              (shownOn) => shownOn.channelId
+            ),
+            [channelId]
+          );
+
+          const stale = yield* Effect.flip(
+            review.approve(editor, post.id, before)
+          );
+
+          assert.strictEqual(stale._tag, "ApprovalChanged");
+
+          // Approved as it now is, it is scheduled on the channel it kept.
+          const { late } = yield* review.approve(editor, post.id, after);
+
+          assert.isFalse(late);
+          assert.strictEqual(yield* statusOf(post.id), "scheduled");
+
+          yield* scheduling.cancel(editor, post.id);
+        })
+      ),
+    timeout
+  );
+});
+
 describe("a workspace where every post waits", () => {
   it.effect(
     "holds an editor's post too, which an editor may approve",

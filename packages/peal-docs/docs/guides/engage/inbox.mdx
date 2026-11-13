@@ -1,0 +1,283 @@
+---
+title: Inbox
+description: "Read and answer the comments under your published posts, and see what each platform lets Peal read."
+sidebar:
+  icon: inbox
+---
+
+The inbox gathers the comments people leave under the posts Peal published for a workspace. Members answer them in public, as the connected account. Open a workspace from **Workspaces**, then **Inbox**.
+
+The inbox reads comments on posts published from Peal:
+
+- on Mastodon and Bluesky;
+- on Facebook Pages, Instagram, YouTube and LinkedIn company pages, where whoever runs the server turned them on ([Facebook Pages and Instagram](#meta), [YouTube](#youtube), [LinkedIn pages](#linkedin)).
+
+Direct messages, mentions and reviews are not collected. Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
+
+## What Peal collects [#collected]
+
+For each post that went live on a channel, Peal reads the public replies to it on the platform. Two kinds of post are left out:
+
+- [stories](/guides/posts#formats), which disappear after 24 hours and whose replies Peal does not read;
+- Facebook reels, whose comments Peal does not read yet.
+
+| Kept                                                                      | Where it comes from                            |
+| ------------------------------------------------------------------------- | ---------------------------------------------- |
+| The comment's text, as plain text                                         | The platform, as anyone can read it            |
+| When it was written, and which comment it answers                         | The platform                                   |
+| Its author's public handle and display name, and their id on the platform | The platform, as it shows them to the account  |
+| A link to the comment on the platform                                     | The platform                                   |
+| Whether the workspace answered it, hid it or liked it                     | Peal, and the platform for what was done there |
+| The replies members sent from Peal, who wrote each, and how sending ended | The members of the workspace                   |
+
+For a post of several parts, a [thread](/guides/posts#threads), Peal reads the comments under every part and gathers them in the post's one thread in the inbox. The parts themselves, which the account wrote, are not comments. A thread's comments are read once all its parts are live. When it stopped midway, they are read from the moment **Post again**, or what you found on the platform, completes it.
+
+Peal reads nothing else of the people who comment: no picture, no profile, no follower count, no other post of theirs, no private message. A reply only its author's followers or the people it mentions can see is a private message, and is not collected.
+
+<Callout type="info" title="Other people's words">
+  Peal uses comments only to show them to the workspace's members and let them
+  answer. No profile of their authors, no automation and no writing assistant
+  reads them, and they are never used to train anything. A workspace's
+  [webhooks](/developers/webhooks/events/media-comments#comment-received) and
+  notices say that comments arrived, with ids and counts, never their text or
+  their authors.
+</Callout>
+
+## When comments are read [#schedule]
+
+Peal looks for new comments every ten minutes. How often a post's comments are read depends on its age:
+
+| Post's age                                     | Its comments are read |
+| ---------------------------------------------- | --------------------- |
+| First day, when most comments arrive           | At every run          |
+| First week                                     | Every hour            |
+| Until the post is {{keep-inbox-window-en}} old | Every six hours       |
+| After that                                     | No longer             |
+
+Whoever runs the server can set another window, of 90 days at most ([`PEAL_ENGAGEMENT_WINDOW_DAYS`](/self-hosting/environment-variables)).
+
+Readings take turns with the channel's publishing: Peal makes one call at a time per account.
+
+- When a platform asks Peal to slow down, or does not answer, that channel's threads wait half an hour.
+- A channel that is turned off or needs reconnecting is passed over until it works again.
+- A disconnected channel's posts are no longer read.
+
+When a comment was edited, Peal shows its new text. When a platform no longer shows a comment, Peal erases its text and its author at the next reading, and keeps only that there was a comment. When the post itself is gone from the platform, every comment under it is erased the same way.
+
+## How long comments are kept [#retention]
+
+A thread (a post's comments on one channel, and the replies sent to them) is deleted {{keep-inbox-en}} after Peal stopped reading the post's comments. With the usual window, that is 60 days after the post went live. The deletion runs once a day.
+
+Some platforms let Peal keep what they give for less time unless Peal reads it again:
+
+- On [YouTube](#youtube), a post's comments, their text and their author, are erased 29 days after the last reading that found all of them.
+- On [LinkedIn](#linkedin), they are erased a day after it.
+
+They are erased as when the platform no longer shows them, and the inbox says "No longer kept". A reading that stops short (a post with more than 500 comments, comments turned off, a day's quota spent) does not count: the comments it did not find are erased at that date. A later reading that finds a comment shows it again. Peal checks this every hour. Disconnecting a channel of such a platform erases its comments at once.
+
+Deleting a workspace deletes its threads at once. When a member closes their account, the replies they sent stay with the workspace, without their name. Their [data export](/guides/workspace) lists the replies they sent, never the comments they answered, which are someone else's.
+
+If you commented under a post published with Peal and want your comment removed from Peal, delete it on the platform: it leaves Peal at the next reading. You can also write to the account that published the post, or to whoever runs the server.
+
+## Answering [#replying]
+
+A reply is a public message from the connected account: everyone who sees the post sees it. Owners, admins and editors may answer. Contributors and viewers read the inbox and answer nothing. On Peal Cloud, each reply sent counts against its billing account's monthly allowance of messages ([Usage meters](/guides/workspace/billing#meters)).
+
+When you send a reply, Peal:
+
+1. checks it against the platform's length, counted as the platform counts (on Mastodon, the mention of the person you answer is put first, as Mastodon needs it to notify them, and counts);
+2. records it before calling the platform;
+3. sends it once.
+
+The thread shows where each reply is:
+
+| Status        | What it means                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------- |
+| `sending`     | Recorded, and on its way.                                                                                 |
+| `sent`        | On the platform, with its link.                                                                           |
+| `failed`      | Nothing went out, and why. Write it again when the cause is gone.                                         |
+| `unconfirmed` | Peal cannot tell whether it went out: the platform did not answer, or the server stopped during the call. |
+| `withdrawn`   | Sent, then deleted from the platform by a member.                                                         |
+
+<Callout type="warning" title="Settle an unconfirmed reply yourself">
+  Peal never sends an unconfirmed reply again, as that could post the same
+  answer twice. Look at the post on the platform, then tell Peal what you found:
+  **It is there**, or **It did not go out**. Until then, no other reply can be
+  written to that comment.
+</Callout>
+
+A reply still on its way an hour after you wrote it becomes unconfirmed too. Peal stops its sending for good at that moment, so nothing goes out for it afterwards, whatever you then find on the platform.
+
+One comment has one reply on its way at a time: of two requests to answer it sent together, one is refused. Through the API, an `Idempotency-Key` header makes a request safe to send again after a lost answer ([Idempotency](/developers/conventions/idempotency#idempotency)).
+
+You can also:
+
+- take a sent reply back: Peal deletes it from the platform. People who already saw it may have kept it.
+- mark a comment as answered when it needs no reply. A comment the account answered on the platform itself is marked answered at the next reading.
+
+## What each platform allows [#abilities]
+
+| Ability                                | Mastodon                                      | Bluesky                                       | Facebook Pages ([where on](#meta)) | Instagram ([where on](#meta))   | YouTube ([where on](#youtube))        | LinkedIn pages ([where on](#linkedin))      |
+| -------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---------------------------------- | ------------------------------- | ------------------------------------- | ------------------------------------------- |
+| Read the comments under a post         | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   | Yes                                         |
+| Reply to a comment                     | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   | Yes                                         |
+| Take a reply back                      | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   | Yes                                         |
+| Like a comment                         | Not yet: Peal does not ask for the permission | Not yet: Peal does not ask for the permission | Not yet                            | No: Instagram's API has no like | No: YouTube's API has no like         | Not yet                                     |
+| Hide someone's comment under your post | No: Mastodon offers it to no account          | Not yet: Peal does not ask for the permission | Yes                                | Yes                             | Yes: it is rejected                   | No: the pages API has no hide               |
+| Delete someone else's comment          | No: Mastodon offers it to no account          | No: nobody deletes another account's post     | Not yet                            | Not yet                         | No: only its author deletes a comment | No: nobody deletes another member's comment |
+
+`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel:
+
+- `available`;
+- `reconnect`: the account was connected before Peal asked for what the ability takes. [Connect the account again](/guides/channels), without disconnecting it, and the channel stays with its history;
+- `unsupported`.
+
+On Mastodon, replies to public and unlisted posts are read. Peal reads them with the account's access when the account allowed it, which shows every reply. Without it, Peal sees the first 60, twenty replies deep at most. On Bluesky, Peal reads the thread from Bluesky's public service, without the account's session.
+
+A thread keeps its first 500 comments. Under a post with thousands of replies, Peal reads as far as that and no further: the comments past them stay on the platform, and are not shown here.
+
+### Facebook Pages and Instagram [#meta]
+
+Peal reads the comments under Facebook Pages' and Instagram accounts' posts only where whoever runs the server turned them on ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables#core)). The permissions they take are granted by Meta's App Review, which an app's own accounts do not need, and anyone else's do.
+
+| Platform       | What the account allows at sign-in                                                                              | What the server's operator sets                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Facebook Pages | `pages_read_user_content` to read the comments, `pages_manage_engagement` to answer, hide and take a reply back | `facebook` in `PEAL_INBOX_PLATFORMS`, with Meta's app (`META_APP_ID`, `META_APP_SECRET`) |
+| Instagram      | `instagram_manage_comments` through a Page, or `instagram_business_manage_comments` through Instagram Login     | `instagram` in `PEAL_INBOX_PLATFORMS`, with either of Instagram's ways in                |
+
+The sign-in asks for these permissions where the server reads the platform, and a member may decline them: the account still connects and posts, with no inbox. An account connected before shows `reconnect` on what it lacks: [connect it again](/guides/channels), without disconnecting it.
+
+Meta grants them at once for accounts its app's own people manage (Standard Access). For any other account, it grants them only once the app passed App Review, with its business verified (Advanced Access). [Self-hosting](/self-hosting/platforms#meta) says how to set the app up.
+
+On these platforms:
+
+- Facebook shows the name of the person or Page who commented, and no handle. It may not show who wrote a comment at all, which the inbox then calls "Someone". It does not say whether a comment is hidden: Peal shows what was done from Peal.
+- Instagram answers only top-level comments: a reply to a reply goes under the comment it answers. It takes no reply to a hidden comment.
+- Instagram puts a reply to a reply under the top-level comment, so the next reading shows that comment as answered too.
+- Meta takes no key that would make a reply safe to send twice. When a reply's outcome is unknown, Peal looks for it among the replies under the comment. It finds it only when exactly one by the account, since you wrote it, has its text; otherwise it stays `unconfirmed` for you to settle. It is never sent again.
+- Peal reads comments every ten minutes, as on the other platforms, and stops for the run once Meta says half the account's calls are used, so that publishing keeps the rest. Meta's notifications of new comments are not used yet.
+- Only posts published after the platform was turned on are read: those published before keep no inbox.
+
+### YouTube [#youtube]
+
+Peal reads the comments under a YouTube channel's videos, Shorts included, only where whoever runs the server turned YouTube on ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables#core)). The scope they take, `youtube.force-ssl`, is one Google verifies before an app may ask anyone but its own testers for it.
+
+| What the account allows at sign-in                                           | What the server's operator sets                                                                           |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `youtube.force-ssl` to read the comments, answer, hide and take a reply back | `youtube` in `PEAL_INBOX_PLATFORMS`, with YouTube's client (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`) |
+
+The sign-in asks for this scope where the server reads YouTube, and Google's consent page lets the owner untick it: the channel still connects and posts, with no inbox. A channel connected before shows `reconnect`: [connect it again](/guides/channels), without disconnecting it.
+
+On YouTube:
+
+- YouTube has one level of replies: a reply to a reply goes under the top-level comment.
+- A comment's author is shown by the name they display, which is often their handle. There is no link to a comment.
+- YouTube takes no key that would make a reply safe to send twice. When a reply's outcome is unknown, Peal looks for it among the replies under the comment, as on [Meta's platforms](#meta), and never sends it again.
+- YouTube's policies let Peal keep a comment 30 days without reading it again. Peal erases a post's comments 29 days after the last reading that found all of them ([retention](#retention)), and erases them all at once when the channel is disconnected.
+- Only videos published after YouTube was turned on are read: those published before keep no inbox.
+
+Hiding a comment rejects it. It and the replies under it are no longer shown on YouTube, and Peal never bans its author. The next reading no longer finds it, since YouTube's API lists no rejected comment, and then erases it as no longer on the platform. Until then, showing it again asks YouTube to publish it, which YouTube may refuse. After that, show it again from YouTube Studio, and Peal reads it once YouTube shows it.
+
+<Accordion>
+  <AccordionItem title="YouTube's daily quota">
+    The project's daily quota of 10,000 units resets at midnight Pacific Time.
+    Peal splits it in three by default:
+
+    | Share                     | Units          | Setting                                                  |
+    | ------------------------- | -------------- | -------------------------------------------------------- |
+    | Comment reads             | 3,000 at most  | `YOUTUBE_DAILY_COMMENT_UNITS`                            |
+    | Custom thumbnails         | About 4,000    | `YOUTUBE_DAILY_THUMBNAILS` (80, at about 50 units each)  |
+    | What Peal does not count  | 3,000 left     | Replies, hides and withdrawals (50 units each), publishing's status reads and lookups, and analytics |
+
+    Reading comments spends one unit a page. Past its share, or once YouTube
+    says the quota is spent, comments wait for the next day. Replies, hides and
+    withdrawals are never held back for the reading's share.
+
+  </AccordionItem>
+</Accordion>
+
+### LinkedIn pages [#linkedin]
+
+Peal reads the comments under a LinkedIn company page's posts only where whoever runs the server turned LinkedIn on ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables#core)), with the pages app (`LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`). A member's own profile is not read: LinkedIn closes the permission that reads a member's posts to almost every app.
+
+| What the page's administrator allows at sign-in | What it does                              |
+| ----------------------------------------------- | ----------------------------------------- |
+| `r_organization_social_feed`                    | Read the comments under the page's posts  |
+| `w_organization_social_feed`                    | Answer as the page, and take a reply back |
+
+The pages' sign-in asks for both where the server reads LinkedIn. A page connected before shows `reconnect`: [connect it again](/guides/channels), without disconnecting it.
+
+<Callout type="warning">
+  LinkedIn grants all that is asked or nothing. An app that does not hold these
+  scopes yet makes LinkedIn refuse the whole sign-in, so turn LinkedIn on only
+  once the app's products list them.
+</Callout>
+
+On LinkedIn:
+
+- Peal keeps who commented by their LinkedIn identifier and fetches no name. LinkedIn lets an app keep another member's profile for a day at most, so the inbox shows "A LinkedIn member", or "A LinkedIn page" for a page.
+- LinkedIn lets an app keep comments for 48 hours, and profile data for a day. Peal erases a post's comments a day after the last reading that found all of them ([retention](#retention)). While a post is read, it is read at least every six hours, so its comments stay shown.
+- A comment has nested comments one level deep: an answer to a nested comment goes under the comment it answers.
+- Nothing is hidden or liked from Peal.
+- LinkedIn takes no key that would make a reply safe to send twice. When a reply's outcome is unknown, Peal looks for it among the comments under the one it answered, as on [Meta's platforms](#meta), and never sends it again.
+- Only posts published after LinkedIn was turned on are read.
+
+<Accordion>
+  <AccordionItem title="LinkedIn's daily calls">
+    LinkedIn's Development tier allows 500 calls a day for the whole app and 100
+    for each member, posting included. Reading comments takes at most 200 of the
+    app's and 40 of each member's by default (`LINKEDIN_DAILY_COMMENT_CALLS`,
+    `LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER`), counted by UTC day. It then
+    stops until the next day, while posting and replies go on.
+
+    - A member is the administrator who connected the page: every page they connected shares their 40.
+    - Peal keeps that member's LinkedIn identifier with the page only while it reads LinkedIn comments, and forgets it within a day once they are turned off. It counts the calls under a keyed digest of it, never the identifier.
+    - A page connected before Peal kept who connected it, or while LinkedIn comments were off, is counted alone until it is reconnected.
+    - Once a day's share is spent, the posts not read whole that day lose their comments' text a day after their last complete reading ([retention](#retention)), until a reading finds them again. On the Development tier, the inbox may show few comments for much of the day.
+    - The Standard tier has no such limit: raise both there.
+    - A list of comments that LinkedIn gives without its total and that fills its pages (ten comments or more) takes one call more, to find its end.
+
+  </AccordionItem>
+</Accordion>
+
+### Other platforms [#other-platforms]
+
+Peal reads no comments on the other platforms yet. Each needs a permission its platform grants after a review:
+
+| Platform                           | What reading and answering comments needs                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Threads                            | `threads_read_replies` and `threads_manage_replies`, granted by Meta's App Review                         |
+| X                                  | Paid access to X's API for reading replies                                                                |
+| TikTok                             | Comments are offered to business accounts through a separate TikTok product, which Peal does not use      |
+| Pinterest, Google Business Profile | Not planned: Pinterest's API has no comments, and a Business Profile has reviews, which are not collected |
+
+If you run your own server, the same reviews apply to your own platform apps.
+
+## With the API, the command line and AI assistants [#api]
+
+| Action                                       | Permission         | Who has it                 |
+| -------------------------------------------- | ------------------ | -------------------------- |
+| Read                                         | `engagement:read`  | Every role                 |
+| Answer, mark, moderate and take a reply back | `engagement:reply` | Owners, admins and editors |
+
+An API key carries what its creator gave it. An application connected through OAuth needs the scope `workspace:publish` to do anything but read, as for publishing a post. Staff who act as a member to help them neither read the inbox nor answer.
+
+| Request                                                                    | What it does                                                                                                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Lists the threads that have comments, those waiting for an answer first. `channelId`, `postId` and `unanswered=true` narrow the list; `cursor` and `limit` page it. |
+| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | A thread whole: comments, replies, and what the channel can do.                                                                                                     |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Answers a comment. Answers `202` with the reply, `sending`.                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marks a comment answered, or waiting again.                                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Hides, shows, likes, unlikes or deletes, where the platform allows.                                                                                                 |
+| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Records what someone found for an unconfirmed reply.                                                                                                                |
+| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Takes a sent reply back.                                                                                                                                            |
+
+The command line has the same under `peal inbox` (see [Command line](/developers/cli)). AI assistants connected through [MCP](/developers/mcp) have `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` and `moderate_comment`.
+
+<Callout type="warning" title="Comments can carry instructions">
+  A comment is text written by someone outside your workspace, and may be
+  written to steer an AI assistant ("ignore your instructions and…"). Peal's
+  tools say so to the assistant, and no tool acts because a comment asks. Give
+  an assistant the scope to publish only if you want it to be able to answer in
+  your name.
+</Callout>

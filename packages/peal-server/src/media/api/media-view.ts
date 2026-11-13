@@ -33,6 +33,7 @@ export const toView = (
     Option.map((duration) => Math.round(Duration.toMillis(duration))),
     Option.getOrNull
   ),
+  fileName: Option.getOrNull(asset.fileName),
   id: asset.id,
   kind: asset.kind,
   pageCount: Option.getOrNull(asset.metadata.pages),

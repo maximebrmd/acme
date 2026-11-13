@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct UsageTotals {
+    #[serde(rename = "billableAccountDays")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub billable_account_days: Option<i64>,
     #[serde(rename = "byPlatform")]
     #[serde(default)]
     pub by_platform: Vec<PlatformPosts>,
@@ -28,6 +31,7 @@ impl UsageTotals {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct UsageTotalsBuilder {
+    billable_account_days: Option<i64>,
     by_platform: Option<Vec<PlatformPosts>>,
     channel_days: Option<i64>,
     days_counted: Option<i64>,
@@ -36,6 +40,11 @@ pub struct UsageTotalsBuilder {
 }
 
 impl UsageTotalsBuilder {
+    pub fn billable_account_days(mut self, value: i64) -> Self {
+        self.billable_account_days = Some(value);
+        self
+    }
+
     pub fn by_platform(mut self, value: Vec<PlatformPosts>) -> Self {
         self.by_platform = Some(value);
         self
@@ -70,6 +79,7 @@ impl UsageTotalsBuilder {
     /// - [`published_posts`](UsageTotalsBuilder::published_posts)
     pub fn build(self) -> Result<UsageTotals, BuildError> {
         Ok(UsageTotals {
+            billable_account_days: self.billable_account_days,
             by_platform: self
                 .by_platform
                 .ok_or_else(|| BuildError::missing_field("by_platform"))?,
