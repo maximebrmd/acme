@@ -57,7 +57,7 @@ const overPlan = new BadRequest({ code: ownRefusalCodes.planLimit });
 // words of its own (no payment method, a payment failing, a plan from
 // before per-account pricing, the ceiling or the cap before a first paid
 // invoice).
-const meterCodes = {
+export const meterCodes = {
   ceilingReached: ownRefusalCodes.xCeilingReached,
   notEnabled: ownRefusalCodes.paymentMethodRequired,
   paymentFailed: ownRefusalCodes.paymentFailed,

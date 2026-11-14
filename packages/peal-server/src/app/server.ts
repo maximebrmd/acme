@@ -21,6 +21,7 @@ import {
   analyticsCollection,
   AnalyticsLive,
   AnalyticsRecordsLive,
+  PostLikesLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
 import { ApiAnswersLive } from "#app/answers.ts";
@@ -333,6 +334,8 @@ const PublishingContextLive = PublishingLive.pipe(
       MediaContextLive,
       ReviewGateContextLive,
       AnalyticsRecordsLive,
+      // The likes follow-up rules wait for, as analytics read them.
+      PostLikesLive,
       EngagementRecordsLive,
       PostBoostsLive,
       ShortLinkSettingsLive

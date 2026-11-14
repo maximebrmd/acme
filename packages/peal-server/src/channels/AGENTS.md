@@ -99,7 +99,8 @@
 - Bluesky's sign-in asks for granular scopes (`blueskyScope`, which the
   client metadata documents serve): posts, blobs, two rpc scopes, and the
   two gates' `repo:` scopes (`blueskyGateScopes`,
-  `#shared/domain/bluesky-scopes.ts`). A scope added there reaches only
+  `#shared/domain/bluesky-scopes.ts`), and the repost's
+  (`blueskyRepostScope`, for publishing's follow-up rules). A scope added there reaches only
   accounts connected after: never force a reconnect; publishing reads each
   channel's stored scopes (`ChannelGrants`, backed by
   `ChannelAccess.account`) and refuses, and describes, what one lacks.

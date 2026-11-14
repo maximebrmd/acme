@@ -104,4 +104,10 @@ export const PlatformMetricsReaderLive = PlatformReaders.pipe(
 // A workspace's analytics as a whole, alone: for the channels context,
 // which tells it of a channel gone or back in the transaction that deletes
 // or saves the channel. Needs `Drizzle` and `SqlClient` only.
+/**
+ * The likes analytics last read of published targets (PostLikes), for
+ * publishing's follow-up rules. Needs the database.
+ */
+export { SqlPostLikes as PostLikesLive } from "#analytics/infrastructure/sql-post-likes.ts";
+
 export { DrizzleAnalyticsRecords as AnalyticsRecordsLive } from "#analytics/infrastructure/drizzle-analytics-records.ts";

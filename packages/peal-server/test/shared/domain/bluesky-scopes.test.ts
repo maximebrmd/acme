@@ -3,8 +3,10 @@ import { describe, expect, it } from "@effect/vitest";
 import { blueskyScope } from "#channels/infrastructure/platforms/bluesky/bluesky-client.ts";
 import {
   blueskyGateScopes,
+  blueskyRepostScope,
   createsRecords,
   postgateCollection,
+  repostCollection,
   threadgateCollection,
 } from "#shared/domain/bluesky-scopes.ts";
 
@@ -14,6 +16,18 @@ describe("a Bluesky account's scopes", () => {
   it("let Peal write a post's gates once granted, as Peal now asks", () => {
     expect(createsRecords(blueskyScope.split(" "), gates)).toBeTruthy();
     expect(createsRecords([...blueskyGateScopes], gates)).toBeTruthy();
+  });
+
+  it("let Peal repost the account's own posts once granted, as Peal now asks", () => {
+    expect(
+      createsRecords(blueskyScope.split(" "), [repostCollection])
+    ).toBeTruthy();
+    expect(
+      createsRecords([blueskyRepostScope], [repostCollection])
+    ).toBeTruthy();
+    expect(
+      createsRecords([...blueskyGateScopes], [repostCollection])
+    ).toBeFalsy();
   });
 
   it("do not, on a channel connected before Peal asked for them", () => {

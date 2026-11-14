@@ -12,19 +12,24 @@ import type {
 } from "@atproto/oauth-client-node";
 import { Option } from "effect";
 
-import { blueskyGateScopes } from "#shared/domain/bluesky-scopes.ts";
+import {
+  blueskyGateScopes,
+  blueskyRepostScope,
+} from "#shared/domain/bluesky-scopes.ts";
 import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 
 /**
  * What Peal asks Bluesky accounts for: to create and delete posts, to
  * create the gates that say who may reply to a thread and whether a post
- * may be quoted (`blueskyGateScopes`), upload images and videos, and check
+ * may be quoted (`blueskyGateScopes`), to repost the account's own posts
+ * (`blueskyRepostScope`, for follow-up rules), upload images and videos, and check
  * video upload limits. `atproto` is required.
  */
 export const blueskyScope = [
   "atproto",
   "repo:app.bsky.feed.post?action=create&action=delete",
   ...blueskyGateScopes,
+  blueskyRepostScope,
   "blob:image/*",
   "blob:video/*",
   "rpc:com.atproto.repo.uploadBlob?aud=*",

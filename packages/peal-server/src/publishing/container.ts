@@ -13,6 +13,11 @@ import { FeedNotices } from "#publishing/application/feed-notices.ts";
 import { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import { FeedSource } from "#publishing/application/feed-source.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
+import { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
+import { FollowUpCounts } from "#publishing/application/follow-up-counts.ts";
+import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
+import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
+import { FollowUps } from "#publishing/application/follow-ups.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
@@ -46,17 +51,21 @@ import { Queues } from "#publishing/application/queues.ts";
 import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import { Recycling } from "#publishing/application/recycling.ts";
+import { RoutedFollowUpPublisher } from "#publishing/application/routed-follow-up-publisher.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import { SendFollowUp } from "#publishing/application/send-follow-up.ts";
 import type { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { AdsLivePostHolds } from "#publishing/infrastructure/ads-live-post-holds.ts";
 import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
+import { AnalyticsFollowUpCounts } from "#publishing/infrastructure/analytics-follow-up-counts.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import { ChannelAccessGrants } from "#publishing/infrastructure/channel-access-grants.ts";
 import {
   ChannelGateLive,
+  GatedFollowUpPublisher,
   GatedLivePostClients,
   GatedPlatformPublisher,
   UnreadComments,
@@ -64,6 +73,7 @@ import {
 } from "#publishing/infrastructure/channel-gate.ts";
 import {
   FeedsCron,
+  FollowUpsCron,
   IdempotencyRetentionCron,
   QuotaRetentionCron,
   RecyclingCron,
@@ -73,6 +83,7 @@ import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-chann
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleFeedReads } from "#publishing/infrastructure/drizzle-feed-reads.ts";
 import { DrizzleFeedStore } from "#publishing/infrastructure/drizzle-feed-store.ts";
+import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
@@ -89,6 +100,7 @@ import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { HttpFeedSource } from "#publishing/infrastructure/feeds/http-feed-source.ts";
+import { armedOutcomes } from "#publishing/infrastructure/follow-up-outcomes.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryFeedPictures } from "#publishing/infrastructure/library-feed-pictures.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
@@ -106,6 +118,7 @@ import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allo
 import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
+import { PlatformRepostsLive } from "#publishing/infrastructure/platforms/platform-reposts-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
 import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ShortLinksShortLinkDefaults } from "#publishing/infrastructure/shortlinks-short-link-defaults.ts";
@@ -116,12 +129,14 @@ import {
   webhookOutcomes,
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
+import { WorkflowFollowUpJobs } from "#publishing/infrastructure/workflow-follow-up-jobs.ts";
 import { WorkflowLivePostJobs } from "#publishing/infrastructure/workflow-live-post-jobs.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { ChangeLivePostV1Live } from "#publishing/infrastructure/workflows/change-live-post.ts";
 import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { SendFollowUpV1Live } from "#publishing/infrastructure/workflows/send-follow-up.ts";
 import { WorkspaceRecyclingActors } from "#publishing/infrastructure/workspace-recycling-actors.ts";
 import { XThreadsLive } from "#publishing/infrastructure/x-threads.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -140,6 +155,19 @@ type RecyclingServices = RecyclingActors | RecyclingNotices;
 // What feeds need beside publishing's own adapters: what reads them, who
 // hears that one stopped, and what brings an item's picture in.
 type FeedServices = FeedNotices | FeedPictures | FeedSource;
+
+// What follow-up rules need beside publishing's own adapters: what each
+// channel can carry, and the likes analytics counted.
+type FollowUpServices = FollowUpChannels | FollowUpCounts;
+
+/**
+ * For tests that count nothing: every channel carries what its platform
+ * supports, and no post has likes.
+ */
+export const FollowUpsUnused = Layer.merge(
+  FollowUpChannels.supported,
+  FollowUpCounts.none
+);
 
 /**
  * For tests that read no feed: every host is out of reach, nobody hears
@@ -171,7 +199,7 @@ export const LivePostsUnused = Layer.mergeAll(
   PlatformCredentials.unusable
 );
 
-const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
+const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7, E8, R8>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | ShortLinkDefaults | WorkspaceChannels,
     E,
@@ -182,9 +210,11 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
   events: Layer.Layer<PostEvents | H, never, R4>,
   live: Layer.Layer<LiveServices, never, R5>,
   recycling: Layer.Layer<RecyclingServices, never, R6>,
-  feeds: Layer.Layer<FeedServices, E7, R7>
+  feeds: Layer.Layer<FeedServices, E7, R7>,
+  followUps: Layer.Layer<FollowUpServices, E8, R8>
 ) =>
   Layer.mergeAll(
+    FollowUpRules.layer.pipe(Layer.provideMerge(FollowUps.layer)),
     Layer.mergeAll(PostBatches.layer, Recycling.layer, Feeds.layer).pipe(
       Layer.provideMerge(
         Layer.mergeAll(PostChecks.layer, PostScheduling.layer, PostDrafts.layer)
@@ -213,6 +243,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
         DrizzleContentFingerprints,
         DrizzleFeedReads,
         DrizzleFeedStore,
+        DrizzleFollowUpStore,
         DrizzleIdempotencyKeys,
         DrizzleLivePostChangeStore,
         DrizzlePostOversight,
@@ -228,9 +259,11 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
         LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
         WorkflowLivePostJobs,
+        WorkflowFollowUpJobs,
         live,
         recycling,
         feeds,
+        followUps,
         references,
         accounts,
         origins,
@@ -271,6 +304,7 @@ export const publishingWith = <
   R5 = never,
   R6 = never,
   R7 = never,
+  R8 = never,
 >(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | ShortLinkDefaults | WorkspaceChannels,
@@ -282,7 +316,8 @@ export const publishingWith = <
   events: Layer.Layer<PostEvents, never, R4> = PostEvents.none,
   live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
   recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused,
-  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused
+  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused,
+  followUps: Layer.Layer<FollowUpServices, never, R8> = FollowUpsUnused
 ) =>
   publishingOver(
     references,
@@ -291,7 +326,8 @@ export const publishingWith = <
     events,
     live,
     recycling,
-    feeds
+    feeds,
+    followUps
   ).pipe(
     Layer.provideMerge(ApprovalGate.open),
     // No platform's posts are billed to warn of here.
@@ -315,6 +351,7 @@ export const publishingBehind = <
   R5 = never,
   R6 = never,
   R7 = never,
+  R8 = never,
 >(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
@@ -325,7 +362,8 @@ export const publishingBehind = <
   events: Layer.Layer<PostEvents | H, never, R4>,
   live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
   recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused,
-  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused
+  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused,
+  followUps: Layer.Layer<FollowUpServices, never, R8> = FollowUpsUnused
 ) =>
   publishingOver(
     references,
@@ -334,7 +372,8 @@ export const publishingBehind = <
     events,
     live,
     recycling,
-    feeds
+    feeds,
+    followUps
   ).pipe(Layer.provideMerge(gate), Layer.provide(PostMeter.unmetered));
 
 /**
@@ -360,6 +399,37 @@ export const publishingBehind = <
 const PacedLookupsLive = pacedLookups(
   PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
 ).pipe(Layer.provide(DrizzlePlatformQuota));
+
+// What follow-up rules read on the server: what a channel can carry, from
+// its grants, the operator's threads and analytics' coverage, and the
+// likes analytics counted (PostLikes, from the composition root).
+const FollowUpServicesLive = Layer.merge(
+  FollowUpChannels.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        ChannelAccessGrants,
+        AnalyticsCountedPlatforms,
+        XThreadsLive
+      )
+    )
+  ),
+  AnalyticsFollowUpCounts
+);
+
+// The follow-ups that arm a target as it is published, beside the use
+// cases' own: the same adapters, for the outcomes publishing tells.
+const ArmingFollowUpsLive = FollowUps.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleFollowUpStore,
+      DrizzlePostRepository,
+      ChannelAccessCredentials,
+      WorkspaceRecyclingActors,
+      WorkflowFollowUpJobs,
+      FollowUpServicesLive
+    )
+  )
+);
 
 export const PublishingLive = publishingOver(
   Layer.mergeAll(
@@ -391,7 +461,10 @@ export const PublishingLive = publishingOver(
     ),
     NotifiedFeedNotices,
     LibraryFeedPictures
-  )
+  ),
+  // Follow-up rules: what a channel can carry, and the likes analytics
+  // counted.
+  FollowUpServicesLive
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.
   Layer.provide(XThreadsLive),
@@ -422,9 +495,13 @@ export const PublishingLive = publishingOver(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
-      Layer.provide(DrizzlePostRepository)
-    )
+    webhookOutcomes(
+      meteredOutcomes(
+        armedOutcomes(NotifiedPublicationOutcomes).pipe(
+          Layer.provide(ArmingFollowUpsLive)
+        )
+      )
+    ).pipe(Layer.provide(DrizzlePostRepository))
   ),
   // Scheduling warns of X's posts the billing account cannot pay for.
   Layer.provide(MeteredXPostsLive)
@@ -506,11 +583,14 @@ export const publishingWorkers = <
   R3 = never,
   E4 = never,
   R4 = never,
+  E5 = never,
+  R5 = never,
 >(
   platforms: Layer.Layer<PlatformPublisher, E, R>,
   readers: GateReaders<E2, R2> = UnreadMetrics,
   engagement: GateEngagement<E3, R3> = UnreadComments,
-  live: Layer.Layer<LivePostClients, E4, R4> = LivePostClients.none
+  live: Layer.Layer<LivePostClients, E4, R4> = LivePostClients.none,
+  followUps: Layer.Layer<FollowUpPublisher, E5, R5> = FollowUpPublisher.none
 ) =>
   Layer.mergeAll(
     PublishPostV1Live,
@@ -520,8 +600,16 @@ export const publishingWorkers = <
     Layer.provide(GatedPlatformPublisher),
     Layer.merge(ChangeLivePostV1Live.pipe(Layer.provide(GatedLivePostClients))),
     Layer.merge(
+      SendFollowUpV1Live.pipe(
+        Layer.provide(SendFollowUp.layer),
+        Layer.provide(GatedFollowUpPublisher)
+      )
+    ),
+    Layer.merge(
       ChannelGateLive.pipe(
-        Layer.provide(Layer.mergeAll(platforms, readers, engagement, live))
+        Layer.provide(
+          Layer.mergeAll(platforms, readers, engagement, live, followUps)
+        )
       )
     )
   );
@@ -565,6 +653,37 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
 );
 
 /**
+ * What the gates carry follow-ups out with: comments through the same
+ * platform clients a post's parts go through, reposts through the
+ * platforms' repost clients, X's comments claimed on billing's meters, as
+ * PlatformsLive's are.
+ */
+export const FollowUpPlatformsLive = RoutedFollowUpPublisher.pipe(
+  Layer.provide(XThreadsLive),
+  Layer.provide(MeteredXPostsLive),
+  Layer.provide(Layer.merge(PlatformClientsLive, PlatformRepostsLive)),
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelAccessCredentials,
+      limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
+      DrizzlePublicationProgress,
+      DrizzleUploadSessions,
+      DrizzlePlatformQuota,
+      DrizzleRecordedPosts,
+      DrizzleFollowUpStore
+    )
+  ),
+  Layer.provide(OutboundGuard.layer),
+  Layer.provide(
+    Layer.mergeAll(
+      FetchHttpClient.layer,
+      Mac.layerWebCrypto,
+      Digest.layerWebCrypto
+    ).pipe(Layer.provideMerge(SecureRandom.layerWebCrypto))
+  )
+);
+
+/**
  * The workers as the server runs them, publishing to the platforms, with
  * the readers analytics' counts come from (MetricsReader), which the
  * composition root provides.
@@ -581,7 +700,8 @@ export const publishingWorkersReading = <E, R, E2, R2>(
     // edit, with the channels' tokens and the edits' texts.
     LivePostClientsLive.pipe(
       Layer.provide(Layer.merge(ChannelAccessCredentials, LivePostEdits.layer))
-    )
+    ),
+    FollowUpPlatformsLive
   );
 
 /**
@@ -617,6 +737,7 @@ export {
 export const PublishingCronsLive = Layer.mergeAll(
   IdempotencyRetentionCron,
   RecyclingCron,
+  FollowUpsCron,
   FeedsCron,
   QuotaRetentionCron.pipe(Layer.provide(DrizzlePlatformQuota))
 );

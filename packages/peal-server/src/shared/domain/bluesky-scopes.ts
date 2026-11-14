@@ -26,6 +26,16 @@ export const blueskyGateScopes = [
   `repo:${postgateCollection}?action=create`,
 ] as const;
 
+/** The collection of a repost, which a follow-up rule makes. */
+export const repostCollection = "app.bsky.feed.repost";
+
+/**
+ * The scope Peal asks for to repost the account's own posts, for
+ * publishing's follow-up rules: channels connected before lack it, and
+ * publishing reposts only where it was granted (`createsRecords`).
+ */
+export const blueskyRepostScope = `repo:${repostCollection}?action=create`;
+
 const genericScope = "transition:generic";
 
 const repoScope = /^repo(?::(?<positional>[^?]+))?(?:\?(?<query>.*))?$/u;

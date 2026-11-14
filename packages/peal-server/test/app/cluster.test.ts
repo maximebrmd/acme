@@ -45,6 +45,7 @@ import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { MediaSweeps } from "#media/application/media-sweeps.ts";
 import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
+import { FollowUps } from "#publishing/application/follow-ups.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
@@ -407,6 +408,24 @@ const PublishingCronWorkTest = Layer.mergeAll(
     )
   ),
   Layer.effect(
+    FollowUps,
+    FollowUps.use((followUps) =>
+      Effect.succeed(
+        FollowUps.of({
+          ...followUps,
+          runDue: Effect.succeed({
+            cancelled: 0,
+            completed: 0,
+            expired: 0,
+            left: 0,
+            triggered: 0,
+          }),
+          settleStranded: Effect.succeed(0),
+        })
+      )
+    )
+  ),
+  Layer.effect(
     Recycling,
     Recycling.use((rules) =>
       Effect.succeed(
@@ -446,6 +465,7 @@ const serverWith = <E, R>(
     never,
     | Layer.Success<typeof ChannelJobsTest>
     | Feeds
+    | FollowUps
     | PostScheduling
     | Recycling
     | Drizzle

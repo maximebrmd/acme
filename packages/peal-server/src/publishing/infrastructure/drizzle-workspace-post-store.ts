@@ -23,6 +23,7 @@ import {
   feedReads,
   feeds,
   queues,
+  followUpRules,
   recyclingRules,
   idempotencyKeys,
   livePostChanges,
@@ -374,6 +375,14 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .where(eq(recyclingRules.startedBy, userId))
           .pipe(Effect.mapError(failed));
 
+        // Nor that they started a follow-up rule: its next follow-up ends
+        // it, as its starter is gone.
+        yield* db
+          .update(followUpRules)
+          .set({ startedBy: null })
+          .where(eq(followUpRules.startedBy, userId))
+          .pipe(Effect.mapError(failed));
+
         // Nor that they added a feed: the next run stops it, as its
         // starter is gone.
         yield* db
@@ -509,6 +518,13 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(feeds)
           .where(eq(feeds.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // The follow-up rules, with what they armed: a job that wakes
+        // finds nothing, and a gate claims no call for it.
+        yield* db
+          .delete(followUpRules)
+          .where(eq(followUpRules.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
 
         // And what its members had read for it this past day.

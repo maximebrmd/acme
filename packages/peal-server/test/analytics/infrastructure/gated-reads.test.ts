@@ -7,6 +7,7 @@ import type {
   MetricsBatch,
   MetricsRequest,
 } from "#analytics/application/metrics-reader.ts";
+import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import {
   ChannelGateLive,
@@ -40,7 +41,8 @@ const gatedOver = (
             FakePlatformPublisher,
             readerAnswering(answer),
             UnreadComments,
-            LivePostClients.none
+            LivePostClients.none,
+            FollowUpPublisher.none
           )
         )
       )
