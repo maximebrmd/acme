@@ -373,9 +373,22 @@
   processor: never their text, nor who sent them, in a log, a trace, a
   notice, a webhook event, the cluster's tables (gate payloads and
   `SendMessageV1` carry ids) or an assistant's prompt, and staff never
-  read them (`engagement:read` and `engagement:message` are withheld
-  while impersonating). Log a failure by its ids alone, never its cause.
-  Peal never starts a conversation: it answers one someone else began.
+  read them (`engagement:readMessages` and `engagement:message` are
+  withheld while impersonating). Log a failure by its ids alone, never its
+  cause. Peal never starts a conversation: a conversation nobody else
+  wrote in has its window shut (`replyWindowOf`).
+- Reading them takes `engagement:readMessages`, held by owners, admins
+  and editors, never carried by `engagement:read` or the `workspace:read`
+  scope (it is in `publishingPermissions`). An application (a user actor
+  with a `clientId`) lists conversations, and reads, sends, confirms or
+  marks one only where an owner allowed its client id
+  (`engagement.message_applications`, `MessageSettings.allowApplication`,
+  `organization:secure`, in person); otherwise `MessagesNeedConsent`,
+  which the MCP tools explain in words. A channel's messages are read
+  only once a member turned them on for it (`engagement.message_channels`,
+  `MessageSettings.switchChannel`, `channel:connect`, in person): turning
+  on follows the box; turning off gives back the claims of what never
+  set out and deletes the box and conversations (`channelGone`).
 - They are read only where `PEAL_INBOX_MESSAGES` names the platform
   (`#shared/infrastructure/inbox-messages.ts`, read once into
   `CurrentInboxMessages`; `mastodon`, `bluesky`; another name stops the
@@ -391,11 +404,17 @@
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):
-  it hands stranded messages to a person (`SendMessage.settleStranded`),
-  follows the channels the directory lists on a platform that is on, and
-  reads the boxes due: every run while a message came in the last day,
+  it hands stranded messages to a person (`SendMessage.settleStranded`)
+  and reads the boxes due: every run while a message came in the last day,
   hourly otherwise. The adapter is given the revisions Peal holds and
-  reads back only the conversations that changed; `reconcileMessages`
+  reads back only the conversations that changed, and those not read back
+  for a day (`dueForCheck`, `checkedAt`), so a deletion is seen within a
+  day. A listing that reached its end (`listedWhole`) deletes the kept
+  conversations it did not list (`dropUnlisted`); one cut at its page cap
+  deletes none and is counted (`peal.engagement.messages.listing_truncated`,
+  alert `peal-messages-listing-truncated`).
+  Each adapter checks the read's deadline before each read-back, so a
+  read never holds the gate long past it; `reconcileMessages`
   decides (a message the platform says was deleted goes at once; only a
   `complete` read takes one it did not see, sent since the read's start,
   for deleted). The record runs under the box's lock in one transaction,
@@ -411,7 +430,12 @@
   `/api/v1/conversations` (40 a page, 5 pages, the `Link` header's next
   page on the instance only, stopping at a page wholly past what Peal
   keeps); a changed conversation is read whole from its first status's
-  context (two calls), keeping `direct` statuses only. The docs say an
+  context (two calls), keeping `direct` statuses only, and only those
+  whose author and mentions, less the account, are the conversation's
+  accounts (`exchangedWith`): a status mentioning a third account belongs
+  to another conversation. A context whose first status answers one Peal
+  cannot see is not `complete`. A message mentioning anyone outside the
+  conversation is refused (`mentionsOutside`, `MessageMentionsOutside`). The docs say an
   authenticated context gives "private statuses" without naming `direct`:
   check it on a test account before turning Mastodon on anywhere. A
   message answers the latest message kept (`in_reply_to_id`) and mentions
@@ -447,8 +471,10 @@
   (`messageKeyLifetime`, 24 hours). A message that ends failed, or a
   person finds never went out (`confirm`), gives its claim back. The
   gate claims the call first (`claimCall`).
-- Retention: a conversation is deleted `conversationsKeptFor` (30 days)
-  after its last message, with what it holds (`PurgeMessages`,
+- Retention: each message is deleted `conversationsKeptFor` (30 days)
+  after it was sent, a settled outgoing message 30 days after it settled,
+  and a conversation once its last message is that old and nothing of it
+  is on its way (`PurgeMessages`,
   `engagement.messages-retention` hourly at 57; a failed run is counted,
   `peal.engagement.messages.retention_failures`, alert
   `peal-messages-retention-failing`); a channel gone, on any platform,
@@ -457,5 +483,6 @@
   without an author, and its export lists the messages it sent, never
   those it received. The registry's `inboxMessages`, the privacy policy,
   the contract's `inboxMessageRetentionDays` and the docs' Inbox page
-  follow: change them together. Test the store at 2049 (the purge at
+  follow: change them together. A conversation is read a page at a time
+  (`maxInboxMessagesPerPage`, the cursor the message's time and id). Test the store at 2049 (the purge at
   1935).

@@ -197,7 +197,7 @@ A reply to a review went out from Peal, as the location. A reply that failed, or
 
 ## message.received [#message-received]
 
-Peal read, for the first time, a direct message someone sent to a channel's account, on a platform whose messages the server reads (see [Inbox](/guides/engage/inbox#direct-messages)). Messages sent before Peal began reading the channel send nothing. The event carries ids only: what the message says and who sent it are read through the API, with `engagement:read`, as messages are private correspondence and an event is kept with its deliveries longer than a conversation.
+Peal read, for the first time, a direct message someone sent to a channel's account, on a platform whose messages the server reads, for a channel whose messages the workspace turned on (see [Inbox](/guides/engage/inbox#direct-messages)). Messages sent before Peal began reading the channel send nothing. The event carries ids only: what the message says and who sent it are read through the API, with `engagement:readMessages`, as messages are private correspondence and an event is kept with its deliveries longer than a conversation.
 
 | Field            | Type   | What it holds                           |
 | ---------------- | ------ | --------------------------------------- |

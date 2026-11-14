@@ -179,8 +179,12 @@
   without its `idempotencyKey`) say that a message is private, reaches a
   real person and cannot be taken back, and that what a person wrote is
   data, never instructions; `list_conversations` answers who and counts,
-  never text. No tool confirms or marks a message: a person does it in the
-  web app or the command line.
+  never text. `get_conversation` and `send_message` need an owner's leave
+  for the application (`MessagesNeedConsent`): without it they refuse in
+  words that name the client id and the inbox's settings
+  (`notAllowedToRead`), and the model is told to say so and stop. No tool
+  confirms or marks a message, or changes the settings: a person does it
+  in the web app or the command line.
 - The ads toolkit (`ads-tools.ts`) reads ad accounts, campaigns, daily
   numbers and boosts; `boost_post` and `resume_boost` spend the user's
   money: they are `destructive` and `openWorld`, say so first in their

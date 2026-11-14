@@ -30,6 +30,7 @@ const watched = [
   "peal_engagement_messages_unfinished_total",
   "peal_engagement_messages_box_failures_total",
   "peal_engagement_messages_retention_failures_total",
+  "peal_engagement_messages_listing_truncated_total",
   "peal_ads_sync_unfinished_total",
   "peal_media_sweep_failures_total",
   "peal_media_sweep_refusals_total",

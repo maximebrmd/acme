@@ -197,7 +197,7 @@ Une réponse à un avis est partie depuis Peal, au nom de l’établissement. Un
 
 ## message.received [#message-received]
 
-Peal a lu pour la première fois un message privé que quelqu’un a envoyé au compte d’un canal, sur une plateforme dont le serveur lit les messages (voir [Boîte de réception](/guides/engage/inbox#direct-messages)). Les messages envoyés avant que Peal ne commence à lire le canal n’envoient rien. L’événement ne porte que des identifiants : ce que dit le message et qui l’a envoyé se lisent par l’API, avec `engagement:read`, car les messages sont une correspondance privée et un événement est conservé avec ses livraisons plus longtemps qu’une conversation.
+Peal a lu pour la première fois un message privé que quelqu’un a envoyé au compte d’un canal, sur une plateforme dont le serveur lit les messages, pour un canal dont l’espace de travail a activé les messages (voir [Boîte de réception](/guides/engage/inbox#direct-messages)). Les messages envoyés avant que Peal ne commence à lire le canal n’envoient rien. L’événement ne porte que des identifiants : ce que dit le message et qui l’a envoyé se lisent par l’API, avec `engagement:readMessages`, car les messages sont une correspondance privée et un événement est conservé avec ses livraisons plus longtemps qu’une conversation.
 
 | Champ            | Type   | Ce qu’il contient                              |
 | ---------------- | ------ | ---------------------------------------------- |

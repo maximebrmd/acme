@@ -2,7 +2,12 @@ import { Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultInboxPageSize } from "peal-contract";
 
 import { InboxTools } from "#app/mcp/inbox-tools.ts";
-import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
+import {
+  messagesConsentText,
+  notAllowed,
+  refuse,
+  usageRefusal,
+} from "#app/mcp/refusals.ts";
 import {
   conversationCursorOf,
   messageCursorOf,
@@ -58,12 +63,6 @@ const decodeConversationId = Schema.decodeUnknownOption(ConversationIdSchema);
 const noConversation = () =>
   refuse(
     "The workspace has no such conversation: it may have gone with its channel, or be older than Peal keeps one. list_conversations lists them."
-  );
-
-// Without the owner's leave, an application lists conversations only.
-const notAllowedToRead = () =>
-  refuse(
-    "This application may list the workspace's conversations, never read or answer their messages: direct messages are private, and an owner of the workspace lets an application read them, in person, in the inbox's settings in the web app. Nothing was read or sent. Tell the user to read and answer them in the web app."
   );
 
 const cannotMessage = ({ standing }: MessageAbilityUnavailable) =>
@@ -166,6 +165,19 @@ export const InboxToolsLive = InboxTools.toLayer(
     const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
+
+    // Without the owner's leave, an application lists conversations only:
+    // the refusal names its client id, which the owner allows.
+    const notAllowedToRead = () =>
+      actor.pipe(
+        Effect.flatMap(({ subject }) =>
+          refuse(
+            messagesConsentText(
+              subject._tag === "user" ? (subject.clientId ?? "") : ""
+            )
+          )
+        )
+      );
 
     return InboxTools.of({
       get_conversation: ({ conversationId, cursor }) =>

@@ -225,16 +225,22 @@ describe("the data processing registry", () => {
     expect(kept("inboxMessages")).toContain(
       "Each message 30 days after it was sent"
     );
-    expect(kept("inboxMessages")).toContain("turned off");
-    expect(categoryOf("inboxMessages")?.data.en).toContain(
-      "only for the channels a member turned them on for"
-    );
     // Private correspondence: shown and answered, nothing else, by
     // nobody at Peal.
     expect(categoryOf("inboxMessages")?.purposes.en).toContain(
       "Peal’s staff do not read them"
     );
     expect(categoryOf("inboxMessages")?.data.en).toContain("never the files");
+  });
+
+  it("reads a channel's direct messages only once a member turned them on, and deletes them when turned off", () => {
+    expect(kept("inboxMessages")).toContain("turned off");
+    expect(categoryOf("inboxMessages")?.data.en).toContain(
+      "only for the channels a member turned them on for"
+    );
+    expect(categoryOf("inboxMessages")?.purposes.en).toContain(
+      "only once an owner of the workspace allowed it"
+    );
   });
 
   it("keeps the days of ads' numbers and the ads audit trail as long as their purge does", () => {

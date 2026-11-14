@@ -77,7 +77,7 @@ Inside each workspace it owns, a partner key holds the [permissions](/guides/pos
 
 - `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*` and `billing:read`;
 - `engagement:read` and `engagement:reply`: the [comments](/guides/engage/inbox) under a customer's posts, and answering them in public as its account. Other people wrote those comments, so give a key these only if your product shows or answers them;
-- `engagement:message`: answering the [direct messages](/guides/engage/inbox#direct-messages) a customer's Mastodon and Bluesky accounts receive, privately, as the account, which `engagement:read` reads. Messages are private correspondence: give a key these only if your product shows or answers them;
+- `engagement:message`: answering the [direct messages](/guides/engage/inbox#direct-messages) a customer's Mastodon and Bluesky accounts receive, privately, as the account, which `engagement:readMessages` lists and reads (`engagement:read` does not), for the channels whose messages the customer's workspace turned on. Messages are private correspondence: give a key these only if your product shows or answers them;
 - `assistant:configure`, to set each customer's own [image provider](/guides/workspace#image-provider): `PUT /api/workspaces/{workspaceId}/assistant/image-provider`, with the customer's key, one workspace at a time;
 - `activity:read`, which reads the workspace's [activity log](/guides/workspace#activity): what your key asked to change there, and the accounts connected through connect links.
 
