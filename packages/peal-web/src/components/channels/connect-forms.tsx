@@ -30,6 +30,7 @@ import {
   metaPlatforms,
 } from "#components/channels/connect-meta.tsx";
 import type { MetaPlatform } from "#components/channels/connect-meta.tsx";
+import { ConnectWebsite } from "#components/channels/connect-website.tsx";
 
 const ErrorMessage = ({
   error,
@@ -289,7 +290,9 @@ const ConnectWithInstagram = ({
  * or a handle, a button for X, TikTok, YouTube, Pinterest and Google
  * Business Profile, one for each of Instagram's ways in the server has,
  * one for a LinkedIn profile and one for company pages on a server that
- * connects pages, and Meta's sign-in for Threads and Facebook Pages.
+ * connects pages, and Meta's sign-in for Threads and Facebook Pages; and
+ * a WordPress site, by its address and an application password, which
+ * every server connects.
  */
 export const ConnectForms = ({
   instagramConnections,
@@ -351,6 +354,7 @@ export const ConnectForms = ({
             ]
           : []
       )}
+      <ConnectWebsite workspaceId={workspaceId} />
     </div>
   );
 };

@@ -18,6 +18,7 @@ export type Page =
   | "analytics"
   | "apiKeys"
   | "approvals"
+  | "articles"
   | "assistant"
   | "billing"
   | "calendar"
@@ -41,7 +42,7 @@ export type Page =
   | "webhooks";
 
 /** Pages that are not in the sidebar, which the breadcrumb still names. */
-export type Detail = "newPost" | "post" | "thread";
+export type Detail = "article" | "newArticle" | "newPost" | "post" | "thread";
 
 export type Group = "build" | "engage" | "partners";
 
@@ -78,6 +79,12 @@ const pages: Readonly<Record<Page, PageRule>> = {
     may: needs("post:read"),
     mode: "studio",
     path: "/approvals",
+    section: "posts",
+  },
+  articles: {
+    may: needs("post:read"),
+    mode: "studio",
+    path: "/articles",
     section: "posts",
   },
   assistant: {
@@ -212,7 +219,7 @@ const layout: Readonly<
 };
 
 const sectionPages: Readonly<Record<Section, readonly Page[]>> = {
-  posts: ["posts", "drafts", "approvals", "import"],
+  posts: ["posts", "drafts", "articles", "approvals", "import"],
   settings: [
     "general",
     "members",
@@ -291,6 +298,14 @@ const pageAt = (path: string): PageAt => {
 
   if (exact !== undefined) {
     return { detail: null, page: exact };
+  }
+
+  if (path === "/articles/new") {
+    return { detail: "newArticle", page: "articles" };
+  }
+
+  if (path.startsWith("/articles/")) {
+    return { detail: "article", page: "articles" };
   }
 
   if (path.startsWith("/posts/")) {

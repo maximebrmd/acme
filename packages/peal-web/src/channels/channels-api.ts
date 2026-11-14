@@ -1,7 +1,13 @@
 import { Cause, Exit, Option, Schema } from "effect";
 import { Atom } from "effect/reactivity";
-import { ConnectFailureReasonSchema } from "peal-contract";
-import type { ConnectFailureReason } from "peal-contract";
+import {
+  ConnectFailureReasonSchema,
+  SiteNotConnectedReasonSchema,
+} from "peal-contract";
+import type {
+  ConnectFailureReason,
+  SiteNotConnectedReason,
+} from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -42,6 +48,9 @@ export const completeConnection = PealApi.mutation(
 
 export const chooseAccounts = PealApi.mutation("channels", "chooseAccounts");
 
+/** Connects a website by its address, a user and an application password. */
+export const connectSite = PealApi.mutation("channels", "connectSite");
+
 export const reconnectChannel = PealApi.mutation("channels", "reconnect");
 
 export const disconnectChannel = PealApi.mutation("channels", "disconnect");
@@ -60,6 +69,7 @@ export const enableChannel = PealApi.mutation("channels", "enable");
  */
 export type ChannelErrorKey =
   | ConnectFailureReason
+  | SiteNotConnectedReason
   | "forbidden"
   | "notFound"
   | "planLimit"
@@ -77,12 +87,18 @@ interface Tagged {
 
 const isConnectFailure = Schema.is(ConnectFailureReasonSchema);
 
+const isSiteRefusal = Schema.is(SiteNotConnectedReasonSchema);
+
 // The contract's errors, told apart by tag; anything else, such as the
 // server being down, is unknown.
 const keyOf = (error: Tagged): ChannelErrorKey => {
   switch (error._tag) {
     case "ConnectFailed": {
       return isConnectFailure(error.reason) ? error.reason : "unknown";
+    }
+
+    case "SiteNotConnected": {
+      return isSiteRefusal(error.reason) ? error.reason : "unknown";
     }
 
     case "PlatformUnreachable": {

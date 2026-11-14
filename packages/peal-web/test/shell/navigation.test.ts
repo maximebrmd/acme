@@ -25,6 +25,14 @@ const owner: readonly Permission[] = [
 const pagesOf = (navigation: ReturnType<typeof navigationOf>) =>
   navigation.groups.flatMap(({ links }) => links.map(({ page }) => page));
 
+// What the breadcrumb names on an article's page.
+const articleCrumb = (path: string) =>
+  navigationOf({
+    pathname: `${base}/articles${path}`,
+    permissions: owner,
+    workspaceId,
+  }).breadcrumb;
+
 describe(navigationOf, () => {
   it("puts a Studio page in Studio, with the pages the member may open", () => {
     const navigation = navigationOf({
@@ -101,6 +109,7 @@ describe(navigationOf, () => {
     expect(draft.sectionLinks.map(({ page }) => page)).toStrictEqual([
       "posts",
       "drafts",
+      "articles",
       "approvals",
       "import",
     ]);
@@ -111,6 +120,23 @@ describe(navigationOf, () => {
       page: "drafts",
       section: "posts",
     });
+  });
+
+  it("keeps an article's pages under Posts, and names them", () => {
+    expect(articleCrumb("")).toStrictEqual({
+      page: "articles",
+      section: "posts",
+    });
+    expect(articleCrumb("/new")).toStrictEqual({
+      page: "newArticle",
+      section: "posts",
+    });
+    expect(articleCrumb("/00000000-0000-7000-8000-0000000000c1")).toStrictEqual(
+      {
+        page: "article",
+        section: "posts",
+      }
+    );
   });
 
   it("keeps a post's own pages under Posts, and names them", () => {

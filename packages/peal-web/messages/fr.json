@@ -721,7 +721,7 @@
     "retry": "Réessayer",
     "empty": "Aucun compte n’est encore connecté.",
     "listTitle": "Comptes connectés",
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} wordpress {WordPress} x {X} youtube {YouTube} other {{platform}}}",
     "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} linkedinProfile {profil} linkedinPage {page d’entreprise} other {{connection}}})",
     "status": {
       "active": "Connecté",
@@ -798,8 +798,23 @@
       "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page.",
       "xPaymentMethod": "Un compte X demande un moyen de paiement sur le compte de facturation, car l’API de X est facturée aux tarifs de X. Ajoutez-en un sur la page de facturation, puis connectez-le.",
       "xPaymentFailed": "Un compte X demande un compte de facturation qui peut être facturé, car l’API de X est facturée aux tarifs de X, et son dernier paiement a échoué. Mettez à jour le moyen de paiement depuis la page de facturation, puis connectez-le.",
-      "xPerAccountPricing": "Un compte X demande le tarif par compte, car l’API de X est facturée aux tarifs de X, et l’abonnement de cet espace de travail lui est antérieur. Passez au tarif par compte sur la page de facturation, puis connectez-le."
-    }
+      "xPerAccountPricing": "Un compte X demande le tarif par compte, car l’API de X est facturée aux tarifs de X, et l’abonnement de cet espace de travail lui est antérieur. Passez au tarif par compte sur la page de facturation, puis connectez-le.",
+      "notWordPress": "Cette adresse ne mène à aucun site WordPress. Donnez la page d’accueil du site, comme https://blog.example.com.",
+      "addressNotAllowed": "Peal joint les sites web en HTTPS, à des adresses publiques seulement.",
+      "credentialsRefused": "Le site a refusé l’identifiant et le mot de passe d’application. Vérifiez-les, et que votre hébergeur laisse passer l’en-tête Authorization.",
+      "cannotPublish": "Cet utilisateur ne peut pas publier d’articles ni téléverser de fichiers sur le site : prenez un auteur, un éditeur ou un administrateur."
+    },
+    "websiteTitle": "Site WordPress",
+    "websiteDescription": "Publiez des articles sur un site WordPress à vous. Sur la page de profil de votre utilisateur dans WordPress, sous Mots de passe d’application, créez un mot de passe pour Peal et collez-le ici : Peal le garde chiffré et ne le montre plus jamais.",
+    "websiteAddress": "Adresse du site",
+    "websiteAddressHint": "La page d’accueil du site, en HTTPS, comme https://blog.example.com.",
+    "websiteUser": "Identifiant",
+    "websiteUserHint": "L’identifiant d’un auteur, d’un éditeur ou d’un administrateur du site.",
+    "websitePassword": "Mot de passe d’application",
+    "websitePasswordHint": "Créé pour Peal sur la page de profil de l’utilisateur ; pas son propre mot de passe.",
+    "connectWebsite": "Connecter le site",
+    "websiteConnected": "{site} est connecté.",
+    "reconnectWebsite": "Reconnecter {handle} avec un nouveau mot de passe d’application"
   },
   "PlatformConnect": {
     "connecting": "Ouverture…",
@@ -2822,7 +2837,10 @@
       "post": "Publication",
       "thread": "Conversation",
       "home": "Accueil",
-      "platforms": "Plateformes"
+      "platforms": "Plateformes",
+      "articles": "Articles",
+      "article": "Article",
+      "newArticle": "Nouvel article"
     }
   },
   "WorkspaceHome": {
@@ -2983,6 +3001,10 @@
       },
       "webhook": {
         "test": "Événement de test"
+      },
+      "article": {
+        "published": "Un article est parti vers son site web",
+        "failed": "Un article n’est pas parti vers son site web"
       }
     },
     "edit": "Modifier",
@@ -4497,5 +4519,108 @@
     },
     "analytics": "Statistiques",
     "unpublish": "Dépublier"
+  },
+  "Articles": {
+    "title": "Articles",
+    "description": "Les articles des sites web de {workspace} : écrits ici, envoyés à chaque site à leur heure.",
+    "newTitle": "Nouvel article",
+    "editTitle": "Article",
+    "notFound": "Cet article n’est pas dans l’espace de travail.",
+    "list": {
+      "untitled": "Sans titre",
+      "meta": "{site} · modifié {updated}",
+      "removed": "Dans la corbeille du site",
+      "state": {
+        "draft": "Brouillon",
+        "scheduled": "Programmé",
+        "publishing": "En cours d’envoi",
+        "published": "Sur le site",
+        "failed": "Échec",
+        "unconfirmed": "À vérifier"
+      },
+      "noSite": "Connectez un site WordPress sur la page Canaux pour y écrire des articles.",
+      "sites": "{count, plural, one {# site web connecté} other {# sites web connectés}}.",
+      "new": "Nouvel article",
+      "connect": "Connecter un site",
+      "loadFailed": "Les articles n’ont pas pu être chargés.",
+      "retry": "Réessayer",
+      "empty": "Aucun article pour l’instant."
+    },
+    "editor": {
+      "toolbar": "Mise en forme",
+      "heading2": "Titre",
+      "heading3": "Sous-titre",
+      "bold": "Gras",
+      "italic": "Italique",
+      "strike": "Barré",
+      "code": "Code",
+      "link": "Lien",
+      "bulletList": "Liste à puces",
+      "orderedList": "Liste numérotée",
+      "blockquote": "Citation",
+      "rule": "Séparateur",
+      "site": "Site web",
+      "title": "Titre",
+      "body": "Corps",
+      "excerpt": "Extrait",
+      "tags": "Étiquettes",
+      "categories": "Catégories",
+      "termsHint": "Séparées par des virgules, comme le site les montre : Peal prend celles que le site a, quelle que soit leur casse, et crée les autres.",
+      "cover": "Image mise en avant",
+      "noCover": "Aucune",
+      "removeCover": "Retirer",
+      "siteStatus": "Sur le site",
+      "status": {
+        "publish": "Publié aussitôt",
+        "draft": "Un brouillon là-bas, à finir sur le site",
+        "future": "Programmé là-bas : le site le publie à l’heure"
+      },
+      "at": "Heure",
+      "atHint": "En {zone}. Vide l’envoie maintenant ; avec « Programmé là-bas », le site le publie à cette heure et Peal l’envoie aussitôt.",
+      "save": "Enregistrer",
+      "sendNow": "Envoyer maintenant",
+      "schedule": "Programmer",
+      "unschedule": "Repasser en brouillon",
+      "retry": "Renvoyer",
+      "updateOnSite": "Mettre à jour sur le site",
+      "unpublish": "Dépublier",
+      "unpublishTitle": "Dépublier cet article ?",
+      "unpublishDescription": "Son article part dans la corbeille du site : les lecteurs ne le voient plus, et le site le supprime plus tard.",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "permalink": "Sur le site à",
+      "saved": "Enregistré.",
+      "scheduled": "Programmé : ce qui part est public.",
+      "unscheduled": "Repassé en brouillon.",
+      "updatedOnSite": "Mis à jour sur le site.",
+      "unpublished": "Parti dans la corbeille du site.",
+      "deleted": "Supprimé de Peal.",
+      "violations": {
+        "titleMissing": "Donnez-lui un titre.",
+        "titleTooLong": "Le titre est trop long.",
+        "bodyMissing": "Écrivez son corps.",
+        "bodyInvalid": "Le corps contient quelque chose que le site ne peut pas prendre.",
+        "excerptTooLong": "L’extrait est trop long.",
+        "tooManyTerms": "Trop d’étiquettes ou de catégories : 20 au plus.",
+        "termInvalid": "Une étiquette ou une catégorie est vide, ou trop longue.",
+        "siteTimeInPast": "Pour que le site le publie à une heure, l’heure doit être à venir.",
+        "timeInPast": "Cette heure est passée.",
+        "coverNotImage": "L’image mise en avant doit être une image."
+      },
+      "errors": {
+        "ArticleChangeRefused": "Le site a refusé la modification ({code}) : rien n’a changé.",
+        "ArticleNotFound": "Cet article n’est plus dans l’espace de travail.",
+        "ArticleStateConflict": "L’article a changé entre-temps : rechargez la page.",
+        "ChannelNotFound": "Ce site web n’est plus connecté.",
+        "Forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
+        "InvalidTimeZone": "Le fuseau horaire de votre navigateur n’est pas connu de Peal.",
+        "PlatformUnreachable": "Le site n’a pas répondu. Réessayez dans un instant.",
+        "UnknownMedia": "Une image n’est plus dans la bibliothèque, ou n’est pas prête.",
+        "unknown": "Un problème est survenu. Réessayez."
+      },
+      "linkAddress": "L’adresse du lien",
+      "linkHint": "Vide enlève le lien.",
+      "linkApply": "Appliquer"
+    }
   }
 }
