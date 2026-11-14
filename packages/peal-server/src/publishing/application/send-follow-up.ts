@@ -9,17 +9,24 @@ import {
 } from "effect";
 
 import type { FollowUpId } from "#publishing/domain/follow-up-id.ts";
+import { mayAct } from "#publishing/domain/follow-up-rule.ts";
 import {
   beginFollowUpCall,
   settleFollowUp,
   wasAttempted,
 } from "#publishing/domain/follow-up.ts";
-import type { FollowUpCallOutcome } from "#publishing/domain/follow-up.ts";
+import type {
+  FollowUp,
+  FollowUpCallOutcome,
+} from "#publishing/domain/follow-up.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
+import { ApprovalGate } from "./approval-gate.ts";
 import { FollowUpPublisher } from "./follow-up-publisher.ts";
 import { FollowUpStore } from "./follow-up-store.ts";
+import { RecyclingActors } from "./recycling-actors.ts";
 
 /** Follow-ups whose call ended, by how. */
 export const followUpsSent = Metric.counter("peal.publishing.follow_ups.sent", {
@@ -56,6 +63,8 @@ export class SendFollowUp extends Context.Service<
     Effect.gen(function* SendFollowUpLive() {
       const store = yield* FollowUpStore;
       const publisher = yield* FollowUpPublisher;
+      const actors = yield* RecyclingActors;
+      const gate = yield* ApprovalGate;
       const { transaction } = yield* TransactionRunner;
 
       // Saves how the call ended, unless the follow-up moved meanwhile.
@@ -80,6 +89,27 @@ export class SendFollowUp extends Context.Service<
           ? ("settled" as const)
           : ("superseded" as const);
       });
+
+      // Whether what the rule sends may still go out as its starter, just
+      // before the call: a change since the run triggered it may need an
+      // approval, and the policy may hold the starter now. A rule gone is
+      // the publisher's to refuse.
+      const stillMayAct = Effect.fn("SendFollowUp.stillMayAct")(
+        function* stillMayAct(followUp: FollowUp) {
+          const rule = yield* store.rule(followUp.workspaceId, followUp.ruleId);
+
+          if (Option.isNone(rule)) {
+            return true;
+          }
+
+          const starter = yield* actors.of(rule.value);
+
+          return (
+            starter._tag === "acting" &&
+            mayAct(rule.value, yield* gate.holds(starter.actor))
+          );
+        }
+      );
 
       const outcomeOf = (
         call: Effect.Effect<
@@ -122,6 +152,17 @@ export class SendFollowUp extends Context.Service<
           const outcome = yield* outcomeOf(publisher.resume(request));
 
           return yield* transaction(settle(followUpId, outcome));
+        }
+
+        // Put off, as nothing went out: armed again until its window ends,
+        // for the run to judge again.
+        if (!(yield* stillMayAct(followUp))) {
+          return yield* transaction(
+            settle(followUpId, {
+              _tag: "refused",
+              failure: new PlatformUnavailable(),
+            })
+          );
         }
 
         const begun = beginFollowUpCall(followUp, yield* DateTime.now);

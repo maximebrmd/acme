@@ -34,6 +34,7 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
+import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import { publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
@@ -177,6 +178,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         ReferencesTest,
         AccountRules.none,
         ApprovalGate.open,
+        RecyclingActors.none,
         PostEvents.none,
         DrizzleLivePostChangeStore,
         LivePostEvents.none

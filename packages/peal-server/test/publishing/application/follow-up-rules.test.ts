@@ -325,6 +325,60 @@ describe("follow-up rules", () => {
   );
 
   it.effect(
+    "send nothing the starter may no longer have go out, and arm it again",
+    () =>
+      onServer(
+        Effect.gen(function* heldAtSend() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          assert.strictEqual(started.rule.approval._tag, "notNeeded");
+
+          // The starter may act when the run triggers it, and the policy
+          // holds them by the time its job sends it.
+          const asked = { times: 0 };
+
+          yield* startersAre(() => {
+            asked.times += 1;
+
+            return {
+              _tag: "acting",
+              actor: actorIn(
+                workspaceId,
+                permissionsFor(asked.times === 1 ? "editor" : "contributor")
+              ),
+            };
+          });
+
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+
+          yield* eventually(
+            "the follow-up is armed again",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.every(({ status }) => status._tag === "armed")
+              )
+            )
+          );
+
+          assert.strictEqual((yield* followUpCalls).length, 0);
+          assert.strictEqual((yield* runDue).triggered, 0);
+        }),
+        HoldingServer
+      ),
+    timeout
+  );
+
+  it.effect(
     "follow a post up once it has enough likes, once",
     () =>
       onServer(
