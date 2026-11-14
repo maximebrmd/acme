@@ -94,5 +94,13 @@
     "change": "On a server that bills, a post's target on X may fail, nothing sent, with the failure reasons paymentMethodRequired, paymentFailed, perAccountPricingRequired or xCeilingReached, and a thread on X refused at a later part with xThreadCut, where it went out before; X's reads are billed only for a workspace that turned them on (PUT …/billing/x), and stop at the account's x ceiling",
     "kind": "behaviour",
     "reason": "X's posts and reads are billed at X's rates on the xApi meter, within the billing account's monthly ceiling for X. A server that does not bill publishes and reads X as before."
+  },
+  {
+    "change": "Channel.platform was a Platform, and is a ChannelPlatform",
+    "reason": "A channel now connects a social network or a website (a self-hosted WordPress site), so its platform is a ChannelPlatform: every Platform value, plus wordpress. Nothing a client knew changes on the wire: a social channel answers the same value, and a website's channel answers wordpress, a value the client did not know. Platform stays the social networks' list everywhere else (connecting, posts, violations, capabilities), so no request takes wordpress where it would be refused. The typed SDKs change the field's type from Platform to ChannelPlatform: code that keeps channel.platform in a Platform variable changes its type, or checks that the value is a social network first."
+  },
+  {
+    "change": "NoticeChannel.platform was a Platform, and is a ChannelPlatform",
+    "reason": "A channel now connects a social network or a website (a self-hosted WordPress site), so its platform is a ChannelPlatform: every Platform value, plus wordpress. Nothing a client knew changes on the wire: a social channel answers the same value, and a website's channel answers wordpress, a value the client did not know. Platform stays the social networks' list everywhere else (connecting, posts, violations, capabilities), so no request takes wordpress where it would be refused. The typed SDKs change the field's type from Platform to ChannelPlatform: code that keeps channel.platform in a Platform variable changes its type, or checks that the value is a social network first."
   }
 ]
