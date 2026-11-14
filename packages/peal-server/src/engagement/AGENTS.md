@@ -334,7 +334,7 @@
 - `CollectReviews` runs on `engagement.collect-reviews` (hourly at 27,
   through the gates: `ReadReviews`): it follows the channels the
   directory lists (`ReviewLocations`), reads the threads due, hourly while
-  a review changed in the last week, six-hourly otherwise, and records a
+  a review changed in the last week, six-hourly otherwise (Google's 429 stops the run, `RateLimited`, and puts the location off as long as `Retry-After` says, an hour at least: the project's quota is shared with publishing), and records a
   read under the thread's lock in one transaction, telling
   `review.received` (ids only: never stars nor text, as an event outlives the 29 days) through `ReviewOutcomes`.
 - Only a member in person answers a review or deletes its reply

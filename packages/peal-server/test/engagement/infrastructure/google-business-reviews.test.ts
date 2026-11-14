@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Exit, Layer, Option } from "effect";
+import { DateTime, Duration, Effect, Exit, Layer, Option } from "effect";
 import { FetchHttpClient } from "effect/http";
 
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
@@ -284,7 +284,23 @@ describe("Google Business Profile's reviews", () => {
             .read(busy.account, keptSince)
             .pipe(Effect.flip);
 
-          assert.deepStrictEqual(limited._tag, "PlatformUnavailable");
+          assert.deepStrictEqual(limited._tag, "RateLimited");
+
+          // Google's Retry-After paces the collection.
+          busy.api.script(`GET /v4/${fakeLocation}/reviews`, [
+            json({ error: { code: 429, status: "RESOURCE_EXHAUSTED" } }, 429, {
+              "Retry-After": "120",
+            }),
+          ]);
+
+          const paced = yield* busy.platform
+            .read(busy.account, keptSince)
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            paced._tag === "RateLimited" ? paced.retryAfter : undefined,
+            Duration.seconds(120)
+          );
 
           const unscoped = yield* onGoogle({ scopes: [] });
 

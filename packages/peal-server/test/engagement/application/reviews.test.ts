@@ -1,9 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Option, Result } from "effect";
+import { DateTime, Duration, Effect, Option, Result } from "effect";
 import { TestClock } from "effect/testing";
 
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
-import { CollectReviews } from "#engagement/application/collect-reviews.ts";
+import {
+  CollectReviews,
+  ReviewsPaceRef,
+} from "#engagement/application/collect-reviews.ts";
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
 import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
 import { SendReviewReply } from "#engagement/application/send-review-reply.ts";
@@ -12,6 +15,7 @@ import type { ReviewReading } from "#engagement/domain/review.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
 import {
   locationChannel,
   makeReviewWorld,
@@ -252,6 +256,46 @@ const withReview = (changed: Partial<ReviewReading> = {}) => {
 
   return world;
 };
+
+describe("the reviews' collection, paced by Google", () => {
+  it.effect(
+    "stops a run once Google asks to slow down, and puts the location off as long as Google says",
+    () => {
+      const world = located();
+
+      world.state.locations.push({ channelId: channelId(2), workspaceId });
+      world.state.channels.set(channelId(2), locationChannel);
+      world.state.read = () =>
+        Effect.fail(new RateLimited({ retryAfter: Duration.hours(3) }));
+
+      return at(
+        Effect.gen(function* paced() {
+          const report = yield* collect.pipe(
+            Effect.provideService(ReviewsPaceRef, {
+              budget: Duration.minutes(40),
+              concurrency: 1,
+              pageSize: 500,
+            })
+          );
+
+          // The first read was refused: the second was not asked.
+          assert.lengthOf(world.state.reads, 1);
+          assert.strictEqual(report.deferred, 1);
+          assert.strictEqual(report.left, 1);
+
+          const [limited] = [...world.state.threads.values()].filter(
+            ({ channelId: id }) => id === world.state.reads[0]?.channelId
+          );
+
+          assert.deepStrictEqual(
+            limited?.nextReadAt,
+            DateTime.addDuration(reviewedAt, "3 hours")
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
 
 describe("members and the reviews", () => {
   it.effect(

@@ -29,7 +29,9 @@ import {
 import type { PlatformHttp } from "#engagement/infrastructure/platforms/engagement-platform.ts";
 import { googleBusinessReviewScope } from "#shared/domain/inbox-platform.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
 // A Google Business Profile location's reviews, from the reference of the
 // My Business API v4's `accounts.locations.reviews`
@@ -383,6 +385,16 @@ export const googleBusinessReviews = Effect.fn("googleBusinessReviews")(
 
           if (refusal === "token") {
             return yield* new TokenRejected();
+          }
+
+          // The project's quota: the run stops, for as long as Google said.
+          if (refusal === "rateLimited") {
+            const wait = retryAfterOf(response.headers, yield* DateTime.now);
+
+            return yield* Option.match(wait, {
+              onNone: () => new RateLimited({}),
+              onSome: (retryAfter) => new RateLimited({ retryAfter }),
+            });
           }
 
           return yield* refusal === "permission" || refusal === "gone"

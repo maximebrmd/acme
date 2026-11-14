@@ -5,6 +5,7 @@ import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts
 import { ReviewReadingSchema } from "#engagement/domain/review.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
 
 /**
  * A location to read, by its channel: its reviews written or changed
@@ -32,10 +33,15 @@ export const ReviewsBatchSchema = Schema.Struct({
 
 export type ReviewsBatch = typeof ReviewsBatchSchema.Type;
 
-/** Why nothing was read: the channel, or the platform being down or busy. */
+/**
+ * Why nothing was read: the channel, the platform being down, or the
+ * platform asking to slow down (the project's quota is shared by every
+ * location and by publishing), for as long as it said.
+ */
 export const ReviewsReadFailureSchema = Schema.Union([
   ChannelUnreadable,
   PlatformUnavailable,
+  RateLimited,
 ]);
 
 export type ReviewsReadFailure = typeof ReviewsReadFailureSchema.Type;

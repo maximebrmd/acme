@@ -6,6 +6,7 @@ import {
   Layer,
   Metric,
   Option,
+  Ref,
   Result,
 } from "effect";
 
@@ -255,6 +256,20 @@ export class CollectReviews extends Context.Service<
         failure: ReviewsReadFailure,
         at: DateTime.Utc
       ) => {
+        // Google asked to slow down: as long as it said, an hour at least.
+        if (failure._tag === "RateLimited") {
+          return store.saveThread(
+            postponeReviewRead(
+              thread,
+              at,
+              Duration.max(
+                failure.retryAfter ?? reviewsRetryAfter,
+                reviewsRetryAfter
+              )
+            )
+          );
+        }
+
         if (
           failure._tag === "ChannelUnreadable" &&
           failure.reason === "disconnected"
@@ -276,10 +291,14 @@ export class CollectReviews extends Context.Service<
       const readOne = (
         thread: ReviewThread,
         at: DateTime.Utc,
-        deadline: DateTime.Utc
+        deadline: DateTime.Utc,
+        halted: Ref.Ref<boolean>
       ): Effect.Effect<Turn, DatabaseError> =>
         Effect.gen(function* reading() {
-          if (DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)) {
+          if (
+            (yield* Ref.get(halted)) ||
+            DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)
+          ) {
             return "unreached" as const;
           }
 
@@ -288,6 +307,12 @@ export class CollectReviews extends Context.Service<
             .pipe(Effect.result);
 
           if (Result.isFailure(read)) {
+            // The quota is the project's: no other location is asked this
+            // run, and the next starts again.
+            if (read.failure._tag === "RateLimited") {
+              yield* Ref.set(halted, true);
+            }
+
             yield* putOff(thread, read.failure, at);
 
             return "deferred" as const;
@@ -326,6 +351,7 @@ export class CollectReviews extends Context.Service<
         const stranded = yield* sending.settleStranded;
         const followed = yield* followAll(at);
         const deadline = DateTime.addDuration(at, pace.budget);
+        const halted = yield* Ref.make(false);
         let read = 0;
         let deferred = 0;
 
@@ -334,7 +360,7 @@ export class CollectReviews extends Context.Service<
 
           const turns = yield* Effect.forEach(
             due,
-            (thread) => readOne(thread, at, deadline),
+            (thread) => readOne(thread, at, deadline, halted),
             { concurrency: pace.concurrency }
           );
 
