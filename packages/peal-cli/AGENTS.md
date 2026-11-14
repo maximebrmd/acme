@@ -61,6 +61,9 @@
   text assistant stays without a command, as an agent writes its own text.
   Its answer says the file is marked as made by AI and that the post's
   options carry the platforms' AI labels.
+- `peal inbox reviews` (`commands/inbox-reviews.ts`: list, show, reply,
+  answered, withdraw) is the inbox's reviews group; the studio answers it
+  from `test/studio-reviews.ts`.
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.
