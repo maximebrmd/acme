@@ -4204,6 +4204,8 @@
       "off": "Non lus",
       "turnOn": "Lire ses messages",
       "turnOff": "Arrêter, et supprimer ce qui a été conservé",
+      "grantNeeded": "Bluesky demande d’abord au compte d’autoriser Peal à accéder à ses messages privés.",
+      "grant": "Autoriser, sur Bluesky",
       "none": "Aucun canal Mastodon ou Bluesky dans cet espace de travail.",
       "applications": "Applications qui peuvent les lire et y répondre",
       "applicationsDescription": "Une application connectée par OAuth, comme un assistant IA, liste les conversations, et ne les lit ou n’y répond qu’une fois que vous l’y autorisez. Indiquez l’identifiant de client qu’elle affiche dans son refus.",

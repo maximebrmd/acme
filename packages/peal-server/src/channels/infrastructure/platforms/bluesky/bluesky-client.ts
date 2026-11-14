@@ -35,11 +35,12 @@ export const blueskyScope = [
 ].join(" ");
 
 /**
- * What Peal asks Bluesky accounts for where the inbox reads Bluesky's
- * direct messages (`PEAL_INBOX_MESSAGES`): the chat methods' scopes too
- * (`blueskyChatScopes`). Off, exactly `blueskyScope`. The AT Protocol's
- * consent takes every scope asked or none, so a channel connected before
- * gets them by connecting again.
+ * The most Peal may ask Bluesky accounts for, as its client metadata says,
+ * where the inbox reads Bluesky's direct messages (`PEAL_INBOX_MESSAGES`):
+ * the chat methods' scopes too (`blueskyChatScopes`). Off, exactly
+ * `blueskyScope`. A sign-in asks for the chat scopes only when a member
+ * turns a channel's messages on (the authorizer's `scopeFor`); the AT
+ * Protocol's consent takes every scope asked or none.
  */
 export const blueskyScopeWith = (chat: boolean): string =>
   chat ? [blueskyScope, ...blueskyChatScopes].join(" ") : blueskyScope;

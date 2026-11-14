@@ -32,6 +32,8 @@ const unavailable = json({ error: "Service Unavailable" }, 503);
 
 interface Grant {
   readonly challenge: string;
+  /** The scope the client asked for, in its pushed request. */
+  readonly scope: string;
   readonly state: string;
 }
 
@@ -53,8 +55,12 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
   const refreshTokens = new Set<string>();
   let issued = 0;
   let behaviour: RefreshBehaviour = "rotate";
+  // What a sign-in grants: the session's fixed scope, or what was asked.
+  let grantAsked = false;
+  // The scope of each pushed request, oldest first.
+  const asked: string[] = [];
 
-  const tokens = () => {
+  const tokens = (granted = scope) => {
     issued += 1;
 
     const refreshToken = `refresh-${issued}`;
@@ -65,7 +71,7 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
       access_token: `access-${issued}`,
       expires_in: 3600,
       refresh_token: refreshToken,
-      scope,
+      scope: granted,
       sub: blueskyAccount.did,
       token_type: "DPoP",
     });
@@ -86,7 +92,7 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
 
       codes.delete(form.get("code") ?? "");
 
-      return tokens();
+      return tokens(grantAsked ? grant.scope : scope);
     }
 
     if (behaviour === "fail") {
@@ -170,8 +176,10 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
         const form = formOf(request);
         const requestUri = `urn:ietf:params:oauth:request_uri:req-${requests.size + 1}`;
 
+        asked.push(form.get("scope") ?? "");
         requests.set(requestUri, {
           challenge: form.get("code_challenge") ?? "",
+          scope: form.get("scope") ?? "",
           state: form.get("state") ?? "",
         });
 
@@ -227,6 +235,12 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
   return {
     ...server,
     approve,
+    /** The scope each pushed request asked for, oldest first. */
+    asked: () => [...asked],
+    /** Whether a sign-in grants what it asked, rather than the fixed scope. */
+    grantAsked: (next: boolean) => {
+      grantAsked = next;
+    },
     /** How later refresh requests are answered. */
     refreshWith: (next: RefreshBehaviour) => {
       behaviour = next;

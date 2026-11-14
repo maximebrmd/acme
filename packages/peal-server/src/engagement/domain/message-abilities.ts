@@ -64,9 +64,10 @@ const chat =
  *   has asked for since its first release, so a channel without them is
  *   one whose server granted less, and reconnecting asks them again.
  * - Bluesky: the chat methods each take their `rpc` scope at the chat
- *   service (`blueskyChatScopes`), which Bluesky's sign-in asks for where
- *   the server reads Bluesky's messages: a channel connected before has
- *   none of them, and gets them by connecting again. Reading takes
+ *   service (`blueskyChatScopes`), which a sign-in asks for only when a
+ *   member turns the channel's messages on (a reconnect with
+ *   `messages`): until then a channel has none of them, and is
+ *   `reconnect`. Reading takes
  *   `listConvos` and `getMessages`; answering also `sendMessage`, and
  *   `acceptConvo` for a conversation someone else began.
  *

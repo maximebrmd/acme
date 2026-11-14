@@ -150,4 +150,20 @@ describe("the direct messages' views", () => {
     expect(on).toContain("supprimer");
     expect(on).toContain("disabled");
   });
+
+  it("offer to allow Bluesky's direct messages where the account must allow them first", async () => {
+    const html = await render(
+      "en",
+      <ChannelMessagesView
+        channel={{ ...channel, platform: "bluesky" }}
+        disabled={false}
+        on={false}
+        onGrant={constVoid}
+        onSwitch={constVoid}
+      />
+    );
+
+    expect(html).toContain("Allow, on Bluesky");
+    expect(html).not.toContain("Read its messages");
+  });
 });

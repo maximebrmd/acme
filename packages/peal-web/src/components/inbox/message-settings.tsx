@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Exit } from "effect";
+import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type { Channel, InboxMessageSettings } from "peal-contract";
@@ -13,8 +13,10 @@ import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 import { toast } from "sonner";
 
-import { channelsOf } from "#channels/channels-api.ts";
+import { channelsOf, reconnectChannel } from "#channels/channels-api.ts";
+import { rememberConnection } from "#channels/pending-connection.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
+import { inboxErrorOf } from "#inbox/errors.ts";
 import {
   messageSettings,
   messageSettingsChanged,
@@ -27,16 +29,33 @@ import { useChannelName } from "./inbox-views.tsx";
 // The platforms whose direct messages Peal may read.
 const messagePlatforms: ReadonlySet<string> = new Set(["mastodon", "bluesky"]);
 
-/** One channel's switch: its messages read, or not. */
+// Whether the switch was refused until the account allows its messages.
+const needsGrant = <A, E extends { readonly _tag: string }>(
+  exit: Exit.Exit<A, E>
+) =>
+  inboxErrorOf(exit).pipe(
+    Option.exists(
+      (explained) =>
+        explained.key === "unavailable" && explained.standing === "reconnect"
+    )
+  );
+
+/**
+ * One channel's switch: its messages read, or not. `onGrant`, for an
+ * account that must allow its messages first (Bluesky's chat), starts the
+ * sign-in that asks for them.
+ */
 export const ChannelMessagesView = ({
   channel,
   disabled,
   on,
+  onGrant,
   onSwitch,
 }: {
   readonly channel: Channel;
   readonly disabled: boolean;
   readonly on: boolean;
+  readonly onGrant?: () => void;
   readonly onSwitch: (on: boolean) => void;
 }) => {
   const t = useTranslations("InboxMessages.settings");
@@ -50,16 +69,27 @@ export const ChannelMessagesView = ({
           {on ? t("on") : t("off")}
         </Badge>
       </span>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={disabled}
-        onClick={() => {
-          onSwitch(!on);
-        }}
-      >
-        {on ? t("turnOff") : t("turnOn")}
-      </Button>
+      {onGrant === undefined ? (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          onClick={() => {
+            onSwitch(!on);
+          }}
+        >
+          {on ? t("turnOff") : t("turnOn")}
+        </Button>
+      ) : (
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-sm">
+            {t("grantNeeded")}
+          </span>
+          <Button size="sm" disabled={disabled} onClick={onGrant}>
+            {t("grant")}
+          </Button>
+        </span>
+      )}
     </li>
   );
 };
@@ -155,6 +185,9 @@ export const MessageSettingsPanel = ({
   const channels = useAtomValue(channelsOf(workspaceId));
   const switchOne = useAtomSet(setChannelMessages, { mode: "promiseExit" });
   const allowOne = useAtomSet(setMessageApplication, { mode: "promiseExit" });
+  const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
+  // The channels whose accounts must allow their messages first.
+  const [ungranted, setUngranted] = useState<ReadonlySet<string>>(new Set());
   const [pending, start] = useTransition();
   const titleId = useId();
 
@@ -180,6 +213,24 @@ export const MessageSettingsPanel = ({
     }
   };
 
+  const grant = (channel: Channel) => {
+    start(async () => {
+      const exit = await reconnect({
+        params: { channelId: channel.id, workspaceId },
+        query: { messages: "true" },
+      });
+
+      if (Exit.isSuccess(exit)) {
+        rememberConnection({ platform: channel.platform, workspaceId });
+        globalThis.location.assign(exit.value.authorizationUrl);
+
+        return;
+      }
+
+      toast.error(t("failed"));
+    });
+  };
+
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -198,15 +249,28 @@ export const MessageSettingsPanel = ({
               channel={channel}
               disabled={pending}
               on={on.has(channel.id)}
+              {...(ungranted.has(channel.id)
+                ? {
+                    onGrant: () => {
+                      grant(channel);
+                    },
+                  }
+                : {})}
               onSwitch={(enabled) => {
                 start(async () => {
-                  done(
-                    await switchOne({
-                      params: { channelId: channel.id, workspaceId },
-                      payload: { enabled },
-                      reactivityKeys,
-                    })
-                  );
+                  const exit = await switchOne({
+                    params: { channelId: channel.id, workspaceId },
+                    payload: { enabled },
+                    reactivityKeys,
+                  });
+
+                  if (needsGrant(exit)) {
+                    setUngranted((now) => new Set([...now, channel.id]));
+
+                    return;
+                  }
+
+                  done(exit);
                 });
               }}
             />

@@ -191,6 +191,43 @@ describe("the messages' collection", () => {
   );
 
   it.effect(
+    "keeps a Bluesky channel's messages off until its account granted the chat scopes",
+    () => {
+      const world = makeMessageWorld(new Set(["bluesky"]));
+      const admin = actorWith("channel:connect");
+
+      world.state.channels.set(channelId(1), {
+        ...blueskyChannel,
+        scopes: ["atproto", "repo:app.bsky.feed.post?action=create"],
+      });
+      world.state.channels.set(channelId(2), blueskyChannel);
+
+      return at(
+        Effect.gen(function* grants() {
+          const refused = yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(1), true)
+          ).pipe(Effect.flip);
+
+          assert.deepInclude(refused, {
+            _tag: "MessageAbilityUnavailable",
+            ability: "read",
+            standing: "reconnect",
+          });
+
+          const on = yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(2), true)
+          );
+
+          assert.deepStrictEqual(
+            on.channels.map(({ channelId: id }) => id),
+            [channelId(2)]
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
     "deletes a kept conversation a whole listing no longer shows, and keeps it when the listing was not whole",
     () => {
       const world = worldWith();

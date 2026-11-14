@@ -111,8 +111,9 @@ export type BlueskyChatMethod = (typeof blueskyChatMethods)[number];
  * method, at the chat service (the permission spec,
  * atproto.com/specs/permission, read 2026-11-14: `rpc:<lxm>?aud=<did>#<service>`,
  * `aud` always required, the fragment written `%23`). The channels context
- * adds them, as optional, to Bluesky's sign-in where the inbox reads
- * Bluesky's messages.
+ * puts them in the client's metadata where the inbox reads Bluesky's
+ * messages, and asks them only of an account whose messages a member
+ * turns on.
  */
 export const blueskyChatScopes = blueskyChatMethods.map(
   (method) => `rpc:${method}?aud=${blueskyChatService.replace("#", "%23")}`
@@ -181,3 +182,12 @@ export const allowsRpc = (
     scopes.includes("transition:chat.bsky") &&
     scopes.includes(genericScope)) ||
   scopes.some((scope) => allowsIn(scope, method, audience));
+
+/**
+ * Whether the scopes allow every chat method Peal calls at the chat
+ * service: what a Bluesky channel needs before its messages are read.
+ */
+export const grantsBlueskyChat = (scopes: readonly string[]): boolean =>
+  blueskyChatMethods.every((method) =>
+    allowsRpc(scopes, method, blueskyChatService)
+  );

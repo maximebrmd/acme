@@ -398,9 +398,11 @@
   `read:statuses` and `write:statuses`, which its sign-in always asked;
   Bluesky the chat methods' `rpc` scopes at `did:web:api.bsky.chat#bsky_chat`
   (`blueskyChatScopes`, or `transition:chat.bsky` with
-  `transition:generic`), asked at sign-in where Bluesky's messages are on,
-  so a channel connected before is `reconnect`. A channel without them is
-  never called (`platform-messages.ts`).
+  `transition:generic`), asked only when a member turns a Bluesky
+  channel's messages on: `switchChannel` refuses a channel whose read is
+  not `available` (`MessageAbilityUnavailable`, `reconnect`), and the web
+  app reconnects it with `messages=true`, the switch off meanwhile. A
+  channel without them is never called (`platform-messages.ts`).
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):

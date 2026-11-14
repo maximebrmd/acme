@@ -29,6 +29,11 @@ export interface AuthorizationRequest {
   readonly instance: Option.Option<string>;
   /** The channel being reconnected, whose account the sign-in is for. */
   readonly reconnecting: Option.Option<Channel>;
+  /**
+   * The sign-in also asks to read and answer the account's direct
+   * messages, where the platform asks for that apart (Bluesky's chat).
+   */
+  readonly messages?: boolean;
 }
 
 /** A sign-in the platform now waits on. */

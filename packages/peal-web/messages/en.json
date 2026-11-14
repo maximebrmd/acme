@@ -4204,6 +4204,8 @@
       "off": "Not read",
       "turnOn": "Read its messages",
       "turnOff": "Stop, and delete what was kept",
+      "grantNeeded": "Bluesky asks the account to allow Peal its direct messages first.",
+      "grant": "Allow, on Bluesky",
       "none": "No Mastodon or Bluesky channel in this workspace.",
       "applications": "Applications that may read and answer them",
       "applicationsDescription": "An application connected through OAuth, such as an AI assistant, lists conversations, and reads or answers them only once you let it. Give the client id it shows in its refusal.",

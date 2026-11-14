@@ -1,6 +1,9 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
-import { readsMessagesOn } from "#engagement/domain/message-abilities.ts";
+import {
+  messageAbilitiesOf,
+  readsMessagesOn,
+} from "#engagement/domain/message-abilities.ts";
 import { followBox } from "#engagement/domain/message-box.ts";
 import { CurrentInboxMessages } from "#shared/application/current-inbox-messages.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -128,6 +131,22 @@ export class MessageSettings extends Context.Service<
             return yield* new MessageAbilityUnavailable({
               ability: "read",
               standing: "unsupported",
+            });
+          }
+
+          // An account that has not granted what reading takes (Bluesky's
+          // chat, asked only once a member asks for the channel's messages)
+          // stays off until it is connected again with them.
+          const { read } = messageAbilitiesOf(
+            channel.value.platform,
+            channel.value.scopes,
+            messages
+          );
+
+          if (read !== "available") {
+            return yield* new MessageAbilityUnavailable({
+              ability: "read",
+              standing: read,
             });
           }
 

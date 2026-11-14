@@ -442,6 +442,27 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
     })
   );
 
+  it.effect(
+    "take the ask for the account's direct messages on a reconnect, and go on to the platform's sign-in",
+    () =>
+      Effect.gen(function* asks() {
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connected(workspaceId);
+        const client = yield* clientAs(owner(workspaceId));
+
+        // The test's channel lives on a server nobody answers for: the
+        // request was taken, and the sign-in began.
+        const failure = yield* Effect.flip(
+          client.channels.reconnect({
+            params: { channelId: channel.id, workspaceId },
+            query: { messages: "true" },
+          })
+        );
+
+        assert.strictEqual(failure._tag, "PlatformUnreachable");
+      })
+  );
+
   it.effect("answer 404 to reconnecting a channel the workspace lacks", () =>
     Effect.gen(function* missing() {
       const workspaceId = yield* freshWorkspace;
@@ -451,6 +472,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
         yield* Effect.flip(
           client.channels.reconnect({
             params: { channelId: "not-a-channel-id", workspaceId },
+            query: {},
           })
         ),
         ChannelNotFound

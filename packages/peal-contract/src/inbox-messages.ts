@@ -376,7 +376,7 @@ export class InboxMessagesApi extends HttpApiGroup.make("inboxMessages")
       success: InboxMessageSettingsSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Turns a channel's direct messages on (\`enabled: true\`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 \`InboxActionUnavailable\`). Needs channel:connect. ${inPerson}`,
+        description: `Turns a channel's direct messages on (\`enabled: true\`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 \`InboxActionUnavailable\`, \`unsupported\`), and a Bluesky channel whose account has not granted the chat methods' permissions too (\`reconnect\`): reconnect it with \`messages=true\`, then turn its messages on. Needs channel:connect. ${inPerson}`,
         summary: "Turn a channel's direct messages on or off",
       })
     ),

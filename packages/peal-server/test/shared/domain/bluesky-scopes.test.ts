@@ -7,6 +7,7 @@ import {
   blueskyChatScopes,
   blueskyGateScopes,
   createsRecords,
+  grantsBlueskyChat,
   postgateCollection,
   threadgateCollection,
 } from "#shared/domain/bluesky-scopes.ts";
@@ -155,5 +156,23 @@ describe("a Bluesky account's chat scopes", () => {
         chat
       )
     ).toBeFalsy();
+  });
+});
+
+describe(grantsBlueskyChat, () => {
+  it("holds for scopes that allow every chat method Peal calls, granular or transitional", () => {
+    expect(grantsBlueskyChat([...blueskyChatScopes])).toBeTruthy();
+    expect(
+      grantsBlueskyChat([
+        "atproto",
+        "transition:generic",
+        "transition:chat.bsky",
+      ])
+    ).toBeTruthy();
+  });
+
+  it("does not for publishing's scopes, or for some of the chat methods only", () => {
+    expect(grantsBlueskyChat(blueskyScope.split(" "))).toBeFalsy();
+    expect(grantsBlueskyChat(blueskyChatScopes.slice(0, 2))).toBeFalsy();
   });
 });
