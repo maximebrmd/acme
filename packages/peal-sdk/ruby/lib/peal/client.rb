@@ -50,6 +50,11 @@ module Peal
       @posts ||= Peal::Posts::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Articles::Client]
+    def articles
+      @articles ||= Peal::Articles::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Media::Client]
     def media
       @media ||= Peal::Media::Client.new(client: @raw_client)

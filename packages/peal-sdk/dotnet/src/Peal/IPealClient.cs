@@ -8,6 +8,7 @@ public partial interface IPealClient
     public IApiKeysClient ApiKeys { get; }
     public IChannelsClient Channels { get; }
     public IPostsClient Posts { get; }
+    public IArticlesClient Articles { get; }
     public IMediaClient Media { get; }
     public INoticesClient Notices { get; }
     public INotificationPreferencesClient NotificationPreferences { get; }

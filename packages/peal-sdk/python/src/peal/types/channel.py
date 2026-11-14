@@ -7,8 +7,8 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .channel_connection import ChannelConnection
+from .channel_platform import ChannelPlatform
 from .channel_status import ChannelStatus
-from .platform import Platform
 
 
 class Channel(UniversalBaseModel):
@@ -22,7 +22,7 @@ class Channel(UniversalBaseModel):
     handle: str
     id: str
     label: typing.Optional[str] = None
-    platform: Platform
+    platform: ChannelPlatform
     status: ChannelStatus
     token_expires_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="tokenExpiresAt"), pydantic.Field(alias="tokenExpiresAt")

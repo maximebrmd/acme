@@ -47,6 +47,9 @@ public final class WebhookEventType {
 
     public static final WebhookEventType REVIEW_REPLIED = new WebhookEventType(Value.REVIEW_REPLIED, "review.replied");
 
+    public static final WebhookEventType ARTICLE_PUBLISHED =
+            new WebhookEventType(Value.ARTICLE_PUBLISHED, "article.published");
+
     public static final WebhookEventType POST_UNCONFIRMED =
             new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
 
@@ -94,6 +97,8 @@ public final class WebhookEventType {
 
     public static final WebhookEventType POST_UNPUBLISHED =
             new WebhookEventType(Value.POST_UNPUBLISHED, "post.unpublished");
+
+    public static final WebhookEventType ARTICLE_FAILED = new WebhookEventType(Value.ARTICLE_FAILED, "article.failed");
 
     private final Value value;
 
@@ -159,6 +164,8 @@ public final class WebhookEventType {
                 return visitor.visitWebhookTest();
             case REVIEW_REPLIED:
                 return visitor.visitReviewReplied();
+            case ARTICLE_PUBLISHED:
+                return visitor.visitArticlePublished();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
             case REVIEW_RECEIVED:
@@ -197,6 +204,8 @@ public final class WebhookEventType {
                 return visitor.visitMediaReady();
             case POST_UNPUBLISHED:
                 return visitor.visitPostUnpublished();
+            case ARTICLE_FAILED:
+                return visitor.visitArticleFailed();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -238,6 +247,8 @@ public final class WebhookEventType {
                 return WEBHOOK_TEST;
             case "review.replied":
                 return REVIEW_REPLIED;
+            case "article.published":
+                return ARTICLE_PUBLISHED;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
             case "review.received":
@@ -276,6 +287,8 @@ public final class WebhookEventType {
                 return MEDIA_READY;
             case "post.unpublished":
                 return POST_UNPUBLISHED;
+            case "article.failed":
+                return ARTICLE_FAILED;
             default:
                 return new WebhookEventType(Value.UNKNOWN, value);
         }
@@ -350,6 +363,10 @@ public final class WebhookEventType {
 
         BOOST_BUDGET_REACHED,
 
+        ARTICLE_PUBLISHED,
+
+        ARTICLE_FAILED,
+
         WEBHOOK_TEST,
 
         UNKNOWN
@@ -423,6 +440,10 @@ public final class WebhookEventType {
         T visitBoostUnconfirmed();
 
         T visitBoostBudgetReached();
+
+        T visitArticlePublished();
+
+        T visitArticleFailed();
 
         T visitWebhookTest();
 

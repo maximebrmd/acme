@@ -39,6 +39,7 @@ public partial class PealClient : IPealClient
         ApiKeys = new ApiKeysClient(_client);
         Channels = new ChannelsClient(_client);
         Posts = new PostsClient(_client);
+        Articles = new ArticlesClient(_client);
         Media = new MediaClient(_client);
         Notices = new NoticesClient(_client);
         NotificationPreferences = new NotificationPreferencesClient(_client);
@@ -83,6 +84,8 @@ public partial class PealClient : IPealClient
     public IChannelsClient Channels { get; }
 
     public IPostsClient Posts { get; }
+
+    public IArticlesClient Articles { get; }
 
     public IMediaClient Media { get; }
 

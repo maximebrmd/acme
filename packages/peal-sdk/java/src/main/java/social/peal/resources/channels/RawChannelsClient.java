@@ -37,6 +37,7 @@ import social.peal.resources.channels.requests.ChannelUpdate;
 import social.peal.resources.channels.requests.ChooseAccounts;
 import social.peal.resources.channels.requests.ConnectCallback;
 import social.peal.resources.channels.requests.ConnectChannel;
+import social.peal.resources.channels.requests.ConnectSite;
 import social.peal.resources.channels.requests.DisableChannelsRequest;
 import social.peal.resources.channels.requests.DisconnectChannelsRequest;
 import social.peal.resources.channels.requests.EnableChannelsRequest;
@@ -343,6 +344,98 @@ public class RawChannelsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 429:
                         throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected <code>addressNotAllowed</code>); one that has no WordPress REST API is <code>notWordPress</code>, a refused password <code>credentialsRefused</code>, a user who may not publish <code>cannotPublish</code>. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     */
+    public PealClientHttpResponse<Channel> connectSite(String workspaceId, ConnectSite request) {
+        return connectSite(workspaceId, request, null);
+    }
+
+    /**
+     * Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected <code>addressNotAllowed</code>); one that has no WordPress REST API is <code>notWordPress</code>, a refused password <code>credentialsRefused</code>, a user who may not publish <code>cannotPublish</code>. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     */
+    public PealClientHttpResponse<Channel> connectSite(
+            String workspaceId, ConnectSite request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("channels")
+                .addPathSegments("websites");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
+                .url(httpUrl.build())
+                .method("POST", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Channel.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 402:
+                        throw new PaymentRequiredError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 404:
+                        throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 422:
+                        throw new UnprocessableEntityError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 502:
+                        throw new BadGatewayError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {

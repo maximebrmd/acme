@@ -12,7 +12,7 @@ export interface FindChannelsRequest {
     workspaceId: string;
     cursor?: string;
     limit?: string;
-    platform?: Peal.Platform;
+    platform?: Peal.ChannelPlatform;
     q?: string;
     status?: Peal.ChannelStatusName;
 }

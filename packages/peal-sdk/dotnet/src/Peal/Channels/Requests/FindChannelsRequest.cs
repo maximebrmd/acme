@@ -16,7 +16,7 @@ public record FindChannelsRequest
     public string? Limit { get; set; }
 
     [JsonIgnore]
-    public Platform? Platform { get; set; }
+    public ChannelPlatform? Platform { get; set; }
 
     [JsonIgnore]
     public string? Q { get; set; }

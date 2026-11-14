@@ -104,6 +104,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         Values.BoostBudgetReached
     );
 
+    public static readonly SubscribableWebhookEventType ArticlePublished = new(
+        Values.ArticlePublished
+    );
+
+    public static readonly SubscribableWebhookEventType ArticleFailed = new(Values.ArticleFailed);
+
     public SubscribableWebhookEventType(string value)
     {
         Value = value;
@@ -268,5 +274,9 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string BoostUnconfirmed = "boost.unconfirmed";
 
         public const string BoostBudgetReached = "boost.budget_reached";
+
+        public const string ArticlePublished = "article.published";
+
+        public const string ArticleFailed = "article.failed";
     }
 }

@@ -22,10 +22,12 @@ from ..types.authorization import Authorization
 from ..types.channel import Channel
 from ..types.channel_connection import ChannelConnection
 from ..types.channel_page import ChannelPage
+from ..types.channel_platform import ChannelPlatform
 from ..types.channel_status_name import ChannelStatusName
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
+from ..types.site_platform import SitePlatform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
 
@@ -129,7 +131,7 @@ class RawChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[Platform] = None,
+        platform: typing.Optional[ChannelPlatform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -145,7 +147,7 @@ class RawChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[Platform]
+        platform : typing.Optional[ChannelPlatform]
 
         q : typing.Optional[str]
 
@@ -313,6 +315,153 @@ class RawChannelsClient:
                 )
             if _response.status_code == 429:
                 raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    def connect_site(
+        self,
+        workspace_id: str,
+        *,
+        address: str,
+        application_password: str,
+        platform: SitePlatform,
+        user_name: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> HttpResponse[Channel]:
+        """
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        address : str
+
+        application_password : str
+
+        platform : SitePlatform
+
+        user_name : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[Channel]
+            Channel
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/channels/websites",
+            method="POST",
+            json={
+                "address": address,
+                "applicationPassword": application_password,
+                "platform": platform,
+                "userName": user_name,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Channel,
+                    parse_obj_as(
+                        type_=Channel,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 502:
+                raise BadGatewayError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1346,7 +1495,7 @@ class AsyncRawChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[Platform] = None,
+        platform: typing.Optional[ChannelPlatform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1362,7 +1511,7 @@ class AsyncRawChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[Platform]
+        platform : typing.Optional[ChannelPlatform]
 
         q : typing.Optional[str]
 
@@ -1530,6 +1679,153 @@ class AsyncRawChannelsClient:
                 )
             if _response.status_code == 429:
                 raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    async def connect_site(
+        self,
+        workspace_id: str,
+        *,
+        address: str,
+        application_password: str,
+        platform: SitePlatform,
+        user_name: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AsyncHttpResponse[Channel]:
+        """
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        address : str
+
+        application_password : str
+
+        platform : SitePlatform
+
+        user_name : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[Channel]
+            Channel
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/channels/websites",
+            method="POST",
+            json={
+                "address": address,
+                "applicationPassword": application_password,
+                "platform": platform,
+                "userName": user_name,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Channel,
+                    parse_obj_as(
+                        type_=Channel,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 502:
+                raise BadGatewayError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,

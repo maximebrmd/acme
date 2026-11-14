@@ -595,6 +595,8 @@ const (
 	SubscribableWebhookEventTypeBoostFailed            SubscribableWebhookEventType = "boost.failed"
 	SubscribableWebhookEventTypeBoostUnconfirmed       SubscribableWebhookEventType = "boost.unconfirmed"
 	SubscribableWebhookEventTypeBoostBudgetReached     SubscribableWebhookEventType = "boost.budget_reached"
+	SubscribableWebhookEventTypeArticlePublished       SubscribableWebhookEventType = "article.published"
+	SubscribableWebhookEventTypeArticleFailed          SubscribableWebhookEventType = "article.failed"
 )
 
 func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEventType, error) {
@@ -667,6 +669,10 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypeBoostUnconfirmed, nil
 	case "boost.budget_reached":
 		return SubscribableWebhookEventTypeBoostBudgetReached, nil
+	case "article.published":
+		return SubscribableWebhookEventTypeArticlePublished, nil
+	case "article.failed":
+		return SubscribableWebhookEventTypeArticleFailed, nil
 	}
 	var t SubscribableWebhookEventType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1877,6 +1883,8 @@ const (
 	WebhookEventTypeBoostFailed            WebhookEventType = "boost.failed"
 	WebhookEventTypeBoostUnconfirmed       WebhookEventType = "boost.unconfirmed"
 	WebhookEventTypeBoostBudgetReached     WebhookEventType = "boost.budget_reached"
+	WebhookEventTypeArticlePublished       WebhookEventType = "article.published"
+	WebhookEventTypeArticleFailed          WebhookEventType = "article.failed"
 	WebhookEventTypeWebhookTest            WebhookEventType = "webhook.test"
 )
 
@@ -1950,6 +1958,10 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypeBoostUnconfirmed, nil
 	case "boost.budget_reached":
 		return WebhookEventTypeBoostBudgetReached, nil
+	case "article.published":
+		return WebhookEventTypeArticlePublished, nil
+	case "article.failed":
+		return WebhookEventTypeArticleFailed, nil
 	case "webhook.test":
 		return WebhookEventTypeWebhookTest, nil
 	}

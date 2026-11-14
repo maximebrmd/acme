@@ -12,6 +12,7 @@ import social.peal.resources.channels.requests.ChannelUpdate;
 import social.peal.resources.channels.requests.ChooseAccounts;
 import social.peal.resources.channels.requests.ConnectCallback;
 import social.peal.resources.channels.requests.ConnectChannel;
+import social.peal.resources.channels.requests.ConnectSite;
 import social.peal.resources.channels.requests.DisableChannelsRequest;
 import social.peal.resources.channels.requests.DisconnectChannelsRequest;
 import social.peal.resources.channels.requests.EnableChannelsRequest;
@@ -214,6 +215,36 @@ public class AsyncChannelsClient {
         CompletableFuture<PealClientHttpResponse<ConnectablePlatforms>> rawFuture =
                 this.rawClient.platforms(workspaceId, request, requestOptions);
         CompletableFuture<ConnectablePlatforms> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected <code>addressNotAllowed</code>); one that has no WordPress REST API is <code>notWordPress</code>, a refused password <code>credentialsRefused</code>, a user who may not publish <code>cannotPublish</code>. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     */
+    public CompletableFuture<Channel> connectSite(String workspaceId, ConnectSite request) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture = this.rawClient.connectSite(workspaceId, request);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected <code>addressNotAllowed</code>); one that has no WordPress REST API is <code>notWordPress</code>, a refused password <code>credentialsRefused</code>, a user who may not publish <code>cannotPublish</code>. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     */
+    public CompletableFuture<Channel> connectSite(
+            String workspaceId, ConnectSite request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.connectSite(workspaceId, request, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

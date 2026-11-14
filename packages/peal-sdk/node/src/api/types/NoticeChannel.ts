@@ -4,5 +4,5 @@ import * as Peal from "../index.js";
 
 export interface NoticeChannel {
     handle: string;
-    platform: Peal.Platform;
+    platform: Peal.ChannelPlatform;
 }

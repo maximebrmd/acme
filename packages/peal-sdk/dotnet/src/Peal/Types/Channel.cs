@@ -30,7 +30,7 @@ public record Channel : IJsonOnDeserialized
     public string? Label { get; set; }
 
     [JsonPropertyName("platform")]
-    public required Platform Platform { get; set; }
+    public required ChannelPlatform Platform { get; set; }
 
     [JsonPropertyName("status")]
     public required ChannelStatus Status { get; set; }

@@ -4,6 +4,7 @@ import { ActivityClient } from "./api/resources/activity/client/Client.js";
 import { AdsClient } from "./api/resources/ads/client/Client.js";
 import { AnalyticsClient } from "./api/resources/analytics/client/Client.js";
 import { ApiKeysClient } from "./api/resources/apiKeys/client/Client.js";
+import { ArticlesClient } from "./api/resources/articles/client/Client.js";
 import { AssistantClient } from "./api/resources/assistant/client/Client.js";
 import { BillingClient } from "./api/resources/billing/client/Client.js";
 import { CapabilitiesClient } from "./api/resources/capabilities/client/Client.js";
@@ -57,6 +58,7 @@ export class PealClient {
     protected _apiKeys: ApiKeysClient | undefined;
     protected _channels: ChannelsClient | undefined;
     protected _posts: PostsClient | undefined;
+    protected _articles: ArticlesClient | undefined;
     protected _media: MediaClient | undefined;
     protected _notices: NoticesClient | undefined;
     protected _notificationPreferences: NotificationPreferencesClient | undefined;
@@ -116,6 +118,10 @@ export class PealClient {
 
     public get posts(): PostsClient {
         return (this._posts ??= new PostsClient(this._options));
+    }
+
+    public get articles(): ArticlesClient {
+        return (this._articles ??= new ArticlesClient(this._options));
     }
 
     public get media(): MediaClient {

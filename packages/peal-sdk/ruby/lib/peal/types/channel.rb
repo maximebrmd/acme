@@ -17,7 +17,7 @@ module Peal
 
       field :label, -> { String }, optional: false, nullable: true
 
-      field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
+      field :platform, -> { Peal::Types::ChannelPlatform }, optional: false, nullable: false
 
       field :status, -> { Peal::Types::ChannelStatus }, optional: false, nullable: false
 

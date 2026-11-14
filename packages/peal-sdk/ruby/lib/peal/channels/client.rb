@@ -68,7 +68,7 @@ module Peal
       # @option params [String] :workspace_id
       # @option params [String, nil] :cursor
       # @option params [String, nil] :limit
-      # @option params [Peal::Types::Platform, nil] :platform
+      # @option params [Peal::Types::ChannelPlatform, nil] :platform
       # @option params [String, nil] :q
       # @option params [Peal::Types::ChannelStatusName, nil] :status
       #
@@ -143,6 +143,66 @@ module Peal
         code = response.code.to_i
         if code.between?(200, 299)
           (response.body.to_s.empty? ? nil : Peal::Types::ConnectablePlatforms.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
+      # Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal
+      # publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST
+      # API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on
+      # HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is
+      # `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that
+      # does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected
+      # with the new password. A site counts as one channel: a new one needs room in the workspace's plan
+      # (PlanLimitReached). Needs channel:connect.
+      #
+      # @param request_options [Hash]
+      # @param params [Peal::Channels::Types::ConnectSite]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      #
+      # @example
+      #   client.channels.connect_site(
+      #     workspace_id: "workspaceId",
+      #     address: "address",
+      #     application_password: "applicationPassword",
+      #     platform: "wordpress",
+      #     user_name: "userName"
+      #   )
+      #
+      # @return [Peal::Types::Channel]
+      def connect_site(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Channels::Types::ConnectSite.new(params).to_h
+        non_body_param_names = %w[workspaceId]
+        body = request_data.except(*non_body_param_names)
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/channels/websites",
+          body: body,
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Channel.load(response.body))
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {

@@ -174,6 +174,53 @@ func (r *RawClient) Platforms(
 	}, nil
 }
 
+func (r *RawClient) ConnectSite(
+	ctx context.Context,
+	request *peal.ConnectSite,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.Channel], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/channels/websites",
+		request.WorkspaceID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *peal.Channel
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  true,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.Channel]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
 func (r *RawClient) Connect(
 	ctx context.Context,
 	request *peal.ConnectChannel,

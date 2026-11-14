@@ -38,6 +38,8 @@ SubscribableWebhookEventType = typing.Union[
         "boost.failed",
         "boost.unconfirmed",
         "boost.budget_reached",
+        "article.published",
+        "article.failed",
     ],
     typing.Any,
 ]

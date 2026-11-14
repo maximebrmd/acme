@@ -4,7 +4,7 @@ pub use crate::prelude::*;
 pub struct NoticeChannel {
     #[serde(default)]
     pub handle: String,
-    pub platform: Platform,
+    pub platform: ChannelPlatform,
 }
 
 impl NoticeChannel {
@@ -17,7 +17,7 @@ impl NoticeChannel {
 #[non_exhaustive]
 pub struct NoticeChannelBuilder {
     handle: Option<String>,
-    platform: Option<Platform>,
+    platform: Option<ChannelPlatform>,
 }
 
 impl NoticeChannelBuilder {
@@ -26,7 +26,7 @@ impl NoticeChannelBuilder {
         self
     }
 
-    pub fn platform(mut self, value: Platform) -> Self {
+    pub fn platform(mut self, value: ChannelPlatform) -> Self {
         self.platform = Some(value);
         self
     }

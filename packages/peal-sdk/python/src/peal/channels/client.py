@@ -8,10 +8,12 @@ from ..types.authorization import Authorization
 from ..types.channel import Channel
 from ..types.channel_connection import ChannelConnection
 from ..types.channel_page import ChannelPage
+from ..types.channel_platform import ChannelPlatform
 from ..types.channel_status_name import ChannelStatusName
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
+from ..types.site_platform import SitePlatform
 from .raw_client import AsyncRawChannelsClient, RawChannelsClient
 
 # this is used as the default value for optional parameters
@@ -71,7 +73,7 @@ class ChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[Platform] = None,
+        platform: typing.Optional[ChannelPlatform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -87,7 +89,7 @@ class ChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[Platform]
+        platform : typing.Optional[ChannelPlatform]
 
         q : typing.Optional[str]
 
@@ -153,6 +155,64 @@ class ChannelsClient:
         )
         """
         _response = self._raw_client.platforms(workspace_id, request_options=request_options)
+        return _response.data
+
+    def connect_site(
+        self,
+        workspace_id: str,
+        *,
+        address: str,
+        application_password: str,
+        platform: SitePlatform,
+        user_name: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        address : str
+
+        application_password : str
+
+        platform : SitePlatform
+
+        user_name : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.channels.connect_site(
+            workspace_id="workspaceId",
+            address="address",
+            application_password="applicationPassword",
+            platform="wordpress",
+            user_name="userName",
+        )
+        """
+        _response = self._raw_client.connect_site(
+            workspace_id,
+            address=address,
+            application_password=application_password,
+            platform=platform,
+            user_name=user_name,
+            request_options=request_options,
+        )
         return _response.data
 
     def connect(
@@ -556,7 +616,7 @@ class AsyncChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[Platform] = None,
+        platform: typing.Optional[ChannelPlatform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -572,7 +632,7 @@ class AsyncChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[Platform]
+        platform : typing.Optional[ChannelPlatform]
 
         q : typing.Optional[str]
 
@@ -654,6 +714,72 @@ class AsyncChannelsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.platforms(workspace_id, request_options=request_options)
+        return _response.data
+
+    async def connect_site(
+        self,
+        workspace_id: str,
+        *,
+        address: str,
+        application_password: str,
+        platform: SitePlatform,
+        user_name: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        address : str
+
+        application_password : str
+
+        platform : SitePlatform
+
+        user_name : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.channels.connect_site(
+                workspace_id="workspaceId",
+                address="address",
+                application_password="applicationPassword",
+                platform="wordpress",
+                user_name="userName",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.connect_site(
+            workspace_id,
+            address=address,
+            application_password=application_password,
+            platform=platform,
+            user_name=user_name,
+            request_options=request_options,
+        )
         return _response.data
 
     async def connect(

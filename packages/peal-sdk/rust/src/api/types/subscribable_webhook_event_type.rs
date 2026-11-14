@@ -38,6 +38,8 @@ pub enum SubscribableWebhookEventType {
     BoostFailed,
     BoostUnconfirmed,
     BoostBudgetReached,
+    ArticlePublished,
+    ArticleFailed,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -80,6 +82,8 @@ impl Serialize for SubscribableWebhookEventType {
             Self::BoostFailed => serializer.serialize_str("boost.failed"),
             Self::BoostUnconfirmed => serializer.serialize_str("boost.unconfirmed"),
             Self::BoostBudgetReached => serializer.serialize_str("boost.budget_reached"),
+            Self::ArticlePublished => serializer.serialize_str("article.published"),
+            Self::ArticleFailed => serializer.serialize_str("article.failed"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -123,6 +127,8 @@ impl<'de> Deserialize<'de> for SubscribableWebhookEventType {
             "boost.failed" => Ok(Self::BoostFailed),
             "boost.unconfirmed" => Ok(Self::BoostUnconfirmed),
             "boost.budget_reached" => Ok(Self::BoostBudgetReached),
+            "article.published" => Ok(Self::ArticlePublished),
+            "article.failed" => Ok(Self::ArticleFailed),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -165,6 +171,8 @@ impl fmt::Display for SubscribableWebhookEventType {
             Self::BoostFailed => write!(f, "boost.failed"),
             Self::BoostUnconfirmed => write!(f, "boost.unconfirmed"),
             Self::BoostBudgetReached => write!(f, "boost.budget_reached"),
+            Self::ArticlePublished => write!(f, "article.published"),
+            Self::ArticleFailed => write!(f, "article.failed"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

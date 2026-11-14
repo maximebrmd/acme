@@ -612,6 +612,207 @@ func TestSettersMarkExplicitConnectChannel(t *testing.T) {
 
 }
 
+func TestSettersConnectSite(t *testing.T) {
+	t.Run("SetWorkspaceID", func(t *testing.T) {
+		obj := &ConnectSite{}
+		var fernTestValueWorkspaceID string
+		obj.SetWorkspaceID(fernTestValueWorkspaceID)
+		assert.Equal(t, fernTestValueWorkspaceID, obj.WorkspaceID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAddress", func(t *testing.T) {
+		obj := &ConnectSite{}
+		var fernTestValueAddress string
+		obj.SetAddress(fernTestValueAddress)
+		assert.Equal(t, fernTestValueAddress, obj.Address)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetApplicationPassword", func(t *testing.T) {
+		obj := &ConnectSite{}
+		var fernTestValueApplicationPassword string
+		obj.SetApplicationPassword(fernTestValueApplicationPassword)
+		assert.Equal(t, fernTestValueApplicationPassword, obj.ApplicationPassword)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPlatform", func(t *testing.T) {
+		obj := &ConnectSite{}
+		var fernTestValuePlatform SitePlatform
+		obj.SetPlatform(fernTestValuePlatform)
+		assert.Equal(t, fernTestValuePlatform, obj.Platform)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetUserName", func(t *testing.T) {
+		obj := &ConnectSite{}
+		var fernTestValueUserName string
+		obj.SetUserName(fernTestValueUserName)
+		assert.Equal(t, fernTestValueUserName, obj.UserName)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestSettersMarkExplicitConnectSite(t *testing.T) {
+	t.Run("SetWorkspaceID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectSite{}
+		var fernTestValueWorkspaceID string
+
+		// Act
+		obj.SetWorkspaceID(fernTestValueWorkspaceID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAddress_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectSite{}
+		var fernTestValueAddress string
+
+		// Act
+		obj.SetAddress(fernTestValueAddress)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetApplicationPassword_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectSite{}
+		var fernTestValueApplicationPassword string
+
+		// Act
+		obj.SetApplicationPassword(fernTestValueApplicationPassword)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPlatform_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectSite{}
+		var fernTestValuePlatform SitePlatform
+
+		// Act
+		obj.SetPlatform(fernTestValuePlatform)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetUserName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectSite{}
+		var fernTestValueUserName string
+
+		// Act
+		obj.SetUserName(fernTestValueUserName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersDisableChannelsRequest(t *testing.T) {
 	t.Run("SetWorkspaceID", func(t *testing.T) {
 		obj := &DisableChannelsRequest{}
@@ -891,7 +1092,7 @@ func TestSettersFindChannelsRequest(t *testing.T) {
 
 	t.Run("SetPlatform", func(t *testing.T) {
 		obj := &FindChannelsRequest{}
-		var fernTestValuePlatform *Platform
+		var fernTestValuePlatform *ChannelPlatform
 		obj.SetPlatform(fernTestValuePlatform)
 		assert.Equal(t, fernTestValuePlatform, obj.Platform)
 		assert.NotNil(t, obj.explicitFields)
@@ -1013,7 +1214,7 @@ func TestSettersMarkExplicitFindChannelsRequest(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &FindChannelsRequest{}
-		var fernTestValuePlatform *Platform
+		var fernTestValuePlatform *ChannelPlatform
 
 		// Act
 		obj.SetPlatform(fernTestValuePlatform)
@@ -1400,7 +1601,7 @@ func TestSettersChannel(t *testing.T) {
 
 	t.Run("SetPlatform", func(t *testing.T) {
 		obj := &Channel{}
-		var fernTestValuePlatform Platform
+		var fernTestValuePlatform ChannelPlatform
 		obj.SetPlatform(fernTestValuePlatform)
 		assert.Equal(t, fernTestValuePlatform, obj.Platform)
 		assert.NotNil(t, obj.explicitFields)
@@ -1607,7 +1808,7 @@ func TestGettersChannel(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Channel{}
-		var expected Platform
+		var expected ChannelPlatform
 		obj.Platform = expected
 
 		// Act & Assert
@@ -1885,7 +2086,7 @@ func TestSettersMarkExplicitChannel(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Channel{}
-		var fernTestValuePlatform Platform
+		var fernTestValuePlatform ChannelPlatform
 
 		// Act
 		obj.SetPlatform(fernTestValuePlatform)
@@ -4417,6 +4618,28 @@ func TestEnumLinkedInConnection(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewLinkedInConnectionFromString("linkedinProfile")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSitePlatform(t *testing.T) {
+	t.Run("NewFromString_wordpress", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSitePlatformFromString("wordpress")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SitePlatform("wordpress"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSitePlatformFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSitePlatformFromString("wordpress")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

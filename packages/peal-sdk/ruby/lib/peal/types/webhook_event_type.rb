@@ -41,6 +41,8 @@ module Peal
       BOOST_FAILED = "boost.failed"
       BOOST_UNCONFIRMED = "boost.unconfirmed"
       BOOST_BUDGET_REACHED = "boost.budget_reached"
+      ARTICLE_PUBLISHED = "article.published"
+      ARTICLE_FAILED = "article.failed"
       WEBHOOK_TEST = "webhook.test"
     end
   end

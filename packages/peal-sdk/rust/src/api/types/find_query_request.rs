@@ -8,7 +8,7 @@ pub struct FindQueryRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub platform: Option<Platform>,
+    pub platform: Option<ChannelPlatform>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub q: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,7 +26,7 @@ impl FindQueryRequest {
 pub struct FindQueryRequestBuilder {
     cursor: Option<String>,
     limit: Option<String>,
-    platform: Option<Platform>,
+    platform: Option<ChannelPlatform>,
     q: Option<String>,
     status: Option<ChannelStatusName>,
 }
@@ -42,7 +42,7 @@ impl FindQueryRequestBuilder {
         self
     }
 
-    pub fn platform(mut self, value: Platform) -> Self {
+    pub fn platform(mut self, value: ChannelPlatform) -> Self {
         self.platform = Some(value);
         self
     }

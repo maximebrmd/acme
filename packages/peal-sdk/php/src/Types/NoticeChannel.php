@@ -14,7 +14,7 @@ class NoticeChannel extends JsonSerializableType
     public string $handle;
 
     /**
-     * @var value-of<Platform> $platform
+     * @var value-of<ChannelPlatform> $platform
      */
     #[JsonProperty('platform')]
     public string $platform;
@@ -22,7 +22,7 @@ class NoticeChannel extends JsonSerializableType
     /**
      * @param array{
      *   handle: string,
-     *   platform: value-of<Platform>,
+     *   platform: value-of<ChannelPlatform>,
      * } $values
      */
     public function __construct(

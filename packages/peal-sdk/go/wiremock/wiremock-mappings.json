@@ -365,6 +365,42 @@
       }
     },
     {
+      "id": "9a398982-b5e8-40e3-bab0-95286aa87fe1",
+      "name": "Connect a website - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/websites",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"avatarUrl\": \"avatarUrl\",\n  \"connection\": \"instagramLogin\",\n  \"displayName\": \"displayName\",\n  \"handle\": \"handle\",\n  \"id\": \"id\",\n  \"label\": \"label\",\n  \"platform\": \"x\",\n  \"status\": {\n    \"_tag\": \"active\"\n  },\n  \"tokenExpiresAt\": \"tokenExpiresAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9a398982-b5e8-40e3-bab0-95286aa87fe1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "86d734b7-bb52-4bbe-b5f2-d28a0fa48c1d",
       "name": "Start connecting an account - default",
       "request": {
@@ -1759,6 +1795,390 @@
         }
       },
       "uuid": "5050f28b-e41d-4ba6-a5b6-7cdf1702e108",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d8a3833b-a5e0-4b5a-89d5-c6b53124131b",
+      "name": "List articles - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"body\": {\n        \"content\": [],\n        \"type\": \"doc\"\n      },\n      \"categories\": [\n        \"categories\"\n      ],\n      \"channelId\": \"channelId\",\n      \"coverMediaId\": \"coverMediaId\",\n      \"createdAt\": \"createdAt\",\n      \"excerpt\": \"excerpt\",\n      \"id\": \"id\",\n      \"siteStatus\": \"publish\",\n      \"state\": {\n        \"_tag\": \"draft\"\n      },\n      \"tags\": [\n        \"tags\"\n      ],\n      \"title\": \"title\",\n      \"updatedAt\": \"updatedAt\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d8a3833b-a5e0-4b5a-89d5-c6b53124131b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "347eed9c-5b93-40fe-9e59-f23ed3ef7d3d",
+      "name": "Create an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "347eed9c-5b93-40fe-9e59-f23ed3ef7d3d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c8bf67cd-6fe9-45bb-bae9-441b2caa7a75",
+      "name": "Get an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c8bf67cd-6fe9-45bb-bae9-441b2caa7a75",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e4ece510-36b1-463f-a0b6-58df8bda2b0c",
+      "name": "Delete an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e4ece510-36b1-463f-a0b6-58df8bda2b0c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "acbb1e91-8e2b-4bd2-bb62-3d7eb72b0fa7",
+      "name": "Update an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "acbb1e91-8e2b-4bd2-bb62-3d7eb72b0fa7",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f57517f7-b638-4b92-81fc-f0cb45f8e6c6",
+      "name": "Schedule an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}/schedule",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f57517f7-b638-4b92-81fc-f0cb45f8e6c6",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "bfae8e59-e301-4aec-96af-83a2ce540f45",
+      "name": "Unschedule an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}/unschedule",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "bfae8e59-e301-4aec-96af-83a2ce540f45",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ac2dfee9-1d82-4c8d-8abb-a91aee61ae5d",
+      "name": "Send an article again - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}/retry",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ac2dfee9-1d82-4c8d-8abb-a91aee61ae5d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a97e116d-cf34-432a-9cb6-640343d68b68",
+      "name": "Unpublish an article - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}/unpublish",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a97e116d-cf34-432a-9cb6-640343d68b68",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "73571aed-2448-48a2-9abd-9be51c5edb75",
+      "name": "Update an article on its site - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/articles/{articleId}/site",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "articleId": {
+            "equalTo": "articleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"body\": {\n    \"content\": [\n      {\n        \"key\": \"value\"\n      }\n    ],\n    \"type\": \"doc\"\n  },\n  \"categories\": [\n    \"categories\"\n  ],\n  \"channelId\": \"channelId\",\n  \"coverMediaId\": \"coverMediaId\",\n  \"createdAt\": \"createdAt\",\n  \"excerpt\": \"excerpt\",\n  \"id\": \"id\",\n  \"siteStatus\": \"publish\",\n  \"state\": {\n    \"_tag\": \"draft\"\n  },\n  \"tags\": [\n    \"tags\"\n  ],\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "73571aed-2448-48a2-9abd-9be51c5edb75",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -7988,6 +8408,6 @@
     }
   ],
   "meta": {
-    "total": 213
+    "total": 224
   }
 }

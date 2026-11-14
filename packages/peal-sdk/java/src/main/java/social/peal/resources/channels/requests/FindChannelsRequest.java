@@ -16,8 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.types.ChannelPlatform;
 import social.peal.types.ChannelStatusName;
-import social.peal.types.Platform;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = FindChannelsRequest.Builder.class)
@@ -26,7 +26,7 @@ public final class FindChannelsRequest {
 
     private final Optional<String> limit;
 
-    private final Optional<Platform> platform;
+    private final Optional<ChannelPlatform> platform;
 
     private final Optional<String> q;
 
@@ -37,7 +37,7 @@ public final class FindChannelsRequest {
     private FindChannelsRequest(
             Optional<String> cursor,
             Optional<String> limit,
-            Optional<Platform> platform,
+            Optional<ChannelPlatform> platform,
             Optional<String> q,
             Optional<ChannelStatusName> status,
             Map<String, Object> additionalProperties) {
@@ -60,7 +60,7 @@ public final class FindChannelsRequest {
     }
 
     @JsonProperty("platform")
-    public Optional<Platform> getPlatform() {
+    public Optional<ChannelPlatform> getPlatform() {
         return platform;
     }
 
@@ -113,7 +113,7 @@ public final class FindChannelsRequest {
 
         private Optional<String> limit = Optional.empty();
 
-        private Optional<Platform> platform = Optional.empty();
+        private Optional<ChannelPlatform> platform = Optional.empty();
 
         private Optional<String> q = Optional.empty();
 
@@ -155,12 +155,12 @@ public final class FindChannelsRequest {
         }
 
         @JsonSetter(value = "platform", nulls = Nulls.SKIP)
-        public Builder platform(Optional<Platform> platform) {
+        public Builder platform(Optional<ChannelPlatform> platform) {
             this.platform = platform;
             return this;
         }
 
-        public Builder platform(Platform platform) {
+        public Builder platform(ChannelPlatform platform) {
             this.platform = Optional.ofNullable(platform);
             return this;
         }

@@ -84,6 +84,17 @@
       },
       "default": "./dist/cjs/api/resources/posts/exports.js"
     },
+    "./articles": {
+      "import": {
+        "types": "./dist/esm/api/resources/articles/exports.d.mts",
+        "default": "./dist/esm/api/resources/articles/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/articles/exports.d.ts",
+        "default": "./dist/cjs/api/resources/articles/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/articles/exports.js"
+    },
     "./media": {
       "import": {
         "types": "./dist/esm/api/resources/media/exports.d.mts",

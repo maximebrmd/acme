@@ -14,6 +14,7 @@ if typing.TYPE_CHECKING:
     from .ads.client import AdsClient, AsyncAdsClient
     from .analytics.client import AnalyticsClient, AsyncAnalyticsClient
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
+    from .articles.client import ArticlesClient, AsyncArticlesClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
     from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
@@ -139,6 +140,7 @@ class Peal:
         self._api_keys: typing.Optional[ApiKeysClient] = None
         self._channels: typing.Optional[ChannelsClient] = None
         self._posts: typing.Optional[PostsClient] = None
+        self._articles: typing.Optional[ArticlesClient] = None
         self._media: typing.Optional[MediaClient] = None
         self._notices: typing.Optional[NoticesClient] = None
         self._notification_preferences: typing.Optional[NotificationPreferencesClient] = None
@@ -218,6 +220,14 @@ class Peal:
 
             self._posts = PostsClient(client_wrapper=self._client_wrapper)
         return self._posts
+
+    @property
+    def articles(self):
+        if self._articles is None:
+            from .articles.client import ArticlesClient  # noqa: E402
+
+            self._articles = ArticlesClient(client_wrapper=self._client_wrapper)
+        return self._articles
 
     @property
     def media(self):
@@ -579,6 +589,7 @@ class AsyncPeal:
         self._api_keys: typing.Optional[AsyncApiKeysClient] = None
         self._channels: typing.Optional[AsyncChannelsClient] = None
         self._posts: typing.Optional[AsyncPostsClient] = None
+        self._articles: typing.Optional[AsyncArticlesClient] = None
         self._media: typing.Optional[AsyncMediaClient] = None
         self._notices: typing.Optional[AsyncNoticesClient] = None
         self._notification_preferences: typing.Optional[AsyncNotificationPreferencesClient] = None
@@ -658,6 +669,14 @@ class AsyncPeal:
 
             self._posts = AsyncPostsClient(client_wrapper=self._client_wrapper)
         return self._posts
+
+    @property
+    def articles(self):
+        if self._articles is None:
+            from .articles.client import AsyncArticlesClient  # noqa: E402
+
+            self._articles = AsyncArticlesClient(client_wrapper=self._client_wrapper)
+        return self._articles
 
     @property
     def media(self):

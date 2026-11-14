@@ -21,11 +21,11 @@ import social.peal.core.ObjectMappers;
 public final class NoticeChannel {
     private final String handle;
 
-    private final Platform platform;
+    private final ChannelPlatform platform;
 
     private final Map<String, Object> additionalProperties;
 
-    private NoticeChannel(String handle, Platform platform, Map<String, Object> additionalProperties) {
+    private NoticeChannel(String handle, ChannelPlatform platform, Map<String, Object> additionalProperties) {
         this.handle = handle;
         this.platform = platform;
         this.additionalProperties = additionalProperties;
@@ -37,7 +37,7 @@ public final class NoticeChannel {
     }
 
     @JsonProperty("platform")
-    public Platform getPlatform() {
+    public ChannelPlatform getPlatform() {
         return platform;
     }
 
@@ -77,7 +77,7 @@ public final class NoticeChannel {
     }
 
     public interface PlatformStage {
-        _FinalStage platform(@NotNull Platform platform);
+        _FinalStage platform(@NotNull ChannelPlatform platform);
     }
 
     public interface _FinalStage {
@@ -92,7 +92,7 @@ public final class NoticeChannel {
     public static final class Builder implements HandleStage, PlatformStage, _FinalStage {
         private String handle;
 
-        private Platform platform;
+        private ChannelPlatform platform;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -114,7 +114,7 @@ public final class NoticeChannel {
 
         @java.lang.Override
         @JsonSetter("platform")
-        public _FinalStage platform(@NotNull Platform platform) {
+        public _FinalStage platform(@NotNull ChannelPlatform platform) {
             this.platform = Objects.requireNonNull(platform, "platform must not be null");
             return this;
         }
