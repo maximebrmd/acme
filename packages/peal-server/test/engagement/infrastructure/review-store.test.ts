@@ -428,4 +428,42 @@ layer(StoreTest)("the review store", (it) => {
         );
       })
   );
+
+  it.effect(
+    "counts a review whose reply Google rejected as still waiting",
+    () =>
+      Effect.gen(function* rejectedReply() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* ReviewStore;
+        const thread = yield* locationOf(
+          workspaceId,
+          "2047-02-06T10:00:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const rejected = yield* reviewOn(
+            thread,
+            1,
+            "2047-02-06T09:00:00.000Z",
+            {
+              reply: Option.some({
+                moderation: Option.some("rejected"),
+                text: "A synthetic reply Google rejected",
+                updatedAt: utc("2047-02-06T09:30:00.000Z"),
+              }),
+            }
+          );
+
+          yield* store.saveReviews([rejected]);
+          yield* store.recount(thread.id);
+
+          assert.strictEqual(
+            Option.getOrThrow(yield* store.thread(thread.id)).unanswered,
+            1
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
 });

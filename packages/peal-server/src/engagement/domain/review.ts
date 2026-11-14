@@ -217,11 +217,15 @@ export const markReviewAnswered = (
   });
 
 /**
- * Whether the review waits for no answer: the location replied, or a
- * member said it needs none.
+ * Whether the review waits for no answer: the location replied, and
+ * Google did not reject the reply, which then shows nothing; or a member
+ * said it needs none.
  */
 export const isReviewAnswered = (review: Review): boolean =>
-  Option.isSome(review.reply) || Option.isSome(review.answeredAt);
+  Option.exists(
+    review.reply,
+    ({ moderation }) => !Option.contains(moderation, "rejected")
+  ) || Option.isSome(review.answeredAt);
 
 /** The instant before which a review is no longer kept, at `now`. */
 export const keptSince = (now: DateTime.Utc): DateTime.Utc =>

@@ -37,6 +37,20 @@ describe("a review", () => {
     ).toBeFalsy();
   });
 
+  it("waits for an answer still when Google rejected the location's reply, which shows nothing", () => {
+    const rejected = review(1, {
+      reply: Option.some({
+        ...ownerReply,
+        moderation: Option.some("rejected"),
+      }),
+    });
+
+    expect(isReviewAnswered(rejected)).toBeFalsy();
+    expect(
+      isReviewAnswered(markReviewAnswered(rejected, true, reviewedAt))
+    ).toBeTruthy();
+  });
+
   it("keeps nothing a database refuses or a screen acts on, whatever Google gives", () => {
     const nul = String.fromCodePoint(0);
     const lone = String.fromCodePoint(0xd8_00);

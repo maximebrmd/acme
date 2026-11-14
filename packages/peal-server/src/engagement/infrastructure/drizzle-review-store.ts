@@ -471,7 +471,9 @@ export const DrizzleReviewStore = Layer.effect(
         FROM (
           SELECT count(*)::int AS reviews,
                  (count(*) FILTER (
-                   WHERE reply_text IS NULL AND answered_at IS NULL
+                   WHERE (reply_text IS NULL
+                          OR reply_moderation = 'rejected')
+                     AND answered_at IS NULL
                  ))::int AS unanswered,
                  max(updated_at) AS latest
           FROM engagement.reviews
