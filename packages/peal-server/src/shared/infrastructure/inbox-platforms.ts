@@ -40,8 +40,8 @@ const clientSet = (prefix: string) =>
 
 /**
  * `PEAL_INBOX_PLATFORMS`: the optional platforms the inbox reads comments
- * on, comma-separated among `facebook`, `instagram`, `youtube` and
- * `linkedin`; none
+ * (or, on Google Business Profile, reviews) on, comma-separated among
+ * `facebook`, `instagram`, `youtube`, `linkedin` and `googleBusiness`; none
  * when unset or blank. Any other name stops the server, as does a
  * platform without the app it signs in with: Facebook Pages need Meta's
  * main app (`META_APP_ID`, `META_APP_SECRET`), Instagram either of its
@@ -49,7 +49,9 @@ const clientSet = (prefix: string) =>
  * `INSTAGRAM_APP_SECRET`), YouTube its OAuth client (`YOUTUBE_CLIENT_ID`,
  * `YOUTUBE_CLIENT_SECRET`), LinkedIn the pages app
  * (`LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`): comments
- * are read on company pages only.
+ * are read on company pages only; Google Business Profile its OAuth client
+ * (`GOOGLE_BUSINESS_CLIENT_ID`, `GOOGLE_BUSINESS_CLIENT_SECRET`), whose
+ * project Google gives access to the Business Profile APIs.
  */
 export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
   const written = yield* Config.option(Config.String("PEAL_INBOX_PLATFORMS"));
@@ -104,6 +106,16 @@ export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
     return yield* new InvalidInboxSettings({
       reason:
         "linkedin in PEAL_INBOX_PLATFORMS needs LINKEDIN_PAGES_CLIENT_ID and LINKEDIN_PAGES_CLIENT_SECRET",
+    });
+  }
+
+  if (
+    platforms.has("googleBusiness") &&
+    !(yield* clientSet("GOOGLE_BUSINESS"))
+  ) {
+    return yield* new InvalidInboxSettings({
+      reason:
+        "googleBusiness in PEAL_INBOX_PLATFORMS needs GOOGLE_BUSINESS_CLIENT_ID and GOOGLE_BUSINESS_CLIENT_SECRET",
     });
   }
 

@@ -45,6 +45,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
  *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
  *   `trial-memory.ts`);
+ * - `inboxReviews`: a review of a location, from when it was written or
+ *   last changed (`engagement/domain/review.ts`, `reviewsKeptFor`: Google
+ *   lets what its API gives be stored 30 days at most);
  * - `webhookDeliveries`: a webhook endpoint's delivery log
  *   (`webhooks/domain/delivery-policy.ts`);
  * - `usageDays`: each workspace's usage counts, day by day
@@ -90,6 +93,7 @@ export const retentionPeriods = {
   exportLinks: { days: 7 },
   idempotencyKeys: { hours: 24 },
   inboxAfterCollection: { days: 30 },
+  inboxReviews: { days: 29 },
   inboxWindow: { days: 30 },
   invoices: { years: 10 },
   legalAccount: { years: 1 },
@@ -343,6 +347,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "The platforms, for the comments, which their authors published there (on Facebook Pages, Instagram, YouTube and LinkedIn company pages, where the operator turned them on, through the permissions the connected account granted); the members of your workspaces, for the replies",
       fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés (sur les Pages Facebook, Instagram, YouTube et les pages d’entreprise LinkedIn, là où l’exploitant les a activés, grâce aux autorisations accordées par le compte connecté) ; les membres de vos espaces de travail, pour les réponses",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The reviews people leave on Google about the Google Business Profile locations a workspace connected, on a server whose inbox reads them: for each, its stars, its text, when it was written and last changed, the name its author shows on Google (none when they stay anonymous) and how many photos it holds, never the photos, nor the author’s picture or profile; the location’s reply as Google shows it; whether the workspace marked it answered; and the replies members send from Peal, with who wrote each and how sending ended",
+      fr: "Les avis laissés sur Google à propos des établissements Google Business Profile qu’un espace de travail a connectés, sur un serveur dont la boîte de réception les lit : pour chacun, ses étoiles, son texte, quand il a été écrit et modifié pour la dernière fois, le nom qu’affiche son auteur sur Google (aucun quand il reste anonyme) et le nombre de photos qu’il contient, jamais les photos, ni la photo de profil ou le profil de l’auteur ; la réponse de l’établissement telle que Google la montre ; si l’espace de travail l’a marqué comme répondu ; et les réponses que les membres envoient depuis Peal, avec leur auteur et l’issue de l’envoi",
+    },
+    id: "inboxReviews",
+    legalBasis: {
+      en: "For members, performance of a contract (GDPR Article 6(1)(b)). For the people who wrote the reviews, who are not users of the service, legitimate interests (GDPR Article 6(1)(f)): the workspace’s interest in reading and answering what is said in public about its own locations; the service processes their reviews for the workspace, and for nothing else",
+      fr: "Pour les membres, exécution d’un contrat (RGPD, article 6, paragraphe 1, point b). Pour les personnes qui ont écrit les avis, qui ne sont pas utilisatrices du service, intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : l’intérêt de l’espace de travail à lire ce qui est dit en public de ses propres établissements et à y répondre ; le service traite leurs avis pour l’espace de travail, et pour rien d’autre",
+    },
+    name: {
+      en: "Reviews of locations, and replies to them",
+      fr: "Avis sur les établissements, et réponses",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show a workspace’s members the reviews of its locations and let them answer in public, as the location. Reviews are used for nothing else: no profile of their authors, no advertising, no automated decision, no training of models",
+      fr: "Montrer aux membres d’un espace de travail les avis sur ses établissements et leur permettre d’y répondre en public, au nom de l’établissement. Les avis ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles",
+    },
+    retention: {
+      en: `${p.inboxReviews.days} days after a review was written or last changed, then deleted within an hour, with the replies sent to it; at once when its channel is disconnected or its workspace deleted. A review Google no longer shows is deleted at the next read that lists all of the location’s, and a location not read for ${p.inboxReviews.days} days is deleted with its reviews. Closing an account removes it as the author of the replies it sent, which stay with their review`,
+      fr: `${p.inboxReviews.days} jours après qu’un avis a été écrit ou modifié pour la dernière fois, puis supprimé dans l’heure, avec les réponses qui lui ont été envoyées ; aussitôt quand son canal est déconnecté ou son espace de travail supprimé. Un avis que Google ne montre plus est supprimé à la lecture suivante qui liste tous ceux de l’établissement, et un établissement qui n’a pas été lu pendant ${p.inboxReviews.days} jours est supprimé avec ses avis. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur avis`,
+    },
+    source: {
+      en: "Google, for the reviews, which their authors published on Google Business Profile, through the permission the connected account granted; the members of your workspaces, for the replies",
+      fr: "Google, pour les avis, que leurs auteurs y ont publiés sur Google Business Profile, grâce à l’autorisation accordée par le compte connecté ; les membres de vos espaces de travail, pour les réponses",
     },
   },
   {

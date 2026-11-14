@@ -28,6 +28,8 @@ enum SubscribableWebhookEventType: string
     case MediaFailed = "media.failed";
     case CommentReceived = "comment.received";
     case CommentReplied = "comment.replied";
+    case ReviewReceived = "review.received";
+    case ReviewReplied = "review.replied";
     case BoostStarted = "boost.started";
     case BoostPaused = "boost.paused";
     case BoostResumed = "boost.resumed";

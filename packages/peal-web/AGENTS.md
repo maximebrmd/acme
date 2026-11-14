@@ -470,6 +470,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   API and other clients set) is shown, counted for that channel
   (`partTextOn`) and editable, or dropped for the text for all channels:
   the composer never sends a text it does not show.
+- The inbox's reviews (`reviews-list.tsx`, `review-screen.tsx`, views in
+  `review-views.tsx`, atoms in `#inbox/review-atoms.ts`) show below the
+  comments only while the workspace has a location with reviews, and a
+  location at `…/inbox/reviews/[threadId]`: stars, text as text, the
+  reviewer's display name or "anonymous", a photo count (never a photo),
+  the location's reply with Google's moderation; a reply counted in
+  UTF-8 bytes (Google's 4,096), withdraw and "needs no answer" where the
+  channel's `abilities` say `available`.
 - The inbox (`components/inbox/`) lists threads with counts and never a
   comment's text (`ThreadsList`), and shows one whole (`ThreadScreen`):
   views in `inbox-views.tsx` take links as props, so tests render each

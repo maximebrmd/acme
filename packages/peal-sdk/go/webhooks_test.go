@@ -6270,6 +6270,20 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("comment.replied"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_review_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("review.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("review.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_review_replied", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("review.replied")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("review.replied"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_boost_started", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewSubscribableWebhookEventTypeFromString("boost.started")
@@ -6687,6 +6701,20 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("comment.replied")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("comment.replied"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_review_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("review.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("review.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_review_replied", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("review.replied")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("review.replied"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_boost_started", func(t *testing.T) {

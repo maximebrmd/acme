@@ -2,6 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct InboxActionUnavailableEncoded {
+    #[serde(rename = "_tag")]
+    pub tag: InboxActionUnavailableEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,6 +25,7 @@ impl InboxActionUnavailableEncoded {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct InboxActionUnavailableEncodedBuilder {
+    tag: Option<InboxActionUnavailableEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
@@ -31,6 +34,11 @@ pub struct InboxActionUnavailableEncodedBuilder {
 }
 
 impl InboxActionUnavailableEncodedBuilder {
+    pub fn tag(mut self, value: InboxActionUnavailableEncodedTag) -> Self {
+        self.tag = Some(value);
+        self
+    }
+
     pub fn code(mut self, value: impl Into<String>) -> Self {
         self.code = Some(value.into());
         self
@@ -58,10 +66,12 @@ impl InboxActionUnavailableEncodedBuilder {
 
     /// Consumes the builder and constructs a [`InboxActionUnavailableEncoded`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`tag`](InboxActionUnavailableEncodedBuilder::tag)
     /// - [`ability`](InboxActionUnavailableEncodedBuilder::ability)
     /// - [`standing`](InboxActionUnavailableEncodedBuilder::standing)
     pub fn build(self) -> Result<InboxActionUnavailableEncoded, BuildError> {
         Ok(InboxActionUnavailableEncoded {
+            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,
             request_id: self.request_id,

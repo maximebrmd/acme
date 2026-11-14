@@ -6,12 +6,21 @@ import { EngagementRecords } from "#engagement/application/engagement-records.ts
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { SentReplyRecord } from "#shared/application/personal-data.ts";
+import type {
+  SentReplyRecord,
+  SentReviewReplyRecord,
+} from "#shared/application/personal-data.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
-import { erasedWorkspaces, replies, threads } from "./schema.ts";
+import {
+  erasedWorkspaces,
+  replies,
+  reviewReplies,
+  reviewThreads,
+  threads,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -56,6 +65,30 @@ export const DrizzleEngagementRecords = Layer.effect(
       }
     );
 
+    const exportUserReviewReplies = Effect.fn(
+      "EngagementRecords.exportUserReviewReplies"
+    )(function* exportUserReviewReplies(userId: string) {
+      const rows = yield* db
+        .select({
+          channelId: reviewReplies.channelId,
+          createdAt: reviewReplies.createdAt,
+          id: reviewReplies.id,
+          reviewId: reviewReplies.reviewId,
+          status: reviewReplies.status,
+          text: reviewReplies.text,
+          workspaceId: reviewReplies.workspaceId,
+        })
+        .from(reviewReplies)
+        .where(eq(reviewReplies.authorId, userId))
+        .orderBy(asc(reviewReplies.id))
+        .pipe(Effect.mapError(failed));
+
+      return rows.map((row): SentReviewReplyRecord => ({
+        ...row,
+        createdAt: DateTime.fromDateUnsafe(row.createdAt),
+      }));
+    });
+
     const eraseWorkspace = Effect.fn("EngagementRecords.eraseWorkspace")(
       function* eraseWorkspace(workspaceId: string) {
         const now = yield* DateTime.now;
@@ -74,6 +107,10 @@ export const DrizzleEngagementRecords = Layer.effect(
               yield* db
                 .delete(threads)
                 .where(eq(threads.workspaceId, workspaceId));
+
+              yield* db
+                .delete(reviewThreads)
+                .where(eq(reviewThreads.workspaceId, workspaceId));
             })
           )
           .pipe(Effect.mapError(failed));
@@ -92,6 +129,12 @@ export const DrizzleEngagementRecords = Layer.effect(
           .update(threads)
           .set({ authorId: null })
           .where(eq(threads.authorId, userId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(reviewReplies)
+          .set({ authorId: null })
+          .where(eq(reviewReplies.authorId, userId))
           .pipe(Effect.mapError(failed));
       }
     );
@@ -118,6 +161,14 @@ export const DrizzleEngagementRecords = Layer.effect(
         platform: Platform,
         at: DateTime.Utc
       ) {
+        // A location's reviews go at once, with their replies.
+        if (platform === "googleBusiness") {
+          yield* db
+            .delete(reviewThreads)
+            .where(eq(reviewThreads.channelId, channelId))
+            .pipe(Effect.mapError(failed));
+        }
+
         if (!boundsKeeping(platform)) {
           return;
         }
@@ -178,6 +229,7 @@ export const DrizzleEngagementRecords = Layer.effect(
       channelGone,
       eraseWorkspace,
       exportUser,
+      exportUserReviewReplies,
       forgetUser,
       postRemoved,
     });

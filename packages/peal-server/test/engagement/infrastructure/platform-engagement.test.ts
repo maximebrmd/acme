@@ -36,6 +36,7 @@ import type { AccountFailure } from "#test/analytics/access-log.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { memoryQuota } from "#test/engagement/fakes/fake-youtube-comments.ts";
+import { makeReviewWorld } from "#test/engagement/fakes/review-world.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
@@ -169,6 +170,7 @@ const onServer = Effect.fnUntraced(function* onServer(
     metaHosts: { ...metaHosts, facebookGraph: url, instagramGraph: url },
     youtubeApi: url,
     youtubeCommentUnits: youtubeCommentsDailyUnits,
+    businessApi: url,
   }).pipe(
     Layer.provide(Layer.succeed(CurrentInboxPlatforms, on.inbox ?? new Set())),
     Layer.provide(memoryQuota().layer)
@@ -183,6 +185,7 @@ const onServer = Effect.fnUntraced(function* onServer(
         Layer.provide(
           Layer.mergeAll(
             world.ports,
+            makeReviewWorld().ports,
             channelAccessOf(
               Option.getOrElse(failure, () => account),
               ["token-1"]

@@ -18,6 +18,7 @@ export const InboxErrorKeySchema = Schema.Literals([
   "replyEmpty",
   "replyNotFound",
   "replyPending",
+  "reviewNotFound",
   "threadNotFound",
   "unknown",
 ]);
@@ -47,6 +48,8 @@ const reasons = new Map<string, InboxErrorKey>([
   ["InboxCommentGone", "commentGone"],
   ["InboxCommentNotFound", "commentNotFound"],
   ["InboxReplyNotFound", "replyNotFound"],
+  ["InboxReviewNotFound", "reviewNotFound"],
+  ["InboxReviewThreadNotFound", "threadNotFound"],
   ["InboxThreadNotFound", "threadNotFound"],
   ["ReplyPending", "replyPending"],
   // The billing account's messages of the month: the upgrade dialog

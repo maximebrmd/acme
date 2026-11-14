@@ -598,12 +598,14 @@ export { DrizzlePlatformQuota as PlatformQuotaLive } from "#publishing/infrastru
 export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";
 
 /**
- * The CommentSource and ReplySender that send each call through its
+ * The CommentSource and ReplySender, and the ReviewSource and
+ * ReviewReplySender (GatedReviews), that send each call through its
  * channel's gate, for engagement.
  */
 export {
   GatedCommentSource,
   GatedReplySender,
+  GatedReviews,
   UnreadComments,
 } from "#publishing/infrastructure/channel-gate.ts";
 

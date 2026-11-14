@@ -1,12 +1,12 @@
 ---
-title: Media and comment events
-description: "The events of a file in the media library, and of the comments under a published post."
+title: Media, comment and review events
+description: "The events of a file in the media library, of the comments under a published post, and of a location's reviews."
 sidebar:
   icon: message-square
-  label: "Media and comments"
+  label: "Media, comments and reviews"
 ---
 
-The events of a file in the media library and of the comments under a published post, each with its fields and an example payload. Media events are about no channel, so they reach an endpoint [whatever channels it lists](/developers/webhooks#filters).
+The events of a file in the media library, of the comments under a published post and of the reviews of a location, each with its fields and an example payload. Media events are about no channel, so they reach an endpoint [whatever channels it lists](/developers/webhooks#filters).
 
 ## media.ready [#media-ready]
 
@@ -131,6 +131,66 @@ A reply to a comment went out from Peal, as the channel's account. A reply that 
     "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
     "permalink": "https://mastodon.example/@peal_example/113000000000000002",
     "repliedAt": "2026-11-10T09:20:41.000Z"
+  }
+}
+```
+
+## review.received [#review-received]
+
+Peal read a review for the first time on a location a Google Business Profile channel posts as (see [Inbox](/guides/engage/inbox#reviews)). The event carries ids only: the review's stars, what it says and who wrote it are read through the API, as Google lets what its API gives be stored 30 days at most and an event is kept with its deliveries, with `engagement:read`.
+
+| Field         | Type   | What it holds                            |
+| ------------- | ------ | ---------------------------------------- |
+| `workspaceId` | string | The workspace                            |
+| `channelId`   | string | The channel whose location was reviewed  |
+| `threadId`    | string | The thread: the reviews of that location |
+| `reviewId`    | string | The review                               |
+| `receivedAt`  | string | When Peal read it, as an instant in UTC  |
+
+```json title="review.received"
+{
+  "id": "019a8163-4a1b-7c2d-8e3f-4a5b6c7d8e01",
+  "type": "review.received",
+  "version": 1,
+  "timestamp": "2026-11-14T09:27:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+    "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+    "receivedAt": "2026-11-14T09:27:04.000Z"
+  }
+}
+```
+
+## review.replied [#review-replied]
+
+A reply to a review went out from Peal, as the location. A reply that failed, or whose outcome is not known yet, sends nothing: read it through the API.
+
+| Field         | Type   | What it holds                          |
+| ------------- | ------ | -------------------------------------- |
+| `workspaceId` | string | The workspace                          |
+| `channelId`   | string | The channel                            |
+| `threadId`    | string | The thread                             |
+| `reviewId`    | string | The review that was answered           |
+| `replyId`     | string | The reply                              |
+| `repliedAt`   | string | When it went out, as an instant in UTC |
+
+```json title="review.replied"
+{
+  "id": "019a8163-5b2c-7d3e-8f4a-5b6c7d8e9f02",
+  "type": "review.replied",
+  "version": 1,
+  "timestamp": "2026-11-14T09:40:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+    "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+    "replyId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d1e",
+    "repliedAt": "2026-11-14T09:40:12.000Z"
   }
 }
 ```

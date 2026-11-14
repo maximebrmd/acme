@@ -69,6 +69,7 @@ import {
 import {
   engagementLive,
   InboxApiLive,
+  InboxReviewsApiLive,
   EngagementRecordsLive,
   EngagementWorkersLive,
   InboxWaitingLive,
@@ -95,6 +96,7 @@ import {
   ChannelSetsApiLive,
   GatedMetricsReader,
   GatedReplySender,
+  GatedReviews,
   UnreadComments,
   LookupsApiLive,
   MediaInPostsLive,
@@ -182,6 +184,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   WebhooksApiLive,
   ActivityApiLive,
   InboxApiLive,
+  InboxReviewsApiLive,
   ContractRequestsDeskApiLive,
   BillingAccountsDeskApiLive,
   TagsApiLive,
@@ -379,7 +382,7 @@ const engagementOver = <E, R>(
 
 // As the server runs it: through the channels' gates.
 const EngagementContextLive = engagementOver(
-  Layer.merge(GatedCommentSource, GatedReplySender)
+  Layer.mergeAll(GatedCommentSource, GatedReplySender, GatedReviews)
 );
 
 // As AppLive runs it, without workers: nothing is read or sent.

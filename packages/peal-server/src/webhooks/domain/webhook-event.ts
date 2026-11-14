@@ -108,6 +108,15 @@ const comment = {
   threadId: Uuid7Schema,
 };
 
+// A review of a location a channel posts as, by ids: never what it says,
+// nor who wrote it, which the receiver reads through the API.
+const review = {
+  ...workspace,
+  channelId: ChannelIdSchema,
+  reviewId: Uuid7Schema,
+  threadId: Uuid7Schema,
+};
+
 /**
  * Something that happened in a workspace, as its webhook endpoints hear
  * it: `type` names it, and tells what `data` holds.
@@ -354,6 +363,20 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("comment.replied"),
   }),
+  // Peal read a review of a location for the first time: ids only.
+  Schema.Struct({
+    data: Schema.Struct({ ...review, receivedAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("review.received"),
+  }),
+  // A reply to the review went out from Peal, as the location.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...review,
+      repliedAt: Schema.DateTimeUtc,
+      replyId: Uuid7Schema,
+    }),
+    type: Schema.Literal("review.replied"),
+  }),
   // A boost of a published post changed: ids, amounts in the ad account's
   // minor units, and where it stands. Never who it is shown to. The
   // `webhook.test` event stays last, as the contract lists it.
@@ -463,6 +486,8 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "post.unpublish_failed": ofChannel,
       "post.unpublished": ofChannel,
       "post.unscheduled": () => ofPost,
+      "review.received": ofChannel,
+      "review.replied": ofChannel,
       "webhook.test": noChannel,
     })
   );

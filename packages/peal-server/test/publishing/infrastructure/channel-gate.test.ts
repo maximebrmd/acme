@@ -15,6 +15,7 @@ import {
   GatedMetricsReader,
   GatedPlatformPublisher,
   GatedReplySender,
+  UnreadReviews,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
@@ -157,7 +158,13 @@ const serverOn = (platform: Platform) =>
   ).pipe(
     Layer.provideMerge(
       ChannelGateLive.pipe(
-        Layer.provide(Layer.merge(adaptersOf(platform), LivePostClients.none))
+        Layer.provide(
+          Layer.mergeAll(
+            adaptersOf(platform),
+            LivePostClients.none,
+            UnreadReviews
+          )
+        )
       )
     ),
     Layer.provideMerge(clusterOver(MessageStorage.layerMemory))
@@ -234,17 +241,22 @@ describe("the channel's gate, with every context that calls through it", () => {
     const calls = [...ChannelGate.protocol.requests.values()];
 
     assert.deepStrictEqual(calls.map(({ _tag }) => _tag).toSorted(), [
+      "CheckReviewReply",
       "EditLivePost",
       "ModerateComment",
       "Publish",
       "ReadAccount",
       "ReadComments",
       "ReadMetrics",
+      "ReadReviews",
       "RemoveLivePost",
       "Resume",
       "ResumeReply",
+      "ResumeReviewReply",
       "SendReply",
+      "SendReviewReply",
       "WithdrawReply",
+      "WithdrawReviewReply",
     ]);
 
     // A persisted call would store its payload in the cluster's tables:

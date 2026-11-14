@@ -31,6 +31,9 @@ const mediaId = MediaAssetIdSchema.make(synthetic(6));
 const threadId = Uuid7Schema.make(synthetic(7));
 const commentId = Uuid7Schema.make(synthetic(8));
 const replyId = Uuid7Schema.make(synthetic(9));
+const reviewId = Uuid7Schema.make(synthetic(11));
+const reviewThreadId = Uuid7Schema.make(synthetic(12));
+const reviewReplyId = Uuid7Schema.make(synthetic(13));
 
 const at = DateTime.makeUnsafe("2026-01-01T09:00:00Z");
 
@@ -59,6 +62,13 @@ const comment = (workspaceId: WorkspaceId) => ({
   commentId,
   postId,
   threadId,
+  workspaceId,
+});
+
+const review = (workspaceId: WorkspaceId) => ({
+  channelId,
+  reviewId,
+  threadId: reviewThreadId,
   workspaceId,
 });
 
@@ -286,6 +296,18 @@ const samples: Samples = {
   "post.unscheduled": (workspaceId) => ({
     data: { postId, workspaceId },
     type: "post.unscheduled",
+  }),
+  "review.received": (workspaceId) => ({
+    data: { ...review(workspaceId), receivedAt: at },
+    type: "review.received",
+  }),
+  "review.replied": (workspaceId) => ({
+    data: {
+      ...review(workspaceId),
+      repliedAt: at,
+      replyId: reviewReplyId,
+    },
+    type: "review.replied",
   }),
 };
 

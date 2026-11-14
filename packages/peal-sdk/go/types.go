@@ -9812,6 +9812,31 @@ func (i ImportUnreadableEncodedTag) Ptr() *ImportUnreadableEncodedTag {
 	return &i
 }
 
+type InboxAbilityStanding string
+
+const (
+	InboxAbilityStandingAvailable   InboxAbilityStanding = "available"
+	InboxAbilityStandingReconnect   InboxAbilityStanding = "reconnect"
+	InboxAbilityStandingUnsupported InboxAbilityStanding = "unsupported"
+)
+
+func NewInboxAbilityStandingFromString(s string) (InboxAbilityStanding, error) {
+	switch s {
+	case "available":
+		return InboxAbilityStandingAvailable, nil
+	case "reconnect":
+		return InboxAbilityStandingReconnect, nil
+	case "unsupported":
+		return InboxAbilityStandingUnsupported, nil
+	}
+	var t InboxAbilityStanding
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InboxAbilityStanding) Ptr() *InboxAbilityStanding {
+	return &i
+}
+
 var (
 	inboxActionFailedEncodedFieldTag       = big.NewInt(1 << 0)
 	inboxActionFailedEncodedFieldCode      = big.NewInt(1 << 1)
@@ -9982,14 +10007,16 @@ func (i InboxActionFailedEncodedTag) Ptr() *InboxActionFailedEncodedTag {
 }
 
 var (
-	inboxActionUnavailableEncodedFieldCode      = big.NewInt(1 << 0)
-	inboxActionUnavailableEncodedFieldMessage   = big.NewInt(1 << 1)
-	inboxActionUnavailableEncodedFieldRequestID = big.NewInt(1 << 2)
-	inboxActionUnavailableEncodedFieldAbility   = big.NewInt(1 << 3)
-	inboxActionUnavailableEncodedFieldStanding  = big.NewInt(1 << 4)
+	inboxActionUnavailableEncodedFieldTag       = big.NewInt(1 << 0)
+	inboxActionUnavailableEncodedFieldCode      = big.NewInt(1 << 1)
+	inboxActionUnavailableEncodedFieldMessage   = big.NewInt(1 << 2)
+	inboxActionUnavailableEncodedFieldRequestID = big.NewInt(1 << 3)
+	inboxActionUnavailableEncodedFieldAbility   = big.NewInt(1 << 4)
+	inboxActionUnavailableEncodedFieldStanding  = big.NewInt(1 << 5)
 )
 
 type InboxActionUnavailableEncoded struct {
+	Tag       InboxActionUnavailableEncodedTag      `json:"_tag" url:"_tag"`
 	Code      *string                               `json:"code,omitempty" url:"code,omitempty"`
 	Message   *string                               `json:"message,omitempty" url:"message,omitempty"`
 	RequestID *string                               `json:"requestId,omitempty" url:"requestId,omitempty"`
@@ -10001,6 +10028,13 @@ type InboxActionUnavailableEncoded struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (i *InboxActionUnavailableEncoded) GetTag() InboxActionUnavailableEncodedTag {
+	if i == nil {
+		return ""
+	}
+	return i.Tag
 }
 
 func (i *InboxActionUnavailableEncoded) GetCode() *string {
@@ -10052,6 +10086,13 @@ func (i *InboxActionUnavailableEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	i.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxActionUnavailableEncoded) SetTag(tag InboxActionUnavailableEncodedTag) {
+	i.Tag = tag
+	i.require(inboxActionUnavailableEncodedFieldTag)
 }
 
 // SetCode sets the Code field and marks it as non-optional;
@@ -10150,6 +10191,25 @@ func NewInboxActionUnavailableEncodedStandingFromString(s string) (InboxActionUn
 }
 
 func (i InboxActionUnavailableEncodedStanding) Ptr() *InboxActionUnavailableEncodedStanding {
+	return &i
+}
+
+type InboxActionUnavailableEncodedTag string
+
+const (
+	InboxActionUnavailableEncodedTagInboxActionUnavailable InboxActionUnavailableEncodedTag = "InboxActionUnavailable"
+)
+
+func NewInboxActionUnavailableEncodedTagFromString(s string) (InboxActionUnavailableEncodedTag, error) {
+	switch s {
+	case "InboxActionUnavailable":
+		return InboxActionUnavailableEncodedTagInboxActionUnavailable, nil
+	}
+	var t InboxActionUnavailableEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InboxActionUnavailableEncodedTag) Ptr() *InboxActionUnavailableEncodedTag {
 	return &i
 }
 
@@ -10528,6 +10588,273 @@ func (i *InboxReplyNotFoundEncoded) MarshalJSON() ([]byte, error) {
 }
 
 func (i *InboxReplyNotFoundEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type InboxReplyStatus string
+
+const (
+	InboxReplyStatusSending     InboxReplyStatus = "sending"
+	InboxReplyStatusSent        InboxReplyStatus = "sent"
+	InboxReplyStatusFailed      InboxReplyStatus = "failed"
+	InboxReplyStatusUnconfirmed InboxReplyStatus = "unconfirmed"
+	InboxReplyStatusWithdrawn   InboxReplyStatus = "withdrawn"
+)
+
+func NewInboxReplyStatusFromString(s string) (InboxReplyStatus, error) {
+	switch s {
+	case "sending":
+		return InboxReplyStatusSending, nil
+	case "sent":
+		return InboxReplyStatusSent, nil
+	case "failed":
+		return InboxReplyStatusFailed, nil
+	case "unconfirmed":
+		return InboxReplyStatusUnconfirmed, nil
+	case "withdrawn":
+		return InboxReplyStatusWithdrawn, nil
+	}
+	var t InboxReplyStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InboxReplyStatus) Ptr() *InboxReplyStatus {
+	return &i
+}
+
+var (
+	inboxReviewNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	inboxReviewNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	inboxReviewNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type InboxReviewNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InboxReviewNotFoundEncoded) GetCode() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Code
+}
+
+func (i *InboxReviewNotFoundEncoded) GetMessage() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Message
+}
+
+func (i *InboxReviewNotFoundEncoded) GetRequestID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RequestID
+}
+
+func (i *InboxReviewNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InboxReviewNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewNotFoundEncoded) SetCode(code *string) {
+	i.Code = code
+	i.require(inboxReviewNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewNotFoundEncoded) SetMessage(message *string) {
+	i.Message = message
+	i.require(inboxReviewNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewNotFoundEncoded) SetRequestID(requestID *string) {
+	i.RequestID = requestID
+	i.require(inboxReviewNotFoundEncodedFieldRequestID)
+}
+
+func (i *InboxReviewNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler InboxReviewNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InboxReviewNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InboxReviewNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed InboxReviewNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InboxReviewNotFoundEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	inboxReviewThreadNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	inboxReviewThreadNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	inboxReviewThreadNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type InboxReviewThreadNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) GetCode() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Code
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) GetMessage() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Message
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) GetRequestID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RequestID
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewThreadNotFoundEncoded) SetCode(code *string) {
+	i.Code = code
+	i.require(inboxReviewThreadNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewThreadNotFoundEncoded) SetMessage(message *string) {
+	i.Message = message
+	i.require(inboxReviewThreadNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxReviewThreadNotFoundEncoded) SetRequestID(requestID *string) {
+	i.RequestID = requestID
+	i.require(inboxReviewThreadNotFoundEncodedFieldRequestID)
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler InboxReviewThreadNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InboxReviewThreadNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed InboxReviewThreadNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InboxReviewThreadNotFoundEncoded) String() string {
 	if i == nil {
 		return "<nil>"
 	}

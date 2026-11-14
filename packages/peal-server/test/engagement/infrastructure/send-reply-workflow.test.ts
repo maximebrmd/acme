@@ -37,6 +37,7 @@ import {
   ChannelGateLive,
   GatedCommentSource,
   GatedReplySender,
+  UnreadReviews,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
@@ -133,6 +134,7 @@ const adaptersOf = (world: World, platform: Platform) => {
     );
 
   return Layer.mergeAll(
+    UnreadReviews,
     Layer.succeed(
       CommentSource,
       CommentSource.of({

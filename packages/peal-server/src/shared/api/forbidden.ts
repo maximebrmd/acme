@@ -31,6 +31,8 @@ const reasons = new Map<string, ForbiddenReason>([
   // A permission only a person in their own session uses.
   ["PermissionNotGrantable", "personRequired"],
   ["PersonRequired", "personRequired"],
+  // Google asks that a review's reply follow the user's own consent.
+  ["ReviewReplyNeedsPerson", "personRequired"],
   ["RoleNotInvitable", "missingPermission"],
   ["SessionRequired", "personRequired"],
   ["TwoStepRequired", "twoStepRequired"],

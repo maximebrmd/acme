@@ -22,6 +22,7 @@ import type {
   Platform,
 } from "peal-contract";
 
+import { reviews } from "#commands/inbox-reviews.ts";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
@@ -534,7 +535,7 @@ const abilities = Command.make(
 
 export const inbox = Command.make("inbox").pipe(
   Command.withDescription(
-    `The comments people leave under a workspace's published posts, on ${inboxPlatformsText}: read them, and answer in public as the channel's account.`
+    `The comments people leave under a workspace's published posts, on ${inboxPlatformsText}, and the reviews of its Google Business Profile locations: read them, and answer in public as the channel's account.`
   ),
   Command.withSubcommands([
     threads,
@@ -545,5 +546,6 @@ export const inbox = Command.make("inbox").pipe(
     moderate,
     confirm,
     withdraw,
+    reviews,
   ])
 );

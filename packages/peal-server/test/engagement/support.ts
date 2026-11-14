@@ -4,6 +4,13 @@ import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import type { Comment, CommentReading } from "#engagement/domain/comment.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
+import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
+import { ReviewReplyIdSchema } from "#engagement/domain/review-reply-id.ts";
+import { ReviewThreadIdSchema } from "#engagement/domain/review-thread-id.ts";
+import { followLocation } from "#engagement/domain/review-thread.ts";
+import type { ReviewThread } from "#engagement/domain/review-thread.ts";
+import { receiveReview } from "#engagement/domain/review.ts";
+import type { Review, ReviewReading } from "#engagement/domain/review.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
 import type { FollowedPost, Thread } from "#engagement/domain/thread.ts";
@@ -14,6 +21,7 @@ import {
   UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 
 // Synthetic ids and people for the engagement tests: nothing here names a
@@ -91,3 +99,43 @@ export const comment = (
     reading(n, changed),
     DateTime.addDuration(publishedAt, "10 minutes")
   );
+
+// Reviews: one location's thread, its reviews as Google would give them.
+
+export const reviewThreadId = (n: number) =>
+  ReviewThreadIdSchema.make(uuid7(3000 + n));
+
+export const reviewId = (n: number) => ReviewIdSchema.make(uuid7(4000 + n));
+
+export const reviewReplyId = (n: number) =>
+  ReviewReplyIdSchema.make(uuid7(6000 + n));
+
+export const reviewedAt = DateTime.makeUnsafe("2026-11-12T09:00:00Z");
+
+export const reviewThread = (
+  n = 1,
+  on: ChannelId = channelId(1)
+): ReviewThread =>
+  followLocation(reviewThreadId(n), { channelId: on, workspaceId }, reviewedAt);
+
+export const reviewReading = (
+  n: number,
+  changed: Partial<ReviewReading> = {}
+): ReviewReading => ({
+  photoCount: 0,
+  platformReviewId: `accounts/101/locations/202/reviews/r${n}`,
+  rating: 5,
+  reply: Option.none(),
+  reviewerName: Option.some(`Visitor ${n}`),
+  text: `Review ${n}`,
+  updatedAt: DateTime.subtractDuration(reviewedAt, "1 hour"),
+  writtenAt: DateTime.subtractDuration(reviewedAt, "1 hour"),
+  ...changed,
+});
+
+export const review = (
+  n: number,
+  changed: Partial<ReviewReading> = {},
+  on: ReviewThread = reviewThread()
+): Review =>
+  receiveReview(reviewId(n), on, reviewReading(n, changed), reviewedAt);

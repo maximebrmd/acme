@@ -31,6 +31,8 @@ module Peal
       MEDIA_FAILED = "media.failed"
       COMMENT_RECEIVED = "comment.received"
       COMMENT_REPLIED = "comment.replied"
+      REVIEW_RECEIVED = "review.received"
+      REVIEW_REPLIED = "review.replied"
       BOOST_STARTED = "boost.started"
       BOOST_PAUSED = "boost.paused"
       BOOST_RESUMED = "boost.resumed"

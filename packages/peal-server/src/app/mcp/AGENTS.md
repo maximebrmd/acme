@@ -27,7 +27,8 @@
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
   `tags-tools.ts`, `saved-tools.ts`, `media-tools.ts`, `reports-tools.ts`,
-  `people-tools.ts`, `webhooks-tools.ts`, `inbox-tools.ts`)
+  `people-tools.ts`, `webhooks-tools.ts`, `inbox-tools.ts`, which holds
+  the reviews' tools too, `*_location_review*`)
   and its handlers beside it, merged
   into `PealTools`. Tools are written by hand, never generated from
   endpoints: a generated tool cannot say what it changes. `find_tools`

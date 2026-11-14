@@ -49,8 +49,14 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType BOOST_UNCONFIRMED =
             new SubscribableWebhookEventType(Value.BOOST_UNCONFIRMED, "boost.unconfirmed");
 
+    public static final SubscribableWebhookEventType REVIEW_REPLIED =
+            new SubscribableWebhookEventType(Value.REVIEW_REPLIED, "review.replied");
+
     public static final SubscribableWebhookEventType POST_UNCONFIRMED =
             new SubscribableWebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
+
+    public static final SubscribableWebhookEventType REVIEW_RECEIVED =
+            new SubscribableWebhookEventType(Value.REVIEW_RECEIVED, "review.received");
 
     public static final SubscribableWebhookEventType POST_UNPUBLISH_FAILED =
             new SubscribableWebhookEventType(Value.POST_UNPUBLISH_FAILED, "post.unpublish_failed");
@@ -164,8 +170,12 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitChannelConnected();
             case BOOST_UNCONFIRMED:
                 return visitor.visitBoostUnconfirmed();
+            case REVIEW_REPLIED:
+                return visitor.visitReviewReplied();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
+            case REVIEW_RECEIVED:
+                return visitor.visitReviewReceived();
             case POST_UNPUBLISH_FAILED:
                 return visitor.visitPostUnpublishFailed();
             case BOOST_STARTED:
@@ -237,8 +247,12 @@ public final class SubscribableWebhookEventType {
                 return CHANNEL_CONNECTED;
             case "boost.unconfirmed":
                 return BOOST_UNCONFIRMED;
+            case "review.replied":
+                return REVIEW_REPLIED;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
+            case "review.received":
+                return REVIEW_RECEIVED;
             case "post.unpublish_failed":
                 return POST_UNPUBLISH_FAILED;
             case "boost.started":
@@ -327,6 +341,10 @@ public final class SubscribableWebhookEventType {
 
         COMMENT_REPLIED,
 
+        REVIEW_RECEIVED,
+
+        REVIEW_REPLIED,
+
         BOOST_STARTED,
 
         BOOST_PAUSED,
@@ -394,6 +412,10 @@ public final class SubscribableWebhookEventType {
         T visitCommentReceived();
 
         T visitCommentReplied();
+
+        T visitReviewReceived();
+
+        T visitReviewReplied();
 
         T visitBoostStarted();
 

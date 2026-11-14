@@ -2971,6 +2971,10 @@
         "received": "A comment is read under a published post",
         "replied": "A reply to a comment goes out from Peal"
       },
+      "review": {
+        "received": "A review of a location is read",
+        "replied": "A reply to a review goes out from Peal"
+      },
       "webhook": {
         "test": "Test event"
       }
@@ -4095,7 +4099,52 @@
       "actionFailed": "The platform did not do it, and nothing changed: {reason, select, rateLimited {it asked to slow down. Try again in a moment.} platformUnavailable {it could not be reached. Try again later.} reconnectNeeded {it refuses the account’s authorization. Disconnect the channel and connect the account again.} channelUnavailable {the channel was disconnected or turned off.} commentGone {the comment is no longer there.} refused {it refused.} other {{reason}}}",
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
       "unknown": "Something went wrong. Try again.",
-      "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month."
+      "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month.",
+      "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one."
+    }
+  },
+  "InboxReviews": {
+    "title": "Reviews",
+    "description": "What people write about the Google Business Profile locations your channels post as. Peal keeps a review {days, number} days after it was written or last changed, as Google lets what it gives be stored 30 days at most.",
+    "loading": "Loading reviews…",
+    "loadFailed": "The reviews could not be loaded.",
+    "retry": "Try again",
+    "row": {
+      "location": "Location of {channel}",
+      "counts": "{unanswered, number} waiting of {reviews, number}",
+      "figures": "{average, select, none {} other {{average} stars on average}}{total, select, none {} other { · {total} on Google}}",
+      "lastReview": "Latest review {at}"
+    },
+    "thread": {
+      "back": "Back to the inbox",
+      "title": "Reviews of a location",
+      "empty": "No review written or changed in the last {days, number} days.",
+      "readOnly": "Your role may read reviews but not answer them."
+    },
+    "review": {
+      "stars": "{rating, plural, one {# star} other {# stars}}",
+      "anonymous": "Someone who stays anonymous",
+      "photos": "{count, plural, one {# photo, not shown} other {# photos, not shown}}",
+      "written": "Written {at}",
+      "changed": "Changed {at}",
+      "state": "{state, select, new {Waiting for an answer} other {Answered}}",
+      "noText": "A rating without words.",
+      "ownerReply": "The location’s reply",
+      "moderation": "{moderation, select, pending {Google is checking it} approved {Shown by Google} rejected {Rejected by Google} other {}}",
+      "markAnswered": "Needs no answer",
+      "markWaiting": "Waits for an answer",
+      "withdraw": "Delete the reply",
+      "withdrawn": "The location’s reply was deleted.",
+      "reply": "{status, select, sending {Reply on its way} sent {Reply sent} failed {Reply not sent} unconfirmed {Reply not confirmed yet: the next read of the location says} withdrawn {Reply deleted} other {}}"
+    },
+    "box": {
+      "label": "Reply as the location",
+      "public": "Everyone who sees the review on Google sees the reply, which replaces the location’s reply. Google may check it before showing it.",
+      "count": "{length, number} of {maximum, number} bytes",
+      "send": "Send",
+      "sending": "Sending…",
+      "sent": "The reply is on its way.",
+      "pending": "A reply to this review is on its way. Wait until it has gone out to write another."
     }
   },
   "TwoStep": {

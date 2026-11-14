@@ -24,6 +24,7 @@ import type {
   PreferencesRecord,
   ReviewRecord,
   SentReplyRecord,
+  SentReviewReplyRecord,
   SavedItemsRecord,
   ShortLinkRecord,
   StaffActionRecord,
@@ -104,6 +105,8 @@ export interface UserContent {
    * workspace; never the comments, which other people wrote.
    */
   readonly replies: readonly SentReplyRecord[];
+  /** The replies they sent from Peal to reviews of locations; never the reviews. */
+  readonly reviewReplies: readonly SentReviewReplyRecord[];
   /** What they wrote and decided in the reviews of posts. */
   readonly review: UserReviewRecord;
   /** What staff did to their account, from the audit log. */

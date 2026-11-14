@@ -190,6 +190,12 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
   "engagement.replies": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.replies WHERE workspace_id = ${id}`,
+  "engagement.review_replies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.review_replies WHERE workspace_id = ${id}`,
+  "engagement.review_threads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.review_threads WHERE workspace_id = ${id}`,
+  "engagement.reviews": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.reviews WHERE workspace_id = ${id}`,
   "engagement.threads": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.threads WHERE workspace_id = ${id}`,
   "media.media_assets": (sql, id) =>
@@ -358,6 +364,8 @@ const userRows = {
   // with the workspace, without them.
   "engagement.replies": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.replies WHERE author_id = ${id}`,
+  "engagement.review_replies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.review_replies WHERE author_id = ${id}`,
   "engagement.threads": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.threads WHERE author_id = ${id}`,
   "notifications.notices": (sql, id) =>
@@ -719,6 +727,20 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO engagement.replies (id, thread_id, comment_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
     VALUES (${uuid7()}, ${threadId}, ${commentId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic reply', now(), 'sent', now())`;
+
+  // A location's reviews, with someone's review and the reply the person
+  // sent to it.
+  const reviewThreadId = uuid7();
+  const reviewId = uuid7();
+
+  yield* sql`INSERT INTO engagement.review_threads (id, workspace_id, channel_id, created_at, next_read_at, review_count, unanswered_count)
+    VALUES (${reviewThreadId}, ${workspaceId}, ${uuid7()}, now(), now() + interval '1 hour', 1, 0)`;
+
+  yield* sql`INSERT INTO engagement.reviews (id, thread_id, workspace_id, channel_id, platform_review_id, rating, text, reviewer_name, written_at, updated_at, received_at)
+    VALUES (${reviewId}, ${reviewThreadId}, ${workspaceId}, ${uuid7()}, ${`accounts/101/locations/202/reviews/${reviewId}`}, 5, 'A synthetic review', 'A synthetic visitor', now(), now(), now())`;
+
+  yield* sql`INSERT INTO engagement.review_replies (id, review_id, thread_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
+    VALUES (${uuid7()}, ${reviewId}, ${reviewThreadId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic reply', now(), 'sent', now())`;
   // A sign-in to an ad network, an ad account it connects that an owner
   // allowed to spend, what was read of it, a boost that was stopped with
   // its journal, and the audit trail's line of it.

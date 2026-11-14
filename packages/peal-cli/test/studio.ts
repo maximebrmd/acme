@@ -162,6 +162,8 @@ import { overviewGroupLive } from "./studio-overview.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
 import type { StudioQueue } from "./studio-queues.ts";
 import { studioRecyclingOf } from "./studio-recycling.ts";
+import { makeReviews, studioReviewsLive } from "./studio-reviews.ts";
+import type { ReviewsState } from "./studio-reviews.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -882,6 +884,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     lastWeeklyDigest: null,
   },
   replies: [],
+  reviewReplies: [],
   review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
@@ -1413,6 +1416,7 @@ const inPerson = CurrentPrincipal.pipe(
 
 export interface Studio {
   readonly inbox: Ref.Ref<InboxState>;
+  readonly reviews: Ref.Ref<ReviewsState>;
   /** The API keys the server takes, beside the user's access token. */
   readonly keys: readonly StudioKey[];
   readonly me: Me;
@@ -1427,6 +1431,7 @@ export const makeStudio = (
 ) =>
   Effect.all({
     inbox: makeInbox,
+    reviews: makeReviews,
     state: Ref.make<StudioState>({
       ads: adsWorld,
       approvals: [approval],
@@ -5984,6 +5989,7 @@ export const studioGroupsLive = (studio: Studio) =>
       })
     ),
     studioInboxLive(studio.inbox),
+    studioReviewsLive(studio.reviews),
     HttpApiBuilder.group(Api, "tags", (handlers) =>
       handlers.handleAll({
         create: ({ params, payload }) =>

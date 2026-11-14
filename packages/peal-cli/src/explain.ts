@@ -631,6 +631,14 @@ const reasonOf =
         refused(
           "The workspace has no such reply: peal inbox thread shows a thread's."
         ),
+      InboxReviewNotFound: () =>
+        refused(
+          "The workspace has no such review: it may have gone from Google, or be older than Peal keeps one. peal inbox reviews show lists a location's."
+        ),
+      InboxReviewThreadNotFound: () =>
+        refused(
+          "The workspace has no such location's reviews: peal inbox reviews list lists them."
+        ),
       InboxThreadNotFound: () =>
         refused(
           "The workspace has no such thread: peal inbox threads lists them."

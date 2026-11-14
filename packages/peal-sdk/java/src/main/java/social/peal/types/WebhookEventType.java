@@ -45,8 +45,13 @@ public final class WebhookEventType {
 
     public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
 
+    public static final WebhookEventType REVIEW_REPLIED = new WebhookEventType(Value.REVIEW_REPLIED, "review.replied");
+
     public static final WebhookEventType POST_UNCONFIRMED =
             new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
+
+    public static final WebhookEventType REVIEW_RECEIVED =
+            new WebhookEventType(Value.REVIEW_RECEIVED, "review.received");
 
     public static final WebhookEventType POST_UNPUBLISH_FAILED =
             new WebhookEventType(Value.POST_UNPUBLISH_FAILED, "post.unpublish_failed");
@@ -152,8 +157,12 @@ public final class WebhookEventType {
                 return visitor.visitBoostUnconfirmed();
             case WEBHOOK_TEST:
                 return visitor.visitWebhookTest();
+            case REVIEW_REPLIED:
+                return visitor.visitReviewReplied();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
+            case REVIEW_RECEIVED:
+                return visitor.visitReviewReceived();
             case POST_UNPUBLISH_FAILED:
                 return visitor.visitPostUnpublishFailed();
             case BOOST_STARTED:
@@ -227,8 +236,12 @@ public final class WebhookEventType {
                 return BOOST_UNCONFIRMED;
             case "webhook.test":
                 return WEBHOOK_TEST;
+            case "review.replied":
+                return REVIEW_REPLIED;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
+            case "review.received":
+                return REVIEW_RECEIVED;
             case "post.unpublish_failed":
                 return POST_UNPUBLISH_FAILED;
             case "boost.started":
@@ -317,6 +330,10 @@ public final class WebhookEventType {
 
         COMMENT_REPLIED,
 
+        REVIEW_RECEIVED,
+
+        REVIEW_REPLIED,
+
         BOOST_STARTED,
 
         BOOST_PAUSED,
@@ -386,6 +403,10 @@ public final class WebhookEventType {
         T visitCommentReceived();
 
         T visitCommentReplied();
+
+        T visitReviewReceived();
+
+        T visitReviewReplied();
 
         T visitBoostStarted();
 

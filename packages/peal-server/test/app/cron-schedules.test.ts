@@ -76,6 +76,7 @@ const gated = [
   "analytics.collect-metrics",
   "channels.token-refresh",
   "engagement.collect-comments",
+  "engagement.collect-reviews",
 ];
 
 const collections = new Set(gated.filter((name) => name.includes(".collect-")));
