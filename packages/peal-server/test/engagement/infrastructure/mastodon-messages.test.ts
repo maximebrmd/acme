@@ -1,5 +1,7 @@
+import { setTimeout } from "node:timers/promises";
+
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
 
@@ -78,8 +80,12 @@ const bodyOf = jsonBodyOf(
 );
 
 const onServer = Effect.fnUntraced(function* onServer(
-  handle: (request: PlatformRequest, origin: string) => PlatformAnswer,
-  tokens: readonly string[] = ["token-1"]
+  handle: (
+    request: PlatformRequest,
+    origin: string
+  ) => PlatformAnswer | Promise<PlatformAnswer>,
+  tokens: readonly string[] = ["token-1"],
+  deadline?: Duration.Duration
 ) {
   const server = yield* platformServer(handle);
 
@@ -92,10 +98,14 @@ const onServer = Effect.fnUntraced(function* onServer(
   };
 
   const platform = yield* Effect.gen(function* building() {
-    return yield* mastodonMessages({
+    const options: Parameters<typeof mastodonMessages>[0] = {
       http: yield* publicHttpClient,
       scheme: "http:",
-    });
+    };
+
+    return yield* mastodonMessages(
+      deadline === undefined ? options : { ...options, deadline }
+    );
   }).pipe(
     Effect.provide(
       Layer.mergeAll(
@@ -400,6 +410,9 @@ describe("Mastodon's direct messages", () => {
             ),
             ["c1"]
           );
+          // Every conversation listed, and the listing whole.
+          assert.deepStrictEqual(batch.listed, ["c1", "c9"]);
+          assert.isTrue(batch.listedWhole);
           assert.lengthOf(
             server
               .requests()
@@ -568,5 +581,40 @@ describe("Mastodon's direct messages", () => {
       });
       assert.lengthOf(server.requests(), 0);
     })
+  );
+
+  it.live(
+    "stops between conversations at its time, so the channel's gate is never held long",
+    () =>
+      Effect.gen(function* stops() {
+        const { account, platform, server } = yield* onServer(
+          async (request) => {
+            if (request.path === "/api/v1/conversations") {
+              return json(
+                ["c1", "c2", "c3", "c4"].map((id, index) =>
+                  conversation(id, status(String(5000 + index)))
+                )
+              );
+            }
+
+            // Each read-back is slow.
+            await setTimeout(60);
+
+            return json({ ancestors: [], descendants: [] });
+          },
+          ["token-1"],
+          Duration.millis(100)
+        );
+
+        const batch = yield* platform.read(account, {
+          keptSince: DateTime.subtractDuration(yield* DateTime.now, "30 days"),
+          known: new Map(),
+        });
+
+        assert.isTrue(batch.halted);
+        assert.isFalse(batch.listedWhole);
+        assert.isBelow(batch.conversations.length, 4);
+        assert.isBelow(server.requests().length, 6);
+      })
   );
 });

@@ -26,6 +26,7 @@ export const PermissionSchema = Schema.Literals([
   "engagement:read",
   "engagement:reply",
   "engagement:message",
+  "engagement:readMessages",
   "invitation:create",
   "invitation:cancel",
   "media:read",

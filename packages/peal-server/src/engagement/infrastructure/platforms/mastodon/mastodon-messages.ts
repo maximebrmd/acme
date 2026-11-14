@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Metric, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
@@ -30,6 +30,7 @@ import type {
   MessagesToRead,
   OutgoingDirect,
 } from "#engagement/infrastructure/platforms/message-platform.ts";
+import { messagesListingTruncated } from "#engagement/infrastructure/platforms/messages-listing.ts";
 import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { textOfHtml } from "#shared/domain/html-text.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -414,22 +415,33 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
     ) {
       const deadline = DateTime.addDuration(yield* DateTime.now, deadlineAfter);
       const readings: ConversationReading[] = [];
+      const seen: string[] = [];
+
+      const pastDeadline = DateTime.now.pipe(
+        Effect.map((now) => DateTime.isGreaterThanOrEqualTo(now, deadline))
+      );
+
+      // Where the read stopped: at its time, or at the last page it takes.
+      const halted = (): MessagesBatch => ({
+        conversations: readings,
+        halted: true,
+        listed: seen,
+        listedWhole: false,
+      });
 
       let page = Option.some(
         new URL(`/api/v1/conversations?limit=${pageSize}`, instance)
       );
 
       for (let turn = 0; Option.isSome(page); turn += 1) {
-        if (
-          turn >= maxPages ||
-          DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)
-        ) {
-          const halted: MessagesBatch = {
-            conversations: readings,
-            halted: true,
-          };
+        if (turn >= maxPages) {
+          yield* Metric.update(messagesListingTruncated, 1);
 
-          return halted;
+          return halted();
+        }
+
+        if (yield* pastDeadline) {
+          return halted();
         }
 
         const response = yield* reader
@@ -451,6 +463,8 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
         let older = 0;
 
         for (const conversation of listed) {
+          seen.push(conversation.id);
+
           const last = Option.fromNullishOr(conversation.last_status);
 
           const lastAt = last.pipe(
@@ -465,6 +479,12 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
           if (Option.isNone(last) || Option.isNone(lastAt)) {
             older += 1;
           } else if (request.known.get(conversation.id) !== last.value.id) {
+            // Each read-back is two calls: none starts past the read's
+            // time, so the channel's gate is never held long.
+            if (yield* pastDeadline) {
+              return halted();
+            }
+
             readings.push(
               yield* readingOf(
                 instance,
@@ -486,7 +506,12 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
             : nextPageOf(response, instance);
       }
 
-      const batch: MessagesBatch = { conversations: readings, halted: false };
+      const batch: MessagesBatch = {
+        conversations: readings,
+        halted: false,
+        listed: seen,
+        listedWhole: true,
+      };
 
       return batch;
     });

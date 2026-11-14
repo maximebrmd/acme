@@ -4,10 +4,12 @@ import {
   Api,
   CurrentMember,
   defaultInboxPageSize,
+  maxInboxMessagesPerPage,
   IdempotencyKeyReused,
   InboxActionUnavailable,
   InboxConversationNotFound,
   InboxMessageNotFound,
+  MessageMentionsOutside,
   MessagePending,
   ReplyInvalid,
   ReplyStatusConflict,
@@ -16,6 +18,7 @@ import {
 import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
 import type { MessageAbilityUnavailable } from "#engagement/application/message-ability-unavailable.ts";
 import type { MessagePending as PendingMessage } from "#engagement/application/message-pending.ts";
+import { MessageSettings } from "#engagement/application/message-settings.ts";
 import type { ReplyTooLong } from "#engagement/application/reply-too-long.ts";
 import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
 import type { InvalidOutgoingMessageTransition } from "#engagement/domain/invalid-outgoing-message-transition.ts";
@@ -27,6 +30,8 @@ import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
 import {
   conversationCursorOf,
+  messageCursorOf,
+  toMessageSettingsView,
   toConversationDetailView,
   toConversationPageView,
   toConversationView,
@@ -94,6 +99,7 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
   "inboxMessages",
   Effect.fn(function* inboxMessagesHandlers(handlers) {
     const messages = yield* EngagementMessages;
+    const settings = yield* MessageSettings;
     const allowance = yield* allowanceRefusal;
 
     return handlers.handleAll({
@@ -111,12 +117,13 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               DatabaseError: Effect.die,
               InvalidOutgoingMessageTransition: conflict,
+              MessagesNeedConsent: forbidden,
               MissingPermission: forbidden,
               OutgoingMessageNotFound: messageNotFound,
             })
           );
         }),
-      getConversation: ({ params }) =>
+      getConversation: ({ params, query }) =>
         Effect.gen(function* getConversation() {
           const actor = actorOf(yield* CurrentMember);
 
@@ -125,14 +132,74 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
             conversationNotFound
           );
 
-          return yield* messages.conversation(actor, conversationId).pipe(
-            Effect.map(toConversationDetailView),
+          const before = yield* filterOf(query.cursor, messageCursorOf);
+
+          return yield* messages
+            .conversation(actor, conversationId, {
+              before,
+              limit: query.limit ?? maxInboxMessagesPerPage,
+            })
+            .pipe(
+              Effect.map(toConversationDetailView),
+              Effect.catchTags({
+                ConversationNotFound: conversationNotFound,
+                DatabaseError: Effect.die,
+                MessagesNeedConsent: forbidden,
+                MissingPermission: forbidden,
+              })
+            );
+        }),
+      getMessageSettings: () =>
+        Effect.gen(function* getMessageSettings() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* settings.settings(actor).pipe(
+            Effect.map(toMessageSettingsView),
             Effect.catchTags({
-              ConversationNotFound: conversationNotFound,
               DatabaseError: Effect.die,
+              MessagesNeedPerson: forbidden,
               MissingPermission: forbidden,
             })
           );
+        }),
+      setChannelMessages: ({ params, payload }) =>
+        Effect.gen(function* setChannelMessages() {
+          const actor = actorOf(yield* CurrentMember);
+          const channelId = decodeChannelId(params.channelId);
+
+          if (Option.isNone(channelId)) {
+            return yield* new InboxActionUnavailable({
+              ability: "read",
+              standing: "unsupported",
+            });
+          }
+
+          return yield* settings
+            .switchChannel(actor, channelId.value, payload.enabled)
+            .pipe(
+              Effect.map(toMessageSettingsView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MessageAbilityUnavailable: unavailable,
+                MessagesNeedPerson: forbidden,
+                MissingPermission: forbidden,
+              })
+            );
+        }),
+      setMessageApplication: ({ payload }) =>
+        Effect.gen(function* setMessageApplication() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* settings
+            .allowApplication(actor, payload.clientId, payload.allowed)
+            .pipe(
+              Effect.map(toMessageSettingsView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MessagesNeedPerson: forbidden,
+                MissingPermission: forbidden,
+              })
+            );
         }),
       listConversations: ({ query }) =>
         Effect.gen(function* listConversations() {
@@ -177,7 +244,10 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
                 ConversationNotFound: conversationNotFound,
                 DatabaseError: Effect.die,
                 MessageAbilityUnavailable: unavailable,
+                MessageMentionsOutside: ({ mentions }) =>
+                  Effect.fail(new MessageMentionsOutside({ mentions })),
                 MessagePending: pending,
+                MessagesNeedConsent: forbidden,
                 MissingPermission: forbidden,
                 ReplyEmpty: empty,
                 ReplyKeyReused: () => Effect.fail(new IdempotencyKeyReused()),
@@ -209,6 +279,7 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 ConversationNotFound: conversationNotFound,
                 DatabaseError: Effect.die,
+                MessagesNeedConsent: forbidden,
                 MissingPermission: forbidden,
               })
             );

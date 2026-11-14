@@ -304,7 +304,12 @@ const ChannelJobsTest = Layer.mergeAll(
         }),
     })
   ),
-  Layer.succeed(PurgeMessages, PurgeMessages.of({ purge: Effect.succeed(0) })),
+  Layer.succeed(
+    PurgeMessages,
+    PurgeMessages.of({
+      purge: Effect.succeed({ conversations: 0, messages: 0 }),
+    })
+  ),
   Layer.succeed(
     SendReply,
     SendReply.of({

@@ -22,13 +22,19 @@ export type MessagesRequest = typeof MessagesRequestSchema.Type;
 /**
  * What a read of a channel's conversations found: those new or changed
  * since Peal last read them, each with its messages back to `keptSince`.
- * A conversation that did not change is not in it. `halted` when the read
+ * A conversation that did not change, and was read back whole in the last
+ * day, is not in it. `halted` when the read
  * stopped before it listed every conversation (the platform asked to slow
  * down, or the read's time ran out): the next run goes on.
  */
 export const MessagesBatchSchema = Schema.Struct({
   conversations: Schema.Array(ConversationReadingSchema),
   halted: Schema.Boolean,
+  // Every conversation the listing showed, by its id on the platform, and
+  // whether that is all the platform has back to `keptSince`: a kept
+  // conversation a whole listing no longer shows was deleted there.
+  listed: Schema.Array(Schema.String),
+  listedWhole: Schema.Boolean,
 });
 
 export type MessagesBatch = typeof MessagesBatchSchema.Type;

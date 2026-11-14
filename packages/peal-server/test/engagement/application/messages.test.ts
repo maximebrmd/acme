@@ -2,14 +2,16 @@
 // tells, what a member sends and how it is journalled, metered, sent once
 // and settled, and what the retention deletes.
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref, Result } from "effect";
+import { DateTime, Duration, Effect, Layer, Option, Ref, Result } from "effect";
 import { TestClock } from "effect/testing";
 
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
 import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
+import { MessageSettings } from "#engagement/application/message-settings.ts";
 import { PurgeMessages } from "#engagement/application/purge-messages.ts";
 import { SendMessage } from "#engagement/application/send-message.ts";
+import { refreshConversation } from "#engagement/domain/conversation.ts";
 import { followBox } from "#engagement/domain/message-box.ts";
 import { beginMessage } from "#engagement/domain/outgoing-message.ts";
 import { Actor } from "#shared/domain/access.ts";
@@ -45,11 +47,26 @@ const actorWith = (...permissions: Permission[]) =>
 
 const editor = actorWith(
   "engagement:read",
+  "engagement:readMessages",
   "engagement:reply",
   "engagement:message"
 );
 
+// A viewer reads comments, never direct messages.
 const viewer = actorWith("engagement:read");
+
+// A member through an application (an MCP client, say), with every
+// permission an editor holds.
+const throughApp = new Actor({
+  permissions: [...editor.permissions],
+  subject: {
+    _tag: "user",
+    clientId: "synthetic-mcp-client",
+    impersonatedBy: Option.none(),
+    userId: memberId,
+  },
+  workspaceId,
+});
 
 const at = <A, E, R>(effect: Effect.Effect<A, E, R>, when = messagedAt) =>
   TestClock.setTime(DateTime.toEpochMillis(when)).pipe(Effect.andThen(effect));
@@ -60,7 +77,18 @@ const worldWith = (
   platform: "bluesky" | "mastodon" = "mastodon",
   world: MessageWorld = makeMessageWorld()
 ) => {
-  const talk = conversation(1, { participants: [participant(1)] });
+  const started = conversation(1, { participants: [participant(1)] });
+  const incoming = directMessage(1, {}, started);
+
+  // Someone wrote: Peal answers, never starts.
+  const talk = refreshConversation(
+    started,
+    conversationReading(1),
+    [incoming],
+    messagedAt
+  );
+
+  world.state.messages.set(incoming.id, incoming);
 
   world.state.channels.set(
     channelId(1),
@@ -77,58 +105,130 @@ const sending = (text: string, key?: string) =>
   );
 
 describe("the messages' collection", () => {
-  it.effect(
-    "follows and reads nothing where the server reads no messages",
-    () => {
-      const world = makeMessageWorld(new Set());
+  it.effect("reads nothing where the server reads no messages", () => {
+    const world = makeMessageWorld(new Set());
 
-      world.state.connected.push({
-        channelId: channelId(1),
-        platform: "mastodon",
-        workspaceId,
+    world.state.boxes.set(
+      channelId(1),
+      followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+    );
+
+    return at(
+      Effect.gen(function* off() {
+        yield* CollectMessages.use((collect) => collect.run(messagedAt));
+
+        assert.lengthOf(world.state.reads, 0);
+      })
+    ).pipe(Effect.provide(world.layer));
+  });
+
+  it.effect(
+    "reads a channel only once a member in person turned its messages on, and forgets it when turned off",
+    () => {
+      const world = makeMessageWorld(new Set(["mastodon"]));
+
+      world.state.channels.set(channelId(1), mastodonChannel);
+      world.state.channels.set(channelId(2), {
+        ...mastodonChannel,
+        platform: "facebook",
       });
 
+      const admin = actorWith("channel:connect", "engagement:readMessages");
+
       return at(
-        Effect.gen(function* off() {
-          const report = yield* CollectMessages.use((collect) =>
-            collect.run(messagedAt)
+        Effect.gen(function* switches() {
+          yield* CollectMessages.use((collect) => collect.run(messagedAt));
+
+          assert.lengthOf(world.state.reads, 0);
+
+          const refused = yield* MessageSettings.use((settings) =>
+            settings.switchChannel(
+              new Actor({
+                permissions: ["channel:connect"],
+                subject: throughApp.subject,
+                workspaceId,
+              }),
+              channelId(1),
+              true
+            )
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "MessagesNeedPerson");
+
+          const off = yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(2), true)
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(off._tag, "MessageAbilityUnavailable");
+
+          const on = yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(1), true)
           );
 
-          assert.strictEqual(report.followed, 0);
-          assert.lengthOf(world.state.reads, 0);
+          assert.deepStrictEqual(
+            on.channels.map(({ channelId: id }) => id),
+            [channelId(1)]
+          );
+
+          yield* CollectMessages.use((collect) => collect.run(messagedAt));
+
+          assert.deepStrictEqual(
+            world.state.reads.map((read) => read.channelId),
+            [channelId(1)]
+          );
+
+          world.state.conversations.set(conversationId(1), conversation(1));
+
+          yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(1), false)
+          );
+
+          assert.strictEqual(world.state.conversations.size, 0);
+          assert.isFalse(world.state.boxes.has(channelId(1)));
         })
       ).pipe(Effect.provide(world.layer));
     }
   );
 
   it.effect(
-    "follows the channels of the platforms it reads, and only them",
+    "deletes a kept conversation a whole listing no longer shows, and keeps it when the listing was not whole",
     () => {
-      const world = makeMessageWorld(new Set(["mastodon"]));
+      const world = worldWith();
 
-      world.state.connected.push(
-        { channelId: channelId(1), platform: "mastodon", workspaceId },
-        { channelId: channelId(2), platform: "bluesky", workspaceId },
-        { channelId: channelId(3), platform: "facebook", workspaceId }
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
       );
+      world.state.read = () =>
+        Effect.succeed({
+          conversations: [],
+          halted: true,
+          listed: [],
+          listedWhole: false,
+        });
 
-      return at(
-        Effect.gen(function* follows() {
-          const report = yield* CollectMessages.use((collect) =>
-            collect.run(messagedAt)
-          );
+      return Effect.gen(function* listings() {
+        yield* at(CollectMessages.use((collect) => collect.run(messagedAt)));
 
-          assert.strictEqual(report.followed, 1);
-          assert.deepStrictEqual(
-            world.state.reads.map((read) => read.channelId),
-            [channelId(1)]
-          );
-          assert.deepStrictEqual(
-            world.state.reads[0]?.keptSince,
-            DateTime.subtractDuration(messagedAt, "30 days")
-          );
-        })
-      ).pipe(Effect.provide(world.layer));
+        assert.strictEqual(world.state.conversations.size, 1);
+
+        world.state.read = () =>
+          Effect.succeed({
+            conversations: [],
+            halted: false,
+            listed: ["c9"],
+            listedWhole: true,
+          });
+
+        const later = DateTime.addDuration(messagedAt, "2 hours");
+
+        yield* at(
+          CollectMessages.use((collect) => collect.run(later)),
+          later
+        );
+
+        assert.strictEqual(world.state.conversations.size, 0);
+      }).pipe(Effect.provide(world.layer));
     }
   );
 
@@ -160,6 +260,8 @@ describe("the messages' collection", () => {
             }),
           ],
           halted: false,
+          listed: [],
+          listedWhole: false,
         });
 
       return at(
@@ -212,6 +314,8 @@ describe("the messages' collection", () => {
           }),
         ],
         halted: false,
+        listed: [],
+        listedWhole: false,
       });
 
     return at(
@@ -242,6 +346,8 @@ describe("the messages' collection", () => {
           }),
         ],
         halted: false,
+        listed: [],
+        listedWhole: false,
       });
 
     return at(
@@ -417,7 +523,11 @@ describe("a message a member sends", () => {
     const world = worldWith();
 
     const stranger = new Actor({
-      permissions: ["engagement:read", "engagement:message"],
+      permissions: [
+        "engagement:read",
+        "engagement:readMessages",
+        "engagement:message",
+      ],
       subject: { _tag: "apiKey", apiKeyId: "synthetic-key" },
       workspaceId: WorkspaceIdSchema.make(
         "99999999-9999-4999-8999-999999999999"
@@ -461,7 +571,12 @@ describe("a message on a server that bills", () => {
 
     world.state.conversations.set(
       conversationId(2),
-      conversation(2, { platformConversationId: "c2" })
+      refreshConversation(
+        conversation(2, { platformConversationId: "c2" }),
+        conversationReading(2),
+        [directMessage(2, {}, conversation(2))],
+        messagedAt
+      )
     );
 
     return at(
@@ -595,7 +710,7 @@ describe("sending a message", () => {
 });
 
 describe("a workspace's conversations", () => {
-  it.effect("are read with engagement:read, unread ones first filtered", () => {
+  it.effect("are read with engagement:readMessages, a page at a time", () => {
     const world = worldWith();
     const kept = directMessage(1);
 
@@ -605,7 +720,7 @@ describe("a workspace's conversations", () => {
       Effect.gen(function* reads() {
         const page = yield* EngagementMessages.use((messages) =>
           messages.list(
-            viewer,
+            editor,
             { channelId: Option.none(), unread: false },
             { after: Option.none(), limit: 10 }
           )
@@ -617,7 +732,7 @@ describe("a workspace's conversations", () => {
         );
 
         const detail = yield* EngagementMessages.use((messages) =>
-          messages.conversation(viewer, conversationId(1))
+          messages.conversation(editor, conversationId(1))
         );
 
         assert.deepStrictEqual(
@@ -639,18 +754,161 @@ describe("a workspace's conversations", () => {
     ).pipe(Effect.provide(world.layer));
   });
 
-  it.effect("are deleted 30 days after their last message", () => {
+  it.effect(
+    "lose each message 30 days after it was sent, and go once none is left",
+    () => {
+      const world = worldWith();
+
+      const recent = directMessage(2, {
+        sentAt: DateTime.addDuration(messagedAt, "20 days"),
+      });
+
+      world.state.messages.set(recent.id, recent);
+
+      return Effect.gen(function* purges() {
+        const first = yield* at(
+          PurgeMessages.use((purging) => purging.purge),
+          DateTime.addDuration(messagedAt, "31 days")
+        );
+
+        assert.deepStrictEqual(first, { conversations: 1, messages: 1 });
+        assert.deepStrictEqual([...world.state.messages.keys()], []);
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect("are paged, the latest messages first, shown oldest first", () => {
     const world = worldWith();
 
+    for (const n of [2, 3]) {
+      const message = directMessage(n, {
+        sentAt: DateTime.addDuration(messagedAt, Duration.minutes(n)),
+      });
+
+      world.state.messages.set(message.id, message);
+    }
+
     return at(
-      Effect.gen(function* purges() {
-        assert.strictEqual(
-          yield* PurgeMessages.use((purging) => purging.purge),
-          1
+      Effect.gen(function* pages() {
+        const latest = yield* EngagementMessages.use((messages) =>
+          messages.conversation(editor, conversationId(1), {
+            before: Option.none(),
+            limit: 2,
+          })
         );
-        assert.strictEqual(world.state.conversations.size, 0);
-      }),
-      DateTime.addDuration(messagedAt, "31 days")
+
+        assert.deepStrictEqual(
+          latest.messages.map(({ platformMessageId }) => platformMessageId),
+          ["m2", "m3"]
+        );
+
+        const older = yield* EngagementMessages.use((messages) =>
+          messages.conversation(editor, conversationId(1), {
+            before: latest.older,
+            limit: 2,
+          })
+        );
+
+        assert.deepStrictEqual(
+          older.messages.map(({ platformMessageId }) => platformMessageId),
+          ["m1"]
+        );
+        assert.isTrue(Option.isNone(older.older));
+      })
     ).pipe(Effect.provide(world.layer));
   });
+
+  it.effect(
+    "are refused to a viewer, and to an application the owner did not let read them",
+    () => {
+      const world = worldWith();
+      const owner = actorWith("organization:secure");
+
+      return at(
+        Effect.gen(function* consent() {
+          const byViewer = yield* EngagementMessages.use((messages) =>
+            messages.list(
+              viewer,
+              { channelId: Option.none(), unread: false },
+              { after: Option.none(), limit: 10 }
+            )
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(byViewer._tag, "MissingPermission");
+
+          // The application lists who and how many, never what they say.
+          const listed = yield* EngagementMessages.use((messages) =>
+            messages.list(
+              throughApp,
+              { channelId: Option.none(), unread: false },
+              { after: Option.none(), limit: 10 }
+            )
+          );
+
+          assert.lengthOf(listed.items, 1);
+
+          const read = yield* EngagementMessages.use((messages) =>
+            messages.conversation(throughApp, conversationId(1))
+          ).pipe(Effect.flip);
+
+          const sent = yield* EngagementMessages.use((messages) =>
+            messages.send(throughApp, conversationId(1), "Hello")
+          ).pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            [read._tag, sent._tag],
+            ["MessagesNeedConsent", "MessagesNeedConsent"]
+          );
+
+          yield* MessageSettings.use((settings) =>
+            settings.allowApplication(owner, "synthetic-mcp-client", true)
+          );
+
+          const allowed = yield* EngagementMessages.use((messages) =>
+            messages.conversation(throughApp, conversationId(1))
+          );
+
+          assert.lengthOf(allowed.messages, 1);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect("take no first message from Peal", () => {
+    const world = worldWith();
+
+    world.state.conversations.set(conversationId(1), conversation(1));
+
+    return at(
+      Effect.gen(function* first() {
+        const refused = yield* sending("Hello").pipe(Effect.flip);
+
+        assert.deepInclude(refused, {
+          _tag: "MessageAbilityUnavailable",
+          standing: "unsupported",
+        });
+      })
+    ).pipe(Effect.provide(world.layer));
+  });
+
+  it.effect(
+    "refuse a Mastodon message that mentions someone outside the conversation",
+    () => {
+      const world = worldWith();
+
+      return at(
+        Effect.gen(function* outside() {
+          const refused = yield* sending("Thanks! cc @boss@other.example").pipe(
+            Effect.flip
+          );
+
+          assert.deepInclude(refused, {
+            _tag: "MessageMentionsOutside",
+            mentions: ["@boss@other.example"],
+          });
+          assert.lengthOf(world.state.jobs, 0);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
 });

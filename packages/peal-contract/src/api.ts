@@ -1881,8 +1881,12 @@ export {
   InboxOutgoingMessageSchema,
   InboxOutgoingMessageStatusSchema,
   InboxParticipantSchema,
+  InboxMessageApplicationSchema,
+  InboxMessageChannelSchema,
+  InboxMessageSettingsSchema,
   InboxReplyWindowSchema,
   maxInboxMessageLength,
+  maxInboxMessagesPerPage,
   NewInboxMessageSchema,
 } from "./inbox-messages.ts";
 
@@ -1895,9 +1899,12 @@ export type {
   InboxOutgoingMessage,
   InboxOutgoingMessageReason,
   InboxOutgoingMessageStatus,
+  InboxMessageSettings,
   InboxParticipant,
   NewInboxMessage,
 } from "./inbox-messages.ts";
+
+export { MessageMentionsOutside } from "./message-mentions-outside.ts";
 
 export { InboxConversationNotFound } from "./inbox-conversation-not-found.ts";
 

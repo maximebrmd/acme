@@ -8,6 +8,7 @@ import { EngagementMessages } from "#engagement/application/engagement-messages.
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
 import { InboxWaiting } from "#engagement/application/inbox-waiting.ts";
+import { MessageSettings } from "#engagement/application/message-settings.ts";
 import type { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import type { MessageSender } from "#engagement/application/ports/message-sender.ts";
 import type { MessageSource } from "#engagement/application/ports/message-source.ts";
@@ -21,7 +22,6 @@ import { SendMessage } from "#engagement/application/send-message.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { SendReviewReply } from "#engagement/application/send-review-reply.ts";
 import { AccessEngagementChannels } from "#engagement/infrastructure/access-engagement-channels.ts";
-import { ChannelsMessageChannels } from "#engagement/infrastructure/channels-message-channels.ts";
 import { ChannelsReviewLocations } from "#engagement/infrastructure/channels-review-locations.ts";
 import { CommentsPaceLive } from "#engagement/infrastructure/collection-pace.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
@@ -46,6 +46,8 @@ import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 export { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 
 export { EngagementMessages } from "#engagement/application/engagement-messages.ts";
+
+export { MessageSettings } from "#engagement/application/message-settings.ts";
 
 export { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 
@@ -72,6 +74,7 @@ export const engagementWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
     CollectReviews.layer.pipe(Layer.provideMerge(SendReviewReply.layer)),
     PurgeReviews.layer,
     EngagementMessages.layer,
+    MessageSettings.layer,
     CollectMessages.layer.pipe(Layer.provideMerge(SendMessage.layer)),
     PurgeMessages.layer
   ).pipe(Layer.provideMerge(adapters));
@@ -112,7 +115,6 @@ export const engagementLive = <E, R>(
         DrizzleReviewStore,
         DrizzleMessageStore,
         ChannelsReviewLocations,
-        ChannelsMessageChannels,
         WorkflowMessageJobs,
         ToldMessageOutcomes,
         WorkflowReviewReplyJobs,

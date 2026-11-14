@@ -4,6 +4,7 @@ import { conversationsKeptSince } from "#engagement/domain/conversation.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { MessageStore } from "./ports/message-store.ts";
+import type { MessagesPurged } from "./ports/message-store.ts";
 
 /**
  * Purges of conversations that failed: conversations past their time then
@@ -22,13 +23,15 @@ export const messagesRetentionFailures = Metric.counter(
 const perPass = 1000;
 
 /**
- * Keeps no conversation longer than `conversationsKeptFor` after its last
- * message: it is deleted with every message it holds and those sent from
- * Peal. Run hourly, so nothing outlives its time by more than an hour.
+ * Keeps no message longer than `conversationsKeptFor` after it was sent:
+ * it is deleted, a message sent from Peal once settled that long ago, and
+ * a conversation once its last message is that old, unless a message to
+ * it is still on its way. Run hourly, so nothing outlives its time by
+ * more than an hour.
  */
 export class PurgeMessages extends Context.Service<
   PurgeMessages,
-  { readonly purge: Effect.Effect<number, DatabaseError> }
+  { readonly purge: Effect.Effect<MessagesPurged, DatabaseError> }
 >()("peal-server/engagement/application/PurgeMessages") {
   static readonly layer = Layer.effect(
     PurgeMessages,
@@ -37,14 +40,18 @@ export class PurgeMessages extends Context.Service<
 
       const purge = Effect.gen(function* purge() {
         const since = conversationsKeptSince(yield* DateTime.now);
-        let purged = 0;
+        let conversations = 0;
+        let messages = 0;
 
         for (;;) {
           const pass = yield* store.purge(since, perPass);
 
-          purged += pass;
+          conversations += pass.conversations;
+          messages += pass.messages;
 
-          if (pass < perPass) {
+          if (pass.conversations < perPass && pass.messages < perPass) {
+            const purged: MessagesPurged = { conversations, messages };
+
             return purged;
           }
         }

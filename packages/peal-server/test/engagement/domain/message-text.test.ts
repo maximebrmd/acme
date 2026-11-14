@@ -3,6 +3,7 @@ import { Option } from "effect";
 
 import {
   chatOverflow,
+  mentionsOutside,
   outgoingMessageText,
 } from "#engagement/domain/message-text.ts";
 import { participant } from "#test/engagement/support.ts";
@@ -42,5 +43,28 @@ describe("a message's text", () => {
     expect(chatOverflow("mastodon", "a".repeat(5000))).toStrictEqual(
       Option.none()
     );
+  });
+});
+
+describe("a Mastodon message's mentions", () => {
+  it("name the accounts outside the conversation the text would reach", () => {
+    expect(
+      mentionsOutside(
+        "mastodon",
+        [participant(1)],
+        "Thanks! cc @boss@other.example and @journalist, @Reader1@Social.Example"
+      )
+    ).toStrictEqual(["@boss@other.example", "@journalist"]);
+    expect(
+      mentionsOutside(
+        "mastodon",
+        [participant(1)],
+        "Write to hello@shop.example"
+      )
+    ).toStrictEqual([]);
+    // Bluesky's chat delivers to the conversation only.
+    expect(
+      mentionsOutside("bluesky", [participant(1)], "cc @boss.bsky.social")
+    ).toStrictEqual([]);
   });
 });

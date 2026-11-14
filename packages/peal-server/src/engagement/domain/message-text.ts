@@ -93,3 +93,32 @@ export const chatOverflow = (
       })
     : Option.none();
 };
+
+// A mention as Mastodon reads one: `@name` or `@name@host`, not inside an
+// address such as `hello@shop.example`.
+const mentionPattern =
+  /(?<![\p{L}\p{N}_@.])@[\p{L}\p{N}_]+(?:[.-][\p{L}\p{N}_]+)*(?:@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+)?/gu;
+
+/**
+ * The mentions in a Mastodon message of accounts outside the
+ * conversation: a `direct` status reaches every account it mentions, so
+ * one typed in the text would hand the private message to them too. None
+ * on Bluesky, whose chat goes to the conversation alone.
+ */
+export const mentionsOutside = (
+  platform: InboxMessagePlatform,
+  participants: readonly Participant[],
+  text: string
+): readonly string[] => {
+  if (platform !== "mastodon") {
+    return [];
+  }
+
+  const handles = new Set(
+    participants.map(({ handle }) => handle.toLowerCase())
+  );
+
+  return [...text.matchAll(mentionPattern)].flatMap(([mention]) =>
+    handles.has(mention.slice(1).toLowerCase()) ? [] : [mention]
+  );
+};

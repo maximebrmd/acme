@@ -150,6 +150,11 @@ const show = Command.make(
   "show",
   {
     conversationId: conversationArgument,
+    cursor: Flag.String("cursor").pipe(
+      Flag.withMetavar("<cursor>"),
+      Flag.withDescription("Older messages, as the page before named them."),
+      Flag.optional
+    ),
     json: jsonFlag,
     workspace: workspaceFlag,
   },
@@ -162,6 +167,10 @@ const show = Command.make(
           conversationId: flags.conversationId,
           workspaceId: workspace.id,
         },
+        query: Option.match(flags.cursor, {
+          onNone: () => ({}),
+          onSome: (cursor) => ({ cursor }),
+        }),
       })
       .pipe(Effect.mapError(explain(url)));
 
@@ -192,6 +201,10 @@ const show = Command.make(
 
     for (const sent of detail.sent) {
       yield* Console.log(`  sent from Peal ${sent.id}  ${sentLine(sent)}`);
+    }
+
+    if (detail.nextCursor !== null) {
+      yield* Console.log(`Older: --cursor ${detail.nextCursor}`);
     }
 
     yield* Console.log(

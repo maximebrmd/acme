@@ -192,8 +192,12 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM engagement.conversations WHERE workspace_id = ${id}`,
   "engagement.direct_messages": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.direct_messages WHERE workspace_id = ${id}`,
+  "engagement.message_applications": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.message_applications WHERE workspace_id = ${id}`,
   "engagement.message_boxes": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.message_boxes WHERE workspace_id = ${id}`,
+  "engagement.message_channels": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.message_channels WHERE workspace_id = ${id}`,
   "engagement.outgoing_messages": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.outgoing_messages WHERE workspace_id = ${id}`,
   "engagement.replies": (sql, id) =>
@@ -370,6 +374,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE created_by = ${`user:${id}`}`,
   // The replies and messages they sent, and the threads of the posts they
   // wrote, stay with the workspace, without them.
+  "engagement.message_applications": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.message_applications WHERE granted_by = ${id}`,
+  "engagement.message_channels": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.message_channels WHERE enabled_by = ${id}`,
   "engagement.outgoing_messages": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.outgoing_messages WHERE author_id = ${id}`,
   "engagement.replies": (sql, id) =>
@@ -759,6 +767,12 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO engagement.message_boxes (channel_id, workspace_id, created_at, next_read_at)
     VALUES (${messageChannelId}, ${workspaceId}, now(), now() + interval '1 hour')`;
+
+  yield* sql`INSERT INTO engagement.message_channels (channel_id, workspace_id, enabled_at, enabled_by)
+    VALUES (${messageChannelId}, ${workspaceId}, now(), ${person.id})`;
+
+  yield* sql`INSERT INTO engagement.message_applications (workspace_id, client_id, granted_at, granted_by)
+    VALUES (${workspaceId}, 'synthetic-client', now(), ${person.id})`;
 
   yield* sql`INSERT INTO engagement.conversations (id, workspace_id, channel_id, platform_conversation_id, participants, revision, last_message_at, created_at)
     VALUES (${conversationId}, ${workspaceId}, ${messageChannelId}, 'c1', '[]'::jsonb, 'r1', now(), now())`;

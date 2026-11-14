@@ -3,6 +3,7 @@ import { DateTime, Duration, Option } from "effect";
 
 import {
   changedSince,
+  dueForCheck,
   conversationsKeptFor,
   isConversationKept,
   isUnread,
@@ -55,9 +56,12 @@ describe("a conversation", () => {
   });
 
   it("is unread once someone wrote after a member read it", () => {
-    const fresh = refreshConversation(conversation(1), conversationReading(1), [
-      directMessage(1),
-    ]);
+    const fresh = refreshConversation(
+      conversation(1),
+      conversationReading(1),
+      [directMessage(1)],
+      messagedAt
+    );
 
     expect(isUnread(fresh)).toBeTruthy();
 
@@ -68,9 +72,17 @@ describe("a conversation", () => {
   });
 
   it("is not unread for the account's own messages", () => {
-    const own = refreshConversation(conversation(1), conversationReading(1), [
-      directMessage(1, { fromAccount: true, senderPlatformId: Option.none() }),
-    ]);
+    const own = refreshConversation(
+      conversation(1),
+      conversationReading(1),
+      [
+        directMessage(1, {
+          fromAccount: true,
+          senderPlatformId: Option.none(),
+        }),
+      ],
+      messagedAt
+    );
 
     expect(isUnread(own)).toBeFalsy();
     expect(Option.isNone(own.lastIncomingAt)).toBeTruthy();
@@ -87,7 +99,8 @@ describe("a conversation", () => {
         request: true,
         revision: "r2",
       }),
-      [directMessage(1, { sentAt })]
+      [directMessage(1, { sentAt })],
+      messagedAt
     );
 
     expect(refreshed.lastMessageAt).toStrictEqual(sentAt);
@@ -130,6 +143,30 @@ describe("a conversation", () => {
         )
       ).toStrictEqual({ closesAt: Option.none(), open: true });
     }
+  });
+});
+
+describe("a conversation's daily check", () => {
+  it("is due once a day has passed since it was last read back whole", () => {
+    const read = conversation(1);
+
+    expect(
+      dueForCheck(read, DateTime.addDuration(messagedAt, "23 hours"))
+    ).toBeFalsy();
+    expect(
+      dueForCheck(read, DateTime.addDuration(messagedAt, "25 hours"))
+    ).toBeTruthy();
+    expect(
+      dueForCheck(
+        refreshConversation(
+          read,
+          conversationReading(1),
+          [],
+          DateTime.addDuration(messagedAt, "25 hours")
+        ),
+        DateTime.addDuration(messagedAt, "26 hours")
+      )
+    ).toBeFalsy();
   });
 });
 

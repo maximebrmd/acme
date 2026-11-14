@@ -4,6 +4,7 @@ import type {
   InboxConversationDetail,
   InboxConversationPage,
   InboxDirectMessage,
+  InboxMessageSettings,
   InboxOutgoingMessage,
 } from "peal-contract";
 
@@ -11,13 +12,16 @@ import type {
   ConversationDetail,
   ConversationPage,
 } from "#engagement/application/engagement-messages.ts";
+import type { MessageSettingsView } from "#engagement/application/message-settings.ts";
 import type {
   ConversationCursor,
   ConversationSummary,
+  MessageCursor,
 } from "#engagement/application/ports/message-store.ts";
 import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
 import { isUnread } from "#engagement/domain/conversation.ts";
 import type { Conversation } from "#engagement/domain/conversation.ts";
+import { DirectMessageIdSchema } from "#engagement/domain/direct-message-id.ts";
 import type { DirectMessage } from "#engagement/domain/direct-message.ts";
 import type { OutgoingMessage } from "#engagement/domain/outgoing-message.ts";
 
@@ -118,12 +122,47 @@ export const toConversationPageView = (
   nextCursor: page.next.pipe(Option.map(encodeCursor), Option.getOrNull),
 });
 
+const decodeMessageId = Schema.decodeUnknownOption(DirectMessageIdSchema);
+
+// A page of messages ends at a message: its instant and its id, as text.
+const encodeMessageCursor = (cursor: MessageCursor): string =>
+  [DateTime.toEpochMillis(cursor.sentAt), cursor.messageId].join("_");
+
+/** The cursor of a conversation's page a client sent back, if this server made it. */
+export const messageCursorOf = (text: string): Option.Option<MessageCursor> => {
+  const [millis = "", id = ""] = text.split("_");
+
+  return Option.all({
+    messageId: decodeMessageId(id),
+    sentAt: instantOf(millis),
+  });
+};
+
+export const toMessageSettingsView = (
+  settings: MessageSettingsView
+): InboxMessageSettings => ({
+  applications: settings.applications.map((application) => ({
+    clientId: application.clientId,
+    grantedAt: application.grantedAt,
+    grantedBy: Option.getOrNull(application.grantedBy),
+  })),
+  channels: settings.channels.map((channel) => ({
+    channelId: channel.channelId,
+    enabledAt: channel.enabledAt,
+    enabledBy: Option.getOrNull(channel.enabledBy),
+  })),
+});
+
 export const toConversationDetailView = (
   detail: ConversationDetail
 ): InboxConversationDetail => ({
   abilities: { ...detail.abilities },
   conversation: toConversationView(detail.conversation, detail.messages.length),
   messages: detail.messages.map(toDirectMessageView),
+  nextCursor: detail.older.pipe(
+    Option.map(encodeMessageCursor),
+    Option.getOrNull
+  ),
   platform: Option.getOrNull(detail.platform),
   sent: detail.sent.map(toOutgoingMessageView),
   window: {

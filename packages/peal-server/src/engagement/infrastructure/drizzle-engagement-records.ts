@@ -18,7 +18,9 @@ import { shareFollowingLock } from "./following-lock.ts";
 import {
   conversations,
   erasedWorkspaces,
+  messageApplications,
   messageBoxes,
+  messageChannels,
   outgoingMessages,
   replies,
   reviewReplies,
@@ -141,6 +143,14 @@ export const DrizzleEngagementRecords = Layer.effect(
                 .where(eq(reviewThreads.workspaceId, workspaceId));
 
               yield* db
+                .delete(messageChannels)
+                .where(eq(messageChannels.workspaceId, workspaceId));
+
+              yield* db
+                .delete(messageApplications)
+                .where(eq(messageApplications.workspaceId, workspaceId));
+
+              yield* db
                 .delete(messageBoxes)
                 .where(eq(messageBoxes.workspaceId, workspaceId));
 
@@ -178,6 +188,18 @@ export const DrizzleEngagementRecords = Layer.effect(
           .set({ authorId: null })
           .where(eq(outgoingMessages.authorId, userId))
           .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(messageChannels)
+          .set({ enabledBy: null })
+          .where(eq(messageChannels.enabledBy, userId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(messageApplications)
+          .set({ grantedBy: null })
+          .where(eq(messageApplications.grantedBy, userId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -210,6 +232,10 @@ export const DrizzleEngagementRecords = Layer.effect(
         yield* sql
           .withTransaction(
             Effect.gen(function* deleting() {
+              yield* db
+                .delete(messageChannels)
+                .where(eq(messageChannels.channelId, channelId));
+
               yield* db
                 .delete(messageBoxes)
                 .where(eq(messageBoxes.channelId, channelId));

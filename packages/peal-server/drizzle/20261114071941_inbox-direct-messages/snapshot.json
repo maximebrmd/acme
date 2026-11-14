@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "37c42951-a1a5-4b8d-89c8-ef5ed00b4e41",
+  "id": "ee2027f9-8219-4157-ae22-973e0dc20eeb",
   "prevIds": [
     "a2046b91-4eb6-486c-ae16-806a3e538698"
   ],
@@ -50,6 +50,25 @@
       "statementTarget": [
         "table",
         "engagement",
+        "message_applications"
+      ],
+      "writes": [
+        "s|tbl|engagement.message_applications",
+        "n|tbl|engagement.message_applications",
+        "e|tbl|engagement.message_applications",
+        "n|rel|engagement.message_applications",
+        "n|type|engagement.message_applications",
+        "n|rel|engagement.message_applications_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
         "message_boxes"
       ],
       "writes": [
@@ -59,6 +78,25 @@
         "n|rel|engagement.message_boxes",
         "n|type|engagement.message_boxes",
         "n|rel|engagement.message_boxes_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "message_channels"
+      ],
+      "writes": [
+        "s|tbl|engagement.message_channels",
+        "n|tbl|engagement.message_channels",
+        "e|tbl|engagement.message_channels",
+        "n|rel|engagement.message_channels",
+        "n|type|engagement.message_channels",
+        "n|rel|engagement.message_channels_pkey"
       ],
       "reads": [
         "n|sch|engagement"
@@ -234,6 +272,26 @@
       "statementTarget": [
         "index",
         "engagement",
+        "message_channels",
+        "message_channels_workspace"
+      ],
+      "writes": [
+        "s|idx|engagement.message_channels_workspace",
+        "n|idx|engagement.message_channels_workspace",
+        "e|idx|engagement.message_channels_workspace",
+        "n|rel|engagement.message_channels_workspace"
+      ],
+      "reads": [
+        "n|tbl|engagement.message_channels",
+        "n|sch|engagement",
+        "n|col|engagement.message_channels.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
         "outgoing_messages",
         "outgoing_messages_conversation"
       ],
@@ -402,7 +460,25 @@
       "op": "create",
       "row": {
         "schema": "engagement",
+        "name": "message_applications",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
         "name": "message_boxes",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "name": "message_channels",
         "isRlsEnabled": false,
         "entityType": "tables"
       }
@@ -534,6 +610,22 @@
         "schema": "engagement",
         "table": "conversations",
         "name": "read_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "conversations",
+        "name": "checked_at",
         "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": false,
@@ -772,6 +864,70 @@
       "op": "create",
       "row": {
         "schema": "engagement",
+        "table": "message_applications",
+        "name": "client_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_applications",
+        "name": "granted_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_applications",
+        "name": "granted_by",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_applications",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
         "table": "message_boxes",
         "name": "channel_id",
         "type": "uuid",
@@ -837,6 +993,70 @@
       "row": {
         "schema": "engagement",
         "table": "message_boxes",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_channels",
+        "name": "channel_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_channels",
+        "name": "enabled_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_channels",
+        "name": "enabled_by",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_channels",
         "name": "workspace_id",
         "type": "uuid",
         "typeSchema": null,
@@ -1286,6 +1506,30 @@
       "op": "create",
       "row": {
         "schema": "engagement",
+        "table": "message_channels",
+        "name": "message_channels_workspace",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
         "table": "outgoing_messages",
         "name": "outgoing_messages_conversation",
         "nameExplicit": true,
@@ -1467,6 +1711,20 @@
       "op": "create",
       "row": {
         "schema": "engagement",
+        "table": "message_applications",
+        "name": "message_applications_pkey",
+        "columns": [
+          "workspace_id",
+          "client_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
         "table": "conversations",
         "name": "conversations_pkey",
         "columns": [
@@ -1495,6 +1753,19 @@
         "schema": "engagement",
         "table": "message_boxes",
         "name": "message_boxes_pkey",
+        "columns": [
+          "channel_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "message_channels",
+        "name": "message_channels_pkey",
         "columns": [
           "channel_id"
         ],

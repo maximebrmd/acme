@@ -17,6 +17,13 @@ import type { MessageBox } from "./message-box.ts";
  */
 export const conversationsKeptFor = Duration.days(30);
 
+/**
+ * How often a conversation is read back whole even when the platform says
+ * it did not change: a message deleted there, which may leave its
+ * revision as it was, is then deleted in Peal within a day.
+ */
+export const checkedEvery = Duration.days(1);
+
 /** The longest name or handle Peal keeps of a participant. */
 export const maxParticipantNameLength = 200;
 
@@ -75,6 +82,8 @@ export class Conversation extends Schema.Class<Conversation>(
   "peal-server/engagement/domain/Conversation"
 )({
   channelId: ChannelIdSchema,
+  // When its messages were last read back whole from the platform.
+  checkedAt: Schema.Option(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,
   id: ConversationIdSchema,
   lastIncomingAt: Schema.Option(Schema.DateTimeUtc),
@@ -95,6 +104,7 @@ const withFields = (
 ): Conversation =>
   new Conversation({
     channelId: conversation.channelId,
+    checkedAt: conversation.checkedAt,
     createdAt: conversation.createdAt,
     id: conversation.id,
     lastIncomingAt: conversation.lastIncomingAt,
@@ -149,6 +159,7 @@ export const startConversation = (
 ): Conversation =>
   new Conversation({
     channelId: box.channelId,
+    checkedAt: Option.some(now),
     createdAt: now,
     id,
     lastIncomingAt: Option.none(),
@@ -191,7 +202,8 @@ const latestOf = (
 export const refreshConversation = (
   conversation: Conversation,
   reading: ConversationReading,
-  kept: readonly DirectMessage[]
+  kept: readonly DirectMessage[],
+  now: DateTime.Utc
 ): Conversation => {
   const incoming = latestOf(
     kept.flatMap((message) => (message.fromAccount ? [] : [message.sentAt]))
@@ -203,6 +215,7 @@ export const refreshConversation = (
   ]);
 
   return withFields(conversation, {
+    checkedAt: Option.some(now),
     lastIncomingAt: Option.orElse(incoming, () => conversation.lastIncomingAt),
     lastMessageAt: Option.getOrElse(latest, () => reading.lastMessageAt),
     participants: storableParticipants(reading.participants),
@@ -244,3 +257,30 @@ export const markConversationRead = (
 /** The conversation once the account accepted it on the platform. */
 export const acceptConversation = (conversation: Conversation): Conversation =>
   withFields(conversation, { request: false });
+
+/**
+ * Whether a read must fetch the conversation's messages whatever its
+ * revision says: it was not read back whole for `checkedEvery`.
+ */
+export const dueForCheck = (
+  conversation: Conversation,
+  now: DateTime.Utc
+): boolean =>
+  !Option.exists(conversation.checkedAt, (checked) =>
+    DateTime.isGreaterThan(
+      checked,
+      DateTime.subtractDuration(now, checkedEvery)
+    )
+  );
+
+/** The conversation once a message was sent to it from Peal at `at`. */
+export const answeredAt = (
+  conversation: Conversation,
+  at: DateTime.Utc
+): Conversation =>
+  withFields(conversation, {
+    lastMessageAt: DateTime.isGreaterThan(at, conversation.lastMessageAt)
+      ? at
+      : conversation.lastMessageAt,
+    readAt: Option.some(at),
+  });

@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  primaryKey,
   pgSchema,
   smallint,
   text,
@@ -414,6 +415,10 @@ export const conversations = engagement.table(
     participants: jsonb("participants").notNull(),
     platformConversationId: text("platform_conversation_id").notNull(),
     readAt: instant("read_at"),
+    // When its messages were last read back whole from the platform: one
+    // whose revision did not change is read back once a day all the same,
+    // so a deletion there is seen.
+    checkedAt: instant("checked_at"),
     request: boolean("request").notNull().default(false),
     revision: text("revision").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
@@ -536,4 +541,38 @@ export const outgoingMessages = engagement.table(
       sql`(${table.status} = 'sending') = (${table.settledAt} IS NULL)`
     ),
   ]
+);
+
+/**
+ * The channels whose direct messages a workspace turned on: nothing of a
+ * channel's conversations is read until a member who may connect channels
+ * says so, in person; `enabled_by` is who (null once their account is
+ * closed). Turning it off deletes the channel's box and conversations.
+ */
+export const messageChannels = engagement.table(
+  "message_channels",
+  {
+    channelId: uuid("channel_id").primaryKey(),
+    enabledAt: instant("enabled_at").notNull(),
+    enabledBy: uuid("enabled_by"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("message_channels_workspace").on(table.workspaceId)]
+);
+
+/**
+ * The applications (OAuth clients) a workspace's owner let read and answer
+ * its direct messages, in person: without a row, an application lists
+ * conversations and is refused their messages. `granted_by` is who (null
+ * once their account is closed).
+ */
+export const messageApplications = engagement.table(
+  "message_applications",
+  {
+    clientId: text("client_id").notNull(),
+    grantedAt: instant("granted_at").notNull(),
+    grantedBy: uuid("granted_by"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.workspaceId, table.clientId] })]
 );

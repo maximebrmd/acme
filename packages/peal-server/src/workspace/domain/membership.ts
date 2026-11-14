@@ -67,6 +67,7 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "channel:connect",
   "engagement:message",
   "engagement:read",
+  "engagement:readMessages",
   "engagement:reply",
   "organization:delete",
   "organization:secure",

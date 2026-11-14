@@ -25,9 +25,7 @@ import {
   receiveMessage,
   reconcileMessages,
 } from "#engagement/domain/direct-message.ts";
-import { readsMessagesOn } from "#engagement/domain/message-abilities.ts";
 import {
-  followBox,
   postponeBoxRead,
   recordBoxRead,
 } from "#engagement/domain/message-box.ts";
@@ -36,9 +34,7 @@ import { CurrentInboxMessages } from "#shared/application/current-inbox-messages
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
 
-import { MessageChannels } from "./ports/message-channels.ts";
 import { MessageOutcomes } from "./ports/message-outcomes.ts";
 import { MessageSource } from "./ports/message-source.ts";
 import type {
@@ -50,8 +46,6 @@ import { SendMessage } from "./send-message.ts";
 
 /** What a run of the messages' collection did. */
 export interface MessagesReport {
-  /** Channels connected since they were last listed, now followed. */
-  readonly followed: number;
   /** Channels whose conversations were read. */
   readonly read: number;
   /** Channels put off: paused, gone, or their platform down. */
@@ -121,7 +115,6 @@ export const messagesBoxFailures = Metric.counter(
 
 const emptyReport: MessagesReport = {
   deferred: 0,
-  followed: 0,
   left: 0,
   read: 0,
   stranded: 0,
@@ -133,8 +126,9 @@ type Turn = "deferred" | "read" | "unreached";
 /**
  * Reads the direct messages of every channel on a platform the operator
  * turned on (`PEAL_INBOX_MESSAGES`): off, it follows nothing and calls
- * nothing. A run hands the messages no job settled to a person, follows
- * the channels connected since the last, then reads those due, the ones
+ * nothing, and a channel is read only once its workspace turned its
+ * messages on (`switchOn`, which follows its box). A run hands the
+ * messages no job settled to a person, then reads the boxes due, the ones
  * that waited longest first, each through its channel's gate: the
  * conversations new or changed since the last read, back to the oldest
  * message Peal may keep (`conversationsKeptFor`). What a read changes and
@@ -152,7 +146,6 @@ export class CollectMessages extends Context.Service<
   static readonly layer = Layer.effect(
     CollectMessages,
     Effect.gen(function* CollectMessagesLive() {
-      const listed = yield* MessageChannels;
       const store = yield* MessageStore;
       const source = yield* MessageSource;
       const outcomes = yield* MessageOutcomes;
@@ -161,32 +154,6 @@ export class CollectMessages extends Context.Service<
       const pace = yield* MessagesPaceRef;
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
-
-      // Follows every connected channel on a platform read, a page at a time.
-      const followAll = Effect.fn("CollectMessages.follow")(function* followAll(
-        at: DateTime.Utc
-      ) {
-        let after = Option.none<ChannelId>();
-        let followed = 0;
-
-        for (;;) {
-          const page = yield* listed.after(after, pace.pageSize);
-
-          followed += yield* store.follow(
-            page.channels.flatMap((channel) =>
-              readsMessagesOn(channel.platform, messages)
-                ? [followBox(channel, at)]
-                : []
-            )
-          );
-
-          if (Option.isNone(page.reached)) {
-            return followed;
-          }
-
-          after = page.reached;
-        }
-      });
 
       // One conversation as the read found it: kept, its messages
       // reconciled, and the messages others sent since the channel was
@@ -251,7 +218,7 @@ export class CollectMessages extends Context.Service<
         const after = yield* store.messagesOf(conversation.id);
 
         yield* store.saveConversations([
-          refreshConversation(conversation, reading, after),
+          refreshConversation(conversation, reading, after, now),
         ]);
 
         const told = received.filter(
@@ -317,6 +284,12 @@ export class CollectMessages extends Context.Service<
           ) {
             latest = Option.some(lastMessageAt);
           }
+        }
+
+        // A listing that showed every conversation the platform has, back
+        // to what Peal keeps, no longer shows those deleted there.
+        if (batch.listedWhole) {
+          yield* store.dropUnlisted(box.channelId, batch.listed);
         }
 
         // A read that halted is read again at the next run, from the
@@ -415,7 +388,6 @@ export class CollectMessages extends Context.Service<
         }
 
         const stranded = yield* sending.settleStranded;
-        const followed = yield* followAll(at);
         const deadline = DateTime.addDuration(at, pace.budget);
         let read = 0;
         let deferred = 0;
@@ -451,7 +423,6 @@ export class CollectMessages extends Context.Service<
 
         const report: MessagesReport = {
           deferred,
-          followed,
           left,
           read,
           stranded,

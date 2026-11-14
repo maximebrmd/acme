@@ -45,6 +45,7 @@ export const partnerKeyPermissions: readonly Permission[] = [
   "engagement:read",
   "engagement:reply",
   "engagement:message",
+  "engagement:readMessages",
   "media:read",
   "media:upload",
   "media:delete",

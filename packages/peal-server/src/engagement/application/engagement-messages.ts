@@ -1,6 +1,9 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
-import { markConversationRead } from "#engagement/domain/conversation.ts";
+import {
+  answeredAt,
+  markConversationRead,
+} from "#engagement/domain/conversation.ts";
 import type { Conversation } from "#engagement/domain/conversation.ts";
 import type { DirectMessage } from "#engagement/domain/direct-message.ts";
 import type { InvalidOutgoingMessageTransition } from "#engagement/domain/invalid-outgoing-message-transition.ts";
@@ -15,6 +18,7 @@ import type {
 import {
   chatOverflow,
   maxOutgoingMessageLength,
+  mentionsOutside,
   outgoingMessageText,
 } from "#engagement/domain/message-text.ts";
 import { OutgoingMessageIdSchema } from "#engagement/domain/outgoing-message-id.ts";
@@ -41,7 +45,9 @@ import type { Platform } from "#shared/domain/platform.ts";
 
 import { ConversationNotFound } from "./conversation-not-found.ts";
 import { MessageAbilityUnavailable } from "./message-ability-unavailable.ts";
+import { MessageMentionsOutside } from "./message-mentions-outside.ts";
 import { MessagePending } from "./message-pending.ts";
+import { MessagesNeedConsent } from "./messages-need-consent.ts";
 import { claimOf } from "./outgoing-message-claim.ts";
 import { OutgoingMessageNotFound } from "./outgoing-message-not-found.ts";
 import { EngagementChannels } from "./ports/engagement-channels.ts";
@@ -53,25 +59,34 @@ import type {
   ConversationCursor,
   ConversationFilter,
   ConversationSummary,
+  MessageCursor,
 } from "./ports/message-store.ts";
 import { ReplyLimits } from "./ports/reply-limits.ts";
 import { ReplyEmpty } from "./reply-empty.ts";
 import { ReplyKeyReused } from "./reply-key-reused.ts";
 import { ReplyTooLong } from "./reply-too-long.ts";
 
-type Refused = DatabaseError | MissingPermission;
+type Refused = DatabaseError | MessagesNeedConsent | MissingPermission;
+
+/** The most messages a page of a conversation holds. */
+export const maxMessagesPerPage = 100;
 
 /** A conversation whole, for a member reading it. */
 export interface ConversationDetail {
   readonly abilities: MessageAbilities;
   readonly conversation: Conversation;
-  /** Its messages as the platform gave them, oldest first. */
+  /**
+   * A page of its messages as the platform gave them, oldest first: the
+   * latest, or those before the page's cursor.
+   */
   readonly messages: readonly DirectMessage[];
   /** The channel's platform; none once the channel is gone or off. */
   readonly platform: Option.Option<Platform>;
   /** The messages sent from Peal, oldest first. */
   readonly sent: readonly OutgoingMessage[];
   readonly window: ReplyWindow;
+  /** Where the page of older messages starts; none on the oldest. */
+  readonly older: Option.Option<MessageCursor>;
 }
 
 /** A page of a workspace's conversations, and where the next starts. */
@@ -93,10 +108,12 @@ const writerOf = (actor: Actor): Option.Option<UserId> =>
 
 /**
  * What members do with their workspace's direct messages: read them
- * (`engagement:read`), and answer a conversation privately as the
+ * (`engagement:readMessages`), and answer a conversation privately as the
  * channel's account, settle a message Peal could not confirm, or say a
- * conversation was read (`engagement:message`). Peal never starts a
- * conversation: it answers those someone else began.
+ * conversation was read (`engagement:message`). An application acting for
+ * a member (OAuth) lists conversations, and reads or answers one only
+ * where the workspace's owner let it (`MessagesNeedConsent`). Peal never
+ * starts a conversation: it answers those someone else began.
  *
  * A message is checked (its conversation still there, the channel able,
  * the platform's window open, the text within the platform's length) and
@@ -116,10 +133,14 @@ export class EngagementMessages extends Context.Service<
         readonly after: Option.Option<ConversationCursor>;
         readonly limit: number;
       }
-    ) => Effect.Effect<ConversationPage, Refused>;
+    ) => Effect.Effect<ConversationPage, DatabaseError | MissingPermission>;
     readonly conversation: (
       actor: Actor,
-      conversationId: string
+      conversationId: string,
+      page?: {
+        readonly before: Option.Option<MessageCursor>;
+        readonly limit: number;
+      }
     ) => Effect.Effect<ConversationDetail, ConversationNotFound | Refused>;
     readonly send: (
       actor: Actor,
@@ -136,6 +157,7 @@ export class EngagementMessages extends Context.Service<
       | AllowanceReached
       | ConversationNotFound
       | MessageAbilityUnavailable
+      | MessageMentionsOutside
       | MessagePending
       | Refused
       | ReplyEmpty
@@ -171,6 +193,24 @@ export class EngagementMessages extends Context.Service<
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
       const meters = yield* MeteredUsage;
+
+      // An application acting for a member reads and answers messages
+      // only where the workspace's owner let it; a person, or an API key
+      // given the permission, needs no leave.
+      const consented = Effect.fn("EngagementMessages.consented")(
+        function* consented(actor: Actor) {
+          const { subject } = actor;
+
+          const allowed =
+            subject._tag !== "user" ||
+            subject.clientId === undefined ||
+            (yield* store.allows(actor.workspaceId, subject.clientId));
+
+          return yield* allowed
+            ? Effect.void
+            : Effect.fail(new MessagesNeedConsent());
+        }
+      );
 
       const summaryOf = Effect.fn("EngagementMessages.summaryOf")(
         function* summaryOf(actor: Actor, conversationId: string) {
@@ -234,7 +274,7 @@ export class EngagementMessages extends Context.Service<
           readonly limit: number;
         }
       ) {
-        yield* Effect.fromResult(authorize(actor, "engagement:read"));
+        yield* Effect.fromResult(authorize(actor, "engagement:readMessages"));
 
         const items = yield* store.listConversations(
           actor.workspaceId,
@@ -263,10 +303,31 @@ export class EngagementMessages extends Context.Service<
       });
 
       const conversation = Effect.fn("EngagementMessages.conversation")(
-        function* conversation(actor: Actor, conversationId: string) {
-          yield* Effect.fromResult(authorize(actor, "engagement:read"));
+        function* conversation(
+          actor: Actor,
+          conversationId: string,
+          page?: {
+            readonly before: Option.Option<MessageCursor>;
+            readonly limit: number;
+          }
+        ) {
+          yield* Effect.fromResult(authorize(actor, "engagement:readMessages"));
+          yield* consented(actor);
 
           const summary = yield* summaryOf(actor, conversationId);
+
+          const limit = Math.min(
+            Math.max(page?.limit ?? maxMessagesPerPage, 1),
+            maxMessagesPerPage
+          );
+
+          const latest = yield* store.pageOfMessages(summary.conversation.id, {
+            before: page?.before ?? Option.none(),
+            limit: limit + 1,
+          });
+
+          const shown = latest.slice(0, limit);
+          const oldest = shown.at(-1);
           const channel = yield* channelOf(summary.conversation.channelId);
           const now = yield* DateTime.now;
 
@@ -278,7 +339,14 @@ export class EngagementMessages extends Context.Service<
           const detail: ConversationDetail = {
             abilities: abilitiesOf(channel),
             conversation: summary.conversation,
-            messages: yield* store.messagesOf(summary.conversation.id),
+            messages: shown.toReversed(),
+            older:
+              latest.length > limit && oldest !== undefined
+                ? Option.some({
+                    messageId: oldest.id,
+                    sentAt: oldest.sentAt,
+                  })
+                : Option.none(),
             platform: channel.pipe(Option.map((found) => found.platform)),
             sent: yield* store.outgoingOf(summary.conversation.id),
             window: Option.match(platform, {
@@ -322,6 +390,7 @@ export class EngagementMessages extends Context.Service<
         key: Option.Option<string> = Option.none()
       ) {
         yield* Effect.fromResult(authorize(actor, "engagement:message"));
+        yield* consented(actor);
 
         const summary = yield* summaryOf(actor, conversationId);
         const talk = summary.conversation;
@@ -336,7 +405,8 @@ export class EngagementMessages extends Context.Service<
 
         const now = yield* DateTime.now;
 
-        // A platform whose window closed takes no answer any more.
+        // Peal never makes a first contact, and a platform whose window
+        // closed takes no answer any more.
         if (!replyWindowOf(channel.platform, talk.lastIncomingAt, now).open) {
           return yield* new MessageAbilityUnavailable({
             ability: "send",
@@ -364,6 +434,18 @@ export class EngagementMessages extends Context.Service<
           talk.participants,
           text
         );
+
+        // A Mastodon direct status reaches every account it mentions: one
+        // outside the conversation would be handed the message.
+        const outside = mentionsOutside(
+          channel.platform,
+          talk.participants,
+          outgoing
+        );
+
+        if (outside.length > 0) {
+          return yield* new MessageMentionsOutside({ mentions: outside });
+        }
 
         const overflow = chatOverflow(channel.platform, outgoing);
 
@@ -431,8 +513,10 @@ export class EngagementMessages extends Context.Service<
                       .pipe(
                         Effect.andThen(jobs.start(written.id)),
                         Effect.andThen(
+                          // Answered now: read, and its latest message, so
+                          // its retention runs from the answer.
                           changedUnderLock(talk, (current) =>
-                            markConversationRead(current, true, now)
+                            answeredAt(current, now)
                           )
                         )
                       )
@@ -465,6 +549,7 @@ export class EngagementMessages extends Context.Service<
         found: boolean
       ) {
         yield* Effect.fromResult(authorize(actor, "engagement:message"));
+        yield* consented(actor);
 
         const stored = yield* store.outgoing(messageId);
 
@@ -515,6 +600,7 @@ export class EngagementMessages extends Context.Service<
           read: boolean
         ) {
           yield* Effect.fromResult(authorize(actor, "engagement:message"));
+          yield* consented(actor);
 
           const summary = yield* summaryOf(actor, conversationId);
           const at = yield* DateTime.now;

@@ -470,6 +470,11 @@
     "tag": "MediaTooLarge"
   },
   {
+    "code": "message_mentions_outside",
+    "status": 422,
+    "tag": "MessageMentionsOutside"
+  },
+  {
     "code": "message_pending",
     "status": 409,
     "tag": "MessagePending"

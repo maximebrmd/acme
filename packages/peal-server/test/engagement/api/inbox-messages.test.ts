@@ -62,7 +62,13 @@ const worldWithConversation = () => {
   const world = makeMessageWorld();
   const started = conversation(1);
   const kept = directMessage(1, {}, started);
-  const talk = refreshConversation(started, conversationReading(1), [kept]);
+
+  const talk = refreshConversation(
+    started,
+    conversationReading(1),
+    [kept],
+    messagedAt
+  );
 
   world.state.channels.set(channelId(1), mastodonChannel);
   world.state.conversations.set(talk.id, talk);
@@ -77,12 +83,22 @@ const at = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   );
 
 describe("the direct messages endpoints", () => {
-  it.effect("list the conversations, and show one whole to a viewer", () => {
+  it.effect("list the conversations, and show one whole to an editor", () => {
     const { talk, world } = worldWithConversation();
 
     return at(
       Effect.gen(function* reads() {
-        const client = yield* clientAs(world, permissionsFor("viewer"));
+        const viewer = yield* clientAs(world, permissionsFor("viewer"));
+
+        // A viewer reads comments, never direct messages.
+        assert.instanceOf(
+          yield* viewer.inboxMessages
+            .listConversations({ params, query: {} })
+            .pipe(Effect.flip),
+          Forbidden
+        );
+
+        const client = yield* clientAs(world, permissionsFor("editor"));
 
         const page = yield* client.inboxMessages.listConversations({
           params,
@@ -107,6 +123,7 @@ describe("the direct messages endpoints", () => {
 
         const detail = yield* client.inboxMessages.getConversation({
           params: { ...params, conversationId: talk.id },
+          query: {},
         });
 
         assert.strictEqual(detail.platform, "mastodon");
@@ -135,7 +152,7 @@ describe("the direct messages endpoints", () => {
 
     return at(
       Effect.gen(function* pages() {
-        const client = yield* clientAs(world, permissionsFor("viewer"));
+        const client = yield* clientAs(world, permissionsFor("editor"));
 
         const first = yield* client.inboxMessages.listConversations({
           params,
@@ -253,6 +270,7 @@ describe("the direct messages endpoints", () => {
             yield* editor.inboxMessages
               .getConversation({
                 params: { ...params, conversationId: "not-an-id" },
+                query: {},
               })
               .pipe(Effect.flip),
             InboxConversationNotFound
@@ -269,4 +287,58 @@ describe("the direct messages endpoints", () => {
 
     expect(Result.isFailure(decoded)).toBeTruthy();
   });
+
+  it.effect(
+    "turn a channel's messages on for an admin, and let an owner allow an application",
+    () => {
+      const { world } = worldWithConversation();
+
+      return at(
+        Effect.gen(function* settings() {
+          const editor = yield* clientAs(world, permissionsFor("editor"));
+          const admin = yield* clientAs(world, permissionsFor("admin"));
+          const owner = yield* clientAs(world, permissionsFor("owner"));
+
+          assert.instanceOf(
+            yield* editor.inboxMessages
+              .setChannelMessages({
+                params: { ...params, channelId: channelId(1) },
+                payload: { enabled: true },
+              })
+              .pipe(Effect.flip),
+            Forbidden
+          );
+
+          const on = yield* admin.inboxMessages.setChannelMessages({
+            params: { ...params, channelId: channelId(1) },
+            payload: { enabled: true },
+          });
+
+          assert.deepStrictEqual(
+            on.channels.map(({ channelId: id }) => id),
+            [channelId(1)]
+          );
+          assert.instanceOf(
+            yield* admin.inboxMessages
+              .setMessageApplication({
+                params,
+                payload: { allowed: true, clientId: "synthetic-client" },
+              })
+              .pipe(Effect.flip),
+            Forbidden
+          );
+
+          const allowed = yield* owner.inboxMessages.setMessageApplication({
+            params,
+            payload: { allowed: true, clientId: "synthetic-client" },
+          });
+
+          assert.deepStrictEqual(
+            allowed.applications.map(({ clientId }) => clientId),
+            ["synthetic-client"]
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
 });

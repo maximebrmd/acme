@@ -9,7 +9,7 @@ import type { MessageBox } from "#engagement/domain/message-box.ts";
 import type { OutgoingMessageId } from "#engagement/domain/outgoing-message-id.ts";
 import type { OutgoingMessage } from "#engagement/domain/outgoing-message.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /** A conversation with what its list shows. */
 export interface ConversationSummary {
@@ -29,6 +29,36 @@ export interface ConversationFilter {
 export interface ConversationCursor {
   readonly conversationId: ConversationId;
   readonly lastMessageAt: DateTime.Utc;
+}
+
+/** A channel whose direct messages its workspace turned on. */
+export interface MessagesSwitchedOn {
+  readonly channelId: ChannelId;
+  readonly enabledAt: DateTime.Utc;
+  /** Who turned them on; none once their account is closed. */
+  readonly enabledBy: Option.Option<UserId>;
+  readonly workspaceId: WorkspaceId;
+}
+
+/** An application a workspace's owner let read and answer its messages. */
+export interface MessagesApplication {
+  readonly clientId: string;
+  readonly grantedAt: DateTime.Utc;
+  /** Who allowed it; none once their account is closed. */
+  readonly grantedBy: Option.Option<UserId>;
+  readonly workspaceId: WorkspaceId;
+}
+
+/** Where a page of a conversation's messages starts: before this one. */
+export interface MessageCursor {
+  readonly messageId: DirectMessageId;
+  readonly sentAt: DateTime.Utc;
+}
+
+/** What one pass of the retention deleted. */
+export interface MessagesPurged {
+  readonly conversations: number;
+  readonly messages: number;
 }
 
 /** An idempotency key a request came with, and since when its uses count. */
@@ -114,6 +144,17 @@ export class MessageStore extends Context.Service<
       conversationId: ConversationId
     ) => Effect.Effect<readonly DirectMessage[], DatabaseError>;
     /**
+     * A page of the conversation's messages, the latest first: at most
+     * `limit` sent before `before`, or the latest.
+     */
+    readonly pageOfMessages: (
+      conversationId: ConversationId,
+      page: {
+        readonly before: Option.Option<MessageCursor>;
+        readonly limit: number;
+      }
+    ) => Effect.Effect<readonly DirectMessage[], DatabaseError>;
+    /**
      * Saves messages of one conversation: new ones are inserted (one it
      * already holds under the same id on the platform is passed over),
      * known ones replaced. Answers the messages new to it.
@@ -167,17 +208,62 @@ export class MessageStore extends Context.Service<
       calledBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly OutgoingMessage[], DatabaseError>;
-    /** Deletes the channel's box, its conversations and what they hold, at once. */
+    /** The channels of the workspace whose direct messages it turned on. */
+    readonly switchedOn: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly MessagesSwitchedOn[], DatabaseError>;
+    /**
+     * Turns a channel's messages on, and follows its box: read at the next
+     * run. Turning on again changes nothing.
+     */
+    readonly switchOn: (
+      on: MessagesSwitchedOn,
+      box: MessageBox
+    ) => Effect.Effect<void, DatabaseError>;
+    /** The applications the workspace's owner allowed. */
+    readonly applications: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly MessagesApplication[], DatabaseError>;
+    /** Allows an application; allowing again changes nothing. */
+    readonly allowApplication: (
+      allowed: MessagesApplication
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Takes an application's leave back. */
+    readonly revokeApplication: (
+      workspaceId: WorkspaceId,
+      clientId: string
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Whether the workspace's owner allowed the application. */
+    readonly allows: (
+      workspaceId: WorkspaceId,
+      clientId: string
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Deletes the conversations of the box, kept, whose ids on the platform
+     * are not in `listed`: a complete listing no longer shows them, as the
+     * platform deleted them. Answers how many.
+     */
+    readonly dropUnlisted: (
+      channelId: ChannelId,
+      listed: readonly string[]
+    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * Deletes the channel's switch, box, conversations and what they hold,
+     * at once: the channel left, or its workspace turned its messages off.
+     */
     readonly channelGone: (
       channelId: ChannelId
     ) => Effect.Effect<number, DatabaseError>;
     /**
-     * Deletes the conversations whose last message was sent before
-     * `keptSince`, with what they hold, `limit` at most. Answers how many.
+     * Deletes, `limit` of each at most: the messages sent before
+     * `keptSince`, the messages sent from Peal settled before it, and the
+     * conversations whose last message was sent before it and that hold no
+     * message on its way or unconfirmed. Answers how many messages and
+     * conversations.
      */
     readonly purge: (
       keptSince: DateTime.Utc,
       limit: number
-    ) => Effect.Effect<number, DatabaseError>;
+    ) => Effect.Effect<MessagesPurged, DatabaseError>;
   }
 >()("peal-server/engagement/application/MessageStore") {}

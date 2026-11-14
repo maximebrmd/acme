@@ -3,10 +3,9 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
 import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
+import { MessageSettings } from "#engagement/application/message-settings.ts";
 import { EngagementChannels } from "#engagement/application/ports/engagement-channels.ts";
 import type { EngagedChannel } from "#engagement/application/ports/engagement-channels.ts";
-import { MessageChannels } from "#engagement/application/ports/message-channels.ts";
-import type { ConnectedChannel } from "#engagement/application/ports/message-channels.ts";
 import { MessageJobs } from "#engagement/application/ports/message-jobs.ts";
 import { MessageOutcomes } from "#engagement/application/ports/message-outcomes.ts";
 import { MessageSender } from "#engagement/application/ports/message-sender.ts";
@@ -21,6 +20,8 @@ import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import type {
   ConversationSummary,
   MessageJournalled,
+  MessagesApplication,
+  MessagesSwitchedOn,
 } from "#engagement/application/ports/message-store.ts";
 import { ReplyLimits } from "#engagement/application/ports/reply-limits.ts";
 import { PurgeMessages } from "#engagement/application/purge-messages.ts";
@@ -67,7 +68,8 @@ export interface MessageWorldState {
   readonly boxes: Map<ChannelId, MessageBox>;
   readonly cancelled: OutgoingMessageId[];
   readonly channels: Map<ChannelId, EngagedChannel>;
-  readonly connected: ConnectedChannel[];
+  readonly applications: MessagesApplication[];
+  readonly switchedOn: Map<ChannelId, MessagesSwitchedOn>;
   readonly conversations: Map<string, Conversation>;
   readonly jobs: OutgoingMessageId[];
   readonly keys: Map<string, OutgoingMessageId>;
@@ -96,13 +98,20 @@ export const makeMessageWorld = (
     boxes: new Map(),
     cancelled: [],
     channels: new Map(),
-    connected: [],
+    applications: [],
+    switchedOn: new Map(),
     conversations: new Map(),
     jobs: [],
     keys: new Map(),
     messages: new Map(),
     outgoing: new Map(),
-    read: () => Effect.succeed({ conversations: [], halted: false }),
+    read: () =>
+      Effect.succeed({
+        conversations: [],
+        halted: false,
+        listed: [],
+        listedWhole: false,
+      }),
     reads: [],
     received: [],
     resumed: [],
@@ -143,7 +152,107 @@ export const makeMessageWorld = (
     }
   };
 
+  const channelGone = (channelId: ChannelId) => {
+    state.switchedOn.delete(channelId);
+    state.boxes.delete(channelId);
+
+    const gone = [...state.conversations.values()].filter(
+      (conversation) => conversation.channelId === channelId
+    );
+
+    for (const conversation of gone) {
+      dropConversation(conversation.id);
+    }
+
+    return gone.length;
+  };
+
   const store = MessageStore.of({
+    allowApplication: (allowed) =>
+      Effect.sync(() => {
+        if (
+          !state.applications.some(
+            (kept) =>
+              kept.workspaceId === allowed.workspaceId &&
+              kept.clientId === allowed.clientId
+          )
+        ) {
+          state.applications.push(allowed);
+        }
+      }),
+    allows: (workspaceId, clientId) =>
+      Effect.sync(() =>
+        state.applications.some(
+          (kept) =>
+            kept.workspaceId === workspaceId && kept.clientId === clientId
+        )
+      ),
+    applications: (workspaceId) =>
+      Effect.sync(() =>
+        state.applications.filter((kept) => kept.workspaceId === workspaceId)
+      ),
+    dropUnlisted: (channelId, listed) =>
+      Effect.sync(() => {
+        const gone = [...state.conversations.values()].filter(
+          (conversation) =>
+            conversation.channelId === channelId &&
+            !listed.includes(conversation.platformConversationId)
+        );
+
+        for (const conversation of gone) {
+          dropConversation(conversation.id);
+        }
+
+        return gone.length;
+      }),
+    pageOfMessages: (conversationId, page) =>
+      Effect.sync(() =>
+        [...state.messages.values()]
+          .filter(
+            (message) =>
+              message.conversationId === conversationId &&
+              Option.match(page.before, {
+                onNone: () => true,
+                onSome: (cursor) =>
+                  millis(message.sentAt) < millis(cursor.sentAt) ||
+                  (millis(message.sentAt) === millis(cursor.sentAt) &&
+                    message.id < cursor.messageId),
+              })
+          )
+          .toSorted(
+            (left, right) =>
+              millis(right.sentAt) - millis(left.sentAt) ||
+              right.id.localeCompare(left.id)
+          )
+          .slice(0, page.limit)
+      ),
+    revokeApplication: (workspaceId, clientId) =>
+      Effect.sync(() => {
+        const index = state.applications.findIndex(
+          (kept) =>
+            kept.workspaceId === workspaceId && kept.clientId === clientId
+        );
+
+        if (index !== -1) {
+          state.applications.splice(index, 1);
+        }
+      }),
+    switchedOn: (workspaceId) =>
+      Effect.sync(() =>
+        [...state.switchedOn.values()].filter(
+          (on) => on.workspaceId === workspaceId
+        )
+      ),
+    switchOn: (on, box) =>
+      Effect.sync(() => {
+        if (!state.switchedOn.has(on.channelId)) {
+          state.switchedOn.set(on.channelId, on);
+        }
+
+        if (!state.boxes.has(box.channelId)) {
+          state.boxes.set(box.channelId, box);
+        }
+      }),
     advanceMessage: (next, from) =>
       Effect.sync(() => {
         const current = state.outgoing.get(from.id);
@@ -161,20 +270,7 @@ export const makeMessageWorld = (
       }),
     box: (channelId) =>
       Effect.sync(() => Option.fromUndefinedOr(state.boxes.get(channelId))),
-    channelGone: (channelId) =>
-      Effect.sync(() => {
-        state.boxes.delete(channelId);
-
-        const gone = [...state.conversations.values()].filter(
-          (conversation) => conversation.channelId === channelId
-        );
-
-        for (const conversation of gone) {
-          dropConversation(conversation.id);
-        }
-
-        return gone.length;
-      }),
+    channelGone: (channelId) => Effect.sync(() => channelGone(channelId)),
     claimCall: (messageId) =>
       Effect.sync(
         () => state.outgoing.get(messageId)?.status._tag === "sending"
@@ -310,10 +406,19 @@ export const makeMessageWorld = (
       ),
     purge: (keptSince, limit) =>
       Effect.sync(() => {
+        const old = [...state.messages.values()]
+          .filter((message) => millis(message.sentAt) < millis(keptSince))
+          .slice(0, limit);
+
+        for (const message of old) {
+          state.messages.delete(message.id);
+        }
+
         const gone = [...state.conversations.values()]
           .filter(
             (conversation) =>
-              millis(conversation.lastMessageAt) < millis(keptSince)
+              millis(conversation.lastMessageAt) < millis(keptSince) &&
+              pending(conversation.id) === undefined
           )
           .slice(0, limit);
 
@@ -321,7 +426,7 @@ export const makeMessageWorld = (
           dropConversation(conversation.id);
         }
 
-        return gone.length;
+        return { conversations: gone.length, messages: old.length };
       }),
     saveBox: (box) =>
       Effect.sync(() => {
@@ -386,34 +491,6 @@ export const makeMessageWorld = (
 
   const ports = Layer.mergeAll(
     Layer.succeed(MessageStore, store),
-    Layer.succeed(
-      MessageChannels,
-      MessageChannels.of({
-        after: (after, limit) =>
-          Effect.sync(() => {
-            const sorted = state.connected
-              .toSorted((left, right) =>
-                left.channelId.localeCompare(right.channelId)
-              )
-              .filter((channel) =>
-                Option.match(after, {
-                  onNone: () => true,
-                  onSome: (last) => channel.channelId > last,
-                })
-              );
-
-            const page = sorted.slice(0, limit);
-
-            return {
-              channels: page,
-              reached:
-                sorted.length > limit
-                  ? Option.fromUndefinedOr(page.at(-1)?.channelId)
-                  : Option.none(),
-            };
-          }),
-      })
-    ),
     Layer.succeed(
       MessageSource,
       MessageSource.of({
@@ -506,6 +583,7 @@ export const makeMessageWorld = (
 
   const layer = Layer.mergeAll(
     EngagementMessages.layer,
+    MessageSettings.layer,
     CollectMessages.layer.pipe(Layer.provideMerge(SendMessage.layer)),
     PurgeMessages.layer
   ).pipe(Layer.provideMerge(ports));

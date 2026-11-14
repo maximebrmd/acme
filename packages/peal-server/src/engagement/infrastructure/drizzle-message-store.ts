@@ -6,6 +6,7 @@ import {
   inArray,
   isNull,
   lte,
+  notInArray,
   or,
   sql as drizzleSql,
 } from "drizzle-orm";
@@ -18,8 +19,11 @@ import type {
   ConversationCursor,
   ConversationFilter,
   ConversationSummary,
+  MessageCursor,
   MessageJournalled,
   MessageKey,
+  MessagesApplication,
+  MessagesSwitchedOn,
 } from "#engagement/application/ports/message-store.ts";
 import { Conversation } from "#engagement/domain/conversation.ts";
 import { DirectMessage } from "#engagement/domain/direct-message.ts";
@@ -28,6 +32,11 @@ import { OutgoingMessageIdSchema } from "#engagement/domain/outgoing-message-id.
 import { OutgoingMessage } from "#engagement/domain/outgoing-message.ts";
 import type { OutgoingMessageStatus } from "#engagement/domain/outgoing-message.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import {
+  ChannelIdSchema,
+  UserIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -36,7 +45,9 @@ import {
   conversations,
   directMessages,
   erasedWorkspaces,
+  messageApplications,
   messageBoxes,
+  messageChannels,
   outgoingMessages,
 } from "./schema.ts";
 
@@ -98,6 +109,7 @@ const conversationOf = (row: ConversationRow) =>
 
     return yield* decodeConversation({
       channelId: row.channelId,
+      checkedAt: instant(row.checkedAt),
       createdAt: utc(row.createdAt),
       id: row.id,
       lastIncomingAt: instant(row.lastIncomingAt),
@@ -117,6 +129,7 @@ const encodeParticipantsJson = Schema.encodeSync(
 
 const conversationRowOf = (conversation: Conversation) => ({
   channelId: conversation.channelId,
+  checkedAt: nullableDate(conversation.checkedAt),
   createdAt: date(conversation.createdAt),
   id: conversation.id,
   lastIncomingAt: nullableDate(conversation.lastIncomingAt),
@@ -770,6 +783,10 @@ export const DrizzleMessageStore = Layer.effect(
           .withTransaction(
             Effect.gen(function* deleting() {
               yield* db
+                .delete(messageChannels)
+                .where(eq(messageChannels.channelId, channelId));
+
+              yield* db
                 .delete(messageBoxes)
                 .where(eq(messageBoxes.channelId, channelId));
 
@@ -785,26 +802,216 @@ export const DrizzleMessageStore = Layer.effect(
       }
     );
 
+    // Messages past their time first; then what Peal sent and settled
+    // before it; then the conversations past their time that hold nothing
+    // still on its way, so a message journalled keeps its claim's row.
     const purge = Effect.fn("MessageStore.purge")(function* purge(
       keptSince: DateTime.Utc,
       limit: number
     ) {
-      const deleted = yield* sql`
-        DELETE FROM engagement.conversations
+      const since = DateTime.formatIso(keptSince);
+
+      const messages = yield* sql`
+        DELETE FROM engagement.direct_messages
         WHERE id IN (
-          SELECT id FROM engagement.conversations
-          WHERE last_message_at < ${DateTime.formatIso(keptSince)}::timestamptz
-          ORDER BY last_message_at
+          SELECT id FROM engagement.direct_messages
+          WHERE sent_at < ${since}::timestamptz
+          ORDER BY sent_at
           LIMIT ${limit}
         )
         RETURNING id
       `.pipe(Effect.mapError(failed));
 
-      return deleted.length;
+      yield* sql`
+        DELETE FROM engagement.outgoing_messages
+        WHERE id IN (
+          SELECT id FROM engagement.outgoing_messages
+          WHERE status IN ('sent', 'failed')
+            AND settled_at < ${since}::timestamptz
+          ORDER BY settled_at
+          LIMIT ${limit}
+        )
+      `.pipe(Effect.mapError(failed));
+
+      const gone = yield* sql`
+        DELETE FROM engagement.conversations
+        WHERE id IN (
+          SELECT conversation.id FROM engagement.conversations AS conversation
+          WHERE conversation.last_message_at < ${since}::timestamptz
+            AND NOT EXISTS (
+              SELECT 1 FROM engagement.outgoing_messages AS pending
+              WHERE pending.conversation_id = conversation.id
+                AND pending.status IN ('sending', 'unconfirmed')
+            )
+          ORDER BY conversation.last_message_at
+          LIMIT ${limit}
+        )
+        RETURNING id
+      `.pipe(Effect.mapError(failed));
+
+      return { conversations: gone.length, messages: messages.length };
     });
+
+    const pageOfMessages = Effect.fn("MessageStore.pageOfMessages")(
+      function* pageOfMessages(
+        conversationId: string,
+        page: {
+          readonly before: Option.Option<MessageCursor>;
+          readonly limit: number;
+        }
+      ) {
+        const rows = yield* db
+          .select()
+          .from(directMessages)
+          .where(
+            and(
+              eq(directMessages.conversationId, conversationId),
+              page.before.pipe(
+                Option.map(
+                  (cursor) =>
+                    drizzleSql`(${directMessages.sentAt}, ${directMessages.id}) < (${DateTime.formatIso(cursor.sentAt)}::timestamptz, ${cursor.messageId}::uuid)`
+                ),
+                Option.getOrUndefined
+              )
+            )
+          )
+          .orderBy(desc(directMessages.sentAt), desc(directMessages.id))
+          .limit(page.limit)
+          .pipe(Effect.mapError(failed));
+
+        return yield* Effect.all(rows.map(messageOf));
+      }
+    );
+
+    const switchedOn = Effect.fn("MessageStore.switchedOn")(
+      function* switchedOn(workspaceId: string) {
+        const rows = yield* db
+          .select()
+          .from(messageChannels)
+          .where(eq(messageChannels.workspaceId, workspaceId))
+          .orderBy(asc(messageChannels.enabledAt))
+          .pipe(Effect.mapError(failed));
+
+        return rows.map((row): MessagesSwitchedOn => ({
+          channelId: ChannelIdSchema.make(row.channelId),
+          enabledAt: DateTime.fromDateUnsafe(row.enabledAt),
+          enabledBy: Option.fromNullOr(row.enabledBy).pipe(
+            Option.map((id) => UserIdSchema.make(id))
+          ),
+          workspaceId: WorkspaceIdSchema.make(row.workspaceId),
+        }));
+      }
+    );
+
+    const switchOn = Effect.fn("MessageStore.switchOn")(function* switchOn(
+      on: MessagesSwitchedOn,
+      followed: MessageBox
+    ) {
+      yield* db
+        .insert(messageChannels)
+        .values({
+          channelId: on.channelId,
+          enabledAt: date(on.enabledAt),
+          enabledBy: Option.getOrNull(on.enabledBy),
+          workspaceId: on.workspaceId,
+        })
+        .onConflictDoNothing()
+        .pipe(Effect.mapError(failed));
+
+      yield* follow([followed]);
+    });
+
+    const applications = Effect.fn("MessageStore.applications")(
+      function* applications(workspaceId: string) {
+        const rows = yield* db
+          .select()
+          .from(messageApplications)
+          .where(eq(messageApplications.workspaceId, workspaceId))
+          .orderBy(asc(messageApplications.grantedAt))
+          .pipe(Effect.mapError(failed));
+
+        return rows.map((row): MessagesApplication => ({
+          clientId: row.clientId,
+          grantedAt: DateTime.fromDateUnsafe(row.grantedAt),
+          grantedBy: Option.fromNullOr(row.grantedBy).pipe(
+            Option.map((id) => UserIdSchema.make(id))
+          ),
+          workspaceId: WorkspaceIdSchema.make(row.workspaceId),
+        }));
+      }
+    );
+
+    const allowApplication = (allowed: MessagesApplication) =>
+      db
+        .insert(messageApplications)
+        .values({
+          clientId: allowed.clientId,
+          grantedAt: date(allowed.grantedAt),
+          grantedBy: Option.getOrNull(allowed.grantedBy),
+          workspaceId: allowed.workspaceId,
+        })
+        .onConflictDoNothing()
+        .pipe(Effect.asVoid, Effect.mapError(failed));
+
+    const revokeApplication = (workspaceId: string, clientId: string) =>
+      db
+        .delete(messageApplications)
+        .where(
+          and(
+            eq(messageApplications.workspaceId, workspaceId),
+            eq(messageApplications.clientId, clientId)
+          )
+        )
+        .pipe(Effect.asVoid, Effect.mapError(failed));
+
+    const allows = Effect.fn("MessageStore.allows")(function* allows(
+      workspaceId: string,
+      clientId: string
+    ) {
+      const [row] = yield* db
+        .select({ clientId: messageApplications.clientId })
+        .from(messageApplications)
+        .where(
+          and(
+            eq(messageApplications.workspaceId, workspaceId),
+            eq(messageApplications.clientId, clientId)
+          )
+        )
+        .limit(1)
+        .pipe(Effect.mapError(failed));
+
+      return row !== undefined;
+    });
+
+    const dropUnlisted = Effect.fn("MessageStore.dropUnlisted")(
+      function* dropUnlisted(channelId: string, listed: readonly string[]) {
+        const gone = yield* db
+          .delete(conversations)
+          .where(
+            and(
+              eq(conversations.channelId, channelId),
+              listed.length === 0
+                ? undefined
+                : notInArray(conversations.platformConversationId, [...listed])
+            )
+          )
+          .returning({ id: conversations.id })
+          .pipe(Effect.mapError(failed));
+
+        return gone.length;
+      }
+    );
 
     return MessageStore.of({
       advanceMessage,
+      allowApplication,
+      allows,
+      applications,
+      dropUnlisted,
+      pageOfMessages,
+      revokeApplication,
+      switchedOn,
+      switchOn,
       box,
       channelGone,
       claimCall,

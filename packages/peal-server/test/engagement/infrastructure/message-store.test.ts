@@ -52,6 +52,8 @@ const forget = (workspaceId: WorkspaceId) =>
     Effect.all([
       sql`DELETE FROM engagement.conversations WHERE workspace_id = ${workspaceId}`,
       sql`DELETE FROM engagement.message_boxes WHERE workspace_id = ${workspaceId}`,
+      sql`DELETE FROM engagement.message_channels WHERE workspace_id = ${workspaceId}`,
+      sql`DELETE FROM engagement.message_applications WHERE workspace_id = ${workspaceId}`,
     ])
   ).pipe(Effect.orDie);
 
@@ -186,7 +188,8 @@ layer(StoreTest)("the message store", (it) => {
               lastMessageAt: utc("2049-02-02T09:05:00.000Z"),
               revision: "r2",
             }),
-            [first, own]
+            [first, own],
+            utc("2049-02-02T09:06:00.000Z")
           );
 
           yield* store.saveConversations([refreshed]);
@@ -450,39 +453,198 @@ layer(StoreTest)("the message store", (it) => {
       })
   );
 
-  it.effect("deletes conversations 30 days after their last message", () =>
-    Effect.gen(function* purges() {
+  it.effect(
+    "deletes each message 30 days after it was sent, and a conversation once its last message is that old",
+    () =>
+      Effect.gen(function* purges() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "1935-03-01T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const old = yield* conversationOn(box, 1, "1935-01-01T10:00:00.000Z");
+
+          const active = yield* conversationOn(
+            box,
+            2,
+            "1935-02-15T10:00:00.000Z"
+          );
+
+          yield* store.saveConversations([old, active]);
+
+          const stale = yield* messageOn(active, 1, "1935-01-01T10:00:00.000Z");
+          const fresh = yield* messageOn(active, 2, "1935-02-15T10:00:00.000Z");
+
+          yield* store.saveMessages([stale, fresh]);
+
+          const purged = yield* store.purge(
+            utc("1935-01-30T10:00:00.000Z"),
+            1000
+          );
+
+          assert.isAtLeast(purged.conversations, 1);
+          assert.isAtLeast(purged.messages, 1);
+          assert.deepStrictEqual(
+            yield* store.conversation(old.id),
+            Option.none()
+          );
+          assert.deepStrictEqual(
+            (yield* store.messagesOf(active.id)).map(({ id }) => id),
+            [fresh.id]
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "keeps a conversation past its time while a message to it is on its way",
+    () =>
+      Effect.gen(function* pending() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "1935-04-01T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const talk = yield* conversationOn(
+            box,
+            1,
+            "1935-03-01T10:00:00.000Z"
+          );
+
+          yield* store.saveConversations([talk]);
+          yield* store.journalMessage(
+            writeMessage(
+              yield* newId(OutgoingMessageIdSchema),
+              talk,
+              Option.none(),
+              "Hello",
+              utc("1935-03-31T10:00:00.000Z")
+            ),
+            Option.none()
+          );
+
+          yield* store.purge(utc("1935-03-30T10:00:00.000Z"), 1000);
+
+          assert.isTrue(Option.isSome(yield* store.conversation(talk.id)));
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect("pages a conversation's messages, the latest first", () =>
+    Effect.gen(function* pages() {
       const workspaceId = yield* freshWorkspace;
       const store = yield* MessageStore;
-      const box = yield* boxOf(workspaceId, "1935-03-01T10:00:00.000Z");
+      const box = yield* boxOf(workspaceId, "2049-03-01T10:00:00.000Z");
 
       yield* Effect.gen(function* checks() {
         yield* store.follow([box]);
 
-        const old = yield* conversationOn(box, 1, "1935-01-01T10:00:00.000Z");
+        const talk = yield* conversationOn(box, 1, "2049-03-01T09:00:00.000Z");
 
-        const recent = yield* conversationOn(
-          box,
-          2,
-          "1935-02-15T10:00:00.000Z"
-        );
+        yield* store.saveConversations([talk]);
 
-        yield* store.saveConversations([old, recent]);
-        yield* store.saveMessages([
-          yield* messageOn(old, 1, "1935-01-01T10:00:00.000Z"),
-        ]);
+        const first = yield* messageOn(talk, 1, "2049-03-01T08:00:00.000Z");
+        const second = yield* messageOn(talk, 2, "2049-03-01T09:00:00.000Z");
 
-        assert.strictEqual(
-          yield* store.purge(utc("1935-01-30T10:00:00.000Z"), 1000),
-          1
+        yield* store.saveMessages([first, second]);
+
+        assert.deepStrictEqual(
+          yield* store.pageOfMessages(talk.id, {
+            before: Option.none(),
+            limit: 1,
+          }),
+          [second]
         );
         assert.deepStrictEqual(
-          yield* store.conversation(old.id),
-          Option.none()
+          yield* store.pageOfMessages(talk.id, {
+            before: Option.some({
+              messageId: second.id,
+              sentAt: second.sentAt,
+            }),
+            limit: 10,
+          }),
+          [first]
         );
-        assert.isTrue(Option.isSome(yield* store.conversation(recent.id)));
       }).pipe(Effect.ensuring(forget(workspaceId)));
     })
+  );
+
+  it.effect(
+    "turns a channel's messages on, lets applications in, and deletes what a whole listing no longer shows",
+    () =>
+      Effect.gen(function* settings() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "2049-03-02T10:00:00.000Z");
+        const at = utc("2049-03-02T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.switchOn(
+            {
+              channelId: box.channelId,
+              enabledAt: at,
+              enabledBy: Option.none(),
+              workspaceId,
+            },
+            box
+          );
+
+          assert.deepStrictEqual(
+            (yield* store.switchedOn(workspaceId)).map(
+              ({ channelId }) => channelId
+            ),
+            [box.channelId]
+          );
+          assert.deepStrictEqual(
+            yield* store.box(box.channelId),
+            Option.some(box)
+          );
+
+          yield* store.allowApplication({
+            clientId: "synthetic-client",
+            grantedAt: at,
+            grantedBy: Option.none(),
+            workspaceId,
+          });
+
+          assert.isTrue(yield* store.allows(workspaceId, "synthetic-client"));
+
+          yield* store.revokeApplication(workspaceId, "synthetic-client");
+
+          assert.isFalse(yield* store.allows(workspaceId, "synthetic-client"));
+
+          const listed = yield* conversationOn(
+            box,
+            1,
+            "2049-03-02T09:00:00.000Z"
+          );
+
+          const gone = yield* conversationOn(
+            box,
+            2,
+            "2049-03-02T09:00:00.000Z"
+          );
+
+          yield* store.saveConversations([listed, gone]);
+
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, ["c1"]),
+            1
+          );
+          assert.deepStrictEqual(
+            yield* store.conversation(gone.id),
+            Option.none()
+          );
+
+          yield* store.channelGone(box.channelId);
+
+          assert.deepStrictEqual(yield* store.switchedOn(workspaceId), []);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
   );
 
   it.effect(

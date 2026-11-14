@@ -790,6 +790,10 @@ const reasonOf =
             ? "The reply says nothing: nothing was sent."
             : `The reply is too long for its platform: ${String(length)} ${unit ?? "characters"}, where it takes ${String(maximum)} (on Mastodon, the mention of the person answered counts). Nothing was sent.`
         ),
+      MessageMentionsOutside: ({ mentions }) =>
+        refused(
+          `The message mentions accounts outside the conversation (${mentions.join(", ")}), which a Mastodon direct message would reach too: nothing was sent. Take the mentions out.`
+        ),
       MessagePending: ({ messageId }) =>
         refused(
           `A message to this conversation is on its way, or may have gone out (${messageId}): nothing more was sent. If it is unconfirmed, check the platform, then run peal inbox messages confirm.`

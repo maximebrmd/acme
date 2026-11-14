@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Metric, Option, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
@@ -26,6 +26,7 @@ import type {
   MessagesToRead,
   OutgoingDirect,
 } from "#engagement/infrastructure/platforms/message-platform.ts";
+import { messagesListingTruncated } from "#engagement/infrastructure/platforms/messages-listing.ts";
 import { blueskyChatService } from "#shared/domain/bluesky-scopes.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
@@ -160,6 +161,18 @@ const readingOf = (
         }))
       )
     : Option.none();
+
+// Whether a conversation is one Peal reads back: a direct one, with a
+// message Peal may keep, changed or due for its daily check.
+const needsReadBack = (convo: ConvoView, request: MessagesToRead) =>
+  convo.kind?.$type !== groupType &&
+  Option.fromUndefinedOr(convo.lastMessage).pipe(
+    Option.flatMap(sentAtOf),
+    Option.exists((at) =>
+      DateTime.isGreaterThanOrEqualTo(at, request.keptSince)
+    )
+  ) &&
+  request.known.get(convo.id) !== convo.rev;
 
 const undecided: MessageSendOutcome = {
   _tag: "unconfirmed",
@@ -330,16 +343,23 @@ export const blueskyMessages = Effect.fn("BlueskyMessages.make")(
     ) {
       const deadline = DateTime.addDuration(yield* DateTime.now, deadlineAfter);
       const readings: ConversationReading[] = [];
+      const seen: string[] = [];
       let cursor = Option.none<string>();
 
-      for (let page = 0; page < maxPages; page += 1) {
-        if (DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)) {
-          const halted: MessagesBatch = {
-            conversations: readings,
-            halted: true,
-          };
+      const pastDeadline = DateTime.now.pipe(
+        Effect.map((now) => DateTime.isGreaterThanOrEqualTo(now, deadline))
+      );
 
-          return halted;
+      const halted = (): MessagesBatch => ({
+        conversations: readings,
+        halted: true,
+        listed: seen,
+        listedWhole: false,
+      });
+
+      for (let page = 0; page < maxPages; page += 1) {
+        if (yield* pastDeadline) {
+          return halted();
         }
 
         const answer = yield* answerOf(
@@ -354,9 +374,19 @@ export const blueskyMessages = Effect.fn("BlueskyMessages.make")(
         );
 
         for (const convo of answer.convos) {
-          const reading = yield* changedReading(session, convo, request);
+          seen.push(convo.id);
 
-          readings.push(...Option.toArray(reading));
+          // A read-back may take several calls: none starts past the
+          // read's time, so the channel's gate is never held long.
+          if (needsReadBack(convo, request)) {
+            if (yield* pastDeadline) {
+              return halted();
+            }
+
+            const reading = yield* changedReading(session, convo, request);
+
+            readings.push(...Option.toArray(reading));
+          }
         }
 
         cursor = Option.fromUndefinedOr(answer.cursor);
@@ -365,15 +395,17 @@ export const blueskyMessages = Effect.fn("BlueskyMessages.make")(
           const batch: MessagesBatch = {
             conversations: readings,
             halted: false,
+            listed: seen,
+            listedWhole: true,
           };
 
           return batch;
         }
       }
 
-      const halted: MessagesBatch = { conversations: readings, halted: true };
+      yield* Metric.update(messagesListingTruncated, 1);
 
-      return halted;
+      return halted();
     });
 
     // A direct conversation changed since Peal read it, with a message

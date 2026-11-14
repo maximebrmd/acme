@@ -14,6 +14,8 @@ export interface ReplyWindow {
 
 const alwaysOpen: ReplyWindow = { closesAt: Option.none(), open: true };
 
+const shut: ReplyWindow = { closesAt: Option.none(), open: false };
+
 // Each platform's rule, from when the person last wrote, at `now`.
 const windows: Readonly<
   Record<
@@ -32,7 +34,8 @@ const windows: Readonly<
 /**
  * The window in which a platform lets the account answer someone who
  * wrote to it, from when they last wrote (`lastIncomingAt`), at `now`.
- * Mastodon and Bluesky set none. A platform that answers only within
+ * Nobody else wrote yet: the window is shut, as Peal never makes a first
+ * contact. Mastodon and Bluesky set no limit past that. A platform that answers only within
  * hours of a person's message (Meta's 24 hours, and 7 days for a person's
  * answer) brings its rule here.
  */
@@ -40,4 +43,5 @@ export const replyWindowOf = (
   platform: InboxMessagePlatform,
   lastIncomingAt: Option.Option<DateTime.Utc>,
   now: DateTime.Utc
-): ReplyWindow => windows[platform](lastIncomingAt, now);
+): ReplyWindow =>
+  Option.isNone(lastIncomingAt) ? shut : windows[platform](lastIncomingAt, now);

@@ -137,11 +137,18 @@ export const studioMessagesLive = (state: Ref.Ref<MessagesState>) =>
             abilities: { read: "available", send: "available" } as const,
             conversation: current.conversation,
             messages: received,
+            nextCursor: null,
             platform: "mastodon" as const,
             sent: current.sent,
             window: { closesAt: null, open: true },
           };
         }),
+      getMessageSettings: () =>
+        allowed("channel:connect").pipe(
+          Effect.as({ applications: [], channels: [] })
+        ),
+      setChannelMessages: () => Effect.fail(new Forbidden()),
+      setMessageApplication: () => Effect.fail(new Forbidden()),
       listConversations: () =>
         Effect.gen(function* listConversations() {
           yield* allowed("engagement:read");

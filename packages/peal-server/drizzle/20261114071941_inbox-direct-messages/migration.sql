@@ -7,6 +7,7 @@ CREATE TABLE "engagement"."conversations" (
 	"participants" jsonb NOT NULL,
 	"platform_conversation_id" text NOT NULL,
 	"read_at" timestamp with time zone,
+	"checked_at" timestamp with time zone,
 	"request" boolean DEFAULT false NOT NULL,
 	"revision" text NOT NULL,
 	"workspace_id" uuid NOT NULL,
@@ -29,11 +30,26 @@ CREATE TABLE "engagement"."direct_messages" (
 	CONSTRAINT "direct_messages_sender" CHECK (NOT "from_account" OR "sender_platform_id" IS NULL)
 );
 --> statement-breakpoint
+CREATE TABLE "engagement"."message_applications" (
+	"client_id" text,
+	"granted_at" timestamp with time zone NOT NULL,
+	"granted_by" uuid,
+	"workspace_id" uuid,
+	CONSTRAINT "message_applications_pkey" PRIMARY KEY("workspace_id","client_id")
+);
+--> statement-breakpoint
 CREATE TABLE "engagement"."message_boxes" (
 	"channel_id" uuid PRIMARY KEY,
 	"created_at" timestamp with time zone NOT NULL,
 	"last_read_at" timestamp with time zone,
 	"next_read_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "engagement"."message_channels" (
+	"channel_id" uuid PRIMARY KEY,
+	"enabled_at" timestamp with time zone NOT NULL,
+	"enabled_by" uuid,
 	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
@@ -63,6 +79,7 @@ CREATE UNIQUE INDEX "direct_messages_platform_id" ON "engagement"."direct_messag
 CREATE INDEX "direct_messages_conversation_sent" ON "engagement"."direct_messages" ("conversation_id","sent_at");--> statement-breakpoint
 CREATE INDEX "message_boxes_due" ON "engagement"."message_boxes" ("next_read_at","channel_id");--> statement-breakpoint
 CREATE INDEX "message_boxes_workspace" ON "engagement"."message_boxes" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "message_channels_workspace" ON "engagement"."message_channels" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "outgoing_messages_conversation" ON "engagement"."outgoing_messages" ("conversation_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "outgoing_messages_pending" ON "engagement"."outgoing_messages" ("conversation_id") WHERE "status" IN ('sending', 'unconfirmed');--> statement-breakpoint
 CREATE UNIQUE INDEX "outgoing_messages_key" ON "engagement"."outgoing_messages" ("workspace_id","key_digest") WHERE "key_digest" IS NOT NULL;--> statement-breakpoint

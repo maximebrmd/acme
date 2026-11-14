@@ -8,6 +8,7 @@ import type { MessageSendRequest } from "#engagement/application/ports/message-s
 import { MessageSource } from "#engagement/application/ports/message-source.ts";
 import type { MessagesRequest } from "#engagement/application/ports/message-source.ts";
 import { MessageStore } from "#engagement/application/ports/message-store.ts";
+import { dueForCheck } from "#engagement/domain/conversation.ts";
 import {
   messageAbilitiesOf,
   readsMessagesOn,
@@ -114,13 +115,23 @@ export const platformMessagesWith = (settings: {
           .conversationsOf(request.channelId)
           .pipe(Effect.catchTag("DatabaseError", databaseDown));
 
+        const now = yield* DateTime.now;
+
+        // A conversation not read back whole for a day is read back
+        // whatever its revision says, so a deletion there is seen.
         return yield* platforms[account.platform].read(account, {
           keptSince: request.keptSince,
           known: new Map(
-            known.map((conversation) => [
-              conversation.platformConversationId,
-              conversation.revision,
-            ])
+            known.flatMap((conversation) =>
+              dueForCheck(conversation, now)
+                ? []
+                : [
+                    [
+                      conversation.platformConversationId,
+                      conversation.revision,
+                    ] as const,
+                  ]
+            )
           ),
         });
       });
@@ -208,11 +219,13 @@ export const platformMessagesWith = (settings: {
             text: message.value.text,
           });
         }).pipe(
-          Effect.catchTag("DatabaseError", (failure) =>
-            Effect.logWarning(
-              "Could not read a direct message to send",
-              failure
-            ).pipe(
+          // Logged by its ids alone, never the failure's cause.
+          Effect.catchTag("DatabaseError", () =>
+            Effect.logWarning("Could not read a direct message to send").pipe(
+              Effect.annotateLogs({
+                channelId: request.channelId,
+                messageId: request.messageId,
+              }),
               Effect.as(
                 mode === "send" ? failedWith("platformUnavailable") : notClaimed
               )

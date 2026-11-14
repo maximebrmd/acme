@@ -199,18 +199,21 @@ const CollectMessagesCron = ClusterCron.make({
 });
 
 /**
- * Every hour at minute 57: deletes the conversations whose last message
- * was sent 30 days ago, with what they hold (`PurgeMessages`). A failed
+ * Every hour at minute 57: deletes the direct messages sent 30 days ago,
+ * and the conversations left with none (`PurgeMessages`). A failed
  * run is counted (`peal.engagement.messages.retention_failures`, alert
  * `peal-messages-retention-failing`) and the next hour's catches up.
  */
 const MessagesRetentionCron = ClusterCron.make({
   cron: Cron.parseUnsafe("57 * * * *", "UTC"),
   execute: PurgeMessages.use((purging) => purging.purge).pipe(
-    Effect.tap((conversations) =>
-      conversations > 0
-        ? Effect.logInfo("Deleted conversations past their time").pipe(
-            Effect.annotateLogs({ conversations })
+    Effect.tap((purged) =>
+      purged.conversations > 0 || purged.messages > 0
+        ? Effect.logInfo("Deleted direct messages past their time").pipe(
+            Effect.annotateLogs({
+              conversations: purged.conversations,
+              messages: purged.messages,
+            })
           )
         : Effect.void
     ),

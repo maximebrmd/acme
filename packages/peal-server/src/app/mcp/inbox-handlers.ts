@@ -5,6 +5,7 @@ import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
 import {
   conversationCursorOf,
+  messageCursorOf,
   toConversationDetailView,
   toConversationPageView,
   toOutgoingMessageView,
@@ -25,7 +26,10 @@ import {
 } from "#engagement/api/inbox-view.ts";
 import type { AbilityUnavailable } from "#engagement/application/ability-unavailable.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
-import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
+import {
+  EngagementMessages,
+  maxMessagesPerPage,
+} from "#engagement/application/engagement-messages.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
 import type { MessageAbilityUnavailable } from "#engagement/application/message-ability-unavailable.ts";
@@ -56,11 +60,17 @@ const noConversation = () =>
     "The workspace has no such conversation: it may have gone with its channel, or be older than Peal keeps one. list_conversations lists them."
   );
 
+// Without the owner's leave, an application lists conversations only.
+const notAllowedToRead = () =>
+  refuse(
+    "This application may list the workspace's conversations, never read or answer their messages: direct messages are private, and an owner of the workspace lets an application read them, in person, in the inbox's settings in the web app. Nothing was read or sent. Tell the user to read and answer them in the web app."
+  );
+
 const cannotMessage = ({ standing }: MessageAbilityUnavailable) =>
   refuse(
     standing === "reconnect"
       ? "This channel may not send direct messages yet: its account was connected before Peal asked for what that takes, or the channel was disconnected or turned off. The user disconnects it and connects the account again, in the web app. Nothing was sent."
-      : "This server does not send direct messages on this channel's platform: nothing was sent."
+      : "Nothing was sent: this server does not send direct messages on this channel's platform, or nobody else wrote in the conversation yet, and Peal never starts one."
   );
 
 const noLocation = () =>
@@ -158,21 +168,29 @@ export const InboxToolsLive = InboxTools.toLayer(
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return InboxTools.of({
-      get_conversation: ({ conversationId }) =>
+      get_conversation: ({ conversationId, cursor }) =>
         Effect.gen(function* getConversation() {
           const id = yield* idOr(
             decodeConversationId(conversationId),
             noConversation
           );
 
-          return yield* messages.conversation(yield* actor, id).pipe(
-            Effect.map(toConversationDetailView),
-            Effect.catchTags({
-              ConversationNotFound: noConversation,
-              DatabaseError: Effect.die,
-              MissingPermission: notAllowed("read the inbox"),
+          const before = yield* filterOf(cursor, messageCursorOf, "cursor");
+
+          return yield* messages
+            .conversation(yield* actor, id, {
+              before,
+              limit: maxMessagesPerPage,
             })
-          );
+            .pipe(
+              Effect.map(toConversationDetailView),
+              Effect.catchTags({
+                ConversationNotFound: noConversation,
+                DatabaseError: Effect.die,
+                MessagesNeedConsent: notAllowedToRead,
+                MissingPermission: notAllowed("read direct messages"),
+              })
+            );
         }),
       list_conversations: ({ channelId, cursor, limit, unread }) =>
         Effect.gen(function* listConversations() {
@@ -194,7 +212,7 @@ export const InboxToolsLive = InboxTools.toLayer(
               Effect.map(toConversationPageView),
               Effect.catchTags({
                 DatabaseError: Effect.die,
-                MissingPermission: notAllowed("read the inbox"),
+                MissingPermission: notAllowed("list direct messages"),
               })
             );
         }),
@@ -219,10 +237,15 @@ export const InboxToolsLive = InboxTools.toLayer(
                 ConversationNotFound: noConversation,
                 DatabaseError: Effect.die,
                 MessageAbilityUnavailable: cannotMessage,
+                MessageMentionsOutside: ({ mentions }) =>
+                  refuse(
+                    `The message mentions accounts outside the conversation (${mentions.join(", ")}), which a Mastodon direct message would reach too: nothing was sent. Take the mentions out.`
+                  ),
                 MessagePending: ({ messageId }) =>
                   refuse(
                     `A message to this conversation is on its way, or may have gone out (${messageId}): nothing more was sent. If it is unconfirmed, the user checks the platform and settles it in the web app.`
                   ),
+                MessagesNeedConsent: notAllowedToRead,
                 MissingPermission: notAllowed("send direct messages"),
                 ReplyEmpty: () =>
                   refuse("The message says nothing: nothing was sent."),
