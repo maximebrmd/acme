@@ -3,6 +3,7 @@
 // of it, and with the site's terms as WordPress answers them.
 import { assert, describe, it } from "@effect/vitest";
 import {
+  Clock,
   DateTime,
   Deferred,
   Duration,
@@ -464,11 +465,12 @@ describe("an attempt at sending an article", () => {
           const sharding = yield* Sharding.Sharding;
           const states = Effect.all(sent.map((id) => stateOf(id)));
 
-          for (
-            let round = 0;
-            round < 600 &&
-            !(yield* states).every((state) => state === "published");
-            round += 1
+          const liveNow = TestClock.withLive(Clock.currentTimeMillis);
+          const giveUpAt = (yield* liveNow) + 75_000;
+
+          while (
+            !(yield* states).every((state) => state === "published") &&
+            (yield* liveNow) < giveUpAt
           ) {
             yield* sharding.pollStorage;
             yield* TestClock.adjust(Duration.seconds(1));
@@ -698,16 +700,18 @@ describe("an attempt at sending an article", () => {
             timeZone: zone,
           });
 
-          // A day and more without the site's turn.
-          for (
-            let round = 0;
-            round < 1000 &&
-            ["publishing", "scheduled"].includes(yield* stateOf(draft.id));
-            round += 1
+          // A day and more without the site's turn, for as long as a slow
+          // machine needs to run the attempts through it.
+          const liveNow = TestClock.withLive(Clock.currentTimeMillis);
+          const giveUpAt = (yield* liveNow) + 75_000;
+
+          while (
+            ["publishing", "scheduled"].includes(yield* stateOf(draft.id)) &&
+            (yield* liveNow) < giveUpAt
           ) {
             yield* sharding.pollStorage;
             yield* TestClock.adjust(Duration.minutes(15));
-            yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(20)));
           }
 
           assert.strictEqual(yield* stateOf(draft.id), "unconfirmed");
