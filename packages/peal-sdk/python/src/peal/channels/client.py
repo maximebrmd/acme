@@ -13,6 +13,7 @@ from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
 from .raw_client import AsyncRawChannelsClient, RawChannelsClient
+from .types.reconnect_channels_request_messages import ReconnectChannelsRequestMessages
 
 # this is used as the default value for optional parameters
 OMIT = typing.cast(typing.Any, ...)
@@ -314,16 +315,23 @@ class ChannelsClient:
         return _response.data
 
     def reconnect(
-        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> Authorization:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         channel_id : str
+
+        messages : typing.Optional[ReconnectChannelsRequestMessages]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -345,7 +353,9 @@ class ChannelsClient:
             channel_id="channelId",
         )
         """
-        _response = self._raw_client.reconnect(workspace_id, channel_id, request_options=request_options)
+        _response = self._raw_client.reconnect(
+            workspace_id, channel_id, messages=messages, request_options=request_options
+        )
         return _response.data
 
     def disconnect(
@@ -839,16 +849,23 @@ class AsyncChannelsClient:
         return _response.data
 
     async def reconnect(
-        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> Authorization:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         channel_id : str
+
+        messages : typing.Optional[ReconnectChannelsRequestMessages]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -878,7 +895,9 @@ class AsyncChannelsClient:
 
         asyncio.run(main())
         """
-        _response = await self._raw_client.reconnect(workspace_id, channel_id, request_options=request_options)
+        _response = await self._raw_client.reconnect(
+            workspace_id, channel_id, messages=messages, request_options=request_options
+        )
         return _response.data
 
     async def disconnect(

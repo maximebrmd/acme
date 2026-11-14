@@ -2,8 +2,20 @@ import { Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultInboxPageSize } from "peal-contract";
 
 import { InboxTools } from "#app/mcp/inbox-tools.ts";
-import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
+import {
+  messagesConsentText,
+  notAllowed,
+  refuse,
+  usageRefusal,
+} from "#app/mcp/refusals.ts";
 import { commentRuleView } from "#engagement/api/comment-rule-view.ts";
+import {
+  conversationCursorOf,
+  messageCursorOf,
+  toConversationDetailView,
+  toConversationPageView,
+  toOutgoingMessageView,
+} from "#engagement/api/inbox-message-view.ts";
 import {
   reviewCursorOf,
   toReviewReplyView,
@@ -26,14 +38,20 @@ import type {
   ListedCommentRule,
 } from "#engagement/application/comment-rules.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
+import {
+  EngagementMessages,
+  maxMessagesPerPage,
+} from "#engagement/application/engagement-messages.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
+import type { MessageAbilityUnavailable } from "#engagement/application/message-ability-unavailable.ts";
 import type { ModerationFailed } from "#engagement/application/moderation-failed.ts";
 import type { ReplyTooLong } from "#engagement/application/reply-too-long.ts";
 import type { ReviewActionFailed } from "#engagement/application/review-action-failed.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import { CommentRuleIdSchema } from "#engagement/domain/comment-rule-id.ts";
 import type { CommentRuleScope } from "#engagement/domain/comment-rule.ts";
+import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
 import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-transition.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
@@ -50,6 +68,19 @@ const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 const decodeReviewThreadId = Schema.decodeUnknownOption(ReviewThreadIdSchema);
 const decodeReviewId = Schema.decodeUnknownOption(ReviewIdSchema);
+const decodeConversationId = Schema.decodeUnknownOption(ConversationIdSchema);
+
+const noConversation = () =>
+  refuse(
+    "The workspace has no such conversation: it may have gone with its channel, or be older than Peal keeps one. list_conversations lists them."
+  );
+
+const cannotMessage = ({ standing }: MessageAbilityUnavailable) =>
+  refuse(
+    standing === "reconnect"
+      ? "This channel may not send direct messages yet: its account was connected before Peal asked for what that takes, or the channel was disconnected or turned off. The user disconnects it and connects the account again, in the web app. Nothing was sent."
+      : "Nothing was sent: this server does not send direct messages on this channel's platform, or nobody else wrote in the conversation yet, and Peal never starts one."
+  );
 
 const noLocation = () =>
   refuse(
@@ -201,9 +232,23 @@ export const InboxToolsLive = InboxTools.toLayer(
     const replies = yield* EngagementReplies;
     const reviews = yield* EngagementReviews;
     const commentRules = yield* CommentRules;
+    const messages = yield* EngagementMessages;
     const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
+
+    // Without the owner's leave, an application lists conversations only:
+    // the refusal names its client id, which the owner allows.
+    const notAllowedToRead = () =>
+      actor.pipe(
+        Effect.flatMap(({ subject }) =>
+          refuse(
+            messagesConsentText(
+              subject._tag === "user" ? (subject.clientId ?? "") : ""
+            )
+          )
+        )
+      );
 
     // Said before anything is read: a rule answers in public.
     const answerer = actor.pipe(
@@ -317,6 +362,99 @@ export const InboxToolsLive = InboxTools.toLayer(
             );
 
           return commentRuleView(listed);
+        }),
+
+      get_conversation: ({ conversationId, cursor }) =>
+        Effect.gen(function* getConversation() {
+          const id = yield* idOr(
+            decodeConversationId(conversationId),
+            noConversation
+          );
+
+          const before = yield* filterOf(cursor, messageCursorOf, "cursor");
+
+          return yield* messages
+            .conversation(yield* actor, id, {
+              before,
+              limit: maxMessagesPerPage,
+            })
+            .pipe(
+              Effect.map(toConversationDetailView),
+              Effect.catchTags({
+                ConversationNotFound: noConversation,
+                DatabaseError: Effect.die,
+                MessagesNeedConsent: notAllowedToRead,
+                MissingPermission: notAllowed("read direct messages"),
+              })
+            );
+        }),
+      list_conversations: ({ channelId, cursor, limit, unread }) =>
+        Effect.gen(function* listConversations() {
+          const channel = yield* filterOf(
+            channelId,
+            decodeChannelId,
+            "channelId"
+          );
+
+          const after = yield* filterOf(cursor, conversationCursorOf, "cursor");
+
+          return yield* messages
+            .list(
+              yield* actor,
+              { channelId: channel, unread: unread ?? false },
+              { after, limit: limit ?? defaultInboxPageSize }
+            )
+            .pipe(
+              Effect.map(toConversationPageView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("list direct messages"),
+              })
+            );
+        }),
+      send_message: ({ conversationId, idempotencyKey, text }) =>
+        Effect.gen(function* sendMessage() {
+          const id = yield* idOr(
+            decodeConversationId(conversationId),
+            noConversation
+          );
+
+          const sender = yield* actor;
+
+          return yield* messages
+            .send(sender, id, text, Option.fromUndefinedOr(idempotencyKey))
+            .pipe(
+              Effect.map(toOutgoingMessageView),
+              Effect.catchTags({
+                AllowanceReached: refusedByMeter(
+                  sender.workspaceId,
+                  "Nothing was sent."
+                ),
+                ConversationNotFound: noConversation,
+                DatabaseError: Effect.die,
+                MessageAbilityUnavailable: cannotMessage,
+                MessageMentionsOutside: ({ mentions }) =>
+                  refuse(
+                    `The message mentions accounts outside the conversation (${mentions.join(", ")}), which a Mastodon direct message would reach too: nothing was sent. Take the mentions out.`
+                  ),
+                MessagePending: ({ messageId }) =>
+                  refuse(
+                    `A message to this conversation is on its way, or may have gone out (${messageId}): nothing more was sent. If it is unconfirmed, the user checks the platform and settles it in the web app.`
+                  ),
+                MessagesNeedConsent: notAllowedToRead,
+                MissingPermission: notAllowed("send direct messages"),
+                ReplyEmpty: () =>
+                  refuse("The message says nothing: nothing was sent."),
+                ReplyKeyReused: () =>
+                  refuse(
+                    "This idempotencyKey was first sent with another conversation or another text: nothing was sent. Call again under a new key."
+                  ),
+                ReplyTooLong: ({ length, maximum, unit }) =>
+                  refuse(
+                    `The message is too long for its platform: ${String(length)} ${unit}, where it takes ${String(maximum)} (on Mastodon, the mentions of the participants count). Nothing was sent.`
+                  ),
+              })
+            );
         }),
       delete_location_review_reply: ({ reviewId }) =>
         Effect.gen(function* deleteReply() {

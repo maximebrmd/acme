@@ -30,6 +30,8 @@ SubscribableWebhookEventType = typing.Union[
         "comment.replied",
         "review.received",
         "review.replied",
+        "message.received",
+        "message.sent",
         "boost.started",
         "boost.paused",
         "boost.resumed",

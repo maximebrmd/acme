@@ -4,7 +4,12 @@ import * as pulumi from "@pulumi/pulumi";
 import type { AccountSettings, UptimeSettings } from "./settings.ts";
 
 /** Addresses on the domain, each forwarded to the owner's mailbox. */
-const forwardedLocals = ["hello", "notifications", "sandbox"] as const;
+const forwardedLocals = [
+  "hello",
+  "maxime",
+  "notifications",
+  "sandbox",
+] as const;
 
 /**
  * The uptime server's records, which Cloudflare does not proxy: the server

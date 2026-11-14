@@ -91,6 +91,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.MessagesReceived"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.MessagesReceived value)
+    {
+        Type = "MessagesReceived";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.ChannelReconnectRequired"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.ChannelReconnectRequired value)
@@ -295,6 +304,11 @@ public record NoticeEvent
     public bool IsCommentsReceived => Type == "CommentsReceived";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "MessagesReceived"
+    /// </summary>
+    public bool IsMessagesReceived => Type == "MessagesReceived";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "ChannelReconnectRequired"
     /// </summary>
     public bool IsChannelReconnectRequired => Type == "ChannelReconnectRequired";
@@ -450,6 +464,15 @@ public record NoticeEvent
         IsCommentsReceived
             ? (Peal.NoticeEventCommentsReceived)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'CommentsReceived'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventMessagesReceived"/> if <see cref="Type"/> is 'MessagesReceived', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'MessagesReceived'.</exception>
+    public Peal.NoticeEventMessagesReceived AsMessagesReceived() =>
+        IsMessagesReceived
+            ? (Peal.NoticeEventMessagesReceived)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'MessagesReceived'");
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventChannelReconnectRequired"/> if <see cref="Type"/> is 'ChannelReconnectRequired', otherwise throws an exception.
@@ -621,6 +644,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventPostChangesRequested, T> onPostChangesRequested,
         Func<Peal.NoticeEventPostCommented, T> onPostCommented,
         Func<Peal.NoticeEventCommentsReceived, T> onCommentsReceived,
+        Func<Peal.NoticeEventMessagesReceived, T> onMessagesReceived,
         Func<Peal.NoticeEventChannelReconnectRequired, T> onChannelReconnectRequired,
         Func<Peal.NoticeEventChannelReconnectSoon, T> onChannelReconnectSoon,
         Func<Peal.NoticeEventSubscriptionStarted, T> onSubscriptionStarted,
@@ -651,6 +675,7 @@ public record NoticeEvent
             "PostChangesRequested" => onPostChangesRequested(AsPostChangesRequested()),
             "PostCommented" => onPostCommented(AsPostCommented()),
             "CommentsReceived" => onCommentsReceived(AsCommentsReceived()),
+            "MessagesReceived" => onMessagesReceived(AsMessagesReceived()),
             "ChannelReconnectRequired" => onChannelReconnectRequired(AsChannelReconnectRequired()),
             "ChannelReconnectSoon" => onChannelReconnectSoon(AsChannelReconnectSoon()),
             "SubscriptionStarted" => onSubscriptionStarted(AsSubscriptionStarted()),
@@ -683,6 +708,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventPostChangesRequested> onPostChangesRequested,
         Action<Peal.NoticeEventPostCommented> onPostCommented,
         Action<Peal.NoticeEventCommentsReceived> onCommentsReceived,
+        Action<Peal.NoticeEventMessagesReceived> onMessagesReceived,
         Action<Peal.NoticeEventChannelReconnectRequired> onChannelReconnectRequired,
         Action<Peal.NoticeEventChannelReconnectSoon> onChannelReconnectSoon,
         Action<Peal.NoticeEventSubscriptionStarted> onSubscriptionStarted,
@@ -728,6 +754,9 @@ public record NoticeEvent
                 break;
             case "CommentsReceived":
                 onCommentsReceived(AsCommentsReceived());
+                break;
+            case "MessagesReceived":
+                onMessagesReceived(AsMessagesReceived());
                 break;
             case "ChannelReconnectRequired":
                 onChannelReconnectRequired(AsChannelReconnectRequired());
@@ -892,6 +921,20 @@ public record NoticeEvent
         if (Type == "CommentsReceived")
         {
             value = (Peal.NoticeEventCommentsReceived)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventMessagesReceived"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsMessagesReceived(out Peal.NoticeEventMessagesReceived? value)
+    {
+        if (Type == "MessagesReceived")
+        {
+            value = (Peal.NoticeEventMessagesReceived)Value!;
             return true;
         }
         value = null;
@@ -1158,6 +1201,8 @@ public record NoticeEvent
 
     public static implicit operator NoticeEvent(NoticeEvent.CommentsReceived value) => new(value);
 
+    public static implicit operator NoticeEvent(NoticeEvent.MessagesReceived value) => new(value);
+
     public static implicit operator NoticeEvent(NoticeEvent.ChannelReconnectRequired value) =>
         new(value);
 
@@ -1285,6 +1330,11 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventCommentsReceived"
                         ),
+                "MessagesReceived" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventMessagesReceived?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventMessagesReceived"
+                        ),
                 "ChannelReconnectRequired" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventChannelReconnectRequired?>(
                         options
@@ -1408,6 +1458,7 @@ public record NoticeEvent
                     "PostChangesRequested" => JsonSerializer.SerializeToNode(value.Value, options),
                     "PostCommented" => JsonSerializer.SerializeToNode(value.Value, options),
                     "CommentsReceived" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "MessagesReceived" => JsonSerializer.SerializeToNode(value.Value, options),
                     "ChannelReconnectRequired" => JsonSerializer.SerializeToNode(
                         value.Value,
                         options
@@ -1621,6 +1672,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.CommentsReceived(
             Peal.NoticeEventCommentsReceived value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for MessagesReceived
+    /// </summary>
+    [Serializable]
+    public struct MessagesReceived
+    {
+        public MessagesReceived(Peal.NoticeEventMessagesReceived value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventMessagesReceived Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.MessagesReceived(
+            Peal.NoticeEventMessagesReceived value
         ) => new(value);
     }
 

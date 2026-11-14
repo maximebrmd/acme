@@ -296,6 +296,26 @@
   },
   {
     "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+      "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b02",
+      "receivedAt": "2026-11-14T10:02:00.000Z",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "message.received"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+      "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b03",
+      "sentAt": "2026-11-14T10:05:00.000Z",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "message.sent"
+  },
+  {
+    "data": {
       "endpointId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c08",
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
     },

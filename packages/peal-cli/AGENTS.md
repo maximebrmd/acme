@@ -73,6 +73,14 @@
 - `peal inbox rules` (`commands/inbox-rules.ts`: list, show, start,
   update, pause, resume, stop) keeps the comment rules, from
   `test/studio-inbox-rules.ts` in tests.
+- `peal inbox messages` (`commands/inbox-messages.ts`: list, show, send,
+  read, confirm) reads the conversations of the workspace's Mastodon and
+  Bluesky channels and answers one privately; `send` takes
+  `--idempotency-key` as `peal inbox reply` does, and `show` `--cursor`
+  for older messages. The settings (which channels' messages are read,
+  which applications may read them) are a person's, in the web app, and
+  have no command (the parity test's exemptions). Its tests run against
+  `test/studio-messages.ts`.
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.

@@ -175,7 +175,7 @@ none of them, and the new table is ignored.
 ## Past follow-up rules
 
 The release that follows posts up at a likes threshold (migration
-`follow-up-rules`) adds two tables the release before ignores
+`follow-up-and-comment-rules`) adds two tables the release before ignores
 (`publishing.follow_up_rules`, `publishing.follow_ups`), so rules stop
 acting and keep what they armed, and one job, `SendFollowUpV1`, which the
 release before does not register: a follow-up on its way when the
@@ -197,7 +197,7 @@ run hands it over (armed again when its call never set out,
 
 ## Past comment rules
 
-The same release's comment rules (migration `comment-rules`) add two
+The same release's comment rules (the same migration) add two
 tables the release before ignores: rules stop answering, and the replies
 they made stay ordinary replies of the inbox, which the release before
 reads as any other. Nothing to check before rolling back.

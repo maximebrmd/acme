@@ -32,6 +32,7 @@ export const OAuthClientDocumentsLive = Layer.effect(
     }
 
     const { mode, publicUrl } = bluesky.value;
+    const scope = bluesky.value.scope ?? blueskyScope;
 
     // The keys were parsed at startup: one without a public half is a bug.
     // The library leaves unset members as undefined, which JSON drops.
@@ -62,7 +63,7 @@ export const OAuthClientDocumentsLive = Layer.effect(
           jwks_uri: new URL(blueskyPaths.jwks, publicUrl).href,
           redirect_uris: [new URL(blueskyPaths.callback, publicUrl).href],
           response_types: ["code"],
-          scope: blueskyScope,
+          scope,
           token_endpoint_auth_method: "private_key_jwt",
           token_endpoint_auth_signing_alg: "ES256",
         },

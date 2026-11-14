@@ -1,7 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option } from "effect";
 
-import { planRefusalText, usageRefusalText } from "#app/mcp/refusals.ts";
+import {
+  messagesConsentText,
+  planRefusalText,
+  usageRefusalText,
+} from "#app/mcp/refusals.ts";
 import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
@@ -172,5 +176,15 @@ describe(usageRefusalText, () => {
       "moves it to per-account pricing"
     );
     expect(xRefusal("planAllowance")).not.toContain("used 0 of the 0");
+  });
+});
+
+describe(messagesConsentText, () => {
+  it("names the application's client id, where an owner lets it in, and that nothing was read", () => {
+    const text = messagesConsentText("synthetic-client");
+
+    expect(text).toContain("`synthetic-client`");
+    expect(text).toContain("an owner of the workspace");
+    expect(text).toContain("Nothing was read or sent.");
   });
 });

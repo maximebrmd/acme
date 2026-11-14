@@ -141,6 +141,20 @@ const coverage = {
   "inbox.reply": by("inbox reply"),
   "inbox.setAnswered": by("inbox answered"),
   "inbox.withdrawReply": by("inbox withdraw"),
+  "inboxMessages.confirmMessage": by("inbox messages confirm"),
+  "inboxMessages.getConversation": by("inbox messages show"),
+  "inboxMessages.getMessageSettings": exempt(
+    "Which channels' direct messages are read, and which applications may read them, are decided in the web app by a member in person: the command line is an application acting for them."
+  ),
+  "inboxMessages.listConversations": by("inbox messages list"),
+  "inboxMessages.sendMessage": by("inbox messages send"),
+  "inboxMessages.setChannelMessages": exempt(
+    "Only a member in person, in the web app, turns a channel's direct messages on or off."
+  ),
+  "inboxMessages.setConversationRead": by("inbox messages read"),
+  "inboxMessages.setMessageApplication": exempt(
+    "Only an owner in person, in the web app, lets an application read the direct messages."
+  ),
   "inboxReviews.getReviewThread": by("inbox reviews show"),
   "inboxRules.createCommentRule": by("inbox rules start"),
   "inboxRules.deleteCommentRule": by("inbox rules stop"),

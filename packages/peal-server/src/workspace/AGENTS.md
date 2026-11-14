@@ -93,7 +93,10 @@ The staff context follows these rules too. What the law has a host keep is in
 - API keys belong to workspaces, never carry more than their creator holds
   nor what only a person in their own session uses (`personOnlyPermissions`:
   `ads:authorize` and `organization:secure`, refused with
-  `PermissionNotGrantable`, 403 `personRequired`), and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
+  `PermissionNotGrantable`, 403 `personRequired`), nor the direct
+  messages' (`engagement:readMessages`, `engagement:message`) unless an
+  owner in person gives them, as the owner's leave for an application;
+  partner keys never hold those. Keys are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
 - Staff (Better Auth's admin role) act through the staff context's use
   cases only (`StaffActions`): each checks `mayAct`

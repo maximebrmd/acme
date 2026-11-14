@@ -244,6 +244,7 @@ const PortsLive = Layer.mergeAll(
               disclosedTo: "Synthetic authorities",
               keptAfterClosure: [{ data: ["name", "email"], years: 5 }],
             },
+            messages: [],
             notices: [],
             preferences: {
               email: {

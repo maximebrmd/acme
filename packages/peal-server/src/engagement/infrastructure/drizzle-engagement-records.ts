@@ -1,4 +1,5 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -6,17 +7,25 @@ import { EngagementRecords } from "#engagement/application/engagement-records.ts
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type {
+  SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
 } from "#shared/application/personal-data.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
 import {
   commentRules,
+  conversations,
   erasedWorkspaces,
+  messageApplications,
+  messageBoxes,
+  messageChannels,
+  outgoingMessages,
   replies,
   reviewReplies,
   reviewThreads,
@@ -39,6 +48,46 @@ export const DrizzleEngagementRecords = Layer.effect(
   Effect.gen(function* DrizzleEngagementRecords() {
     const db = yield* Drizzle;
     const sql = yield* SqlClient.SqlClient;
+    const meters = yield* MeteredUsage;
+
+    // The messages sent from Peal that never set out (on their way, no
+    // call begun), locked until the caller's transaction ends, so a job
+    // that would begin one waits and then finds it gone.
+    const unsentWhere = (where: SQL | undefined) =>
+      db
+        .select({
+          createdAt: outgoingMessages.createdAt,
+          workspaceId: outgoingMessages.workspaceId,
+        })
+        .from(outgoingMessages)
+        .where(
+          and(
+            where,
+            eq(outgoingMessages.status, "sending"),
+            isNull(outgoingMessages.attemptedAt)
+          )
+        )
+        .for("update");
+
+    // Their outbound messages, given back once their rows went: what
+    // never set out is not billed.
+    const giveBackUnsent = (
+      unsent: readonly {
+        readonly createdAt: Date;
+        readonly workspaceId: string;
+      }[]
+    ) =>
+      Effect.forEach(
+        unsent,
+        (message) =>
+          meters.giveBack({
+            at: DateTime.fromDateUnsafe(message.createdAt),
+            meter: "outboundMessages",
+            units: 1,
+            workspaceId: WorkspaceIdSchema.make(message.workspaceId),
+          }),
+        { discard: true }
+      );
 
     const exportUser = Effect.fn("EngagementRecords.exportUser")(
       function* exportUser(userId: string) {
@@ -90,15 +139,43 @@ export const DrizzleEngagementRecords = Layer.effect(
       }));
     });
 
+    const exportUserMessages = Effect.fn(
+      "EngagementRecords.exportUserMessages"
+    )(function* exportUserMessages(userId: string) {
+      const rows = yield* db
+        .select({
+          channelId: outgoingMessages.channelId,
+          conversationId: outgoingMessages.conversationId,
+          createdAt: outgoingMessages.createdAt,
+          id: outgoingMessages.id,
+          status: outgoingMessages.status,
+          text: outgoingMessages.text,
+          workspaceId: outgoingMessages.workspaceId,
+        })
+        .from(outgoingMessages)
+        .where(eq(outgoingMessages.authorId, userId))
+        .orderBy(asc(outgoingMessages.id))
+        .pipe(Effect.mapError(failed));
+
+      return rows.map((row): SentMessageRecord => ({
+        ...row,
+        createdAt: DateTime.fromDateUnsafe(row.createdAt),
+      }));
+    });
+
     const eraseWorkspace = Effect.fn("EngagementRecords.eraseWorkspace")(
       function* eraseWorkspace(workspaceId: string) {
         const now = yield* DateTime.now;
 
         // In the caller's transaction, whose end releases the lock.
-        yield* sql
+        const unsent = yield* sql
           .withTransaction(
             Effect.gen(function* erasing() {
               yield* shareFollowingLock(sql);
+
+              const found = yield* unsentWhere(
+                eq(outgoingMessages.workspaceId, workspaceId)
+              );
 
               yield* db
                 .insert(erasedWorkspaces)
@@ -117,9 +194,30 @@ export const DrizzleEngagementRecords = Layer.effect(
               yield* db
                 .delete(reviewThreads)
                 .where(eq(reviewThreads.workspaceId, workspaceId));
+
+              yield* db
+                .delete(messageChannels)
+                .where(eq(messageChannels.workspaceId, workspaceId));
+
+              yield* db
+                .delete(messageApplications)
+                .where(eq(messageApplications.workspaceId, workspaceId));
+
+              yield* db
+                .delete(messageBoxes)
+                .where(eq(messageBoxes.workspaceId, workspaceId));
+
+              yield* db
+                .delete(conversations)
+                .where(eq(conversations.workspaceId, workspaceId));
+
+              return found;
             })
           )
           .pipe(Effect.mapError(failed));
+
+        // Before billing forgets the workspace, later in the erasure.
+        yield* giveBackUnsent(unsent);
       }
     );
 
@@ -150,6 +248,24 @@ export const DrizzleEngagementRecords = Layer.effect(
           .set({ startedBy: null })
           .where(eq(commentRules.startedBy, userId))
           .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(outgoingMessages)
+          .set({ authorId: null })
+          .where(eq(outgoingMessages.authorId, userId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(messageChannels)
+          .set({ enabledBy: null })
+          .where(eq(messageChannels.enabledBy, userId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(messageApplications)
+          .set({ grantedBy: null })
+          .where(eq(messageApplications.grantedBy, userId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -175,6 +291,36 @@ export const DrizzleEngagementRecords = Layer.effect(
         platform: Platform,
         at: DateTime.Utc
       ) {
+        // A channel's conversations go at once, whatever its platform,
+        // with their messages and those sent from Peal: correspondence is
+        // kept for the channel's workspace only while it holds the
+        // channel.
+        const unsent = yield* sql
+          .withTransaction(
+            Effect.gen(function* deleting() {
+              const found = yield* unsentWhere(
+                eq(outgoingMessages.channelId, channelId)
+              );
+
+              yield* db
+                .delete(messageChannels)
+                .where(eq(messageChannels.channelId, channelId));
+
+              yield* db
+                .delete(messageBoxes)
+                .where(eq(messageBoxes.channelId, channelId));
+
+              yield* db
+                .delete(conversations)
+                .where(eq(conversations.channelId, channelId));
+
+              return found;
+            })
+          )
+          .pipe(Effect.mapError(failed));
+
+        yield* giveBackUnsent(unsent);
+
         // A location's reviews go at once, with their replies.
         if (platform === "googleBusiness") {
           yield* db
@@ -243,6 +389,7 @@ export const DrizzleEngagementRecords = Layer.effect(
       channelGone,
       eraseWorkspace,
       exportUser,
+      exportUserMessages,
       exportUserReviewReplies,
       forgetUser,
       postRemoved,

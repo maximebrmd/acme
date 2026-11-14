@@ -66,11 +66,12 @@ const objectIdsOf = (
   );
 
 // The groups whose writes create, change or delete content, comments and
-// approvals included, and the replies sent in public from the inbox (a
-// comment rule's own included): the law has Peal keep each such connection a year
-// (ConnectionJournal).
+// approvals included, the replies sent in public from the inbox (a comment
+// rule's own included) and the direct messages sent from it: the law has Peal keep each such connection
+// a year (ConnectionJournal).
 const contentGroups: ReadonlySet<string> = new Set([
   "inbox",
+  "inboxMessages",
   "inboxReviews",
   "inboxRules",
   "media",

@@ -16,6 +16,9 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType MEDIA_FAILED =
             new SubscribableWebhookEventType(Value.MEDIA_FAILED, "media.failed");
 
+    public static final SubscribableWebhookEventType MESSAGE_RECEIVED =
+            new SubscribableWebhookEventType(Value.MESSAGE_RECEIVED, "message.received");
+
     public static final SubscribableWebhookEventType POST_FAILED =
             new SubscribableWebhookEventType(Value.POST_FAILED, "post.failed");
 
@@ -51,6 +54,9 @@ public final class SubscribableWebhookEventType {
 
     public static final SubscribableWebhookEventType REVIEW_REPLIED =
             new SubscribableWebhookEventType(Value.REVIEW_REPLIED, "review.replied");
+
+    public static final SubscribableWebhookEventType MESSAGE_SENT =
+            new SubscribableWebhookEventType(Value.MESSAGE_SENT, "message.sent");
 
     public static final SubscribableWebhookEventType POST_UNCONFIRMED =
             new SubscribableWebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
@@ -148,6 +154,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitChannelDisabled();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
+            case MESSAGE_RECEIVED:
+                return visitor.visitMessageReceived();
             case POST_FAILED:
                 return visitor.visitPostFailed();
             case COMMENT_RECEIVED:
@@ -172,6 +180,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitBoostUnconfirmed();
             case REVIEW_REPLIED:
                 return visitor.visitReviewReplied();
+            case MESSAGE_SENT:
+                return visitor.visitMessageSent();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
             case REVIEW_RECEIVED:
@@ -225,6 +235,8 @@ public final class SubscribableWebhookEventType {
                 return CHANNEL_DISABLED;
             case "media.failed":
                 return MEDIA_FAILED;
+            case "message.received":
+                return MESSAGE_RECEIVED;
             case "post.failed":
                 return POST_FAILED;
             case "comment.received":
@@ -249,6 +261,8 @@ public final class SubscribableWebhookEventType {
                 return BOOST_UNCONFIRMED;
             case "review.replied":
                 return REVIEW_REPLIED;
+            case "message.sent":
+                return MESSAGE_SENT;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
             case "review.received":
@@ -345,6 +359,10 @@ public final class SubscribableWebhookEventType {
 
         REVIEW_REPLIED,
 
+        MESSAGE_RECEIVED,
+
+        MESSAGE_SENT,
+
         BOOST_STARTED,
 
         BOOST_PAUSED,
@@ -416,6 +434,10 @@ public final class SubscribableWebhookEventType {
         T visitReviewReceived();
 
         T visitReviewReplied();
+
+        T visitMessageReceived();
+
+        T visitMessageSent();
 
         T visitBoostStarted();
 

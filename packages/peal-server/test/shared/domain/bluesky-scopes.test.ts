@@ -2,9 +2,13 @@ import { describe, expect, it } from "@effect/vitest";
 
 import { blueskyScope } from "#channels/infrastructure/platforms/bluesky/bluesky-client.ts";
 import {
+  allowsRpc,
+  blueskyChatMethods,
+  blueskyChatScopes,
   blueskyGateScopes,
   blueskyRepostScope,
   createsRecords,
+  grantsBlueskyChat,
   postgateCollection,
   repostCollection,
   threadgateCollection,
@@ -75,5 +79,114 @@ describe("a Bluesky account's scopes", () => {
     expect(
       createsRecords(["repo:%zz?action=create", "repo:*"], gates)
     ).toBeTruthy();
+  });
+});
+
+describe("a Bluesky account's chat scopes", () => {
+  const chat = "did:web:api.bsky.chat#bsky_chat";
+
+  it("are written as the permission spec writes them", () => {
+    expect(blueskyChatScopes[0]).toBe(
+      "rpc:chat.bsky.convo.listConvos?aud=did:web:api.bsky.chat%23bsky_chat"
+    );
+  });
+
+  it("let Peal call the chat methods Peal asks for, at the chat service", () => {
+    expect(
+      blueskyChatMethods.every((method) =>
+        allowsRpc([...blueskyChatScopes], method, chat)
+      )
+    ).toBeTruthy();
+    expect(
+      allowsRpc([...blueskyChatScopes], "chat.bsky.convo.leaveConvo", chat)
+    ).toBeFalsy();
+    expect(
+      allowsRpc(
+        [...blueskyChatScopes],
+        "chat.bsky.convo.sendMessage",
+        "did:web:api.bsky.app#bsky_appview"
+      )
+    ).toBeFalsy();
+  });
+
+  it("read the permission spec's forms of an rpc scope", () => {
+    expect(
+      allowsRpc(
+        [
+          "rpc?lxm=chat.bsky.convo.getMessages&lxm=chat.bsky.convo.sendMessage&aud=did:web:api.bsky.chat%23bsky_chat",
+        ],
+        "chat.bsky.convo.sendMessage",
+        chat
+      )
+    ).toBeTruthy();
+    expect(
+      allowsRpc(
+        ["rpc:chat.bsky.convo.sendMessage?aud=*"],
+        "chat.bsky.convo.sendMessage",
+        chat
+      )
+    ).toBeTruthy();
+    expect(
+      allowsRpc(
+        ["rpc:*?aud=did:web:api.bsky.chat%23bsky_chat"],
+        "chat.bsky.convo.listConvos",
+        chat
+      )
+    ).toBeTruthy();
+  });
+
+  it("grant nothing in the form the spec forbids, nor malformed", () => {
+    expect(
+      allowsRpc(["rpc:*?aud=*"], "chat.bsky.convo.listConvos", chat)
+    ).toBeFalsy();
+    expect(
+      allowsRpc(
+        ["rpc:chat.bsky.convo.listConvos"],
+        "chat.bsky.convo.listConvos",
+        chat
+      )
+    ).toBeFalsy();
+    expect(
+      allowsRpc(
+        ["rpc:chat.bsky.convo.listConvos?aud=%E0%A4%A"],
+        "chat.bsky.convo.listConvos",
+        chat
+      )
+    ).toBeFalsy();
+  });
+
+  it("let a session of the transitional scopes call every chat method", () => {
+    expect(
+      allowsRpc(
+        ["atproto", "transition:generic", "transition:chat.bsky"],
+        "chat.bsky.convo.sendMessage",
+        chat
+      )
+    ).toBeTruthy();
+    expect(
+      allowsRpc(
+        ["atproto", "transition:generic"],
+        "chat.bsky.convo.sendMessage",
+        chat
+      )
+    ).toBeFalsy();
+  });
+});
+
+describe(grantsBlueskyChat, () => {
+  it("holds for scopes that allow every chat method Peal calls, granular or transitional", () => {
+    expect(grantsBlueskyChat([...blueskyChatScopes])).toBeTruthy();
+    expect(
+      grantsBlueskyChat([
+        "atproto",
+        "transition:generic",
+        "transition:chat.bsky",
+      ])
+    ).toBeTruthy();
+  });
+
+  it("does not for publishing's scopes, or for some of the chat methods only", () => {
+    expect(grantsBlueskyChat(blueskyScope.split(" "))).toBeFalsy();
+    expect(grantsBlueskyChat(blueskyChatScopes.slice(0, 2))).toBeFalsy();
   });
 });

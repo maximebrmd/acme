@@ -27,6 +27,7 @@ from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
+from .types.reconnect_channels_request_messages import ReconnectChannelsRequestMessages
 from pydantic import ValidationError
 
 # this is used as the default value for optional parameters
@@ -770,16 +771,23 @@ class RawChannelsClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     def reconnect(
-        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Authorization]:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         channel_id : str
+
+        messages : typing.Optional[ReconnectChannelsRequestMessages]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -795,6 +803,9 @@ class RawChannelsClient:
         _response = self._client_wrapper.httpx_client.request(
             f"api/workspaces/{encode_path_param(workspace_id)}/channels/{encode_path_param(channel_id)}/reconnect",
             method="POST",
+            params={
+                "messages": messages,
+            },
             request_options=_request_options_with_retries_disabled,
         )
         try:
@@ -1987,16 +1998,23 @@ class AsyncRawChannelsClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     async def reconnect(
-        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Authorization]:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         channel_id : str
+
+        messages : typing.Optional[ReconnectChannelsRequestMessages]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2012,6 +2030,9 @@ class AsyncRawChannelsClient:
         _response = await self._client_wrapper.httpx_client.request(
             f"api/workspaces/{encode_path_param(workspace_id)}/channels/{encode_path_param(channel_id)}/reconnect",
             method="POST",
+            params={
+                "messages": messages,
+            },
             request_options=_request_options_with_retries_disabled,
         )
         try:

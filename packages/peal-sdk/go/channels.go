@@ -498,11 +498,13 @@ func (p *PlatformsChannelsRequest) SetWorkspaceID(workspaceID string) {
 var (
 	reconnectChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	reconnectChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
+	reconnectChannelsRequestFieldMessages    = big.NewInt(1 << 2)
 )
 
 type ReconnectChannelsRequest struct {
-	WorkspaceID string `json:"-" url:"-"`
-	ChannelID   string `json:"-" url:"-"`
+	WorkspaceID string                            `json:"-" url:"-"`
+	ChannelID   string                            `json:"-" url:"-"`
+	Messages    *ReconnectChannelsRequestMessages `json:"-" url:"messages,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -529,6 +531,13 @@ func (r *ReconnectChannelsRequest) SetWorkspaceID(workspaceID string) {
 func (r *ReconnectChannelsRequest) SetChannelID(channelID string) {
 	r.ChannelID = channelID
 	r.require(reconnectChannelsRequestFieldChannelID)
+}
+
+// SetMessages sets the Messages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReconnectChannelsRequest) SetMessages(messages *ReconnectChannelsRequestMessages) {
+	r.Messages = messages
+	r.require(reconnectChannelsRequestFieldMessages)
 }
 
 var (
@@ -2145,6 +2154,28 @@ func NewLinkedInConnectionFromString(s string) (LinkedInConnection, error) {
 
 func (l LinkedInConnection) Ptr() *LinkedInConnection {
 	return &l
+}
+
+type ReconnectChannelsRequestMessages string
+
+const (
+	ReconnectChannelsRequestMessagesTrue  ReconnectChannelsRequestMessages = "true"
+	ReconnectChannelsRequestMessagesFalse ReconnectChannelsRequestMessages = "false"
+)
+
+func NewReconnectChannelsRequestMessagesFromString(s string) (ReconnectChannelsRequestMessages, error) {
+	switch s {
+	case "true":
+		return ReconnectChannelsRequestMessagesTrue, nil
+	case "false":
+		return ReconnectChannelsRequestMessagesFalse, nil
+	}
+	var t ReconnectChannelsRequestMessages
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r ReconnectChannelsRequestMessages) Ptr() *ReconnectChannelsRequestMessages {
+	return &r
 }
 
 var (

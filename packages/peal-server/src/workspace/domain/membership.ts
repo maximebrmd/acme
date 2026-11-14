@@ -47,8 +47,9 @@ export type Membership = typeof MembershipSchema.Type;
  * connect an ad account, spend on ads or decide what ads may spend,
  * or require two-step verification of the workspace's members, which all
  * outlive the impersonation or reach outside Peal; nor answer
- * the comments under the workspace's posts, nor read them: other people
- * wrote those, and staff need none of them to help a member. They may
+ * the comments under the workspace's posts, nor read them, nor read or
+ * answer its direct messages: other people wrote those, messages are
+ * private correspondence, and staff need none of them to help a member. They may
  * write and edit drafts, each change recorded in the audit log
  * under their own name (the ImpersonationGuard), while the drafts carry the
  * member's.
@@ -64,7 +65,9 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "assistant:configure",
   "billing:manage",
   "channel:connect",
+  "engagement:message",
   "engagement:read",
+  "engagement:readMessages",
   "engagement:reply",
   "organization:delete",
   "organization:secure",

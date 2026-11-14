@@ -652,6 +652,14 @@ const reasonOf =
         refused(
           "The workspace has no such comment: peal inbox thread shows a thread's."
         ),
+      InboxConversationNotFound: () =>
+        refused(
+          "The workspace has no such conversation: it may have gone with its channel, or be older than Peal keeps one. peal inbox messages list lists them."
+        ),
+      InboxMessageNotFound: () =>
+        refused(
+          "The workspace sent no such message from Peal: peal inbox messages show lists a conversation's."
+        ),
       InboxReplyNotFound: () =>
         refused(
           "The workspace has no such reply: peal inbox thread shows a thread's."
@@ -846,6 +854,14 @@ const reasonOf =
           reason === "empty" || length === null || maximum === null
             ? "The reply says nothing: nothing was sent."
             : `The reply is too long for its platform: ${String(length)} ${unit ?? "characters"}, where it takes ${String(maximum)} (on Mastodon, the mention of the person answered counts). Nothing was sent.`
+        ),
+      MessageMentionsOutside: ({ mentions }) =>
+        refused(
+          `The message mentions accounts outside the conversation (${mentions.join(", ")}), which a Mastodon direct message would reach too: nothing was sent. Take the mentions out.`
+        ),
+      MessagePending: ({ messageId }) =>
+        refused(
+          `A message to this conversation is on its way, or may have gone out (${messageId}): nothing more was sent. If it is unconfirmed, check the platform, then run peal inbox messages confirm.`
         ),
       ReplyPending: ({ replyId }) =>
         refused(

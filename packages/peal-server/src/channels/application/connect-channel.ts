@@ -219,7 +219,10 @@ export class ConnectChannel extends Context.Service<
     /** The platform's sign-in page for the account of a channel. */
     readonly reconnect: (
       actor: Actor,
-      channelId: string
+      channelId: string,
+      // `messages`: the sign-in also asks for the account's direct
+      // messages, where the platform asks for them apart.
+      options?: { readonly messages?: boolean }
     ) => Effect.Effect<string, ReconnectFailure>;
     /**
      * The channel the account became, or the one it reconnected, or the
@@ -512,7 +515,11 @@ export class ConnectChannel extends Context.Service<
       );
 
       const reconnect = Effect.fn("ConnectChannel.reconnect")(
-        function* reconnect(actor: Actor, channelId: string) {
+        function* reconnect(
+          actor: Actor,
+          channelId: string,
+          options?: { readonly messages?: boolean }
+        ) {
           yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
           const channel = yield* findChannel(actor, channelId);
@@ -526,6 +533,7 @@ export class ConnectChannel extends Context.Service<
           const pending = yield* authorizer.begin({
             handle: Option.none(),
             instance: Option.none(),
+            messages: options?.messages ?? false,
             reconnecting: Option.some(channel),
           });
 

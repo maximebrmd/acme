@@ -11,6 +11,7 @@ import { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts"
 import {
   distinctScopes,
   grantableToPartnerKey,
+  partnerKeyPermissions,
 } from "#workspace/domain/partner-key.ts";
 
 const now = DateTime.makeUnsafe("2026-11-10T12:00:00Z");
@@ -124,5 +125,12 @@ describe("a partner key in a workspace", () => {
     expect(failureOf(actorFor(key, workspaceId, Option.none(), now))).toBe(
       "NotAMember"
     );
+  });
+});
+
+describe("a partner key's permissions", () => {
+  it("never take the direct messages: a partner's workspace has no owner to let them in", () => {
+    expect(partnerKeyPermissions).not.toContain("engagement:readMessages");
+    expect(partnerKeyPermissions).not.toContain("engagement:message");
   });
 });

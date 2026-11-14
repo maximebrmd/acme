@@ -95,6 +95,16 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       postId,
       threadId,
     }),
+    MessagesReceived: ({
+      channel,
+      conversationId,
+      count,
+    }): NoticeEventView => ({
+      _tag: "MessagesReceived",
+      channel: channelView(channel),
+      conversationId,
+      count,
+    }),
     FeedStopped: ({ feedId, reason }): NoticeEventView => ({
       _tag: "FeedStopped",
       feedId,

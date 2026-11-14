@@ -29,6 +29,10 @@ import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { blueskyAuthorizer } from "#channels/infrastructure/platforms/bluesky/bluesky-authorizer.ts";
+import {
+  blueskyScope,
+  blueskyScopeWith,
+} from "#channels/infrastructure/platforms/bluesky/bluesky-client.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { publicFetch } from "#shared/infrastructure/platforms/public-http.ts";
@@ -80,6 +84,8 @@ const BlueskyAuthorizersTest = Layer.effect(
         mode: { _tag: "confidential", keys: [key] },
         plcDirectoryUrl: network.url,
         publicUrl: testPublicUrl,
+        // A server that reads Bluesky's messages: the most it may ask.
+        scope: blueskyScopeWith(true),
       },
       yield* publicFetch
     );
@@ -422,5 +428,80 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
         before.session
       );
     })
+  );
+
+  // Signs in again to the channel's account, as the member would, asking
+  // for its messages too when `messages`.
+  const reconnected = Effect.fn("reconnected")(function* reconnected(
+    channel: Channel,
+    messages: boolean
+  ) {
+    const network = yield* FakeNetwork;
+    const connect = yield* ConnectChannel;
+
+    const authorizationUrl = yield* connect.reconnect(
+      manager(channel.workspaceId),
+      channel.id,
+      { messages }
+    );
+
+    const back = network.approve(authorizationUrl);
+
+    return yield* connect
+      .complete(manager(channel.workspaceId), "bluesky", {
+        code: Option.some(back.code),
+        error: Option.none(),
+        issuer: Option.some(back.iss),
+        state: back.state,
+      })
+      .pipe(Effect.flatMap(connectedChannel));
+  });
+
+  it.effect(
+    "asks only what publishing needs at sign-in, and the chat scopes when a member asks for the channel's messages",
+    () =>
+      Effect.gen(function* asks() {
+        const workspaceId = yield* freshWorkspace;
+        const network = yield* FakeNetwork;
+        const channel = yield* connected(workspaceId);
+
+        assert.strictEqual(network.asked().at(-1), blueskyScope);
+
+        yield* reconnected(channel, true);
+
+        assert.strictEqual(network.asked().at(-1), blueskyScopeWith(true));
+      })
+  );
+
+  it.effect(
+    "keeps asking the chat scopes on a reconnect of a channel that granted them",
+    () =>
+      Effect.gen(function* keeps() {
+        const workspaceId = yield* freshWorkspace;
+        const network = yield* FakeNetwork;
+        const channel = yield* connected(workspaceId);
+
+        network.grantAsked(true);
+
+        yield* Effect.gen(function* granted() {
+          const chatting = yield* reconnected(channel, true);
+
+          assert.includeMembers(
+            [...chatting.scopes],
+            blueskyScopeWith(true).split(" ")
+          );
+
+          // Reconnected for its token alone, it keeps its messages.
+          yield* reconnected(chatting, false);
+
+          assert.strictEqual(network.asked().at(-1), blueskyScopeWith(true));
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => {
+              network.grantAsked(false);
+            })
+          )
+        );
+      })
   );
 });

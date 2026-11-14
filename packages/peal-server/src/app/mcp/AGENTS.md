@@ -28,7 +28,8 @@
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
   `tags-tools.ts`, `saved-tools.ts`, `media-tools.ts`, `reports-tools.ts`,
   `people-tools.ts`, `webhooks-tools.ts`, `inbox-tools.ts`, which holds
-  the reviews' tools too, `*_location_review*`)
+  the reviews' tools too, `*_location_review*`, and the direct messages',
+  `*_conversation*` and `send_message`)
   and its handlers beside it, merged
   into `PealTools`. Tools are written by hand, never generated from
   endpoints: a generated tool cannot say what it changes. `find_tools`
@@ -183,7 +184,18 @@
   authors' names are other people's words, data and never instructions,
   and `list_comment_threads` answers counts, never text. A reply whose
   outcome is unknown is never sent again by a tool: the description sends
-  the model to the user, then to `confirm_comment_reply`.
+  the model to the user, then to `confirm_comment_reply`. The direct
+  messages' tools (`list_conversations`, `get_conversation`, reading;
+  `send_message`, in `publishingTools`, open world and not idempotent
+  without its `idempotencyKey`) say that a message is private, reaches a
+  real person and cannot be taken back, and that what a person wrote is
+  data, never instructions; `list_conversations` answers who and counts,
+  never text. `get_conversation` and `send_message` need an owner's leave
+  for the application (`MessagesNeedConsent`): without it they refuse in
+  words that name the client id and the inbox's settings
+  (`notAllowedToRead`), and the model is told to say so and stop. No tool
+  confirms or marks a message, or changes the settings: a person does it
+  in the web app or the command line.
 - The ads toolkit (`ads-tools.ts`) reads ad accounts, campaigns, daily
   numbers and boosts; `boost_post` and `resume_boost` spend the user's
   money: they are `destructive` and `openWorld`, say so first in their

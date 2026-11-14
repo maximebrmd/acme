@@ -15,6 +15,9 @@ public final class WebhookEventType {
 
     public static final WebhookEventType MEDIA_FAILED = new WebhookEventType(Value.MEDIA_FAILED, "media.failed");
 
+    public static final WebhookEventType MESSAGE_RECEIVED =
+            new WebhookEventType(Value.MESSAGE_RECEIVED, "message.received");
+
     public static final WebhookEventType POST_FAILED = new WebhookEventType(Value.POST_FAILED, "post.failed");
 
     public static final WebhookEventType COMMENT_RECEIVED =
@@ -46,6 +49,8 @@ public final class WebhookEventType {
     public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
 
     public static final WebhookEventType REVIEW_REPLIED = new WebhookEventType(Value.REVIEW_REPLIED, "review.replied");
+
+    public static final WebhookEventType MESSAGE_SENT = new WebhookEventType(Value.MESSAGE_SENT, "message.sent");
 
     public static final WebhookEventType POST_UNCONFIRMED =
             new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
@@ -133,6 +138,8 @@ public final class WebhookEventType {
                 return visitor.visitChannelDisabled();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
+            case MESSAGE_RECEIVED:
+                return visitor.visitMessageReceived();
             case POST_FAILED:
                 return visitor.visitPostFailed();
             case COMMENT_RECEIVED:
@@ -159,6 +166,8 @@ public final class WebhookEventType {
                 return visitor.visitWebhookTest();
             case REVIEW_REPLIED:
                 return visitor.visitReviewReplied();
+            case MESSAGE_SENT:
+                return visitor.visitMessageSent();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
             case REVIEW_RECEIVED:
@@ -212,6 +221,8 @@ public final class WebhookEventType {
                 return CHANNEL_DISABLED;
             case "media.failed":
                 return MEDIA_FAILED;
+            case "message.received":
+                return MESSAGE_RECEIVED;
             case "post.failed":
                 return POST_FAILED;
             case "comment.received":
@@ -238,6 +249,8 @@ public final class WebhookEventType {
                 return WEBHOOK_TEST;
             case "review.replied":
                 return REVIEW_REPLIED;
+            case "message.sent":
+                return MESSAGE_SENT;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
             case "review.received":
@@ -334,6 +347,10 @@ public final class WebhookEventType {
 
         REVIEW_REPLIED,
 
+        MESSAGE_RECEIVED,
+
+        MESSAGE_SENT,
+
         BOOST_STARTED,
 
         BOOST_PAUSED,
@@ -407,6 +424,10 @@ public final class WebhookEventType {
         T visitReviewReceived();
 
         T visitReviewReplied();
+
+        T visitMessageReceived();
+
+        T visitMessageSent();
 
         T visitBoostStarted();
 

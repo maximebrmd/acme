@@ -444,6 +444,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_channel_capabilities: [true, false, true, true],
           get_channel_defaults: [true, false, true, false],
           get_comment_thread: [true, false, true, false],
+          get_conversation: [true, false, true, false],
           get_location_reviews: [true, false, true, false],
           get_connect_link: [true, false, true, false],
           get_feed: [true, false, true, true],
@@ -469,6 +470,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_channel_sets: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_comment_threads: [true, false, true, false],
+          list_conversations: [true, false, true, false],
           list_location_reviews: [true, false, true, false],
           list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
@@ -524,6 +526,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           // Peal calls the receiver, a server outside it.
+          send_message: [false, false, false, true],
           send_test_webhook: [false, false, false, true],
           server_health: [true, false, true, false],
           // They replace the options the channel had.
@@ -770,6 +773,9 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["reply_to_location_review", "workspace:publish"],
               ["delete_location_review_reply", "workspace:publish"],
               ["mark_location_review_answered", "workspace:publish"],
+              ["list_conversations", "workspace:read"],
+              ["get_conversation", "workspace:read"],
+              ["send_message", "workspace:publish"],
               ["list_comment_rules", "workspace:read"],
               ["start_comment_rule", "workspace:publish"],
               ["update_comment_rule", "workspace:publish"],
@@ -866,6 +872,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             reply_to_comment: { commentId: postId, text: "Never sent." },
             reply_to_location_review: { reviewId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
+            send_message: { conversationId: postId, text: "Never sent." },
             request_changes: { ...decision, comment: "Never read." },
             reschedule_post: {
               at: "2030-01-01T10:00:00Z",

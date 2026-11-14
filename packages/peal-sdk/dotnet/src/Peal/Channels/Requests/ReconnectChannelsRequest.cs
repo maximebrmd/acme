@@ -12,6 +12,9 @@ public record ReconnectChannelsRequest
     [JsonIgnore]
     public required string ChannelId { get; set; }
 
+    [JsonIgnore]
+    public ReconnectChannelsRequestMessages? Messages { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

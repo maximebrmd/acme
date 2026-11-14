@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var searchPostsRequestRemoved = SearchPostsRequestRemoved.True;
+var reconnectChannelsRequestMessages = ReconnectChannelsRequestMessages.True;
 
 // Using a custom value
-var customSearchPostsRequestRemoved = SearchPostsRequestRemoved.FromCustom("custom-value");
+var customReconnectChannelsRequestMessages = ReconnectChannelsRequestMessages.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (searchPostsRequestRemoved.Value)
+switch (reconnectChannelsRequestMessages.Value)
 {
-    case SearchPostsRequestRemoved.Values.True:
+    case ReconnectChannelsRequestMessages.Values.True:
         Console.WriteLine("True");
         break;
     default:
-        Console.WriteLine($"Unknown value: {searchPostsRequestRemoved.Value}");
+        Console.WriteLine($"Unknown value: {reconnectChannelsRequestMessages.Value}");
         break;
 }
 
 // Explicit casting
-string searchPostsRequestRemovedString = (string)SearchPostsRequestRemoved.True;
-SearchPostsRequestRemoved searchPostsRequestRemovedFromString = (SearchPostsRequestRemoved)"true";
+string reconnectChannelsRequestMessagesString = (string)ReconnectChannelsRequestMessages.True;
+ReconnectChannelsRequestMessages reconnectChannelsRequestMessagesFromString = (ReconnectChannelsRequestMessages)"true";
 ```
 
 ## Contributing

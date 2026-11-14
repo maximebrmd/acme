@@ -60,6 +60,16 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       postId,
       threadId,
     }),
+    MessagesReceived: ({
+      channel,
+      conversationId,
+      count,
+    }): NoticeEventRecord => ({
+      _tag: "MessagesReceived",
+      channel,
+      conversationId,
+      count,
+    }),
     FeedStopped: ({ feedId, reason }): NoticeEventRecord => ({
       _tag: "FeedStopped",
       feedId,

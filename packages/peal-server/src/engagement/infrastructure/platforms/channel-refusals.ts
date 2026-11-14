@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import type { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
+import type { MessageFailure } from "#engagement/domain/outgoing-message.ts";
 import type { ReplyFailure } from "#engagement/domain/reply.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -51,3 +52,21 @@ export const refusedWith =
   <A>(onRefused: (reason: ReplyFailure) => A) =>
   (failure: Parameters<typeof accessFailure>[0]) =>
     Effect.succeed(onRefused(accessFailure(failure)));
+
+/**
+ * Answers what `onRefused` makes of why no token could be had, for a
+ * direct message: each reason comes before any request to the platform.
+ */
+export const messageRefusedWith =
+  <A>(onRefused: (reason: MessageFailure) => A) =>
+  (failure: Parameters<typeof accessFailure>[0]) => {
+    const reason = accessFailure(failure);
+
+    return Effect.succeed(
+      onRefused(
+        reason === "channelUnavailable" || reason === "reconnectNeeded"
+          ? reason
+          : "platformUnavailable"
+      )
+    );
+  };
