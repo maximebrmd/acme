@@ -43,7 +43,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection                                                                                          |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                                                                                                    |
 | `staff`         | the staff console: what staff read and do, and the audit log of it                                                                                              |
-| `engagement`    | the inbox: comments under published posts, replies sent to them, their collection                                                                               |
+| `engagement`    | the inbox: comments under published posts, reviews of locations, direct messages, what is sent to them, their collection                                        |
 | `activity`      | each workspace's activity log, and the requests counted for the rate limit                                                                                      |
 | `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log                                                                                       |
 | `legal`         | what French law has a host keep, and the legal requests that read it                                                                                            |
