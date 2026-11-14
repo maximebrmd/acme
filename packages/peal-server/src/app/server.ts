@@ -46,6 +46,7 @@ import {
   BillingActionsApiLive,
   BillingLive,
   BillingMetersLive,
+  BillingXReadsLive,
   BillingOverviewLive,
   PartnerUsageApiLive,
   UsageApiLive,
@@ -628,7 +629,10 @@ const HttpServerLive = Layer.unwrap(
 // read and answer comments with engagement's.
 const WorkersLive = Layer.mergeAll(
   publishingWorkersReading(
-    PlatformMetricsReaderLive,
+    // X's reads claim billing's meter where the server bills.
+    PlatformMetricsReaderLive.pipe(
+      Layer.provide(Layer.merge(MetersContextLive, BillingXReadsLive))
+    ),
     // YouTube's comment reads count their units in the server's ledger of
     // the project's day, which publishing keeps.
     PlatformEngagementLive.pipe(Layer.provide(PlatformQuotaLive))

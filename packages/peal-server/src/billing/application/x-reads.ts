@@ -3,6 +3,8 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 import { BillingOff } from "#billing/domain/billing-off.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
+import { rateCard } from "#billing/domain/rate-card.ts";
+import type { XRates } from "#billing/domain/rate-card.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -39,6 +41,11 @@ export class XReads extends Context.Service<
     readonly on: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * X's published rates, in units of the `xApi` meter (thousandths of a
+     * dollar): what each resource a read returns costs.
+     */
+    readonly rates: XRates;
   }
 >()("peal-server/billing/application/XReads") {
   static readonly layer = Layer.effect(
@@ -71,7 +78,7 @@ export class XReads extends Context.Service<
       const on = (workspaceId: WorkspaceId) =>
         of(workspaceId).pipe(Effect.map(Option.exists(({ reads }) => reads)));
 
-      return XReads.of({ of, on, set });
+      return XReads.of({ of, on, rates: rateCard.x.rates, set });
     })
   );
 }
