@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
@@ -20,10 +20,15 @@ import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
+import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
+import type { AuthorizationRequest } from "#channels/application/platform-authorizer.ts";
 import type { TokenLifetime } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
+  MastodonAuthorizersTest,
   MastodonConnectTest,
+  authorizersOf,
+  connectChannelWith,
   mastodonInstance,
 } from "#test/channels/connect-support.ts";
 import {
@@ -31,6 +36,7 @@ import {
   freshWorkspace,
   memberOf,
   nonRefreshable,
+  OpenOutboundGuard,
   refreshable,
   syntheticCredentials,
 } from "#test/channels/support.ts";
@@ -679,6 +685,75 @@ layer(UseCasesTest)("the channel search", (it) => {
         .pipe(Effect.flip);
 
       assert.strictEqual(badCursor._tag, "BadRequest");
+    })
+  );
+});
+
+// What the Mastodon authorizer was asked to begin, as the endpoint passed it.
+const asked = Ref.makeUnsafe<readonly AuthorizationRequest[]>([]);
+
+const RecordingAuthorizers = Layer.effect(
+  PlatformAuthorizers,
+  Effect.gen(function* RecordingAuthorizers() {
+    const real = Option.getOrThrow(
+      (yield* PlatformAuthorizers).for("mastodon")
+    );
+
+    return authorizersOf({
+      ...real,
+      begin: (request) =>
+        Ref.update(asked, (all) => [...all, request]).pipe(
+          Effect.andThen(real.begin(request))
+        ),
+    });
+  })
+).pipe(
+  Layer.provide(MastodonAuthorizersTest),
+  Layer.provide(OpenOutboundGuard)
+);
+
+const AskingTest = Layer.mergeAll(
+  ListChannels.layer,
+  ChannelSettings.layer,
+  DisconnectChannel.layer
+).pipe(
+  Layer.provideMerge(TransactionsTest),
+  Layer.provideMerge(connectChannelWith(RecordingAuthorizers))
+);
+
+layer(AskingTest)("the channels endpoints, on a reconnect", (it) => {
+  it.effect("pass on the ask for reposts and for messages", () =>
+    Effect.gen(function* passes() {
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connected(workspaceId);
+      const client = yield* clientAs(owner(workspaceId));
+
+      yield* Ref.set(asked, []);
+
+      for (const query of [
+        { reposts: "true" },
+        { messages: "true" },
+        {},
+      ] as const) {
+        yield* Effect.flip(
+          client.channels.reconnect({
+            params: { channelId: channel.id, workspaceId },
+            query,
+          })
+        );
+      }
+
+      assert.deepStrictEqual(
+        (yield* Ref.get(asked)).map(({ messages, reposts }) => ({
+          messages,
+          reposts,
+        })),
+        [
+          { messages: false, reposts: true },
+          { messages: true, reposts: false },
+          { messages: false, reposts: false },
+        ]
+      );
     })
   );
 });

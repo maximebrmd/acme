@@ -1,11 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Deferred, Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Deferred, Effect, Fiber, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
 import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
+import { FollowUpStore } from "#publishing/application/follow-up-store.ts";
 import type { StartFollowUpRequest } from "#publishing/application/follow-up-rules.ts";
 import { FollowUps } from "#publishing/application/follow-ups.ts";
 import { PlatformClients } from "#publishing/application/platform-client.ts";
@@ -25,6 +26,7 @@ import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor, can } from "#shared/domain/access.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -514,6 +516,53 @@ describe("follow-up rules", () => {
             (sql) =>
               sql`DELETE FROM publishing.follow_ups WHERE id = ${followUp.id}`
           ).pipe(Effect.orDie);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "count a channel's day under its lock, waiting for whoever holds it",
+    () =>
+      onServer(
+        Effect.gen(function* locked() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+          yield* likesOf(target.id, 10);
+
+          // Another transaction holds the channel's day.
+          const held = yield* Deferred.make<void>();
+          const release = yield* Deferred.make<void>();
+          const { transaction } = yield* TransactionRunner;
+
+          const holder = yield* transaction(
+            FollowUpStore.use((store) => store.claimChannelDay(mastodon)).pipe(
+              Effect.andThen(Deferred.succeed(held, undefined)),
+              Effect.andThen(Deferred.await(release))
+            )
+          ).pipe(Effect.forkChild);
+
+          yield* Deferred.await(held);
+
+          const run = yield* runDue.pipe(Effect.forkChild);
+
+          yield* TestClock.withLive(Effect.sleep("300 millis"));
+
+          const waited = run.pollUnsafe() === undefined;
+
+          yield* Deferred.succeed(release, undefined);
+          yield* Fiber.join(holder);
+
+          assert.isTrue(waited);
+          assert.strictEqual((yield* Fiber.join(run)).triggered, 1);
         })
       ),
     timeout

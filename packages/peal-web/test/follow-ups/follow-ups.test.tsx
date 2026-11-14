@@ -165,4 +165,51 @@ describe("the workspace's follow-up rules", () => {
 
     expect(french).toContain("À 50 J’aime : un commentaire et un repartage");
   });
+
+  it("offer to allow reposts on a channel that must be connected again for them, to who may", async () => {
+    const waiting: FollowUpRule = {
+      ...rule,
+      channels: [
+        {
+          channelId: "0190f3a0-0000-7000-8000-00000000c002",
+          comment: "available",
+          platform: "bluesky",
+          repost: "reconnect",
+        },
+      ],
+    };
+
+    const allowed = await render(
+      "en",
+      <FollowUpRuleView
+        actions={null}
+        onAllowReposts={() => undefined}
+        rule={waiting}
+        scope="On a post"
+      />
+    );
+
+    expect(allowed).toContain("Allow reposts");
+    expect(allowed).toContain("Bluesky: comment yes, repost connect the channel again");
+
+    // Nobody who may not change rules is offered it, nor on a channel
+    // that reposts already.
+    expect(
+      await render(
+        "en",
+        <FollowUpRuleView actions={null} rule={waiting} scope="On a post" />
+      )
+    ).not.toContain("Allow reposts");
+    expect(
+      await render(
+        "fr",
+        <FollowUpRuleView
+          actions={null}
+          onAllowReposts={() => undefined}
+          rule={rule}
+          scope="Sur une publication"
+        />
+      )
+    ).not.toContain("Autoriser les repartages");
+  });
 });

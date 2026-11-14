@@ -11,6 +11,7 @@ import { EngagementOutcomes } from "#engagement/application/ports/engagement-out
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
+import { CommentRuleStore } from "#engagement/application/ports/comment-rule-store.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
@@ -22,6 +23,7 @@ import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-eng
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { PublishingReplyLimits } from "#engagement/infrastructure/publishing-reply-limits.ts";
 import { UnreadComments } from "#publishing/container.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import {
@@ -91,12 +93,30 @@ const FakeChannels = Layer.succeed(
   })
 );
 
-const RulesTest = CommentRules.layer.pipe(
+// The rules' store on Postgres, failing for a rule whose keywords hold
+// "outage" when it reads what the rule may answer, as a database would.
+const FailingForOutage = Layer.effect(
+  CommentRuleStore,
+  Effect.gen(function* FailingForOutage() {
+    const store = yield* CommentRuleStore;
+
+    return CommentRuleStore.of({
+      ...store,
+      candidates: (rule, channelIds, claimedBefore, limit) =>
+        rule.keywords.includes("outage")
+          ? Effect.fail(new DatabaseError({ cause: "synthetic outage" }))
+          : store.candidates(rule, channelIds, claimedBefore, limit),
+    });
+  })
+).pipe(Layer.provide(DrizzleCommentRuleStore));
+
+const rulesTestWith = <E, R>(store: Layer.Layer<CommentRuleStore, E, R>) =>
+  CommentRules.layer.pipe(
   Layer.provideMerge(EngagementReplies.layer),
   Layer.provideMerge(DrizzleEngagementRecords),
   Layer.provideMerge(
     Layer.mergeAll(
-      DrizzleCommentRuleStore,
+      store,
       DrizzleEngagementStore,
       FakeChannels,
       FakeFollowedPosts,
@@ -137,6 +157,10 @@ const RulesTest = CommentRules.layer.pipe(
   ),
   Layer.provideMerge(DatabaseTest)
 );
+
+const RulesTest = rulesTestWith(DrizzleCommentRuleStore);
+
+const OutageTest = rulesTestWith(FailingForOutage);
 
 const forget = (workspaceId: WorkspaceId) =>
   SqlClient.SqlClient.use((sql) =>
@@ -411,6 +435,96 @@ describe("comment rules", () => {
         assert.strictEqual((yield* rules.runDue).replied, 1);
       }).pipe(Effect.ensuring(forget(workspaceId)));
     }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("take a claim back that was left for over half an hour, and answer it", () =>
+    Effect.gen(function* reclaims() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const thread = yield* threadOn(workspaceId, "mastodon");
+        const rules = yield* CommentRules;
+
+        const rule = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "channel", channelId: thread.channelId },
+        });
+
+        yield* Effect.sleep("5 millis");
+
+        const [stale, fresh] = yield* received(thread, [
+          { author: 1, text: "price?" },
+          { author: 2, text: "price, please" },
+        ]);
+
+        assert.isDefined(stale);
+        assert.isDefined(fresh);
+
+        // A run that stopped after claiming them: one long ago, one now.
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+          VALUES (${rule.rule.id}, ${stale.id}, 'claimed', now() - interval '31 minutes'),
+            (${rule.rule.id}, ${fresh.id}, 'claimed', now())`.pipe(Effect.orDie);
+
+        const run = yield* rules.runDue;
+
+        assert.strictEqual(run.replied, 1);
+
+        const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+
+        assert.deepStrictEqual(
+          new Map(
+            after.matches.map(({ commentId, outcome }) => [
+              commentId,
+              outcome._tag,
+            ])
+          ),
+          new Map([
+            [stale.id, "replied"],
+            [fresh.id, "claimed"],
+          ])
+        );
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("go on to the other rules when one meets a database error", () =>
+    Effect.gen(function* isolates() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const failing = yield* threadOn(workspaceId, "mastodon");
+        const working = yield* threadOn(workspaceId, "mastodon");
+        const rules = yield* CommentRules;
+
+        yield* rules.start(actorIn(workspaceId), {
+          keywords: ["outage"],
+          reply: "We are on it.",
+          scope: { _tag: "channel", channelId: failing.channelId },
+        });
+
+        const answering = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "channel", channelId: working.channelId },
+        });
+
+        yield* Effect.sleep("5 millis");
+        yield* received(failing, [{ author: 1, text: "outage?" }]);
+        yield* received(working, [{ author: 2, text: "price?" }]);
+
+        assert.strictEqual((yield* rules.runDue).replied, 1);
+
+        const after = yield* rules.get(actorIn(workspaceId), answering.rule.id);
+
+        assert.deepStrictEqual(
+          after.matches.map(({ outcome }) => outcome._tag),
+          ["replied"]
+        );
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(OutageTest))
   );
 
   it.live("end a channel's rules when the channel is disconnected", () =>

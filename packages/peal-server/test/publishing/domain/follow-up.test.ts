@@ -182,6 +182,20 @@ describe("a follow-up rule", () => {
     ).toBe("pending");
   });
 
+  it("waits again when changed by an approver the policy holds", () => {
+    const approved = Result.getOrThrow(
+      approveFollowUpRule(startFollowUpRule(newRule(), now), approver, now)
+    );
+
+    const heldApprover = { approver: Option.some(approver), held: true };
+
+    expect(
+      Result.getOrThrow(
+        changeFollowUpRule(approved, { repost: true }, heldApprover, now)
+      ).approval._tag
+    ).toBe("pending");
+  });
+
   it("can be approved when it comes to need it, whatever it was", () => {
     const rule = startFollowUpRule(newRule(), now);
 
