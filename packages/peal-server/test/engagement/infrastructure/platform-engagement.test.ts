@@ -14,6 +14,7 @@ import { FetchHttpClient } from "effect/http";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
+import { MessageSource } from "#engagement/application/ports/message-source.ts";
 import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import type { SendRequest } from "#engagement/application/ports/reply-sender.ts";
@@ -27,7 +28,9 @@ import type { Reply } from "#engagement/domain/reply.ts";
 import { linkedinCommentsDailyCalls } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { platformEngagementWith } from "#engagement/infrastructure/platforms/platform-engagement.ts";
 import { youtubeCommentsDailyUnits } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
+import { CurrentInboxMessages } from "#shared/application/current-inbox-messages.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -44,6 +47,7 @@ import type { World } from "#test/engagement/fakes/world.ts";
 import {
   channelId,
   comment,
+  conversation,
   memberId,
   replyId,
   thread,
@@ -508,5 +512,108 @@ describe("the gate's reply sender", () => {
       assert.strictEqual((yield* sender.send(request))._tag, "sent");
       assert.lengthOf(server.requests(), 1);
     }).pipe(Effect.scoped)
+  );
+});
+
+describe("the gate's message source", () => {
+  it.effect(
+    "reads a conversation as not whole when the database does not give what Peal keeps of it",
+    () =>
+      Effect.gen(function* unknownKept() {
+        const sentAt = DateTime.formatIso(
+          DateTime.subtractDuration(yield* DateTime.now, "1 hour")
+        );
+
+        const server = yield* platformServer((incoming) =>
+          incoming.path === "/api/v1/conversations"
+            ? json([
+                {
+                  accounts: [{ acct: "reader@social.example", id: "7001" }],
+                  id: "c1",
+                  last_status: {
+                    account: { acct: "reader@social.example", id: "7001" },
+                    content: "<p>@studio Hello</p>",
+                    created_at: sentAt,
+                    id: "3003",
+                    in_reply_to_id: null,
+                    media_attachments: [],
+                    mentions: [{ acct: "studio", id: "109372" }],
+                    visibility: "direct",
+                  },
+                  unread: true,
+                },
+              ])
+            : json({ ancestors: [], descendants: [] })
+        );
+
+        const url = new URL(server.url);
+        const world = makeMessageWorld(new Set(["mastodon"]));
+        const kept = conversation(1);
+
+        world.state.conversations.set(kept.id, kept);
+
+        // The database answers the conversations, not their messages.
+        const store: typeof MessageStore.Service = {
+          ...world.store,
+          messagesOf: () =>
+            Effect.fail(new DatabaseError({ cause: "synthetic outage" })),
+        };
+
+        const source = yield* MessageSource.pipe(
+          Effect.provide(
+            platformEngagementWith({
+              blueskyAppView: url,
+              businessApi: url,
+              linkedinApi: url,
+              linkedinReadCalls: linkedinCommentsDailyCalls,
+              linkedinVersion: "202610",
+              mastodonScheme: "http:",
+              metaAppSecret: Option.none(),
+              metaHosts,
+              youtubeApi: url,
+              youtubeCommentUnits: youtubeCommentsDailyUnits,
+            }).pipe(
+              Layer.provide(
+                Layer.mergeAll(
+                  makeWorld().ports,
+                  makeReviewWorld().ports,
+                  Layer.succeed(MessageStore, store),
+                  Layer.succeed(CurrentInboxMessages, new Set(["mastodon"])),
+                  Layer.succeed(CurrentInboxPlatforms, new Set()),
+                  memoryQuota().layer,
+                  channelAccessOf(
+                    {
+                      accountId: `109372@${url.host}`,
+                      channelId: channelId(1),
+                      connection: Option.none(),
+                      platform: "mastodon",
+                      scopes: ["read:statuses", "write:statuses"],
+                    },
+                    ["token-1"]
+                  ),
+                  FetchHttpClient.layer,
+                  OpenOutboundGuard,
+                  KeyedPseudonymsLive,
+                  Digest.layerWebCrypto,
+                  Mac.layerWebCrypto.pipe(
+                    Layer.provideMerge(SecureRandom.layerWebCrypto)
+                  )
+                )
+              )
+            )
+          )
+        );
+
+        const batch = yield* source.read({
+          channelId: channelId(1),
+          keptSince: DateTime.subtractDuration(yield* DateTime.now, "30 days"),
+        });
+
+        const [reading] = batch.conversations;
+
+        assert.strictEqual(reading?.platformConversationId, "c1");
+        assert.isFalse(reading?.complete ?? true);
+        assert.deepStrictEqual(reading?.deleted, []);
+      }).pipe(Effect.scoped)
   );
 });

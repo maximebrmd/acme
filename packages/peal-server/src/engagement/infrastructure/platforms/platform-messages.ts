@@ -127,17 +127,20 @@ export const platformMessagesWith = (settings: {
         );
 
         // What Peal keeps of a conversation, read when the adapter asks;
-        // none when the database does not answer, so nothing is deleted.
+        // unknown when the database does not answer, which makes the read
+        // not whole, so nothing is deleted.
         const keptOf = (platformConversationId: string) => {
           const id = byPlatformId.get(platformConversationId);
 
           return id === undefined
-            ? Effect.succeed([])
+            ? Effect.succeed(Option.some<readonly string[]>([]))
             : store.messagesOf(id).pipe(
                 Effect.map((kept) =>
-                  kept.map(({ platformMessageId }) => platformMessageId)
+                  Option.some<readonly string[]>(
+                    kept.map(({ platformMessageId }) => platformMessageId)
+                  )
                 ),
-                Effect.orElseSucceed((): readonly string[] => [])
+                Effect.orElseSucceed(() => Option.none<readonly string[]>())
               );
         };
 

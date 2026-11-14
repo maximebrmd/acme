@@ -429,7 +429,8 @@
   asks after each kept status a whole read did not show
   (`GET /api/v1/statuses/:id`, at most 10, `keptOf`): gone, it is in
   `deleted`; still there (a branch detached by a deleted status), the
-  read is not `complete`. The record runs under the box's lock in one transaction,
+  read is not `complete`, as it is when the database does not give what
+  Peal keeps (`keptOf` answers none). The record runs under the box's lock in one transaction,
   and tells `message.received` (ids) and the `MessagesReceived` notice
   (the channel's handle and a count, once a conversation and UTC day, to
   `engagement:message`, emailed under `comments`) only for messages
