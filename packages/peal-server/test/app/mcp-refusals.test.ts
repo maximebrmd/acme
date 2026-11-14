@@ -60,6 +60,19 @@ describe(planRefusalText, () => {
   });
 });
 
+// X's refusal for a standing, as the MCP tools tell it.
+const xRefusal = (reason: "paymentFailed" | "planAllowance") =>
+  usageRefusalText(
+    new AllowanceReached({
+      allowed: 0,
+      meter: "xApi",
+      reason,
+      resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+      used: 0,
+    }),
+    billingUrl
+  );
+
 describe(usageRefusalText, () => {
   const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 
@@ -153,21 +166,11 @@ describe(usageRefusalText, () => {
   });
 
   it("tells X's refusal in its standing's words", () => {
-    const x = (reason: "paymentFailed" | "planAllowance") =>
-      usageRefusalText(
-        new AllowanceReached({
-          allowed: 0,
-          meter: "xApi",
-          reason,
-          resetsAt,
-          used: 0,
-        }),
-        billingUrl
-      );
-
-    expect(x("paymentFailed")).toContain("last payment failed");
-    expect(x("paymentFailed")).not.toContain("adds one");
-    expect(x("planAllowance")).toContain("moves it to per-account pricing");
-    expect(x("planAllowance")).not.toContain("used 0 of the 0");
+    expect(xRefusal("paymentFailed")).toContain("last payment failed");
+    expect(xRefusal("paymentFailed")).not.toContain("adds one");
+    expect(xRefusal("planAllowance")).toContain(
+      "moves it to per-account pricing"
+    );
+    expect(xRefusal("planAllowance")).not.toContain("used 0 of the 0");
   });
 });
