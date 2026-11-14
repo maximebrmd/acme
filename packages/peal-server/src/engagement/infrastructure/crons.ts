@@ -2,7 +2,9 @@ import { Cron, Duration, Effect, Layer } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
+import { CollectReviews } from "#engagement/application/collect-reviews.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 
 /**
@@ -96,9 +98,67 @@ const EngagementRefreshBoundCron = ClusterCron.make({
   skipIfOlderThan: Duration.minutes(50),
 });
 
-/** The comments collection, the refresh bound and the retention. */
+/**
+ * Every hour at minute 27: reads the reviews of the locations due, where
+ * the inbox reads Google Business Profile (`PEAL_INBOX_PLATFORMS`), after
+ * handing the replies no job settled to the next read. Off, it does
+ * nothing. A run starts no read 40 minutes after its time; one more than
+ * 40 minutes late is skipped. The minute is one no other cron starts on
+ * (`test/app/cron-schedules.test.ts`).
+ */
+const CollectReviewsCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("27 * * * *", "UTC"),
+  execute: Effect.gen(function* collectReviews() {
+    const at = yield* ClusterCron.CurrentScheduledTime;
+    const report = yield* CollectReviews.use((collect) => collect.run(at));
+
+    if (Object.values(report).some((count) => count > 0)) {
+      yield* Effect.logInfo("Collected reviews", report);
+    }
+  }).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logWarning("The reviews collection failed", cause)
+    )
+  ),
+  name: "engagement.collect-reviews",
+  skipIfOlderThan: Duration.minutes(40),
+});
+
+/**
+ * Every hour at minute 47: deletes the reviews last changed 29 days ago,
+ * and the threads no read reached in that time, as Google's policies let
+ * what its API gives be stored 30 days (`PurgeReviews`). A failed run is
+ * logged and the next hour's catches up.
+ */
+const ReviewsRetentionCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("47 * * * *", "UTC"),
+  execute: PurgeReviews.use((purging) => purging.purge).pipe(
+    Effect.tap((purged) =>
+      purged.reviews > 0 || purged.threads > 0
+        ? Effect.logInfo("Forgot reviews past their time").pipe(
+            Effect.annotateLogs({
+              reviews: purged.reviews,
+              threads: purged.threads,
+            })
+          )
+        : Effect.void
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning("Forgetting reviews past their time failed", cause)
+    )
+  ),
+  name: "engagement.reviews-retention",
+  skipIfOlderThan: Duration.minutes(50),
+});
+
+/**
+ * The comments collection, the refresh bound and the retention; the
+ * reviews' collection and retention.
+ */
 export const EngagementCronsLive = Layer.mergeAll(
   CollectCommentsCron,
   EngagementRefreshBoundCron,
-  EngagementRetentionCron
+  EngagementRetentionCron,
+  CollectReviewsCron,
+  ReviewsRetentionCron
 );

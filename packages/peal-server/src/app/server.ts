@@ -94,6 +94,7 @@ import {
   ChannelSetsApiLive,
   GatedMetricsReader,
   GatedReplySender,
+  GatedReviews,
   UnreadComments,
   LookupsApiLive,
   MediaInPostsLive,
@@ -375,7 +376,7 @@ const engagementOver = <E, R>(
 
 // As the server runs it: through the channels' gates.
 const EngagementContextLive = engagementOver(
-  Layer.merge(GatedCommentSource, GatedReplySender)
+  Layer.mergeAll(GatedCommentSource, GatedReplySender, GatedReviews)
 );
 
 // As AppLive runs it, without workers: nothing is read or sent.

@@ -30,6 +30,8 @@ const summaries = {
   "channel.reconnect_needed": "A channel's authorization stopped working",
   "comment.received": "Someone commented under a post that went live",
   "comment.replied": "A reply to a comment went out from Peal",
+  "review.received": "Someone reviewed a location a channel posts as",
+  "review.replied": "A reply to a review went out from Peal",
   "media.failed": "A file was refused, or could not be read",
   "media.ready": "A file was read, and can go in posts",
   "post.approval_requested": "A post waits for an approval",

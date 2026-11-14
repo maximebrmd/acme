@@ -275,6 +275,28 @@
   },
   {
     "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "rating": 4,
+      "receivedAt": "2026-11-14T09:27:04.000Z",
+      "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+      "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "review.received"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "repliedAt": "2026-11-14T09:40:12.000Z",
+      "replyId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d1e",
+      "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+      "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "review.replied"
+  },
+  {
+    "data": {
       "endpointId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c08",
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
     },

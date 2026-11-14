@@ -1,12 +1,12 @@
 ---
-title: Événements des médias et des commentaires
-description: "Les événements d’un fichier de la médiathèque, et des commentaires sous une publication en ligne."
+title: Événements des médias, des commentaires et des avis
+description: "Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne, et des avis d’un établissement."
 sidebar:
   icon: message-square
-  label: "Médias et commentaires"
+  label: "Médias, commentaires et avis"
 ---
 
-Les événements d’un fichier de la médiathèque et des commentaires sous une publication en ligne, chacun avec ses champs et un exemple de contenu. Les événements des médias ne concernent aucun canal : ils parviennent à un point de terminaison [quels que soient les canaux qu’il liste](/developers/webhooks#filters).
+Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne et des avis d’un établissement, chacun avec ses champs et un exemple de contenu. Les événements des médias ne concernent aucun canal : ils parviennent à un point de terminaison [quels que soient les canaux qu’il liste](/developers/webhooks#filters).
 
 ## media.ready [#media-ready]
 
@@ -131,6 +131,68 @@ Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal
     "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
     "permalink": "https://mastodon.example/@peal_example/113000000000000002",
     "repliedAt": "2026-11-10T09:20:41.000Z"
+  }
+}
+```
+
+## review.received [#review-received]
+
+Peal a lu un avis pour la première fois sur un établissement au nom duquel publie un canal Google Business Profile (voir [Boîte de réception](/guides/engage/inbox#reviews)). L’événement ne porte que des identifiants et les étoiles : ce que dit l’avis et qui l’a écrit se lisent par l’API, avec `engagement:read`.
+
+| Champ         | Type   | Ce qu’il contient                              |
+| ------------- | ------ | ---------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                            |
+| `channelId`   | chaîne | Le canal dont l’établissement a reçu l’avis    |
+| `threadId`    | chaîne | Le fil : les avis de cet établissement         |
+| `reviewId`    | chaîne | L’avis                                         |
+| `rating`      | entier | Ses étoiles, de 1 à 5                          |
+| `receivedAt`  | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC |
+
+```json title="review.received"
+{
+  "id": "019a8163-4a1b-7c2d-8e3f-4a5b6c7d8e01",
+  "type": "review.received",
+  "version": 1,
+  "timestamp": "2026-11-14T09:27:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+    "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+    "rating": 4,
+    "receivedAt": "2026-11-14T09:27:04.000Z"
+  }
+}
+```
+
+## review.replied [#review-replied]
+
+Une réponse à un avis est partie depuis Peal, au nom de l’établissement. Une réponse qui a échoué, ou dont l’issue n’est pas encore connue, n’envoie rien : lisez-la par l’API.
+
+| Champ         | Type   | Ce qu’il contient                                  |
+| ------------- | ------ | -------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                                |
+| `channelId`   | chaîne | Le canal                                           |
+| `threadId`    | chaîne | Le fil                                             |
+| `reviewId`    | chaîne | L’avis auquel il a été répondu                     |
+| `replyId`     | chaîne | La réponse                                         |
+| `repliedAt`   | chaîne | Quand elle est partie, sous forme d’instant en UTC |
+
+```json title="review.replied"
+{
+  "id": "019a8163-5b2c-7d3e-8f4a-5b6c7d8e9f02",
+  "type": "review.replied",
+  "version": 1,
+  "timestamp": "2026-11-14T09:40:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
+    "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
+    "replyId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d1e",
+    "repliedAt": "2026-11-14T09:40:12.000Z"
   }
 }
 ```

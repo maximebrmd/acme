@@ -9,6 +9,8 @@ import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
 export { ReviewSendOutcomeSchema } from "#engagement/domain/review-reply.ts";
 
+export type { ReviewSendOutcome } from "#engagement/domain/review-reply.ts";
+
 /** A reply to a review to send, by id: its text stays in the engagement tables. */
 export const ReviewReplyRequestSchema = Schema.Struct({
   channelId: ChannelIdSchema,

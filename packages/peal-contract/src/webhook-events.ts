@@ -38,6 +38,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "media.failed",
   "comment.received",
   "comment.replied",
+  "review.received",
+  "review.replied",
   "boost.started",
   "boost.paused",
   "boost.resumed",
@@ -173,6 +175,15 @@ const comment = {
   ...post,
   channelId: Schema.String,
   commentId: Schema.String,
+  threadId: Schema.String,
+};
+
+// A review of a location a channel posts as, by ids: never what it says,
+// nor who wrote it, which the receiver reads through the API.
+const review = {
+  ...workspace,
+  channelId: Schema.String,
+  reviewId: Schema.String,
   threadId: Schema.String,
 };
 
@@ -471,6 +482,27 @@ export const WebhookPayloadSchema = Schema.Union([
       replyId: Schema.String,
     }),
     type: Schema.Literal("comment.replied"),
+  }),
+  // Peal read a review of a location for the first time, with its stars.
+  // Ids only: what it says and who wrote it are read through the API.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...review,
+      rating: Schema.Int,
+      receivedAt: Schema.String,
+    }),
+    type: Schema.Literal("review.received"),
+  }),
+  // A reply to the review went out from Peal, as the location.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...review,
+      repliedAt: Schema.String,
+      replyId: Schema.String,
+    }),
+    type: Schema.Literal("review.replied"),
   }),
   // A boost of a published post changed: it started, was paused, resumed
   // or stopped by a member, ended, failed, could not be confirmed, or
