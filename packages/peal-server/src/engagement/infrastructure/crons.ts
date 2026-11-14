@@ -2,8 +2,13 @@ import { Cron, Duration, Effect, Layer, Metric } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
+import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import {
+  messagesRetentionFailures,
+  PurgeMessages,
+} from "#engagement/application/purge-messages.ts";
 import {
   PurgeReviews,
   reviewsRetentionFailures,
@@ -159,13 +164,79 @@ const ReviewsRetentionCron = ClusterCron.make({
 });
 
 /**
+ * At minutes 1 and 21 of every hour: hands to a person the direct
+ * messages no job settled, follows the channels connected since, and
+ * reads the conversations of the channels due, where the operator turned
+ * a platform's messages on (`PEAL_INBOX_MESSAGES`). Off, it does nothing.
+ * A run starts no read 8 minutes after its time; one more than 8 minutes
+ * late is skipped. They are minutes no other cron starts on
+ * (`test/app/cron-schedules.test.ts`, which leaves few): a channel whose
+ * messages are read every run waits 40 minutes at most, from :21 to :01.
+ */
+const CollectMessagesCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("1,21 * * * *", "UTC"),
+  execute: Effect.gen(function* collectMessages() {
+    const at = yield* ClusterCron.CurrentScheduledTime;
+    const report = yield* CollectMessages.use((collect) => collect.run(at));
+
+    if (report.stranded > 0) {
+      yield* Effect.logWarning(
+        "Direct messages were still on their way an hour after they were written: their job gave up or was lost. They wait to be checked, and are never sent again"
+      ).pipe(Effect.annotateLogs({ messages: report.stranded }));
+    }
+
+    if (Object.values(report).some((count) => count > 0)) {
+      yield* Effect.logInfo("Collected direct messages", report);
+    }
+  }).pipe(
+    // Logged without the cause, which may quote what people wrote.
+    Effect.catchCause(() =>
+      Effect.logWarning("The direct messages collection failed")
+    )
+  ),
+  name: "engagement.collect-messages",
+  skipIfOlderThan: Duration.minutes(8),
+});
+
+/**
+ * Every hour at minute 57: deletes the conversations whose last message
+ * was sent 30 days ago, with what they hold (`PurgeMessages`). A failed
+ * run is counted (`peal.engagement.messages.retention_failures`, alert
+ * `peal-messages-retention-failing`) and the next hour's catches up.
+ */
+const MessagesRetentionCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("57 * * * *", "UTC"),
+  execute: PurgeMessages.use((purging) => purging.purge).pipe(
+    Effect.tap((conversations) =>
+      conversations > 0
+        ? Effect.logInfo("Deleted conversations past their time").pipe(
+            Effect.annotateLogs({ conversations })
+          )
+        : Effect.void
+    ),
+    Effect.catchCause(() =>
+      Metric.update(messagesRetentionFailures, 1).pipe(
+        Effect.andThen(
+          Effect.logWarning("Deleting conversations past their time failed")
+        )
+      )
+    )
+  ),
+  name: "engagement.messages-retention",
+  skipIfOlderThan: Duration.minutes(50),
+});
+
+/**
  * The comments collection, the refresh bound and the retention; the
- * reviews' collection and retention.
+ * reviews' collection and retention; the direct messages' collection and
+ * retention.
  */
 export const EngagementCronsLive = Layer.mergeAll(
   CollectCommentsCron,
   EngagementRefreshBoundCron,
   EngagementRetentionCron,
   CollectReviewsCron,
-  ReviewsRetentionCron
+  ReviewsRetentionCron,
+  CollectMessagesCron,
+  MessagesRetentionCron
 );

@@ -5,8 +5,8 @@ import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
  * How often a channel's conversations are read: a person waits for an
- * answer, so every run of the collection (ten minutes) while the channel
- * had a message in the last day, hourly otherwise.
+ * answer, so at every run of the collection (twice an hour) while the
+ * channel had a message in the last day, hourly otherwise.
  */
 export const messagesOftenFor = Duration.days(1);
 

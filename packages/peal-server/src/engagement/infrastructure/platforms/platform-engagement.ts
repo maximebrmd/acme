@@ -38,6 +38,7 @@ import type { LinkedInReadCalls } from "#engagement/infrastructure/platforms/lin
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
+import { platformMessagesWith } from "#engagement/infrastructure/platforms/platform-messages.ts";
 import { platformReviewsWith } from "#engagement/infrastructure/platforms/platform-reviews.ts";
 import { keptWithoutRefresh } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
@@ -48,6 +49,7 @@ import {
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import { InboxMessagesLive } from "#shared/infrastructure/inbox-messages.ts";
 import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
@@ -106,7 +108,10 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * channel's gate runs them: `CommentSource` reads threads, `ReplySender`
  * sends what the engagement tables hold, found by id, so no text travels
  * with a call; and a location's reviews (`ReviewSource`,
- * `ReviewReplySender`, `platformReviewsWith`), which need the ReviewStore. Each channel is found through the channels context
+ * `ReviewReplySender`, `platformReviewsWith`), which need the ReviewStore;
+ * and a channel's direct messages (`MessageSource`, `MessageSender`,
+ * `platformMessagesWith`), which need the MessageStore and
+ * CurrentInboxMessages. Each channel is found through the channels context
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
@@ -388,6 +393,12 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
       return Layer.mergeAll(
         // A location's reviews, on Google Business Profile.
         platformReviewsWith({ businessApi: settings.businessApi, http }),
+        // A channel's direct messages, on Mastodon and Bluesky.
+        platformMessagesWith({
+          http,
+          mastodonScheme: settings.mastodonScheme,
+          reader,
+        }),
         Layer.succeed(CommentSource, CommentSource.of({ read })),
         Layer.succeed(
           ReplySender,
@@ -434,6 +445,7 @@ export const PlatformEngagementLive = Layer.unwrap(
   )
 ).pipe(
   Layer.provide(InboxPlatformsLive),
+  Layer.provide(InboxMessagesLive),
   Layer.provide(KeyedPseudonymsLive),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(FetchHttpClient.layer),

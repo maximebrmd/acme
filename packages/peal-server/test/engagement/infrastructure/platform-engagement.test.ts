@@ -14,6 +14,7 @@ import { FetchHttpClient } from "effect/http";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
+import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import type { SendRequest } from "#engagement/application/ports/reply-sender.ts";
 import {
@@ -36,6 +37,7 @@ import type { AccountFailure } from "#test/analytics/access-log.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { memoryQuota } from "#test/engagement/fakes/fake-youtube-comments.ts";
+import { makeMessageWorld } from "#test/engagement/fakes/message-world.ts";
 import { makeReviewWorld } from "#test/engagement/fakes/review-world.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
@@ -186,6 +188,7 @@ const onServer = Effect.fnUntraced(function* onServer(
           Layer.mergeAll(
             world.ports,
             makeReviewWorld().ports,
+            Layer.succeed(MessageStore, makeMessageWorld().store),
             channelAccessOf(
               Option.getOrElse(failure, () => account),
               ["token-1"]

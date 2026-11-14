@@ -15,6 +15,7 @@ import {
   GatedMetricsReader,
   GatedPlatformPublisher,
   GatedReplySender,
+  UnreadMessages,
   UnreadReviews,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -162,7 +163,8 @@ const serverOn = (platform: Platform) =>
           Layer.mergeAll(
             adaptersOf(platform),
             LivePostClients.none,
-            UnreadReviews
+            UnreadReviews,
+            UnreadMessages
           )
         )
       )
@@ -247,12 +249,15 @@ describe("the channel's gate, with every context that calls through it", () => {
       "Publish",
       "ReadAccount",
       "ReadComments",
+      "ReadMessages",
       "ReadMetrics",
       "ReadReviews",
       "RemoveLivePost",
       "Resume",
+      "ResumeMessage",
       "ResumeReply",
       "ResumeReviewReply",
+      "SendMessage",
       "SendReply",
       "SendReviewReply",
       "WithdrawReply",

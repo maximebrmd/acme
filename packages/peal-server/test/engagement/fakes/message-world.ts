@@ -510,7 +510,7 @@ export const makeMessageWorld = (
     PurgeMessages.layer
   ).pipe(Layer.provideMerge(ports));
 
-  return { layer, state };
+  return { layer, state, store };
 };
 
 export type MessageWorld = ReturnType<typeof makeMessageWorld>;

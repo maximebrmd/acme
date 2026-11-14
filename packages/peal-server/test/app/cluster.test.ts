@@ -37,8 +37,10 @@ import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts"
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
+import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import { PurgeMessages } from "#engagement/application/purge-messages.ts";
 import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
@@ -289,6 +291,20 @@ const ChannelJobsTest = Layer.mergeAll(
     PurgeReviews,
     PurgeReviews.of({ purge: Effect.succeed({ reviews: 0, threads: 0 }) })
   ),
+  Layer.succeed(
+    CollectMessages,
+    CollectMessages.of({
+      run: () =>
+        Effect.succeed({
+          deferred: 0,
+          followed: 0,
+          left: 0,
+          read: 0,
+          stranded: 0,
+        }),
+    })
+  ),
+  Layer.succeed(PurgeMessages, PurgeMessages.of({ purge: Effect.succeed(0) })),
   Layer.succeed(
     SendReply,
     SendReply.of({

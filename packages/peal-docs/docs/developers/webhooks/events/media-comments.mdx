@@ -1,12 +1,12 @@
 ---
-title: Media, comment and review events
-description: "The events of a file in the media library, of the comments under a published post, and of a location's reviews."
+title: Media, comment, review and message events
+description: "The events of a file in the media library, of the comments under a published post, of a location's reviews, and of a channel's direct messages."
 sidebar:
   icon: message-square
-  label: "Media, comments and reviews"
+  label: "Media, comments, reviews, messages"
 ---
 
-The events of a file in the media library, of the comments under a published post and of the reviews of a location, each with its fields and an example payload. Media events are about no channel, so they reach an endpoint [whatever channels it lists](/developers/webhooks#filters).
+The events of a file in the media library, of the comments under a published post, of the reviews of a location and of a channel's direct messages, each with its fields and an example payload. Media events are about no channel, so they reach an endpoint [whatever channels it lists](/developers/webhooks#filters).
 
 ## media.ready [#media-ready]
 
@@ -191,6 +191,64 @@ A reply to a review went out from Peal, as the location. A reply that failed, or
     "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
     "replyId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d1e",
     "repliedAt": "2026-11-14T09:40:12.000Z"
+  }
+}
+```
+
+## message.received [#message-received]
+
+Peal read, for the first time, a direct message someone sent to a channel's account, on a platform whose messages the server reads (see [Inbox](/guides/engage/inbox#direct-messages)). Messages sent before Peal began reading the channel send nothing. The event carries ids only: what the message says and who sent it are read through the API, with `engagement:read`, as messages are private correspondence and an event is kept with its deliveries longer than a conversation.
+
+| Field            | Type   | What it holds                           |
+| ---------------- | ------ | --------------------------------------- |
+| `workspaceId`    | string | The workspace                           |
+| `channelId`      | string | The channel the message was sent to     |
+| `conversationId` | string | The conversation                        |
+| `messageId`      | string | The message                             |
+| `receivedAt`     | string | When Peal read it, as an instant in UTC |
+
+```json title="message.received"
+{
+  "id": "019a8203-6e70-7c4d-8e5f-6a7b8c9d0e01",
+  "type": "message.received",
+  "version": 1,
+  "timestamp": "2026-11-14T10:02:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+    "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b02",
+    "receivedAt": "2026-11-14T10:02:00.000Z"
+  }
+}
+```
+
+## message.sent [#message-sent]
+
+A direct message went out from Peal, as the channel's account. A message that failed, or whose outcome is not known yet, sends nothing: read it through the API.
+
+| Field            | Type   | What it holds                          |
+| ---------------- | ------ | -------------------------------------- |
+| `workspaceId`    | string | The workspace                          |
+| `channelId`      | string | The channel                            |
+| `conversationId` | string | The conversation it answered           |
+| `messageId`      | string | The message sent from Peal             |
+| `sentAt`         | string | When it went out, as an instant in UTC |
+
+```json title="message.sent"
+{
+  "id": "019a8203-7f80-7d5e-8f6a-7b8c9d0e1f02",
+  "type": "message.sent",
+  "version": 1,
+  "timestamp": "2026-11-14T10:05:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+    "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b03",
+    "sentAt": "2026-11-14T10:05:00.000Z"
   }
 }
 ```

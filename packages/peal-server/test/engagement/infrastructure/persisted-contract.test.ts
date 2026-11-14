@@ -5,6 +5,10 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
 import {
+  MessageSendResultSchema,
+  SendMessageV1,
+} from "#engagement/infrastructure/workflows/send-message.ts";
+import {
   SendReplyV1,
   SendResultSchema,
 } from "#engagement/infrastructure/workflows/send-reply.ts";
@@ -82,6 +86,33 @@ describe("the persisted contract of SendReviewReplyV1", () => {
 
       assert.strictEqual(
         yield* SendReviewReplyV1.executionId(payload),
+        keys.executionId
+      );
+    })
+  );
+});
+
+describe("the persisted contract of SendMessageV1", () => {
+  it("keeps its tag, and how a run leaves its message", () => {
+    assert.strictEqual(SendMessageV1._tag, "SendMessageV1");
+    assert.deepStrictEqual(MessageSendResultSchema.literals, [
+      "settled",
+      "superseded",
+      "unrecorded",
+    ]);
+  });
+
+  it.effect("decodes its payloads, and derives the same execution ids", () =>
+    Effect.gen(function* derivesTheSameIds() {
+      const payload = yield* fixture(
+        "SendMessageV1/payload.json",
+        SendMessageV1.payloadSchema
+      );
+
+      const keys = yield* fixture("SendMessageV1/keys.json", KeysSchema);
+
+      assert.strictEqual(
+        yield* SendMessageV1.executionId(payload),
         keys.executionId
       );
     })
