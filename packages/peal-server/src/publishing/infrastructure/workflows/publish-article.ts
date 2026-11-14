@@ -13,8 +13,9 @@ import {
 } from "#publishing/application/article-publication.ts";
 import { ArticleIdSchema } from "#publishing/domain/article-id.ts";
 import { PublicationDecisionSchema } from "#publishing/domain/publication-policy.ts";
+import type { PublicationDecision } from "#publishing/domain/publication-policy.ts";
 
-import { retryingDatabase } from "./activity-retry.ts";
+import { retryingDatabase, retryingDatabaseOr } from "./activity-retry.ts";
 import { sleepUntil } from "./sleep-until.ts";
 
 /**
@@ -41,19 +42,32 @@ export const PublishArticleV1 = Workflow.make("PublishArticleV1", {
   success: ArticleOutcomeSchema,
 });
 
+// What an attempt the database kept from running answers.
+const laterAttempt: PublicationDecision = {
+  _tag: "retry",
+  delay: Duration.minutes(1),
+};
+
 const attemptAt = (job: ArticleJob, dueAt: DateTime.Utc, attempt: number) =>
   Activity.make({
     execute: Effect.gen(function* sendAttempt() {
       // The same for every run of this attempt of this job.
       const idempotencyKey = yield* Activity.idempotencyKey(`send/${attempt}`);
 
-      return yield* articleAttemptRun({
-        articleId: job.articleId,
-        attempt,
-        dueAt,
-        idempotencyKey,
-        round: job.round,
-      }).pipe(retryingDatabase);
+      // A database down for longer than the step's retries makes the
+      // attempt again a minute later: the journal tells the next what this
+      // one began, so nothing is sent twice, and no article is left
+      // stuck being sent.
+      return yield* retryingDatabaseOr(
+        articleAttemptRun({
+          articleId: job.articleId,
+          attempt,
+          dueAt,
+          idempotencyKey,
+          round: job.round,
+        }),
+        laterAttempt
+      );
     }),
     name: `send/${attempt}`,
     success: PublicationDecisionSchema,

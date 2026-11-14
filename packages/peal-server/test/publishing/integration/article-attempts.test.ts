@@ -24,7 +24,11 @@ import type { ArticleId } from "#publishing/domain/article-id.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
-import { planChannels, siteChannel } from "#test/publishing/article-server.ts";
+import {
+  journalOutage,
+  planChannels,
+  siteChannel,
+} from "#test/publishing/article-server.ts";
 import {
   content,
   eventuallyLater,
@@ -465,8 +469,10 @@ describe("an attempt at sending an article", () => {
           const sharding = yield* Sharding.Sharding;
           const states = Effect.all(sent.map((id) => stateOf(id)));
 
+          // A virtual second for each 50 ms of the machine's: slow sends
+          // keep no waiting attempt past its patience.
           const liveNow = TestClock.withLive(Clock.currentTimeMillis);
-          const giveUpAt = (yield* liveNow) + 75_000;
+          const giveUpAt = (yield* liveNow) + 100_000;
 
           while (
             !(yield* states).every((state) => state === "published") &&
@@ -474,7 +480,7 @@ describe("an attempt at sending an article", () => {
           ) {
             yield* sharding.pollStorage;
             yield* TestClock.adjust(Duration.seconds(1));
-            yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(50)));
           }
 
           assert.deepStrictEqual(
@@ -493,7 +499,8 @@ describe("an attempt at sending an article", () => {
           assert.strictEqual(later[0]?.count, 0);
           assert.lengthOf(sent, 8);
         })
-      )
+      ),
+    120_000
   );
 
   it.effect("holds no more than two of the process's turns at once", () =>
@@ -700,10 +707,11 @@ describe("an attempt at sending an article", () => {
             timeZone: zone,
           });
 
-          // A day and more without the site's turn, for as long as a slow
-          // machine needs to run the attempts through it.
+          // A day and more without the site's turn: each wait of the
+          // attempts ends, and the next asks a minute later, as many times
+          // as a day holds, for as long as a slow machine needs.
           const liveNow = TestClock.withLive(Clock.currentTimeMillis);
-          const giveUpAt = (yield* liveNow) + 75_000;
+          const giveUpAt = (yield* liveNow) + 200_000;
 
           while (
             ["publishing", "scheduled"].includes(yield* stateOf(draft.id)) &&
@@ -729,7 +737,9 @@ describe("an attempt at sending an article", () => {
           assert.strictEqual(madePosts(site), 0);
           assert.lengthOf(site.posts(), 1);
         })
-      )
+      ),
+    // A day of attempts, each a workflow step: slow on a busy machine.
+    240_000
   );
 
   it.effect("leaves a call to check when its search cannot even start", () =>
@@ -942,5 +952,37 @@ describe("an attempt at sending an article", () => {
         );
       })
     )
+  );
+
+  it.effect(
+    "goes out once the database is back, however long it was down",
+    () =>
+      onArticles(
+        Effect.gen(function* outage() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+
+          // Longer than the attempt's own retries.
+          yield* Ref.set(journalOutage, 15);
+
+          const article = yield* (yield* Articles)
+            .create(
+              writer(workspaceId),
+              { channelId: channel.id, content: content() },
+              now
+            )
+            .pipe(Effect.ensuring(Effect.void));
+
+          yield* eventuallyLater(
+            "the article is published",
+            stateOf(article.id).pipe(
+              Effect.map((state) => state === "published")
+            )
+          ).pipe(Effect.ensuring(Ref.set(journalOutage, 0)));
+
+          assert.strictEqual(madePosts(site), 1);
+        })
+      )
   );
 });

@@ -12,6 +12,7 @@ import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-chann
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { ArticleEvents } from "#publishing/application/article-events.ts";
+import { ArticleJournal } from "#publishing/application/article-journal.ts";
 import { ArticleRecords } from "#publishing/application/article-records.ts";
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
@@ -28,7 +29,7 @@ import { WordPressSitePublisherLive } from "#publishing/infrastructure/platforms
 import { SqlArticleSendTurns } from "#publishing/infrastructure/sql-article-send-turns.ts";
 import { WorkflowArticleJobs } from "#publishing/infrastructure/workflow-article-jobs.ts";
 import { PublishArticleV1Live } from "#publishing/infrastructure/workflows/publish-article.ts";
-import type { DatabaseError } from "#shared/application/database-error.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import { can } from "#shared/domain/access.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
@@ -158,6 +159,35 @@ const HookedArticleStore = Layer.effect(
   })
 ).pipe(Layer.provide(DrizzleArticleStore));
 
+/**
+ * How many more times the journal fails to begin an attempt's call, as
+ * through a database outage.
+ */
+export const journalOutage = Ref.makeUnsafe(0);
+
+// The journal, failing to begin calls while `journalOutage` says.
+const OutagedArticleJournal = Layer.effect(
+  ArticleJournal,
+  Effect.gen(function* OutagedArticleJournal() {
+    const journal = yield* ArticleJournal;
+
+    return ArticleJournal.of({
+      ...journal,
+      begin: (call) =>
+        Ref.modify(journalOutage, (left) => [
+          left > 0,
+          Math.max(0, left - 1),
+        ]).pipe(
+          Effect.flatMap((down) =>
+            down
+              ? Effect.fail(new DatabaseError({ cause: "synthetic outage" }))
+              : journal.begin(call)
+          )
+        ),
+    });
+  })
+).pipe(Layer.provide(DrizzleArticleJournal));
+
 // The site's credential, as the channels context hands it out, with no
 // authorizer: a refused one marks the channel to reconnect.
 const SiteAccessTest = ChannelAccessSiteCredentials.pipe(
@@ -220,7 +250,7 @@ export const ArticleServerTest = Layer.mergeAll(
       SqlArticleSendTurns,
       ApprovalGateTest,
       PostAllowanceTest,
-      DrizzleArticleJournal,
+      OutagedArticleJournal,
       WorkflowArticleJobs,
       ListedSiteChannels,
       LibraryTest,
