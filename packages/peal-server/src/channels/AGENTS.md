@@ -103,6 +103,11 @@
   accounts connected after: never force a reconnect; publishing reads each
   channel's stored scopes (`ChannelGrants`, backed by
   `ChannelAccess.account`) and refuses, and describes, what one lacks.
+  Where `PEAL_INBOX_MESSAGES` names `bluesky`, the scope is
+  `blueskyScopeWith(true)`: the chat methods' `rpc` scopes at the chat
+  service too (`blueskyChatScopes`), read once into the Bluesky settings
+  (`scope`), which the client and its metadata documents both use; off,
+  `blueskyScope` byte for byte.
 - `platformRegistrations` (`infrastructure/platforms/platform-addresses.ts`)
   lists every address a platform is given or reads (redirect URIs, Meta's
   data deletion and deauthorize callbacks, Bluesky's documents), from the

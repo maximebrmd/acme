@@ -3,9 +3,9 @@
 - The context is `engagement`; the product, the API group and the pages
   say "inbox" (`/api/workspaces/:workspaceId/inbox`, `peal inbox`,
   `…/inbox`), as "notices" already names a user's notifications. This
-  slice is comments on posts Peal published, and the reviews of Google
-  Business Profile locations (below); direct messages and mentions will
-  build on it. Nothing here answers by itself: no automation,
+  slice is comments on posts Peal published, the reviews of Google
+  Business Profile locations, and the direct messages of Mastodon and
+  Bluesky channels (below); mentions will build on it. Nothing here answers by itself: no automation,
   and no assistant prompt ever reads a comment.
 - A `Thread` is the comments under one published target; a `Comment` is
   what its platform gave (its id there, the comment it answers, its
@@ -361,3 +361,101 @@
   the setting is turned on anywhere, Google grants the project access (its
   quota is zero before), and one review is read, answered and its reply
   deleted on a test location.
+- Direct messages are a model of their own beside comments and reviews:
+  a `MessageBox` per channel (`engagement.message_boxes`, keyed by the
+  channel: its schedule), a `Conversation` per conversation on the
+  platform (`conversations`: the other accounts' id, handle and shown
+  name, the platform's `revision`, whether it is a `request`, the latest
+  message, the latest from someone else, `read_at`), a `DirectMessage`
+  per message (`direct_messages`: text, sender's id, a file count, never
+  the files) and an `OutgoingMessage` journal (`outgoing_messages`). They
+  are private correspondence the workspace receives, kept as its
+  processor: never their text, nor who sent them, in a log, a trace, a
+  notice, a webhook event, the cluster's tables (gate payloads and
+  `SendMessageV1` carry ids) or an assistant's prompt, and staff never
+  read them (`engagement:read` and `engagement:message` are withheld
+  while impersonating). Log a failure by its ids alone, never its cause.
+  Peal never starts a conversation: it answers one someone else began.
+- They are read only where `PEAL_INBOX_MESSAGES` names the platform
+  (`#shared/infrastructure/inbox-messages.ts`, read once into
+  `CurrentInboxMessages`; `mastodon`, `bluesky`; another name stops the
+  server). Off, `CollectMessages` follows and calls nothing, the
+  abilities are `unsupported` and Bluesky's sign-in is as before, byte for
+  byte. `messageAbilitiesOf` (`read`, `send`): Mastodon takes
+  `read:statuses` and `write:statuses`, which its sign-in always asked;
+  Bluesky the chat methods' `rpc` scopes at `did:web:api.bsky.chat#bsky_chat`
+  (`blueskyChatScopes`, or `transition:chat.bsky` with
+  `transition:generic`), asked at sign-in where Bluesky's messages are on,
+  so a channel connected before is `reconnect`. A channel without them is
+  never called (`platform-messages.ts`).
+- `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
+  21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
+  minutes a run, 8 channels at once, through the gates: `ReadMessages`):
+  it hands stranded messages to a person (`SendMessage.settleStranded`),
+  follows the channels the directory lists on a platform that is on, and
+  reads the boxes due: every run while a message came in the last day,
+  hourly otherwise. The adapter is given the revisions Peal holds and
+  reads back only the conversations that changed; `reconcileMessages`
+  decides (a message the platform says was deleted goes at once; only a
+  `complete` read takes one it did not see, sent since the read's start,
+  for deleted). The record runs under the box's lock in one transaction,
+  and tells `message.received` (ids) and the `MessagesReceived` notice
+  (the channel's handle and a count, once a conversation and UTC day, to
+  `engagement:message`, emailed under `comments`) only for messages
+  others sent after the box was followed. A box the database refuses is
+  put off and counted (`peal.engagement.messages.box_failures`, alert
+  `peal-messages-box-failing`); `.left` and `.unfinished` feed
+  `peal-messages-behind`.
+- Mastodon (`platforms/mastodon/mastodon-messages.ts`, docs read
+  2026-11-14): a message is a status of `direct` visibility;
+  `/api/v1/conversations` (40 a page, 5 pages, the `Link` header's next
+  page on the instance only, stopping at a page wholly past what Peal
+  keeps); a changed conversation is read whole from its first status's
+  context (two calls), keeping `direct` statuses only. The docs say an
+  authenticated context gives "private statuses" without naming `direct`:
+  check it on a test account before turning Mastodon on anywhere. A
+  message answers the latest message kept (`in_reply_to_id`) and mentions
+  every participant first (`outgoingMessageText`), under the
+  Idempotency-Key of its id; resume as a reply's (50 minutes, failed only
+  on Mastodon's 422).
+- Bluesky (`platforms/bluesky/bluesky-messages.ts`, the installed
+  `chat.bsky.convo` lexicons): through the PDS with `atproto-proxy:
+  did:web:api.bsky.chat#bsky_chat`; `listConvos` (100 a page, 5 pages),
+  direct conversations only (groups are not read), a changed `rev` read
+  back by `getMessages` to what Peal keeps; `deletedMessageView` is a
+  deletion. `getLog` is not used: its lexicon does not say where a read
+  without a cursor starts. A request is accepted (`acceptConvo`) before
+  the first answer. `sendMessage` takes no key, so a resume never sends:
+  exactly one of the account's messages since, with the text, and not one
+  Peal already holds (`takenIds`), is `sent`; anything else
+  `unconfirmed`. 1,000 graphemes and 10,000 bytes (`chatOverflow`). A 401
+  or 403 without a token error pauses the read, never marks the channel
+  to reconnect. Neither adapter was run against the platform: before the
+  setting is turned on anywhere, read and answer one conversation on a
+  test account of each, and Bluesky's granular chat scopes checked to be
+  granted as asked.
+- Sending (`EngagementMessages.send`, `engagement:message`, in
+  `publishingPermissions`): the conversation, the channel able, the
+  platform's `replyWindowOf` open (always, on these two), the text within
+  5,000 characters and the platform's length (Mastodon's status through
+  `ReplyLimits`), then the journal row, the meter's claim (one
+  `outboundMessages`, paused refusing first unless the request has a key),
+  the job (`SendMessageV1`, payload `messageId`, activity `send`,
+  persisted contract) and the conversation marked read, in one
+  transaction. `outgoing_messages_pending` holds one message on its way
+  or unconfirmed a conversation; `outgoing_messages_key` one a key
+  (`messageKeyLifetime`, 24 hours). A message that ends failed, or a
+  person finds never went out (`confirm`), gives its claim back. The
+  gate claims the call first (`claimCall`).
+- Retention: a conversation is deleted `conversationsKeptFor` (30 days)
+  after its last message, with what it holds (`PurgeMessages`,
+  `engagement.messages-retention` hourly at 57; a failed run is counted,
+  `peal.engagement.messages.retention_failures`, alert
+  `peal-messages-retention-failing`); a channel gone, on any platform,
+  deletes its box and conversations at once (`EngagementRecords.channelGone`),
+  and a workspace erased with them. A closed account leaves its messages
+  without an author, and its export lists the messages it sent, never
+  those it received. The registry's `inboxMessages`, the privacy policy,
+  the contract's `inboxMessageRetentionDays` and the docs' Inbox page
+  follow: change them together. Test the store at 2049 (the purge at
+  1935).
