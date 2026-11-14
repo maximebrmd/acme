@@ -17,6 +17,7 @@ import {
 import type { ReviewReading } from "#engagement/domain/review.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import {
@@ -484,6 +485,71 @@ const journalled = (world: ReviewWorld) =>
       reviews.reply(editor, onlyReview(world).id, "Thank you!")
     );
   });
+
+describe("another workspace", () => {
+  it.effect(
+    "neither reads, answers nor marks a review of this one's locations",
+    () => {
+      const world = withReview();
+
+      const outsider = new Actor({
+        permissions: ["engagement:read", "engagement:reply"],
+        subject: {
+          _tag: "user",
+          impersonatedBy: Option.none(),
+          userId: memberId,
+        },
+        workspaceId: WorkspaceIdSchema.make(
+          "33333333-3333-4333-8333-333333333333"
+        ),
+      });
+
+      return at(
+        Effect.gen(function* isolated() {
+          yield* collect;
+
+          const review = onlyReview(world);
+
+          const page = yield* EngagementReviews.use((reviews) =>
+            reviews.threads(
+              outsider,
+              { channelId: Option.none(), unanswered: false },
+              { after: Option.none(), limit: 30 }
+            )
+          );
+
+          const refusals = [
+            yield* EngagementReviews.use((reviews) =>
+              reviews.thread(outsider, review.threadId)
+            ).pipe(Effect.flip),
+            yield* EngagementReviews.use((reviews) =>
+              reviews.reply(outsider, review.id, "Thanks")
+            ).pipe(Effect.flip),
+            yield* EngagementReviews.use((reviews) =>
+              reviews.setAnswered(outsider, review.id, true)
+            ).pipe(Effect.flip),
+            yield* EngagementReviews.use((reviews) =>
+              reviews.withdraw(outsider, review.id)
+            ).pipe(Effect.flip),
+          ];
+
+          assert.deepStrictEqual(page.threads, []);
+          assert.deepStrictEqual(
+            refusals.map(({ _tag }) => _tag),
+            [
+              "ReviewThreadNotFound",
+              "ReviewNotFound",
+              "ReviewNotFound",
+              "ReviewNotFound",
+            ]
+          );
+          assert.lengthOf(world.state.jobs, 0);
+          assert.isTrue(Option.isNone(onlyReview(world).answeredAt));
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
 
 describe("a reply's text", () => {
   it.effect(
