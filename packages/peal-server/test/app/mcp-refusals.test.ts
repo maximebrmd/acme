@@ -135,4 +135,20 @@ describe(usageRefusalText, () => {
     expect(capped).toContain("until the account's first invoice is paid");
     expect(capped).not.toContain("raises the account's monthly ceiling");
   });
+
+  it("tells X at X's rates, never a price per ten units", () => {
+    const x = usageRefusalText(
+      new AllowanceReached({
+        allowed: 0,
+        meter: "xApi",
+        reason: "paymentMethodRequired",
+        resetsAt,
+        used: 0,
+      }),
+      billingUrl
+    );
+
+    expect(x).toContain("billed at X's published rates, with nothing added");
+    expect(x).not.toContain("past the allowance 10 cost");
+  });
 });

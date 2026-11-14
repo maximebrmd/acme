@@ -159,6 +159,10 @@ const unitPrice = (meter: Meter): string => {
     return "its price past the allowance is not set yet";
   }
 
+  if (meter === "xApi") {
+    return "billed at X's published rates, with nothing added, up to the account's monthly ceiling for X";
+  }
+
   const { cents, per } = rateCard.prices.usd.meters[meter];
 
   return per === 1

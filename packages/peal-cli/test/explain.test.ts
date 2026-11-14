@@ -254,4 +254,20 @@ describe("a meter's refusal, explained", () => {
     expect(capped).toContain("until the account's first invoice is paid");
     expect(capped).not.toContain("monthly ceiling");
   });
+
+  it("tells X at X's rates, never a price per ten units", () => {
+    const x = refusalOf(
+      new UsageAllowanceReached({
+        allowed: 0,
+        billingUrl,
+        meter: "xApi",
+        reason: "paymentMethodRequired",
+        resetsAt,
+        used: 0,
+      })
+    );
+
+    expect(x).toContain("billed at X's published rates, with nothing added");
+    expect(x).not.toContain("past the allowance 10 cost");
+  });
 });
