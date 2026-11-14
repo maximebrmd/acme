@@ -64,7 +64,8 @@ export type ChannelErrorKey =
   | "notFound"
   | "planLimit"
   | "unknown"
-  | "unreachable";
+  | "unreachable"
+  | "xPaymentMethod";
 
 // Several errors give a `reason`, each from its own list.
 interface Tagged {
@@ -96,6 +97,11 @@ const keyOf = (error: Tagged): ChannelErrorKey => {
 
     case "PlanLimitReached": {
       return "planLimit";
+    }
+
+    // X, billed at its rates, needs a payment method first.
+    case "UsageAllowanceReached": {
+      return "xPaymentMethod";
     }
 
     default: {

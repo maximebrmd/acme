@@ -398,15 +398,13 @@ export const decideClaim = (
   });
 };
 
-/**
- * The meters the billing page shows: every one but X's, which comes with
- * its pass-through.
- */
+/** The meters the billing page shows, X's passed through at its rates last. */
 export const shownMeters: readonly Meter[] = [
   "outboundMessages",
   "managedAds",
   "assistantRequests",
   "assistantImages",
+  "xApi",
 ];
 
 /** A meter of a billing account this month, as its billing page tells it. */

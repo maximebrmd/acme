@@ -29,6 +29,9 @@ export const withdraw = PealApi.mutation("billingActions", "withdraw");
 /** What the billing account spends past a group's allowances a month. */
 export const setSpendCeiling = PealApi.mutation("billingActions", "setCeiling");
 
+/** Whether the workspace reads its X channels at X's rates. */
+export const setXReads = PealApi.mutation("billingActions", "setXReads");
+
 /** The workspace's usage over the UTC days from `from` to `to`. */
 export const usageOf = (
   workspaceId: string,

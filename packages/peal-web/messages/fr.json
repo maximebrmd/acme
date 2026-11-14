@@ -795,7 +795,8 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page.",
+      "xPaymentMethod": "Un compte X demande un moyen de paiement sur le compte de facturation, car l’API de X est facturée aux tarifs de X. Ajoutez-en un sur la page de facturation, puis connectez-le."
     }
   },
   "PlatformConnect": {
@@ -2285,7 +2286,30 @@
         "save": "Enregistrer le plafond",
         "failed": "Le plafond n’a pas été enregistré. Réessayez."
       },
-      "assistantComing": "La quantité incluse et le prix de l’assistant de rédaction sont à venir : d’ici là, rien n’est facturé au-delà de l’inclus."
+      "assistantComing": "La quantité incluse et le prix de l’assistant de rédaction sont à venir : d’ici là, rien n’est facturé au-delà de l’inclus.",
+      "xRates": "Aux tarifs de X",
+      "xIncluded": "Aucun",
+      "xPassThrough": {
+        "title": "X, aux tarifs de X",
+        "description": "X facture chaque publication et chaque lecture de son API. Peal la refacture aux tarifs à l’usage publiés par X, sans rien ajouter, dans la limite du plafond mensuel du compte de facturation pour X. Un compte X demande un moyen de paiement.",
+        "readOn": "Tarifs de X relevés sur sa page de tarifs pour développeurs le {day}.",
+        "caption": "Les tarifs de X refacturés, par appel ou par élément lu",
+        "item": "Appel",
+        "rate": "Tarif, HT",
+        "rateIncluded": "Avec la TVA française de {rate} %",
+        "names": {
+          "postCreate": "Une publication envoyée",
+          "postCreateWithUrl": "Une publication envoyée avec un lien",
+          "postRead": "Les chiffres d’une publication lus, une fois par jour",
+          "userRead": "Les abonnés d’un compte lus, une fois par jour"
+        },
+        "readsOn": "Cet espace de travail lit les chiffres et les abonnés de ses canaux X : chaque publication et chaque compte lus sont facturés au tarif de X, une fois par jour UTC.",
+        "readsOff": "Cet espace de travail ne lit pas les chiffres de ses canaux X : les statistiques de X restent vides, et aucune lecture n’est facturée.",
+        "turnOn": "Lire X",
+        "turnOff": "Arrêter de lire X",
+        "failed": "Le changement n’a pas été enregistré. Réessayez."
+      },
+      "usedOfMoney": "{used} sur {most}"
     }
   },
   "BillingAccount": {
@@ -2433,7 +2457,9 @@
     "reachedMeter": "Le compte de facturation de {workspace} a utilisé les {allowed, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} qu’il peut utiliser ce mois-ci sans moyen de paiement. Le compte repart le {resetsAt}.",
     "givesMeter": "Avec un moyen de paiement, {included, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} sont inclus chaque mois, et ceux au-delà sont facturés au prix de la grille tarifaire, HT, chaque mois pour le mois écoulé.",
     "givesMeterComing": "Avec un moyen de paiement, l’assistant de rédaction sur les modèles de Peal a une quantité incluse chaque mois ; son prix au-delà est à venir.",
-    "orWait": "Ou attendez le mois prochain : la lecture et la publication continuent en attendant."
+    "orWait": "Ou attendez le mois prochain : la lecture et la publication continuent en attendant.",
+    "reachedX": "Le compte de facturation de {workspace} n’a pas de moyen de paiement, et l’API de X est facturée aux tarifs de X : un compte X ne se connecte, et les publications ne partent sur X, qu’avec un moyen de paiement.",
+    "givesX": "Avec un moyen de paiement, les appels à X sont facturés aux tarifs publiés par X, sans rien ajouter, chaque mois pour le mois écoulé, dans la limite d’un plafond mensuel de {ceiling} HT, modifiable sur la page de facturation."
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",

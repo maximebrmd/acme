@@ -252,7 +252,7 @@
   `SpendCeilingNotOffered` 409), as the billing page shows its form
   only once all are. The row names
   nobody; the activity log keeps who. `GET …/billing` answers `meters`
-  (`meterMonthsOf`, `shownMeters`: X joins with its pass-through), their
+  (`meterMonthsOf`, `shownMeters`, X's last), their
   money (`estimate`, in the total `estimate` too) to the billing
   workspace's members only, `priceConfirmed` false for
   `unconfirmedMeters` (the rate card's `awaitingDecision`), which every

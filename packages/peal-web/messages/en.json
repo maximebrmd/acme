@@ -795,7 +795,8 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page.",
+      "xPaymentMethod": "An X account needs a payment method on the billing account, as X’s API is billed at X’s own rates. Add one on the billing page, then connect it."
     }
   },
   "PlatformConnect": {
@@ -2285,7 +2286,30 @@
         "save": "Save the ceiling",
         "failed": "The ceiling was not saved. Try again."
       },
-      "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed."
+      "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed.",
+      "xRates": "At X’s rates",
+      "xIncluded": "None",
+      "xPassThrough": {
+        "title": "X, at X’s rates",
+        "description": "X bills each post and each read of its API. Peal passes it on at X’s published pay-per-use rates, with nothing added, up to the billing account’s monthly ceiling for X. An X account needs a payment method.",
+        "readOn": "X’s rates as read on its developer pricing page on {day}.",
+        "caption": "X’s rates passed on, per call or per item read",
+        "item": "Call",
+        "rate": "Rate, excl. VAT",
+        "rateIncluded": "With France’s {rate}% VAT",
+        "names": {
+          "postCreate": "A post sent",
+          "postCreateWithUrl": "A post sent with a link",
+          "postRead": "A post’s counts read, once a day",
+          "userRead": "An account’s followers read, once a day"
+        },
+        "readsOn": "This workspace reads its X channels’ counts and followers: each post and account read is billed at X’s rate, once a UTC day.",
+        "readsOff": "This workspace does not read its X channels’ counts: X’s analytics stay empty, and nothing is billed for reads.",
+        "turnOn": "Turn X reads on",
+        "turnOff": "Stop reading X",
+        "failed": "The change was not saved. Try again."
+      },
+      "usedOfMoney": "{used} of {most}"
     }
   },
   "BillingAccount": {
@@ -2433,7 +2457,9 @@
     "reachedMeter": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} it may use this month without a payment method. They start again on {resetsAt}.",
     "givesMeter": "With a payment method, {included, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} are included each month, and those past them are billed at the rate card's price, excl. VAT, each month for the month past.",
     "givesMeterComing": "With a payment method, the writing assistant on Peal's models has a monthly allowance; its price past the allowance is coming.",
-    "orWait": "Or wait for next month: reading and publishing go on meanwhile."
+    "orWait": "Or wait for next month: reading and publishing go on meanwhile.",
+    "reachedX": "{workspace}’s billing account has no payment method, and X’s API is billed at X’s own rates: an X account is connected, and posts go out to X, only with one.",
+    "givesX": "With a payment method, X’s calls are billed at X’s own published rates, with nothing added, each month for the month past, up to a monthly ceiling of {ceiling} excl. VAT, which you can change on the billing page."
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
