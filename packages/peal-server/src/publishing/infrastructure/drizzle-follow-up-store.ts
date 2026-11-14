@@ -17,7 +17,10 @@ import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { FollowUpStore } from "#publishing/application/follow-up-store.ts";
-import type { ArmedFollowUp } from "#publishing/application/follow-up-store.ts";
+import type {
+  ArmedFollowUp,
+  UnarmedTarget,
+} from "#publishing/application/follow-up-store.ts";
 import {
   FollowUpApprovalSchema,
   FollowUpRule,
@@ -28,7 +31,12 @@ import {
   FollowUpStatusSchema,
 } from "#publishing/domain/follow-up.ts";
 import type { FollowUpStatus } from "#publishing/domain/follow-up.ts";
+import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
+import {
+  PostTargetIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -41,6 +49,17 @@ type FollowUpRow = typeof followUps.$inferSelect;
 // Rows are decoded with the domain's schemas, so a row the domain could
 // not have written fails loudly instead of being trusted.
 const decodeRule = Schema.decodeUnknownEffect(FollowUpRule);
+
+// A rule and a target of its where a kind it asks is not armed.
+const decodeUnarmed = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      ruleId: FollowUpRuleIdSchema,
+      targetId: PostTargetIdSchema,
+      workspaceId: WorkspaceIdSchema,
+    })
+  )
+);
 const decodeFollowUp = Schema.decodeUnknownEffect(FollowUp);
 
 const ApprovalJson = Schema.toCodecJson(FollowUpApprovalSchema);
@@ -381,6 +400,42 @@ export const DrizzleFollowUpStore = Layer.effect(
           .from(followUpRules)
           .where(ruleInWorkspace(workspaceId, ruleId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstOf(toRule))),
+      unarmedTargets: (since, after, limit) =>
+        client`
+          SELECT r.id AS "ruleId", r.workspace_id AS "workspaceId",
+            t.id AS "targetId"
+          FROM publishing.follow_up_rules r
+          JOIN publishing.post_targets t
+            ON (r.scope = 'post' AND t.post_id = r.post_id)
+            OR (r.scope = 'channel' AND t.channel_id = r.channel_id
+              AND t.listed_at >= r.created_at)
+          WHERE r.status <> 'ended'
+            AND t.listed_at >= ${date(since)}
+            AND t.removed_at IS NULL
+            AND (
+              (r.repost AND NOT EXISTS (
+                SELECT 1 FROM publishing.follow_ups f
+                WHERE f.target_id = t.id AND f.kind = 'repost'
+                  AND f.status <> 'cancelled'
+              ))
+              OR (r.comment IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM publishing.follow_ups f
+                WHERE f.target_id = t.id AND f.kind = 'comment'
+                  AND f.status <> 'cancelled'
+              ))
+            )
+            AND ${Option.match(after, {
+              onNone: () => client`TRUE`,
+              onSome: (cursor) =>
+                client`(r.id, t.id) > (${cursor.ruleId}::uuid, ${cursor.targetId}::uuid)`,
+            })}
+          ORDER BY r.id, t.id
+          LIMIT ${limit}
+        `.pipe(
+          Effect.flatMap(decodeUnarmed),
+          Effect.map((rows): readonly UnarmedTarget[] => rows),
+          Effect.mapError(failed)
+        ),
       openChannelRules: (after, limit) =>
         db
           .select()

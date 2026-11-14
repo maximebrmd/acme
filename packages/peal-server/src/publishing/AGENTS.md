@@ -1125,7 +1125,7 @@ publishing's schema, naming nobody: each goes with its workspace
   `notApproved`; a change by a member in person who approves posts and
   is not held approves it), on a post still live, the channel still
   able, the channel's day counted under its lock (`claimChannelDay`).
-  A channel's rule whose channel was disconnected ends `channelGone`.
+  A channel's rule whose channel was disconnected ends `channelGone`, and a kind a channel could not carry when its target was armed is armed by the run once it can (`unarmedTargets`, `armMissing`: a Bluesky repost once the account grants reposts). A follow-up a platform put off waits until `notBefore`: what the platform asked (`retryAfter`), and at least `followUpPutOffFirst` (10 minutes) doubled each attempt, `followUpPutOffMost` (6 hours) at most.
   Staff acting as a member start and change none. `SendFollowUpV1`
   (payload `followUpId` and `attempt`, keyed by both, so a follow-up
   armed again runs as a new execution; activity `send`, persisted

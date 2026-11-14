@@ -156,7 +156,8 @@ A follow-up rule acts on your own post once it has enough likes: it publishes a 
 
 - The likes are those Peal's [analytics](/guides/engage/analytics) last counted: hourly for two days after a post went live, then daily. A rule never asks a platform for more, so a post reaches its likes on Peal's next count, and a platform Peal counts nothing on (X, unless reads are on) never triggers it.
 - A post is followed up once of each kind, whatever rules act on it, and a channel carries 10 follow-ups a day at most; past that they wait for the next day, within their seven days. What a stopped rule gave up is left to the next rule; a rule on a post that another rule already follows up in every way it asks is refused.
-- Adding a comment or a repost to a rule on a post acts at once on the channels the post is already out on.
+- Adding a comment or a repost to a rule on a post acts at once on the channels the post is already out on. A kind a channel could not carry yet, such as a Bluesky repost before you connected the channel again, is armed by the next run (within ten minutes) once it can, on posts still within their seven days.
+- When a platform puts a follow-up off (it is unreachable, or slows the account down), Peal waits what the platform asked, and at least ten minutes, doubled each time, six hours at most, before it tries again.
 - On X, a comment whose sending was cut short is looked for among the account's recent posts before anything is sent again: a read at Peal's cost, never billed to you.
 - The comment goes under the post's last part, so it reads as the thread's next part. Nothing likes, follows or messages anyone.
 - A rule on a channel acts on every post the channel publishes after it started. A post and a channel have one rule going on at a time.

@@ -16,6 +16,7 @@ import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   actsUntil,
   endFollowUpRule,
+  followUpWindow,
   mayAct,
   maxFollowUpsPerChannelDay,
 } from "#publishing/domain/follow-up-rule.ts";
@@ -52,7 +53,7 @@ import { FollowUpChannels } from "./follow-up-channels.ts";
 import { FollowUpCounts } from "./follow-up-counts.ts";
 import { FollowUpJobs } from "./follow-up-jobs.ts";
 import { FollowUpStore } from "./follow-up-store.ts";
-import type { ArmedFollowUp } from "./follow-up-store.ts";
+import type { ArmedFollowUp, UnarmedTarget } from "./follow-up-store.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
 import { PostRepository } from "./post-repository.ts";
 import { RecyclingActors } from "./recycling-actors.ts";
@@ -108,6 +109,11 @@ export interface FollowUpRun {
   readonly completed: number;
   /** Channel-scoped rules that ended, their channel disconnected. */
   readonly channelGone: number;
+  /**
+   * Kinds armed on posts already out, that their channel could not carry
+   * when they were armed: a repost once the account grants reposts.
+   */
+  readonly armed: number;
 }
 
 /** What a rule asks, as a channel's abilities read it. */
@@ -653,8 +659,41 @@ export class FollowUps extends Context.Service<
         }
       });
 
+      // What the open rules ask on posts already out within their seven
+      // days that no follow-up holds yet: a kind their channel could not
+      // carry when they were armed, such as a Bluesky repost before the
+      // account granted reposts. Armed once the channel can carry it.
+      const armMissing = Effect.gen(function* armMissing() {
+        const now = yield* DateTime.now;
+        const since = DateTime.subtractDuration(now, followUpWindow);
+        let after = Option.none<UnarmedTarget>();
+        let armed = 0;
+
+        for (;;) {
+          const page = yield* store.unarmedTargets(since, after, armedPageSize);
+
+          for (const unarmed of page) {
+            const [rule, target] = yield* Effect.all([
+              store.rule(unarmed.workspaceId, unarmed.ruleId),
+              posts.findTarget(unarmed.targetId),
+            ]);
+
+            if (Option.isSome(rule) && Option.isSome(target)) {
+              armed += (yield* armWith([rule.value], target.value)).length;
+            }
+          }
+
+          if (page.length < armedPageSize) {
+            return armed;
+          }
+
+          after = Option.fromUndefinedOr(page.at(-1));
+        }
+      });
+
       const runDue = Effect.gen(function* runDue() {
         const tally = {
+          armed: 0,
           cancelled: 0,
           channelGone: 0,
           completed: 0,
@@ -720,6 +759,7 @@ export class FollowUps extends Context.Service<
         }
 
         tally.channelGone = yield* endChannelsGone;
+        tally.armed = yield* armMissing;
 
         for (const [outcome, count] of Object.entries(tally)) {
           yield* Metric.update(

@@ -127,6 +127,40 @@ const serverBehind = (gate: Layer.Layer<ApprovalGate>) =>
 
 const FollowUpServer = serverBehind(ApprovalGate.open);
 
+// The channels whose account has not granted reposts yet, as a test sets
+// them: everything else carries what its platform supports.
+const withoutReposts = Ref.makeUnsafe<ReadonlySet<string>>(new Set());
+
+const GrantingChannels = Layer.succeed(
+  FollowUpChannels,
+  FollowUpChannels.of({
+    of: (channel, ask) =>
+      Ref.get(withoutReposts).pipe(
+        Effect.flatMap((missing) =>
+          FollowUpChannels.use((supported) => supported.of(channel, ask)).pipe(
+            Effect.provide(FollowUpChannels.supported),
+            Effect.map((able) =>
+              missing.has(channel.channelId) && able.repost === "available"
+                ? { ...able, repost: "reconnect" as const }
+                : able
+            )
+          )
+        )
+      ),
+  })
+);
+
+const GrantingServer = postsServerBehind(
+  ApprovalGate.open,
+  attachableMedia(),
+  postAllowance(),
+  PostEvents.none,
+  FakeRecycling,
+  FeedsUnused,
+  ShortLinkDefaults.none,
+  Layer.mergeAll(GrantingChannels, FakeFollowUpCounts, FakeFollowUpPublisher)
+);
+
 // What the platforms' clients were handed, as the gates' side builds it.
 const sentPosts = Ref.makeUnsafe<readonly OutgoingPost[]>([]);
 const sentReposts = Ref.makeUnsafe<readonly OutgoingRepost[]>([]);
@@ -989,6 +1023,52 @@ describe("follow-up rules", () => {
 
           assert.strictEqual(listed.length, 0);
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "arm a repost on what is already out once the channel grants reposts",
+    () =>
+      onServer(
+        Effect.gen(function* granted() {
+          const workspaceId = yield* freshWorkspace;
+          const bluesky = yield* connected(workspaceId, "bluesky");
+          const postId = yield* published(workspaceId, [bluesky]);
+
+          yield* Ref.set(withoutReposts, new Set([bluesky]));
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId))
+          );
+
+          assert.deepStrictEqual(
+            started.followUps.map(({ kind }) => kind),
+            ["comment"]
+          );
+
+          // Nothing more while the channel cannot repost.
+          yield* runDue;
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, started.rule.id)).followUps.map(
+              ({ kind }) => kind
+            ),
+            ["comment"]
+          );
+
+          // Connected again with reposts: the next run arms the repost.
+          yield* Ref.set(withoutReposts, new Set());
+
+          assert.strictEqual((yield* runDue).armed, 1);
+          assert.sameMembers(
+            (yield* ruleNow(workspaceId, started.rule.id)).followUps.map(
+              ({ kind }) => kind
+            ),
+            ["comment", "repost"]
+          );
+          assert.strictEqual((yield* runDue).armed, 0);
+        }).pipe(Effect.ensuring(Ref.set(withoutReposts, new Set()))),
+        GrantingServer
       ),
     timeout
   );

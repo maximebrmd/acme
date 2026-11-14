@@ -9,7 +9,12 @@ import type {
 } from "#publishing/domain/follow-up-rule.ts";
 import type { FollowUp } from "#publishing/domain/follow-up.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  PostTargetId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
 /** A page of a workspace's rules, oldest first, after a rule. */
 export interface FollowUpRulePage {
@@ -30,6 +35,13 @@ export interface ArmedFollowUp {
  * The workspaces' follow-up rules and what they armed, as they are kept:
  * ids, counts and the rules' own text, never what a post says.
  */
+/** A rule and a target of its it may still arm a kind on. */
+export interface UnarmedTarget {
+  readonly ruleId: FollowUpRuleId;
+  readonly targetId: PostTargetId;
+  readonly workspaceId: WorkspaceId;
+}
+
 export class FollowUpStore extends Context.Service<
   FollowUpStore,
   {
@@ -161,6 +173,18 @@ export class FollowUpStore extends Context.Service<
     readonly settledPostRules: (
       limit: number
     ) => Effect.Effect<readonly FollowUpRule[], DatabaseError>;
+    /**
+     * The targets an open rule acts on that went live since `since`, where
+     * a kind it asks has no follow-up still standing (one given up is not):
+     * those a channel could not carry when they were armed, such as a
+     * Bluesky repost before the account granted reposts. By rule then
+     * target, after `after`.
+     */
+    readonly unarmedTargets: (
+      since: DateTime.Utc,
+      after: Option.Option<UnarmedTarget>,
+      limit: number
+    ) => Effect.Effect<readonly UnarmedTarget[], DatabaseError>;
     /** Channel-scoped rules that have not ended, by id, after `after`. */
     readonly openChannelRules: (
       after: Option.Option<FollowUpRuleId>,
