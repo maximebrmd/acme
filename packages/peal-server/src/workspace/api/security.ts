@@ -70,6 +70,7 @@ const objectIdsOf = (
 // (ConnectionJournal).
 const contentGroups: ReadonlySet<string> = new Set([
   "inbox",
+  "inboxReviews",
   "media",
   "posts",
   "review",
