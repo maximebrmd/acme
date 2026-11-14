@@ -347,6 +347,7 @@ export const googleBusinessReviews = Effect.fn("googleBusinessReviews")(
     ) {
       const reviews: ReviewReading[] = [];
       let passedOver = false;
+      let listedAny = false;
       let after = Option.none<string>();
 
       let figures = {
@@ -405,6 +406,8 @@ export const googleBusinessReviews = Effect.fn("googleBusinessReviews")(
         let reachedBound = false;
 
         for (const raw of body.reviews ?? []) {
+          listedAny = true;
+
           const review = decodeReview(raw).pipe(
             Option.flatMap((decoded) => readingOf(account.accountId, decoded))
           );
@@ -423,9 +426,15 @@ export const googleBusinessReviews = Effect.fn("googleBusinessReviews")(
         );
 
         if (reachedBound || Option.isNone(after)) {
+          // An answer that lists no review proves the location has none
+          // only when Google counts none: otherwise it may be a passing
+          // fault, and a complete read would delete every review kept.
+          const provenEmpty =
+            listedAny || Option.contains(figures.totalReviewCount, 0);
+
           const batch: ReviewsBatch = {
             ...figures,
-            complete: !passedOver,
+            complete: !passedOver && provenEmpty,
             reviews,
           };
 

@@ -435,6 +435,7 @@ layer(StoreTest)("the review store", (it) => {
       Effect.gen(function* rejectedReply() {
         const workspaceId = yield* freshWorkspace;
         const store = yield* ReviewStore;
+
         const thread = yield* locationOf(
           workspaceId,
           "2047-02-06T10:00:00.000Z"

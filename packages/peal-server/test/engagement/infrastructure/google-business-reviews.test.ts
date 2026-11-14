@@ -19,7 +19,7 @@ import {
   fakeLocation,
 } from "#test/engagement/fakes/fake-business-reviews.ts";
 import type { FakeReview } from "#test/engagement/fakes/fake-business-reviews.ts";
-import { textOf } from "#test/publishing/fakes/platform-server.ts";
+import { json, textOf } from "#test/publishing/fakes/platform-server.ts";
 
 // A location's reviews against a loopback API that answers as Google's
 // reference of the My Business API v4 says: reviews listed by pages, the
@@ -198,6 +198,35 @@ describe("Google Business Profile's reviews", () => {
             unreadable.reviews.map(({ platformReviewId }) => platformReviewId),
             [reviewName(2)]
           );
+        })
+      )
+  );
+
+  it.effect(
+    "takes an empty answer for complete only when Google counts no review at the location",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* empty() {
+          const { account, api, platform } = yield* onGoogle();
+          const route = `GET /v4/${fakeLocation}/reviews`;
+
+          api.script(route, [
+            json({ averageRating: 4.5, totalReviewCount: 12 }),
+          ]);
+
+          const unproven = yield* platform.read(account, keptSince);
+
+          assert.isFalse(unproven.complete);
+
+          api.script(route, [json({})]);
+
+          assert.isFalse((yield* platform.read(account, keptSince)).complete);
+
+          // A location with no review at all.
+          const none = yield* platform.read(account, keptSince);
+
+          assert.isTrue(none.complete);
+          assert.deepStrictEqual(none.totalReviewCount, Option.some(0));
         })
       )
   );
