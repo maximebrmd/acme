@@ -241,6 +241,13 @@ const contentOf = (
         ["platform", platformName(catalog, channel)],
       ],
     }),
+    MessagesTurnedOff: ({ channel }): Content => ({
+      messages: catalog.messagesTurnedOff,
+      values: [
+        ["handle", channel.handle],
+        ["platform", platformName(catalog, channel)],
+      ],
+    }),
     FeedStopped: ({ reason }): Content => ({
       messages: catalog.feedStopped,
       values: [["reason", catalog.feedStopReasons[reason]]],

@@ -4,6 +4,7 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { MessageOutcomes } from "#engagement/application/ports/message-outcomes.ts";
 import type { Conversation } from "#engagement/domain/conversation.ts";
 import type { DirectMessage } from "#engagement/domain/direct-message.ts";
+import type { MessageBox } from "#engagement/domain/message-box.ts";
 import type { OutgoingMessage } from "#engagement/domain/outgoing-message.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
@@ -77,6 +78,41 @@ export const ToldMessageOutcomes = Layer.effect(
           );
       });
 
+    // Who may connect channels is told the messages went, and why, once
+    // each time they were on.
+    const turnedOff = (box: MessageBox) =>
+      Effect.gen(function* telling() {
+        const channel = yield* channels.findById(
+          box.workspaceId,
+          box.channelId
+        );
+
+        if (Option.isNone(channel)) {
+          return;
+        }
+
+        yield* notices
+          .notify({
+            event: {
+              _tag: "MessagesTurnedOff",
+              channel: {
+                handle: channel.value.handle,
+                platform: channel.value.platform,
+              },
+            },
+            // Once each time they were on: the box is made anew each time.
+            key: `messages-off:${box.channelId}:${DateTime.formatIso(box.createdAt)}`,
+            workspaceId: box.workspaceId,
+          })
+          .pipe(
+            Effect.catchTag("RecipientsUnavailable", () =>
+              Effect.logWarning(
+                "Could not tell members a channel's messages were turned off"
+              )
+            )
+          );
+      });
+
     const receivedEvent = (
       conversation: Conversation,
       message: DirectMessage
@@ -123,6 +159,8 @@ export const ToldMessageOutcomes = Layer.effect(
               })
               .pipe(logged("a direct message sent"))
           : Effect.void,
+      turnedOff: (box) =>
+        turnedOff(box).pipe(logged("direct messages turned off")),
     });
   })
 );

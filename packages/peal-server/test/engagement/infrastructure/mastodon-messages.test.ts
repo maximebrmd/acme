@@ -415,7 +415,7 @@ describe("Mastodon's direct messages", () => {
           });
 
           const batch = yield* platform.read(account, {
-            keptOf: () => Effect.succeed(["3001", "3002", "3003"]),
+            keptOf: () => Effect.succeed(Option.some(["3001", "3002", "3003"])),
             keptSince,
             known: new Map([["c1", "3002"]]),
           });
@@ -427,6 +427,43 @@ describe("Mastodon's direct messages", () => {
           assert.includeMembers(
             server.requests().map(({ path }) => path),
             ["/api/v1/statuses/3001", "/api/v1/statuses/3002"]
+          );
+        })
+      )
+  );
+
+  it.effect(
+    "reads a thread as not whole when what Peal keeps of it could not be had, and asks after nothing",
+    () =>
+      at(
+        Effect.gen(function* unknownKept() {
+          const { account, platform, server } = yield* onServer((request) => {
+            if (request.path === "/api/v1/conversations") {
+              return json([conversation("c1", status("3003"))]);
+            }
+
+            if (request.path === "/api/v1/statuses/3003/context") {
+              return json({ ancestors: [], descendants: [] });
+            }
+
+            return json({ error: "Record not found" }, 404);
+          });
+
+          // The database did not answer: what Peal keeps is unknown.
+          const batch = yield* platform.read(account, {
+            keptOf: () => Effect.succeed(Option.none()),
+            keptSince,
+            known: new Map(),
+          });
+
+          const [reading] = batch.conversations;
+
+          assert.isFalse(reading?.complete ?? true);
+          assert.deepStrictEqual(reading?.deleted, []);
+          assert.isFalse(
+            server
+              .requests()
+              .some(({ path }) => /^\/api\/v1\/statuses\/\d+$/u.test(path))
           );
         })
       )

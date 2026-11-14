@@ -605,6 +605,19 @@ export const DrizzleMessageStore = Layer.effect(
         saved: OutgoingMessage,
         key: Option.Option<MessageKey>
       ) {
+        // The conversation's box first, as every deletion of its
+        // conversations takes it before it lists what never set out: one
+        // that runs meanwhile waits for this message, and gives back its
+        // claim, or runs first, and the message finds its conversation gone.
+        yield* sql`
+          SELECT 1 FROM engagement.message_boxes
+          WHERE channel_id = (
+            SELECT channel_id FROM engagement.conversations
+            WHERE id = ${saved.conversationId}::uuid
+          )
+          FOR UPDATE
+        `.pipe(Effect.mapError(failed));
+
         const keyDigest = Option.isSome(key)
           ? yield* hashOf(key.value.key)
           : null;
@@ -834,7 +847,26 @@ export const DrizzleMessageStore = Layer.effect(
         )
       `.pipe(Effect.mapError(failed));
 
-      const gone = yield* sql`
+      // The boxes of the conversations past their time first, by channel,
+      // as every deletion of conversations takes them: a message being
+      // journalled to one is then seen on its way by the delete, which a
+      // later statement makes, and keeps it.
+      const gone = yield* sql
+        .withTransaction(
+          sql`
+          SELECT 1 FROM engagement.message_boxes
+          WHERE channel_id IN (
+            SELECT conversation.channel_id
+            FROM engagement.conversations AS conversation
+            WHERE conversation.last_message_at < ${since}::timestamptz
+            ORDER BY conversation.last_message_at
+            LIMIT ${limit}
+          )
+          ORDER BY channel_id
+          FOR UPDATE
+        `.pipe(
+            Effect.andThen(
+              sql`
         DELETE FROM engagement.conversations
         WHERE id IN (
           SELECT conversation.id FROM engagement.conversations AS conversation
@@ -848,7 +880,11 @@ export const DrizzleMessageStore = Layer.effect(
           LIMIT ${limit}
         )
         RETURNING id
-      `.pipe(Effect.mapError(failed));
+      `
+            )
+          )
+        )
+        .pipe(Effect.mapError(failed));
 
       return { conversations: gone.length, messages: messages.length };
     });
@@ -887,6 +923,10 @@ export const DrizzleMessageStore = Layer.effect(
     const unsentOf = Effect.fn("MessageStore.unsentOf")(function* unsentOf(
       channelId: string
     ) {
+      // After the box, which a message being journalled holds: it is then
+      // listed here, not deleted unseen.
+      yield* lockBox(channelId);
+
       const rows = yield* db
         .select()
         .from(outgoingMessages)
@@ -1005,6 +1045,21 @@ export const DrizzleMessageStore = Layer.effect(
       return row !== undefined;
     });
 
+    const clearUnlisted = (channelId: string, listed: readonly string[]) =>
+      listed.length === 0
+        ? Effect.void
+        : db
+            .update(conversations)
+            .set({ unlistedAt: null })
+            .where(
+              and(
+                eq(conversations.channelId, channelId),
+                inArray(conversations.platformConversationId, [...listed]),
+                isNotNull(conversations.unlistedAt)
+              )
+            )
+            .pipe(Effect.asVoid, Effect.mapError(failed));
+
     const dropUnlisted = Effect.fn("MessageStore.dropUnlisted")(
       function* dropUnlisted(
         channelId: string,
@@ -1018,18 +1073,12 @@ export const DrizzleMessageStore = Layer.effect(
           return 0;
         }
 
+        // Under the box, which a message being journalled holds: its
+        // conversation is then seen to have it on its way.
+        yield* lockBox(channelId);
+
         // Shown again: no longer missed.
-        yield* db
-          .update(conversations)
-          .set({ unlistedAt: null })
-          .where(
-            and(
-              eq(conversations.channelId, channelId),
-              inArray(conversations.platformConversationId, shown),
-              isNotNull(conversations.unlistedAt)
-            )
-          )
-          .pipe(Effect.mapError(failed));
+        yield* clearUnlisted(channelId, shown);
 
         // Missed by the whole listing before too: gone on the platform,
         // unless a message to it is on its way.
@@ -1068,6 +1117,7 @@ export const DrizzleMessageStore = Layer.effect(
       allowApplication,
       allows,
       applications,
+      clearUnlisted,
       dropUnlisted,
       pageOfMessages,
       revokeApplication,

@@ -80,6 +80,7 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     conversationId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c0df"),
     count: 2,
   },
+  MessagesTurnedOff: { _tag: "MessagesTurnedOff", channel },
   FeedStopped: {
     _tag: "FeedStopped",
     feedId: Uuid7Schema.make("00000000-0000-7000-8000-00000000fe01"),
@@ -188,6 +189,16 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
 };
 
 describe("notice events", () => {
+  it("tell who may connect channels that a channel's messages were turned off, on the inbox", () => {
+    expect(audienceOf(events.MessagesTurnedOff)).toBe("channel:connect");
+    expect(emailKindOf(events.MessagesTurnedOff)).toStrictEqual(
+      Option.some("channelReconnect")
+    );
+    expect(pageOf(events.MessagesTurnedOff, workspaceId)).toBe(
+      `/app/${workspaceId}/inbox`
+    );
+  });
+
   it("go to the members who can act on them", () => {
     expect(audienceOf(events.ChannelReconnectRequired)).toBe("channel:connect");
     expect(audienceOf(events.ChannelReconnectSoon)).toBe("channel:connect");
@@ -447,6 +458,8 @@ describe("notification preferences", () => {
       Option.none(),
       Option.none(),
       Option.some("channelReconnect"),
+      Option.some("channelReconnect"),
+      // A channel's messages turned off, to reconnect it for them.
       Option.some("channelReconnect"),
       Option.some("feedStopped"),
       Option.some("postReview"),

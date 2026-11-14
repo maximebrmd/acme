@@ -88,6 +88,11 @@ export interface MessageWorldState {
   readonly sent: MessageSendRequest[];
   sending: MessageSendOutcome;
   readonly settled: OutgoingMessage[];
+  /** The boxes whose messages were turned off, as members were told. */
+  readonly turnedOff: {
+    readonly channelId: ChannelId;
+    readonly workspaceId: string;
+  }[];
 }
 
 export const makeMessageWorld = (
@@ -119,6 +124,7 @@ export const makeMessageWorld = (
     sent: [],
     sending: { _tag: "sent", platformMessageId: "m-sent" },
     settled: [],
+    turnedOff: [],
   };
 
   const summaryOf = (conversation: Conversation): ConversationSummary => ({
@@ -194,6 +200,17 @@ export const makeMessageWorld = (
       Effect.sync(() =>
         state.applications.filter((kept) => kept.workspaceId === workspaceId)
       ),
+    clearUnlisted: (channelId, listed) =>
+      Effect.sync(() => {
+        for (const conversation of state.conversations.values()) {
+          if (
+            conversation.channelId === channelId &&
+            listed.includes(conversation.platformConversationId)
+          ) {
+            unlisted.delete(conversation.id);
+          }
+        }
+      }),
     dropUnlisted: (channelId, listed) =>
       Effect.sync(() => {
         const ofBox = [...state.conversations.values()].filter(
@@ -572,6 +589,13 @@ export const makeMessageWorld = (
         settled: (_conversation, message) =>
           Effect.sync(() => {
             state.settled.push(message);
+          }),
+        turnedOff: (box) =>
+          Effect.sync(() => {
+            state.turnedOff.push({
+              channelId: box.channelId,
+              workspaceId: box.workspaceId,
+            });
           }),
       })
     ),

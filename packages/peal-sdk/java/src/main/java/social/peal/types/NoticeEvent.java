@@ -62,6 +62,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new MessagesReceivedValue(value));
     }
 
+    public static NoticeEvent messagesTurnedOff(NoticeEventMessagesTurnedOff value) {
+        return new NoticeEvent(new MessagesTurnedOffValue(value));
+    }
+
     public static NoticeEvent channelReconnectRequired(NoticeEventChannelReconnectRequired value) {
         return new NoticeEvent(new ChannelReconnectRequiredValue(value));
     }
@@ -164,6 +168,10 @@ public final class NoticeEvent {
 
     public boolean isMessagesReceived() {
         return value instanceof MessagesReceivedValue;
+    }
+
+    public boolean isMessagesTurnedOff() {
+        return value instanceof MessagesTurnedOffValue;
     }
 
     public boolean isChannelReconnectRequired() {
@@ -297,6 +305,13 @@ public final class NoticeEvent {
     public Optional<NoticeEventMessagesReceived> getMessagesReceived() {
         if (isMessagesReceived()) {
             return Optional.of(((MessagesReceivedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventMessagesTurnedOff> getMessagesTurnedOff() {
+        if (isMessagesTurnedOff()) {
+            return Optional.of(((MessagesTurnedOffValue) value).value);
         }
         return Optional.empty();
     }
@@ -467,6 +482,8 @@ public final class NoticeEvent {
 
         T visitMessagesReceived(NoticeEventMessagesReceived messagesReceived);
 
+        T visitMessagesTurnedOff(NoticeEventMessagesTurnedOff messagesTurnedOff);
+
         T visitChannelReconnectRequired(NoticeEventChannelReconnectRequired channelReconnectRequired);
 
         T visitChannelReconnectSoon(NoticeEventChannelReconnectSoon channelReconnectSoon);
@@ -515,6 +532,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(PostCommentedValue.class),
         @JsonSubTypes.Type(CommentsReceivedValue.class),
         @JsonSubTypes.Type(MessagesReceivedValue.class),
+        @JsonSubTypes.Type(MessagesTurnedOffValue.class),
         @JsonSubTypes.Type(ChannelReconnectRequiredValue.class),
         @JsonSubTypes.Type(ChannelReconnectSoonValue.class),
         @JsonSubTypes.Type(SubscriptionStartedValue.class),
@@ -884,6 +902,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(MessagesReceivedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("MessagesTurnedOff")
+    @JsonIgnoreProperties("_tag")
+    private static final class MessagesTurnedOffValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventMessagesTurnedOff value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private MessagesTurnedOffValue() {}
+
+        private MessagesTurnedOffValue(NoticeEventMessagesTurnedOff value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitMessagesTurnedOff(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof MessagesTurnedOffValue && equalTo((MessagesTurnedOffValue) other);
+        }
+
+        private boolean equalTo(MessagesTurnedOffValue other) {
             return value.equals(other.value);
         }
 

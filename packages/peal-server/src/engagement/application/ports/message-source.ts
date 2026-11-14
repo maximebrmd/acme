@@ -2,6 +2,7 @@ import { Context, Schema } from "effect";
 import type { Effect } from "effect";
 
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { ConversationReadingSchema } from "#engagement/domain/conversation.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -40,11 +41,13 @@ export const MessagesBatchSchema = Schema.Struct({
 export type MessagesBatch = typeof MessagesBatchSchema.Type;
 
 /**
- * Why nothing was read: the channel, the platform being down, or the
- * platform asking to slow down.
+ * Why nothing was read: the channel, its account no longer granting what
+ * reading takes, the platform being down, or the platform asking to slow
+ * down.
  */
 export const MessagesReadFailureSchema = Schema.Union([
   ChannelUnreadable,
+  MessagesUngranted,
   PlatformUnavailable,
   RateLimited,
 ]);

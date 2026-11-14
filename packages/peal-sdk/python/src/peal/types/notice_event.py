@@ -188,6 +188,22 @@ class NoticeEvent_MessagesReceived(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_MessagesTurnedOff(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["MessagesTurnedOff"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "MessagesTurnedOff"
+    channel: NoticeChannel
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_ChannelReconnectRequired(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["ChannelReconnectRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -510,6 +526,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_PostCommented,
         NoticeEvent_CommentsReceived,
         NoticeEvent_MessagesReceived,
+        NoticeEvent_MessagesTurnedOff,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_SubscriptionStarted,

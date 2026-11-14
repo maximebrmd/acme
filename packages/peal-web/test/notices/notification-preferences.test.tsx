@@ -80,7 +80,7 @@ describe(PreferencesFields, () => {
         ["A post stops repeating", { checked: true, labelled: true }],
         ["A feed stops making posts", { checked: true, labelled: true }],
         [
-          "A channel must be reconnected, now or soon",
+          "A channel must be reconnected, now or soon, or its direct messages were turned off",
           { checked: true, labelled: true },
         ],
         [
