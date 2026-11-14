@@ -81,7 +81,7 @@
 # is reported instead.
 - name: Find the files host.env names that the release lacks
   ansible.builtin.shell: |
-    set -eu
+    set -euo pipefail
     commit='{{ peal_release_checkout.after }}'
     if ! git cat-file -e "$commit^{commit}" 2>/dev/null; then
       echo unknown
@@ -94,12 +94,13 @@
       value="${line#*=}"
       value="${value#[\'\"]}"
       value="${value%[\'\"]}"
-      printf '%s\n' "$compose" | grep -Eq "^[[:space:]]*- [\$][{]$name:-[^}]*[}]:" || continue
+      grep -Eq "^[[:space:]]*- [\$][{]$name:-[^}]*[}]:" <<<"$compose" || continue
       if [ "$(git cat-file -t "$commit:packages/peal-docker/${value#./}" 2>/dev/null)" != blob ]; then
         echo "missing $value"
       fi
     done
   args:
+    executable: /bin/bash
     chdir: "{{ peal_release_local_dir }}/checkout"
     stdin: "{{ peal_release_host_files.stdout }}"
   register: peal_release_host_files_missing
