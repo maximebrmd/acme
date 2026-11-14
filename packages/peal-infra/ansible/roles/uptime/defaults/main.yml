@@ -116,6 +116,10 @@ uptime_brand_root: /srv/uptime-brand
 uptime_platform_watch_bin: /usr/local/bin/peal-platform-watch
 uptime_platform_watch_python: /usr/bin/python3
 uptime_platform_watch_root: "{{ uptime_root }}/platform-watch"
+# Where systemd mounts that folder for the watch, which gatus cannot reach
+# in uptime_root. An empty mount point stays once the service has run; the
+# role removes it with the watch.
+uptime_platform_watch_mount: /var/lib/peal-platform-watch
 uptime_platform_watch_schedule: "*-*-* 00/6:00:00"
 uptime_platform_watch_delay: 1h
 uptime_platform_watch_sources: []

@@ -50,6 +50,15 @@ uptime_slack_channels: >-
 # watch").
 uptime_platform_watch: "{{ 'SLACK_CHANGELOG_WEBHOOK_URL' in uptime_set_credentials }}"
 
+# The resolvers on this machine /etc/resolv.conf names (systemd-resolved's
+# stub, 127.0.0.53, on Ubuntu), the one local address the platform watch
+# may reach: its unit denies the rest of localhost.
+uptime_platform_watch_resolvers: >-
+  {{ (uptime_resolv_conf.content | default('') | b64decode).splitlines()
+     | select('match', '^\s*nameserver\s+') | map('regex_replace', '^\s*nameserver\s+(\S+).*$', '\1')
+     | map('regex_replace', '%.*$', '')
+     | select('match', '^(127\.|::1$|fe80:|169\.254\.)') | unique | list }}
+
 # The heartbeat tokens generated on the server, one per environment whose
 # Grafana sends a heartbeat.
 uptime_heartbeat_tokens: >-

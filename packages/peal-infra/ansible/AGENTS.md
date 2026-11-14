@@ -70,7 +70,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   (the sandbox's in `#alerts-sandbox`, `slack: true`), only on an incident,
   never a blip (the role's thresholds). Slack is optional, there as in
   Grafana (`peal_runtime` mounts `telegram-slack.yaml` only with
-  `SLACK_ALERTS_WEBHOOK_URL`): with its webhooks unset, every rendered
+  `SLACK_ALERTS_WEBHOOK_URL`, and `release.yml` refuses, before it changes
+  anything, a `host.env` that names it while `credentials.env` lacks the
+  webhook, on which Grafana would not start): with its webhooks unset, every rendered
   file stays as it was, which `tests/test_uptime.py` checks. The platform
   watch (`files/platform_watch.py`, the standard library's alone, tested in
   `tests/test_platform_watch.py` on synthetic pages, never the internet)

@@ -14,10 +14,19 @@ Type=oneshot
 User=gatus
 Group=gatus
 EnvironmentFile={{ uptime_root }}/platform-watch.env
-BindPaths={{ uptime_platform_watch_root }}:/var/lib/peal-platform-watch
-ExecStart={{ uptime_platform_watch_python }} -I {{ uptime_platform_watch_bin }} --sources /var/lib/peal-platform-watch/sources.json --state /var/lib/peal-platform-watch/state
+BindPaths={{ uptime_platform_watch_root }}:{{ uptime_platform_watch_mount }}
+ExecStart={{ uptime_platform_watch_python }} -I {{ uptime_platform_watch_bin }} --sources {{ uptime_platform_watch_mount }}/sources.json --state {{ uptime_platform_watch_mount }}/state
 TimeoutStartSec=30min
 Nice=10
+# A page or a feed that misbehaves takes the watch down, not the server.
+MemoryMax=512M
+TasksMax=32
+# The internet alone: nothing on this machine, its link or a multicast
+# group, but the local resolver /etc/resolv.conf names, if any.
+IPAddressDeny=localhost link-local multicast
+{% if uptime_platform_watch_resolvers %}
+IPAddressAllow={{ uptime_platform_watch_resolvers | join(' ') }}
+{% endif %}
 UMask=0077
 NoNewPrivileges=true
 CapabilityBoundingSet=

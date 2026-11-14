@@ -561,8 +561,15 @@ the server, as Telegram's do.
    when one changes, and `watch broken: <name> (<reason>)` when a source
    fails 3 runs in a row.
 
-To remove a webhook, revoke it in the app's settings and delete its line:
-the next run puts the sender back on Telegram alone. Slack is outside the
+To remove a webhook, revoke it in the app's settings, delete its line from
+the vault or the server's `credentials.env`, and run `site.yml` (or
+`uptime.yml`), which puts the sender back on Telegram alone, then
+`release.yml` on that environment, which restarts Grafana with it. Grafana
+stops at start on Slack's contact points without their webhook, so
+`release.yml` refuses to release, before it changes anything, while
+`host.env` names `telegram-slack.yaml` and `credentials.env` holds no
+`SLACK_ALERTS_WEBHOOK_URL`: run `site.yml` first. Telegram's contact points
+take Slack's receiver out of Grafana again. Slack is outside the
 EU too: messages carry rule names, states, the environment and labels, or
 a public page's lines, never log lines or personal data.
 
@@ -1214,8 +1221,15 @@ fails 3 runs in a row (an HTTP error, a timeout, no readable text) posts
 `watch broken: <name> (<reason>)` once, and `watch recovered: <name>` when
 it reads again; one source that fails never stops the others, and a
 message Slack refuses is sent again at the next run. It fetches with the
-User-Agent `peal-platform-watch/1 (+https://peal.social)`, follows
-redirects and takes gzip. The webhook reaches it through its environment,
+User-Agent `peal-platform-watch/1 (+https://peal.social)` and takes gzip.
+It follows a redirect to an `https://` address on the internet alone, never
+to this machine, a private network or a link-local address, and reads 8 MB
+of a page at most, decompressed; its unit holds it to 512 MB of memory and
+32 tasks, and denies it every local address but the resolver
+`/etc/resolv.conf` names (systemd-resolved's stub). It posts a second
+apart, waits once as long as Slack asks when Slack answers 429 (30 seconds
+at most), and after a second 429 leaves the rest for the next run; a feed
+item posted before that is never posted again. The webhook reaches it through its environment,
 from a file only root reads, never on its command line or in its output.
 
 To watch another page or feed, add it to the list, with a platform's own
@@ -1362,7 +1376,8 @@ in `/srv/uptime`, on the host alone.
 
 To leave the host: `sudo uptime-compose down`, remove the site file and
 reload Caddy, `sudo systemctl disable --now peal-platform-watch.timer` and
-remove its units, then remove `/srv/uptime`, `/usr/local/bin/uptime-compose`,
+remove its units and the empty `/var/lib/peal-platform-watch`, where systemd
+mounted its folder, then remove `/srv/uptime`, `/usr/local/bin/uptime-compose`,
 `/usr/local/bin/peal-platform-watch` and the `gatus` user.
 
 ## Docker Engine

@@ -6,7 +6,9 @@ or Slack."""
 
 from __future__ import annotations
 
+import base64
 import gzip
+import http.client
 import http.server
 import importlib.util
 import json
@@ -15,6 +17,7 @@ import stat
 import subprocess
 import sys
 import threading
+import urllib.error
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
@@ -279,6 +282,33 @@ def test_a_message_slack_refuses_is_sent_again_next_run(tmp_path: Path) -> None:
     assert len(poster.messages) == 1
 
 
+def test_feed_items_posted_before_slack_refuses_are_never_posted_again(tmp_path: Path) -> None:
+    fetcher = _Fetcher()
+    fetcher.body = RSS
+    source = _source("feed", "Developer blog")
+    watch.run([source], tmp_path, fetcher, _Poster())
+    fetcher.body = RSS.replace(
+        b"<item>",
+        b"<item><title>Version 5.0</title><link>https://example.test/blog/5</link><guid>post-5</guid></item>"
+        b"<item><title>Version 4.0</title><link>https://example.test/blog/4</link><guid>post-4</guid></item><item>",
+        1,
+    )
+    taken: list[str] = []
+
+    def once(text: str) -> bool:
+        if taken:
+            return False
+        taken.append(text)
+        return True
+
+    assert not watch.run([source], tmp_path, fetcher, once)
+    poster = _Poster()
+    assert watch.run([source], tmp_path, fetcher, poster)
+
+    assert taken == ["*Example* · Developer blog: <https://example.test/blog/4|Version 4.0>"]
+    assert poster.messages == ["*Example* · Developer blog: <https://example.test/blog/5|Version 5.0>"]
+
+
 def test_one_failing_source_never_stops_the_others(tmp_path: Path) -> None:
     def fetcher(url: str) -> tuple[bytes, str]:
         if url.endswith("/feed"):
@@ -307,19 +337,41 @@ def test_a_page_with_no_readable_text_fails() -> None:
 # --- Over HTTP, on this machine ----------------------------------------------
 
 
+# Eight times the limit, as a few kilobytes of gzip.
+_BOMB = gzip.compress(b"\0" * (64 * 1024 * 1024), compresslevel=9)
+
+
 class _Site(http.server.BaseHTTPRequestHandler):
     """A synthetic site: a gzipped page behind a redirect, a feed, an
-    error, and a webhook that records what it is sent."""
+    error, a body that inflates far beyond the watch's limit, redirects to
+    places the watch never follows, and webhooks that record what they are
+    sent, ask for fewer messages, or fail."""
 
     received: list[dict[str, Any]] = []
     agents: list[str] = []
+    answers: list[int] = []
 
     def do_GET(self) -> None:
         type(self).agents.append(self.headers.get("User-Agent", ""))
-        if self.path == "/old":
-            self.send_response(301)
-            self.send_header("Location", "/changelog")
+        if self.path in ("/old", "/to-http", "/to-loopback", "/to-metadata"):
+            target = {
+                "/old": "/changelog",
+                "/to-http": "http://example.test/changelog",
+                "/to-loopback": f"https://127.0.0.1:{self.server.server_address[1]}/changelog",
+                "/to-metadata": "https://169.254.169.254/latest/meta-data/",
+            }[self.path]
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.send_header("Content-Length", "0")
             self.end_headers()
+        elif self.path == "/bomb":
+            body = _BOMB
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         elif self.path == "/changelog":
             body = gzip.compress(PAGE.encode())
             self.send_response(200)
@@ -339,7 +391,15 @@ class _Site(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", "0"))
-        type(self).received.append(json.loads(self.rfile.read(length)))
+        message = json.loads(self.rfile.read(length))
+        answer = type(self).answers.pop(0) if type(self).answers else 200
+        if answer != 200:
+            self.send_response(answer)
+            self.send_header("Retry-After", "2")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        type(self).received.append(message)
         self.send_response(200)
         self.send_header("Content-Length", "2")
         self.end_headers()
@@ -353,6 +413,7 @@ class _Site(http.server.BaseHTTPRequestHandler):
 def site() -> Iterator[str]:
     _Site.received = []
     _Site.agents = []
+    _Site.answers = []
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Site)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -363,11 +424,59 @@ def site() -> Iterator[str]:
         server.server_close()
 
 
-def test_a_page_is_fetched_through_redirects_and_gzip_with_the_watch_s_user_agent(site: str) -> None:
+def test_a_page_is_fetched_through_redirects_and_gzip_with_the_watch_s_user_agent(
+    site: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The site here is plain HTTP on this machine, which the watch never
+    follows a redirect to otherwise."""
+    monkeypatch.setattr(watch, "REDIRECT_SCHEMES", ("https", "http"))
+    monkeypatch.setattr(watch, "public_address", lambda host: True)
+
     body, charset = watch.fetch(f"{site}/old")
 
     assert watch.page_text(body.decode(charset)) == watch.page_text(PAGE)
     assert _Site.agents == ["peal-platform-watch/1 (+https://peal.social)"] * 2
+
+
+@pytest.mark.parametrize(
+    ("path", "reason"),
+    [
+        ("/old", "redirected to http address"),
+        ("/to-http", "redirected to http address"),
+        ("/to-loopback", "redirected to a private address"),
+        ("/to-metadata", "redirected to a private address"),
+    ],
+)
+def test_a_redirect_goes_to_https_on_the_internet_alone(site: str, path: str, reason: str) -> None:
+    with pytest.raises(watch.FetchError, match=f"^{reason}$"):
+        watch.fetch(f"{site}{path}")
+    # Never followed: one request, the redirect's.
+    assert len(_Site.agents) == 1
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "::1", "10.0.0.1", "192.168.1.1", "169.254.169.254", "fe80::1", "224.0.0.1", "localhost"])
+def test_a_private_address_is_never_public(host: str) -> None:
+    assert not watch.public_address(host)
+
+
+def test_an_internet_address_is_public() -> None:
+    """A literal address, so the test resolves nothing."""
+    assert watch.public_address("9.9.9.9")
+
+
+def test_a_body_that_inflates_beyond_the_limit_fails_the_source(site: str) -> None:
+    """A few kilobytes that inflate to gigabytes stop at the limit."""
+    assert len(_BOMB) < 64 * 1024
+    with pytest.raises(watch.FetchError, match="^larger than 8 MB$"):
+        watch.fetch(f"{site}/bomb")
+
+
+def test_a_body_just_under_the_limit_inflates_whole() -> None:
+    body = b"a" * watch.MAX_BYTES
+
+    assert watch._decode(gzip.compress(body), "gzip") == body
+    with pytest.raises(watch.FetchError):
+        watch._decode(gzip.compress(body + b"a"), "gzip")
 
 
 def test_an_http_error_is_a_short_reason(site: str) -> None:
@@ -378,6 +487,99 @@ def test_an_http_error_is_a_short_reason(site: str) -> None:
 def test_a_message_goes_to_the_webhook_as_slack_reads_it(site: str) -> None:
     assert watch.post(f"{site}/webhook", "hello")
     assert _Site.received == [{"text": "hello", "unfurl_links": False, "unfurl_media": False}]
+
+
+class _Clock:
+    """Time that passes only when the poster sleeps."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.slept: list[float] = []
+
+    def sleep(self, seconds: float) -> None:
+        self.slept.append(seconds)
+        self.now += seconds
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_messages_go_a_second_apart(site: str) -> None:
+    clock = _Clock()
+    slack = watch.Slack(f"{site}/webhook", sleep=clock.sleep, clock=clock)
+
+    assert slack("one") and slack("two") and slack("three")
+    assert clock.slept == [1.0, 1.0]
+
+
+def test_slack_asking_for_fewer_is_waited_for_once(site: str) -> None:
+    clock = _Clock()
+    slack = watch.Slack(f"{site}/webhook", sleep=clock.sleep, clock=clock)
+    _Site.answers = [429]
+
+    assert slack("one")
+    assert clock.slept == [2.0]
+    assert [message["text"] for message in _Site.received] == ["one"]
+
+
+def test_a_second_429_stops_posting_for_the_run(site: str, capsys: pytest.CaptureFixture[str]) -> None:
+    clock = _Clock()
+    slack = watch.Slack(f"{site}/webhook", sleep=clock.sleep, clock=clock)
+    _Site.answers = [429, 429]
+
+    assert not slack("one")
+    assert not slack("two")
+    assert _Site.received == []
+    assert "HTTP 429" in capsys.readouterr().err
+
+
+def test_a_long_retry_after_is_capped(site: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = _Clock()
+    slack = watch.Slack(f"{site}/webhook", sleep=clock.sleep, clock=clock)
+    monkeypatch.setattr(watch, "_send", _refusing_then_taking(3600.0))
+
+    assert slack("one")
+    assert clock.slept == [30.0]
+
+
+def _refusing_then_taking(retry_after: float) -> Any:
+    calls: list[str] = []
+
+    def send(webhook: str, text: str) -> None:
+        calls.append(text)
+        if len(calls) == 1:
+            raise watch._Answer(429, retry_after)
+
+    return send
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        http.client.RemoteDisconnected("closed by /services/synthetic-secret-path"),
+        ValueError("URL can't contain control characters. '/services/synthetic-secret-path'"),
+        ConnectionResetError("reset at /services/synthetic-secret-path"),
+        urllib.error.URLError("refused at /services/synthetic-secret-path"),
+    ],
+)
+def test_a_failed_post_logs_its_class_alone(error: Exception, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """An error's message may hold the webhook's path, which is its
+    secret."""
+
+    def send(webhook: str, text: str) -> None:
+        raise error
+
+    monkeypatch.setattr(watch, "_send", send)
+
+    assert not watch.Slack("https://hooks.slack.invalid/services/synthetic-secret-path")("hello")
+    output = capsys.readouterr()
+    assert "synthetic-secret-path" not in output.out + output.err
+    assert error.__class__.__name__ in output.err
+
+
+def test_an_invalid_webhook_url_is_a_failed_post_not_a_crash(capsys: pytest.CaptureFixture[str]) -> None:
+    assert not watch.Slack("http://127.0.0.1:notaport/services/synthetic-secret-path")("hello")
+    assert "synthetic-secret-path" not in capsys.readouterr().err
 
 
 def _run_script(tmp_path: Path, sources: list[dict[str, str]], webhook: str | None) -> subprocess.CompletedProcess[str]:
@@ -397,7 +599,7 @@ def _run_script(tmp_path: Path, sources: list[dict[str, str]], webhook: str | No
 def test_the_script_runs_every_source_and_never_prints_the_webhook(site: str, tmp_path: Path) -> None:
     webhook = f"{site}/services/synthetic-webhook"
     sources = [
-        {"name": "Changelog", "platform": "Example", "url": f"{site}/old", "kind": "page"},
+        {"name": "Changelog", "platform": "Example", "url": f"{site}/changelog", "kind": "page"},
         {"name": "News", "platform": "Example", "url": f"{site}/feed", "kind": "feed"},
         {"name": "Gone", "platform": "Example", "url": f"{site}/missing", "kind": "page"},
     ]
@@ -517,11 +719,13 @@ OFF_PATH = [
     "Look for the platform watch's timer",
     "Stop the platform watch without its webhook",
     "Remove the platform watch without its webhook",
+    "Remove the platform watch's mount point without its webhook",
     "Look for the platform watch's Python",
     "Install the platform watch",
     "Create the platform watch's folders",
     "Write the platform watch's sources",
     "Give the platform watch its webhook",
+    "Read the server's resolvers",
     "Write the platform watch's service and timer",
     "Start the platform watch's timer at boot",
 ]
@@ -537,6 +741,7 @@ def test_without_its_webhook_a_server_without_the_watch_is_left_as_it_is(tmp_pat
         check=check,
         uptime_root=str(tmp_path / "uptime"),
         uptime_platform_watch_root=str(tmp_path / "uptime" / "platform-watch"),
+        uptime_platform_watch_mount=str(tmp_path / "mount"),
         uptime_platform_watch_sources=SOURCES,
         uptime_credentials={"TELEGRAM_BOT_TOKEN": "synthetic"},
         **{name: VARS[name] for name in ("uptime_platform_watch", "uptime_set_credentials")},
@@ -547,10 +752,39 @@ def test_without_its_webhook_a_server_without_the_watch_is_left_as_it_is(tmp_pat
     assert not (tmp_path / "uptime").exists()
 
 
+def _remove_mount_point(tmp_path: Path) -> dict[str, int]:
+    return run_tasks(
+        tmp_path,
+        "uptime",
+        ["Remove the platform watch's mount point without its webhook"],
+        uptime_platform_watch_mount=str(tmp_path / "mount"),
+        uptime_credentials={},
+        **{name: VARS[name] for name in ("uptime_platform_watch", "uptime_set_credentials")},
+    )
+
+
+def test_the_empty_mount_point_goes_with_the_watch(tmp_path: Path) -> None:
+    (tmp_path / "mount").mkdir()
+
+    assert _remove_mount_point(tmp_path)["changed"] == 1
+    assert not (tmp_path / "mount").exists()
+    assert _remove_mount_point(tmp_path)["changed"] == 0
+
+
+def test_a_mount_point_with_anything_in_it_stays(tmp_path: Path) -> None:
+    (tmp_path / "mount").mkdir()
+    (tmp_path / "mount" / "kept").write_text("synthetic")
+
+    recap = _remove_mount_point(tmp_path)
+
+    assert (recap["changed"], recap["failed"]) == (0, 0)
+    assert (tmp_path / "mount" / "kept").exists()
+
+
 def _unit(name: str) -> str:
     template = (INFRA / "roles" / "uptime" / "templates" / f"{name}.j2").read_text()
     names = {name: render(value, uptime_root="/srv/uptime") if isinstance(value, str) else value for name, value in DEFAULTS.items()}
-    return render(template, **names)
+    return render(template, **names, uptime_platform_watch_resolvers=["127.0.0.53"])
 
 
 def test_the_service_runs_as_gatus_with_its_webhook_in_its_environment_alone() -> None:
@@ -569,6 +803,32 @@ def test_the_service_runs_as_gatus_with_its_webhook_in_its_environment_alone() -
     assert lines["NoNewPrivileges"] == "true"
     assert lines["ProtectSystem"] == "strict"
     assert lines["CapabilityBoundingSet"] == ""
+    assert lines["MemoryMax"] == "512M"
+    assert lines["TasksMax"] == "32"
+    assert lines["IPAddressDeny"] == "localhost link-local multicast"
+    assert lines["IPAddressAllow"] == "127.0.0.53"
+
+
+def _resolvers(resolv_conf: str) -> list[str]:
+    return ansible_render(
+        VARS["uptime_platform_watch_resolvers"],
+        uptime_resolv_conf={"content": base64.b64encode(resolv_conf.encode()).decode()},
+    )
+
+
+def test_the_watch_reaches_the_local_resolver_alone() -> None:
+    """systemd-resolved's stub on Ubuntu; a resolver on the internet needs
+    no exception, as the unit denies local addresses alone."""
+    assert _resolvers("# Generated\nnameserver 127.0.0.53\noptions edns0 trust-ad\nsearch .\n") == ["127.0.0.53"]
+    assert _resolvers("nameserver 9.9.9.9\nnameserver 2620:fe::fe\n") == []
+    assert _resolvers("nameserver ::1\nnameserver fe80::1%eth0\n") == ["::1", "fe80::1"]
+
+
+def test_without_a_local_resolver_the_unit_allows_nothing_local() -> None:
+    template = (INFRA / "roles" / "uptime" / "templates" / "peal-platform-watch.service.j2").read_text()
+    names = {name: render(value, uptime_root="/srv/uptime") if isinstance(value, str) else value for name, value in DEFAULTS.items()}
+
+    assert "IPAddressAllow" not in render(template, **names, uptime_platform_watch_resolvers=[])
 
 
 def test_the_timer_runs_every_6_hours_at_a_random_minute() -> None:

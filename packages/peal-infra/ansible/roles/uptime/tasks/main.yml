@@ -607,6 +607,18 @@
   notify: Reload systemd for the platform watch
   when: not (uptime_platform_watch | bool)
 
+# systemd leaves the folder it mounted the watch's on, empty: it goes too,
+# and stays if anything is in it.
+- name: Remove the platform watch's mount point without its webhook
+  ansible.builtin.shell: |
+    set -eu
+    if [ -d {{ uptime_platform_watch_mount }} ] && rmdir {{ uptime_platform_watch_mount }} 2>/dev/null; then
+      echo removed
+    fi
+  register: uptime_platform_watch_unmounted
+  changed_when: uptime_platform_watch_unmounted.stdout == 'removed'
+  when: not (uptime_platform_watch | bool)
+
 - name: Look for the platform watch's Python
   ansible.builtin.stat:
     path: "{{ uptime_platform_watch_python }}"
@@ -676,6 +688,14 @@
     fi
   register: uptime_platform_watch_webhook
   changed_when: uptime_platform_watch_webhook.stdout | length > 0
+  when: uptime_platform_watch | bool
+
+# Read-only: the unit lets the watch reach the local resolver alone.
+- name: Read the server's resolvers
+  ansible.builtin.slurp:
+    src: /etc/resolv.conf
+  register: uptime_resolv_conf
+  check_mode: false
   when: uptime_platform_watch | bool
 
 - name: Write the platform watch's service and timer

@@ -20,14 +20,16 @@ from __future__ import annotations
 
 import argparse
 import difflib
-import gzip
 import hashlib
-import html
+import http.client
+import ipaddress
 import json
 import os
 import re
+import socket
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -46,6 +48,10 @@ DIFF_LINES = 15
 LINE_CHARS = 200
 FEED_ITEMS = 10
 SEEN_KEPT = 1000
+POST_INTERVAL = 1.0
+RETRY_CAP = 30.0
+# A redirect is followed to these schemes alone, and to a public address.
+REDIRECT_SCHEMES = ("https",)
 WEBHOOK_VARIABLE = "SLACK_CHANGELOG_WEBHOOK_URL"
 KINDS = ("page", "feed")
 
@@ -403,23 +409,64 @@ def feed_items(document: bytes) -> list[Item]:
 # --- Fetching and posting ----------------------------------------------------
 
 
+_TOO_LARGE = f"larger than {MAX_BYTES // (1024 * 1024)} MB"
+
+
+def _inflate(body: bytes, wbits: int) -> bytes:
+    """A compressed body, decompressed to MAX_BYTES at most: a small body
+    that inflates to gigabytes fails the source instead of the server."""
+    decompressor = zlib.decompressobj(wbits=wbits)
+    inflated = decompressor.decompress(body, MAX_BYTES + 1)
+    if len(inflated) > MAX_BYTES or decompressor.unconsumed_tail:
+        raise FetchError(_TOO_LARGE)
+    return inflated + decompressor.flush(MAX_BYTES + 1 - len(inflated))
+
+
 def _decode(body: bytes, encoding: str) -> bytes:
     encoding = encoding.strip().lower()
     if encoding in ("", "identity"):
         return body
     if encoding in ("gzip", "x-gzip"):
-        return gzip.decompress(body)
+        return _inflate(body, 31)
     if encoding == "deflate":
         try:
-            return zlib.decompress(body)
+            return _inflate(body, zlib.MAX_WBITS)
         except zlib.error:
-            return zlib.decompress(body, -zlib.MAX_WBITS)
+            return _inflate(body, -zlib.MAX_WBITS)
     raise FetchError(f"unknown content encoding {encoding}")
+
+
+def public_address(host: str) -> bool:
+    """Whether every address a host name resolves to is on the internet:
+    never this machine, a private network, a link-local or multicast
+    address."""
+    try:
+        addresses = {info[4][0] for info in socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)}
+    except (OSError, UnicodeError):
+        return False
+    parsed = [ipaddress.ip_address(address.split("%", 1)[0]) for address in addresses]
+    return bool(parsed) and all(address.is_global and not address.is_multicast for address in parsed)
+
+
+class _Redirects(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect to an https:// address on the internet alone."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> Any:
+        target = urllib.parse.urlsplit(urllib.parse.urljoin(req.full_url, newurl))
+        if target.scheme not in REDIRECT_SCHEMES:
+            raise FetchError(f"redirected to {target.scheme or 'a relative'} address")
+        if not public_address(target.hostname or ""):
+            raise FetchError("redirected to a private address")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = urllib.request.build_opener(_Redirects)
 
 
 def fetch(url: str) -> tuple[bytes, str]:
     """A source's body, decompressed, and its charset; redirects are
-    followed. Raises FetchError with a short reason."""
+    followed to https:// addresses on the internet alone. Raises FetchError
+    with a short reason."""
     request = urllib.request.Request(
         url,
         headers={
@@ -430,19 +477,23 @@ def fetch(url: str) -> tuple[bytes, str]:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+        with _opener.open(request, timeout=TIMEOUT_SECONDS) as response:
             body = response.read(MAX_BYTES + 1)
             if len(body) > MAX_BYTES:
-                raise FetchError(f"larger than {MAX_BYTES // (1024 * 1024)} MB")
+                raise FetchError(_TOO_LARGE)
             charset = response.headers.get_content_charset() or "utf-8"
             return _decode(body, response.headers.get("Content-Encoding", "")), charset
+    except FetchError:
+        raise
     except urllib.error.HTTPError as error:
         raise FetchError(f"HTTP {error.code}") from None
     except urllib.error.URLError as error:
-        raise FetchError(f"unreachable: {error.reason}") from None
+        if isinstance(error.reason, FetchError):
+            raise error.reason from None
+        raise FetchError(f"unreachable: {error.reason.__class__.__name__}") from None
     except TimeoutError:
         raise FetchError("timed out") from None
-    except (OSError, EOFError, zlib.error, ValueError) as error:
+    except (OSError, EOFError, zlib.error, ValueError, http.client.HTTPException) as error:
         raise FetchError(f"unreadable: {error.__class__.__name__}") from None
 
 
@@ -455,9 +506,17 @@ def _link(url: str, label: str) -> str:
     return f"<{url.replace('|', '%7C').replace('>', '%3E')}|{_escape(label)}>"
 
 
-def post(webhook: str, text: str) -> bool:
-    """Posts a message to the Slack webhook; whether Slack took it. The
-    webhook's URL never reaches the output."""
+class _Answer(Exception):
+    """Slack's answer to a message it did not take: its status, and the
+    seconds it asks to wait (Retry-After), if any."""
+
+    def __init__(self, status: int, retry_after: float | None) -> None:
+        super().__init__(status)
+        self.status = status
+        self.retry_after = retry_after
+
+
+def _send(webhook: str, text: str) -> None:
     body = json.dumps({"text": text, "unfurl_links": False, "unfurl_media": False}).encode()
     request = urllib.request.Request(
         webhook,
@@ -467,12 +526,68 @@ def post(webhook: str, text: str) -> bool:
     )
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            return 200 <= response.status < 300
+            if not 200 <= response.status < 300:
+                raise _Answer(response.status, None)
     except urllib.error.HTTPError as error:
-        print(f"Slack refused a message: HTTP {error.code}", file=sys.stderr)
-    except (urllib.error.URLError, OSError) as error:
-        print(f"Slack is unreachable: {error.__class__.__name__}", file=sys.stderr)
-    return False
+        try:
+            retry_after: float | None = float(error.headers.get("Retry-After", ""))
+        except (TypeError, ValueError):
+            retry_after = None
+        raise _Answer(error.code, retry_after) from None
+
+
+class Slack:
+    """Posts messages to a Slack webhook, a second apart, as Slack asks of
+    a webhook. Slack answers 429 when it wants fewer: the poster waits as
+    long as Retry-After says (RETRY_CAP at most) and tries once more, and
+    after a second 429 posts nothing else this run. The webhook's URL, which
+    is its secret, never reaches the output: errors are logged by their
+    class alone, as their messages may hold the URL."""
+
+    def __init__(self, webhook: str, sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic) -> None:
+        self.webhook = webhook
+        self.sleep = sleep
+        self.clock = clock
+        self.last: float | None = None
+        self.retried = False
+        self.stopped = False
+
+    def _paced(self, text: str) -> None:
+        if self.last is not None:
+            wait = POST_INTERVAL - (self.clock() - self.last)
+            if wait > 0:
+                self.sleep(wait)
+        try:
+            _send(self.webhook, text)
+        finally:
+            self.last = self.clock()
+
+    def __call__(self, text: str) -> bool:
+        if self.stopped:
+            return False
+        try:
+            try:
+                self._paced(text)
+            except _Answer as answer:
+                if answer.status != 429 or self.retried:
+                    raise
+                self.retried = True
+                self.sleep(min(RETRY_CAP, max(0.0, answer.retry_after if answer.retry_after is not None else POST_INTERVAL)))
+                self._paced(text)
+            return True
+        except _Answer as answer:
+            print(f"Slack refused a message: HTTP {answer.status}", file=sys.stderr)
+            if answer.status == 429:
+                print("Slack asks for fewer messages: the others wait for the next run", file=sys.stderr)
+                self.stopped = True
+        except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as error:
+            print(f"Slack is unreachable: {error.__class__.__name__}", file=sys.stderr)
+        return False
+
+
+def post(webhook: str, text: str) -> bool:
+    """Posts one message to the Slack webhook; whether Slack took it."""
+    return Slack(webhook)(text)
 
 
 # --- Messages ----------------------------------------------------------------
@@ -541,8 +656,9 @@ Poster = Callable[[str], bool]
 
 def check(source: Source, state: dict[str, Any], fetcher: Fetcher, poster: Poster) -> tuple[dict[str, Any], bool]:
     """One run of one source: its new state, and whether every message it
-    had was posted. The state moves on only once its messages are posted,
-    so a message Slack did not take is sent again next run."""
+    had was posted. The state moves on with each message posted, and no
+    further, so a message Slack did not take is sent again next run, and
+    one it took is not."""
     try:
         body, charset = fetcher(source.url)
         if source.kind == "page":
@@ -556,32 +672,37 @@ def check(source: Source, state: dict[str, Any], fetcher: Fetcher, poster: Poste
     except Exception as error:  # One source never stops the run.
         return _failed(source, state, f"failed: {error.__class__.__name__}", poster)
 
-    messages = []
+    new_state: dict[str, Any] = {key: value for key, value in state.items() if key != "reason"}
+    new_state.update(kind=source.kind, failures=0)
     if state.get("broken"):
-        messages.append(recovered_message(source))
-    new_state: dict[str, Any] = {"kind": source.kind, "failures": 0, "broken": False}
+        if not poster(recovered_message(source)):
+            return new_state, False
+    new_state["broken"] = False
+
     if source.kind == "page":
         lines = content
-        new_state["lines"] = lines
         if "lines" in state and state["lines"] != lines:
             added_removed, more = changed_lines(state["lines"], lines)
-            messages.append(page_message(source, added_removed, more))
-    else:
-        items = content
-        seen = list(state.get("seen", []))
-        if "seen" in state:
-            fresh = [item for item in items if item.id not in seen]
-            # Oldest first, as people read a channel.
-            for item in reversed(fresh[:FEED_ITEMS]):
-                messages.append(item_message(source, item))
-            if len(fresh) > FEED_ITEMS:
-                messages.append(f"…and {len(fresh) - FEED_ITEMS} more in {_link(source.url, source.name)}.")
-        known = set(seen)
-        new_state["seen"] = ([item.id for item in items if item.id not in known] + seen)[:SEEN_KEPT]
+            if not poster(page_message(source, added_removed, more)):
+                return new_state, False
+        new_state["lines"] = lines
+        return new_state, True
 
-    for message in messages:
-        if not poster(message):
-            return state, False
+    items = content
+    seen = list(state.get("seen", []))
+    if "seen" in state:
+        fresh = [item for item in items if item.id not in set(seen)]
+        # Oldest first, as people read a channel; each one is seen once
+        # posted, so a run cut short never posts it again.
+        for item in reversed(fresh[:FEED_ITEMS]):
+            if not poster(item_message(source, item)):
+                return new_state, False
+            seen.insert(0, item.id)
+            new_state["seen"] = seen[:SEEN_KEPT]
+        if len(fresh) > FEED_ITEMS and not poster(f"…and {len(fresh) - FEED_ITEMS} more in {_link(source.url, source.name)}."):
+            return new_state, False
+    known = set(seen)
+    new_state["seen"] = ([item.id for item in items if item.id not in known] + seen)[:SEEN_KEPT]
     return new_state, True
 
 
@@ -626,7 +747,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     sources = load_sources(arguments.sources)
     arguments.state.mkdir(mode=0o700, exist_ok=True)
-    posted = run(sources, arguments.state, fetch, lambda text: post(webhook, text))
+    posted = run(sources, arguments.state, fetch, Slack(webhook))
     return 0 if posted else 1
 
 
