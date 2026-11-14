@@ -120,10 +120,16 @@ class InboxReviewsClient:
         return _response.data
 
     def reply_to_review(
-        self, workspace_id: str, review_id: str, *, text: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        review_id: str,
+        *,
+        text: str,
+        idempotency_key: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxReviewReply:
         """
-        Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's `reply.moderation`). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply `sending`, and the location's reviews show how it ended. A reply whose outcome is not known is `unconfirmed` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 `ReplyPending`). Replies to reviews count no inbox message. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's `reply.moderation`). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply `sending`, and the location's reviews show how it ended. A reply whose outcome is not known is `unconfirmed` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 `ReplyPending`). With an `Idempotency-Key` header (255 characters at most, new for each reply), the request is safe to send again: within 24 hours the same key with the same review and text answers the reply the first request made, and sends no other; with another review or text it is refused (409 `IdempotencyKeyReused`). Replies to reviews count no inbox message. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`, `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -132,6 +138,8 @@ class InboxReviewsClient:
         review_id : str
 
         text : str
+
+        idempotency_key : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -155,7 +163,7 @@ class InboxReviewsClient:
         )
         """
         _response = self._raw_client.reply_to_review(
-            workspace_id, review_id, text=text, request_options=request_options
+            workspace_id, review_id, text=text, idempotency_key=idempotency_key, request_options=request_options
         )
         return _response.data
 
@@ -163,7 +171,7 @@ class InboxReviewsClient:
         self, workspace_id: str, review_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> InboxReview:
         """
-        Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`, `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -361,10 +369,16 @@ class AsyncInboxReviewsClient:
         return _response.data
 
     async def reply_to_review(
-        self, workspace_id: str, review_id: str, *, text: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        review_id: str,
+        *,
+        text: str,
+        idempotency_key: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxReviewReply:
         """
-        Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's `reply.moderation`). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply `sending`, and the location's reviews show how it ended. A reply whose outcome is not known is `unconfirmed` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 `ReplyPending`). Replies to reviews count no inbox message. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's `reply.moderation`). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply `sending`, and the location's reviews show how it ended. A reply whose outcome is not known is `unconfirmed` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 `ReplyPending`). With an `Idempotency-Key` header (255 characters at most, new for each reply), the request is safe to send again: within 24 hours the same key with the same review and text answers the reply the first request made, and sends no other; with another review or text it is refused (409 `IdempotencyKeyReused`). Replies to reviews count no inbox message. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`, `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -373,6 +387,8 @@ class AsyncInboxReviewsClient:
         review_id : str
 
         text : str
+
+        idempotency_key : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -404,7 +420,7 @@ class AsyncInboxReviewsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.reply_to_review(
-            workspace_id, review_id, text=text, request_options=request_options
+            workspace_id, review_id, text=text, idempotency_key=idempotency_key, request_options=request_options
         )
         return _response.data
 
@@ -412,7 +428,7 @@ class AsyncInboxReviewsClient:
         self, workspace_id: str, review_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> InboxReview:
         """
-        Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`, `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------

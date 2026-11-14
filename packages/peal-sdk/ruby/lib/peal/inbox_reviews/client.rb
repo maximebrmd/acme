@@ -118,8 +118,14 @@ module Peal
       # 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply `sending`, and the location's reviews
       # show how it ended. A reply whose outcome is not known is `unconfirmed` until the next read of the location,
       # which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409
-      # `ReplyPending`). Replies to reviews count no inbox message. Needs engagement:reply, which an OAuth client holds
-      # only with the scope workspace:publish, and which staff acting as a member never hold.
+      # `ReplyPending`). With an `Idempotency-Key` header (255 characters at most, new for each reply), the request is
+      # safe to send again: within 24 hours the same key with the same review and text answers the reply the first
+      # request made, and sends no other; with another review or text it is refused (409 `IdempotencyKeyReused`).
+      # Replies to reviews count no inbox message. Only a member signed in in person (a session of the web app) may: an
+      # API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`,
+      # `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or
+      # triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client
+      # holds only with the scope workspace:publish, and which staff acting as a member never hold.
       #
       # @param request_options [Hash]
       # @param params [Peal::InboxReviews::Types::NewInboxReviewReply]
@@ -130,6 +136,7 @@ module Peal
       # @option request_options [Integer] :timeout_in_seconds
       # @option params [String] :workspace_id
       # @option params [String] :review_id
+      # @option params [String, nil] :idempotency_key
       #
       # @example
       #   client.inbox_reviews.reply_to_review(
@@ -142,13 +149,17 @@ module Peal
       def reply_to_review(request_options: {}, **params)
         params = Peal::Internal::Types::Utils.normalize_keys(params)
         request_data = Peal::InboxReviews::Types::NewInboxReviewReply.new(params).to_h
-        non_body_param_names = %w[workspaceId reviewId]
+        non_body_param_names = %w[workspaceId reviewId idempotency-key]
         body = request_data.except(*non_body_param_names)
+
+        headers = {}
+        headers["idempotency-key"] = params[:idempotency_key] if params[:idempotency_key]
 
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],
           method: "PUT",
           path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/inbox/reviews/#{URI.encode_uri_component(params[:review_id].to_s)}/reply",
+          headers: headers,
           body: body,
           request_options: request_options
         )
@@ -171,8 +182,11 @@ module Peal
       end
 
       # Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A
-      # review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the
-      # scope workspace:publish, and which staff acting as a member never hold.
+      # review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may:
+      # an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`,
+      # `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or
+      # triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client
+      # holds only with the scope workspace:publish, and which staff acting as a member never hold.
       #
       # @param request_options [Hash]
       # @param params [Hash]

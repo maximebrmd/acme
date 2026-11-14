@@ -164,7 +164,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's <code>reply.moderation</code>). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply <code>sending</code>, and the location's reviews show how it ended. A reply whose outcome is not known is <code>unconfirmed</code> until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 <code>ReplyPending</code>). Replies to reviews count no inbox message. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's <code>reply.moderation</code>). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply <code>sending</code>, and the location's reviews show how it ended. A reply whose outcome is not known is <code>unconfirmed</code> until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 <code>ReplyPending</code>). With an <code>Idempotency-Key</code> header (255 characters at most, new for each reply), the request is safe to send again: within 24 hours the same key with the same review and text answers the reply the first request made, and sends no other; with another review or text it is refused (409 <code>IdempotencyKeyReused</code>). Replies to reviews count no inbox message. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReviewReply> replyToReview(
             String workspaceId, String reviewId, NewInboxReviewReply request) {
@@ -180,7 +180,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's <code>reply.moderation</code>). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply <code>sending</code>, and the location's reviews show how it ended. A reply whose outcome is not known is <code>unconfirmed</code> until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 <code>ReplyPending</code>). Replies to reviews count no inbox message. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's <code>reply.moderation</code>). The reply is checked against Google's 4096 bytes (UTF-8), journalled, and sent by a job: the answer is the reply <code>sending</code>, and the location's reviews show how it ended. A reply whose outcome is not known is <code>unconfirmed</code> until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 <code>ReplyPending</code>). With an <code>Idempotency-Key</code> header (255 characters at most, new for each reply), the request is safe to send again: within 24 hours the same key with the same review and text answers the reply the first request made, and sends no other; with another review or text it is refused (409 <code>IdempotencyKeyReused</code>). Replies to reviews count no inbox message. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReviewReply> replyToReview(
             String workspaceId, String reviewId, NewInboxReviewReply request, RequestOptions requestOptions) {
@@ -196,7 +196,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReview> withdrawReviewReply(String workspaceId, String reviewId) {
         CompletableFuture<PealClientHttpResponse<InboxReview>> rawFuture =
@@ -211,7 +211,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReview> withdrawReviewReply(
             String workspaceId, String reviewId, RequestOptions requestOptions) {
@@ -227,7 +227,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReview> withdrawReviewReply(
             String workspaceId, String reviewId, WithdrawReviewReplyInboxReviewsRequest request) {
@@ -243,7 +243,7 @@ public class AsyncInboxReviewsClient {
     }
 
     /**
-     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 <code>Forbidden</code>, <code>personRequired</code>), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReview> withdrawReviewReply(
             String workspaceId,

@@ -8,6 +8,8 @@ module Peal
 
         field :review_id, -> { String }, optional: false, nullable: false, api_name: "reviewId"
 
+        field :idempotency_key, -> { String }, optional: true, nullable: false, api_name: "idempotency-key"
+
         field :text, -> { String }, optional: false, nullable: false
       end
     end
