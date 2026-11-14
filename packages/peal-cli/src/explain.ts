@@ -18,6 +18,7 @@ import type {
   ImageProviderRefused,
   ImportUnreadable,
   MediaSourceFailure,
+  CommentRuleRefusal,
   FollowUpRefusal,
   NotRecyclableReason,
   PostNotPromotable,
@@ -151,6 +152,17 @@ const urlRefusals: Readonly<Record<WebhookUrlRefused["reason"], string>> = {
   tooLong: "The address is longer than 2048 characters.",
   unknownHost:
     "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why a comment rule was refused, as the user puts it right.
+const commentRuleRefusals: Readonly<Record<CommentRuleRefusal, string>> = {
+  channels:
+    "No channel can carry the rule's reply, or it is too long for one that could: each channel says why. Nothing was saved.",
+  emptyReply: "The reply is empty: give it some text.",
+  keywords:
+    "Give 1 to 10 keywords of 60 characters at most, each with some letters or digits.",
+  noChannel:
+    "The rule answers on no channel of the inbox: a post's rule needs a post that went out, on a channel the inbox reads.",
 };
 
 // Why a follow-up rule was refused, as the user puts it right.
@@ -765,6 +777,24 @@ const reasonOf =
         refused(
           "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
         ),
+      CommentRuleEnded: ({ reason }) =>
+        refused(
+          `The comment rule ended (${reason}) and changes no more: peal inbox rules start makes another.`
+        ),
+      CommentRuleNotFound: () =>
+        refused(
+          "The workspace has no such comment rule: peal inbox rules list shows them."
+        ),
+      CommentRuleNotPossible: ({ channels, reason }) =>
+        refused(
+          [
+            commentRuleRefusals[reason],
+            ...channels.map(
+              ({ channelId, platform, reply }) =>
+                `  ${platform} ${channelId}: ${reply}`
+            ),
+          ].join("\n")
+        ),
       FollowUpNotPossible: ({ channels, reason }) =>
         refused(
           [
@@ -902,6 +932,10 @@ const reasonOf =
       TooManyQueues: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
+        ),
+      TooManyCommentRules: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} comment rules going, the most it may: stop one first, with peal inbox rules stop.`
         ),
       TooManyFollowUpRules: ({ allowed }) =>
         refused(

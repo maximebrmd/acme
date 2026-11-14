@@ -5,6 +5,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgSchema,
   smallint,
   text,
@@ -368,5 +369,73 @@ export const reviewReplies = engagement.table(
       "review_replies_settled",
       sql`(${table.status} = 'sending') = (${table.settledAt} IS NULL)`
     ),
+  ]
+);
+
+/**
+ * A rule that answers comments by itself (the domain's `CommentRule`): on
+ * one post's comments (`scope` `post`, `post_id`) or every post of a
+ * channel's (`channel`, `channel_id`), the `keywords` it listens for,
+ * folded, and the `reply` a member wrote. `status` is `active`, `paused`
+ * or `ended`, with `status_at` and `ended_reason`; who started it and
+ * how (`started_by`, `started_via`, the domain's JSON).
+ */
+export const commentRules = engagement.table(
+  "comment_rules",
+  {
+    channelId: uuid("channel_id"),
+    createdAt: instant("created_at").notNull(),
+    endedReason: text("ended_reason"),
+    id: uuid("id").primaryKey(),
+    keywords: text("keywords").array().notNull(),
+    postId: uuid("post_id"),
+    reply: text("reply").notNull(),
+    scope: text("scope").notNull(),
+    startedBy: uuid("started_by"),
+    startedVia: jsonb("started_via").notNull(),
+    status: text("status").notNull(),
+    statusAt: instant("status_at"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    index("comment_rules_workspace_id").on(table.workspaceId, table.id),
+    index("comment_rules_active")
+      .on(table.id)
+      .where(sql`${table.status} = 'active'`),
+    check(
+      "comment_rules_scope",
+      sql`(${table.scope} = 'post' AND ${table.postId} IS NOT NULL AND ${table.channelId} IS NULL) OR (${table.scope} = 'channel' AND ${table.channelId} IS NOT NULL AND ${table.postId} IS NULL)`
+    ),
+  ]
+);
+
+/**
+ * A comment a rule looked at, once: what came of it (`outcome`:
+ * `claimed` while its reply is being made, `replied` with the reply,
+ * `noMatch`, `samePerson` when the rule answered its author already,
+ * `refused` with the inbox's refusal as `code`). Ids and words of Peal's
+ * only, never what the comment says; it goes with the comment.
+ */
+export const commentRuleMatches = engagement.table(
+  "comment_rule_matches",
+  {
+    code: text("code"),
+    commentId: uuid("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    lookedAt: instant("looked_at").notNull(),
+    outcome: text("outcome").notNull(),
+    replyId: uuid("reply_id"),
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => commentRules.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("comment_rule_matches_rule_comment").on(
+      table.ruleId,
+      table.commentId
+    ),
+    index("comment_rule_matches_rule_looked").on(table.ruleId, table.lookedAt),
+    index("comment_rule_matches_comment").on(table.commentId),
   ]
 );

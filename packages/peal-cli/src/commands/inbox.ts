@@ -23,6 +23,7 @@ import type {
 } from "peal-contract";
 
 import { reviews } from "#commands/inbox-reviews.ts";
+import { rules } from "#commands/inbox-rules.ts";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
@@ -547,5 +548,6 @@ export const inbox = Command.make("inbox").pipe(
     confirm,
     withdraw,
     reviews,
+    rules,
   ])
 );

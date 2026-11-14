@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
+import { CommentRules } from "#engagement/application/comment-rules.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
@@ -17,6 +18,7 @@ import { SendReviewReply } from "#engagement/application/send-review-reply.ts";
 import { AccessEngagementChannels } from "#engagement/infrastructure/access-engagement-channels.ts";
 import { ChannelsReviewLocations } from "#engagement/infrastructure/channels-review-locations.ts";
 import { CommentsPaceLive } from "#engagement/infrastructure/collection-pace.ts";
+import { DrizzleCommentRuleStore } from "#engagement/infrastructure/drizzle-comment-rule-store.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { DrizzleInboxWaitingReads } from "#engagement/infrastructure/drizzle-inbox-waiting-reads.ts";
@@ -29,6 +31,7 @@ import { WorkflowReplyJobs } from "#engagement/infrastructure/workflow-reply-job
 import { WorkflowReviewReplyJobs } from "#engagement/infrastructure/workflow-review-reply-jobs.ts";
 import { SendReplyV1Live } from "#engagement/infrastructure/workflows/send-reply.ts";
 import { SendReviewReplyV1Live } from "#engagement/infrastructure/workflows/send-review-reply.ts";
+import { WorkspaceRuleStarters } from "#engagement/infrastructure/workspace-rule-starters.ts";
 import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 
 export { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
@@ -49,7 +52,7 @@ export { EngagementReviews } from "#engagement/application/engagement-reviews.ts
 export const engagementWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
   Layer.mergeAll(
     EngagementInbox.layer,
-    EngagementReplies.layer,
+    CommentRules.layer.pipe(Layer.provideMerge(EngagementReplies.layer)),
     CollectComments.layer,
     PurgeEngagement.layer,
     SendReply.layer,
@@ -92,6 +95,8 @@ export const engagementLive = <E, R>(
         PublishingReplyLimits,
         WorkflowReplyJobs,
         ToldEngagementOutcomes,
+        DrizzleCommentRuleStore,
+        WorkspaceRuleStarters,
         gated
       )
     ).pipe(
@@ -107,6 +112,9 @@ export const engagementLive = <E, R>(
 // the Authentication and WorkspaceAccess middleware of the workspace
 // context, which the composition root brings.
 export { InboxHandlers as InboxApiLive } from "#engagement/api/inbox.ts";
+
+// The inbox's comment rules, alike.
+export { InboxRulesHandlers as InboxRulesApiLive } from "#engagement/api/inbox-rules.ts";
 
 // The inbox's reviews endpoints, alike.
 export { InboxReviewsHandlers as InboxReviewsApiLive } from "#engagement/api/inbox-reviews.ts";

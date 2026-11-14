@@ -157,6 +157,7 @@ import {
 } from "./studio-capabilities.ts";
 import { studioFeedsOf } from "./studio-feeds.ts";
 import { studioFollowUpsOf } from "./studio-follow-ups.ts";
+import { studioInboxRulesOf } from "./studio-inbox-rules.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
 import { overviewGroupLive } from "./studio-overview.ts";
@@ -2495,6 +2496,18 @@ const followUpsOfStudio = studioFollowUpsOf({
   workspaceId: studioId,
 });
 
+// The studio's comment rules, over its channels.
+const inboxRulesOfStudio = studioInboxRulesOf({
+  allowed,
+  channelPlatform: (channelId) =>
+    Option.fromUndefinedOr(channels.find(({ id }) => id === channelId)).pipe(
+      Option.map(({ platform }) => platform)
+    ),
+  now: studioNow,
+  record,
+  workspaceId: studioId,
+});
+
 // The studio's feeds.
 const feedsOfStudio = studioFeedsOf({
   allowed,
@@ -3174,6 +3187,7 @@ export const studioGroupsLive = (studio: Studio) =>
     queuesOfStudio.groupLive(studio),
     recyclingOfStudio.groupLive(studio),
     followUpsOfStudio.groupLive(studio),
+    inboxRulesOfStudio.groupLive(studio),
     feedsOfStudio.groupLive(studio),
     overviewGroupLive(studio, studioId),
     HttpApiBuilder.group(Api, "session", (handlers) =>

@@ -20,6 +20,10 @@ import {
   maxIdempotencyKeyLength,
   maxInboxPageSize,
   maxInboxReplyLength,
+  CommentRuleSchema,
+  CommentRuleStatusSchema,
+  maxKeywords,
+  maxRuleRepliesPerDay,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -227,9 +231,80 @@ export const MarkLocationReviewAnswered = Tool.make(
   )
   .annotate(Tool.Title, "Mark a review answered");
 
+const commentRuleId = Schema.String.annotate({
+  description: "The comment rule's id, as list_comment_rules answers it.",
+});
+
+const rulesAnswer = `A comment rule answers by itself, in public, as the channel's account, a comment received after it started under a post it answers on that holds one of its keywords as a word (whatever its case and accents), with its \`reply\`: once a comment and once a person, ${String(maxRuleRepliesPerDay)} a day at most, each reply one of the inbox's own, with their meter. It answers on Mastodon, and on Facebook Pages and Instagram where the server reads them; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself. It never likes, follows or messages anyone privately.`;
+
+const keywords = Schema.Array(Schema.String).annotate({
+  description: `1 to ${String(maxKeywords)} words or phrases, 60 characters each at most.`,
+});
+
+export const ListCommentRules = Tool.make("list_comment_rules", {
+  dependencies: [CurrentMember],
+  description: `Lists the workspace's comment rules, oldest first, those with \`status\` alone when given: each with its keywords, reply, what its channels carry and the comments it matched (their ids and what came of each, never their text). ${rulesAnswer}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    status: Schema.optionalKey(CommentRuleStatusSchema),
+  }),
+  success: Schema.Struct({ rules: Schema.Array(CommentRuleSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List comment rules");
+
+export const StartCommentRule = Tool.make("start_comment_rule", {
+  dependencies: [CurrentMember],
+  description: `Starts a comment rule on a post that went out (\`postId\`) or on every post of a channel (\`channelId\`), exactly one of them. ${rulesAnswer} What it sends is public and goes without anyone reading each first: start one only when the user asked, with their own words for the reply. Needs a role that answers comments.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(Schema.String),
+    keywords,
+    postId: Schema.optionalKey(Schema.String),
+    reply: Schema.String.check(Schema.isMaxLength(maxInboxReplyLength)),
+  }),
+  success: CommentRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Start a comment rule");
+
+export const UpdateCommentRule = Tool.make("update_comment_rule", {
+  dependencies: [CurrentMember],
+  description: `Changes a comment rule's \`keywords\` or \`reply\`, or pauses it (\`paused\` true) or sets it going again (false). ${rulesAnswer}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    keywords: Schema.optionalKey(keywords),
+    paused: Schema.optionalKey(Schema.Boolean),
+    reply: Schema.optionalKey(
+      Schema.String.check(Schema.isMaxLength(maxInboxReplyLength))
+    ),
+    ruleId: commentRuleId,
+  }),
+  success: CommentRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Update a comment rule");
+
+export const StopCommentRule = Tool.make("stop_comment_rule", {
+  dependencies: [CurrentMember],
+  description:
+    "Stops a comment rule for good: it answers nothing more, and its replies stay. Do it only when the user asked.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ ruleId: commentRuleId }),
+  success: Schema.Struct({ stopped: Schema.String }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Stop a comment rule");
+
 /**
  * The tools that read the inbox, and answer and moderate its comments and
- * the reviews of its locations.
+ * the reviews of its locations, and keep its comment rules.
  */
 export const InboxTools = Toolkit.make(
   ListCommentThreads,
@@ -243,5 +318,9 @@ export const InboxTools = Toolkit.make(
   GetLocationReviews,
   ReplyToLocationReview,
   DeleteLocationReviewReply,
-  MarkLocationReviewAnswered
+  MarkLocationReviewAnswered,
+  ListCommentRules,
+  StartCommentRule,
+  UpdateCommentRule,
+  StopCommentRule
 );

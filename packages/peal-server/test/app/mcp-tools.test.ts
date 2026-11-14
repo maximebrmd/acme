@@ -481,6 +481,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_post_changes: [true, false, true, false],
           list_posts: [true, false, true, false],
           list_queues: [true, false, true, false],
+          list_comment_rules: [true, false, true, false],
           list_follow_up_rules: [true, false, true, false],
           list_recycling_rules: [true, false, true, false],
           list_review_links: [true, false, true, false],
@@ -528,7 +529,9 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // They replace the options the channel had.
           set_channel_defaults: [false, true, true, false],
           stop_boost: [false, true, true, true],
+          start_comment_rule: [false, false, false, true],
           start_follow_up_rule: [false, false, false, true],
+          stop_comment_rule: [false, true, true, false],
           stop_follow_up_rule: [false, true, true, false],
           stop_recycling_rule: [false, true, true, false],
           // The same tags again change nothing more, and remove nothing
@@ -542,6 +545,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // It replaces what it names.
           update_feed: [false, true, true, true],
           update_queue: [false, true, true, false],
+          update_comment_rule: [false, false, true, true],
           update_follow_up_rule: [false, false, true, true],
           update_recycling_rule: [false, false, true, true],
           update_signature: [false, true, true, false],
@@ -766,6 +770,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["reply_to_location_review", "workspace:publish"],
               ["delete_location_review_reply", "workspace:publish"],
               ["mark_location_review_answered", "workspace:publish"],
+              ["list_comment_rules", "workspace:read"],
+              ["start_comment_rule", "workspace:publish"],
+              ["update_comment_rule", "workspace:publish"],
+              ["stop_comment_rule", "workspace:publish"],
             ]
           );
 
@@ -872,11 +880,18 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               postId,
               timeZone: "Europe/Paris",
             },
+            start_comment_rule: {
+              keywords: ["price"],
+              postId,
+              reply: "Never sent.",
+            },
             start_follow_up_rule: { likes: 10, postId, repost: true },
+            stop_comment_rule: { ruleId: postId },
             stop_follow_up_rule: { ruleId: postId },
             stop_recycling_rule: { ruleId: postId },
             unpublish_post: { postId },
             unschedule_post: { postId },
+            update_comment_rule: { paused: true, ruleId: postId },
             update_follow_up_rule: { paused: true, ruleId: postId },
             update_recycling_rule: { paused: true, ruleId: postId },
             withdraw_comment_reply: { replyId: postId },

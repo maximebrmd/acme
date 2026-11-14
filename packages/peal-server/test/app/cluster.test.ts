@@ -38,6 +38,7 @@ import { RefreshChannelTokens } from "#channels/application/refresh-channel-toke
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
+import { CommentRules } from "#engagement/application/comment-rules.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
@@ -270,6 +271,17 @@ const ChannelJobsTest = Layer.mergeAll(
           read: 0,
           received: 0,
         }),
+    })
+  ),
+  Layer.succeed(
+    CommentRules,
+    CommentRules.of({
+      change: () => Effect.die("No comment rule changes here"),
+      get: () => Effect.die("No comment rule is read here"),
+      list: () => Effect.succeed([]),
+      runDue: Effect.succeed({ ended: 0, looked: 0, replied: 0 }),
+      start: () => Effect.die("No comment rule starts here"),
+      stop: () => Effect.die("No comment rule stops here"),
     })
   ),
   Layer.succeed(

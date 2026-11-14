@@ -200,6 +200,21 @@
     "tag": "CommentNotFound"
   },
   {
+    "code": "comment_rule_ended",
+    "status": 409,
+    "tag": "CommentRuleEnded"
+  },
+  {
+    "code": "comment_rule_not_found",
+    "status": 404,
+    "tag": "CommentRuleNotFound"
+  },
+  {
+    "code": "comment_rule_not_possible",
+    "status": 422,
+    "tag": "CommentRuleNotPossible"
+  },
+  {
     "code": "connect_failed",
     "status": 422,
     "tag": "ConnectFailed"
@@ -778,6 +793,11 @@
     "code": "too_many_client_errors",
     "status": 429,
     "tag": "TooManyClientErrors"
+  },
+  {
+    "code": "too_many_comment_rules",
+    "status": 409,
+    "tag": "TooManyCommentRules"
   },
   {
     "code": "too_many_connect_attempts",

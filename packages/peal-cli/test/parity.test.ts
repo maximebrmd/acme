@@ -142,6 +142,11 @@ const coverage = {
   "inbox.setAnswered": by("inbox answered"),
   "inbox.withdrawReply": by("inbox withdraw"),
   "inboxReviews.getReviewThread": by("inbox reviews show"),
+  "inboxRules.createCommentRule": by("inbox rules start"),
+  "inboxRules.deleteCommentRule": by("inbox rules stop"),
+  "inboxRules.getCommentRule": by("inbox rules show"),
+  "inboxRules.listCommentRules": by("inbox rules list"),
+  "inboxRules.updateCommentRule": by("inbox rules update"),
   "inboxReviews.listReviewThreads": by("inbox reviews list"),
   "inboxReviews.replyToReview": exempt(
     "Only a member in the web app answers a review: Google's policies ask that a reply follow the user's own decision, and the command line is an application acting for them."

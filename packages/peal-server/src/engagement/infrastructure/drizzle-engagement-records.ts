@@ -15,6 +15,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
 import {
+  commentRules,
   erasedWorkspaces,
   replies,
   reviewReplies,
@@ -104,6 +105,11 @@ export const DrizzleEngagementRecords = Layer.effect(
                 .values({ erasedAt: DateTime.toDateUtc(now), workspaceId })
                 .onConflictDoNothing();
 
+              // The comment rules, with what they matched.
+              yield* db
+                .delete(commentRules)
+                .where(eq(commentRules.workspaceId, workspaceId));
+
               yield* db
                 .delete(threads)
                 .where(eq(threads.workspaceId, workspaceId));
@@ -135,6 +141,14 @@ export const DrizzleEngagementRecords = Layer.effect(
           .update(reviewReplies)
           .set({ authorId: null })
           .where(eq(reviewReplies.authorId, userId))
+          .pipe(Effect.mapError(failed));
+
+        // Nor that they started a comment rule: its next run ends it, as
+        // its starter is gone.
+        yield* db
+          .update(commentRules)
+          .set({ startedBy: null })
+          .where(eq(commentRules.startedBy, userId))
           .pipe(Effect.mapError(failed));
       }
     );
