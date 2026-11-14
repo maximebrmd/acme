@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "fd1dc0ca-b1f8-43ed-b075-42e3b33ea35d",
+  "id": "3c7cb8fd-b189-4283-ac75-ea5b366e116b",
   "prevIds": [
     "9d892cac-59ad-42a0-a77d-020ef63843e3"
   ],
@@ -19,6 +19,24 @@
         "s|col|billing.subscriptions.retires_at",
         "n|col|billing.subscriptions.retires_at",
         "e|col|billing.subscriptions.retires_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retired_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retired_at",
+        "n|col|billing.subscriptions.retired_at",
+        "e|col|billing.subscriptions.retired_at"
       ],
       "reads": [
         "n|tbl|billing.subscriptions",
@@ -51,6 +69,22 @@
         "schema": "billing",
         "table": "subscriptions",
         "name": "retires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retired_at",
         "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": false,

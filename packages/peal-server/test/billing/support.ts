@@ -21,6 +21,7 @@ import { CreditProblems } from "#billing/application/ports/credit-problems.ts";
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { MeterUsageStore } from "#billing/application/ports/meter-usage-store.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
@@ -746,3 +747,9 @@ export const NoMetersTest = Layer.succeed(
 
 /** No credit refused: any record of one dies. */
 export const NoCreditProblemsTest = Layer.mock(CreditProblems, {});
+
+/** No legacy plan retired. */
+export const NoRetirementsTest = Layer.mock(PlanRetirements, {
+  retiresAt: () => Effect.succeedNone,
+  untold: Effect.succeed([]),
+});

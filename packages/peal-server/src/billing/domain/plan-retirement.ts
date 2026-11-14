@@ -1,7 +1,5 @@
 import { DateTime, Duration } from "effect";
 
-import type { BillingInterval } from "./billing-interval.ts";
-
 /**
  * The notice a legacy plan is given before it ends for good: the terms
  * promise 30 days before a change of price, and a new contract cannot be
@@ -13,42 +11,33 @@ export const retirementNotice = Duration.days(30);
 /**
  * How long after a retirement is applied its notice may go out: the
  * hourly reminders tell it, and an email that fails is retried for some
- * hours. The day is counted from then, so 30 days are never fewer.
+ * hours. The day is counted from then; when the notice goes out later, the
+ * day moves later before it does (`noticeIsShort`).
  */
 export const retirementTelling = Duration.days(1);
 
 /**
- * The day a legacy plan retired with a notice at `noticeAt` ends: its
- * period's end when that is 30 days or more after the notice; else, for a
- * monthly plan, the first period's end that is (it renews once or twice,
- * whole months, as paid for); for a yearly plan, the 30th day itself, as
- * renewing a year to retire it would charge a year: Stripe then charges
- * the period it renews into only up to that day. Months are counted from
- * the period's end as Effect counts them (the 31st of January and a month
- * is the 28th of February), never later than Stripe's own period end.
+ * How long after its day a retired plan's end may come and still be the
+ * retirement's: Stripe ends it at the instant, and its event follows.
  */
-export const retirementDay = (
-  noticeAt: DateTime.Utc,
-  periodEnd: DateTime.Utc,
-  interval: BillingInterval
-): DateTime.Utc => {
+export const retirementEndTolerance = Duration.hours(1);
+
+/**
+ * The day a legacy plan retired with a notice at `noticeAt` ends: the
+ * first midnight UTC 30 days or more after it, whatever the plan's
+ * period. Stripe ends it then; what it was paid for beyond that day is
+ * credited back, and a period it renews into before it is charged only up
+ * to it, so nothing after the day is charged.
+ */
+export const retirementDay = (noticeAt: DateTime.Utc): DateTime.Utc => {
   const earliest = DateTime.addDuration(noticeAt, retirementNotice);
+  const midnight = DateTime.startOf(earliest, "day");
 
-  if (DateTime.isGreaterThanOrEqualTo(periodEnd, earliest)) {
-    return periodEnd;
-  }
-
-  if (interval === "year") {
-    return earliest;
-  }
-
-  let months = 1;
-  let end = DateTime.add(periodEnd, { months });
-
-  while (DateTime.isLessThan(end, earliest)) {
-    months += 1;
-    end = DateTime.add(periodEnd, { months });
-  }
-
-  return end;
+  return DateTime.Equivalence(midnight, earliest)
+    ? earliest
+    : DateTime.add(midnight, { days: 1 });
 };
+
+/** Whether a notice sent at `now` would give fewer than 30 days before `day`. */
+export const noticeIsShort = (day: DateTime.Utc, now: DateTime.Utc): boolean =>
+  DateTime.isLessThan(day, DateTime.addDuration(now, retirementNotice));

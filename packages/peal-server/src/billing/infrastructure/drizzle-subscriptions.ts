@@ -420,6 +420,7 @@ const retiring = and(
 const retiringOf = (row: Row) =>
   toSubscription(row).pipe(
     Effect.map((subscription) => ({
+      retiredAt: instantOf(row.retiredAt),
       retiresAt: instantOf(row.retiresAt),
       subscription,
       toldAt: instantOf(row.retirementToldAt),
@@ -445,24 +446,24 @@ export const DrizzlePlanRetirementsLive = Layer.effect(
 
     return PlanRetirements.of({
       legacy: read(retiring).pipe(Effect.withSpan("PlanRetirements.legacy")),
-      retire: Effect.fn("PlanRetirements.retire")(
-        function* retire(subscriptionId, retiresAt) {
-          // A day kept already stays: the one Stripe was asked for.
-          const [row] = yield* db
-            .update(subscriptions)
-            .set({
-              retiresAt: sql`coalesce(${subscriptions.retiresAt}, ${date(retiresAt)})`,
-            })
-            .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
-            .returning({ retiresAt: subscriptions.retiresAt })
-            .pipe(Effect.mapError(failed));
-
-          return Option.getOrElse(
-            instantOf(row?.retiresAt ?? null),
-            () => retiresAt
-          );
-        }
-      ),
+      retire: (subscriptionId, retiresAt, at) =>
+        db
+          .update(subscriptions)
+          .set({
+            retiredAt: sql`coalesce(${subscriptions.retiredAt}, ${date(at)})`,
+            retiresAt: date(retiresAt),
+          })
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      retiresAt: (subscriptionId) =>
+        db
+          .select({ retiresAt: subscriptions.retiresAt })
+          .from(subscriptions)
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) => instantOf(row?.retiresAt ?? null))
+          ),
       told: (subscriptionId, at) =>
         db
           .update(subscriptions)

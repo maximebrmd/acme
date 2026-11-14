@@ -5,6 +5,7 @@ import { AccountDays } from "#billing/application/account-days.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { CreditProblems } from "#billing/application/ports/credit-problems.ts";
 import type { CreditProblem } from "#billing/application/ports/credit-problems.ts";
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
@@ -108,6 +109,9 @@ const legacyInvoices = new Map<string, readonly PaidInvoice[]>([
   ],
 ]);
 
+// The day each retired subscription was retired to.
+const retiredTo = new Map<string, DateTime.Utc>();
+
 // When each subscription's latest event recorded happened.
 const lastEvents = new Map<string, DateTime.Utc>();
 
@@ -204,6 +208,7 @@ const PortsInMemory = Layer.mergeAll(
                 ).pipe(Effect.as([])),
           endAtTrialEnd: (_workspace, id, end) =>
             asked(`endAtTrialEnd ${id} ${DateTime.formatIso(end)}`),
+          retireAt: () => Effect.die("not retired here"),
           endAndInvoice: (_workspace, id, reason) =>
             asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
@@ -272,6 +277,10 @@ const PortsInMemory = Layer.mergeAll(
       )
     )
   ),
+  Layer.mock(PlanRetirements, {
+    retiresAt: (id) =>
+      Effect.succeed(Option.fromUndefinedOr(retiredTo.get(id))),
+  }),
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
@@ -292,6 +301,7 @@ const reset = RecordLog.use((log) =>
     Ref.set(log.problems, []),
     Effect.sync(() => {
       lastEvents.clear();
+      retiredTo.clear();
     }),
     Ref.set(log.stripe, []),
     Ref.set(log.trials, []),
@@ -545,6 +555,55 @@ layer(RecordTest)("recording a subscription", (it) => {
           (yield* Metric.value(creditProblemsCount)).count,
           before + 1
         );
+      })
+  );
+
+  it.effect(
+    "credits a retired legacy plan Stripe ended on its day what it was paid for beyond it, and not one ended well before",
+    () =>
+      Effect.gen(function* retired() {
+        yield* reset;
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+        yield* Effect.sync(() => {
+          retiredTo.set("sub_synthetic_legacy", at("2026-11-16T00:00:00Z"));
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
+        // Ended by Stripe at its day: 15 of November's 30 days go back.
+        yield* record({
+          occurredAt: at("2026-11-16T00:00:04Z"),
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "canceled",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "credit sub_synthetic_legacy in_november:950,in_october:0 retirement",
+        ]);
+
+        // Ended a week before its day: not the retirement's end.
+        yield* reset;
+        yield* Effect.sync(() => {
+          retiredTo.set("sub_synthetic_legacy", at("2026-11-23T00:00:00Z"));
+        });
+        yield* record({
+          occurredAt: at("2026-11-16T00:00:04Z"),
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "canceled",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+
+        assert.deepStrictEqual(yield* askedOfStripe, []);
       })
   );
 

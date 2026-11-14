@@ -218,7 +218,13 @@ describe(renderNoticeEmail, () => {
       "The Starter plan of Studio Nord ends on January 1, 2027 at 12:00 AM UTC"
     );
     expect(render(retiring, "en").text).toContain(
-      "its unused time is refunded to the payment method it was paid with"
+      "nothing after that day is charged: the unused part of what was paid for beyond it is refunded to the payment method it was paid with"
+    );
+    expect(render(retiring, "en").text).not.toContain(
+      "nothing more is charged"
+    );
+    expect(render(retiring, "fr").text).toContain(
+      "rien n’est facturé au-delà de ce jour"
     );
     expect(render(retiring, "fr").subject).toBe(
       "La formule Starter de Studio Nord prend fin le 1 janvier 2027 à 00:00 UTC"

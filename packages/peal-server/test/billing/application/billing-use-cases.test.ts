@@ -32,6 +32,7 @@ import {
   AccountDaysUncountedTest,
   AloneInAccountsTest,
   NoCreditProblemsTest,
+  NoRetirementsTest,
   NoOwnChannelsTest,
   NoAddressesTest,
   NoContractsTest,
@@ -136,6 +137,7 @@ const billingWith = (enabled: boolean) =>
         UsageBillingUncalledTest,
         NoOwnChannelsTest,
         NoCreditProblemsTest,
+        NoRetirementsTest,
         PlanHolders.layerOwn
       )
     ),
@@ -405,6 +407,7 @@ const recordsWith = (enabled: boolean) =>
       Layer.mergeAll(
         NoMetersTest,
         NoCreditProblemsTest,
+        NoRetirementsTest,
         SubscriptionsInMemory,
         NoTrialsTest,
         StripeUncalledTest,

@@ -10,6 +10,7 @@ import {
 
 import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
+import { retirementEndTolerance } from "#billing/domain/plan-retirement.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import { billsAt, entitles } from "#billing/domain/subscription.ts";
 import type {
@@ -25,6 +26,7 @@ import { AccountDays } from "./account-days.ts";
 import { BillingAccounts } from "./billing-accounts.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { CreditProblems } from "./ports/credit-problems.ts";
+import { PlanRetirements } from "./ports/plan-retirements.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
@@ -163,6 +165,7 @@ export class RecordSubscription extends Context.Service<
       const usage = yield* UsageBilling;
       const days = yield* AccountDays;
       const problems = yield* CreditProblems;
+      const retirements = yield* PlanRetirements;
 
       // A per-account subscription paid for the first time invoices at a
       // threshold until its first invoice is paid, which the reporter's
@@ -297,6 +300,98 @@ export class RecordSubscription extends Context.Service<
                   })
               )
             );
+        }
+      );
+
+      // A retired legacy plan Stripe ended on its day: what it was paid
+      // for beyond the day goes back, as the notice said, never more than
+      // is still refundable. An end well before the day (a move, a
+      // withdrawal) is not the retirement's, and credits itself.
+      const creditRetired = Effect.fn("RecordSubscription.creditRetired")(
+        function* creditRetired(recorded: Subscription, endedAt: DateTime.Utc) {
+          if (
+            recorded.plan === "payAsYouGo" ||
+            recorded.status !== "canceled"
+          ) {
+            return;
+          }
+
+          const retiresAt = yield* retirements.retiresAt(
+            recorded.stripeSubscriptionId
+          );
+
+          if (
+            Option.isSome(retiresAt) &&
+            DateTime.isGreaterThanOrEqualTo(
+              endedAt,
+              DateTime.subtractDuration(retiresAt.value, retirementEndTolerance)
+            )
+          ) {
+            yield* creditUnused(recorded, retiresAt.value, {
+              _tag: "retirement",
+            });
+          }
+        }
+      );
+
+      const moveLegacy = Effect.fn("RecordSubscription.moveLegacy")(
+        function* moveLegacy(recorded: Subscription, occurredAt: DateTime.Utc) {
+          // Per-account pricing now runs, as the subscription's row says (a
+          // late or resent event's own status never moves anything): a
+          // legacy plan the workspace still pays for ends at once, set to
+          // end with its period or not, and the part of its period not
+          // supplied goes back to the payment method it was paid with,
+          // through a credit note on each invoice (its own currency: a legacy
+          // plan's euros cannot pay a dollar invoice), never more than is
+          // still refundable of it. Computed at the moment per-account
+          // pricing started, the same on every retry, each note under its
+          // key, so it is credited once. A credit Stripe refuses for good is
+          // kept for staff and counted, and the plan is ended all the same:
+          // it must stop charging. Last, so a Stripe that does not answer
+          // holds back nothing else of the event.
+          if (!(yield* paysNow(recorded))) {
+            return;
+          }
+
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          const movedAt = Option.getOrElse(
+            recorded.startedAt,
+            () => occurredAt
+          );
+
+          yield* Effect.forEach(
+            held.filter(
+              (legacy) =>
+                legacy.plan !== "payAsYouGo" &&
+                legacy.status !== "trialing" &&
+                entitles(legacy)
+            ),
+            (legacy) =>
+              Effect.gen(function* moved() {
+                const { stripeSubscriptionId } = legacy;
+
+                yield* creditUnused(legacy, movedAt, {
+                  _tag: "movedToRateCard",
+                });
+
+                yield* stripe.endNow(
+                  recorded.workspaceId,
+                  stripeSubscriptionId,
+                  "movedToRateCard"
+                );
+
+                yield* Effect.logInfo(
+                  "Ended a legacy plan moved to per-account pricing, its unused time credited"
+                ).pipe(
+                  Effect.annotateLogs({
+                    stripeSubscriptionId,
+                    workspaceId: recorded.workspaceId,
+                  })
+                );
+              }),
+            { discard: true }
+          );
         }
       );
 
@@ -493,59 +588,12 @@ export class RecordSubscription extends Context.Service<
           yield* accounts.subscriptionChanged(recorded.workspaceId);
         }
 
-        // Per-account pricing now runs, as the subscription's row says (a
-        // late or resent event's own status never moves anything): a
-        // legacy plan the workspace still pays for ends at once, set to
-        // end with its period or not, and the part of its period not
-        // supplied goes back to the payment method it was paid with,
-        // through a credit note on each invoice (its own currency: a legacy
-        // plan's euros cannot pay a dollar invoice), never more than is
-        // still refundable of it. Computed at the moment per-account
-        // pricing started, the same on every retry, each note under its
-        // key, so it is credited once. A credit Stripe refuses for good is
-        // kept for staff and counted, and the plan is ended all the same:
-        // it must stop charging. Last, so a Stripe that does not answer
-        // holds back nothing else of the event.
-        if (outcome !== "ignored" && (yield* paysNow(recorded))) {
-          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+        if (outcome !== "ignored") {
+          yield* creditRetired(recorded, occurredAt);
+        }
 
-          const movedAt = Option.getOrElse(
-            recorded.startedAt,
-            () => occurredAt
-          );
-
-          yield* Effect.forEach(
-            held.filter(
-              (legacy) =>
-                legacy.plan !== "payAsYouGo" &&
-                legacy.status !== "trialing" &&
-                entitles(legacy)
-            ),
-            (legacy) =>
-              Effect.gen(function* moved() {
-                const { stripeSubscriptionId } = legacy;
-
-                yield* creditUnused(legacy, movedAt, {
-                  _tag: "movedToRateCard",
-                });
-
-                yield* stripe.endNow(
-                  recorded.workspaceId,
-                  stripeSubscriptionId,
-                  "movedToRateCard"
-                );
-
-                yield* Effect.logInfo(
-                  "Ended a legacy plan moved to per-account pricing, its unused time credited"
-                ).pipe(
-                  Effect.annotateLogs({
-                    stripeSubscriptionId,
-                    workspaceId: recorded.workspaceId,
-                  })
-                );
-              }),
-            { discard: true }
-          );
+        if (outcome !== "ignored") {
+          yield* moveLegacy(recorded, occurredAt);
         }
 
         yield* Effect.logInfo("Recorded a subscription event").pipe(

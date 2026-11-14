@@ -356,26 +356,35 @@
   peal-server:billing:retire-plans` (`src/retire-plans.ts`, in the image;
   `RetireLegacyPlans`, `RetirePlansLive`): it lists each legacy
   subscription that may still give its plan with what retiring does
-  (`Retirement`), changing nothing; `--apply` keeps the day on its row
-  first (`billing.subscriptions.retires_at`, `PlanRetirements.retire`: a
-  day kept stays), then sets it to end at Stripe under the request key
-  `retirement` (`cancelAtPeriodEnd` when the day is its period's end, else
-  `cancelAt`), and a run again asks again only what Stripe's events do not
-  show ended. The day is `retirementDay(noticeAt, periodEnd, interval)`
-  (`domain/plan-retirement.ts`): the period's end when it is 30 days
-  (`retirementNotice`) or more after the notice, else a monthly plan's
-  next period end that is, and a yearly plan's 30th day (renewing a year
-  to retire it would charge a year); `noticeAt` is a day after the run
-  (`retirementTelling`), as the hourly `SendBillingReminders` tells each
-  billing manager (`PlansRetiring`, always emailed, key
-  `plans-retiring:<subscription>`, then `retirement_told_at`). A trial runs
-  to its end; a plan a cancellation ends is left (`ending`). A server that
-  does not bill lists, and refuses `--apply` (`BillingOff`). Runbook (the
-  owner, sandbox, never in tests): a monthly and a yearly legacy
-  subscription on test clocks, the command, `--apply`, again (nothing
-  more), the notice and email within the hour, the clock past the day (each
-  ends, the monthly after one renewal at most, the yearly prorated to its
-  day), and one moved before its day (credited, ended, no end left set).
+  (`Retirement`), changing nothing. `--apply` takes each on its own: Stripe
+  first (`StripeContracts.retireAt`: `cancel_at` the day, without
+  proration within the period paid for, prorated in a later one, key
+  `retire-<subscription>-<seconds>`), and only once Stripe took it the day
+  and when it was applied are kept (`billing.subscriptions.retires_at`,
+  `retired_at`); one Stripe refuses or does not answer is `failed`, the
+  others go on, the command exits 1, and a run again retries it. The day
+  is `retirementDay(noticeAt)` (`domain/plan-retirement.ts`): the first
+  midnight UTC 30 days (`retirementNotice`) or more after `noticeAt`, a
+  day after the run (`retirementTelling`), whatever the plan's period.
+  The hourly `SendBillingReminders` tells each once (`PlansRetiring`,
+  always emailed, key `plans-retiring:<subscription>`, then
+  `retirement_told_at`), moving the day later at Stripe first when the
+  notice would give fewer than 30 days (`noticeIsShort`), and sets
+  `peal.billing.retirements.untold_age` (alert
+  `peal-retirement-notices-behind`). When Stripe ends a retired plan on its
+  day (its `deleted` event within `retirementEndTolerance` of the day),
+  `RecordSubscription` credits what it was paid for beyond the day
+  (`CreditReason` `retirement`, as the move does); an end well before the
+  day (a move, a withdrawal) is not the retirement's. A trial runs to its
+  end; a cancellation that ends it by the day stands (`ending`), a later
+  one is brought forward. A server that does not bill lists, and refuses
+  `--apply` (`BillingOff`). Runbook (the owner, sandbox, never in tests): a
+  monthly and a yearly legacy subscription on test clocks, the command,
+  `--apply`, again (nothing more), the notice and email within the hour,
+  the clock past a renewal before the day (charged only up to the day) and
+  past the day (each ends, the credit note of the unused part), one moved
+  before its day (credited once, ended, no end left set), and a
+  `refund.failed` sent from the dashboard (listed for staff).
 - `GET …/billing` answers `accounts` (the workspace's own and the
   pooled count, and for the billing workspace's members only the month's
   account-days, `estimate` by `accountsCharge` of what was reported once

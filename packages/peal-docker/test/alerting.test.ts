@@ -43,6 +43,7 @@ const watched = [
   "peal_billing_account_days_started_day",
   "peal_billing_threshold_unset_total",
   "peal_billing_credit_problems_total",
+  "peal_billing_retirements_untold_age",
   "peal_billing_meter_errors_total",
 ];
 
@@ -132,6 +133,12 @@ describe("the production alert rules", () => {
       "max(peal_billing_usage_report_oldest_age) or vector(0)",
       "warning",
       21_600,
+    ],
+    [
+      "peal-retirement-notices-behind",
+      "max(peal_billing_retirements_untold_age) or vector(0)",
+      "warning",
+      7200,
     ],
     [
       "peal-usage-report-stopped",

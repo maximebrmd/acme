@@ -345,6 +345,28 @@ export const StripeContractsLive = Layer.effect(
       ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.cancelAt"));
     };
 
+    const retireAt = (
+      workspaceId: WorkspaceId,
+      id: string,
+      at: DateTime.Utc,
+      prorate: boolean
+    ) => {
+      const seconds = Math.floor(DateTime.toEpochMillis(at) / 1000);
+
+      return call(
+        workspaceId,
+        async (stripe) =>
+          await stripe.subscriptions.update(
+            id,
+            {
+              cancel_at: seconds,
+              proration_behavior: prorate ? "create_prorations" : "none",
+            },
+            { idempotencyKey: `retire-${id}-${seconds}` }
+          )
+      ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.retireAt"));
+    };
+
     // Ends it at once, its unbilled usage invoiced now or never.
     const ending = (
       workspaceId: WorkspaceId,
@@ -594,6 +616,7 @@ export const StripeContractsLive = Layer.effect(
       endNow,
       isBusiness,
       paidInvoices,
+      retireAt,
       upcomingTotal,
     });
   })

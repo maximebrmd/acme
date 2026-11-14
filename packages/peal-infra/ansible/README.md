@@ -804,19 +804,31 @@ workspace.
 
 The plans priced by channels are no longer sold, and their subscriptions
 are retired with 30 days' notice. Each run lists every subscription to one
-that still gives its plan, with the day it would end, and changes nothing:
+that still gives its plan, with the day it would end, and changes nothing
+but the schema (it applies pending migrations, as the server does: run it
+from the image the server runs):
 
 ```sh
 sudo peal-compose run --rm --no-deps server packages/peal-server/src/retire-plans.ts
 ```
 
-With `--apply` it keeps each one's day and sets it to end then at Stripe;
-the server's hourly reminders then tell each workspace's billing managers
-once, by notice and email (`PlansRetiring`). A trial runs to its end, and a
-plan its subscriber cancelled ends anyway. Run it again any time: what was
-set stays. A server that does not bill (production today) prints that
-there is nothing to do, or refuses `--apply`. Once the last legacy
-subscription ended, archive the legacy plans' prices by hand at Stripe.
+With `--apply` it sets each one, on its own, to end on its day at Stripe
+(the first midnight UTC 30 days after the latest its notice goes out),
+then keeps the day; the server's hourly reminders tell each workspace's
+billing managers once, by notice and email (`PlansRetiring`), and move the
+day later first should the notice go out late (`peal-retirement-notices-behind`
+alerts). Nothing after the day is charged: what was paid for beyond it is
+credited when Stripe ends it. One Stripe refuses or does not answer is
+listed as failed, the others go on, and the command exits 1. Run it again
+until it lists nothing to retire and nothing failed, and once more after a
+legacy subscription is paid again (an unpaid one is not listed). A trial
+runs to its end, and a cancellation that ends a plan by its day stands. A
+server that does not bill (production today) prints that there is nothing
+to do, or refuses `--apply`. Subscribe the Stripe webhook to
+`refund.failed` too: a refund that fails later is listed for staff in the
+console, with every credit Stripe refused (`peal-credit-problems`). Once the
+last legacy subscription ended, archive the legacy plans' prices by hand at
+Stripe.
 
 ## Backups
 

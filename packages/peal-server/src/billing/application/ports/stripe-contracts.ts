@@ -120,6 +120,19 @@ export class StripeContracts extends Context.Service<
       reason: CreditReason
     ) => Effect.Effect<readonly InvoiceCredited[], StripeUnreachable>;
     /**
+     * Sets a retired legacy plan to end at `at`: within the period paid
+     * for without proration (its unused part is credited by a credit note
+     * once it ends), in a later one charging the period it renews into
+     * only up to `at` (`prorate`), as Stripe does there anyway. Asked again
+     * for the same day, the same request.
+     */
+    readonly retireAt: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      at: DateTime.Utc,
+      prorate: boolean
+    ) => Effect.Effect<void, StripeUnreachable>;
+    /**
      * Sets a trial to end, cancelled, when its trial does, so it never
      * turns into a charge, even once a payment method was added. A
      * subscription Stripe no longer has, or no longer lets change, is left

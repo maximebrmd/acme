@@ -1,5 +1,5 @@
 import { BunRuntime } from "@effect/platform-bun";
-import { Console, DateTime, Effect, Layer, Option } from "effect";
+import { Console, DateTime, Effect, Layer } from "effect";
 
 import { RetireLegacyPlans } from "#billing/application/retire-legacy-plans.ts";
 import type { Retirement } from "#billing/application/retire-legacy-plans.ts";
@@ -9,15 +9,20 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 
 // Retires the plans priced by tiers of channels. It lists every
 // subscription to one that may still give its plan, with the day it would
-// end, and changes nothing. With --apply it keeps each one's day, sets it
-// to end then at Stripe (its first period's end 30 days or more after its
-// billing managers are told, or a yearly plan's 30th day), and the
-// server's hourly reminders tell them once, by notice and email. A trial
-// runs to its end, and a plan its subscriber cancelled ends anyway. Safe
-// to run again: what was set stays, and a call that did not go through is
-// made again. It applies pending migrations first, as the server would,
-// and prints ids, plans and days, never a name or a key. A server that
-// does not bill lists them, and refuses --apply.
+// end, and changes nothing. With --apply, each one on its own: Stripe is
+// set to end it on that day (the first midnight UTC 30 days or more after
+// the latest its notice may go out), and once Stripe took it the day is
+// kept, and the server's hourly reminders tell its billing managers once,
+// by notice and email; nothing after the day is charged, and what was paid
+// for beyond it is credited when it ends. One Stripe refuses or does not
+// answer is listed as failed, the others go on, and the command exits 1:
+// run it again until it lists nothing to retire or failed (a plan that
+// becomes payable again later, as an unpaid one paid, is listed then). A
+// trial runs to its end, and a cancellation that ends a plan by the day
+// stands. It applies pending migrations first, as the server would, even
+// on a dry run: run it from the image the server runs. It prints ids,
+// plans and days, never a name or a key. A server that does not bill lists
+// them, and refuses --apply.
 //
 //   bun nx run peal-server:billing:retire-plans [-- --apply]
 const apply = process.argv.includes("--apply");
@@ -40,18 +45,15 @@ const lineOf = (retirement: Retirement): string => {
     }
 
     case "ending": {
-      return `ending    ${held}  ends ${Option.match(retirement.endsAt, {
-        onNone: () => "with its period",
-        onSome: day,
-      })} (cancelled already)`;
+      return `ending    ${held}  ends ${day(retirement.endsAt)} (cancelled already)`;
     }
 
     case "trial": {
       return `trial     ${held}  runs to its end`;
     }
 
-    case "unknownPeriod": {
-      return `unknown   ${held}  no period end recorded: left to staff`;
+    case "failed": {
+      return `failed    ${held}  Stripe ${retirement.permanent ? "refused" : "did not answer"}: run again`;
     }
 
     default: {
@@ -71,6 +73,18 @@ const program = Effect.gen(function* retirePlans() {
   }
 
   yield* Console.log(report.retirements.map(lineOf).join("\n"));
+
+  const failed = report.retirements.filter(({ _tag }) => _tag === "failed");
+
+  if (failed.length > 0) {
+    yield* Console.error(
+      `${String(failed.length)} retirement(s) failed at Stripe: nothing was kept for them, run the command again.`
+    );
+    yield* Effect.sync(() => {
+      process.exitCode = 1;
+    });
+  }
+
   yield* Console.log(
     apply
       ? "Applied: the server's hourly reminders tell each billing manager once."

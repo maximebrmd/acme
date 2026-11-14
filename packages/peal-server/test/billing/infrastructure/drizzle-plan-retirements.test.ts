@@ -60,7 +60,7 @@ const ids = (found: readonly { readonly subscription: Subscription }[]) =>
 
 layer(RepositoryTest)("the legacy plans' retirement in Postgres", (it) => {
   it.effect(
-    "lists legacy plans that may still give their plan, keeps the first day, and tells once",
+    "lists legacy plans that may still give their plan, keeps the day Stripe took and when it was first applied, and tells once",
     () =>
       Effect.gen(function* retirements() {
         const retire = yield* PlanRetirements;
@@ -75,13 +75,17 @@ layer(RepositoryTest)("the legacy plans' retirement in Postgres", (it) => {
         assert.notInclude(legacy, perAccount);
         assert.notInclude(ids(yield* retire.untold), starter);
 
+        const first = at("2026-11-14T10:00:00Z");
         const day = at("2027-01-01T00:00:00Z");
 
-        assert.deepStrictEqual(yield* retire.retire(starter, day), day);
-        // Asked again with another day, the first stays.
+        yield* retire.retire(starter, at("2026-12-16T00:00:00Z"), first);
+        // Moved later, as when its notice went out late: the day is the
+        // new one, and when it was first applied stays.
+        yield* retire.retire(starter, day, at("2026-11-17T10:00:00Z"));
+
         assert.deepStrictEqual(
-          yield* retire.retire(starter, at("2027-02-01T00:00:00Z")),
-          day
+          yield* retire.retiresAt(starter),
+          Option.some(day)
         );
 
         const untold = (yield* retire.untold).find(
@@ -89,6 +93,7 @@ layer(RepositoryTest)("the legacy plans' retirement in Postgres", (it) => {
         );
 
         assert.deepStrictEqual(untold?.retiresAt, Option.some(day));
+        assert.deepStrictEqual(untold?.retiredAt, Option.some(first));
 
         yield* retire.told(starter, at("2026-11-14T11:00:00Z"));
         yield* retire.told(starter, at("2026-11-14T12:00:00Z"));

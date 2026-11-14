@@ -7,16 +7,18 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 /** A legacy plan's subscription, with where its retirement stands. */
 export interface RetiringSubscription {
   readonly subscription: Subscription;
-  /** The day its retirement set it to end, once applied. */
+  /** The day Stripe was set to end it, once it accepted. */
   readonly retiresAt: Option.Option<DateTime.Utc>;
+  /** When the retirement was first applied. */
+  readonly retiredAt: Option.Option<DateTime.Utc>;
   /** When its billing managers were told, once. */
   readonly toldAt: Option.Option<DateTime.Utc>;
 }
 
 /**
  * The retirement of the legacy plans, kept on their subscriptions'
- * rows: which still entitle, the day each was set to end, and whether
- * their billing managers were told.
+ * rows: which still entitle, the day each was set to end at Stripe, and
+ * whether their billing managers were told.
  */
 export class PlanRetirements extends Context.Service<
   PlanRetirements,
@@ -30,13 +32,18 @@ export class PlanRetirements extends Context.Service<
       DatabaseError
     >;
     /**
-     * Keeps the day it is retired to, before Stripe is asked: a day kept
-     * already stays, and is the one answered.
+     * Keeps the day Stripe accepted to end it on, and, the first time,
+     * when the retirement was applied.
      */
     readonly retire: (
       subscriptionId: string,
-      retiresAt: DateTime.Utc
-    ) => Effect.Effect<DateTime.Utc, DatabaseError>;
+      retiresAt: DateTime.Utc,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
+    /** The day it was retired to, whatever its status now. */
+    readonly retiresAt: (
+      subscriptionId: string
+    ) => Effect.Effect<Option.Option<DateTime.Utc>, DatabaseError>;
     /** Those retired whose billing managers were not told yet. */
     readonly untold: Effect.Effect<
       readonly RetiringSubscription[],
