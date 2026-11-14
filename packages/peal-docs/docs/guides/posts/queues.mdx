@@ -155,9 +155,9 @@ A follow-up rule acts on your own post once it has enough likes: it publishes a 
 ### When a rule acts [#follow-up-timing]
 
 - The likes are those Peal's [analytics](/guides/engage/analytics) last counted: hourly for two days after a post went live, then daily. A rule never asks a platform for more, so a post reaches its likes on Peal's next count, and a platform Peal counts nothing on (X, unless reads are on) never triggers it.
-- A post is followed up once of each kind, whatever rules act on it, and a channel carries 10 follow-ups a day at most; past that they wait for the next day, within their seven days. What a stopped rule gave up is left to the next rule; a rule on a post that another rule already follows up in every way it asks is refused.
-- Adding a comment or a repost to a rule on a post acts at once on the channels the post is already out on. A kind a channel could not carry yet, such as a Bluesky repost before you connected the channel again, is armed by the next run (within ten minutes) once it can, on posts still within their seven days.
-- When a platform puts a follow-up off (it is unreachable, or slows the account down), Peal waits what the platform asked, and at least ten minutes, doubled each time, six hours at most, before it tries again.
+- A post is followed up once of each kind, whatever rules act on it, and a channel carries 10 follow-ups a day at most; past that they wait for the next day, within their seven days. What a stopped rule gave up is left to the next rule started on the post. A rule on a post with nothing left to publish that would arm nothing is refused: when another rule already follows it up in every way it asks, or when the post's seven days passed, it failed, or no channel it went out on can carry the rule.
+- Adding a comment or a repost to a rule on a post acts at once on the channels the post is already out on. A repost on a Bluesky channel that must be connected again for reposts waits for it (**Allow reposts** in **Settings › Follow-ups**): once connected, the next run arms it, within ten minutes, if the post is still within its seven days, and the rule stays open meanwhile. A kind added to a channel's rule acts on the posts the channel publishes from then on.
+- When a platform puts a follow-up off (it is unreachable, or slows the account down), Peal waits before it tries again: ten minutes the first time, doubled each time up to six hours, or longer when the platform asks for longer.
 - On X, a comment whose sending was cut short is looked for among the account's recent posts before anything is sent again: a read at Peal's cost, never billed to you.
 - The comment goes under the post's last part, so it reads as the thread's next part. Nothing likes, follows or messages anyone.
 - A rule on a channel acts on every post the channel publishes after it started. A post and a channel have one rule going on at a time.
@@ -168,7 +168,7 @@ A rule publishes by itself, so where the workspace's [approval policy](/guides/p
 
 ### When a follow-up does not go out [#follow-up-ends]
 
-A follow-up expires when its seven days pass: the post did not reach the likes, the rule was paused or waiting for an approval, or the channel's day was full. It is given up when its rule is stopped, its post is no longer live, or its channel can no longer carry it. A platform that refuses it fails it, with the platform's code; one that may have taken it without answering leaves it unconfirmed: check the platform, Peal never sends it again. A rule ends when its starter can no longer publish, when its channel is disconnected, or, on a post, once everything it armed is over.
+A follow-up expires when its seven days pass: the post did not reach the likes, the rule was paused or waiting for an approval, the channel's day was full, the platform kept putting it off, or the channel was not connected again in time. It is given up when its rule is stopped, its post is no longer live, or its channel can no longer carry it. A platform that refuses it fails it, with the platform's code; one that may have taken it without answering leaves it unconfirmed: check the platform, Peal never sends it again. A rule ends when its starter can no longer publish, when its channel is disconnected, or, on a post, once everything it armed is over.
 
 ## Post from a feed [#feeds]
 

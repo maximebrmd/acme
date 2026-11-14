@@ -21,6 +21,15 @@ const stateOf = (followUp: FollowUp) =>
       triggeredAt: null,
       until,
     }),
+    waiting: ({ until }) => ({
+      likes: null,
+      permalink: null,
+      platformPostId: null,
+      reason: null,
+      sentAt: null,
+      triggeredAt: null,
+      until,
+    }),
     cancelled: ({ reason }) => ({
       likes: null,
       permalink: null,

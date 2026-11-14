@@ -129,12 +129,15 @@ export type FollowUpRefusal = typeof FollowUpRefusalSchema.Type;
 
 /**
  * Where a follow-up is: `armed` (waiting for the threshold until
- * `until`), `sending`, `sent`, `failed`, `unconfirmed` (it may be live:
+ * `until`), `waiting` (its channel must be connected again to carry it,
+ * a Bluesky repost before the account granted reposts; armed once it
+ * can, until `until`), `sending`, `sent`, `failed`, `unconfirmed` (it may be live:
  * check the platform, Peal never sends it again), `expired` (its window
  * passed) or `cancelled` (given up).
  */
 export const FollowUpStatusSchema = Schema.Literals([
   "armed",
+  "waiting",
   "sending",
   "sent",
   "failed",
@@ -161,7 +164,10 @@ export const FollowUpSchema = Schema.Struct({
   platformPostId: Schema.NullOr(Schema.String),
   postId: Schema.String,
   // Why it failed (the platform's or Peal's code), was not confirmed,
-  // expired or was cancelled; null otherwise.
+  // expired (`belowThreshold`, `paused`, `notApproved`, `dailyLimit`,
+  // `windowEnded` when the platform put it off until its window ended,
+  // `notGranted` when its channel was never connected again) or was
+  // cancelled; null otherwise.
   reason: Schema.NullOr(Schema.String),
   // When it went out; null unless sent.
   sentAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -169,7 +175,8 @@ export const FollowUpSchema = Schema.Struct({
   targetId: Schema.String,
   // When its threshold was reached; null before.
   triggeredAt: Schema.NullOr(Schema.DateTimeUtc),
-  // Until when it waits for its threshold; null unless armed.
+  // Until when it waits for its threshold, or for its channel to carry
+  // it; null unless armed or waiting.
   until: Schema.NullOr(Schema.DateTimeUtc),
 }).annotate({ identifier: "FollowUp" });
 

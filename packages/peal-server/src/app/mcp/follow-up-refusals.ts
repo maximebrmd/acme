@@ -29,7 +29,7 @@ const refusals: Readonly<Record<FollowUpRefusal, string>> = {
   noChannel:
     "The rule acts on no channel of the workspace: give a post of the workspace or one of its channels.",
   windowPassed:
-    "The post went out more than seven days ago everywhere, or failed: nothing of it can be followed up.",
+    "Nothing of the post is left to publish, and no channel it went out on can still be followed up: its seven days passed, it failed, or no channel there can carry the rule.",
   alreadyFollowedUp:
     "Another rule already follows the post up this way: stop it first.",
   postCancelled: "The post was cancelled: nothing of it can be followed up.",

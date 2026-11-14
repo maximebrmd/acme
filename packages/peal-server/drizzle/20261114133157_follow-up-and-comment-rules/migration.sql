@@ -71,6 +71,7 @@ CREATE UNIQUE INDEX "follow_up_rules_channel" ON "publishing"."follow_up_rules" 
 CREATE INDEX "follow_up_rules_workspace_id" ON "publishing"."follow_up_rules" ("workspace_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "follow_ups_target_kind" ON "publishing"."follow_ups" ("target_id","kind") WHERE "status" <> 'cancelled';--> statement-breakpoint
 CREATE INDEX "follow_ups_armed" ON "publishing"."follow_ups" ("id") WHERE "status" = 'armed';--> statement-breakpoint
+CREATE INDEX "follow_ups_waiting" ON "publishing"."follow_ups" ("id") WHERE "status" = 'waiting';--> statement-breakpoint
 CREATE INDEX "follow_ups_channel_triggered" ON "publishing"."follow_ups" ("channel_id","triggered_at") WHERE "triggered_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "follow_ups_sending" ON "publishing"."follow_ups" ("triggered_at") WHERE "status" = 'sending';--> statement-breakpoint
 CREATE INDEX "follow_ups_rule" ON "publishing"."follow_ups" ("rule_id","id");--> statement-breakpoint

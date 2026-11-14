@@ -199,6 +199,19 @@ describe("the workspace's follow-up rules", () => {
       "Bluesky: comment yes, repost connect the channel again"
     );
 
+    // Nor on a rule that ended: a new rule is needed then.
+    await expect(
+      render(
+        "en",
+        <FollowUpRuleView
+          actions={null}
+          onAllowReposts={allowNothing}
+          rule={{ ...waiting, endedReason: "completed", status: "ended" }}
+          scope="On a post"
+        />
+      )
+    ).resolves.not.toContain("Allow reposts");
+
     // Nobody who may not change rules is offered it, nor on a channel
     // that reposts already.
     await expect(

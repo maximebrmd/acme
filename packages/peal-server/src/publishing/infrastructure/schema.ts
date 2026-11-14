@@ -816,6 +816,10 @@ export const followUps = publishing.table(
     index("follow_ups_armed")
       .on(table.id)
       .where(sql`${table.status} = 'armed'`),
+    // Those waiting for their channel to be connected again, by id.
+    index("follow_ups_waiting")
+      .on(table.id)
+      .where(sql`${table.status} = 'waiting'`),
     // The channel's day.
     index("follow_ups_channel_triggered")
       .on(table.channelId, table.triggeredAt)

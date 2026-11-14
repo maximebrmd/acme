@@ -16,19 +16,20 @@ import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   actsUntil,
   endFollowUpRule,
-  followUpWindow,
   mayAct,
   maxFollowUpsPerChannelDay,
 } from "#publishing/domain/follow-up-rule.ts";
 import type { FollowUpRule } from "#publishing/domain/follow-up-rule.ts";
 import {
   armFollowUp,
+  grantFollowUp,
   cancelFollowUp,
   expireFollowUp,
   isPast,
   isPutOff,
   settleFollowUp,
   triggerFollowUp,
+  waitFollowUp,
   wasAttempted,
 } from "#publishing/domain/follow-up.ts";
 import type {
@@ -53,7 +54,7 @@ import { FollowUpChannels } from "./follow-up-channels.ts";
 import { FollowUpCounts } from "./follow-up-counts.ts";
 import { FollowUpJobs } from "./follow-up-jobs.ts";
 import { FollowUpStore } from "./follow-up-store.ts";
-import type { ArmedFollowUp, UnarmedTarget } from "./follow-up-store.ts";
+import type { ArmedFollowUp } from "./follow-up-store.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
 import { PostRepository } from "./post-repository.ts";
 import { RecyclingActors } from "./recycling-actors.ts";
@@ -137,7 +138,7 @@ const liveSince = (target: PostTarget): Option.Option<DateTime.Utc> =>
 
 // Why a window passed without it going out.
 const expiryOf = (
-  { rule }: ArmedFollowUp,
+  { followUp, rule }: ArmedFollowUp,
   likes: Option.Option<number>,
   starterHeld: boolean
 ): FollowUpExpiryReason => {
@@ -147,6 +148,14 @@ const expiryOf = (
 
   if (!Option.exists(likes, (count) => count >= rule.likes)) {
     return "belowThreshold";
+  }
+
+  // The platform put it off, and its window ended meanwhile.
+  if (
+    followUp.status._tag === "armed" &&
+    followUp.status.notBefore !== undefined
+  ) {
+    return "windowEnded";
   }
 
   return rule.approval._tag === "pending" || !mayAct(rule, starterHeld)
@@ -250,15 +259,17 @@ export class FollowUps extends Context.Service<
           askOf(rule)
         );
 
+        // What the channel carries now is armed; what it carries once it
+        // is connected again waits for it. Nothing else is kept.
         const kinds = kindsAsked(rule).filter(
-          (kind) => able[kind] === "available"
+          (kind) => able[kind] === "available" || able[kind] === "reconnect"
         );
 
         return yield* Effect.forEach((kind: FollowUpKind) =>
           newId(FollowUpIdSchema).pipe(
             Effect.provideService(Ids, ids),
             Effect.map((id) =>
-              armFollowUp(
+              (able[kind] === "available" ? armFollowUp : waitFollowUp)(
                 {
                   channelId: target.channelId,
                   id,
@@ -659,35 +670,57 @@ export class FollowUps extends Context.Service<
         }
       });
 
-      // What the open rules ask on posts already out within their seven
-      // days that no follow-up holds yet: a kind their channel could not
-      // carry when they were armed, such as a Bluesky repost before the
-      // account granted reposts. Armed once the channel can carry it.
-      const armMissing = Effect.gen(function* armMissing() {
+      // A follow-up waiting for its channel to be connected again, in a
+      // transaction of its own: armed once the channel carries its kind,
+      // expired `notGranted` once its window passed.
+      const grant = Effect.fn("FollowUps.grant")(function* grant(
+        waiting: ArmedFollowUp
+      ) {
         const now = yield* DateTime.now;
-        const since = DateTime.subtractDuration(now, followUpWindow);
-        let after = Option.none<UnarmedTarget>();
-        let armed = 0;
+        const { followUp, rule } = waiting;
+
+        if (isPast(followUp, now)) {
+          const expired = expireFollowUp(followUp, "notGranted", now);
+
+          return Result.isSuccess(expired) &&
+            (yield* store.advance(expired.success, followUp))
+            ? ("expired" as const)
+            : ("left" as const);
+        }
+
+        if (!(yield* carries(followUp, rule))) {
+          return "left" as const;
+        }
+
+        const granted = grantFollowUp(followUp, now);
+
+        return Result.isSuccess(granted) &&
+          (yield* store.advance(granted.success, followUp))
+          ? ("armed" as const)
+          : ("left" as const);
+      });
+
+      // Every follow-up waiting for its channel, a page at a time.
+      const armMissing = Effect.gen(function* armMissing() {
+        let after = Option.none<FollowUpId>();
+        const tally = { armed: 0, expired: 0 };
 
         for (;;) {
-          const page = yield* store.unarmedTargets(since, after, armedPageSize);
+          const page = yield* store.waiting(after, armedPageSize);
 
-          for (const unarmed of page) {
-            const [rule, target] = yield* Effect.all([
-              store.rule(unarmed.workspaceId, unarmed.ruleId),
-              posts.findTarget(unarmed.targetId),
-            ]);
+          for (const waiting of page) {
+            const step = yield* transaction(grant(waiting));
 
-            if (Option.isSome(rule) && Option.isSome(target)) {
-              armed += (yield* armWith([rule.value], target.value)).length;
+            if (step !== "left") {
+              tally[step] += 1;
             }
           }
 
           if (page.length < armedPageSize) {
-            return armed;
+            return tally;
           }
 
-          after = Option.fromUndefinedOr(page.at(-1));
+          after = Option.fromUndefinedOr(page.at(-1)?.followUp.id);
         }
       });
 
@@ -759,7 +792,11 @@ export class FollowUps extends Context.Service<
         }
 
         tally.channelGone = yield* endChannelsGone;
-        tally.armed = yield* armMissing;
+
+        const waited = yield* armMissing;
+
+        tally.armed = waited.armed;
+        tally.expired += waited.expired;
 
         for (const [outcome, count] of Object.entries(tally)) {
           yield* Metric.update(

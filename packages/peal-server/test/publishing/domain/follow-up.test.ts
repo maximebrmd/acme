@@ -17,13 +17,16 @@ import {
   beginFollowUpCall,
   cancelFollowUp,
   expireFollowUp,
+  grantFollowUp,
+  isOver,
   isPast,
   isPutOff,
   settleFollowUp,
   triggerFollowUp,
+  waitFollowUp,
   wasAttempted,
+  FollowUp,
 } from "#publishing/domain/follow-up.ts";
-import type { FollowUp } from "#publishing/domain/follow-up.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import {
@@ -73,20 +76,33 @@ const held = { approver: Option.none(), held: true } as const;
 const approving = { approver: Option.some(approver), held: false } as const;
 const unheld = { approver: Option.none(), held: false } as const;
 
-const armed = (): FollowUp =>
-  armFollowUp(
-    {
-      channelId,
-      id: FollowUpIdSchema.make("00000000-0000-7000-8000-000000000401"),
-      kind: "comment",
-      postId,
-      ruleId,
-      targetId: PostTargetIdSchema.make("00000000-0000-7000-8000-000000000501"),
-      until: actsUntil(now),
-      workspaceId,
-    },
-    now
-  );
+const arming = () => ({
+  channelId,
+  id: FollowUpIdSchema.make("00000000-0000-7000-8000-000000000401"),
+  kind: "comment" as const,
+  postId,
+  ruleId,
+  targetId: PostTargetIdSchema.make("00000000-0000-7000-8000-000000000501"),
+  until: actsUntil(now),
+  workspaceId,
+});
+
+const armed = (): FollowUp => armFollowUp(arming(), now);
+
+// The follow-up as it is on its `attempt`.
+const onAttempt = (followUp: FollowUp, attempt: number) =>
+  new FollowUp({
+    armedAt: followUp.armedAt,
+    attempt,
+    channelId: followUp.channelId,
+    id: followUp.id,
+    kind: followUp.kind,
+    postId: followUp.postId,
+    ruleId: followUp.ruleId,
+    status: followUp.status,
+    targetId: followUp.targetId,
+    workspaceId: followUp.workspaceId,
+  });
 
 const later = (hours: number) => DateTime.add(now, { hours });
 
@@ -291,6 +307,77 @@ describe("a follow-up", () => {
         until: actsUntil(now),
       });
     }
+  });
+
+  it("waits ten minutes at least, whatever shorter the platform asks, and six hours at most of its own", () => {
+    const putOffOn = (
+      attempt: number,
+      failure: PlatformUnavailable | RateLimited
+    ) =>
+      Result.getOrThrow(
+        settleFollowUp(
+          onAttempt(
+            Result.getOrThrow(beginFollowUpCall(sending(), later(3))),
+            attempt
+          ),
+          { _tag: "refused", failure },
+          later(3)
+        )
+      ).status;
+
+    expect(
+      putOffOn(1, new RateLimited({ retryAfter: Duration.minutes(1) }))
+    ).toStrictEqual({
+      _tag: "armed",
+      notBefore: DateTime.add(later(3), { minutes: 10 }),
+      until: actsUntil(now),
+    });
+    expect(putOffOn(12, new PlatformUnavailable())).toStrictEqual({
+      _tag: "armed",
+      notBefore: later(9),
+      until: actsUntil(now),
+    });
+    // A platform that asks longer is waited for.
+    expect(
+      putOffOn(12, new RateLimited({ retryAfter: Duration.hours(8) }))
+    ).toStrictEqual({
+      _tag: "armed",
+      notBefore: later(11),
+      until: actsUntil(now),
+    });
+  });
+
+  it("waits for its channel to be connected again, then is armed, or ends with its window", () => {
+    const waiting = waitFollowUp(arming(), now);
+
+    expect(waiting.status).toStrictEqual({
+      _tag: "waiting",
+      until: actsUntil(now),
+    });
+    expect(isOver(waiting)).toBeFalsy();
+    expect(
+      Result.isFailure(triggerFollowUp(waiting, 99, later(1)))
+    ).toBeTruthy();
+    expect(
+      Result.getOrThrow(grantFollowUp(waiting, later(1))).status
+    ).toStrictEqual({ _tag: "armed", until: actsUntil(now) });
+  });
+
+  it("is given up with its rule, or expires with its window, while it waits for its channel", () => {
+    const waiting = waitFollowUp(arming(), now);
+
+    expect(
+      Result.getOrThrow(cancelFollowUp(waiting, "ruleEnded", later(1))).status
+        ._tag
+    ).toBe("cancelled");
+    expect(
+      Result.getOrThrow(expireFollowUp(waiting, "notGranted", later(200)))
+        .status
+    ).toStrictEqual({
+      _tag: "expired",
+      expiredAt: later(200),
+      reason: "notGranted",
+    });
   });
 
   it("waits as long as the platform asks, and longer each attempt", () => {

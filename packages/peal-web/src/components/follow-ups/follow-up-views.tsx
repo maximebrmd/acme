@@ -147,7 +147,9 @@ export const FollowUpRuleView = ({
             className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm"
           >
             {t("carries", { comment, platform, repost })}
-            {repost === "reconnect" && onAllowReposts !== undefined ? (
+            {repost === "reconnect" &&
+            rule.status !== "ended" &&
+            onAllowReposts !== undefined ? (
               <Button
                 variant="outline"
                 size="sm"

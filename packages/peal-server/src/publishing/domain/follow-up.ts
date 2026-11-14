@@ -35,7 +35,9 @@ export type FollowUpKind = typeof FollowUpKindSchema.Type;
  * Why a follow-up's window passed without it going out: the post never
  * reached the threshold (`belowThreshold`), it did while the rule was
  * paused (`paused`) or waited for an approval (`notApproved`), or the
- * channel's day was full each time it did (`dailyLimit`).
+ * channel's day was full each time it did (`dailyLimit`), the platform
+ * put it off until the window ended (`windowEnded`), or its channel was
+ * never connected again to carry it (`notGranted`).
  * Stored: add a member, never rename or remove one.
  */
 export const FollowUpExpiryReasonSchema = Schema.Literals([
@@ -43,6 +45,8 @@ export const FollowUpExpiryReasonSchema = Schema.Literals([
   "paused",
   "notApproved",
   "dailyLimit",
+  "windowEnded",
+  "notGranted",
 ]);
 
 export type FollowUpExpiryReason = typeof FollowUpExpiryReasonSchema.Type;
@@ -80,6 +84,9 @@ export const FollowUpStatusSchema = Schema.Union([
     notBefore: Schema.optionalKey(Schema.DateTimeUtc),
     until: Schema.DateTimeUtc,
   }),
+  // Its channel must be connected again to carry it (a Bluesky repost
+  // before the account granted reposts): armed once it can, until `until`.
+  Schema.TaggedStruct("waiting", { until: Schema.DateTimeUtc }),
   Schema.TaggedStruct("sending", {
     attemptedAt: Schema.Option(Schema.DateTimeUtc),
     likes: Likes,
@@ -197,9 +204,31 @@ export const armFollowUp = (arming: Arming, now: DateTime.Utc): FollowUp =>
     workspaceId: arming.workspaceId,
   });
 
+/**
+ * A follow-up its channel cannot carry until it is connected again,
+ * kept at `now` so it is armed once the channel can.
+ */
+export const waitFollowUp = (arming: Arming, now: DateTime.Utc): FollowUp =>
+  withStatus(armFollowUp(arming, now), {
+    _tag: "waiting",
+    until: arming.until,
+  });
+
+/** The channel can carry it now: armed for the rest of its window. */
+export const grantFollowUp = (
+  followUp: FollowUp,
+  now: DateTime.Utc
+): Transition =>
+  followUp.status._tag === "waiting" &&
+  DateTime.isLessThan(now, followUp.status.until)
+    ? Result.succeed(
+        withStatus(followUp, { _tag: "armed", until: followUp.status.until })
+      )
+    : refused(followUp, "grant");
+
 /** Whether an armed follow-up's window passed at `now`. */
 export const isPast = (followUp: FollowUp, now: DateTime.Utc): boolean =>
-  followUp.status._tag === "armed" &&
+  (followUp.status._tag === "armed" || followUp.status._tag === "waiting") &&
   !DateTime.isLessThan(now, followUp.status.until);
 
 /** Whether the platform put it off, and it waits until `notBefore`. */
@@ -381,7 +410,7 @@ export const expireFollowUp = (
   reason: FollowUpExpiryReason,
   now: DateTime.Utc
 ): Transition =>
-  followUp.status._tag === "armed"
+  followUp.status._tag === "armed" || followUp.status._tag === "waiting"
     ? Result.succeed(
         withStatus(followUp, { _tag: "expired", expiredAt: now, reason })
       )
@@ -397,6 +426,7 @@ export const cancelFollowUp = (
   now: DateTime.Utc
 ): Transition =>
   followUp.status._tag === "armed" ||
+  followUp.status._tag === "waiting" ||
   (followUp.status._tag === "sending" && !wasAttempted(followUp))
     ? Result.succeed(
         withStatus(followUp, { _tag: "cancelled", cancelledAt: now, reason })
@@ -405,4 +435,6 @@ export const cancelFollowUp = (
 
 /** Whether it is over, one way or another. */
 export const isOver = (followUp: FollowUp): boolean =>
-  followUp.status._tag !== "armed" && followUp.status._tag !== "sending";
+  followUp.status._tag !== "armed" &&
+  followUp.status._tag !== "sending" &&
+  followUp.status._tag !== "waiting";

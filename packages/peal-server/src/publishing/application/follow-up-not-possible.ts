@@ -7,7 +7,7 @@ import { ChannelFollowUpsSchema } from "#publishing/domain/follow-up-ability.ts"
  * once cleaned (`emptyComment`), its post was cancelled (`postCancelled`)
  * or has no channel (`noChannel`), another rule already follows up all it
  * asks on the post (`alreadyFollowedUp`), nothing of the post is left to
- * publish nor within its seven days (`windowPassed`), no channel can carry what it asks, or
+ * publish and none of it can still be followed up (`windowPassed`), no channel can carry what it asks, or
  * the comment is too long for a channel that could otherwise carry it
  * (`channels`, each kind with its reason).
  */

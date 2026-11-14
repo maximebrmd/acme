@@ -4410,8 +4410,8 @@
     "nothingYet": "Nothing yet: it waits for a post to go live and reach the likes.",
     "kind": "{kind, select, comment {Comment} repost {Repost} other {Follow-up}}",
     "platform": "{platform, select, x {on X} bluesky {on Bluesky} mastodon {on Mastodon} other {}}",
-    "followUpStatus": "{status, select, armed {Waiting for the likes} sending {Going out} sent {Sent} failed {Failed} unconfirmed {Not confirmed: check the platform} expired {Window passed} cancelled {Given up} other {Unknown}}",
-    "reason": "{reason, select, belowThreshold {the post did not reach the likes} paused {the rule was paused} notApproved {the rule was not approved} dailyLimit {the channel’s day was full} ruleEnded {the rule ended} postGone {the post is no longer live} unavailable {the channel can no longer carry it} other {{reason}}}",
+    "followUpStatus": "{status, select, armed {Waiting for the likes} waiting {Waiting for the channel to be connected again} sending {Going out} sent {Sent} failed {Failed} unconfirmed {Not confirmed: check the platform} expired {Window passed} cancelled {Given up} other {Unknown}}",
+    "reason": "{reason, select, belowThreshold {the post did not reach the likes} paused {the rule was paused} notApproved {the rule was not approved} dailyLimit {the channel’s day was full} windowEnded {the platform put it off until its seven days ended} notGranted {the channel was not connected again in time} ruleEnded {the rule ended} postGone {the post is no longer live} unavailable {the channel can no longer carry it} other {{reason}}}",
     "open": "Open",
     "post": "On a post",
     "onChannel": "On every new post of a channel",
@@ -4442,7 +4442,7 @@
       "nothing": "Write a comment, ask for a repost, or both."
     },
     "errors": {
-      "notPossible": "{reason, select, noAction {Write a comment, ask for a repost, or both.} emptyComment {The comment is empty.} postCancelled {The post was cancelled.} noChannel {The rule acts on no channel of the workspace.} windowPassed {The post went out more than seven days ago, or failed: nothing of it can be followed up.} alreadyFollowedUp {Another rule already follows this post up this way: stop it first.} other {None of the post’s channels can carry this, or the comment is too long for one of them.}}",
+      "notPossible": "{reason, select, noAction {Write a comment, ask for a repost, or both.} emptyComment {The comment is empty.} postCancelled {The post was cancelled.} noChannel {The rule acts on no channel of the workspace.} windowPassed {Nothing of the post is left to publish, and no channel it went out on can still be followed up: its seven days passed, it failed, or no channel there can carry the rule.} alreadyFollowedUp {Another rule already follows this post up this way: stop it first.} other {None of the post’s channels can carry this, or the comment is too long for one of them.}}",
       "tooMany": "The workspace has {allowed} rules going, the most it may: stop one first.",
       "ended": "The rule ended and changes no more.",
       "forbidden": "Your role cannot do that.",

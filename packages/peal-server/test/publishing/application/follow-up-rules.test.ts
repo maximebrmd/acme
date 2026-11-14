@@ -1,5 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Deferred, Effect, Fiber, Layer, Option, Ref } from "effect";
+import {
+  DateTime,
+  Deferred,
+  Duration,
+  Effect,
+  Fiber,
+  Layer,
+  Option,
+  Ref,
+} from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
@@ -23,6 +32,7 @@ import { SendFollowUp } from "#publishing/application/send-follow-up.ts";
 import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { FeedsUnused } from "#publishing/container.ts";
 import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
+import type { FollowUp } from "#publishing/domain/follow-up.ts";
 import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -35,6 +45,7 @@ import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   FakeFollowUpCounts,
@@ -306,6 +317,10 @@ const onPost = (
 });
 
 const runDue = FollowUps.use((followUps) => followUps.runDue);
+
+// Each kind a rule armed, with where it is.
+const kinds = (followUps: readonly FollowUp[]) =>
+  new Map(followUps.map(({ kind, status }) => [kind, status._tag]));
 
 const ruleNow = (workspaceId: WorkspaceId, ruleId: string) =>
   FollowUpRules.use((rules) =>
@@ -1077,14 +1092,16 @@ describe("follow-up rules", () => {
   );
 
   it.effect(
-    "arm a repost on what is already out once the channel grants reposts",
+    "keep a repost waiting for the channel to be connected again, and arm it once it is, the rule open meanwhile",
     () =>
       onServer(
         Effect.gen(function* granted() {
           const workspaceId = yield* freshWorkspace;
           const bluesky = yield* connected(workspaceId, "bluesky");
           const postId = yield* published(workspaceId, [bluesky]);
+          const [target] = yield* targetsOf(postId);
 
+          assert.isDefined(target);
           yield* Ref.set(withoutReposts, new Set([bluesky]));
 
           const started = yield* FollowUpRules.use((rules) =>
@@ -1092,32 +1109,312 @@ describe("follow-up rules", () => {
           );
 
           assert.deepStrictEqual(
-            started.followUps.map(({ kind }) => kind),
-            ["comment"]
+            kinds(started.followUps),
+            new Map([
+              ["comment", "armed"],
+              ["repost", "waiting"],
+            ])
           );
 
-          // Nothing more while the channel cannot repost.
-          yield* runDue;
-          assert.deepStrictEqual(
-            (yield* ruleNow(workspaceId, started.rule.id)).followUps.map(
-              ({ kind }) => kind
-            ),
-            ["comment"]
+          // The comment goes out; the rule stays open for the repost.
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+          yield* eventually(
+            "the comment went out",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.some(
+                  ({ kind, status }) =>
+                    kind === "comment" && status._tag === "sent"
+                )
+              )
+            )
           );
 
-          // Connected again with reposts: the next run arms the repost.
+          const between = yield* runDue;
+
+          assert.strictEqual(between.completed, 0);
+          assert.strictEqual(between.armed, 0);
+
+          // Connected again with reposts: the next run arms it, and sets
+          // it out, the likes being there.
           yield* Ref.set(withoutReposts, new Set());
 
-          assert.strictEqual((yield* runDue).armed, 1);
-          assert.sameMembers(
-            (yield* ruleNow(workspaceId, started.rule.id)).followUps.map(
-              ({ kind }) => kind
-            ),
-            ["comment", "repost"]
+          const after = yield* runDue;
+
+          assert.strictEqual(after.armed, 1);
+          assert.strictEqual(
+            (yield* ruleNow(workspaceId, started.rule.id)).rule.status._tag,
+            "active"
           );
           assert.strictEqual((yield* runDue).armed, 0);
         }).pipe(Effect.ensuring(Ref.set(withoutReposts, new Set()))),
         GrantingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "end what waits for the channel with the rule, or with its window",
+    () =>
+      onServer(
+        Effect.gen(function* waitingEnds() {
+          const workspaceId = yield* freshWorkspace;
+          const bluesky = yield* connected(workspaceId, "bluesky");
+          const first = yield* published(workspaceId, [bluesky]);
+          const second = yield* published(workspaceId, [bluesky], "Later.");
+
+          yield* Ref.set(withoutReposts, new Set([bluesky]));
+
+          const stopping = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(first))
+          );
+
+          const lapsing = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(second))
+          );
+
+          // A page of one at a time reads both, in order.
+          const pages = yield* FollowUpStore.use((store) =>
+            store
+              .waiting(Option.none(), 1)
+              .pipe(
+                Effect.flatMap((page) =>
+                  store
+                    .waiting(
+                      Option.fromUndefinedOr(page.at(-1)?.followUp.id),
+                      1
+                    )
+                    .pipe(Effect.map((next) => [...page, ...next]))
+                )
+              )
+          );
+
+          assert.deepStrictEqual(
+            pages.map(({ followUp }) => followUp.id),
+            [...stopping.followUps, ...lapsing.followUps]
+              .flatMap(({ id, status }) =>
+                status._tag === "waiting" ? [id] : []
+              )
+              .toSorted()
+          );
+
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(actorIn(workspaceId), stopping.rule.id)
+          );
+
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, stopping.rule.id)).followUps.map(
+              ({ status }) => status._tag
+            ),
+            ["cancelled", "cancelled"]
+          );
+
+          // Nor is a follow-up of an ended rule read as waiting, however
+          // its row came to say it.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE publishing.follow_ups SET status = 'waiting', state = state || '{"_tag":"waiting","until":"2026-07-13T07:00:00.000Z"}'::jsonb WHERE rule_id = ${stopping.rule.id} AND kind = 'repost'`
+          ).pipe(Effect.orDie);
+          assert.isFalse(
+            (yield* FollowUpStore.use((store) =>
+              store.waiting(Option.none(), 100)
+            )).some(({ rule }) => rule.id === stopping.rule.id)
+          );
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`DELETE FROM publishing.follow_ups WHERE rule_id = ${stopping.rule.id} AND kind = 'repost'`
+          ).pipe(Effect.orDie);
+
+          yield* TestClock.adjust("8 days");
+          yield* runDue;
+
+          const lapsed = (yield* ruleNow(
+            workspaceId,
+            lapsing.rule.id
+          )).followUps.find(({ kind }) => kind === "repost");
+
+          assert.deepStrictEqual(
+            lapsed?.status._tag === "expired" ? lapsed.status.reason : lapsed,
+            "notGranted"
+          );
+        }).pipe(Effect.ensuring(Ref.set(withoutReposts, new Set()))),
+        GrantingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "arm nothing for a kind added to a channel's rule on posts already out, nor what a channel could not carry, nor a stopped rule's kind for another rule",
+    () =>
+      onServer(
+        Effect.gen(function* reachesNoFurther() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+
+          const channelRule = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), {
+              comment: Option.some("Thank you all for reading!"),
+              likes: 10,
+              repost: false,
+              scope: { _tag: "channel", channelId: mastodon },
+            })
+          );
+
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+          yield* FollowUps.use((followUps) => followUps.arm(target));
+
+          // A repost added to the channel's rule: for posts from now on.
+          yield* FollowUpRules.use((rules) =>
+            rules.change(actorIn(workspaceId), channelRule.rule.id, {
+              repost: true,
+            })
+          );
+          assert.strictEqual((yield* runDue).armed, 0);
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, channelRule.rule.id)).followUps.map(
+              ({ kind }) => kind
+            ),
+            ["comment"]
+          );
+
+          // A follow-up given up as the channel could not carry it is
+          // not armed again.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE publishing.follow_ups SET status = 'cancelled', state = ${JSON.stringify({ _tag: "cancelled", cancelledAt: "2026-07-06T07:03:00.000Z", reason: "unavailable" })}::jsonb WHERE rule_id = ${channelRule.rule.id}`
+          ).pipe(Effect.orDie);
+          assert.strictEqual((yield* runDue).armed, 0);
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(actorIn(workspaceId), channelRule.rule.id)
+          );
+
+          // A post's rule stopped: another channel rule does not take its
+          // kind from it on the post already out.
+          const postRule = yield* FollowUpRules.use((rules) =>
+            rules.start(
+              actorIn(workspaceId),
+              onPost(postId, { comment: Option.none() })
+            )
+          );
+
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(actorIn(workspaceId), postRule.rule.id)
+          );
+
+          const next = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), {
+              comment: Option.none(),
+              likes: 10,
+              repost: true,
+              scope: { _tag: "channel", channelId: mastodon },
+            })
+          );
+
+          assert.strictEqual((yield* runDue).armed, 0);
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, next.rule.id)).followUps,
+            []
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "take a rule on a post not out yet, and end it once the post is cancelled",
+    () =>
+      onServer(
+        Effect.gen(function* notOutYet() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const now = yield* DateTime.now;
+
+          const sent = yield* PostScheduling.use((scheduling) =>
+            scheduling.send(actorIn(workspaceId), {
+              channelIds: [mastodon],
+              content: contentOf("Next week's opening."),
+              idempotency: Option.none(),
+              placement: { _tag: "at", at: DateTime.add(now, { days: 2 }) },
+              timeZone: paris,
+            })
+          );
+
+          yield* eventually("the post waits", isSuspended(sent.post.id));
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(sent.post.id))
+          );
+
+          assert.strictEqual(started.rule.status._tag, "active");
+          assert.deepStrictEqual(started.followUps, []);
+          assert.strictEqual((yield* runDue).completed, 0);
+
+          yield* PostScheduling.use((scheduling) =>
+            scheduling.cancel(actorIn(workspaceId), sent.post.id)
+          );
+
+          assert.strictEqual((yield* runDue).completed, 1);
+
+          const ended = yield* ruleNow(workspaceId, started.rule.id);
+
+          assert.deepStrictEqual(
+            ended.rule.status._tag === "ended"
+              ? ended.rule.status.reason
+              : null,
+            "completed"
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "expire a follow-up the platform put off until its seven days ended as such",
+    () =>
+      onServer(
+        Effect.gen(function* putOffToTheEnd() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          yield* followUpsAnswer(() =>
+            Effect.fail(new RateLimited({ retryAfter: Duration.days(9) }))
+          );
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+          yield* eventually(
+            "the follow-up is put off",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.every(({ status }) => status._tag === "armed")
+              )
+            )
+          );
+
+          yield* TestClock.adjust("8 days");
+          yield* runDue;
+
+          const [followUp] = (yield* ruleNow(workspaceId, started.rule.id))
+            .followUps;
+
+          assert.deepStrictEqual(
+            followUp?.status._tag === "expired"
+              ? followUp.status.reason
+              : followUp,
+            "windowEnded"
+          );
+        })
       ),
     timeout
   );
