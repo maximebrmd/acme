@@ -46,7 +46,13 @@
   `user:password` sealed by `TokenCipher` as any token (`nonExpiring`,
   never renewed: a refused one marks the channel to reconnect), and it is
   added through `channelRoomOf` (`application/channel-room.ts`), as every
-  channel is. Connecting the same site again reconnects its channel.
+  channel is. The password goes only to an API root on the home page's
+  own origin, of 2048 characters at most. A new site needs room in the
+  plan before the site is called (none is checked when the workspace has
+  a website on that host already), and a workspace tries 30 times an
+  hour (`SiteConnectPace`, `SiteConnectLimited`). Connecting the same site
+  again reconnects its channel, and one at the same home page under a new
+  API root follows it (`siteMovedTo`).
 - On a server that bills, an account of a platform whose calls are passed
   through at the platform's rates (X, on the `xApi` meter) is connected
   only on per-account pricing that pays: `ChannelAllowance.passedThrough`

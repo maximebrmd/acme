@@ -193,9 +193,21 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   HTML is written by `domain/article-html.ts` alone, every text and
   attribute escaped. It takes the posts' permissions (`post:create`,
   `post:update`, `post:delete`, `post:schedule`, `post:publish` for a
-  change on the site, `post:read`); it passes no approval gate and counts
-  in no month's posts. `articleViolations` checks it when it is
-  scheduled, all at once (`ArticleRejected`), never while a draft.
+  change on the site, `post:read`) and counts in no month's posts. Articles
+  have no approval yet: wherever `ApprovalGate.holds` the actor, what
+  would put one on its site or change it there (create with a time,
+  schedule, retry, edit while scheduled, update on the site) is refused
+  (`ArticleRejected` `approvalRequired`); unpublishing is not. A workspace
+  over its plan (`withinPlan`) schedules and sends none. Every write
+  re-reads the article under its row lock (`ArticleStore.lock`) and
+  decides again on what it finds, and `ArticleStore.update` writes only
+  over the state, revision and round it was read with, so a member and a
+  job never change it at once. `articleViolations` checks it when it is
+  scheduled, all at once (`ArticleRejected`), never while a draft, and
+  its files are looked up in the library again then. Its title and
+  excerpt reach the site escaped: plain text, as a member typed it.
+  `media_ids` lists the library's files it shows: a scheduled or
+  publishing article keeps one from deletion (`MediaInPosts`).
 - `PublishArticleV1` (`workflows/publish-article.ts`, persisted contract:
   payload `{ articleId, revision, round, at }`, key
   `<articleId>:<revision>:<round>`, activities `claim`, `send/<n>`,
@@ -204,25 +216,38 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   decides each attempt with the posts' `decide`, and settles it, telling
   `ArticleEvents` (the webhooks' `article.published`, `article.failed`)
   in that transaction. Each attempt's row (`publishing.article_calls`) is
-  written and committed before the site is called; a row found in flight
-  is resumed (`SitePublisher.resume`), never sent blindly. A schedule
-  raises `revision`, a retry `round`, so a job of an earlier one is
-  superseded. It calls the site directly, not through a channel's gate.
+  written and committed before the site is called, and marked
+  (`committed_at`, `SitePublishRequest.committing`) just before the call
+  that makes the post: a row found without it is made again, one with it
+  resumed (`SitePublisher.resume`), never sent blindly. A schedule raises
+  `revision`, a retry `round`, so a job of an earlier one is superseded.
+  It calls the site directly, not through a channel's gate, but in the
+  channel's turn (`ArticleSendTurns`, an advisory lock): the attempt and
+  the journal's record of the post it made end before another attempt of
+  the channel looks for its own.
 - WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
   sends each file the article shows to `/wp/v2/media` (the bytes as the
   body, `Content-Disposition` naming the file, streamed), finds tags and
-  categories by name whatever their case or makes them, then makes the
+  categories by name whatever their case (WordPress answers names with
+  `&`, `<` and `>` encoded, and a name it has answers `term_exists` with
+  its id) or makes them, then makes the
   post with one `POST /wp/v2/posts`, the commit. WordPress keeps no
   idempotency key: an answer lost (no answer, or a 5xx) is looked for
   among the user's posts changed since the attempt began a minute early,
   by title, and adopted only when exactly one matches that no other
-  article of the channel holds (`ArticleStore.recordedOn`), else
-  unconfirmed. Only a 401 with WordPress's own error is a refused
+  article of the channel holds or its call answered
+  (`ArticleStore.recordedOn`), else unconfirmed. A request the guard
+  refused never left: a name that did not resolve for now is the site
+  unavailable, any other refusal a failure. Only a 401 with WordPress's
+  own error is a refused
   credential; nothing renews one, so the channel is marked to reconnect.
   Unpublishing is `DELETE` without `force` (the site's trash; gone
   already is done), an update `POST /wp/v2/posts/{id}` without status or
-  date: both run in the request, the article saved after. A file is sent
-  again on every update.
+  date, but with an empty excerpt and `featured_media` 0 when Peal has
+  none: both run in the request, the article saved after. A file the site
+  took for the article (`publishing.article_files`, `ArticleJournal`) is
+  never sent again, across attempts and updates. Only an http or https
+  `link` is kept as the permalink.
 - Erasing a workspace erases its articles (`ArticleRecords`, refused
   while a call to a site is in flight, `PostsPublishing`), the export
   holds them, and a member who leaves is forgotten as their author.
