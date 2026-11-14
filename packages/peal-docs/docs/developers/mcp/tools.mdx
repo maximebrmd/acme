@@ -197,6 +197,19 @@ A workspace saves three things to write its posts with, and `create_draft`, `upd
 
 `list_posts` takes `recyclingId`.
 
+### Follow-ups [#follow-up-tools]
+
+`start_follow_up_rule` makes a [follow-up rule](/guides/posts/queues#follow-ups) on a post (`postId`) or a channel (`channelId`): once a post has `likes` likes, it publishes `comment` under it and reposts it when `repost` is set, by itself, in public, so a client calls it only when you asked, with your words for the comment.
+
+| Tool                                         | What it does                                                | Scope               |
+| -------------------------------------------- | ----------------------------------------------------------- | ------------------- |
+| `start_follow_up_rule`                       | Starts a rule                                               | `workspace:publish` |
+| `update_follow_up_rule`                      | Changes or pauses a rule                                    | `workspace:publish` |
+| `stop_follow_up_rule`                        | Stops a rule                                                | `workspace:publish` |
+| `list_follow_up_rules`, `get_follow_up_rule` | Read the rules, what each channel carries and what each did |                     |
+
+No tool approves a rule: a member does, in the web app.
+
 ### Feeds [#feed-tools]
 
 | Tool                     | What it does                                                                                                                                                                                                 | Scope             |

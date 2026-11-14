@@ -176,6 +176,21 @@ Who may do what:
 | 409    | `too_many_recycling_rules`   | 100 rules are going on.                                                                                                                                                                                                             |
 | 409    | `recycling_rule_ended`       | A change to an ended rule.                                                                                                                                                                                                          |
 
+## Follow a post up [#follow-ups]
+
+`POST /api/workspaces/{workspaceId}/follow-ups` starts a [follow-up rule](/guides/posts/queues#follow-ups) on a post or a channel, exactly one:
+
+```json
+{
+  "postId": "…",
+  "likes": 50,
+  "comment": "Thank you all for reading!",
+  "repost": true
+}
+```
+
+The answer is the rule: its `approval` (`notNeeded`, `pending`, `approved`), `channels` (what each channel can carry, kind by kind: `available`, `notAsked`, or why not, such as `notAllowed` on LinkedIn or `reconnect` on a Bluesky channel connected before Peal asked to repost there), and its latest `followUps`, each with its `status` (`armed` until `until`, `sending`, `sent` with `platformPostId` and `permalink`, `failed`, `unconfirmed`, `expired`, `cancelled`) and its `reason`. `FollowUpNotPossible` (422) refuses a rule no channel can carry, or whose comment is too long for a channel that could, with the same `channels`. `PATCH …/follow-ups/{ruleId}` changes `likes`, `comment` (null takes it away) and `repost`, or pauses it (`paused`); `POST …/approve` approves it, a member in person; `DELETE` stops it. `GET …/follow-ups?postId=…` lists a post's rules.
+
 ## Post from a feed [#feeds]
 
 `POST …/feeds` follows a web feed ([how](/guides/posts/queues#feeds)). It is read once, and every item it holds then is recorded as seen and never made; it answers 201 with the feed and `seen`, how many.

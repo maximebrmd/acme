@@ -271,6 +271,24 @@ peal posts list --recycling <rule-id>
 - `peal recycling list` affiche 50 règles par page (`--limit`, 100 au plus) et une ligne `More:` avec le `--cursor` de la suivante.
 - `peal posts list --recycling` liste les publications créées par une règle.
 
+## Relances [#follow-ups]
+
+```sh
+peal follow-ups start --post <post-id> --likes 50 --comment "Merci à toutes et à tous !" --repost
+peal follow-ups start --channel <channel-id> --likes 100 --repost
+peal follow-ups list --post <post-id>
+peal follow-ups show <rule-id>
+peal follow-ups update <rule-id> --likes 80 --no-repost
+peal follow-ups pause <rule-id>
+peal follow-ups resume <rule-id>
+peal follow-ups approve <rule-id>
+peal follow-ups stop <rule-id>
+```
+
+- `peal follow-ups start` crée une [règle de relance](/fr/guides/posts/queues#follow-ups) sur une publication (`--post`) ou sur chaque publication qu’un canal met en ligne ensuite (`--channel`), l’un des deux, avec `--comment`, `--repost` ou les deux, et `--likes` de 1 à 1 000 000. Elle refuse une règle qui ne fait rien avant de demander au serveur, et affiche ce que chaque canal peut porter, sorte par sorte, et pourquoi non.
+- `peal follow-ups show` affiche les canaux de la règle et chaque relance : en attente des mentions J’aime, envoyée avec son adresse, échouée avec le code de la plateforme, non confirmée, expirée ou abandonnée, avec la raison.
+- `peal follow-ups approve` demande un membre qui approuve les publications, connecté en personne : une clé d’API n’approuve jamais.
+
 ## Flux [#feeds]
 
 ```sh

@@ -80,6 +80,13 @@
   provider: a key typed into a chat reaches a model. The journal keeps
   the call by name, never the prompt. The text assistant has no tool: an
   agent writes its own text.
+- `list_follow_up_rules`, `get_follow_up_rule` (reading),
+  `start_follow_up_rule` (open world, never idempotent),
+  `update_follow_up_rule` (open world) and `stop_follow_up_rule`
+  (destructive) are in `SavedTools` and `publishingTools`, check
+  post:schedule before reading anything, and say that what a rule
+  publishes goes out by itself, in public. No tool approves a rule: a
+  member does, in person.
 - `get_media`, `get_media_usage` (reading), `describe_media` (not
   destructive, idempotent) and `delete_media` (destructive: its
   description says an agent calls it only when the user asked for that

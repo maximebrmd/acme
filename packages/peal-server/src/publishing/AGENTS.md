@@ -1090,6 +1090,47 @@ publishing's schema, naming nobody: each goes with its workspace
   alone: the next run ends them `queueGone`. Erasure deletes rules before
   posts; `forgetAuthor` clears `started_by`, and the next run ends the
   rule.
+- A follow-up rule (`domain/follow-up-rule.ts`, `FollowUpRules`,
+  `publishing.follow_up_rules`) acts on one post, or on every post a
+  channel publishes after it started, once it has `likes` likes: its
+  `comment` under the post, a repost, or both, once each a target
+  (`follow_ups` unique on target and kind, whatever rules act on it),
+  within `followUpWindow` (7 days) of the post going live there,
+  `maxFollowUpsPerChannelDay` (10) a channel and UTC day. What each
+  platform carries is `followUpSupport` (`domain/follow-up-support.ts`,
+  from each platform's pages: LinkedIn's terms forbid both), and a
+  channel's own abilities `followUpsOn` (the operator's X threads, the
+  Bluesky repost scope from `ChannelGrants`, analytics' coverage):
+  `FollowUpNotPossible` refuses a rule no channel can carry, or whose
+  comment is too long for one that could. `FollowUps.arm` arms a target
+  in the transaction that settles it (`armedOutcomes`, around
+  `PublicationOutcomes.settled`), and `armPublished` a post already out
+  when its rule starts. The `publishing.follow-ups` cron (every ten
+  minutes from 9) reads the likes analytics last counted
+  (`FollowUpCounts`, analytics' `PostLikes`: never a platform call, so a
+  rule never makes a read happen, X's paid ones included), expires what
+  its window passed with why, and triggers the rest one transaction each
+  under the follow-up's lock (`FOR UPDATE SKIP LOCKED`), as the starter
+  is now (`RecyclingActors`: gone ends the rule `starterGone`), only when
+  the rule is approved or the starter's posts need no approval
+  (`mayAct`, `ApprovalGate.holds`), on a post still live, the channel
+  still able. `SendFollowUpV1` (payload `followUpId`, activity `send`,
+  persisted contract) sends it as engagement sends a reply: the row is the
+  journal (`attemptedAt` committed before the call), a resume never sends
+  blindly, and the gate (`SendFollowUp`, `ResumeFollowUp`, ids only)
+  claims the call first (`claimCall`). `RoutedFollowUpPublisher` hands a
+  comment to the platform's `PlatformClient` as the post's next part
+  (`replyTo` the last live part and the first, the follow-up's id as the
+  idempotency key, X's claimed on `PostMeter`), a repost to
+  `PlatformReposts` (`platforms/platform-reposts-live.ts`: Bluesky's
+  `app.bsky.feed.repost` record under a key from the attempt, read back
+  on a resume; Mastodon's reblog, which Mastodon answers once). A refusal
+  that passes (the platform unreachable, a rate limit) arms it again; any
+  other fails it with the platform's code. A follow-up still `sending`
+  an hour on is handed over by the cron (`settleStranded`). Erasure
+  deletes the rules with what they armed; a call already under way when
+  its workspace is erased may still go out (a gate claims no call for a
+  row gone, so the window is the call itself).
 - A feed (`domain/feed.ts`, `Feeds`, `publishing.feeds`) is a web feed a
   workspace follows: RSS 2.0, Atom 1.0 or JSON Feed 1.1, told from the
   body (never the content type), read through `FeedSource`

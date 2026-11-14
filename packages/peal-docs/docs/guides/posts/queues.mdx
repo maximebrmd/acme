@@ -1,11 +1,11 @@
 ---
 title: Queues, repeats and feeds
-description: "Fill a channel's time slots from a queue, repeat a post, and post what a feed publishes."
+description: "Fill a channel's time slots from a queue, repeat a post, follow a post up once it has enough likes, and post what a feed publishes."
 sidebar:
   icon: list-ordered
 ---
 
-Let Peal pick a post's time from a weekly timetable, make new posts from one at an interval, or turn a blog's new items into posts.
+Let Peal pick a post's time from a weekly timetable, make new posts from one at an interval, follow a post up once it has enough likes, or turn a blog's new items into posts.
 
 ## Queues [#queues]
 
@@ -138,6 +138,34 @@ Peal stops a rule, instead of skipping a post silently, and tells those it conce
 While its post waits for an approval, it makes nothing and waits.
 
 Once that is put right (room in the plan, other variants, a channel connected again, slots on its queue, its post scheduled again), **Resume** sets it going from the next due time after now, with the same variants. Other variants for a refused text go with the resume through the [command line](/developers/cli/posts#recycling) or the API. It does not resume when another rule repeats the post by then, or when the workspace has 100 going. For any other end, make the post repeat again.
+
+## Follow a post up [#follow-ups]
+
+A follow-up rule acts on your own post once it has enough likes: it publishes a comment you wrote under it, as the channel's own reply, reposts it, or both, once each, within seven days of the post going live on that channel. Open a published or scheduled post and choose **Follow up**: the likes it waits for, the comment, and whether it reposts. **Settings › Follow-ups** lists the rules, what each channel can carry, and what each follow-up became.
+
+| Platform | Comment                                                     | Repost                                                   |
+| -------- | ----------------------------------------------------------- | -------------------------------------------------------- |
+| Bluesky  | Yes                                                         | Yes (a channel connected before must be connected again) |
+| Mastodon | Yes                                                         | Yes (a boost)                                            |
+| X        | Yes, where the server sends X threads; X bills it as a post | Not yet                                                  |
+| LinkedIn | No: LinkedIn's terms forbid automated posting               | No                                                       |
+| Threads  | Waits for Threads' review of Peal                           | Not yet                                                  |
+| Others   | Not yet, or not possible there                              | No                                                       |
+
+### When a rule acts [#follow-up-timing]
+
+- The likes are those Peal's [analytics](/guides/engage/analytics) last counted: hourly for two days after a post went live, then daily. A rule never asks a platform for more, so a post reaches its likes on Peal's next count, and a platform Peal counts nothing on (X, unless reads are on) never triggers it.
+- A post is followed up once of each kind, whatever rules act on it, and a channel carries 10 follow-ups a day at most; past that they wait for the next day, within their seven days.
+- The comment goes under the post's last part, so it reads as the thread's next part. Nothing likes, follows or messages anyone.
+- A rule on a channel acts on every post the channel publishes after it started. A post and a channel have one rule going on at a time.
+
+### Approvals [#follow-up-approvals]
+
+A rule publishes by itself, so where the workspace's [approval policy](/guides/posts/review) holds your posts, the rule waits until a member who approves posts approves it in **Settings › Follow-ups**. Changing its comment or whether it reposts asks again; changing its likes or pausing it does not. If the policy starts holding your posts after the rule started, it waits too, unless it was approved.
+
+### When a follow-up does not go out [#follow-up-ends]
+
+A follow-up expires when its seven days pass: the post did not reach the likes, the rule was paused or waiting for an approval, or the channel's day was full. It is given up when its rule is stopped, its post is no longer live, or its channel can no longer carry it. A platform that refuses it fails it, with the platform's code; one that may have taken it without answering leaves it unconfirmed: check the platform, Peal never sends it again. A rule ends when its starter can no longer publish, or, on a post, once everything it armed is over.
 
 ## Post from a feed [#feeds]
 

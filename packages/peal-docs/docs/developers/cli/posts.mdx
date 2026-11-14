@@ -270,6 +270,24 @@ peal posts list --recycling <rule-id>
 - `peal recycling list` prints 50 rules a page (`--limit`, 100 at most) and a `More:` line with the `--cursor` of the next.
 - `peal posts list --recycling` lists the posts a rule made.
 
+## Follow-ups [#follow-ups]
+
+```sh
+peal follow-ups start --post <post-id> --likes 50 --comment "Thank you all for reading!" --repost
+peal follow-ups start --channel <channel-id> --likes 100 --repost
+peal follow-ups list --post <post-id>
+peal follow-ups show <rule-id>
+peal follow-ups update <rule-id> --likes 80 --no-repost
+peal follow-ups pause <rule-id>
+peal follow-ups resume <rule-id>
+peal follow-ups approve <rule-id>
+peal follow-ups stop <rule-id>
+```
+
+- `peal follow-ups start` makes a [follow-up rule](/guides/posts/queues#follow-ups) on one post (`--post`) or on every post a channel publishes from then on (`--channel`), one of them, with `--comment`, `--repost` or both, and `--likes` from 1 to 1,000,000. It refuses a rule that does nothing before asking the server, and prints what each channel can carry, kind by kind, and why not.
+- `peal follow-ups show` prints the rule's channels and each follow-up: waiting for the likes, sent with its address, failed with the platform's code, unconfirmed, expired or given up, with why.
+- `peal follow-ups approve` takes a member who approves posts, signed in: an API key never approves.
+
 ## Feeds [#feeds]
 
 ```sh

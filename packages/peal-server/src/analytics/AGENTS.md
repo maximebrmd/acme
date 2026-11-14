@@ -220,3 +220,7 @@
   Run it on Postgres on the real clock, at an instant earlier than every
   other suite's (`collection-scale.test.ts`): a virtual clock set decades
   back replays every tick of the pool's timers and never returns.
+- `PostLikes` (`SqlPostLikes`) answers publishing's follow-up rules the
+  likes last read of tracked posts, by target, from `tracked_posts`
+  alone: a rule never asks for a read, nor changes the collection's
+  schedule.

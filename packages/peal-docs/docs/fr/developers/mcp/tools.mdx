@@ -197,6 +197,19 @@ Un espace de travail enregistre trois choses pour écrire ses publications, et `
 
 `list_posts` prend `recyclingId`.
 
+### Relances [#follow-up-tools]
+
+`start_follow_up_rule` crée une [règle de relance](/fr/guides/posts/queues#follow-ups) sur une publication (`postId`) ou un canal (`channelId`) : quand une publication a `likes` mentions J’aime, elle publie `comment` dessous et la repartage si `repost` est vrai, d’elle-même, en public ; un client ne l’appelle donc que si vous l’avez demandé, avec vos mots pour le commentaire.
+
+| Outil                                        | Ce qu’il fait                                                         | Scope               |
+| -------------------------------------------- | --------------------------------------------------------------------- | ------------------- |
+| `start_follow_up_rule`                       | Lance une règle                                                       | `workspace:publish` |
+| `update_follow_up_rule`                      | Modifie ou met en pause une règle                                     | `workspace:publish` |
+| `stop_follow_up_rule`                        | Arrête une règle                                                      | `workspace:publish` |
+| `list_follow_up_rules`, `get_follow_up_rule` | Lisent les règles, ce que chaque canal porte et ce que chacune a fait |                     |
+
+Aucun outil n’approuve une règle : un membre le fait, dans l’application web.
+
 ### Flux [#feed-tools]
 
 | Outil                    | Ce qu’il fait                                                                                                                                                                                                                                             | Scope             |

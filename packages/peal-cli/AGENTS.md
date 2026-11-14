@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `overview`,
   `agenda`, `logout`, `mcp` and `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `feeds`, `media`, `approvals`,
+  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `follow-ups`, `feeds`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
   `invitations`, `webhooks`, `ads` and `assistant`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
@@ -65,6 +65,11 @@
   answered) reads the inbox's reviews; answering one or deleting its reply
   is a person's, in the web app (Google's policies), and has no command; the studio answers it
   from `test/studio-reviews.ts`.
+- `peal follow-ups` (`commands/follow-ups.ts`: list, show, start,
+  update, pause, resume, approve, stop) keeps the follow-up rules;
+  `start` takes `--post` or `--channel`, one of them, and `--comment`,
+  `--repost` or both, refused before any request otherwise. The studio
+  answers it from `test/studio-follow-ups.ts`.
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.
