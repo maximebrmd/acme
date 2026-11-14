@@ -8,6 +8,8 @@ import type {
   CredentialFailure,
   PublishingToken,
 } from "#publishing/application/platform-credentials.ts";
+import { SiteCredentials } from "#publishing/application/site-credentials.ts";
+import type { SiteToken } from "#publishing/application/site-credentials.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
@@ -79,6 +81,26 @@ export const ChannelAccessCredentials = Layer.effect(
             channelId,
             ({ accessToken, accountId, connection, platform }) =>
               use({ accessToken, accountId, connection, platform })
+          )
+          .pipe(Effect.catch(credentialFailure<Exclude<E, TokenRejected>>)),
+    });
+  })
+);
+
+/** A website's credential, as the channels context hands it out. */
+export const ChannelAccessSiteCredentials = Layer.effect(
+  SiteCredentials,
+  Effect.gen(function* ChannelAccessSiteCredentials() {
+    const access = yield* ChannelAccess;
+
+    return SiteCredentials.of({
+      withToken: <A, E, R>(
+        channelId: ChannelId,
+        use: (token: SiteToken) => Effect.Effect<A, E | TokenRejected, R>
+      ): Effect.Effect<A, CredentialFailure | Exclude<E, TokenRejected>, R> =>
+        access
+          .withSiteToken(channelId, ({ accessToken, accountId, platform }) =>
+            use({ credential: accessToken, platform, root: accountId })
           )
           .pipe(Effect.catch(credentialFailure<Exclude<E, TokenRejected>>)),
     });

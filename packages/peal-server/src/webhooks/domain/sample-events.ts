@@ -34,6 +34,7 @@ const replyId = Uuid7Schema.make(synthetic(9));
 const reviewId = Uuid7Schema.make(synthetic(11));
 const reviewThreadId = Uuid7Schema.make(synthetic(12));
 const reviewReplyId = Uuid7Schema.make(synthetic(13));
+const articleId = Uuid7Schema.make(synthetic(14));
 
 const at = DateTime.makeUnsafe("2026-01-01T09:00:00Z");
 
@@ -169,6 +170,31 @@ const samples: Samples = {
       replyId,
     },
     type: "comment.replied",
+  }),
+  "article.failed": (workspaceId) => ({
+    data: {
+      articleId,
+      channelId,
+      code: "rest_cannot_create",
+      failedAt: at,
+      platform: "wordpress",
+      reason: "contentRejected",
+      workspaceId,
+    },
+    type: "article.failed",
+  }),
+  "article.published": (workspaceId) => ({
+    data: {
+      articleId,
+      channelId,
+      permalink: "https://site.example/?p=101",
+      platformPostId: "101",
+      publishedAt: at,
+      platform: "wordpress",
+      siteStatus: "publish",
+      workspaceId,
+    },
+    type: "article.published",
   }),
   "media.failed": (workspaceId) => ({
     data: { mediaId, reason: "unreadable", workspaceId },

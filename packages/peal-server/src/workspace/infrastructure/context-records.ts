@@ -11,6 +11,7 @@ import { EngagementRecords } from "#engagement/application/engagement-records.ts
 import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
+import { ArticleRecords } from "#publishing/application/article-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { ReviewRecords } from "#review/application/review-records.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
@@ -55,6 +56,7 @@ export const ContextRecordsLive = Layer.effect(
   Effect.gen(function* ContextRecordsLive() {
     const channels = yield* ChannelRecords;
     const posts = yield* PostRecords;
+    const articles = yield* ArticleRecords;
     const media = yield* MediaRecords;
     const notices = yield* NoticeRecords;
     const usage = yield* UsageRecords;
@@ -77,6 +79,7 @@ export const ContextRecordsLive = Layer.effect(
 
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
+          yield* articles.forgetAuthor(userId);
           yield* engagement.forgetUser(userId);
           yield* reviews.forgetUser(userId);
           yield* channels.eraseUser(userId);
@@ -91,6 +94,10 @@ export const ContextRecordsLive = Layer.effect(
           // Posts first: they stop the jobs that would post to the
           // channels, and refuse while one is going out.
           yield* posts
+            .eraseWorkspace(workspaceId)
+            .pipe(Effect.catchTag("PostsPublishing", busy));
+          // Articles too, whose jobs would send to its websites.
+          yield* articles
             .eraseWorkspace(workspaceId)
             .pipe(Effect.catchTag("PostsPublishing", busy));
 
@@ -149,6 +156,7 @@ export const ContextRecordsLive = Layer.effect(
           accountAnalytics: analytics.exportAccounts(workspaceId),
           ads: adRecords.exportWorkspace(workspaceId),
           analytics: analytics.exportWorkspace(workspaceId),
+          articles: articles.exportWorkspace(workspaceId),
           assistantImageProvider: usage.exportImageProvider(workspaceId),
           assistantOwnImages: usage.exportOwnImages(workspaceId),
           assistantOwnText: usage.exportOwnText(workspaceId),
@@ -184,6 +192,7 @@ export const ContextRecordsLive = Layer.effect(
             workspaceIds,
             (workspaceId) =>
               posts.ensureErasable(workspaceId).pipe(
+                Effect.andThen(articles.ensureErasable(workspaceId)),
                 Effect.catchTag("PostsPublishing", busy),
                 // Nor while a boost may still spend: erasing would leave
                 // it running at its network with nobody to stop it here.

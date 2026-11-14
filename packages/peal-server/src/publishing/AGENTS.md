@@ -182,6 +182,50 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   erased, and its jobs are stopped with it (`PublicationScheduler.cancel`
   and `cancelRound`); one that wakes all the same finds its target gone
   and ends `superseded`, sending nothing.
+- An article (`domain/article.ts`, `Articles`, `publishing.articles`) is
+  a sibling of a post, never one: a title, a body, an excerpt, tags,
+  categories, a cover, for one website's channel (`SiteChannels`,
+  `isSitePlatform`), and how it lands there (`siteStatus`: `publish`,
+  `draft`, or `future`, which the site publishes itself at the article's
+  time, Peal sending it at once: `sendAt`). Its body is the composer's
+  editor document kept to an allow-list (`domain/article-body.ts`: what
+  does not decode is refused, `bodyInvalid` in the contract), and its
+  HTML is written by `domain/article-html.ts` alone, every text and
+  attribute escaped. It takes the posts' permissions (`post:create`,
+  `post:update`, `post:delete`, `post:schedule`, `post:publish` for a
+  change on the site, `post:read`); it passes no approval gate and counts
+  in no month's posts. `articleViolations` checks it when it is
+  scheduled, all at once (`ArticleRejected`), never while a draft.
+- `PublishArticleV1` (`workflows/publish-article.ts`, persisted contract:
+  payload `{ articleId, revision, round, at }`, key
+  `<articleId>:<revision>:<round>`, activities `claim`, `send/<n>`,
+  `settle`, clocks `send-at`, `retry/<n>`) sleeps until `at`, claims the
+  article for its revision and round (`claimed`: missed past an hour),
+  decides each attempt with the posts' `decide`, and settles it, telling
+  `ArticleEvents` (the webhooks' `article.published`, `article.failed`)
+  in that transaction. Each attempt's row (`publishing.article_calls`) is
+  written and committed before the site is called; a row found in flight
+  is resumed (`SitePublisher.resume`), never sent blindly. A schedule
+  raises `revision`, a retry `round`, so a job of an earlier one is
+  superseded. It calls the site directly, not through a channel's gate.
+- WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
+  sends each file the article shows to `/wp/v2/media` (the bytes as the
+  body, `Content-Disposition` naming the file, streamed), finds tags and
+  categories by name whatever their case or makes them, then makes the
+  post with one `POST /wp/v2/posts`, the commit. WordPress keeps no
+  idempotency key: an answer lost (no answer, or a 5xx) is looked for
+  among the user's posts changed since the attempt began a minute early,
+  by title, and adopted only when exactly one matches that no other
+  article of the channel holds (`ArticleStore.recordedOn`), else
+  unconfirmed. Only a 401 with WordPress's own error is a refused
+  credential; nothing renews one, so the channel is marked to reconnect.
+  Unpublishing is `DELETE` without `force` (the site's trash; gone
+  already is done), an update `POST /wp/v2/posts/{id}` without status or
+  date: both run in the request, the article saved after. A file is sent
+  again on every update.
+- Erasing a workspace erases its articles (`ArticleRecords`, refused
+  while a call to a site is in flight, `PostsPublishing`), the export
+  holds them, and a member who leaves is forgotten as their author.
 - A post keeps how it was created and last scheduled (`PostAttribution`,
   `#publishing/domain/post-origin.ts`): in the web app, with an API key or
   through an OAuth application (`Actor.subject.clientId`), with the key's or

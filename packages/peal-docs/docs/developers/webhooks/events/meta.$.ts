@@ -4,7 +4,7 @@ import { defineMeta } from "blume";
 // fr/developers/webhooks/events/meta.ts gives the French label.
 export const shared = {
   icon: "zap",
-  pages: ["index", "posts", "channels", "media-comments", "boosts"],
+  pages: ["index", "posts", "articles", "channels", "media-comments", "boosts"],
   title: "Events",
 } as const;
 

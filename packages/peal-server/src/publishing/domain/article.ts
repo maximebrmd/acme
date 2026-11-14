@@ -14,6 +14,7 @@ import {
 import { bodyMediaOf, bodyTextLength } from "./article-body.ts";
 import { ArticleContent } from "./article-content.ts";
 import { ArticleIdSchema } from "./article-id.ts";
+import type { ArticleViolationSchema } from "./article-rejected.ts";
 import { InvalidArticleTransition } from "./invalid-article-transition.ts";
 import type {
   ArticleAction,
@@ -107,21 +108,7 @@ export class Article extends Schema.Class<Article>(
 export const articleLatenessLimit = Duration.hours(1);
 
 /** What a site will not take of an article, found before it is sent. */
-export type ArticleViolation =
-  | { readonly _tag: "titleMissing" }
-  | { readonly _tag: "titleTooLong"; readonly maximum: number }
-  | { readonly _tag: "bodyMissing" }
-  | { readonly _tag: "excerptTooLong"; readonly maximum: number }
-  | {
-      readonly _tag: "tooManyTerms";
-      readonly field: "categories" | "tags";
-      readonly maximum: number;
-    }
-  | {
-      readonly _tag: "termInvalid";
-      readonly field: "categories" | "tags";
-    }
-  | { readonly _tag: "siteTimeInPast" };
+export type ArticleViolation = typeof ArticleViolationSchema.Type;
 
 const termViolations = (
   field: "categories" | "tags",

@@ -1,0 +1,576 @@
+import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
+import { HttpClientRequest, HttpClientResponse } from "effect/http";
+import type { HttpClient, HttpClientError } from "effect/http";
+
+import { ArticleStore } from "#publishing/application/article-store.ts";
+import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
+import { SiteCredentials } from "#publishing/application/site-credentials.ts";
+import type { SiteToken } from "#publishing/application/site-credentials.ts";
+import { SitePublisher } from "#publishing/application/site-publisher.ts";
+import type { SitePublishRequest } from "#publishing/application/site-publisher.ts";
+import { articleHtml } from "#publishing/domain/article-html.ts";
+import { articleMediaOf } from "#publishing/domain/article.ts";
+import type { Article } from "#publishing/domain/article.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
+import type { MediaAssetId } from "#shared/domain/ids.ts";
+import { MediaRejected } from "#shared/domain/media-rejected.ts";
+import { storableLine } from "#shared/domain/platform-text.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import type {
+  PublishResult,
+  UnconfirmedReason,
+} from "#shared/domain/publish-result.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import {
+  publicHttpClient,
+  publicHttpClientWith,
+  streamedBody,
+} from "#shared/infrastructure/platforms/public-http.ts";
+import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
+import {
+  routeUrl,
+  withSiteCredential,
+  wordpressErrorOf,
+} from "#shared/infrastructure/platforms/wordpress-api.ts";
+
+// Articles on a WordPress site, through its REST API as the handbook
+// documents it (developer.wordpress.org/rest-api/reference): each file
+// the article shows goes to `/wp/v2/media`, its bytes as the request's
+// body with `Content-Disposition` naming the file (the attachments
+// controller's `upload_from_data`); its tags and categories are found by
+// name, or made, under `/wp/v2/tags` and `/wp/v2/categories`; the post is
+// made with one `POST /wp/v2/posts`, the commit: `status` publish, draft
+// or future with `date_gmt`, `featured_media`, `tags` and `categories` by
+// id. WordPress keeps no idempotency key: a post whose answer was lost is
+// looked for among the user's posts changed since the attempt began, by
+// its title, and adopted only when exactly one, not another article's,
+// matches. `DELETE /wp/v2/posts/{id}` without `force` moves it to the
+// trash; `POST /wp/v2/posts/{id}` sends it again.
+
+// Uploads take longer than the API's calls.
+const uploadTimeout = Duration.minutes(10);
+
+// How far before the attempt a post made by it may say it changed: the
+// site's clock and Peal's may differ.
+const clockSlack = Duration.minutes(1);
+
+// The longest of WordPress's codes kept.
+const maxCodeLength = 100;
+
+type Client = HttpClient.HttpClient.With<
+  HttpClientError.HttpClientError | OutboundRequestRefused
+>;
+
+const PostSchema = Schema.Struct({
+  id: Schema.Number,
+  link: Schema.optionalKey(Schema.String),
+});
+
+const FoundPostSchema = Schema.Struct({
+  id: Schema.Number,
+  link: Schema.optionalKey(Schema.String),
+  title: Schema.Struct({ raw: Schema.optionalKey(Schema.String) }),
+});
+
+const MediaSchema = Schema.Struct({
+  id: Schema.Number,
+  source_url: Schema.String,
+});
+
+const TermSchema = Schema.Struct({ id: Schema.Number, name: Schema.String });
+
+const MeSchema = Schema.Struct({ id: Schema.Number });
+
+// Peal's own refusal for an article it cannot read any more.
+const articleGone = new BadRequest({
+  code: ownRefusalCodes.channelDisconnected,
+});
+
+const codeOf = (code: string) => storableLine(code, maxCodeLength);
+
+/**
+ * How WordPress refused a request, from its status and its own error:
+ * only its 401, in its words, is a refused credential; a 403 is the user
+ * lacking a right; anything a proxy says is the site being unreachable.
+ */
+const refusalOf = Effect.fnUntraced(function* refusalOf(
+  response: HttpClientResponse.HttpClientResponse
+) {
+  const now = yield* DateTime.now;
+  const own = yield* wordpressErrorOf(response);
+  const code = own.pipe(Option.map((error) => codeOf(error.code)));
+
+  if (response.status === 429) {
+    const wait = retryAfterOf(response.headers, now);
+
+    return yield* Option.isSome(wait)
+      ? new RateLimited({ retryAfter: wait.value })
+      : new RateLimited();
+  }
+
+  if (response.status >= 500 || Option.isNone(code)) {
+    return yield* new PlatformUnavailable();
+  }
+
+  if (response.status === 401) {
+    return yield* new TokenRejected();
+  }
+
+  if (response.status === 413 || code.value.startsWith("rest_upload")) {
+    return yield* new MediaRejected({ code: code.value });
+  }
+
+  return yield* new BadRequest({ code: code.value });
+});
+
+const sentJson = <A, I>(schema: Schema.Codec<A, I>, ok: readonly number[]) =>
+  Effect.fnUntraced(function* answeredJson(
+    response: HttpClientResponse.HttpClientResponse
+  ) {
+    if (!ok.includes(response.status)) {
+      return yield* refusalOf(response);
+    }
+
+    return yield* HttpClientResponse.schemaBodyJson(schema)(response).pipe(
+      Effect.mapError(() => new PlatformUnavailable())
+    );
+  });
+
+// The site's answer; a failure to reach it is the site being down, and a
+// request the outbound guard refuses one Peal cannot send any more.
+const execute = (
+  client: Client,
+  request: HttpClientRequest.HttpClientRequest
+): Effect.Effect<
+  HttpClientResponse.HttpClientResponse,
+  BadRequest | PlatformUnavailable
+> =>
+  client.execute(request).pipe(
+    Effect.catchTags({
+      HttpClientError: () => Effect.fail(new PlatformUnavailable()),
+      OutboundRequestRefused: () =>
+        Effect.fail(
+          new BadRequest({ code: ownRefusalCodes.channelDisconnected })
+        ),
+    })
+  );
+
+const isoGmt = (instant: DateTime.Utc) =>
+  DateTime.formatIso(instant).slice(0, 19);
+
+/**
+ * The fields of the post, as `/wp/v2/posts` takes them; one left
+ * undefined is not sent, as JSON leaves it out.
+ */
+interface PostFields {
+  readonly categories: readonly number[];
+  readonly content: string;
+  readonly date_gmt?: string;
+  readonly excerpt: string | undefined;
+  readonly featured_media: number | undefined;
+  readonly status?: string;
+  readonly tags: readonly number[];
+  readonly title: string;
+}
+
+const signed = (
+  token: SiteToken,
+  request: HttpClientRequest.HttpClientRequest
+) => request.pipe(withSiteCredential(token.credential));
+
+const postRoute = (token: SiteToken, platformPostId: string) =>
+  routeUrl(token.root, `/wp/v2/posts/${encodeURIComponent(platformPostId)}`);
+
+const published = (post: {
+  readonly id: number;
+  readonly link?: string;
+}): PublishResult =>
+  post.link === undefined
+    ? {
+        _tag: "published",
+        platformPostId: PlatformPostIdSchema.make(String(post.id)),
+      }
+    : {
+        _tag: "published",
+        permalink: post.link,
+        platformPostId: PlatformPostIdSchema.make(String(post.id)),
+      };
+
+/**
+ * SitePublisher for WordPress sites. Every request goes through the public
+ * HTTP client and the outbound guard, to the API's root the channel keeps.
+ */
+export const WordPressSitePublisherLive = Layer.effect(
+  SitePublisher,
+  Effect.gen(function* WordPressSitePublisherLive() {
+    const store = yield* ArticleStore;
+    const credentials = yield* SiteCredentials;
+    const library = yield* MediaForPublishing;
+    const api = yield* publicHttpClient;
+    const uploads = yield* publicHttpClientWith({ timeout: uploadTimeout });
+
+    // Sends one file of the article: its id and address on the site.
+    const upload = Effect.fn("WordPressArticles.upload")(function* upload(
+      client: Client,
+      token: SiteToken,
+      article: Article,
+      mediaId: MediaAssetId,
+      altText: Option.Option<string>
+    ) {
+      const described = yield* library.describe(article.workspaceId, mediaId);
+
+      return yield* Effect.scoped(
+        Effect.gen(function* uploading() {
+          const bytes = yield* library.held(article.workspaceId, mediaId);
+
+          return yield* execute(
+            client,
+            signed(
+              token,
+              HttpClientRequest.post(
+                routeUrl(token.root, "/wp/v2/media", {
+                  ...Option.match(altText, {
+                    onNone: () => ({}),
+                    onSome: (alt) => ({ alt_text: alt }),
+                  }),
+                })
+              ).pipe(
+                HttpClientRequest.setHeader(
+                  "content-disposition",
+                  `attachment; filename="${described.fileName.replaceAll(/["\\\r\n]/gu, "_")}"`
+                ),
+                streamedBody(bytes, {
+                  contentLength: described.byteSize,
+                  contentType: described.contentType,
+                })
+              )
+            )
+          ).pipe(Effect.flatMap(sentJson(MediaSchema, [200, 201])));
+        })
+      );
+    });
+
+    // The ids of the terms named, found by name whatever its case, or
+    // made: a tag by any author, a category by a user who may manage them.
+    const termIds = Effect.fn("WordPressArticles.termIds")(function* termIds(
+      token: SiteToken,
+      taxonomy: "categories" | "tags",
+      names: readonly string[]
+    ) {
+      const ids: number[] = [];
+
+      for (const name of names) {
+        const wanted = name.trim();
+
+        const found = yield* execute(
+          api,
+          signed(
+            token,
+            HttpClientRequest.get(
+              routeUrl(token.root, `/wp/v2/${taxonomy}`, {
+                _fields: "id,name",
+                per_page: "100",
+                search: wanted,
+              })
+            )
+          )
+        ).pipe(Effect.flatMap(sentJson(Schema.Array(TermSchema), [200])));
+
+        const same = found.find(
+          (term) => term.name.toLowerCase() === wanted.toLowerCase()
+        );
+
+        if (same !== undefined) {
+          ids.push(same.id);
+          continue;
+        }
+
+        const made = yield* execute(
+          api,
+          signed(
+            token,
+            HttpClientRequest.post(
+              routeUrl(token.root, `/wp/v2/${taxonomy}`)
+            ).pipe(HttpClientRequest.bodyJsonUnsafe({ name: wanted }))
+          )
+        ).pipe(Effect.flatMap(sentJson(TermSchema, [200, 201])));
+
+        ids.push(made.id);
+      }
+
+      return ids;
+    });
+
+    // Everything the post is made of, its files sent first.
+    const fieldsOf = Effect.fn("WordPressArticles.fieldsOf")(function* fieldsOf(
+      token: SiteToken,
+      article: Article,
+      withStatus: boolean
+    ) {
+      const { content } = article;
+      const images = new Map<MediaAssetId, string>();
+      let featured: number | undefined;
+
+      for (const mediaId of articleMediaOf(content)) {
+        const uploaded = yield* upload(
+          uploads,
+          token,
+          article,
+          mediaId,
+          Option.none()
+        );
+
+        images.set(mediaId, uploaded.source_url);
+
+        if (Option.contains(content.coverMediaId, mediaId)) {
+          featured = uploaded.id;
+        }
+      }
+
+      const fields: PostFields = {
+        categories: yield* termIds(token, "categories", content.categories),
+        content: articleHtml(content.body, images),
+        tags: yield* termIds(token, "tags", content.tags),
+        excerpt: Option.getOrUndefined(content.excerpt),
+        featured_media: featured,
+        title: content.title.trim(),
+      };
+
+      if (!withStatus) {
+        return fields;
+      }
+
+      const { state } = article;
+
+      if (content.siteStatus === "future" && state._tag !== "draft") {
+        return {
+          ...fields,
+          date_gmt: isoGmt(state.schedule.at),
+          status: "future",
+        };
+      }
+
+      return { ...fields, status: content.siteStatus };
+    });
+
+    // The post this attempt made, looked for on the site: the user's own,
+    // changed since the attempt began, of the article's title, and made by
+    // no other of the channel's articles. None, or several, settle nothing.
+    const lookUp = Effect.fn("WordPressArticles.lookUp")(function* lookUp(
+      token: SiteToken,
+      article: Article,
+      startedAt: DateTime.Utc
+    ) {
+      const me = yield* execute(
+        api,
+        signed(
+          token,
+          HttpClientRequest.get(
+            routeUrl(token.root, "/wp/v2/users/me", { _fields: "id" })
+          )
+        )
+      ).pipe(Effect.flatMap(sentJson(MeSchema, [200])));
+
+      const title = article.content.title.trim();
+
+      const posts = yield* execute(
+        api,
+        signed(
+          token,
+          HttpClientRequest.get(
+            routeUrl(token.root, "/wp/v2/posts", {
+              _fields: "id,link,title",
+              author: String(me.id),
+              context: "edit",
+              modified_after: DateTime.formatIso(
+                DateTime.subtractDuration(startedAt, clockSlack)
+              ),
+              per_page: "20",
+              search: title,
+              status: "publish,future,draft,pending,private",
+            })
+          )
+        )
+      ).pipe(Effect.flatMap(sentJson(Schema.Array(FoundPostSchema), [200])));
+
+      const titled = posts.filter((post) => post.title.raw?.trim() === title);
+
+      const recorded = yield* store
+        .recordedOn(
+          article.channelId,
+          titled.map((post) => String(post.id))
+        )
+        .pipe(Effect.orDie);
+
+      const unclaimed = titled.filter((post) => !recorded.has(String(post.id)));
+
+      return unclaimed.length === 1
+        ? Option.fromUndefinedOr(unclaimed[0])
+        : Option.none();
+    });
+
+    const articleOf = (articleId: SitePublishRequest["articleId"]) =>
+      store.get(articleId).pipe(
+        Effect.orDie,
+        Effect.flatMap(
+          Option.match({
+            onNone: () => Effect.fail(articleGone),
+            onSome: Effect.succeed,
+          })
+        )
+      );
+
+    // Found among the user's posts, or not known.
+    const lookedUp = (
+      token: SiteToken,
+      article: Article,
+      startedAt: DateTime.Utc,
+      reason: UnconfirmedReason
+    ) =>
+      lookUp(token, article, startedAt).pipe(
+        Effect.map(
+          Option.match({
+            onNone: (): PublishResult => ({ _tag: "unconfirmed", reason }),
+            onSome: published,
+          })
+        ),
+        // The search failed: whether it went out is not known.
+        Effect.catchTag(
+          ["PlatformUnavailable", "RateLimited", "BadRequest", "MediaRejected"],
+          (): Effect.Effect<PublishResult> =>
+            Effect.succeed({ _tag: "unconfirmed", reason })
+        )
+      );
+
+    const publish = Effect.fn("WordPressArticles.publish")(function* publish(
+      request: SitePublishRequest
+    ) {
+      const article = yield* articleOf(request.articleId);
+
+      return yield* credentials.withToken(article.channelId, (token) =>
+        Effect.gen(function* publishing() {
+          const fields = yield* fieldsOf(token, article, true);
+
+          // The commit: once it may have reached the site, nothing is
+          // sent again; an answer lost, or unreadable, is looked for.
+          const response = yield* api
+            .execute(
+              signed(
+                token,
+                HttpClientRequest.post(
+                  routeUrl(token.root, "/wp/v2/posts")
+                ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
+              )
+            )
+            .pipe(Effect.option);
+
+          if (Option.isNone(response) || response.value.status >= 500) {
+            return yield* lookedUp(
+              token,
+              article,
+              request.startedAt,
+              "noResponse"
+            );
+          }
+
+          if (response.value.status !== 200 && response.value.status !== 201) {
+            return yield* refusalOf(response.value);
+          }
+
+          const post = yield* HttpClientResponse.schemaBodyJson(PostSchema)(
+            response.value
+          ).pipe(Effect.option);
+
+          return Option.isSome(post)
+            ? published(post.value)
+            : yield* lookedUp(
+                token,
+                article,
+                request.startedAt,
+                "unreadableResponse"
+              );
+        })
+      );
+    });
+
+    const resume = Effect.fn("WordPressArticles.resume")(function* resume(
+      request: SitePublishRequest
+    ) {
+      const article = yield* articleOf(request.articleId);
+
+      return yield* credentials.withToken(article.channelId, (token) =>
+        lookedUp(token, article, request.startedAt, "interrupted")
+      );
+    });
+
+    const remove = Effect.fn("WordPressArticles.remove")(function* remove(
+      article: Article,
+      platformPostId: string
+    ) {
+      yield* credentials.withToken(article.channelId, (token) =>
+        execute(
+          api,
+          signed(
+            token,
+            HttpClientRequest.delete(postRoute(token, platformPostId))
+          )
+        ).pipe(
+          Effect.flatMap((response) =>
+            Effect.gen(function* removed() {
+              const own =
+                response.status === 200
+                  ? Option.none()
+                  : yield* wordpressErrorOf(response);
+
+              // In the trash already, or deleted for good: gone either way.
+              const gone =
+                response.status === 200 ||
+                own.pipe(
+                  Option.exists(
+                    ({ code }) =>
+                      code === "rest_already_trashed" ||
+                      code === "rest_post_invalid_id"
+                  )
+                );
+
+              return yield* gone ? Effect.void : refusalOf(response);
+            })
+          )
+        )
+      );
+    });
+
+    const update = Effect.fn("WordPressArticles.update")(function* update(
+      article: Article,
+      platformPostId: string
+    ) {
+      yield* credentials.withToken(article.channelId, (token) =>
+        Effect.gen(function* updating() {
+          // What it says, never how it stands: the site keeps its status.
+          const fields = yield* fieldsOf(token, article, false);
+
+          yield* execute(
+            api,
+            signed(
+              token,
+              HttpClientRequest.post(postRoute(token, platformPostId)).pipe(
+                HttpClientRequest.bodyJsonUnsafe(fields)
+              )
+            )
+          ).pipe(Effect.flatMap(sentJson(PostSchema, [200])));
+        })
+      );
+    });
+
+    return SitePublisher.of({
+      publish,
+      remove,
+      resume,
+      update,
+    });
+  })
+);

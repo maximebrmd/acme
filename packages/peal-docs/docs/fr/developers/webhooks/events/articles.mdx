@@ -1,0 +1,64 @@
+---
+title: Événements des articles
+description: "Les événements d’un article, envoyé à l’un des sites web de l’espace de travail."
+sidebar:
+  icon: newspaper
+  label: "Articles"
+---
+
+## Événements des articles [#article-events]
+
+Un [article](/guides/websites#articles) part vers un site web, par son canal. Ses événements nomment l’article et le canal, jamais ce que dit l’article : lisez-le par l’API pour cela, avec `GET /api/workspaces/{workspaceId}/articles/{articleId}`.
+
+| Champ       | Type           | Contenu                                                                            |
+| ----------- | -------------- | ---------------------------------------------------------------------------------- |
+| `articleId` | chaîne         | L’article                                                                          |
+| `channelId` | chaîne         | Le canal du site web                                                               |
+| `platform`  | chaîne ou null | Ce que fait tourner le site, comme `wordpress` ; null une fois le canal déconnecté |
+
+## article.published [#article-published]
+
+Le site a pris l’article : `platformPostId` est l’identifiant de son article là-bas, `permalink` son adresse (une adresse d’aperçu pour un brouillon), et `siteStatus` ce qu’en a fait le site : `publish`, `draft`, ou `future`, programmé sur le site, qui le publie lui-même à son heure.
+
+```json title="article.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e31",
+  "type": "article.published",
+  "version": 1,
+  "timestamp": "2026-11-17T09:00:03.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "articleId": "019a7b20-4e1d-7c30-8a52-1f3e5d7c9b01",
+    "channelId": "019a7b10-2c3d-7e40-9b61-3a5c7e9f1d02",
+    "platform": "wordpress",
+    "platformPostId": "1042",
+    "permalink": "https://blog.example.com/2026/11/spring-sowing/",
+    "publishedAt": "2026-11-17T09:00:03.000Z",
+    "siteStatus": "publish"
+  }
+}
+```
+
+## article.failed [#article-failed]
+
+L’article n’est pas parti vers son site, et rien n’y est : `reason` dit pourquoi, comme les raisons d’échec de l’API (`tokenExpired` quand le site web doit être reconnecté), et `code` est celui du site quand il en a donné un.
+
+```json title="article.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e32",
+  "type": "article.failed",
+  "version": 1,
+  "timestamp": "2026-11-17T09:00:03.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "articleId": "019a7b20-4e1d-7c30-8a52-1f3e5d7c9b01",
+    "channelId": "019a7b10-2c3d-7e40-9b61-3a5c7e9f1d02",
+    "platform": "wordpress",
+    "code": "rest_cannot_create",
+    "failedAt": "2026-11-17T09:00:03.000Z",
+    "reason": "contentRejected"
+  }
+}
+```

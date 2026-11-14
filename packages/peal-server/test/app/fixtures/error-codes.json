@@ -85,6 +85,26 @@
     "tag": "ApprovalNotPending"
   },
   {
+    "code": "article_change_refused",
+    "status": 422,
+    "tag": "ArticleChangeRefused"
+  },
+  {
+    "code": "article_not_found",
+    "status": 404,
+    "tag": "ArticleNotFound"
+  },
+  {
+    "code": "article_rejected",
+    "status": 422,
+    "tag": "ArticleRejected"
+  },
+  {
+    "code": "article_state_conflict",
+    "status": 409,
+    "tag": "ArticleStateConflict"
+  },
+  {
     "code": "assistant_failed",
     "status": 502,
     "tag": "AssistantFailed"

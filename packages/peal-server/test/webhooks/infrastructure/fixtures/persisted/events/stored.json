@@ -444,5 +444,30 @@
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
     },
     "type": "boost.budget_reached"
+  },
+  {
+    "data": {
+      "articleId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c40",
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c41",
+      "permalink": "https://site.example/?p=101",
+      "platform": "wordpress",
+      "platformPostId": "101",
+      "publishedAt": "2026-11-12T08:00:02.000Z",
+      "siteStatus": "publish",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "article.published"
+  },
+  {
+    "data": {
+      "articleId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c40",
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c41",
+      "code": "rest_cannot_create",
+      "failedAt": "2026-11-12T08:00:02.000Z",
+      "platform": null,
+      "reason": "contentRejected",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "article.failed"
   }
 ]

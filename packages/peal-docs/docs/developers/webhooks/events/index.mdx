@@ -45,6 +45,8 @@ An endpoint subscribes to the event types below, and is sent those alone. Each t
 | [`boost.failed`](/developers/webhooks/events/boosts#boost-failed)                           | A boost could not be made, and nothing ran                                |
 | [`boost.unconfirmed`](/developers/webhooks/events/boosts#boost-unconfirmed)                 | Peal cannot tell whether a boost runs: it may be spending                 |
 | [`boost.budget_reached`](/developers/webhooks/events/boosts#boost-budget-reached)           | A boost spent its whole total budget                                      |
+| [`article.published`](/developers/webhooks/events/articles#article-published)               | An article went to its website                                            |
+| [`article.failed`](/developers/webhooks/events/articles#article-failed)                     | An article did not go to its website                                      |
 | [`webhook.test`](#webhook-test)                                                             | Someone asked for a test event. Sent whatever the endpoint subscribes to. |
 
 ### One event per channel [#per-channel]

@@ -39,6 +39,8 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "boost.failed",
   "boost.unconfirmed",
   "boost.budget_reached",
+  "article.published",
+  "article.failed",
 ]);
 
 export type SubscribableEventType = typeof SubscribableEventTypeSchema.Type;

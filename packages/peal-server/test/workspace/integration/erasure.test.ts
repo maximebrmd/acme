@@ -216,6 +216,11 @@ const workspaceRows = {
   // members asked for.
   "publishing.feed_items": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.feed_items i JOIN publishing.feeds f ON f.id = i.feed_id WHERE f.workspace_id = ${id}`,
+  // Its articles go, with the journal of their calls.
+  "publishing.article_calls": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.article_calls c JOIN publishing.articles a ON a.id = c.article_id WHERE a.workspace_id = ${id}`,
+  "publishing.articles": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.articles WHERE workspace_id = ${id}`,
   "publishing.feed_reads": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.feed_reads WHERE workspace_id = ${id}`,
   "publishing.feeds": (sql, id) =>
@@ -378,6 +383,9 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // Their articles stay with the workspace, without who wrote them.
+  "publishing.articles": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.articles WHERE author_id = ${id}`,
   // The feeds they added stay with the workspace, without them: the next
   // run stops each, its starter gone.
   "publishing.feeds": (sql, id) =>
@@ -608,6 +616,14 @@ const fill = Effect.fn("fill")(function* fill(
   // A change they asked of it once live, which ended.
   yield* sql`INSERT INTO publishing.live_post_changes (id, workspace_id, post_id, target_id, channel_id, kind, status, parts_left, requested_by, requested_via, requested_at, finished_at)
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, ${targetId}, ${uuid7()}, 'unpublish', 'done', '[]'::jsonb, ${person.id}, '{"_tag":"web"}'::jsonb, now(), now())`;
+
+  // An article they wrote, sent to a website, its call ended.
+  const articleId = uuid7();
+
+  yield* sql`INSERT INTO publishing.articles (id, workspace_id, channel_id, author_id, title, body, site_status, state, status, revision, round, created_at, updated_at)
+    VALUES (${articleId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic article', '{"type":"doc","content":[]}'::jsonb, 'publish', '{"_tag":"draft"}'::jsonb, 'draft', 1, 0, now(), now())`;
+  yield* sql`INSERT INTO publishing.article_calls (idempotency_key, article_id, round, attempt, started_at, finished_at, outcome)
+    VALUES (${randomUUID()}, ${articleId}, 0, 1, now(), now(), '{"_tag":"unconfirmed","reason":"noResponse"}'::jsonb)`;
 
   const callKey = randomUUID();
 

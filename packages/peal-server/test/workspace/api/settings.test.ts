@@ -271,6 +271,7 @@ const PortsLive = Layer.mergeAll(
             accountAnalytics: [],
             ads: { accounts: [], audit: [], boosts: [], connections: [] },
             analytics: [],
+            articles: [],
             // Where its images went and with which model: never the key.
             assistantImageProvider: {
               baseUrl: "https://images.example.com/v1",

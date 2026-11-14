@@ -1,6 +1,11 @@
 import { Schema } from "effect";
 
-import { ChannelPlatformSchema, PlatformSchema } from "./platform.ts";
+import { ArticleSiteStatusSchema } from "./articles.ts";
+import {
+  ChannelPlatformSchema,
+  PlatformSchema,
+  SitePlatformSchema,
+} from "./platform.ts";
 import {
   FailureReasonSchema,
   PostOutcomeSchema,
@@ -48,6 +53,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "boost.failed",
   "boost.unconfirmed",
   "boost.budget_reached",
+  "article.published",
+  "article.failed",
 ]).annotate({
   description: "An event a webhook endpoint can subscribe to.",
   identifier: "SubscribableWebhookEventType",
@@ -144,6 +151,15 @@ const channel = {
 };
 
 const media = { ...workspace, mediaId: Schema.String };
+
+// An article on its website's channel: `platform` is null once the
+// channel was disconnected.
+const article = {
+  ...workspace,
+  articleId: Schema.String,
+  channelId: Schema.String,
+  platform: Schema.NullOr(SitePlatformSchema),
+};
 
 /** Where a post ended on one channel, once it has its result there. */
 export const WebhookSettledTargetStatusSchema = Schema.Literals([
@@ -452,6 +468,32 @@ export const WebhookPayloadSchema = Schema.Union([
     ...envelope,
     data: Schema.Struct({ ...channel, expiresAt: Schema.DateTimeUtc }),
     type: Schema.Literal("channel.expiring"),
+  }),
+  // An article went to its website: `platformPostId` is its id there,
+  // `siteStatus` what the site made of it (published, a draft, or
+  // scheduled there). Never what it says.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...article,
+      permalink: Schema.NullOr(Schema.String),
+      platformPostId: Schema.String,
+      publishedAt: Schema.DateTimeUtc,
+      siteStatus: ArticleSiteStatusSchema,
+    }),
+    type: Schema.Literal("article.published"),
+  }),
+  // The article did not go to its website: `reason` says why, `code` is
+  // the site's own when it gave one.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...article,
+      code: Schema.NullOr(Schema.String),
+      failedAt: Schema.DateTimeUtc,
+      reason: FailureReasonSchema,
+    }),
+    type: Schema.Literal("article.failed"),
   }),
   // The file was probed, and can go in posts.
   Schema.Struct({

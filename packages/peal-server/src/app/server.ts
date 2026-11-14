@@ -103,6 +103,9 @@ import {
   PostAttentionLive,
   PlatformQuotaLive,
   PostsApiLive,
+  ArticlesApiLive,
+  ArticleWorkersLive,
+  ArticlesLive,
   PublishingLive,
   QueuesApiLive,
   RecyclingApiLive,
@@ -166,6 +169,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
   ConnectLinksApiLive,
   PostsApiLive,
+  ArticlesApiLive,
   MediaApiLive,
   NoticesApiLive,
   NotificationPreferencesApiLive,
@@ -323,7 +327,7 @@ const MetersContextLive = BillingMetersLive.pipe(
 // A post deleted from its platform is no longer followed by analytics
 // nor the inbox, and none is while a boost of the ads context shows it. A
 // new post that does not say takes the workspace's short links default.
-const PublishingContextLive = PublishingLive.pipe(
+const PublishingContextLive = Layer.merge(PublishingLive, ArticlesLive).pipe(
   Layer.provide(
     Layer.mergeAll(
       // X's posts claimed on billing's meters, which scheduling reads.
@@ -643,6 +647,7 @@ const WorkersLive = Layer.mergeAll(
     // the project's day, which publishing keeps.
     PlatformEngagementLive.pipe(Layer.provide(PlatformQuotaLive))
   ),
+  ArticleWorkersLive,
   NotificationsWorkersLive,
   EngagementWorkersLive,
   WebhooksWorkersLive,

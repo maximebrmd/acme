@@ -71,6 +71,11 @@ export interface FakeWordPressOptions {
     request: FakeWordPressRequest
   ) => FakeWordPressAnswer | "hang" | undefined;
   readonly users?: readonly FakeWordPressUser[];
+  /**
+   * Whether the site does what the request asks and then drops the
+   * connection before it answers: an answer lost on the way.
+   */
+  readonly drop?: (request: FakeWordPressRequest) => boolean;
 }
 
 export interface FakeWordPressAnswer {
@@ -563,7 +568,15 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
           return;
         }
 
-        send(response, route(request));
+        const answered = route(request);
+
+        if (options.drop?.(request) === true) {
+          incoming.socket.destroy();
+
+          return;
+        }
+
+        send(response, answered);
       };
 
       const server = createServer((incoming, response) => {

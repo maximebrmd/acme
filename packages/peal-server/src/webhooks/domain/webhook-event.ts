@@ -12,6 +12,7 @@ import {
 import {
   ChannelPlatformSchema,
   PlatformSchema,
+  SitePlatformSchema,
 } from "#shared/domain/platform.ts";
 
 import { WebhookEndpointIdSchema } from "./webhook-endpoint-id.ts";
@@ -72,6 +73,15 @@ const channel = {
 };
 
 const media = { ...workspace, mediaId: MediaAssetIdSchema };
+
+// An article, on its website's channel: `platform` is null once the
+// channel was disconnected.
+const article = {
+  ...workspace,
+  articleId: Uuid7Schema,
+  channelId: ChannelIdSchema,
+  platform: Schema.NullOr(SitePlatformSchema),
+};
 
 /**
  * How a post ended across its channels, once each has its result: every
@@ -341,6 +351,30 @@ export const WebhookEventSchema = Schema.Union([
     data: Schema.Struct({ ...channel, expiresAt: Schema.DateTimeUtc }),
     type: Schema.Literal("channel.expiring"),
   }),
+  // An article went to its website: `platformPostId` is its id there,
+  // `siteStatus` what the site made of it (published, a draft, or
+  // scheduled there). Never what it says.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...article,
+      permalink: Schema.NullOr(Schema.String),
+      platformPostId: Schema.NonEmptyString,
+      publishedAt: Schema.DateTimeUtc,
+      siteStatus: Schema.Literals(["publish", "draft", "future"]),
+    }),
+    type: Schema.Literal("article.published"),
+  }),
+  // The article did not go to its website: `reason` is the failure reason
+  // the API gives, `code` the site's own when it gave one.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...article,
+      code: Schema.NullOr(Schema.NonEmptyString),
+      failedAt: Schema.DateTimeUtc,
+      reason: Schema.NonEmptyString,
+    }),
+    type: Schema.Literal("article.failed"),
+  }),
   // The file was probed, and can go in posts.
   Schema.Struct({
     data: Schema.Struct({ ...media, contentType: Schema.NonEmptyString }),
@@ -458,6 +492,8 @@ const noChannel = () => none;
 export const channelsOf: (event: WebhookEvent) => EventChannels =
   Match.type<WebhookEvent>().pipe(
     Match.discriminatorsExhaustive("type")({
+      "article.failed": ofChannel,
+      "article.published": ofChannel,
       "boost.budget_reached": noChannel,
       "boost.ended": noChannel,
       "boost.failed": noChannel,
