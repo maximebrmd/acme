@@ -231,6 +231,8 @@ const workspaceRows = {
   // Its articles go, with the journal of their calls.
   "publishing.article_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.article_calls c JOIN publishing.articles a ON a.id = c.article_id WHERE a.workspace_id = ${id}`,
+  "publishing.article_files": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.article_files f JOIN publishing.articles a ON a.id = f.article_id WHERE a.workspace_id = ${id}`,
   "publishing.articles": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.articles WHERE workspace_id = ${id}`,
   "publishing.feed_reads": (sql, id) =>
@@ -642,6 +644,8 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${articleId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic article', '{"type":"doc","content":[]}'::jsonb, 'publish', '{"_tag":"draft"}'::jsonb, 'draft', 1, 0, now(), now())`;
   yield* sql`INSERT INTO publishing.article_calls (idempotency_key, article_id, round, attempt, started_at, finished_at, outcome)
     VALUES (${randomUUID()}, ${articleId}, 0, 1, now(), now(), '{"_tag":"unconfirmed","reason":"noResponse"}'::jsonb)`;
+  yield* sql`INSERT INTO publishing.article_files (article_id, media_id, site_media_id, source_url)
+    VALUES (${articleId}, ${uuid7()}, 101, 'https://site.example/wp-content/uploads/synthetic.png')`;
 
   const callKey = randomUUID();
 

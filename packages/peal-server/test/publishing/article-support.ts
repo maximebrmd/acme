@@ -122,8 +122,9 @@ export const onArticles = <A, E>(
   );
 
 /**
- * Waits until `condition` holds, moving the virtual clock ten seconds a
- * round: for what waits on a retry's delay.
+ * Waits until `condition` holds, moving the virtual clock a second a
+ * round: for what waits on a retry's delay, never past its deadlines
+ * while the machine is slow.
  */
 export const eventuallyLater = <E, R>(
   label: string,
@@ -132,13 +133,13 @@ export const eventuallyLater = <E, R>(
   Effect.gen(function* waitingLater() {
     const sharding = yield* Sharding.Sharding;
 
-    for (let round = 0; round < 500; round += 1) {
+    for (let round = 0; round < 3000; round += 1) {
       if (yield* condition) {
         return;
       }
 
       yield* sharding.pollStorage;
-      yield* TestClock.adjust(Duration.seconds(10));
+      yield* TestClock.adjust(Duration.seconds(1));
       yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
     }
 
