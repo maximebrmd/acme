@@ -3748,7 +3748,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
     );
 
     it.effect(
-      "let a client read a location's reviews and mark one, and refuse it a reply even with the scope that publishes",
+      "refuse a client a reply to a review, or deleting one, even with the scope that publishes",
       () =>
         Effect.gen(function* reviews() {
           const fixture = yield* ToolsFixture;
