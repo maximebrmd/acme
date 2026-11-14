@@ -28,6 +28,8 @@ export const WebhookEventType = {
         CommentReplied: "comment.replied",
         ReviewReceived: "review.received",
         ReviewReplied: "review.replied",
+        MessageReceived: "message.received",
+        MessageSent: "message.sent",
         BoostStarted: "boost.started",
         BoostPaused: "boost.paused",
         BoostResumed: "boost.resumed",

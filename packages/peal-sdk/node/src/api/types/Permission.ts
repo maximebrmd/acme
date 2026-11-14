@@ -21,6 +21,7 @@ export const Permission = {
         ChannelDisconnect: "channel:disconnect",
         EngagementRead: "engagement:read",
         EngagementReply: "engagement:reply",
+        EngagementMessage: "engagement:message",
         InvitationCreate: "invitation:create",
         InvitationCancel: "invitation:cancel",
         MediaRead: "media:read",

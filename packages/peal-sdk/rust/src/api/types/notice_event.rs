@@ -86,6 +86,16 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    MessagesReceived {
+        channel: NoticeChannel,
+        #[serde(rename = "conversationId")]
+        #[serde(default)]
+        conversation_id: String,
+        #[serde(default)]
+        count: i64,
+    },
+
+    #[non_exhaustive]
     ChannelReconnectRequired { channel: NoticeChannel },
 
     #[non_exhaustive]
@@ -302,6 +312,14 @@ impl NoticeEvent {
             count,
             post_id,
             thread_id,
+        }
+    }
+
+    pub fn messages_received(channel: NoticeChannel, conversation_id: String, count: i64) -> Self {
+        Self::MessagesReceived {
+            channel,
+            conversation_id,
+            count,
         }
     }
 

@@ -6284,6 +6284,20 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("review.replied"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_message_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("message.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("message.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_message_sent", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("message.sent")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("message.sent"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_boost_started", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewSubscribableWebhookEventTypeFromString("boost.started")
@@ -6715,6 +6729,20 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("review.replied")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("review.replied"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_message_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("message.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("message.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_message_sent", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("message.sent")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("message.sent"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_boost_started", func(t *testing.T) {

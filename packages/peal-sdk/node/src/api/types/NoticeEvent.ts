@@ -11,6 +11,7 @@ export type NoticeEvent =
     | Peal.NoticeEvent.PostChangesRequested
     | Peal.NoticeEvent.PostCommented
     | Peal.NoticeEvent.CommentsReceived
+    | Peal.NoticeEvent.MessagesReceived
     | Peal.NoticeEvent.ChannelReconnectRequired
     | Peal.NoticeEvent.ChannelReconnectSoon
     | Peal.NoticeEvent.SubscriptionStarted
@@ -59,6 +60,10 @@ export namespace NoticeEvent {
 
     export interface CommentsReceived extends Peal.NoticeEventCommentsReceived {
         _tag: "CommentsReceived";
+    }
+
+    export interface MessagesReceived extends Peal.NoticeEventMessagesReceived {
+        _tag: "MessagesReceived";
     }
 
     export interface ChannelReconnectRequired extends Peal.NoticeEventChannelReconnectRequired {

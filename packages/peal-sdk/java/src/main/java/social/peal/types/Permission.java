@@ -80,6 +80,8 @@ public final class Permission {
 
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
 
+    public static final Permission ENGAGEMENT_MESSAGE = new Permission(Value.ENGAGEMENT_MESSAGE, "engagement:message");
+
     public static final Permission ADS_MANAGE = new Permission(Value.ADS_MANAGE, "ads:manage");
 
     public static final Permission ENGAGEMENT_REPLY = new Permission(Value.ENGAGEMENT_REPLY, "engagement:reply");
@@ -194,6 +196,8 @@ public final class Permission {
                 return visitor.visitAssistantConfigure();
             case WEBHOOK_MANAGE:
                 return visitor.visitWebhookManage();
+            case ENGAGEMENT_MESSAGE:
+                return visitor.visitEngagementMessage();
             case ADS_MANAGE:
                 return visitor.visitAdsManage();
             case ENGAGEMENT_REPLY:
@@ -285,6 +289,8 @@ public final class Permission {
                 return ASSISTANT_CONFIGURE;
             case "webhook:manage":
                 return WEBHOOK_MANAGE;
+            case "engagement:message":
+                return ENGAGEMENT_MESSAGE;
             case "ads:manage":
                 return ADS_MANAGE;
             case "engagement:reply":
@@ -340,6 +346,8 @@ public final class Permission {
         ENGAGEMENT_READ,
 
         ENGAGEMENT_REPLY,
+
+        ENGAGEMENT_MESSAGE,
 
         INVITATION_CREATE,
 
@@ -426,6 +434,8 @@ public final class Permission {
         T visitEngagementRead();
 
         T visitEngagementReply();
+
+        T visitEngagementMessage();
 
         T visitInvitationCreate();
 

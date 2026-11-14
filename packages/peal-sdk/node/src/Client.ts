@@ -14,6 +14,7 @@ import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.j
 import { CredentialClient } from "./api/resources/credential/client/Client.js";
 import { FeedsClient } from "./api/resources/feeds/client/Client.js";
 import { InboxClient } from "./api/resources/inbox/client/Client.js";
+import { InboxMessagesClient } from "./api/resources/inboxMessages/client/Client.js";
 import { InboxReviewsClient } from "./api/resources/inboxReviews/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { LookupsClient } from "./api/resources/lookups/client/Client.js";
@@ -73,6 +74,7 @@ export class PealClient {
     protected _webhooks: WebhooksClient | undefined;
     protected _inbox: InboxClient | undefined;
     protected _inboxReviews: InboxReviewsClient | undefined;
+    protected _inboxMessages: InboxMessagesClient | undefined;
     protected _ads: AdsClient | undefined;
     protected _activity: ActivityClient | undefined;
     protected _partner: PartnerClient | undefined;
@@ -180,6 +182,10 @@ export class PealClient {
 
     public get inboxReviews(): InboxReviewsClient {
         return (this._inboxReviews ??= new InboxReviewsClient(this._options));
+    }
+
+    public get inboxMessages(): InboxMessagesClient {
+        return (this._inboxMessages ??= new InboxMessagesClient(this._options));
     }
 
     public get ads(): AdsClient {

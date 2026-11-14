@@ -84,6 +84,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType ReviewReplied = new(Values.ReviewReplied);
 
+    public static readonly SubscribableWebhookEventType MessageReceived = new(
+        Values.MessageReceived
+    );
+
+    public static readonly SubscribableWebhookEventType MessageSent = new(Values.MessageSent);
+
     public static readonly SubscribableWebhookEventType BoostStarted = new(Values.BoostStarted);
 
     public static readonly SubscribableWebhookEventType BoostPaused = new(Values.BoostPaused);
@@ -252,6 +258,10 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string ReviewReceived = "review.received";
 
         public const string ReviewReplied = "review.replied";
+
+        public const string MessageReceived = "message.received";
+
+        public const string MessageSent = "message.sent";
 
         public const string BoostStarted = "boost.started";
 
