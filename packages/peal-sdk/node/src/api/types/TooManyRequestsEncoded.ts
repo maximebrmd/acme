@@ -6,8 +6,10 @@ export interface TooManyRequestsEncoded {
     message?: string | undefined;
     requestId?: string | undefined;
     limit: number;
+    policy?: TooManyRequestsEncoded.Policy | undefined;
     retryAfterSeconds: number;
     windowSeconds: number;
+    withPaymentMethod?: number | undefined;
 }
 
 export namespace TooManyRequestsEncoded {
@@ -15,4 +17,10 @@ export namespace TooManyRequestsEncoded {
             TooManyRequests: "TooManyRequests"
         } as const;
     export type Tag = typeof Tag[keyof typeof Tag];
+    export const Policy = {
+            Default: "default",
+            Free: "free",
+            Override: "override"
+        } as const;
+    export type Policy = typeof Policy[keyof typeof Policy];
 }

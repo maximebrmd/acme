@@ -38,6 +38,12 @@ class TooManyRequestsEncoded extends JsonSerializableType
     public int $limit;
 
     /**
+     * @var ?value-of<TooManyRequestsEncodedPolicy> $policy
+     */
+    #[JsonProperty('policy')]
+    public ?string $policy;
+
+    /**
      * @var int $retryAfterSeconds
      */
     #[JsonProperty('retryAfterSeconds')]
@@ -50,6 +56,12 @@ class TooManyRequestsEncoded extends JsonSerializableType
     public int $windowSeconds;
 
     /**
+     * @var ?int $withPaymentMethod
+     */
+    #[JsonProperty('withPaymentMethod')]
+    public ?int $withPaymentMethod;
+
+    /**
      * @param array{
      *   tag: value-of<TooManyRequestsEncodedTag>,
      *   limit: int,
@@ -58,6 +70,8 @@ class TooManyRequestsEncoded extends JsonSerializableType
      *   code?: ?string,
      *   message?: ?string,
      *   requestId?: ?string,
+     *   policy?: ?value-of<TooManyRequestsEncodedPolicy>,
+     *   withPaymentMethod?: ?int,
      * } $values
      */
     public function __construct(
@@ -68,8 +82,10 @@ class TooManyRequestsEncoded extends JsonSerializableType
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;
         $this->limit = $values['limit'];
+        $this->policy = $values['policy'] ?? null;
         $this->retryAfterSeconds = $values['retryAfterSeconds'];
         $this->windowSeconds = $values['windowSeconds'];
+        $this->withPaymentMethod = $values['withPaymentMethod'] ?? null;
     }
 
     /**

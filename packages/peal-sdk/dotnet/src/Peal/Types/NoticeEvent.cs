@@ -136,6 +136,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PlansRetiring"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PlansRetiring value)
+    {
+        Type = "PlansRetiring";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.AllowanceReached"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.AllowanceReached value)
@@ -309,6 +318,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "PaymentMethodNeeded"
     /// </summary>
     public bool IsPaymentMethodNeeded => Type == "PaymentMethodNeeded";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "PlansRetiring"
+    /// </summary>
+    public bool IsPlansRetiring => Type == "PlansRetiring";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "AllowanceReached"
@@ -485,6 +499,15 @@ public record NoticeEvent
             : throw new global::System.Exception("NoticeEvent.Type is not 'PaymentMethodNeeded'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPlansRetiring"/> if <see cref="Type"/> is 'PlansRetiring', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PlansRetiring'.</exception>
+    public Peal.NoticeEventPlansRetiring AsPlansRetiring() =>
+        IsPlansRetiring
+            ? (Peal.NoticeEventPlansRetiring)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PlansRetiring'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventAllowanceReached"/> if <see cref="Type"/> is 'AllowanceReached', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AllowanceReached'.</exception>
@@ -603,6 +626,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventSubscriptionStarted, T> onSubscriptionStarted,
         Func<Peal.NoticeEventTrialEnding, T> onTrialEnding,
         Func<Peal.NoticeEventPaymentMethodNeeded, T> onPaymentMethodNeeded,
+        Func<Peal.NoticeEventPlansRetiring, T> onPlansRetiring,
         Func<Peal.NoticeEventAllowanceReached, T> onAllowanceReached,
         Func<Peal.NoticeEventXSpendCeiling, T> onXSpendCeiling,
         Func<Peal.NoticeEventSubscriptionRenewing, T> onSubscriptionRenewing,
@@ -632,6 +656,7 @@ public record NoticeEvent
             "SubscriptionStarted" => onSubscriptionStarted(AsSubscriptionStarted()),
             "TrialEnding" => onTrialEnding(AsTrialEnding()),
             "PaymentMethodNeeded" => onPaymentMethodNeeded(AsPaymentMethodNeeded()),
+            "PlansRetiring" => onPlansRetiring(AsPlansRetiring()),
             "AllowanceReached" => onAllowanceReached(AsAllowanceReached()),
             "XSpendCeiling" => onXSpendCeiling(AsXSpendCeiling()),
             "SubscriptionRenewing" => onSubscriptionRenewing(AsSubscriptionRenewing()),
@@ -663,6 +688,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventSubscriptionStarted> onSubscriptionStarted,
         Action<Peal.NoticeEventTrialEnding> onTrialEnding,
         Action<Peal.NoticeEventPaymentMethodNeeded> onPaymentMethodNeeded,
+        Action<Peal.NoticeEventPlansRetiring> onPlansRetiring,
         Action<Peal.NoticeEventAllowanceReached> onAllowanceReached,
         Action<Peal.NoticeEventXSpendCeiling> onXSpendCeiling,
         Action<Peal.NoticeEventSubscriptionRenewing> onSubscriptionRenewing,
@@ -717,6 +743,9 @@ public record NoticeEvent
                 break;
             case "PaymentMethodNeeded":
                 onPaymentMethodNeeded(AsPaymentMethodNeeded());
+                break;
+            case "PlansRetiring":
+                onPlansRetiring(AsPlansRetiring());
                 break;
             case "AllowanceReached":
                 onAllowanceReached(AsAllowanceReached());
@@ -940,6 +969,20 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPlansRetiring"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPlansRetiring(out Peal.NoticeEventPlansRetiring? value)
+    {
+        if (Type == "PlansRetiring")
+        {
+            value = (Peal.NoticeEventPlansRetiring)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.NoticeEventAllowanceReached"/> and returns true if successful.
     /// </summary>
     public bool TryAsAllowanceReached(out Peal.NoticeEventAllowanceReached? value)
@@ -1129,6 +1172,8 @@ public record NoticeEvent
     public static implicit operator NoticeEvent(NoticeEvent.PaymentMethodNeeded value) =>
         new(value);
 
+    public static implicit operator NoticeEvent(NoticeEvent.PlansRetiring value) => new(value);
+
     public static implicit operator NoticeEvent(NoticeEvent.AllowanceReached value) => new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.XSpendCeiling value) => new(value);
@@ -1271,6 +1316,11 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventPaymentMethodNeeded"
                         ),
+                "PlansRetiring" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPlansRetiring?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPlansRetiring"
+                        ),
                 "AllowanceReached" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventAllowanceReached?>(options)
                         ?? throw new JsonException(
@@ -1366,6 +1416,7 @@ public record NoticeEvent
                     "SubscriptionStarted" => JsonSerializer.SerializeToNode(value.Value, options),
                     "TrialEnding" => JsonSerializer.SerializeToNode(value.Value, options),
                     "PaymentMethodNeeded" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PlansRetiring" => JsonSerializer.SerializeToNode(value.Value, options),
                     "AllowanceReached" => JsonSerializer.SerializeToNode(value.Value, options),
                     "XSpendCeiling" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionRenewing" => JsonSerializer.SerializeToNode(value.Value, options),
@@ -1670,6 +1721,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.PaymentMethodNeeded(
             Peal.NoticeEventPaymentMethodNeeded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PlansRetiring
+    /// </summary>
+    [Serializable]
+    public struct PlansRetiring
+    {
+        public PlansRetiring(Peal.NoticeEventPlansRetiring value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPlansRetiring Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PlansRetiring(
+            Peal.NoticeEventPlansRetiring value
         ) => new(value);
     }
 
