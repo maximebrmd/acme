@@ -244,6 +244,7 @@ export class RequestLimiter extends Context.Service<
             // The free tier is one count per billing account.
             const counted =
               policy.name === "free" ? `free:${account}` : subject;
+
             const digest = yield* digestOf(counted);
             const count = yield* counts.count(digest, windowStart(policy, now));
 
