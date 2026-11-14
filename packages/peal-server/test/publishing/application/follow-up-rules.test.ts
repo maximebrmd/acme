@@ -326,6 +326,9 @@ describe("follow-up rules", () => {
             )
           );
 
+          // Put off for ten minutes first.
+          assert.strictEqual((yield* runDue).triggered, 0);
+          yield* TestClock.adjust("10 minutes");
           assert.strictEqual((yield* runDue).triggered, 1);
 
           yield* eventually(
@@ -1130,12 +1133,12 @@ describe("follow-up rules", () => {
           );
 
           // A member pauses it as the run sets it out.
+          const rules = yield* FollowUpRules;
+
           yield* whileRunning(
-            FollowUpRules.use((rules) =>
-              rules.change(actorIn(workspaceId), started.rule.id, {
-                paused: true,
-              })
-            ).pipe(Effect.asVoid, Effect.orDie)
+            rules
+              .change(actorIn(workspaceId), started.rule.id, { paused: true })
+              .pipe(Effect.asVoid, Effect.orDie)
           );
 
           yield* likesOf(target.id, 10);
@@ -1193,6 +1196,7 @@ describe("follow-up rules", () => {
                 )
               )
             );
+            yield* TestClock.adjust("10 minutes");
             assert.strictEqual((yield* runDue).triggered, 1);
             yield* eventually(
               "the follow-up went out",

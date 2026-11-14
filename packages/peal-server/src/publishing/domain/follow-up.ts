@@ -1,4 +1,4 @@
-import { DateTime, Option, Result, Schema } from "effect";
+import { DateTime, Duration, Option, Result, Schema } from "effect";
 
 import {
   ChannelIdSchema,
@@ -75,7 +75,11 @@ const Likes = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
  * window passed; `cancelled` when it was given up.
  */
 export const FollowUpStatusSchema = Schema.Union([
-  Schema.TaggedStruct("armed", { until: Schema.DateTimeUtc }),
+  Schema.TaggedStruct("armed", {
+    // Put off by the platform: not set out again before then.
+    notBefore: Schema.optionalKey(Schema.DateTimeUtc),
+    until: Schema.DateTimeUtc,
+  }),
   Schema.TaggedStruct("sending", {
     attemptedAt: Schema.Option(Schema.DateTimeUtc),
     likes: Likes,
@@ -198,13 +202,43 @@ export const isPast = (followUp: FollowUp, now: DateTime.Utc): boolean =>
   followUp.status._tag === "armed" &&
   !DateTime.isLessThan(now, followUp.status.until);
 
+/** Whether the platform put it off, and it waits until `notBefore`. */
+export const isPutOff = (followUp: FollowUp, now: DateTime.Utc): boolean =>
+  followUp.status._tag === "armed" &&
+  followUp.status.notBefore !== undefined &&
+  DateTime.isLessThan(now, followUp.status.notBefore);
+
+/** The first wait after the platform puts a follow-up off. */
+export const followUpPutOffFirst = Duration.minutes(10);
+
+/** The longest wait, however many times it was put off. */
+export const followUpPutOffMost = Duration.hours(6);
+
+// How long a follow-up put off on its `attempt` waits: what the platform
+// asked, and at least ten minutes doubled each attempt, six hours at most.
+const putOffFor = (attempt: number, asked: Option.Option<Duration.Duration>) => {
+  const doubled = Duration.times(
+    followUpPutOffFirst,
+    2 ** Math.min(Math.max(attempt - 1, 0), 10)
+  );
+
+  const backOff = Duration.min(doubled, followUpPutOffMost);
+
+  return Option.match(asked, {
+    onNone: () => backOff,
+    onSome: (wait) => Duration.max(wait, backOff),
+  });
+};
+
 /** The threshold was reached at `now`, with `likes`: it is sent next. */
 export const triggerFollowUp = (
   followUp: FollowUp,
   likes: number,
   now: DateTime.Utc
 ): Transition =>
-  followUp.status._tag === "armed" && !isPast(followUp, now)
+  followUp.status._tag === "armed" &&
+  !isPast(followUp, now) &&
+  !isPutOff(followUp, now)
     ? Result.succeed(
         withStatus(
           followUp,
@@ -288,7 +322,19 @@ export const settleFollowUp = (
       withStatus(
         followUp,
         isPassing(outcome.failure)
-          ? { _tag: "armed", until }
+          ? {
+              _tag: "armed",
+              notBefore: DateTime.addDuration(
+                now,
+                putOffFor(
+                  followUp.attempt,
+                  outcome.failure._tag === "RateLimited"
+                    ? Option.fromUndefinedOr(outcome.failure.retryAfter)
+                    : Option.none()
+                )
+              ),
+              until,
+            }
           : {
               _tag: "failed",
               code: codeOf(outcome.failure),

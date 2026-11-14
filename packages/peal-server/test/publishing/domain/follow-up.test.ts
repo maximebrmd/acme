@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Option, Result } from "effect";
+import { DateTime, Duration, Option, Result } from "effect";
 
 import { FollowUpIdSchema } from "#publishing/domain/follow-up-id.ts";
 import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
@@ -18,6 +18,7 @@ import {
   cancelFollowUp,
   expireFollowUp,
   isPast,
+  isPutOff,
   settleFollowUp,
   triggerFollowUp,
   wasAttempted,
@@ -261,16 +262,79 @@ describe("a follow-up", () => {
     });
   });
 
-  it("is armed again when the platform puts it off, nothing having gone out", () => {
+  it("is armed again when the platform puts it off, nothing having gone out, after a while", () => {
     const begun = Result.getOrThrow(beginFollowUpCall(sending(), later(3)));
+    const tenMinutes = DateTime.add(later(3), { minutes: 10 });
 
     for (const failure of [new PlatformUnavailable(), new RateLimited({})]) {
       expect(
         Result.getOrThrow(
           settleFollowUp(begun, { _tag: "refused", failure }, later(3))
         ).status
-      ).toStrictEqual({ _tag: "armed", until: actsUntil(now) });
+      ).toStrictEqual({
+        _tag: "armed",
+        notBefore: tenMinutes,
+        until: actsUntil(now),
+      });
     }
+  });
+
+  it("waits as long as the platform asks, and longer each attempt", () => {
+    const begun = Result.getOrThrow(beginFollowUpCall(sending(), later(3)));
+
+    const putOff = Result.getOrThrow(
+      settleFollowUp(
+        begun,
+        {
+          _tag: "refused",
+          failure: new RateLimited({ retryAfter: Duration.hours(2) }),
+        },
+        later(3)
+      )
+    );
+
+    expect(putOff.status).toStrictEqual({
+      _tag: "armed",
+      notBefore: later(5),
+      until: actsUntil(now),
+    });
+    expect(Result.isFailure(triggerFollowUp(putOff, 99, later(4)))).toBeTruthy();
+    expect(isPutOff(putOff, later(4))).toBeTruthy();
+
+    const third = Result.getOrThrow(triggerFollowUp(putOff, 99, later(5)));
+    const thirdBegun = Result.getOrThrow(
+      beginFollowUpCall(
+        Result.getOrThrow(
+          triggerFollowUp(
+            Result.getOrThrow(
+              settleFollowUp(
+                Result.getOrThrow(beginFollowUpCall(third, later(5))),
+                { _tag: "refused", failure: new PlatformUnavailable() },
+                later(5)
+              )
+            ),
+            99,
+            later(6)
+          )
+        ),
+        later(6)
+      )
+    );
+
+    // A third attempt put off waits 40 minutes: ten, doubled each time.
+    expect(
+      Result.getOrThrow(
+        settleFollowUp(
+          thirdBegun,
+          { _tag: "refused", failure: new PlatformUnavailable() },
+          later(6)
+        )
+      ).status
+    ).toStrictEqual({
+      _tag: "armed",
+      notBefore: DateTime.add(later(6), { minutes: 40 }),
+      until: actsUntil(now),
+    });
   });
 
   it("fails on a refusal, with the platform's code and never its words", () => {

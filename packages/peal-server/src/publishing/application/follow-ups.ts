@@ -25,6 +25,7 @@ import {
   cancelFollowUp,
   expireFollowUp,
   isPast,
+  isPutOff,
   settleFollowUp,
   triggerFollowUp,
   wasAttempted,
@@ -469,7 +470,12 @@ export class FollowUps extends Context.Service<
 
         const rule = found.value;
 
-        if (rule.status._tag === "paused" || likes < rule.likes) {
+        // Paused, short of its likes, or put off by the platform a while.
+        if (
+          rule.status._tag === "paused" ||
+          likes < rule.likes ||
+          isPutOff(followUp, now)
+        ) {
           return "left" satisfies Step;
         }
 
