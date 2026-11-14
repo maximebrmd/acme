@@ -388,6 +388,17 @@ export interface SentReplyRecord {
   readonly workspaceId: string;
 }
 
+/** A reply a member sent from Peal to a review of a location. */
+export interface SentReviewReplyRecord {
+  readonly channelId: string;
+  readonly createdAt: DateTime.Utc;
+  readonly id: string;
+  readonly reviewId: string;
+  readonly status: string;
+  readonly text: string;
+  readonly workspaceId: string;
+}
+
 /** A comment on a post, as the review context keeps it. */
 export interface ReviewCommentRecord {
   /** member, apiKey or visitor. */

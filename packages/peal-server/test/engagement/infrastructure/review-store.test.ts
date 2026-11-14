@@ -2,6 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { ReviewStore } from "#engagement/application/ports/review-store.ts";
 import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
 import { ReviewReplyIdSchema } from "#engagement/domain/review-reply-id.ts";
@@ -21,9 +22,10 @@ import {
   receiveReview,
 } from "#engagement/domain/review.ts";
 import type { ReviewReading } from "#engagement/domain/review.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleReviewStore } from "#engagement/infrastructure/drizzle-review-store.ts";
 import { newId } from "#shared/application/ids.ts";
-import { ChannelIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 import { reviewReading } from "#test/engagement/support.ts";
@@ -32,7 +34,10 @@ import { reviewReading } from "#test/engagement/support.ts";
 // test writes rows of its own workspace, at instants no other suite uses
 // (2047; the retention in 1931), and deletes them after.
 
-const StoreTest = DrizzleReviewStore.pipe(Layer.provideMerge(DatabaseTest));
+const StoreTest = Layer.mergeAll(
+  DrizzleReviewStore,
+  DrizzleEngagementRecords
+).pipe(Layer.provideMerge(DatabaseTest));
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
@@ -346,6 +351,81 @@ layer(StoreTest)("the review store", (it) => {
           );
           assert.deepStrictEqual(yield* store.thread(unread.id), Option.none());
         }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "goes with its channel, its workspace, and lets a closed account's replies stay without their author",
+    () =>
+      Effect.gen(function* recordsOfReviews() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* ReviewStore;
+        const records = yield* EngagementRecords;
+
+        const writer = UserIdSchema.make(
+          "33333333-3333-4333-8333-333333333333"
+        );
+
+        const gone = yield* locationOf(workspaceId, "2047-02-05T10:00:00.000Z");
+        const kept = yield* locationOf(workspaceId, "2047-02-05T10:00:00.000Z");
+        const at = utc("2047-02-05T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([gone, kept]);
+
+          const first = yield* reviewOn(gone, 1, "2047-02-05T09:00:00.000Z");
+          const second = yield* reviewOn(kept, 2, "2047-02-05T09:00:00.000Z");
+
+          yield* store.saveReviews([first, second]);
+
+          const reply = writeReviewReply(
+            yield* newId(ReviewReplyIdSchema),
+            second,
+            Option.some(writer),
+            "Thanks!",
+            at
+          );
+
+          yield* store.journalReply(reply);
+
+          // Another platform's channel leaves reviews alone.
+          yield* records.channelGone(kept.channelId, "mastodon", at);
+
+          assert.isTrue(Option.isSome(yield* store.thread(kept.id)));
+
+          yield* records.channelGone(gone.channelId, "googleBusiness", at);
+
+          assert.deepStrictEqual(yield* store.thread(gone.id), Option.none());
+          assert.deepStrictEqual(yield* store.review(first.id), Option.none());
+
+          assert.deepStrictEqual(
+            (yield* records.exportUserReviewReplies(writer)).map(
+              ({ id, reviewId, text }) => ({ id, reviewId, text })
+            ),
+            [{ id: reply.id, reviewId: second.id, text: "Thanks!" }]
+          );
+
+          yield* records.forgetUser(writer);
+
+          assert.deepStrictEqual(
+            (yield* store.reply(reply.id)).pipe(
+              Option.map(({ authorId }) => authorId)
+            ),
+            Option.some(Option.none())
+          );
+
+          yield* records.eraseWorkspace(workspaceId);
+
+          assert.deepStrictEqual(yield* store.thread(kept.id), Option.none());
+        }).pipe(
+          Effect.ensuring(forget(workspaceId)),
+          Effect.ensuring(
+            SqlClient.SqlClient.use(
+              (sql) =>
+                sql`DELETE FROM engagement.erased_workspaces WHERE workspace_id = ${workspaceId}`
+            ).pipe(Effect.orDie)
+          )
+        );
       })
   );
 });
