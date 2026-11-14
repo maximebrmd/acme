@@ -36,6 +36,7 @@ import type { Thread } from "#engagement/domain/thread.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { textOfHtml } from "#shared/domain/html-text.ts";
 import {
   ChannelIdSchema,
@@ -54,7 +55,7 @@ import { reading } from "#test/engagement/support.ts";
 
 const StoreTest = Layer.mergeAll(
   DrizzleEngagementStore,
-  DrizzleEngagementRecords
+  DrizzleEngagementRecords.pipe(Layer.provide(MeteredUsage.layerUnmetered))
 ).pipe(Layer.provideMerge(DatabaseTest));
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);

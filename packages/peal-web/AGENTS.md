@@ -480,6 +480,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   the location's reply with Google's moderation; a reply counted in
   UTF-8 bytes (Google's 4,096), withdraw and "needs no answer" where the
   channel's `abilities` say `available`.
+- The inbox's direct messages (`messages-list.tsx`, `message-screen.tsx`,
+  views in `message-views.tsx`, atoms in `#inbox/message-atoms.ts`) show
+  below the reviews only while the workspace has a conversation and to
+  members with `engagement:readMessages`, and one at
+  `…/inbox/messages/[conversationId]` (`engagement:readMessages`, a page
+  at a time, `?cursor=` for older ones; the box,
+  "mark read" and confirming an unconfirmed message take
+  `engagement:message`): text as text, never markup, a file count (never
+  a file), the box only where `abilities.send` is `available` and the
+  reply window is open, under an `Idempotency-Key` kept until the message
+  is made. Reading a conversation never marks it read. The settings
+  (`message-settings.tsx`) show to `channel:connect`: each Mastodon and
+  Bluesky channel's switch, and, for `organization:secure`, the
+  applications let read the messages, by client id.
 - The inbox (`components/inbox/`) lists threads with counts and never a
   comment's text (`ThreadsList`), and shows one whole (`ThreadScreen`):
   views in `inbox-views.tsx` take links as props, so tests render each

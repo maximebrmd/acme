@@ -295,3 +295,10 @@ export const livePostRefusals: Readonly<Record<LivePostRefusal, string>> = {
   notSupported:
     "the platform does not let Peal make that change (get_channel_capabilities says why, in `livePost`): the user makes it there",
 };
+
+/**
+ * Why an application may list a workspace's conversations but not read or
+ * answer them: an owner has not let its client in.
+ */
+export const messagesConsentText = (clientId: string): string =>
+  `This application may list the workspace's conversations, never read or answer their messages: direct messages are private, and an owner of the workspace lets an application read them, in person, under "Applications that may read and answer them" in the inbox of the web app, with this application's client id, \`${clientId}\`. Nothing was read or sent. Tell the user so, and that they can read and answer the messages in the web app meanwhile.`;

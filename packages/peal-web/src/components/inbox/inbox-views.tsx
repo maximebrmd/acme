@@ -54,6 +54,10 @@ export const useInboxErrorText = () => {
       });
     }
 
+    if (error.key === "mentionsOutside") {
+      return t("mentionsOutside", { mentions: error.mentions });
+    }
+
     if (error.key === "statusConflict") {
       return t("statusConflict", { status: error.status });
     }

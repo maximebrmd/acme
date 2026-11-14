@@ -64,6 +64,10 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType ReviewReplied = new(Values.ReviewReplied);
 
+    public static readonly WebhookEventType MessageReceived = new(Values.MessageReceived);
+
+    public static readonly WebhookEventType MessageSent = new(Values.MessageSent);
+
     public static readonly WebhookEventType BoostStarted = new(Values.BoostStarted);
 
     public static readonly WebhookEventType BoostPaused = new(Values.BoostPaused);
@@ -229,6 +233,10 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string ReviewReceived = "review.received";
 
         public const string ReviewReplied = "review.replied";
+
+        public const string MessageReceived = "message.received";
+
+        public const string MessageSent = "message.sent";
 
         public const string BoostStarted = "boost.started";
 

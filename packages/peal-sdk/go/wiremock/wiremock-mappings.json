@@ -4435,6 +4435,309 @@
       }
     },
     {
+      "id": "4e521a3f-b134-4b79-bdf8-1f382c83a814",
+      "name": "List the conversations - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/conversations",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"lastIncomingAt\": \"lastIncomingAt\",\n      \"lastMessageAt\": \"lastMessageAt\",\n      \"messages\": 1,\n      \"participants\": [\n        {\n          \"displayName\": null,\n          \"handle\": \"handle\",\n          \"platformId\": \"platformId\"\n        }\n      ],\n      \"readAt\": \"readAt\",\n      \"request\": true,\n      \"unread\": true\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "4e521a3f-b134-4b79-bdf8-1f382c83a814",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a11f5b39-5d92-4cd5-8ae7-d706e3403d65",
+      "name": "Get a conversation - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/conversations/{conversationId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "conversationId": {
+            "equalTo": "conversationId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"abilities\": {\n    \"read\": \"available\",\n    \"send\": \"available\"\n  },\n  \"conversation\": {\n    \"channelId\": \"channelId\",\n    \"id\": \"id\",\n    \"lastIncomingAt\": \"lastIncomingAt\",\n    \"lastMessageAt\": \"lastMessageAt\",\n    \"messages\": 1,\n    \"participants\": [\n      {\n        \"displayName\": null,\n        \"handle\": \"handle\",\n        \"platformId\": \"platformId\"\n      }\n    ],\n    \"readAt\": \"readAt\",\n    \"request\": true,\n    \"unread\": true\n  },\n  \"messages\": [\n    {\n      \"attachments\": 1,\n      \"conversationId\": \"conversationId\",\n      \"fromAccount\": true,\n      \"id\": \"id\",\n      \"senderPlatformId\": \"senderPlatformId\",\n      \"sentAt\": \"sentAt\",\n      \"text\": \"text\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\",\n  \"platform\": \"x\",\n  \"sent\": [\n    {\n      \"authorId\": \"authorId\",\n      \"conversationId\": \"conversationId\",\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"platformMessageId\": \"platformMessageId\",\n      \"reason\": \"channelUnavailable\",\n      \"settledAt\": \"settledAt\",\n      \"status\": \"sending\",\n      \"text\": \"text\"\n    }\n  ],\n  \"window\": {\n    \"closesAt\": \"closesAt\",\n    \"open\": true\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a11f5b39-5d92-4cd5-8ae7-d706e3403d65",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ab71d6fd-c4d9-48a2-ac8c-c5b13aae221c",
+      "name": "Send a direct message - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/conversations/{conversationId}/messages",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "conversationId": {
+            "equalTo": "conversationId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"conversationId\": \"conversationId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"platformMessageId\": \"platformMessageId\",\n  \"reason\": \"channelUnavailable\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ab71d6fd-c4d9-48a2-ac8c-c5b13aae221c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c0c135b9-371d-4cac-ad4f-ea224c3be59d",
+      "name": "Mark a conversation read - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/conversations/{conversationId}/read",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "conversationId": {
+            "equalTo": "conversationId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"id\": \"id\",\n  \"lastIncomingAt\": \"lastIncomingAt\",\n  \"lastMessageAt\": \"lastMessageAt\",\n  \"messages\": 1,\n  \"participants\": [\n    {\n      \"displayName\": \"displayName\",\n      \"handle\": \"handle\",\n      \"platformId\": \"platformId\"\n    }\n  ],\n  \"readAt\": \"readAt\",\n  \"request\": true,\n  \"unread\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c0c135b9-371d-4cac-ad4f-ea224c3be59d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "50d9e739-9469-4d07-8254-2dcdb61b6a05",
+      "name": "Get the direct messages' settings - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/settings",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"applications\": [\n    {\n      \"clientId\": \"clientId\",\n      \"grantedAt\": \"grantedAt\",\n      \"grantedBy\": \"grantedBy\"\n    }\n  ],\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"enabledAt\": \"enabledAt\",\n      \"enabledBy\": \"enabledBy\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "50d9e739-9469-4d07-8254-2dcdb61b6a05",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6de4ed10-b4f1-4bb5-bbc4-0f93058b694a",
+      "name": "Turn a channel's direct messages on or off - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/channels/{channelId}",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"applications\": [\n    {\n      \"clientId\": \"clientId\",\n      \"grantedAt\": \"grantedAt\",\n      \"grantedBy\": \"grantedBy\"\n    }\n  ],\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"enabledAt\": \"enabledAt\",\n      \"enabledBy\": \"enabledBy\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6de4ed10-b4f1-4bb5-bbc4-0f93058b694a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "5f487248-c374-464b-b329-81b5f0cdbe04",
+      "name": "Let an application read the direct messages - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/applications",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"applications\": [\n    {\n      \"clientId\": \"clientId\",\n      \"grantedAt\": \"grantedAt\",\n      \"grantedBy\": \"grantedBy\"\n    }\n  ],\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"enabledAt\": \"enabledAt\",\n      \"enabledBy\": \"enabledBy\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5f487248-c374-464b-b329-81b5f0cdbe04",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "799c9426-3472-4a50-80c9-9760f21d9da9",
+      "name": "Confirm an unconfirmed message - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/messages/outgoing/{messageId}/confirmation",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "messageId": {
+            "equalTo": "messageId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"conversationId\": \"conversationId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"platformMessageId\": \"platformMessageId\",\n  \"reason\": \"channelUnavailable\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "799c9426-3472-4a50-80c9-9760f21d9da9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "51893598-1ba1-4331-a21d-d5e06d33ef09",
       "name": "Get what the server offers of ads - default",
       "request": {
@@ -7988,6 +8291,6 @@
     }
   ],
   "meta": {
-    "total": 213
+    "total": 221
   }
 }

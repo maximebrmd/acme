@@ -349,7 +349,7 @@ public class AsyncChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
      */
     public CompletableFuture<Authorization> reconnect(String workspaceId, String channelId) {
         CompletableFuture<PealClientHttpResponse<Authorization>> rawFuture =
@@ -364,7 +364,7 @@ public class AsyncChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
      */
     public CompletableFuture<Authorization> reconnect(
             String workspaceId, String channelId, RequestOptions requestOptions) {
@@ -380,7 +380,7 @@ public class AsyncChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
      */
     public CompletableFuture<Authorization> reconnect(
             String workspaceId, String channelId, ReconnectChannelsRequest request) {
@@ -396,7 +396,7 @@ public class AsyncChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
      */
     public CompletableFuture<Authorization> reconnect(
             String workspaceId, String channelId, ReconnectChannelsRequest request, RequestOptions requestOptions) {

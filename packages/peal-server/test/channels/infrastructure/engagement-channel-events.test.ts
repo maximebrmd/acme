@@ -43,6 +43,7 @@ describe("a channel gone, as engagement hears it", () => {
             ]),
           eraseWorkspace: () => Effect.void,
           exportUser: () => Effect.succeed([]),
+          exportUserMessages: () => Effect.succeed([]),
           exportUserReviewReplies: () => Effect.succeed([]),
           forgetUser: () => Effect.void,
           postRemoved: () => Effect.void,

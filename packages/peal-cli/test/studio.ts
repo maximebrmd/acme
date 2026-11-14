@@ -158,6 +158,8 @@ import {
 import { studioFeedsOf } from "./studio-feeds.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
+import { makeMessages, studioMessagesLive } from "./studio-messages.ts";
+import type { MessagesState } from "./studio-messages.ts";
 import { overviewGroupLive } from "./studio-overview.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
 import type { StudioQueue } from "./studio-queues.ts";
@@ -206,6 +208,7 @@ const everything: readonly Permission[] = [
   "channel:connect",
   "engagement:read",
   "engagement:reply",
+  "engagement:message",
   "invitation:create",
   "invitation:cancel",
   "media:read",
@@ -866,6 +869,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       workspaceName: "Studio",
     },
   ],
+  messages: [],
   notices: [],
   notificationPreferences: {
     email: {
@@ -1417,6 +1421,7 @@ const inPerson = CurrentPrincipal.pipe(
 export interface Studio {
   readonly inbox: Ref.Ref<InboxState>;
   readonly reviews: Ref.Ref<ReviewsState>;
+  readonly messages: Ref.Ref<MessagesState>;
   /** The API keys the server takes, beside the user's access token. */
   readonly keys: readonly StudioKey[];
   readonly me: Me;
@@ -1431,6 +1436,7 @@ export const makeStudio = (
 ) =>
   Effect.all({
     inbox: makeInbox,
+    messages: makeMessages,
     reviews: makeReviews,
     state: Ref.make<StudioState>({
       ads: adsWorld,
@@ -5990,6 +5996,7 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     studioInboxLive(studio.inbox),
     studioReviewsLive(studio.reviews),
+    studioMessagesLive(studio.messages),
     HttpApiBuilder.group(Api, "tags", (handlers) =>
       handlers.handleAll({
         create: ({ params, payload }) =>

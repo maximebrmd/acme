@@ -26,6 +26,9 @@ const reasons = new Map<string, ForbiddenReason>([
   ["ApprovalNeedsPerson", "personRequired"],
   ["BannedUser", "suspended"],
   ["InboxAccessDenied", "personRequired"],
+  // An application the workspace's owner did not let read messages.
+  ["MessagesNeedConsent", "personRequired"],
+  ["MessagesNeedPerson", "personRequired"],
   ["MissingPermission", "missingPermission"],
   ["NotAMember", "missingPermission"],
   // A permission only a person in their own session uses.

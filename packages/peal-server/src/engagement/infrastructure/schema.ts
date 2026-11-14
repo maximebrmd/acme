@@ -5,6 +5,8 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
+  primaryKey,
   pgSchema,
   smallint,
   text,
@@ -369,4 +371,217 @@ export const reviewReplies = engagement.table(
       sql`(${table.status} = 'sending') = (${table.settledAt} IS NULL)`
     ),
   ]
+);
+
+/**
+ * The direct messages of one channel, on a platform the server reads
+ * messages on (`PEAL_INBOX_MESSAGES`): when its conversations are read
+ * next, and when they were last. One a channel; it goes with its channel
+ * and its workspace.
+ */
+export const messageBoxes = engagement.table(
+  "message_boxes",
+  {
+    channelId: uuid("channel_id").primaryKey(),
+    createdAt: instant("created_at").notNull(),
+    lastReadAt: instant("last_read_at"),
+    nextReadAt: instant("next_read_at").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    index("message_boxes_due").on(table.nextReadAt, table.channelId),
+    index("message_boxes_workspace").on(table.workspaceId),
+  ]
+);
+
+/**
+ * A private conversation of a channel's account with other accounts, as
+ * its platform gave it: its id there, the other accounts in it (their id,
+ * handle and the name they show, and nothing more), what the platform
+ * says changes with every message (`revision`), whether the account has
+ * yet to accept it (`request`), when its latest message was sent, when
+ * the latest from someone else was, and when a member last read or
+ * answered it. Private correspondence kept for the workspace: deleted 30
+ * days after its last message, with its channel, or with its workspace.
+ */
+export const conversations = engagement.table(
+  "conversations",
+  {
+    channelId: uuid("channel_id").notNull(),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    lastIncomingAt: instant("last_incoming_at"),
+    lastMessageAt: instant("last_message_at").notNull(),
+    participants: jsonb("participants").notNull(),
+    platformConversationId: text("platform_conversation_id").notNull(),
+    readAt: instant("read_at"),
+    // When its messages were last read back whole from the platform: one
+    // whose revision did not change is read back once a day all the same,
+    // so a deletion there is seen.
+    checkedAt: instant("checked_at"),
+    // When a whole listing of its channel last missed it, cleared when one
+    // shows it: a second whole listing in a row that misses it deletes it.
+    unlistedAt: instant("unlisted_at"),
+    request: boolean("request").notNull().default(false),
+    revision: text("revision").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("conversations_platform_id").on(
+      table.channelId,
+      table.platformConversationId
+    ),
+    // A workspace's list: latest message first.
+    index("conversations_workspace_listed").on(
+      table.workspaceId,
+      table.lastMessageAt,
+      table.id
+    ),
+    // The retention's read.
+    index("conversations_last_message").on(table.lastMessageAt),
+    check(
+      "conversations_participants",
+      sql`jsonb_typeof(${table.participants}) = 'array'`
+    ),
+  ]
+);
+
+/**
+ * A message of a conversation as its platform gave it: its id there,
+ * whether the channel's own account sent it, who else did (their id on
+ * the platform), its plain text, how many attachments it carries (never
+ * the attachments), and when it was sent. It goes with its conversation,
+ * or at once when the platform says it was deleted.
+ */
+export const directMessages = engagement.table(
+  "direct_messages",
+  {
+    attachments: integer("attachments").notNull().default(0),
+    channelId: uuid("channel_id").notNull(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    fromAccount: boolean("from_account").notNull(),
+    id: uuid("id").primaryKey(),
+    platformMessageId: text("platform_message_id").notNull(),
+    receivedAt: instant("received_at").notNull(),
+    senderPlatformId: text("sender_platform_id"),
+    sentAt: instant("sent_at").notNull(),
+    text: text("text").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("direct_messages_platform_id").on(
+      table.conversationId,
+      table.platformMessageId
+    ),
+    index("direct_messages_conversation_sent").on(
+      table.conversationId,
+      table.sentAt
+    ),
+    // The retention, which deletes each message by when it was sent.
+    index("direct_messages_sent").on(table.sentAt),
+    check("direct_messages_attachments", sql`${table.attachments} >= 0`),
+    check(
+      "direct_messages_sender",
+      sql`NOT ${table.fromAccount} OR ${table.senderPlatformId} IS NULL`
+    ),
+  ]
+);
+
+/**
+ * A message sent from Peal to a conversation, as the channel's account,
+ * and the journal of its sending, as `replies` is for comments: written
+ * `sending` before any call, `attempted_at` set and committed before the
+ * request that can put it out, then how it ended. `author_id` is the
+ * member who wrote it, null for an API key or once their account is
+ * closed. It goes with its conversation.
+ */
+export const outgoingMessages = engagement.table(
+  "outgoing_messages",
+  {
+    attemptedAt: instant("attempted_at"),
+    authorId: uuid("author_id"),
+    callClaimedAt: instant("call_claimed_at"),
+    channelId: uuid("channel_id").notNull(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    // The SHA-256 of the idempotency key the request came with, never the
+    // key; null without one, and once the key is forgotten.
+    keyDigest: text("key_digest"),
+    platformMessageId: text("platform_message_id"),
+    reason: text("reason"),
+    settledAt: instant("settled_at"),
+    status: text("status").notNull(),
+    text: text("text").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    index("outgoing_messages_conversation").on(table.conversationId, table.id),
+    // One message to a conversation is on its way or unconfirmed at a
+    // time: two requests sent together journal one.
+    uniqueIndex("outgoing_messages_pending")
+      .on(table.conversationId)
+      .where(sql`${table.status} IN ('sending', 'unconfirmed')`),
+    // One message an idempotency key, in its workspace.
+    uniqueIndex("outgoing_messages_key")
+      .on(table.workspaceId, table.keyDigest)
+      .where(sql`${table.keyDigest} IS NOT NULL`),
+    // The messages no job settled, which the collection hands to a person.
+    index("outgoing_messages_sending")
+      .on(table.createdAt, table.id)
+      .where(sql`${table.status} = 'sending'`),
+    index("outgoing_messages_author")
+      .on(table.authorId)
+      .where(sql`${table.authorId} IS NOT NULL`),
+    // The retention, which deletes each settled message by when it settled.
+    index("outgoing_messages_settled")
+      .on(table.settledAt)
+      .where(sql`${table.settledAt} IS NOT NULL`),
+    check(
+      "outgoing_messages_status",
+      sql`${table.status} IN ('sending', 'sent', 'failed', 'unconfirmed')`
+    ),
+    check(
+      "outgoing_messages_settled",
+      sql`(${table.status} = 'sending') = (${table.settledAt} IS NULL)`
+    ),
+  ]
+);
+
+/**
+ * The channels whose direct messages a workspace turned on: nothing of a
+ * channel's conversations is read until a member who may connect channels
+ * says so, in person; `enabled_by` is who (null once their account is
+ * closed). Turning it off deletes the channel's box and conversations.
+ */
+export const messageChannels = engagement.table(
+  "message_channels",
+  {
+    channelId: uuid("channel_id").primaryKey(),
+    enabledAt: instant("enabled_at").notNull(),
+    enabledBy: uuid("enabled_by"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("message_channels_workspace").on(table.workspaceId)]
+);
+
+/**
+ * The applications (OAuth clients) a workspace's owner let read and answer
+ * its direct messages, in person: without a row, an application lists
+ * conversations and is refused their messages. `granted_by` is who (null
+ * once their account is closed).
+ */
+export const messageApplications = engagement.table(
+  "message_applications",
+  {
+    clientId: text("client_id").notNull(),
+    grantedAt: instant("granted_at").notNull(),
+    grantedBy: uuid("granted_by"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.workspaceId, table.clientId] })]
 );

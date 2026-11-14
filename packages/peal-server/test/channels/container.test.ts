@@ -19,6 +19,7 @@ import { platformRegistrations } from "#channels/infrastructure/platforms/platfo
 import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { Notify } from "#notifications/application/notify.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   AccountDaysUncountedTest,
@@ -62,7 +63,10 @@ const Neighbours = Layer.mergeAll(
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
   DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest)),
-  DrizzleEngagementRecords.pipe(Layer.provide(DatabaseTest))
+  DrizzleEngagementRecords.pipe(
+    Layer.provide(MeteredUsage.layerUnmetered),
+    Layer.provide(DatabaseTest)
+  )
 );
 
 // The channels context as the server builds it, with these settings. A blank

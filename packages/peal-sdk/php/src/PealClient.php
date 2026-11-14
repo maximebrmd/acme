@@ -24,6 +24,7 @@ use Peal\Lookups\LookupsClient;
 use Peal\Webhooks\WebhooksClient;
 use Peal\Inbox\InboxClient;
 use Peal\InboxReviews\InboxReviewsClient;
+use Peal\InboxMessages\InboxMessagesClient;
 use Peal\Ads\AdsClient;
 use Peal\Activity\ActivityClient;
 use Peal\Partner\PartnerClient;
@@ -153,6 +154,11 @@ class PealClient
      * @var InboxReviewsClient $inboxReviews
      */
     public InboxReviewsClient $inboxReviews;
+
+    /**
+     * @var InboxMessagesClient $inboxMessages
+     */
+    public InboxMessagesClient $inboxMessages;
 
     /**
      * @var AdsClient $ads
@@ -302,6 +308,7 @@ class PealClient
         $this->webhooks = new WebhooksClient($this->client, $this->options);
         $this->inbox = new InboxClient($this->client, $this->options);
         $this->inboxReviews = new InboxReviewsClient($this->client, $this->options);
+        $this->inboxMessages = new InboxMessagesClient($this->client, $this->options);
         $this->ads = new AdsClient($this->client, $this->options);
         $this->activity = new ActivityClient($this->client, $this->options);
         $this->partner = new PartnerClient($this->client, $this->options);

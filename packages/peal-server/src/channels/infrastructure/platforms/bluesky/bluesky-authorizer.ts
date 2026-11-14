@@ -20,12 +20,17 @@ import type {
 } from "#channels/application/platform-authorizer.ts";
 import { AvatarUrlSchema } from "#channels/domain/avatar-url.ts";
 import { tokenPolicies } from "#channels/domain/token-policy.ts";
+import { grantsBlueskyChat } from "#shared/domain/bluesky-scopes.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 
-import { makeBlueskyClient, memoryStore } from "./bluesky-client.ts";
+import {
+  blueskyScope,
+  makeBlueskyClient,
+  memoryStore,
+} from "./bluesky-client.ts";
 import type { BlueskyClientOptions } from "./bluesky-client.ts";
 import { parseSavedSession, parseSavedState } from "./saved-oauth-data.ts";
 
@@ -246,6 +251,21 @@ export const blueskyAuthorizer = Effect.fn("BlueskyAuthorizer.make")(
         Option.getOrElse(() => options.defaultService)
       );
 
+    // What a sign-in asks: publishing's scopes, and the most the client
+    // may ask (its metadata's, the chat scopes too where the server reads
+    // Bluesky's messages) only for a member who asks for the channel's
+    // messages, or a reconnect of a channel that granted them, so a
+    // reconnect never takes its messages away.
+    const scopeFor = (
+      request: Parameters<PlatformAuthorizer["begin"]>[0]
+    ): string =>
+      request.messages === true ||
+      request.reconnecting.pipe(
+        Option.exists((channel) => grantsBlueskyChat(channel.scopes))
+      )
+        ? (options.scope ?? blueskyScope)
+        : blueskyScope;
+
     const begin: PlatformAuthorizer["begin"] = (request) =>
       Effect.gen(function* beginning() {
         const wire = observed(publicFetch);
@@ -253,7 +273,10 @@ export const blueskyAuthorizer = Effect.fn("BlueskyAuthorizer.make")(
 
         const url = yield* Effect.tryPromise({
           catch: (cause) => beginFailure(failureOf(wire.trouble(), cause)),
-          try: async () => await client.authorize(signInWith(request)),
+          try: async () =>
+            await client.authorize(signInWith(request), {
+              scope: scopeFor(request),
+            }),
         });
 
         const [pending] = states.values;

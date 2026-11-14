@@ -37,6 +37,7 @@ import {
   ChannelGateLive,
   GatedCommentSource,
   GatedReplySender,
+  UnreadMessages,
   UnreadReviews,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
@@ -135,6 +136,7 @@ const adaptersOf = (world: World, platform: Platform) => {
 
   return Layer.mergeAll(
     UnreadReviews,
+    UnreadMessages,
     Layer.succeed(
       CommentSource,
       CommentSource.of({

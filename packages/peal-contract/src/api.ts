@@ -24,6 +24,7 @@ import { CredentialApi } from "./credential.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { FeedsApi } from "./feeds.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
+import { InboxMessagesApi } from "./inbox-messages.ts";
 import { InboxReviewsApi } from "./inbox-reviews.ts";
 import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
@@ -1873,6 +1874,50 @@ export type {
   NewInboxReviewReply,
 } from "./inbox-reviews.ts";
 
+export {
+  inboxMessagePlatforms,
+  inboxMessageRetentionDays,
+  InboxConversationDetailSchema,
+  InboxConversationPageSchema,
+  InboxConversationSchema,
+  InboxDirectMessageSchema,
+  InboxMessageAbilitiesSchema,
+  InboxMessagesApi,
+  InboxOutgoingMessageReasonSchema,
+  InboxOutgoingMessageSchema,
+  InboxOutgoingMessageStatusSchema,
+  InboxParticipantSchema,
+  InboxMessageApplicationSchema,
+  InboxMessageChannelSchema,
+  InboxMessageSettingsSchema,
+  InboxReplyWindowSchema,
+  maxInboxMessageLength,
+  maxInboxMessagesPerPage,
+  NewInboxMessageSchema,
+} from "./inbox-messages.ts";
+
+export type {
+  InboxConversation,
+  InboxConversationDetail,
+  InboxConversationPage,
+  InboxDirectMessage,
+  InboxMessageAbilities,
+  InboxOutgoingMessage,
+  InboxOutgoingMessageReason,
+  InboxOutgoingMessageStatus,
+  InboxMessageSettings,
+  InboxParticipant,
+  NewInboxMessage,
+} from "./inbox-messages.ts";
+
+export { MessageMentionsOutside } from "./message-mentions-outside.ts";
+
+export { InboxConversationNotFound } from "./inbox-conversation-not-found.ts";
+
+export { InboxMessageNotFound } from "./inbox-message-not-found.ts";
+
+export { MessagePending } from "./message-pending.ts";
+
 export { InboxReviewNotFound } from "./inbox-review-not-found.ts";
 
 export { InboxReviewThreadNotFound } from "./inbox-review-thread-not-found.ts";
@@ -2278,6 +2323,7 @@ export class Api extends HttpApi.make("peal")
   .add(WebhooksApi)
   .add(InboxApi)
   .add(InboxReviewsApi)
+  .add(InboxMessagesApi)
   .add(AdsApi)
   .add(ActivityApi)
   .add(PartnerApi)

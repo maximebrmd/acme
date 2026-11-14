@@ -1,12 +1,12 @@
 ---
-title: Événements des médias, des commentaires et des avis
-description: "Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne, et des avis d’un établissement."
+title: Événements des médias, des commentaires, des avis et des messages
+description: "Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne, des avis d’un établissement, et des messages privés d’un canal."
 sidebar:
   icon: message-square
-  label: "Médias, commentaires et avis"
+  label: "Médias, commentaires, avis, messages"
 ---
 
-Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne et des avis d’un établissement, chacun avec ses champs et un exemple de contenu. Les événements des médias ne concernent aucun canal : ils parviennent à un point de terminaison [quels que soient les canaux qu’il liste](/developers/webhooks#filters).
+Les événements d’un fichier de la médiathèque, des commentaires sous une publication en ligne, des avis d’un établissement et des messages privés d’un canal, chacun avec ses champs et un exemple de contenu. Les événements des médias ne concernent aucun canal : ils parviennent à un point de terminaison [quels que soient les canaux qu’il liste](/developers/webhooks#filters).
 
 ## media.ready [#media-ready]
 
@@ -191,6 +191,64 @@ Une réponse à un avis est partie depuis Peal, au nom de l’établissement. Un
     "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
     "replyId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d1e",
     "repliedAt": "2026-11-14T09:40:12.000Z"
+  }
+}
+```
+
+## message.received [#message-received]
+
+Peal a lu pour la première fois un message privé que quelqu’un a envoyé au compte d’un canal, sur une plateforme dont le serveur lit les messages, pour un canal dont l’espace de travail a activé les messages (voir [Boîte de réception](/guides/engage/inbox#direct-messages)). Les messages envoyés avant que Peal ne commence à lire le canal n’envoient rien. L’événement ne porte que des identifiants : ce que dit le message et qui l’a envoyé se lisent par l’API, avec `engagement:readMessages`, car les messages sont une correspondance privée et un événement est conservé avec ses livraisons plus longtemps qu’une conversation.
+
+| Champ            | Type   | Ce qu’il contient                              |
+| ---------------- | ------ | ---------------------------------------------- |
+| `workspaceId`    | chaîne | L’espace de travail                            |
+| `channelId`      | chaîne | Le canal auquel le message a été envoyé        |
+| `conversationId` | chaîne | La conversation                                |
+| `messageId`      | chaîne | Le message                                     |
+| `receivedAt`     | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC |
+
+```json title="message.received"
+{
+  "id": "019a8203-6e70-7c4d-8e5f-6a7b8c9d0e01",
+  "type": "message.received",
+  "version": 1,
+  "timestamp": "2026-11-14T10:02:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+    "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b02",
+    "receivedAt": "2026-11-14T10:02:00.000Z"
+  }
+}
+```
+
+## message.sent [#message-sent]
+
+Un message privé est parti depuis Peal, au nom du compte du canal. Un message qui a échoué, ou dont l’issue n’est pas encore connue, n’envoie rien : lisez-le par l’API.
+
+| Champ            | Type   | Ce qu’il contient                            |
+| ---------------- | ------ | -------------------------------------------- |
+| `workspaceId`    | chaîne | L’espace de travail                          |
+| `channelId`      | chaîne | Le canal                                     |
+| `conversationId` | chaîne | La conversation à laquelle il répond         |
+| `messageId`      | chaîne | Le message envoyé depuis Peal                |
+| `sentAt`         | chaîne | Quand il est parti, sous forme d’instant UTC |
+
+```json title="message.sent"
+{
+  "id": "019a8203-7f80-7d5e-8f6a-7b8c9d0e1f02",
+  "type": "message.sent",
+  "version": 1,
+  "timestamp": "2026-11-14T10:05:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "conversationId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b01",
+    "messageId": "019a8203-4d50-7a2b-b3c4-5d6e7f8a9b03",
+    "sentAt": "2026-11-14T10:05:00.000Z"
   }
 }
 ```

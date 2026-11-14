@@ -25,6 +25,25 @@ import type {
   CommentsReadFailure,
 } from "#engagement/application/ports/comment-source.ts";
 import {
+  MessageSendOutcomeSchema,
+  MessageSendRequestSchema,
+  MessageSender,
+} from "#engagement/application/ports/message-sender.ts";
+import type {
+  MessageSendOutcome,
+  MessageSendRequest,
+} from "#engagement/application/ports/message-sender.ts";
+import {
+  MessageSource,
+  MessagesBatchSchema,
+  MessagesReadFailureSchema,
+  MessagesRequestSchema,
+} from "#engagement/application/ports/message-source.ts";
+import type {
+  MessagesBatch,
+  MessagesReadFailure,
+} from "#engagement/application/ports/message-source.ts";
+import {
   ActionOutcomeSchema,
   ModerationRequestSchema,
   ReplySender,
@@ -104,7 +123,10 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * on them as the account, for engagement: their payloads are ids, and the
  * text of a reply stays in engagement's tables. `ReadReviews` reads a
  * location's reviews, and `SendReviewReply`, `ResumeReviewReply` and
- * `WithdrawReviewReply` answer them, the same way. `RemoveLivePost` deletes a
+ * `WithdrawReviewReply` answer them, the same way, and `ReadMessages`,
+ * `SendMessage` and `ResumeMessage` read a channel's direct messages and
+ * answer them: their payloads are ids, and no message's text travels
+ * through the cluster's tables. `RemoveLivePost` deletes a
  * post, or a part of one, that a member asked to unpublish, by the
  * platform's id for it: a removal never overlaps a publish on the channel.
  * `EditLivePost` replaces the text of a part a member asked to edit, by
@@ -112,7 +134,7 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * gate, whose side reads it from the change.
  *
  * Calls run in the order they came, whichever context sent them. Each
- * collection (post counts, the account, comments, reviews) has one call a channel
+ * collection (post counts, the account, comments, reviews, messages) has one call a channel
  * outstanding at most, so a publish waits for the reads that came before
  * it: one of each at most, each bounded, never for those after. Their
  * crons start on minutes of their own (`test/app/cron-schedules.test.ts`).
@@ -180,6 +202,19 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: ReviewWithdrawalSchema },
     success: ReviewActionOutcomeSchema,
   }),
+  Rpc.make("ReadMessages", {
+    error: MessagesReadFailureSchema,
+    payload: { request: MessagesRequestSchema },
+    success: MessagesBatchSchema,
+  }),
+  Rpc.make("SendMessage", {
+    payload: { request: MessageSendRequestSchema },
+    success: MessageSendOutcomeSchema,
+  }),
+  Rpc.make("ResumeMessage", {
+    payload: { request: MessageSendRequestSchema },
+    success: MessageSendOutcomeSchema,
+  }),
   Rpc.make("RemoveLivePost", {
     error: RemovalFailureSchema,
     payload: { request: RemovalRequestSchema },
@@ -205,6 +240,8 @@ export const ChannelGateLive = ChannelGate.toLayer(
     const replies = yield* ReplySender;
     const reviews = yield* ReviewSource;
     const reviewReplies = yield* ReviewReplySender;
+    const messages = yield* MessageSource;
+    const messageSender = yield* MessageSender;
     const live = yield* LivePostClients;
 
     return ChannelGate.of({
@@ -213,13 +250,16 @@ export const ChannelGateLive = ChannelGate.toLayer(
       Publish: ({ payload }) => platforms.publish(payload.request),
       ReadAccount: ({ payload }) => metrics.account(payload.request),
       ReadComments: ({ payload }) => comments.read(payload.request),
+      ReadMessages: ({ payload }) => messages.read(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
       CheckReviewReply: ({ payload }) => reviewReplies.check(payload.request),
       ReadReviews: ({ payload }) => reviews.read(payload.request),
       RemoveLivePost: ({ payload }) => live.remove(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
+      ResumeMessage: ({ payload }) => messageSender.resume(payload.request),
       ResumeReply: ({ payload }) => replies.resume(payload.request),
       ResumeReviewReply: ({ payload }) => reviewReplies.resume(payload.request),
+      SendMessage: ({ payload }) => messageSender.send(payload.request),
       SendReply: ({ payload }) => replies.send(payload.request),
       SendReviewReply: ({ payload }) => reviewReplies.send(payload.request),
       WithdrawReply: ({ payload }) => replies.withdraw(payload.request),
@@ -262,13 +302,31 @@ export const UnreadReviews = Layer.mergeAll(
   )
 );
 
+/** For gates that read no direct message and send none: as UnreadComments. */
+export const UnreadMessages = Layer.mergeAll(
+  Layer.succeed(
+    MessageSource,
+    MessageSource.of({ read: () => Effect.fail(new PlatformUnavailable()) })
+  ),
+  Layer.succeed(
+    MessageSender,
+    MessageSender.of({
+      resume: () =>
+        Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" }),
+      send: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+    })
+  )
+);
+
 /**
- * For gates that neither read comments and reviews nor answer them, as in
- * tests of publishing: every read answers that the platform is
- * unavailable, and nothing is sent.
+ * For gates that neither read comments, reviews and messages nor answer
+ * them, as in tests of publishing: every read answers that the platform
+ * is unavailable, and nothing is sent.
  */
 export const UnreadComments = Layer.mergeAll(
   UnreadReviews,
+  UnreadMessages,
   Layer.succeed(
     CommentSource,
     CommentSource.of({ read: () => Effect.fail(new PlatformUnavailable()) })
@@ -748,6 +806,111 @@ export const GatedReviews = Layer.effectContext(
                 }),
                 Effect.catchDefect(notWithdrawn)
               ),
+        })
+      )
+    );
+  })
+);
+
+// The gate did not take the read, or a bug broke it: it read nothing, and
+// the next collection tries again.
+const noMessages = (): Effect.Effect<never, MessagesReadFailure> =>
+  Effect.fail(new PlatformUnavailable());
+
+const messageNotSent = () =>
+  Effect.succeed<MessageSendOutcome>({
+    _tag: "failed",
+    reason: "platformUnavailable",
+  });
+
+const messageUnchecked = () =>
+  Effect.succeed<MessageSendOutcome>({
+    _tag: "unconfirmed",
+    reason: "interrupted",
+  });
+
+/**
+ * The MessageSource and MessageSender engagement reads and answers direct
+ * messages with: each call goes through its channel's gate, in turn with
+ * the channel's publishing. A message the gate did not take was not sent;
+ * one it lost during the call, or whose adapter broke, may have gone out,
+ * and a person checks. Provide ChannelGateLive, with the real adapters,
+ * beside it.
+ */
+export const GatedMessages = Layer.effectContext(
+  Effect.gen(function* GatedMessages() {
+    const gateFor = yield* ChannelGate.client;
+
+    const taken = {
+      schedule: notTakenRetry,
+      times: 4,
+      while: (error: { readonly _tag: string }) =>
+        error._tag === "MailboxFull" ||
+        error._tag === "EntityNotAssignedToRunner",
+    };
+
+    const read = (request: typeof MessagesRequestSchema.Type) =>
+      gateFor(request.channelId)
+        .ReadMessages({ request })
+        .pipe(
+          Effect.retry(taken),
+          Effect.catchTags({
+            AlreadyProcessingMessage: noMessages,
+            EntityNotAssignedToRunner: noMessages,
+            MailboxFull: noMessages,
+            PersistenceError: noMessages,
+          }),
+          // Logged without the cause, which may quote what people wrote.
+          Effect.catchDefect(() =>
+            Effect.logError(
+              "A direct messages read failed in its adapter"
+            ).pipe(Effect.andThen(noMessages()))
+          )
+        ) satisfies Effect.Effect<MessagesBatch, MessagesReadFailure>;
+
+    const sending = (
+      call: Effect.Effect<
+        MessageSendOutcome,
+        Effect.Error<ReturnType<ReturnType<typeof gateFor>["SendMessage"]>>
+      >,
+      notTaken: () => Effect.Effect<MessageSendOutcome>
+    ): Effect.Effect<MessageSendOutcome> =>
+      call.pipe(
+        Effect.retry(taken),
+        Effect.catchTags({
+          AlreadyProcessingMessage: () =>
+            Effect.succeed<MessageSendOutcome>({
+              _tag: "unconfirmed",
+              reason: "noResponse",
+            }),
+          EntityNotAssignedToRunner: notTaken,
+          MailboxFull: notTaken,
+          PersistenceError: notTaken,
+        }),
+        Effect.catchDefect(() =>
+          Effect.logError("A direct message failed in its adapter").pipe(
+            Effect.as<MessageSendOutcome>({
+              _tag: "unconfirmed",
+              reason: "adapterFailure",
+            })
+          )
+        )
+      );
+
+    return Context.make(MessageSource, MessageSource.of({ read })).pipe(
+      Context.add(
+        MessageSender,
+        MessageSender.of({
+          resume: (request: MessageSendRequest) =>
+            sending(
+              gateFor(request.channelId).ResumeMessage({ request }),
+              messageUnchecked
+            ),
+          send: (request: MessageSendRequest) =>
+            sending(
+              gateFor(request.channelId).SendMessage({ request }),
+              messageNotSent
+            ),
         })
       )
     );

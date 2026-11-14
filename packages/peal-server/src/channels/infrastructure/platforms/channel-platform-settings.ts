@@ -15,6 +15,7 @@ import {
   isProduction,
   publicUrlConfig,
 } from "#shared/infrastructure/environment.ts";
+import { inboxMessagesConfig } from "#shared/infrastructure/inbox-messages.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import {
   instagramAppConfig,
@@ -30,6 +31,7 @@ import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
 import type { BlueskyAuthorizerOptions } from "./bluesky/bluesky-authorizer.ts";
+import { blueskyScopeWith } from "./bluesky/bluesky-client.ts";
 import type { BlueskyClientMode } from "./bluesky/bluesky-client.ts";
 import { oauthClientConfig } from "./oauth-client.ts";
 import type { OAuthClient } from "./oauth-client.ts";
@@ -234,6 +236,9 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   );
 
   const mode = yield* blueskyModeOf({ keys, production, publicUrl });
+  // Where the inbox reads Bluesky's messages, its sign-in asks the chat
+  // scopes too; off, what it asked before.
+  const messages = yield* inboxMessagesConfig;
   const linkedin = yield* oauthClientConfig("linkedin", "LINKEDIN");
   const linkedinPages = yield* oauthClientConfig("linkedin", "LINKEDIN_PAGES");
   const linkedinVersion = yield* linkedinVersionConfig;
@@ -264,6 +269,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         ...blueskyDefaults,
         mode: clientMode,
         publicUrl,
+        scope: blueskyScopeWith(messages.has("bluesky")),
       }))
     ),
     googleBusiness,

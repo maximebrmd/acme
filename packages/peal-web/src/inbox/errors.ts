@@ -2,6 +2,7 @@ import { Cause, Exit, Option, Schema } from "effect";
 import {
   InboxActionFailed,
   InboxActionUnavailable,
+  MessageMentionsOutside,
   ReplyInvalid,
   ReplyStatusConflict,
 } from "peal-contract";
@@ -13,7 +14,9 @@ import {
 export const InboxErrorKeySchema = Schema.Literals([
   "commentGone",
   "commentNotFound",
+  "conversationNotFound",
   "forbidden",
+  "messagePending",
   "messagesUsed",
   "replyEmpty",
   "replyNotFound",
@@ -37,6 +40,8 @@ export type InboxError =
       readonly length: number;
       readonly maximum: number;
     }
+  // A Mastodon message would reach accounts outside its conversation.
+  | { readonly key: "mentionsOutside"; readonly mentions: string }
   | {
       readonly key: "unavailable";
       readonly standing: InboxActionUnavailable["standing"];
@@ -47,10 +52,13 @@ const reasons = new Map<string, InboxErrorKey>([
   ["Forbidden", "forbidden"],
   ["InboxCommentGone", "commentGone"],
   ["InboxCommentNotFound", "commentNotFound"],
+  ["InboxConversationNotFound", "conversationNotFound"],
+  ["InboxMessageNotFound", "replyNotFound"],
   ["InboxReplyNotFound", "replyNotFound"],
   ["InboxReviewNotFound", "reviewNotFound"],
   ["InboxReviewThreadNotFound", "threadNotFound"],
   ["InboxThreadNotFound", "threadNotFound"],
+  ["MessagePending", "messagePending"],
   ["ReplyPending", "replyPending"],
   // The billing account's messages of the month: the upgrade dialog
   // opens beside.
@@ -64,6 +72,8 @@ const isUnavailable = Schema.is(InboxActionUnavailable);
 const isFailed = Schema.is(InboxActionFailed);
 
 const isConflict = Schema.is(ReplyStatusConflict);
+
+const isOutside = Schema.is(MessageMentionsOutside);
 
 const explain = (error: { readonly _tag: string }): InboxError => {
   if (isInvalid(error)) {
@@ -80,6 +90,10 @@ const explain = (error: { readonly _tag: string }): InboxError => {
 
   if (isFailed(error)) {
     return { key: "actionFailed", reason: error.reason };
+  }
+
+  if (isOutside(error)) {
+    return { key: "mentionsOutside", mentions: error.mentions.join(", ") };
   }
 
   if (isConflict(error)) {

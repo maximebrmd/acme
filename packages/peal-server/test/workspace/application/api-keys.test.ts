@@ -131,6 +131,52 @@ describe(ApiKeys, () => {
     )
   );
 
+  it.effect(
+    "puts the direct messages' permissions on a key for an owner in person, never through an application",
+    () =>
+      withIssuer(({ requests }) =>
+        Effect.gen(function* messages() {
+          const keys = yield* ApiKeys;
+
+          const owner: readonly Permission[] = [
+            "apiKey:create",
+            "organization:secure",
+            "engagement:readMessages",
+          ];
+
+          const asked = {
+            ...newKey,
+            permissions: ["engagement:readMessages"] as const,
+          };
+
+          const throughApp = new Actor({
+            permissions: owner,
+            subject: {
+              _tag: "user",
+              clientId: "synthetic-client",
+              impersonatedBy: Option.none(),
+              userId,
+            },
+            workspaceId,
+          });
+
+          const refused = yield* keys
+            .create(throughApp, asked)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "PermissionNotGrantable");
+          assert.lengthOf(yield* Ref.get(requests), 0);
+
+          yield* keys.create(member(owner), asked);
+
+          assert.deepStrictEqual(
+            (yield* Ref.get(requests)).map(({ permissions }) => permissions),
+            [["engagement:readMessages"]]
+          );
+        })
+      )
+  );
+
   it.effect("refuses an API key creating keys", () =>
     withIssuer(() =>
       Effect.gen(function* keysMintNoKeys() {

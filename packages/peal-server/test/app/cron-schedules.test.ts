@@ -76,6 +76,7 @@ const gated = [
   "analytics.collect-metrics",
   "channels.token-refresh",
   "engagement.collect-comments",
+  "engagement.collect-messages",
   "engagement.collect-reviews",
 ];
 

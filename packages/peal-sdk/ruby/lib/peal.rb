@@ -171,6 +171,15 @@ require_relative "peal/inbox_reviews/types/get_review_thread_inbox_reviews_reque
 require_relative "peal/inbox_reviews/types/new_inbox_review_reply"
 require_relative "peal/inbox_reviews/types/withdraw_review_reply_inbox_reviews_request"
 require_relative "peal/inbox_reviews/types/set_review_answered_inbox_reviews_request"
+require_relative "peal/inbox_messages/client"
+require_relative "peal/inbox_messages/types/list_conversations_inbox_messages_request"
+require_relative "peal/inbox_messages/types/get_conversation_inbox_messages_request"
+require_relative "peal/inbox_messages/types/new_inbox_message"
+require_relative "peal/inbox_messages/types/set_conversation_read_inbox_messages_request"
+require_relative "peal/inbox_messages/types/get_message_settings_inbox_messages_request"
+require_relative "peal/inbox_messages/types/set_channel_messages_inbox_messages_request"
+require_relative "peal/inbox_messages/types/set_message_application_inbox_messages_request"
+require_relative "peal/inbox_messages/types/confirm_message_inbox_messages_request"
 require_relative "peal/ads/client"
 require_relative "peal/ads/types/status_ads_request"
 require_relative "peal/ads/types/list_connections_ads_request"
@@ -283,6 +292,12 @@ require_relative "peal/short_links/types/get_short_links_request"
 require_relative "peal/environment"
 
 module Peal
+  module Channels
+    module Types
+      autoload :ReconnectChannelsRequestMessages, ::File.join(__dir__, "peal/channels/types/reconnect_channels_request_messages")
+    end
+  end
+
   module Posts
     module Types
       autoload :SearchPostsRequestRemoved, ::File.join(__dir__, "peal/posts/types/search_posts_request_removed")
@@ -304,6 +319,12 @@ module Peal
   module InboxReviews
     module Types
       autoload :ListReviewThreadsInboxReviewsRequestUnanswered, ::File.join(__dir__, "peal/inbox_reviews/types/list_review_threads_inbox_reviews_request_unanswered")
+    end
+  end
+
+  module InboxMessages
+    module Types
+      autoload :ListConversationsInboxMessagesRequestUnread, ::File.join(__dir__, "peal/inbox_messages/types/list_conversations_inbox_messages_request_unread")
     end
   end
 
@@ -842,6 +863,21 @@ module Peal
     autoload :InboxCommentGoneEncodedTag, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded_tag")
     autoload :InboxCommentGoneEncoded, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded")
     autoload :InboxCommentNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_comment_not_found_encoded")
+    autoload :InboxParticipant, ::File.join(__dir__, "peal/types/inbox_participant")
+    autoload :InboxConversation, ::File.join(__dir__, "peal/types/inbox_conversation")
+    autoload :InboxDirectMessage, ::File.join(__dir__, "peal/types/inbox_direct_message")
+    autoload :InboxMessageAbilities, ::File.join(__dir__, "peal/types/inbox_message_abilities")
+    autoload :InboxOutgoingMessageReason, ::File.join(__dir__, "peal/types/inbox_outgoing_message_reason")
+    autoload :InboxOutgoingMessageStatus, ::File.join(__dir__, "peal/types/inbox_outgoing_message_status")
+    autoload :InboxOutgoingMessage, ::File.join(__dir__, "peal/types/inbox_outgoing_message")
+    autoload :InboxReplyWindow, ::File.join(__dir__, "peal/types/inbox_reply_window")
+    autoload :InboxConversationDetail, ::File.join(__dir__, "peal/types/inbox_conversation_detail")
+    autoload :InboxConversationNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_conversation_not_found_encoded")
+    autoload :InboxConversationPage, ::File.join(__dir__, "peal/types/inbox_conversation_page")
+    autoload :InboxMessageApplication, ::File.join(__dir__, "peal/types/inbox_message_application")
+    autoload :InboxMessageChannel, ::File.join(__dir__, "peal/types/inbox_message_channel")
+    autoload :InboxMessageNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_message_not_found_encoded")
+    autoload :InboxMessageSettings, ::File.join(__dir__, "peal/types/inbox_message_settings")
     autoload :InboxModerationAction, ::File.join(__dir__, "peal/types/inbox_moderation_action")
     autoload :InboxOwnerReplyModeration, ::File.join(__dir__, "peal/types/inbox_owner_reply_moderation")
     autoload :InboxOwnerReply, ::File.join(__dir__, "peal/types/inbox_owner_reply")
@@ -923,6 +959,8 @@ module Peal
     autoload :MediaTooLargeEncodedKind, ::File.join(__dir__, "peal/types/media_too_large_encoded_kind")
     autoload :MediaTooLargeEncoded, ::File.join(__dir__, "peal/types/media_too_large_encoded")
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
+    autoload :MessageMentionsOutsideEncoded, ::File.join(__dir__, "peal/types/message_mentions_outside_encoded")
+    autoload :MessagePendingEncoded, ::File.join(__dir__, "peal/types/message_pending_encoded")
     autoload :MeteredPosts, ::File.join(__dir__, "peal/types/metered_posts")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")
     autoload :SpecialAdCategory, ::File.join(__dir__, "peal/types/special_ad_category")
@@ -936,6 +974,7 @@ module Peal
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
     autoload :NoticeEventCommentsReceived, ::File.join(__dir__, "peal/types/notice_event_comments_received")
     autoload :NoticeEventFeedStopped, ::File.join(__dir__, "peal/types/notice_event_feed_stopped")
+    autoload :NoticeEventMessagesReceived, ::File.join(__dir__, "peal/types/notice_event_messages_received")
     autoload :NoticeEventPaymentMethodNeeded, ::File.join(__dir__, "peal/types/notice_event_payment_method_needed")
     autoload :NoticeEventPlansRetiring, ::File.join(__dir__, "peal/types/notice_event_plans_retiring")
     autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")

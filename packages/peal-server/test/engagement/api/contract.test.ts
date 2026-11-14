@@ -2,6 +2,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { Duration } from "effect";
 import {
   idempotencyKeyLifetimeHours,
+  InboxMessageAbilitiesSchema,
+  inboxMessagePlatforms,
+  inboxMessageRetentionDays,
+  InboxOutgoingMessageReasonSchema,
+  InboxOutgoingMessageStatusSchema,
+  maxInboxMessageLength,
   InboxAbilitySchema,
   InboxAbilityStandingSchema,
   InboxCollectionEndSchema,
@@ -19,13 +25,21 @@ import {
 import { maxThreadsPerPage } from "#engagement/application/engagement-inbox.ts";
 import { defaultWindow } from "#engagement/domain/collection-schedule.ts";
 import { CommentStateSchema } from "#engagement/domain/comment.ts";
+import { conversationsKeptFor } from "#engagement/domain/conversation.ts";
 import {
   AbilityStandingSchema,
   engagedPlatforms,
   EngagementAbilitySchema,
 } from "#engagement/domain/engagement-abilities.ts";
 import { keptAfterCollection } from "#engagement/domain/engagement-retention.ts";
+import { MessageAbilitySchema } from "#engagement/domain/message-abilities.ts";
+import { maxOutgoingMessageLength } from "#engagement/domain/message-text.ts";
 import { ModerationActionSchema } from "#engagement/domain/moderation.ts";
+import {
+  MessageFailureSchema,
+  messageKeyLifetime,
+  OutgoingMessageStatusSchema,
+} from "#engagement/domain/outgoing-message.ts";
 import { maxReplyLength } from "#engagement/domain/reply-text.ts";
 import {
   ReplyDoubtSchema,
@@ -34,6 +48,7 @@ import {
   ReplyStatusSchema,
 } from "#engagement/domain/reply.ts";
 import { CollectionEndSchema } from "#engagement/domain/thread.ts";
+import { InboxMessagePlatformSchema } from "#shared/domain/inbox-message-platform.ts";
 
 // The contract copies the engagement context's vocabulary and figures, for
 // clients that cannot import the server: change them together.
@@ -86,5 +101,36 @@ describe("the contract's inbox", () => {
     expect(inboxRetentionDays).toBe(Duration.toDays(keptAfterCollection));
     expect(maxInboxReplyLength).toBe(maxReplyLength);
     expect(maxInboxPageSize).toBe(maxThreadsPerPage);
+  });
+});
+
+describe("the contract's direct messages", () => {
+  it("names the platforms, the retention and the longest message as the domain does", () => {
+    expect([...inboxMessagePlatforms]).toStrictEqual(
+      InboxMessagePlatformSchema.literals
+    );
+    expect(Duration.toDays(conversationsKeptFor)).toBe(
+      inboxMessageRetentionDays
+    );
+    expect(maxInboxMessageLength).toBe(maxOutgoingMessageLength);
+    expect(Duration.toHours(messageKeyLifetime)).toBe(
+      idempotencyKeyLifetimeHours
+    );
+  });
+
+  it("names a message's states and reasons as the domain does", () => {
+    expect(InboxOutgoingMessageStatusSchema.literals).toStrictEqual(
+      OutgoingMessageStatusSchema.members.map(
+        ({ fields }) => fields._tag.schema.literal
+      )
+    );
+    expect(InboxOutgoingMessageReasonSchema.literals).toStrictEqual([
+      ...MessageFailureSchema.literals,
+      ...ReplyDoubtSchema.literals,
+    ]);
+    expect(InboxMessageAbilitiesSchema.fields).toHaveProperty("send");
+    expect(Object.keys(InboxMessageAbilitiesSchema.fields)).toStrictEqual(
+      MessageAbilitySchema.literals
+    );
   });
 });
