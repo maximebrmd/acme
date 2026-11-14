@@ -124,7 +124,14 @@ export const usageLimitReason = ({
   resetsAt,
   used,
 }: UsageShortfallFields): string => {
-  const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meters[meter]} it may use this month, which starts again on ${DateTime.formatIsoDateUtc(resetsAt)} (UTC).`;
+  const until = DateTime.formatIsoDateUtc(resetsAt);
+
+  // X has no allowance: its calls are billed from the first, when the
+  // account can be billed.
+  const held =
+    meter === "xApi"
+      ? `X's API is passed through at X's published rates, and the workspace's billing account cannot be billed for it now; this month's count starts again on ${until} (UTC).`
+      : `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meters[meter]} it may use this month, which starts again on ${until} (UTC).`;
 
   if (reason === "ceilingReached" && unconfirmedMeters.includes(meter)) {
     return `${held} Nothing past the allowance is used until its price is set: wait until then.`;

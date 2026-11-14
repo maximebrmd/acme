@@ -65,7 +65,9 @@ export type ChannelErrorKey =
   | "planLimit"
   | "unknown"
   | "unreachable"
-  | "xPaymentMethod";
+  | "xPaymentFailed"
+  | "xPaymentMethod"
+  | "xPerAccountPricing";
 
 // Several errors give a `reason`, each from its own list.
 interface Tagged {
@@ -99,9 +101,16 @@ const keyOf = (error: Tagged): ChannelErrorKey => {
       return "planLimit";
     }
 
-    // X, billed at its rates, needs a payment method first.
+    // X, billed at its rates, needs per-account pricing that pays: told
+    // as the standing it lacks.
     case "UsageAllowanceReached": {
-      return "xPaymentMethod";
+      if (error.reason === "paymentFailed") {
+        return "xPaymentFailed";
+      }
+
+      return error.reason === "planAllowance"
+        ? "xPerAccountPricing"
+        : "xPaymentMethod";
     }
 
     default: {

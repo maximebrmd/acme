@@ -796,7 +796,9 @@
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
       "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page.",
-      "xPaymentMethod": "Un compte X demande un moyen de paiement sur le compte de facturation, car l’API de X est facturée aux tarifs de X. Ajoutez-en un sur la page de facturation, puis connectez-le."
+      "xPaymentMethod": "Un compte X demande un moyen de paiement sur le compte de facturation, car l’API de X est facturée aux tarifs de X. Ajoutez-en un sur la page de facturation, puis connectez-le.",
+      "xPaymentFailed": "Un compte X demande un compte de facturation qui peut être facturé, car l’API de X est facturée aux tarifs de X, et son dernier paiement a échoué. Mettez à jour le moyen de paiement depuis la page de facturation, puis connectez-le.",
+      "xPerAccountPricing": "Un compte X demande le tarif par compte, car l’API de X est facturée aux tarifs de X, et l’abonnement de cet espace de travail lui est antérieur. Passez au tarif par compte sur la page de facturation, puis connectez-le."
     }
   },
   "PlatformConnect": {

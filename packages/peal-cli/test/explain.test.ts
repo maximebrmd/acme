@@ -180,6 +180,19 @@ const refusalOf = (failure: UsageAllowanceReached): string => {
   return explained._tag === "Refused" ? explained.reason : explained._tag;
 };
 
+// X's refusal for a standing, as the command line explains it.
+const xRefusal = (reason: "paymentFailed" | "planAllowance") =>
+  refusalOf(
+    new UsageAllowanceReached({
+      allowed: 0,
+      billingUrl,
+      meter: "xApi",
+      reason,
+      resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+      used: 0,
+    })
+  );
+
 describe("a meter's refusal, explained", () => {
   const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 
@@ -269,5 +282,12 @@ describe("a meter's refusal, explained", () => {
 
     expect(x).toContain("billed at X's published rates, with nothing added");
     expect(x).not.toContain("past the allowance 10 cost");
+  });
+
+  it("tells X's refusal in its standing's words", () => {
+    expect(xRefusal("paymentFailed")).toContain("last payment failed");
+    expect(xRefusal("paymentFailed")).not.toContain("adds one");
+    expect(xRefusal("planAllowance")).toContain("to per-account pricing");
+    expect(xRefusal("planAllowance")).not.toContain("used 0 of the 0");
   });
 });

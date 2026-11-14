@@ -151,4 +151,23 @@ describe(usageRefusalText, () => {
     expect(x).toContain("billed at X's published rates, with nothing added");
     expect(x).not.toContain("past the allowance 10 cost");
   });
+
+  it("tells X's refusal in its standing's words", () => {
+    const x = (reason: "paymentFailed" | "planAllowance") =>
+      usageRefusalText(
+        new AllowanceReached({
+          allowed: 0,
+          meter: "xApi",
+          reason,
+          resetsAt,
+          used: 0,
+        }),
+        billingUrl
+      );
+
+    expect(x("paymentFailed")).toContain("last payment failed");
+    expect(x("paymentFailed")).not.toContain("adds one");
+    expect(x("planAllowance")).toContain("moves it to per-account pricing");
+    expect(x("planAllowance")).not.toContain("used 0 of the 0");
+  });
 });

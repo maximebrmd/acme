@@ -796,7 +796,9 @@
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
       "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page.",
-      "xPaymentMethod": "An X account needs a payment method on the billing account, as X’s API is billed at X’s own rates. Add one on the billing page, then connect it."
+      "xPaymentMethod": "An X account needs a payment method on the billing account, as X’s API is billed at X’s own rates. Add one on the billing page, then connect it.",
+      "xPaymentFailed": "An X account needs a billing account that can be billed, as X’s API is billed at X’s own rates, and its last payment failed. Update the payment method from the billing page, then connect it.",
+      "xPerAccountPricing": "An X account needs per-account pricing, as X’s API is billed at X’s own rates, and this workspace’s plan is one from before it. Move to per-account pricing on the billing page, then connect it."
     }
   },
   "PlatformConnect": {
