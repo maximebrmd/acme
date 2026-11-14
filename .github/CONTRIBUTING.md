@@ -78,7 +78,7 @@ you change before you change it. The ones contributors meet first:
   manifests, `fern-api` (with the generators), Drizzle until 1.0 is npm's
   `latest`, and the majors of Postgres (its data needs `pg_upgrade`) and
   Node (kept on LTS). And what it does not read: the SDK generator and
-  toolchain images, CI's service images and Betterleaks, the Dockerfiles'
+  toolchain images, CI's service images, Betterleaks, actionlint and zizmor, the Dockerfiles'
   `# syntax=` and ffmpeg images, pgBackRest's apt pin, the Ansible
   collections and the uptime role's images.
 - **Lint findings are fixed, not suppressed.** `bun run fix` applies what it
@@ -107,8 +107,9 @@ in plain words: "fix: keep a post's time zone when it moves on the calendar".
 Pull requests are squash-merged, so the title becomes the commit on `main`.
 
 A maintainer reviews each pull request, as
-[CODEOWNERS](CODEOWNERS) says. CI must pass, including the `sdks` job when the
-contract changed, before it merges.
+[CODEOWNERS](CODEOWNERS) says. It merges through the merge queue, which runs
+CI again on the commit that lands: its `ci` check passes once every job the
+change needs has passed, the `sdks` jobs included when the contract changed.
 
 ## Licence of contributions
 
@@ -641,8 +642,8 @@ missing, install it with
 `packages/peal-e2e/node_modules/.bin/e2e-web install chromium`. The report,
 and a trace and screenshots of each failed test, are in
 `packages/peal-e2e/.e2e/`, with the server's and the web app's output in
-`.e2e/logs/app.log`. CI runs the same tests in its `e2e` job, after the other
-checks pass.
+`.e2e/logs/app.log`. CI runs the same tests in its `e2e` job, beside the other
+checks.
 
 ## Build for production
 

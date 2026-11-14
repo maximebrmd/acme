@@ -1,9 +1,14 @@
 name: CI
 
+# Pull requests, and the merge queue, which runs CI again on the commit that
+# lands on main: main gets no other run but the nightly one, which runs every
+# job whatever changed and keeps Nx's cache warm for the branches.
 on:
   pull_request:
-  push:
-    branches: [main]
+  merge_group:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,13 +17,74 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  DO_NOT_TRACK: "1"
+  NX_NO_CLOUD: "true"
+  # What a job's Nx cache keeps between runs (actions/cache).
+  NX_MAX_CACHE_SIZE: 1GB
+
 jobs:
-  verify:
+  # Which of the longer jobs the change needs (scripts/ci-plan.ts): the
+  # server's tests, Ansible's, the SDKs and the end-to-end run. The others
+  # run on every change.
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # The server's tests run against a real, throwaway database, read the
-    # emails they send from Mailpit, and check checkout and the billing portal
-    # against stripe-mock.
+    timeout-minutes: 5
+    outputs:
+      ansible: ${{ steps.plan.outputs.ansible }}
+      e2e: ${{ steps.plan.outputs.e2e }}
+      sdks: ${{ steps.plan.outputs.sdks }}
+      server: ${{ steps.plan.outputs.server }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: bun test scripts/ci-plan.test.ts
+      - id: plan
+        run: bun scripts/ci-plan.ts
+        env:
+          CI_PLAN_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          CI_PLAN_FULL: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          nx-cache: check
+      - run: bun run check
+      - run: bun run typecheck
+      - run: bun run build
+
+  # Every project's tests but the server's and Ansible's, which have jobs of
+  # their own.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          nx-cache: test
+      - run: bun nx run-many --target=test --exclude=peal-server,peal-infra-ansible
+
+  # The server's tests, against a real, throwaway database, reading the
+  # emails they send from Mailpit and checking checkout and the billing
+  # portal against stripe-mock. Should they outgrow the other jobs, vitest's
+  # --shard splits them across a matrix.
+  server:
+    needs: plan
+    if: needs.plan.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:18.6-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
@@ -54,37 +120,47 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
-    env:
-      DO_NOT_TRACK: "1"
-      NX_NO_CLOUD: "true"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 26.13.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-      # The Ansible toolchain in packages/peal-infra/ansible, which `bun run test`
-      # lints and syntax-checks.
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          version: 0.13.7
-      - run: bun install --frozen-lockfile
-      - run: bun run check
-      - run: bun run typecheck
+      - uses: ./.github/actions/setup
       # The media tests store files in the development stack's S3 store, on
       # the port and synthetic credentials compose.yaml defaults to.
       - run: docker compose --file packages/peal-docker/compose.yaml up --detach --wait seaweedfs
-      - run: bun run test
+      - if: github.event_name != 'schedule'
+        run: bun nx run peal-server:test
         env:
           DATABASE_URL: postgres://peal:peal@localhost:5432/peal
           MAILPIT_URL: http://localhost:8025
           SMTP_URL: smtp://localhost:1025
           STRIPE_MOCK_URL: http://localhost:12111
-      - run: bun run build
+      # Files share their worker's modules (vitest.config.ts): the nightly
+      # run takes them in a new order, so a module that keeps one file's
+      # state for the next shows.
+      - if: github.event_name == 'schedule'
+        run: bun nx run peal-server:test --sequence.shuffle.files
+        env:
+          DATABASE_URL: postgres://peal:peal@localhost:5432/peal
+          MAILPIT_URL: http://localhost:8025
+          SMTP_URL: smtp://localhost:1025
+          STRIPE_MOCK_URL: http://localhost:12111
+
+  # ansible-lint, the playbooks' syntax and the pytest suite, whose release
+  # and uptime tests run images in Docker.
+  ansible:
+    needs: plan
+    if: needs.plan.outputs.ansible == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          uv: "true"
+      - run: bun nx run peal-infra-ansible:test
 
   # Every commit of the repository, which is public, scanned for secrets with
   # Betterleaks, at medium confidence and above, with the rules and the
@@ -118,40 +194,90 @@ jobs:
           --redact
           --no-banner
 
-  # The SDKs, generated from the contract and committed: a contract change
-  # comes with the SDKs it changes, or sdk:check fails. Each SDK then builds
-  # in its language's image, pinned by digest, as its registry would get it.
-  sdks:
+  # The workflows themselves: actionlint for their syntax, expressions and
+  # shell, zizmor for their security (injection, credentials, cache
+  # poisoning, pinned actions known to be vulnerable or impostors), each
+  # pinned with its checksum.
+  workflows:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     env:
-      DO_NOT_TRACK: "1"
-      NX_NO_CLOUD: "true"
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+      ZIZMOR_VERSION: 1.32.0
+      ZIZMOR_SHA256: bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Install actionlint and zizmor
+        run: |
+          actionlint="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/$actionlint" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$actionlint"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$actionlint" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/$actionlint" --directory "$RUNNER_TEMP" actionlint
+          zizmor="zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/$zizmor" \
+            "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/$zizmor"
+          echo "$ZIZMOR_SHA256  $RUNNER_TEMP/$zizmor" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/$zizmor" --directory "$RUNNER_TEMP" zizmor
+      - run: '"$RUNNER_TEMP/actionlint" -color'
+      # The token reads the advisories and the actions' repositories.
+      - run: '"$RUNNER_TEMP/zizmor" --format github .github'
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # The SDKs, generated from the contract and committed: a contract change
+  # comes with the SDKs it changes, or the check fails. Each SDK then builds
+  # in its language's image, pinned by digest, as its registry would get it,
+  # and calls a stand-in API as its users would (scripts/test.ts). Two
+  # languages a job, a slower one with a quicker one.
+  sdks:
+    name: sdks (${{ matrix.languages }})
+    needs: plan
+    if: needs.plan.outputs.sdks == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - languages: rust, python
+            projects: peal-sdk-rust,peal-sdk-python
+          - languages: go, node
+            projects: peal-sdk-go,peal-sdk-node
+          - languages: dotnet, ruby
+            projects: peal-sdk-dotnet,peal-sdk-ruby
+          - languages: java, php
+            projects: peal-sdk-java,peal-sdk-php
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 26.13.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+          persist-credentials: false
+      # uv builds the Python SDK.
+      - uses: ./.github/actions/setup
         with:
-          bun-version-file: .bun-version
-      # Builds the Python SDK.
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          version: 0.13.7
-      - run: bun install --frozen-lockfile
-      - run: bun run sdk:check
-      - run: bun run sdk:build
-      # Each SDK calls a stand-in API as its users would (scripts/test.ts).
-      - run: bun run sdk:test
+          uv: "true"
+      - run: bun nx run-many --target=sdk:generate --projects="$PROJECTS"
+        env:
+          PROJECTS: ${{ matrix.projects }}
+      # What `nx run peal-sdk:check` checks after every language's generator.
+      - run: bun scripts/check.ts
+        working-directory: packages/peal-sdk
+      - run: bun nx run-many --target=sdk:build --projects="$PROJECTS"
+        env:
+          PROJECTS: ${{ matrix.projects }}
+      - run: bun nx run-many --target=sdk:test --projects="$PROJECTS"
+        env:
+          PROJECTS: ${{ matrix.projects }}
 
   # The end-to-end tests: a new member's first steps in Chromium, against the
   # server and the web app's production build, each started by the run on
   # its own database, Mailpit and SeaweedFS. They need no model.
   e2e:
-    needs: verify
+    needs: plan
+    if: needs.plan.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -180,23 +306,20 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
-    env:
-      DO_NOT_TRACK: "1"
-      NX_NO_CLOUD: "true"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup
         with:
-          node-version: 26.13.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-      - run: bun install --frozen-lockfile
+          nx-cache: e2e
       - run: docker compose --file packages/peal-docker/compose.yaml up --detach --wait seaweedfs
-      # Chromium for the Playwright version @e2e-dev/web pins, with the system
-      # libraries it needs.
+      # Chromium for the Playwright version @e2e-dev/web pins, kept between
+      # runs, with the system libraries it needs, installed each time.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
       - run: ./node_modules/.bin/e2e-web install chromium --with-deps
         working-directory: packages/peal-e2e
       - run: bun nx run peal-e2e:e2e
@@ -214,3 +337,21 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
+
+  # The one check the main branch's ruleset requires: it passes when every
+  # job above passed or was not needed, so a job can be split, skipped or
+  # added without changing the ruleset.
+  ci:
+    if: ${{ always() }}
+    needs: [plan, check, test, server, ansible, secrets, workflows, sdks, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          jq --exit-status --raw-output '
+            [to_entries[] | select(.value.result != "success" and .value.result != "skipped")]
+            | if length == 0 then "Every job passed or was not needed."
+              else (map("\(.key): \(.value.result)") | join("\n") | halt_error(1)) end
+          ' <<< "$NEEDS"
+        env:
+          NEEDS: ${{ toJSON(needs) }}

@@ -97,7 +97,7 @@ several:
 ## Work and verify
 
 - Use the Bun version in [`.bun-version`](.bun-version) and the Node version
-  in the [CI workflow](.github/workflows/ci.yml). Install with
+  in CI's [setup action](.github/actions/setup/action.yml). Install with
   `bun install --frozen-lockfile`.
 - For code changes, run `bun run check`, `bun run typecheck`, `bun run test`
   and `bun run build`, as CI does. `bun run test` also checks the API
@@ -108,6 +108,15 @@ several:
   [Development stack](#development-stack)). It does not run the end-to-end
   tests: run `nx run peal-e2e:e2e` too when a change touches the pages they
   visit (see [End-to-end tests](packages/peal-e2e/AGENTS.md)).
+- CI (`.github/workflows/ci.yml`) runs those checks in parallel jobs, on
+  pull requests and in the merge queue, and nightly on `main`; its `ci` job,
+  which waits for the others, is the one check the ruleset requires.
+  `scripts/ci-plan.ts` decides from a change's files and the projects Nx
+  finds affected whether it needs the server's tests, Ansible's, the SDKs
+  and the end-to-end run. Nx's graph follows imports only: a test that
+  reads files in another package names them in the plan's rules, with a
+  case in `scripts/ci-plan.test.ts`. actionlint and zizmor
+  (`.github/zizmor.yml`) check the workflows.
 - Linters and formatters are as strict as they go: Ultracite's oxlint presets
   (core and anti-slop everywhere, plus the preset for each package's framework)
   with type-aware rules, and oxfmt. Each package has its own
@@ -135,7 +144,11 @@ several:
 - One class per file: give each error its own file, named after the class.
 - Write `x.pipe(Effect.map(f))`, not `Effect.map(x, f)`, which
   `unicorn/no-array-method-this-argument` mistakes for an array `thisArg`.
-- Tests run under vitest on Node, so code under test cannot use `Bun.*`. Inside
+- Tests run under vitest on Node, so code under test cannot use `Bun.*`.
+  The server, the web app and the command line turn vitest's isolation off
+  (`isolate: false`): a worker's files share its modules, so keep no state
+  in a module that one test file could leave for the next. CI's nightly
+  run takes the server's files in a shuffled order. Inside
   `it.effect`, assert with `assert` from `@effect/vitest` (the lint rules
   report `expect` there as outside a test); in plain `it`, use `expect`.
 - `layer(...)` from `@effect/vitest` builds its layers once for the block, and

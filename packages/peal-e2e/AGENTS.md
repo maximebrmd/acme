@@ -96,7 +96,8 @@
   page, reading the key written beside the QR code and computing the codes
   an authenticator app would (`tests/support/totp.ts`, RFC 6238), signs in
   again with the password then a code, and requires it of its workspace.
-- CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
-  SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
+- CI's `e2e` job runs beside the others when a change can reach the pages
+  (`scripts/ci-plan.ts`), with its own Postgres and Mailpit and SeaweedFS
+  from `compose.yaml`. After a failure, read the report, traces and
   screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and
   the server's and the web app's output in `.e2e/logs/app.log`.
