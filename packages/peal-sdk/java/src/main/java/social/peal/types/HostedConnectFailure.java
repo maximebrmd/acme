@@ -43,6 +43,9 @@ public final class HostedConnectFailure {
 
     public static final HostedConnectFailure PLAN_LIMIT = new HostedConnectFailure(Value.PLAN_LIMIT, "planLimit");
 
+    public static final HostedConnectFailure PLATFORM_NOT_OFFERED =
+            new HostedConnectFailure(Value.PLATFORM_NOT_OFFERED, "platformNotOffered");
+
     public static final HostedConnectFailure INSTANCE_NOT_ALLOWED =
             new HostedConnectFailure(Value.INSTANCE_NOT_ALLOWED, "instanceNotAllowed");
 
@@ -112,6 +115,8 @@ public final class HostedConnectFailure {
                 return visitor.visitNotConfigured();
             case PLAN_LIMIT:
                 return visitor.visitPlanLimit();
+            case PLATFORM_NOT_OFFERED:
+                return visitor.visitPlatformNotOffered();
             case INSTANCE_NOT_ALLOWED:
                 return visitor.visitInstanceNotAllowed();
             case LINK_COMPLETED:
@@ -155,6 +160,8 @@ public final class HostedConnectFailure {
                 return NOT_CONFIGURED;
             case "planLimit":
                 return PLAN_LIMIT;
+            case "platformNotOffered":
+                return PLATFORM_NOT_OFFERED;
             case "instanceNotAllowed":
                 return INSTANCE_NOT_ALLOWED;
             case "linkCompleted":
@@ -201,6 +208,8 @@ public final class HostedConnectFailure {
 
         PLATFORM_UNREACHABLE,
 
+        PLATFORM_NOT_OFFERED,
+
         UNKNOWN
     }
 
@@ -238,6 +247,8 @@ public final class HostedConnectFailure {
         T visitChannelGone();
 
         T visitPlatformUnreachable();
+
+        T visitPlatformNotOffered();
 
         T visitUnknown(String unknownType);
     }

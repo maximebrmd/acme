@@ -184,6 +184,72 @@ func (l *ListWorkspacesPartnerRequest) SetName(name *string) {
 }
 
 var (
+	channelMoveFieldWorkspaceID   = big.NewInt(1 << 0)
+	channelMoveFieldChannelID     = big.NewInt(1 << 1)
+	channelMoveFieldToWorkspaceID = big.NewInt(1 << 2)
+)
+
+type ChannelMove struct {
+	WorkspaceID   string `json:"-" url:"-"`
+	ChannelID     string `json:"-" url:"-"`
+	ToWorkspaceID string `json:"toWorkspaceId" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (c *ChannelMove) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelMove) SetWorkspaceID(workspaceID string) {
+	c.WorkspaceID = workspaceID
+	c.require(channelMoveFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelMove) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelMoveFieldChannelID)
+}
+
+// SetToWorkspaceID sets the ToWorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelMove) SetToWorkspaceID(toWorkspaceID string) {
+	c.ToWorkspaceID = toWorkspaceID
+	c.require(channelMoveFieldToWorkspaceID)
+}
+
+func (c *ChannelMove) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelMove
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = ChannelMove(body)
+	return nil
+}
+
+func (c *ChannelMove) MarshalJSON() ([]byte, error) {
+	type embed ChannelMove
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	overviewPartnerRequestFieldBefore = big.NewInt(1 << 0)
 	overviewPartnerRequestFieldLimit  = big.NewInt(1 << 1)
 )

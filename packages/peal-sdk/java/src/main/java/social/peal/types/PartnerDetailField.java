@@ -13,6 +13,8 @@ public final class PartnerDetailField {
 
     public static final PartnerDetailField PERMISSIONS = new PartnerDetailField(Value.PERMISSIONS, "permissions");
 
+    public static final PartnerDetailField ACCENT_COLOR = new PartnerDetailField(Value.ACCENT_COLOR, "accentColor");
+
     public static final PartnerDetailField RETURN_ORIGINS =
             new PartnerDetailField(Value.RETURN_ORIGINS, "returnOrigins");
 
@@ -56,6 +58,8 @@ public final class PartnerDetailField {
                 return visitor.visitLogoUrl();
             case PERMISSIONS:
                 return visitor.visitPermissions();
+            case ACCENT_COLOR:
+                return visitor.visitAccentColor();
             case RETURN_ORIGINS:
                 return visitor.visitReturnOrigins();
             case NAME:
@@ -75,6 +79,8 @@ public final class PartnerDetailField {
                 return LOGO_URL;
             case "permissions":
                 return PERMISSIONS;
+            case "accentColor":
+                return ACCENT_COLOR;
             case "returnOrigins":
                 return RETURN_ORIGINS;
             case "name":
@@ -89,6 +95,8 @@ public final class PartnerDetailField {
 
         LOGO_URL,
 
+        ACCENT_COLOR,
+
         RETURN_ORIGINS,
 
         EXTERNAL_ID,
@@ -102,6 +110,8 @@ public final class PartnerDetailField {
         T visitName();
 
         T visitLogoUrl();
+
+        T visitAccentColor();
 
         T visitReturnOrigins();
 

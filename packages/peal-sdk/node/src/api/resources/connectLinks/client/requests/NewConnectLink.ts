@@ -5,8 +5,7 @@ import * as Peal from "../../../../index.js";
 /**
  * @example
  *     {
- *         workspaceId: "workspaceId",
- *         platform: "x"
+ *         workspaceId: "workspaceId"
  *     }
  */
 export interface NewConnectLink {
@@ -15,6 +14,7 @@ export interface NewConnectLink {
     connection?: Peal.ChannelConnection;
     expiresInHours?: number;
     locale?: Peal.ConnectLinkLocale;
-    platform: Peal.Platform;
+    platform?: Peal.Platform;
+    platforms?: Peal.Platform[];
     returnUrl?: string;
 }

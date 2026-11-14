@@ -5,8 +5,9 @@ import { Schema } from "effect";
  * the reasons a member's own connection fails for, and those of the link
  * itself (`linkExpired`, `linkCompleted`, `linkRevoked`, `tooManyAttempts`),
  * of the workspace (`planLimit`: no room for one more channel;
- * `channelGone`: the channel to reconnect was disconnected) and of the
- * platform for now (`platformUnreachable`).
+ * `channelGone`: the channel to reconnect was disconnected), of the
+ * platform for now (`platformUnreachable`), and a platform the link does
+ * not connect, or connected already (`platformNotOffered`).
  */
 export const HostedFailureReasonSchema = Schema.Literals([
   "platformNotSupported",
@@ -26,6 +27,7 @@ export const HostedFailureReasonSchema = Schema.Literals([
   "planLimit",
   "channelGone",
   "platformUnreachable",
+  "platformNotOffered",
 ]);
 
 export type HostedFailureReason = typeof HostedFailureReasonSchema.Type;

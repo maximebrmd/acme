@@ -13,9 +13,7 @@ public class CreateTest : BaseMockServerTest
     public async Task MockServerTest_1()
     {
         const string requestJson = """
-            {
-              "platform": "x"
-            }
+            {}
             """;
 
         const string mockResponse = """
@@ -26,6 +24,10 @@ public class CreateTest : BaseMockServerTest
                   "channelIds",
                   "channelIds"
                 ],
+                "connectedPlatforms": [
+                  "x",
+                  "x"
+                ],
                 "completedAt": "completedAt",
                 "createdAt": "createdAt",
                 "expiresAt": "expiresAt",
@@ -33,6 +35,10 @@ public class CreateTest : BaseMockServerTest
                 "failure": "platformNotSupported",
                 "id": "id",
                 "platform": "x",
+                "platforms": [
+                  "x",
+                  "x"
+                ],
                 "returnUrl": "returnUrl",
                 "status": "pending"
               },
@@ -64,7 +70,8 @@ public class CreateTest : BaseMockServerTest
                 Connection = null,
                 ExpiresInHours = null,
                 Locale = null,
-                Platform = Platform.X,
+                Platform = null,
+                Platforms = null,
                 ReturnUrl = null,
             }
         );
@@ -75,9 +82,7 @@ public class CreateTest : BaseMockServerTest
     public async Task MockServerTest_2()
     {
         const string requestJson = """
-            {
-              "platform": "x"
-            }
+            {}
             """;
 
         const string mockResponse = """
@@ -87,6 +92,9 @@ public class CreateTest : BaseMockServerTest
                 "channelIds": [
                   "channelIds"
                 ],
+                "connectedPlatforms": [
+                  "x"
+                ],
                 "completedAt": "completedAt",
                 "createdAt": "createdAt",
                 "expiresAt": "expiresAt",
@@ -94,6 +102,9 @@ public class CreateTest : BaseMockServerTest
                 "failure": "platformNotSupported",
                 "id": "id",
                 "platform": "x",
+                "platforms": [
+                  "x"
+                ],
                 "returnUrl": "returnUrl",
                 "status": "pending"
               },
@@ -118,7 +129,7 @@ public class CreateTest : BaseMockServerTest
             );
 
         var response = await Client.ConnectLinks.CreateAsync(
-            new NewConnectLink { WorkspaceId = "workspaceId", Platform = Platform.X }
+            new NewConnectLink { WorkspaceId = "workspaceId" }
         );
         JsonAssert.AreEqual(response, mockResponse);
     }

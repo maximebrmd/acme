@@ -5663,7 +5663,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"partner\": {\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
+        "body": "{\n  \"partner\": {\n    \"accentColor\": \"accentColor\",\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -5885,6 +5885,45 @@
       }
     },
     {
+      "id": "db57e3c6-2058-4f05-9129-b85df22142cc",
+      "name": "Move a channel to another workspace of the partner - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces/{workspaceId}/channels/{channelId}/move",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"avatarUrl\": \"avatarUrl\",\n  \"connection\": \"instagramLogin\",\n  \"displayName\": \"displayName\",\n  \"handle\": \"handle\",\n  \"id\": \"id\",\n  \"label\": \"label\",\n  \"platform\": \"x\",\n  \"status\": {\n    \"_tag\": \"active\"\n  },\n  \"tokenExpiresAt\": \"tokenExpiresAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "db57e3c6-2058-4f05-9129-b85df22142cc",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "d44eb474-f723-4927-b90e-84f5026ece9a",
       "name": "Get the partner's usage per customer - default",
       "request": {
@@ -5935,7 +5974,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"canOpen\": true,\n  \"partner\": {\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
+        "body": "{\n  \"canOpen\": true,\n  \"partner\": {\n    \"accentColor\": \"accentColor\",\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -5971,7 +6010,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
+        "body": "{\n  \"accentColor\": \"accentColor\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6043,7 +6082,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
+        "body": "{\n  \"accentColor\": \"accentColor\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6262,7 +6301,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  }\n]",
+        "body": "[\n  {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"connectedPlatforms\": [\n      \"x\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"platforms\": [\n      \"x\"\n    ],\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6298,7 +6337,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"link\": {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  },\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"link\": {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"connectedPlatforms\": [\n      \"x\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"platforms\": [\n      \"x\"\n    ],\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  },\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6337,7 +6376,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"connectedPlatforms\": [\n    \"x\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"platforms\": [\n    \"x\"\n  ],\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6376,7 +6415,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"connectedPlatforms\": [\n    \"x\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"platforms\": [\n    \"x\"\n  ],\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -8291,6 +8330,6 @@
     }
   ],
   "meta": {
-    "total": 221
+    "total": 222
   }
 }

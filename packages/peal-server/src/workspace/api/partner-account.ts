@@ -200,6 +200,7 @@ export const PartnerAccountHandlers = HttpApiBuilder.group(
           const partner = yield* accounts.change(actor, payload).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
+              InvalidPartnerAccent: invalid("accentColor"),
               InvalidPartnerLogo: invalid("logoUrl"),
               InvalidPartnerName: invalid("name"),
               InvalidReturnOrigin: invalid("returnOrigins"),

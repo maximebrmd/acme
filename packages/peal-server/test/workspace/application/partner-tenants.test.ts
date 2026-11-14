@@ -34,6 +34,7 @@ const partnerId = PartnerIdSchema.make("0190f3a0-0000-7000-8000-0000000000c1");
 const createdAt = DateTime.makeUnsafe("2026-10-01T09:00:00Z");
 
 const partner = new Partner({
+  accentColor: Option.none(),
   createdAt,
   id: partnerId,
   logoUrl: Option.none(),

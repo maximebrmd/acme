@@ -450,4 +450,69 @@ export class PartnerClient {
 
         return handleNonStatusCodeError(_response.error, _response.rawResponse, "PATCH", "/api/partner/workspaces/{workspaceId}");
     }
+
+    /**
+     * Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+     *
+     * @param {Peal.ChannelMove} request
+     * @param {PartnerClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.partner.moveChannel({
+     *         workspaceId: "workspaceId",
+     *         channelId: "channelId",
+     *         toWorkspaceId: "toWorkspaceId"
+     *     })
+     */
+    public moveChannel(request: Peal.ChannelMove, requestOptions?: PartnerClient.RequestOptions): core.HttpResponsePromise<Peal.Channel> {
+        return core.HttpResponsePromise.fromPromise(this.__moveChannel(request, requestOptions));
+    }
+
+    private async __moveChannel(request: Peal.ChannelMove, requestOptions?: PartnerClient.RequestOptions): Promise<core.WithRawResponse<Peal.Channel>> {
+        const { workspaceId, channelId, ..._body } = request;
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/partner/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/channels/${core.url.encodePathParam(channelId, errors.PealError)}/move`),
+            method: "POST",
+            headers: _headers,
+            contentType: "application/json",
+            queryString: core.url.queryBuilder().mergeAdditional(requestOptions?.queryParams).build(),
+            requestType: "json",
+            body: mergeAdditionalBodyParameters(_body, requestOptions?.additionalBodyParameters),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: 0,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.Channel, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "POST", "/api/partner/workspaces/{workspaceId}/channels/{channelId}/move");
+    }
 }

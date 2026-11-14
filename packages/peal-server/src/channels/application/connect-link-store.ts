@@ -71,8 +71,17 @@ export class ConnectLinkStore extends Context.Service<
       failure: LinkFailure
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * Keeps how the link ended, used or revoked, and forgets the browser
-     * that held it. Says whether it was still pending: a link ends once.
+     * Keeps what a link for several platforms connected while it still
+     * waits on others, and forgets the browser that held its sign-in. Says
+     * whether it was still pending.
+     */
+    readonly progressed: (
+      link: ConnectLink
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Keeps how the link ended, used or revoked, with what it connected,
+     * and forgets the browser that held it. Says whether it was still
+     * pending: a link ends once.
      */
     readonly ended: (
       link: ConnectLink

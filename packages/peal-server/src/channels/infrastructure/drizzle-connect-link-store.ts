@@ -8,7 +8,6 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { connectLinks } from "./schema.ts";
-import { storedConnection } from "./stored-connection.ts";
 
 type Row = typeof connectLinks.$inferSelect;
 
@@ -38,11 +37,15 @@ const statusOf = (row: Row) => {
     : { _tag: row.status };
 };
 
+// A link names the way in it was asked for, or none for the server's
+// first: unlike a channel's row, none never stands for an older way in.
 const toLink = (row: Row) =>
   decodeLink({
     browser: Option.fromNullOr(row.browserDigest),
     channelId: Option.fromNullOr(row.channelId),
-    connection: storedConnection(row.platform, row.connection),
+    connectedChannels: row.channelIds,
+    connectedPlatforms: row.connectedPlatforms,
+    connection: Option.fromNullOr(row.connection),
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
     createdBy: Option.fromNullOr(row.createdBy),
     expiresAt: DateTime.fromDateUnsafe(row.expiresAt),
@@ -52,8 +55,9 @@ const toLink = (row: Row) =>
     }),
     id: row.id,
     locale: Option.fromNullOr(row.locale),
-    platform: row.platform,
+    platforms: row.platforms ?? [row.platform],
     returnUrl: Option.fromNullOr(row.returnUrl),
+    startedPlatform: Option.fromNullOr(row.startedPlatform),
     starts: row.starts,
     status: statusOf(row),
     workspaceId: row.workspaceId,
@@ -107,10 +111,14 @@ export const DrizzleConnectLinkStore = Layer.effect(
               .set({
                 browserDigest: null,
                 channelIds:
-                  status._tag === "completed" ? [...status.channelIds] : [],
+                  status._tag === "completed"
+                    ? [...status.channelIds]
+                    : [...link.connectedChannels],
+                connectedPlatforms: [...link.connectedPlatforms],
                 endedAt: date(status.at),
                 failedAt: null,
                 failureReason: null,
+                startedPlatform: null,
                 status: status._tag,
               })
               .where(and(eq(connectLinks.id, link.id), pending))
@@ -157,6 +165,7 @@ export const DrizzleConnectLinkStore = Layer.effect(
             id: link.id,
             locale: Option.getOrNull(link.locale),
             platform: link.platform,
+            platforms: [...link.platforms],
             returnUrl: Option.getOrNull(link.returnUrl),
             starts: link.starts,
             status: link.status._tag,
@@ -175,7 +184,6 @@ export const DrizzleConnectLinkStore = Layer.effect(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toLink))
           ),
-      // Over since `before`: ended then, or left pending past its time.
       lock: (linkId) =>
         db
           .select()
@@ -184,6 +192,24 @@ export const DrizzleConnectLinkStore = Layer.effect(
           .limit(1)
           .for("update")
           .pipe(Effect.mapError(failed), Effect.flatMap(one)),
+      progressed: (link) =>
+        db
+          .update(connectLinks)
+          .set({
+            browserDigest: null,
+            channelIds: [...link.connectedChannels],
+            connectedPlatforms: [...link.connectedPlatforms],
+            failedAt: null,
+            failureReason: null,
+            startedPlatform: null,
+          })
+          .where(and(eq(connectLinks.id, link.id), pending))
+          .returning({ id: connectLinks.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
+          ),
+      // Over since `before`: ended then, or left pending past its time.
       purge: (before) =>
         db
           .delete(connectLinks)
@@ -205,6 +231,7 @@ export const DrizzleConnectLinkStore = Layer.effect(
           .update(connectLinks)
           .set({
             browserDigest: Option.getOrNull(link.browser),
+            startedPlatform: Option.getOrNull(link.startedPlatform),
             starts: sql`${connectLinks.starts} + 1`,
           })
           .where(

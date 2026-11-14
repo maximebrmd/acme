@@ -23,6 +23,7 @@ import {
   maxPartnerNameLength,
   maxReturnOrigins,
   maxWorkspacePageSize,
+  minAccentContrast,
   PartnerSchema,
   PartnerUsageSchema,
   partnerHealthDescription,
@@ -55,6 +56,10 @@ export const OpenPartnerSchema = Schema.Struct({
 
 /** What to change of a partner account: what is left out stays as it is. */
 export const PartnerChangeSchema = Schema.Struct({
+  // `#RRGGBB`; null removes it.
+  accentColor: Schema.optionalKey(
+    Schema.NullOr(Schema.String.check(Schema.isMaxLength(7)))
+  ),
   // Null removes the logo.
   logoUrl: Schema.optionalKey(
     Schema.NullOr(
@@ -176,7 +181,7 @@ export class PartnerAccountApi extends HttpApiGroup.make("partnerAccount")
       success: PartnerSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. \`returnOrigins\` replaces the whole list, ${maxReturnOrigins} at most: each is an origin as browsers write it (\`https://app.example.com\`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and ${inPerson}.`,
+        description: `Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (\`#RRGGBB\`, drawn as a line beside the logo on the hosted pages, with at least ${minAccentContrast}:1 contrast against white and against Peal's page background \`#FAFAF9\`, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. \`returnOrigins\` replaces the whole list, ${maxReturnOrigins} at most: each is an origin as browsers write it (\`https://app.example.com\`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and ${inPerson}.`,
         summary: "Change the partner account",
       })
     ),

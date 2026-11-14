@@ -1141,18 +1141,21 @@ const usedLink: ConnectLink = {
   channelId: null,
   channelIds: ["0190f3a0-0000-7000-8000-00000000d001"],
   completedAt: at("2026-11-08T10:00:00Z"),
+  connectedPlatforms: ["mastodon"],
   createdAt: at("2026-11-08T09:00:00Z"),
   expiresAt: at("2026-11-15T09:00:00Z"),
   failedAt: null,
   failure: null,
   id: usedLinkId,
   platform: "mastodon",
+  platforms: ["mastodon"],
   returnUrl: "https://app.example.test/social",
   status: "completed",
 };
 
 /** The studio's partner account, and what it owns. */
 export const studioPartner: Partner = {
+  accentColor: "#166534",
   createdAt: at("2026-10-01T09:00:00Z"),
   id: "0190f3a0-0000-7000-8000-00000000e001",
   logoUrl: "https://cdn.example.test/logo.png",
@@ -5125,7 +5128,13 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
-            if (payload.platform === "pinterest") {
+            const platforms =
+              payload.platforms ??
+              (payload.platform === undefined ? [] : [payload.platform]);
+
+            const [platform = "mastodon"] = platforms;
+
+            if (platforms.includes("pinterest")) {
               return yield* new ConnectFailed({
                 reason: "platformNotSupported",
               });
@@ -5145,6 +5154,7 @@ export const studioGroupsLive = (studio: Studio) =>
               channelId: payload.channelId ?? null,
               channelIds: [],
               completedAt: null,
+              connectedPlatforms: [],
               createdAt: now,
               expiresAt: DateTime.add(now, {
                 hours: payload.expiresInHours ?? 168,
@@ -5152,7 +5162,8 @@ export const studioGroupsLive = (studio: Studio) =>
               failedAt: null,
               failure: null,
               id: newLinkId,
-              platform: payload.platform,
+              platform,
+              platforms,
               returnUrl: payload.returnUrl ?? null,
               status: "pending",
             };
@@ -5161,7 +5172,7 @@ export const studioGroupsLive = (studio: Studio) =>
               ...current,
               connectLinks: [link, ...current.connectLinks],
             }));
-            yield* record(studio, `link:create:${payload.platform}`);
+            yield* record(studio, `link:create:${platforms.join(",")}`);
 
             return { link, url: newLinkUrl };
           }),

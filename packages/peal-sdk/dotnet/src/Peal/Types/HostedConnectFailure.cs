@@ -48,6 +48,8 @@ public readonly record struct HostedConnectFailure : IStringEnum
         Values.PlatformUnreachable
     );
 
+    public static readonly HostedConnectFailure PlatformNotOffered = new(Values.PlatformNotOffered);
+
     public HostedConnectFailure(string value)
     {
         Value = value;
@@ -177,5 +179,7 @@ public readonly record struct HostedConnectFailure : IStringEnum
         public const string ChannelGone = "channelGone";
 
         public const string PlatformUnreachable = "platformUnreachable";
+
+        public const string PlatformNotOffered = "platformNotOffered";
     }
 }

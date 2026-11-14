@@ -52,9 +52,17 @@ func TestSettersNewConnectLink(t *testing.T) {
 
 	t.Run("SetPlatform", func(t *testing.T) {
 		obj := &NewConnectLink{}
-		var fernTestValuePlatform Platform
+		var fernTestValuePlatform *Platform
 		obj.SetPlatform(fernTestValuePlatform)
 		assert.Equal(t, fernTestValuePlatform, obj.Platform)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPlatforms", func(t *testing.T) {
+		obj := &NewConnectLink{}
+		var fernTestValuePlatforms []Platform
+		obj.SetPlatforms(fernTestValuePlatforms)
+		assert.Equal(t, fernTestValuePlatforms, obj.Platforms)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -228,10 +236,41 @@ func TestSettersMarkExplicitNewConnectLink(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &NewConnectLink{}
-		var fernTestValuePlatform Platform
+		var fernTestValuePlatform *Platform
 
 		// Act
 		obj.SetPlatform(fernTestValuePlatform)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPlatforms_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NewConnectLink{}
+		var fernTestValuePlatforms []Platform
+
+		// Act
+		obj.SetPlatforms(fernTestValuePlatforms)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -518,6 +557,14 @@ func TestSettersConnectLink(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetConnectedPlatforms", func(t *testing.T) {
+		obj := &ConnectLink{}
+		var fernTestValueConnectedPlatforms []Platform
+		obj.SetConnectedPlatforms(fernTestValueConnectedPlatforms)
+		assert.Equal(t, fernTestValueConnectedPlatforms, obj.ConnectedPlatforms)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetCompletedAt", func(t *testing.T) {
 		obj := &ConnectLink{}
 		var fernTestValueCompletedAt *string
@@ -571,6 +618,14 @@ func TestSettersConnectLink(t *testing.T) {
 		var fernTestValuePlatform Platform
 		obj.SetPlatform(fernTestValuePlatform)
 		assert.Equal(t, fernTestValuePlatform, obj.Platform)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPlatforms", func(t *testing.T) {
+		obj := &ConnectLink{}
+		var fernTestValuePlatforms []Platform
+		obj.SetPlatforms(fernTestValuePlatforms)
+		assert.Equal(t, fernTestValuePlatforms, obj.Platforms)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -657,6 +712,39 @@ func TestGettersConnectLink(t *testing.T) {
 			}
 		}()
 		_ = obj.GetChannelIDs() // Should return zero value
+	})
+
+	t.Run("GetConnectedPlatforms", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		var expected []Platform
+		obj.ConnectedPlatforms = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetConnectedPlatforms(), "getter should return the property value")
+	})
+
+	t.Run("GetConnectedPlatforms_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		obj.ConnectedPlatforms = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetConnectedPlatforms(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetConnectedPlatforms_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ConnectLink
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetConnectedPlatforms() // Should return zero value
 	})
 
 	t.Run("GetCompletedAt", func(t *testing.T) {
@@ -850,6 +938,39 @@ func TestGettersConnectLink(t *testing.T) {
 		_ = obj.GetPlatform() // Should return zero value
 	})
 
+	t.Run("GetPlatforms", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		var expected []Platform
+		obj.Platforms = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPlatforms(), "getter should return the property value")
+	})
+
+	t.Run("GetPlatforms_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		obj.Platforms = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPlatforms(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPlatforms_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ConnectLink
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPlatforms() // Should return zero value
+	})
+
 	t.Run("GetReturnURL", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -948,6 +1069,37 @@ func TestSettersMarkExplicitConnectLink(t *testing.T) {
 
 		// Act
 		obj.SetChannelIDs(fernTestValueChannelIDs)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetConnectedPlatforms_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		var fernTestValueConnectedPlatforms []Platform
+
+		// Act
+		obj.SetConnectedPlatforms(fernTestValueConnectedPlatforms)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1165,6 +1317,37 @@ func TestSettersMarkExplicitConnectLink(t *testing.T) {
 
 		// Act
 		obj.SetPlatform(fernTestValuePlatform)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPlatforms_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectLink{}
+		var fernTestValuePlatforms []Platform
+
+		// Act
+		obj.SetPlatforms(fernTestValuePlatforms)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1730,6 +1913,13 @@ func TestEnumHostedConnectFailure(t *testing.T) {
 		val, err := NewHostedConnectFailureFromString("platformUnreachable")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, HostedConnectFailure("platformUnreachable"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_platformNotOffered", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewHostedConnectFailureFromString("platformNotOffered")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, HostedConnectFailure("platformNotOffered"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {

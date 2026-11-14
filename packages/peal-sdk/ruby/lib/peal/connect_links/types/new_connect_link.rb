@@ -14,7 +14,9 @@ module Peal
 
         field :locale, -> { Peal::Types::ConnectLinkLocale }, optional: true, nullable: false
 
-        field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
+        field :platform, -> { Peal::Types::Platform }, optional: true, nullable: false
+
+        field :platforms, -> { Internal::Types::Array[Peal::Types::Platform] }, optional: true, nullable: false
 
         field :return_url, -> { String }, optional: true, nullable: false, api_name: "returnUrl"
       end

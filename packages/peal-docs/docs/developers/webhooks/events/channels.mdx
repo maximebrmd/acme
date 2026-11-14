@@ -37,7 +37,7 @@ An account was connected to the workspace, or a channel the workspace had was au
 
 ## channel.disconnected [#channel-disconnected]
 
-A channel was disconnected from the workspace.
+A channel was disconnected from the workspace, or its partner [moved it](/developers/embedding/operate#move-channel) to another of its workspaces, which sends `channel.connected` for it under a new id.
 
 | Field         | Type   | What it holds          |
 | ------------- | ------ | ---------------------- |

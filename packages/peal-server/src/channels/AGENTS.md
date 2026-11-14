@@ -17,11 +17,28 @@
   (connected, `refreshNeeded` to reconnect, `disabled` off) and gives the
   platforms of the channels an agenda names, for the overview across
   workspaces: ids as one `anyUuid` parameter, no permission checked.
-- A channel added (`ConnectChannel.addChannel`, the one path that inserts
-  one) is counted for billing in the same `addingTo` transaction, after
+- A channel added (`ConnectChannel.addChannel`, or a move, below) is
+  counted for billing in the same `addingTo` transaction, after
   the insert: `ChannelAllowance.counted` with the pool's count, which only
   a server that bills reads (billing's account-days). A new path that adds
-  a channel calls it too; moving or reconnecting one adds none.
+  a channel calls it too; reconnecting one adds none.
+- A channel moves to another workspace of its pool through `ChannelMoves`
+  (the caller decides who may: the workspace context's
+  `MoveCustomerChannel`, a partner's customers): a new channel there with
+  a new id (`movedChannel`: same account, scopes, token and status, no
+  label, `createdAt` now), its tokens re-bound to it (`rebindTokens`:
+  decrypted for the old id, encrypted for the new, `granted_by` and
+  `token_owner` kept, which `credentials` reads), the platform asked
+  nothing. Under the channel's lock, then one transaction: the caller's
+  `inside` check, both workspaces' `addingTo` (smaller id first), the old
+  row removed and `ChannelEvents.disconnected` (`moved`), the new one
+  inserted, `ChannelAllowance.counted` with the pool, then
+  `ChannelEvents.connected`. So the workspace it leaves sees a
+  disconnection (posts fail as a disconnected channel's, analytics keeps
+  a week, the inbox ends its threads and deletes its messages) and the
+  other a new connection; no plan limit is asked, as the pool holds as
+  many accounts. An account the other workspace has is
+  `ChannelAccountTaken`.
 - On a server that bills, an account of a platform whose calls are passed
   through at the platform's rates (X, on the `xApi` meter) is connected
   only on per-account pricing that pays: `ChannelAllowance.passedThrough`
@@ -337,12 +354,20 @@
 ## Connect links
 
 - A connect link (`ConnectLinks`, `channels.connect_links`) lets whoever
-  holds its address connect an account of one platform to a workspace
-  (those they pick, when the sign-in reached several, as a member's
-  picker lets them), and nothing else, without a session: `POST …/connect-links`
+  holds its address connect an account of one platform, or of each of
+  several (`platforms`, in their order), to a workspace (those they pick,
+  when the sign-in reached several, as a member's picker lets them), and
+  nothing else, without a session: `POST …/connect-links`
   (channel:connect) answers the address once, and only the SHA-256 of its
-  token is kept. It works once, for a sign-in that connects an account;
-  opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
+  token is kept. It works once a platform, for a sign-in that connects an
+  account there: `connectedThrough` keeps the platform and its channels
+  (`connected_platforms`, `channel_ids`) and completes the link once none
+  is left (`waitingPlatforms`); a start names the platform
+  (`started_platform`, the one `complete` and `choose` finish at), and one
+  not waiting is `notOffered`, kept as no failure. Its way in
+  (`connection`) is the platform's it belongs to; a row without one asks
+  the server's first, never an older way in (unlike a channel's row).
+  Opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
   starts 20 sign-ins at most, and a workspace has 100 pending at most; the
   `channels.connect-link-retention` cron deletes those ended 30 days ago.
   With `channelId` it reconnects that channel only. Its actor holds

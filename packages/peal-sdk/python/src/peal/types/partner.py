@@ -9,6 +9,9 @@ from ..core.serialization import FieldMetadata
 
 
 class Partner(UniversalBaseModel):
+    accent_color: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="accentColor"), pydantic.Field(alias="accentColor")
+    ] = None
     created_at: typing_extensions.Annotated[str, FieldMetadata(alias="createdAt"), pydantic.Field(alias="createdAt")]
     id: str
     logo_url: typing_extensions.Annotated[

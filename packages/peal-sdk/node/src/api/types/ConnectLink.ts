@@ -5,6 +5,7 @@ import * as Peal from "../index.js";
 export interface ConnectLink {
     channelId: string | null;
     channelIds: string[];
+    connectedPlatforms: Peal.Platform[];
     completedAt: string | null;
     createdAt: string;
     expiresAt: string;
@@ -12,6 +13,7 @@ export interface ConnectLink {
     failure: Peal.HostedConnectFailure | null;
     id: string;
     platform: Peal.Platform;
+    platforms: Peal.Platform[];
     returnUrl: string | null;
     status: Peal.ConnectLinkStatus;
 }

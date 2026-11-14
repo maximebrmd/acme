@@ -116,7 +116,6 @@ func TestConnectLinksCreateWithWireMock(
 	)
 	request := &peal.NewConnectLink{
 		WorkspaceID: "workspaceId",
-		Platform:    peal.PlatformX,
 	}
 	_, invocationErr := client.ConnectLinks.Create(
 		context.TODO(),

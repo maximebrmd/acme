@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct Partner {
+    #[serde(rename = "accentColor")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accent_color: Option<String>,
     #[serde(rename = "createdAt")]
     #[serde(default)]
     pub created_at: String,
@@ -29,6 +32,7 @@ impl Partner {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct PartnerBuilder {
+    accent_color: Option<String>,
     created_at: Option<String>,
     id: Option<String>,
     logo_url: Option<String>,
@@ -38,6 +42,11 @@ pub struct PartnerBuilder {
 }
 
 impl PartnerBuilder {
+    pub fn accent_color(mut self, value: impl Into<String>) -> Self {
+        self.accent_color = Some(value.into());
+        self
+    }
+
     pub fn created_at(mut self, value: impl Into<String>) -> Self {
         self.created_at = Some(value.into());
         self
@@ -77,6 +86,7 @@ impl PartnerBuilder {
     /// - [`workspace_id`](PartnerBuilder::workspace_id)
     pub fn build(self) -> Result<Partner, BuildError> {
         Ok(Partner {
+            accent_color: self.accent_color,
             created_at: self
                 .created_at
                 .ok_or_else(|| BuildError::missing_field("created_at"))?,

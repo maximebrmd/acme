@@ -804,13 +804,15 @@ func (p *PartnerStanding) String() string {
 
 var (
 	partnerChangeFieldWorkspaceID   = big.NewInt(1 << 0)
-	partnerChangeFieldLogoURL       = big.NewInt(1 << 1)
-	partnerChangeFieldName          = big.NewInt(1 << 2)
-	partnerChangeFieldReturnOrigins = big.NewInt(1 << 3)
+	partnerChangeFieldAccentColor   = big.NewInt(1 << 1)
+	partnerChangeFieldLogoURL       = big.NewInt(1 << 2)
+	partnerChangeFieldName          = big.NewInt(1 << 3)
+	partnerChangeFieldReturnOrigins = big.NewInt(1 << 4)
 )
 
 type PartnerChange struct {
 	WorkspaceID   string   `json:"-" url:"-"`
+	AccentColor   *string  `json:"accentColor,omitempty" url:"-"`
 	LogoURL       *string  `json:"logoUrl,omitempty" url:"-"`
 	Name          *string  `json:"name,omitempty" url:"-"`
 	ReturnOrigins []string `json:"returnOrigins,omitempty" url:"-"`
@@ -833,6 +835,13 @@ func (p *PartnerChange) require(field *big.Int) {
 func (p *PartnerChange) SetWorkspaceID(workspaceID string) {
 	p.WorkspaceID = workspaceID
 	p.require(partnerChangeFieldWorkspaceID)
+}
+
+// SetAccentColor sets the AccentColor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerChange) SetAccentColor(accentColor *string) {
+	p.AccentColor = accentColor
+	p.require(partnerChangeFieldAccentColor)
 }
 
 // SetLogoURL sets the LogoURL field and marks it as non-optional;

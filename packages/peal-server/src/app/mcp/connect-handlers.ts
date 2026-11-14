@@ -6,7 +6,10 @@ import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { partnerUsageView as partnerUsageReportView } from "#billing/api/usage-view.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
-import { toConnectLinkView } from "#channels/api/connect-link-view.ts";
+import {
+  platformsOf,
+  toConnectLinkView,
+} from "#channels/api/connect-link-view.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import {
@@ -47,13 +50,15 @@ export const ConnectToolsLive = ConnectTools.toLayer(
     return ConnectTools.of({
       create_connect_link: (asked) =>
         Effect.gen(function* create() {
+          const platforms = yield* platformsOf(asked);
+
           const created = yield* links
             .create(yield* actor, {
               channelId: Option.fromUndefinedOr(asked.channelId),
               connection: Option.fromUndefinedOr(asked.connection),
               expiresInHours: Option.fromUndefinedOr(asked.expiresInHours),
               locale: Option.fromUndefinedOr(asked.locale),
-              platform: asked.platform,
+              platforms,
               returnUrl: Option.fromUndefinedOr(asked.returnUrl),
             })
             .pipe(

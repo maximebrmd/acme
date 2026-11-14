@@ -21,6 +21,12 @@ class ConnectLink extends JsonSerializableType
     public array $channelIds;
 
     /**
+     * @var array<value-of<Platform>> $connectedPlatforms
+     */
+    #[JsonProperty('connectedPlatforms'), ArrayType(['string'])]
+    public array $connectedPlatforms;
+
+    /**
      * @var ?string $completedAt
      */
     #[JsonProperty('completedAt')]
@@ -63,6 +69,12 @@ class ConnectLink extends JsonSerializableType
     public string $platform;
 
     /**
+     * @var array<value-of<Platform>> $platforms
+     */
+    #[JsonProperty('platforms'), ArrayType(['string'])]
+    public array $platforms;
+
+    /**
      * @var ?string $returnUrl
      */
     #[JsonProperty('returnUrl')]
@@ -77,10 +89,12 @@ class ConnectLink extends JsonSerializableType
     /**
      * @param array{
      *   channelIds: array<string>,
+     *   connectedPlatforms: array<value-of<Platform>>,
      *   createdAt: string,
      *   expiresAt: string,
      *   id: string,
      *   platform: value-of<Platform>,
+     *   platforms: array<value-of<Platform>>,
      *   status: value-of<ConnectLinkStatus>,
      *   channelId?: ?string,
      *   completedAt?: ?string,
@@ -94,6 +108,7 @@ class ConnectLink extends JsonSerializableType
     ) {
         $this->channelId = $values['channelId'] ?? null;
         $this->channelIds = $values['channelIds'];
+        $this->connectedPlatforms = $values['connectedPlatforms'];
         $this->completedAt = $values['completedAt'] ?? null;
         $this->createdAt = $values['createdAt'];
         $this->expiresAt = $values['expiresAt'];
@@ -101,6 +116,7 @@ class ConnectLink extends JsonSerializableType
         $this->failure = $values['failure'] ?? null;
         $this->id = $values['id'];
         $this->platform = $values['platform'];
+        $this->platforms = $values['platforms'];
         $this->returnUrl = $values['returnUrl'] ?? null;
         $this->status = $values['status'];
     }

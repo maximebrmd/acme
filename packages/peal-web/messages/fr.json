@@ -847,6 +847,13 @@
   },
   "ConnectLink": {
     "title": "Connecter un compte",
+    "headingSeveral": "Connecter vos comptes",
+    "asksSeveral": "{host} demande à connecter vos comptes sur ces plateformes, pour y publier pour vous.",
+    "platformName": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformConnected": "Connecté",
+    "connectPlatform": "Connecter {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "left": "Il reste {platforms} à connecter.",
+    "connectAnother": "Connecter un autre compte",
     "heading": "Connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "loading": "Ouverture du lien…",
     "retry": "Réessayer",
@@ -897,6 +904,7 @@
       "planLimit": "Aucun compte de plus ne peut être connecté pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
       "channelGone": "Le compte à reconnecter a été retiré depuis. Demandez un nouveau lien à la personne qui vous l’a envoyé.",
       "platformUnreachable": "La plateforme n’a pas répondu. Réessayez dans un instant.",
+      "platformNotOffered": "Ce lien ne connecte pas de compte de cette plateforme, ou en a déjà connecté un.",
       "notFound": "Ce lien n’ouvre rien. Vérifiez que l’adresse est complète, ou demandez un nouveau lien.",
       "tooMany": "Trop d’essais depuis votre réseau pour le moment. Réessayez dans une heure.",
       "unknown": "Une erreur est survenue. Réessayez."
@@ -2588,7 +2596,7 @@
       "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
       "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
       "partnerClosed": "Ce serveur ouvre les comptes partenaires par son équipe : demandez-en un aux personnes qui l’exploitent.",
-      "partnerInvalid": "Une valeur ne peut pas être conservée. Vérifiez le nom, l’adresse du logo (HTTPS) et les origines : chacune comme https://hôte, sans rien après, 20 au plus.",
+      "partnerInvalid": "Une valeur ne peut pas être conservée. Vérifiez le nom, l’adresse du logo (HTTPS), la couleur d’accent (#RRGGBB, assez foncée pour se lire sur du blanc) et les origines : chacune comme https://hôte, sans rien après, 20 au plus.",
       "partnerOwnsWorkspaces": "Le compte partenaire d’un espace de travail que cela supprimerait possède encore des espaces de travail. Supprimez chacun par l’API partenaire d’abord."
     },
     "cancellation": {
@@ -2709,6 +2717,8 @@
       "accountTitle": "Ce que voient vos clients",
       "logo": "Adresse du logo",
       "logoHint": "Une adresse HTTPS, affichée depuis là sur les pages hébergées. Laissez vide pour n’afficher que le nom.",
+      "accent": "Couleur d’accent",
+      "accentHint": "Six chiffres hexadécimaux, comme #415EEE, tracés en une ligne au-dessus de votre logo sur les pages hébergées. Elle doit garder un contraste de 3:1 avec le blanc, pour être vue. Laissez vide pour l’apparence de Peal.",
       "origins": "Origines de retour",
       "originsHint": "Une par ligne, comme https://app.example.com : schéma, hôte et port, sans rien après. Une page hébergée ne renvoie vos clients qu’à une adresse située sur l’une d’elles, exactement.",
       "save": "Enregistrer",

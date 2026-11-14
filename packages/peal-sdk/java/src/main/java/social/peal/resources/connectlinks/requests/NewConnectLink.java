@@ -12,10 +12,10 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 import social.peal.types.ChannelConnection;
 import social.peal.types.ConnectLinkLocale;
@@ -32,7 +32,9 @@ public final class NewConnectLink {
 
     private final Optional<ConnectLinkLocale> locale;
 
-    private final Platform platform;
+    private final Optional<Platform> platform;
+
+    private final Optional<List<Platform>> platforms;
 
     private final Optional<String> returnUrl;
 
@@ -43,7 +45,8 @@ public final class NewConnectLink {
             Optional<ChannelConnection> connection,
             Optional<Integer> expiresInHours,
             Optional<ConnectLinkLocale> locale,
-            Platform platform,
+            Optional<Platform> platform,
+            Optional<List<Platform>> platforms,
             Optional<String> returnUrl,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
@@ -51,6 +54,7 @@ public final class NewConnectLink {
         this.expiresInHours = expiresInHours;
         this.locale = locale;
         this.platform = platform;
+        this.platforms = platforms;
         this.returnUrl = returnUrl;
         this.additionalProperties = additionalProperties;
     }
@@ -76,8 +80,13 @@ public final class NewConnectLink {
     }
 
     @JsonProperty("platform")
-    public Platform getPlatform() {
+    public Optional<Platform> getPlatform() {
         return platform;
+    }
+
+    @JsonProperty("platforms")
+    public Optional<List<Platform>> getPlatforms() {
+        return platforms;
     }
 
     @JsonProperty("returnUrl")
@@ -102,13 +111,20 @@ public final class NewConnectLink {
                 && expiresInHours.equals(other.expiresInHours)
                 && locale.equals(other.locale)
                 && platform.equals(other.platform)
+                && platforms.equals(other.platforms)
                 && returnUrl.equals(other.returnUrl);
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.channelId, this.connection, this.expiresInHours, this.locale, this.platform, this.returnUrl);
+                this.channelId,
+                this.connection,
+                this.expiresInHours,
+                this.locale,
+                this.platform,
+                this.platforms,
+                this.returnUrl);
     }
 
     @java.lang.Override
@@ -116,149 +132,128 @@ public final class NewConnectLink {
         return ObjectMappers.stringify(this);
     }
 
-    public static PlatformStage builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public interface PlatformStage {
-        _FinalStage platform(@NotNull Platform platform);
-
-        Builder from(NewConnectLink other);
-    }
-
-    public interface _FinalStage {
-        NewConnectLink build();
-
-        _FinalStage additionalProperty(String key, Object value);
-
-        _FinalStage additionalProperties(Map<String, Object> additionalProperties);
-
-        _FinalStage channelId(Optional<String> channelId);
-
-        _FinalStage channelId(String channelId);
-
-        _FinalStage connection(Optional<ChannelConnection> connection);
-
-        _FinalStage connection(ChannelConnection connection);
-
-        _FinalStage expiresInHours(Optional<Integer> expiresInHours);
-
-        _FinalStage expiresInHours(Integer expiresInHours);
-
-        _FinalStage locale(Optional<ConnectLinkLocale> locale);
-
-        _FinalStage locale(ConnectLinkLocale locale);
-
-        _FinalStage returnUrl(Optional<String> returnUrl);
-
-        _FinalStage returnUrl(String returnUrl);
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements PlatformStage, _FinalStage {
-        private Platform platform;
-
-        private Optional<String> returnUrl = Optional.empty();
-
-        private Optional<ConnectLinkLocale> locale = Optional.empty();
-
-        private Optional<Integer> expiresInHours = Optional.empty();
+    public static final class Builder {
+        private Optional<String> channelId = Optional.empty();
 
         private Optional<ChannelConnection> connection = Optional.empty();
 
-        private Optional<String> channelId = Optional.empty();
+        private Optional<Integer> expiresInHours = Optional.empty();
+
+        private Optional<ConnectLinkLocale> locale = Optional.empty();
+
+        private Optional<Platform> platform = Optional.empty();
+
+        private Optional<List<Platform>> platforms = Optional.empty();
+
+        private Optional<String> returnUrl = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
-        @java.lang.Override
         public Builder from(NewConnectLink other) {
             channelId(other.getChannelId());
             connection(other.getConnection());
             expiresInHours(other.getExpiresInHours());
             locale(other.getLocale());
             platform(other.getPlatform());
+            platforms(other.getPlatforms());
             returnUrl(other.getReturnUrl());
             return this;
         }
 
-        @java.lang.Override
-        @JsonSetter("platform")
-        public _FinalStage platform(@NotNull Platform platform) {
-            this.platform = Objects.requireNonNull(platform, "platform must not be null");
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage returnUrl(String returnUrl) {
-            this.returnUrl = Optional.ofNullable(returnUrl);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "returnUrl", nulls = Nulls.SKIP)
-        public _FinalStage returnUrl(Optional<String> returnUrl) {
-            this.returnUrl = returnUrl;
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage locale(ConnectLinkLocale locale) {
-            this.locale = Optional.ofNullable(locale);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "locale", nulls = Nulls.SKIP)
-        public _FinalStage locale(Optional<ConnectLinkLocale> locale) {
-            this.locale = locale;
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage expiresInHours(Integer expiresInHours) {
-            this.expiresInHours = Optional.ofNullable(expiresInHours);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "expiresInHours", nulls = Nulls.SKIP)
-        public _FinalStage expiresInHours(Optional<Integer> expiresInHours) {
-            this.expiresInHours = expiresInHours;
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage connection(ChannelConnection connection) {
-            this.connection = Optional.ofNullable(connection);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "connection", nulls = Nulls.SKIP)
-        public _FinalStage connection(Optional<ChannelConnection> connection) {
-            this.connection = connection;
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage channelId(String channelId) {
-            this.channelId = Optional.ofNullable(channelId);
-            return this;
-        }
-
-        @java.lang.Override
         @JsonSetter(value = "channelId", nulls = Nulls.SKIP)
-        public _FinalStage channelId(Optional<String> channelId) {
+        public Builder channelId(Optional<String> channelId) {
             this.channelId = channelId;
             return this;
         }
 
-        @java.lang.Override
+        public Builder channelId(String channelId) {
+            this.channelId = Optional.ofNullable(channelId);
+            return this;
+        }
+
+        @JsonSetter(value = "connection", nulls = Nulls.SKIP)
+        public Builder connection(Optional<ChannelConnection> connection) {
+            this.connection = connection;
+            return this;
+        }
+
+        public Builder connection(ChannelConnection connection) {
+            this.connection = Optional.ofNullable(connection);
+            return this;
+        }
+
+        @JsonSetter(value = "expiresInHours", nulls = Nulls.SKIP)
+        public Builder expiresInHours(Optional<Integer> expiresInHours) {
+            this.expiresInHours = expiresInHours;
+            return this;
+        }
+
+        public Builder expiresInHours(Integer expiresInHours) {
+            this.expiresInHours = Optional.ofNullable(expiresInHours);
+            return this;
+        }
+
+        @JsonSetter(value = "locale", nulls = Nulls.SKIP)
+        public Builder locale(Optional<ConnectLinkLocale> locale) {
+            this.locale = locale;
+            return this;
+        }
+
+        public Builder locale(ConnectLinkLocale locale) {
+            this.locale = Optional.ofNullable(locale);
+            return this;
+        }
+
+        @JsonSetter(value = "platform", nulls = Nulls.SKIP)
+        public Builder platform(Optional<Platform> platform) {
+            this.platform = platform;
+            return this;
+        }
+
+        public Builder platform(Platform platform) {
+            this.platform = Optional.ofNullable(platform);
+            return this;
+        }
+
+        @JsonSetter(value = "platforms", nulls = Nulls.SKIP)
+        public Builder platforms(Optional<List<Platform>> platforms) {
+            this.platforms = platforms;
+            return this;
+        }
+
+        public Builder platforms(List<Platform> platforms) {
+            this.platforms = Optional.ofNullable(platforms);
+            return this;
+        }
+
+        @JsonSetter(value = "returnUrl", nulls = Nulls.SKIP)
+        public Builder returnUrl(Optional<String> returnUrl) {
+            this.returnUrl = returnUrl;
+            return this;
+        }
+
+        public Builder returnUrl(String returnUrl) {
+            this.returnUrl = Optional.ofNullable(returnUrl);
+            return this;
+        }
+
         public NewConnectLink build() {
             return new NewConnectLink(
-                    channelId, connection, expiresInHours, locale, platform, returnUrl, additionalProperties);
+                    channelId,
+                    connection,
+                    expiresInHours,
+                    locale,
+                    platform,
+                    platforms,
+                    returnUrl,
+                    additionalProperties);
         }
 
         @JsonAnySetter
@@ -268,19 +263,18 @@ public final class NewConnectLink {
                     || key.equalsIgnoreCase("expiresInHours")
                     || key.equalsIgnoreCase("locale")
                     || key.equalsIgnoreCase("platform")
+                    || key.equalsIgnoreCase("platforms")
                     || key.equalsIgnoreCase("returnUrl")) {
                 return;
             }
             this.additionalProperties.put(key, value);
         }
 
-        @java.lang.Override
         public Builder additionalProperty(String key, Object value) {
             this.additionalProperties.put(key, value);
             return this;
         }
 
-        @java.lang.Override
         public Builder additionalProperties(Map<String, Object> additionalProperties) {
             this.additionalProperties.putAll(additionalProperties);
             return this;

@@ -324,17 +324,20 @@ class RawPartnerAccountClient:
         self,
         workspace_id: str,
         *,
+        accent_color: typing.Optional[str] = OMIT,
         logo_url: typing.Optional[str] = OMIT,
         name: typing.Optional[str] = OMIT,
         return_origins: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Partner]:
         """
-        Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+        Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (`#RRGGBB`, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background `#FAFAF9`, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
 
         Parameters
         ----------
         workspace_id : str
+
+        accent_color : typing.Optional[str]
 
         logo_url : typing.Optional[str]
 
@@ -357,6 +360,7 @@ class RawPartnerAccountClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/partner",
             method="PATCH",
             json={
+                "accentColor": accent_color,
                 "logoUrl": logo_url,
                 "name": name,
                 "returnOrigins": return_origins,
@@ -1253,17 +1257,20 @@ class AsyncRawPartnerAccountClient:
         self,
         workspace_id: str,
         *,
+        accent_color: typing.Optional[str] = OMIT,
         logo_url: typing.Optional[str] = OMIT,
         name: typing.Optional[str] = OMIT,
         return_origins: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Partner]:
         """
-        Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+        Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (`#RRGGBB`, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background `#FAFAF9`, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
 
         Parameters
         ----------
         workspace_id : str
+
+        accent_color : typing.Optional[str]
 
         logo_url : typing.Optional[str]
 
@@ -1286,6 +1293,7 @@ class AsyncRawPartnerAccountClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/partner",
             method="PATCH",
             json={
+                "accentColor": accent_color,
                 "logoUrl": logo_url,
                 "name": name,
                 "returnOrigins": return_origins,

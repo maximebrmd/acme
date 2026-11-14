@@ -8,7 +8,7 @@ import type {
 } from "#publishing/domain/live-post-change.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /** A pending change of a workspace's post, as an erasure finds it. */
 export interface OpenChange {
@@ -80,9 +80,11 @@ export class LivePostChangeStore extends Context.Service<
      * Locks the workspace's pending changes until the transaction ends,
      * and says whether a call is in flight for each: one that begins
      * waits for the lock, and finds its change gone after an erasure.
+     * With `channelId`, the changes of posts on that channel alone.
      */
     readonly lockOpen: (
-      workspaceId: WorkspaceId
+      workspaceId: WorkspaceId,
+      channelId?: ChannelId
     ) => Effect.Effect<readonly OpenChange[], DatabaseError>;
   }
 >()("peal-server/publishing/application/LivePostChangeStore") {}

@@ -477,6 +477,17 @@ The staff context follows these rules too. What the law has a host keep is in
   owner's account not closed and the partner account not closed while it
   owns a workspace (`PartnerOwnership.ensureDeletable`,
   `PartnerOwnsWorkspaces`, 409).
+- `MoveCustomerChannel` (`POST /api/partner/workspaces/:workspaceId/channels/:channelId/move`,
+  scope `workspaces:write` and the key's `channel:connect` and
+  `channel:disconnect`) moves a channel between two workspaces the key's
+  partner owns, never its home, through `ChannelMover`
+  (`ContextChannelMoverLive`: channels' `ChannelMoves`, after
+  publishing's `PostRecords.ensureChannelIdle`, `WorkspaceBusy` while a
+  call is in flight through the channel). Inside the move's transaction
+  it locks both workspaces' rows (smaller id first) and checks they are
+  still the partner's, as an offboarding locks its row first, so a move
+  never adds a channel to a workspace being erased. Both activity logs
+  keep `partner.moveChannel`.
 - A workspace a partner owns takes the home workspace's plan (`PlanHolders`,
   `WorkspaceEntitlements.layerShared`). Channels are counted across the
   home workspace and every workspace the partner owns, under the partner's

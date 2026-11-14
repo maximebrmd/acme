@@ -1,3 +1,4 @@
+export type { ChannelMove } from "./ChannelMove.js";
 export type { CustomerWorkspaceChange } from "./CustomerWorkspaceChange.js";
 export type { DeleteWorkspacePartnerRequest } from "./DeleteWorkspacePartnerRequest.js";
 export type { GetWorkspacePartnerRequest } from "./GetWorkspacePartnerRequest.js";

@@ -121,22 +121,21 @@ class RawConnectLinksClient:
         self,
         workspace_id: str,
         *,
-        platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
         connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
+        platform: typing.Optional[Platform] = OMIT,
+        platforms: typing.Optional[typing.Sequence[Platform]] = OMIT,
         return_url: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[CreatedConnectLink]:
         """
-        Creates a link to hand to whoever owns an account of `platform`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
+        Creates a link to hand to whoever owns an account of `platform`, or accounts of each of `platforms`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. With `platforms`, the page offers each in turn, and the link waits until each one connected an account, or it is revoked or expires: `connectedPlatforms` and `channelIds` say what it connected so far. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
-
-        platform : Platform
 
         channel_id : typing.Optional[str]
 
@@ -145,6 +144,10 @@ class RawConnectLinksClient:
         expires_in_hours : typing.Optional[int]
 
         locale : typing.Optional[ConnectLinkLocale]
+
+        platform : typing.Optional[Platform]
+
+        platforms : typing.Optional[typing.Sequence[Platform]]
 
         return_url : typing.Optional[str]
 
@@ -168,6 +171,7 @@ class RawConnectLinksClient:
                 "expiresInHours": expires_in_hours,
                 "locale": locale,
                 "platform": platform,
+                "platforms": platforms,
                 "returnUrl": return_url,
             },
             headers={
@@ -521,22 +525,21 @@ class AsyncRawConnectLinksClient:
         self,
         workspace_id: str,
         *,
-        platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
         connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
+        platform: typing.Optional[Platform] = OMIT,
+        platforms: typing.Optional[typing.Sequence[Platform]] = OMIT,
         return_url: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[CreatedConnectLink]:
         """
-        Creates a link to hand to whoever owns an account of `platform`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
+        Creates a link to hand to whoever owns an account of `platform`, or accounts of each of `platforms`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. With `platforms`, the page offers each in turn, and the link waits until each one connected an account, or it is revoked or expires: `connectedPlatforms` and `channelIds` say what it connected so far. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
-
-        platform : Platform
 
         channel_id : typing.Optional[str]
 
@@ -545,6 +548,10 @@ class AsyncRawConnectLinksClient:
         expires_in_hours : typing.Optional[int]
 
         locale : typing.Optional[ConnectLinkLocale]
+
+        platform : typing.Optional[Platform]
+
+        platforms : typing.Optional[typing.Sequence[Platform]]
 
         return_url : typing.Optional[str]
 
@@ -568,6 +575,7 @@ class AsyncRawConnectLinksClient:
                 "expiresInHours": expires_in_hours,
                 "locale": locale,
                 "platform": platform,
+                "platforms": platforms,
                 "returnUrl": return_url,
             },
             headers={

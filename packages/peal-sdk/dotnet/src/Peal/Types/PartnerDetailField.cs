@@ -12,6 +12,8 @@ public readonly record struct PartnerDetailField : IStringEnum
 
     public static readonly PartnerDetailField LogoUrl = new(Values.LogoUrl);
 
+    public static readonly PartnerDetailField AccentColor = new(Values.AccentColor);
+
     public static readonly PartnerDetailField ReturnOrigins = new(Values.ReturnOrigins);
 
     public static readonly PartnerDetailField ExternalId = new(Values.ExternalId);
@@ -117,6 +119,8 @@ public readonly record struct PartnerDetailField : IStringEnum
         public const string Name = "name";
 
         public const string LogoUrl = "logoUrl";
+
+        public const string AccentColor = "accentColor";
 
         public const string ReturnOrigins = "returnOrigins";
 

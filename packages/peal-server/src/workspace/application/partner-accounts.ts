@@ -7,6 +7,8 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { parseAccentColor } from "#workspace/domain/accent-color.ts";
+import type { InvalidPartnerAccent } from "#workspace/domain/invalid-partner-accent.ts";
 import type { InvalidPartnerLogo } from "#workspace/domain/invalid-partner-logo.ts";
 import type { InvalidReturnOrigin } from "#workspace/domain/invalid-return-origin.ts";
 import { PartnerIdSchema } from "#workspace/domain/partner-id.ts";
@@ -55,6 +57,19 @@ const logoOf = (partner: Partner, logoUrl: string | null | undefined) => {
     : Effect.fromResult(parseLogoUrl(logoUrl)).pipe(Effect.map(Option.some));
 };
 
+// The accent colour a change leaves, as the logo's.
+const accentOf = (partner: Partner, accentColor: string | null | undefined) => {
+  if (accentColor === undefined) {
+    return Effect.succeed(partner.accentColor);
+  }
+
+  return accentColor === null
+    ? Effect.succeed(Option.none<string>())
+    : Effect.fromResult(parseAccentColor(accentColor)).pipe(
+        Effect.map(Option.some)
+      );
+};
+
 /** What a workspace's people read of its partner account. */
 export interface PartnerStanding {
   /** Whether the workspace's people may open an account themselves. */
@@ -64,6 +79,8 @@ export interface PartnerStanding {
 
 /** What its people ask to change of a partner account. */
 export interface PartnerChangeRequest {
+  /** Null removes the accent colour. */
+  readonly accentColor?: string | null;
   /** Null removes the logo. */
   readonly logoUrl?: string | null;
   readonly name?: string;
@@ -72,6 +89,7 @@ export interface PartnerChangeRequest {
 
 export type PartnerChangeFailure =
   | DatabaseError
+  | InvalidPartnerAccent
   | InvalidPartnerLogo
   | InvalidPartnerName
   | InvalidReturnOrigin
@@ -82,7 +100,7 @@ export type PartnerChangeFailure =
 
 /**
  * A workspace's partner account: opening it, what its customers see of it
- * (name, logo) and where the hosted pages may send them back (return
+ * (name, logo, accent colour) and where the hosted pages may send them back (return
  * origins), and closing it.
  *
  * | Use case            | Needs                                   |
@@ -272,6 +290,7 @@ export class PartnerAccounts extends Context.Service<
             : yield* nameOf(request.name);
 
         const logoUrl = yield* logoOf(partner, request.logoUrl);
+        const accentColor = yield* accentOf(partner, request.accentColor);
 
         const returnOrigins =
           request.returnOrigins === undefined
@@ -284,7 +303,7 @@ export class PartnerAccounts extends Context.Service<
 
         const changed = changePartner(
           partner,
-          { logoUrl, name, returnOrigins },
+          { accentColor, logoUrl, name, returnOrigins },
           yield* DateTime.now
         );
 

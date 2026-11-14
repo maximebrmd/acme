@@ -36,11 +36,15 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
       assert.deepStrictEqual(opened, {
         expiresAt: link.expiresAt,
         host: {
+          accentColor: "#166534",
           logoUrl: "https://cdn.example.test/logo.png",
           name: "Partner Suite",
         },
         input: "instance",
         platform: "mastodon",
+        platforms: [
+          { connected: false, input: "instance", platform: "mastodon" },
+        ],
         reconnecting: null,
         returnTo: `https://app.example.test/settings/social?tab=1&peal_link=${link.id}&peal_status=cancelled`,
         status: "pending",

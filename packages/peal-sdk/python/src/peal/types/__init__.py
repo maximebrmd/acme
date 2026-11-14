@@ -189,6 +189,7 @@ if typing.TYPE_CHECKING:
     from .ceiling_currency_mismatch_encoded_tag import CeilingCurrencyMismatchEncodedTag
     from .changes_outcome import ChangesOutcome
     from .channel import Channel
+    from .channel_account_taken_encoded import ChannelAccountTakenEncoded
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
     from .channel_cannot_post_encoded_reason import ChannelCannotPostEncodedReason
     from .channel_cannot_post_encoded_tag import ChannelCannotPostEncodedTag
@@ -1232,6 +1233,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CeilingCurrencyMismatchEncodedTag": ".ceiling_currency_mismatch_encoded_tag",
     "ChangesOutcome": ".changes_outcome",
     "Channel": ".channel",
+    "ChannelAccountTakenEncoded": ".channel_account_taken_encoded",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
     "ChannelCannotPostEncodedReason": ".channel_cannot_post_encoded_reason",
     "ChannelCannotPostEncodedTag": ".channel_cannot_post_encoded_tag",
@@ -2282,6 +2284,7 @@ __all__ = [
     "CeilingCurrencyMismatchEncodedTag",
     "ChangesOutcome",
     "Channel",
+    "ChannelAccountTakenEncoded",
     "ChannelCannotPostEncoded",
     "ChannelCannotPostEncodedReason",
     "ChannelCannotPostEncodedTag",

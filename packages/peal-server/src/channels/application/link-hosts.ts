@@ -5,6 +5,12 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /** Who a hosted page says asks for the connection. */
 export interface LinkHost {
+  /**
+   * A colour (`#RRGGBB`) to draw a line in beside the logo, which the
+   * workspace context checked reads on Peal's light pages; none for
+   * Peal's own look.
+   */
+  readonly accentColor: Option.Option<string>;
   /** A logo to show from its own address; none shows the name alone. */
   readonly logoUrl: Option.Option<string>;
   /**

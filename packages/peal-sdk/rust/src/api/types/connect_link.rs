@@ -8,6 +8,9 @@ pub struct ConnectLink {
     #[serde(rename = "channelIds")]
     #[serde(default)]
     pub channel_ids: Vec<String>,
+    #[serde(rename = "connectedPlatforms")]
+    #[serde(default)]
+    pub connected_platforms: Vec<Platform>,
     #[serde(rename = "completedAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
@@ -25,6 +28,8 @@ pub struct ConnectLink {
     #[serde(default)]
     pub id: String,
     pub platform: Platform,
+    #[serde(default)]
+    pub platforms: Vec<Platform>,
     #[serde(rename = "returnUrl")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub return_url: Option<String>,
@@ -42,6 +47,7 @@ impl ConnectLink {
 pub struct ConnectLinkBuilder {
     channel_id: Option<String>,
     channel_ids: Option<Vec<String>>,
+    connected_platforms: Option<Vec<Platform>>,
     completed_at: Option<String>,
     created_at: Option<String>,
     expires_at: Option<String>,
@@ -49,6 +55,7 @@ pub struct ConnectLinkBuilder {
     failure: Option<HostedConnectFailure>,
     id: Option<String>,
     platform: Option<Platform>,
+    platforms: Option<Vec<Platform>>,
     return_url: Option<String>,
     status: Option<ConnectLinkStatus>,
 }
@@ -61,6 +68,11 @@ impl ConnectLinkBuilder {
 
     pub fn channel_ids(mut self, value: Vec<String>) -> Self {
         self.channel_ids = Some(value);
+        self
+    }
+
+    pub fn connected_platforms(mut self, value: Vec<Platform>) -> Self {
+        self.connected_platforms = Some(value);
         self
     }
 
@@ -99,6 +111,11 @@ impl ConnectLinkBuilder {
         self
     }
 
+    pub fn platforms(mut self, value: Vec<Platform>) -> Self {
+        self.platforms = Some(value);
+        self
+    }
+
     pub fn return_url(mut self, value: impl Into<String>) -> Self {
         self.return_url = Some(value.into());
         self
@@ -112,10 +129,12 @@ impl ConnectLinkBuilder {
     /// Consumes the builder and constructs a [`ConnectLink`].
     /// This method will fail if any of the following fields are not set:
     /// - [`channel_ids`](ConnectLinkBuilder::channel_ids)
+    /// - [`connected_platforms`](ConnectLinkBuilder::connected_platforms)
     /// - [`created_at`](ConnectLinkBuilder::created_at)
     /// - [`expires_at`](ConnectLinkBuilder::expires_at)
     /// - [`id`](ConnectLinkBuilder::id)
     /// - [`platform`](ConnectLinkBuilder::platform)
+    /// - [`platforms`](ConnectLinkBuilder::platforms)
     /// - [`status`](ConnectLinkBuilder::status)
     pub fn build(self) -> Result<ConnectLink, BuildError> {
         Ok(ConnectLink {
@@ -123,6 +142,9 @@ impl ConnectLinkBuilder {
             channel_ids: self
                 .channel_ids
                 .ok_or_else(|| BuildError::missing_field("channel_ids"))?,
+            connected_platforms: self
+                .connected_platforms
+                .ok_or_else(|| BuildError::missing_field("connected_platforms"))?,
             completed_at: self.completed_at,
             created_at: self
                 .created_at
@@ -136,6 +158,9 @@ impl ConnectLinkBuilder {
             platform: self
                 .platform
                 .ok_or_else(|| BuildError::missing_field("platform"))?,
+            platforms: self
+                .platforms
+                .ok_or_else(|| BuildError::missing_field("platforms"))?,
             return_url: self.return_url,
             status: self
                 .status

@@ -22,7 +22,10 @@ public record NewConnectLink
     public ConnectLinkLocale? Locale { get; set; }
 
     [JsonPropertyName("platform")]
-    public required Platform Platform { get; set; }
+    public Platform? Platform { get; set; }
+
+    [JsonPropertyName("platforms")]
+    public IEnumerable<Platform>? Platforms { get; set; }
 
     [JsonPropertyName("returnUrl")]
     public string? ReturnUrl { get; set; }

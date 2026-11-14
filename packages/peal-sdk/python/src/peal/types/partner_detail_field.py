@@ -3,5 +3,5 @@
 import typing
 
 PartnerDetailField = typing.Union[
-    typing.Literal["name", "logoUrl", "returnOrigins", "externalId", "permissions"], typing.Any
+    typing.Literal["name", "logoUrl", "accentColor", "returnOrigins", "externalId", "permissions"], typing.Any
 ]

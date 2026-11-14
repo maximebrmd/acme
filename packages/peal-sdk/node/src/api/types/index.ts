@@ -132,6 +132,7 @@ export * from "./CampaignObjective.js";
 export * from "./CeilingCurrencyMismatchEncoded.js";
 export * from "./ChangesOutcome.js";
 export * from "./Channel.js";
+export * from "./ChannelAccountTakenEncoded.js";
 export * from "./ChannelCannotPostEncoded.js";
 export * from "./ChannelCapabilities.js";
 export * from "./ChannelConnection.js";

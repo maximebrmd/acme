@@ -20,6 +20,10 @@ public class ListTest : BaseMockServerTest
                   "channelIds",
                   "channelIds"
                 ],
+                "connectedPlatforms": [
+                  "x",
+                  "x"
+                ],
                 "completedAt": "completedAt",
                 "createdAt": "createdAt",
                 "expiresAt": "expiresAt",
@@ -27,6 +31,10 @@ public class ListTest : BaseMockServerTest
                 "failure": "platformNotSupported",
                 "id": "id",
                 "platform": "x",
+                "platforms": [
+                  "x",
+                  "x"
+                ],
                 "returnUrl": "returnUrl",
                 "status": "pending"
               },
@@ -36,6 +44,10 @@ public class ListTest : BaseMockServerTest
                   "channelIds",
                   "channelIds"
                 ],
+                "connectedPlatforms": [
+                  "x",
+                  "x"
+                ],
                 "completedAt": "completedAt",
                 "createdAt": "createdAt",
                 "expiresAt": "expiresAt",
@@ -43,6 +55,10 @@ public class ListTest : BaseMockServerTest
                 "failure": "platformNotSupported",
                 "id": "id",
                 "platform": "x",
+                "platforms": [
+                  "x",
+                  "x"
+                ],
                 "returnUrl": "returnUrl",
                 "status": "pending"
               }
@@ -79,6 +95,9 @@ public class ListTest : BaseMockServerTest
                 "channelIds": [
                   "channelIds"
                 ],
+                "connectedPlatforms": [
+                  "x"
+                ],
                 "completedAt": "completedAt",
                 "createdAt": "createdAt",
                 "expiresAt": "expiresAt",
@@ -86,6 +105,9 @@ public class ListTest : BaseMockServerTest
                 "failure": "platformNotSupported",
                 "id": "id",
                 "platform": "x",
+                "platforms": [
+                  "x"
+                ],
                 "returnUrl": "returnUrl",
                 "status": "pending"
               }

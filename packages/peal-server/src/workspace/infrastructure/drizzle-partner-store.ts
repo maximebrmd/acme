@@ -35,6 +35,7 @@ const decodeKey = Schema.decodeUnknownEffect(PartnerKey);
 // a bug, or a row written by hand.
 const toPartner = (row: typeof partners.$inferSelect) =>
   decodePartner({
+    accentColor: Option.fromNullOr(row.accentColor),
     createdAt: utc(row.createdAt),
     id: row.id,
     logoUrl: Option.fromNullOr(row.logoUrl),
@@ -223,6 +224,7 @@ export const DrizzlePartnerStore = Layer.effect(
               const written = yield* db
                 .insert(partners)
                 .values({
+                  accentColor: Option.getOrNull(partner.accentColor),
                   createdAt: date(partner.createdAt),
                   id: partner.id,
                   logoUrl: Option.getOrNull(partner.logoUrl),
@@ -277,6 +279,7 @@ export const DrizzlePartnerStore = Layer.effect(
         db
           .update(partners)
           .set({
+            accentColor: Option.getOrNull(partner.accentColor),
             logoUrl: Option.getOrNull(partner.logoUrl),
             name: partner.name,
             returnOrigins: [...partner.returnOrigins],

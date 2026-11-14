@@ -68,6 +68,35 @@ describe("peal links", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect("creates a link for several platforms, each once", () =>
+    Effect.gen(function* several() {
+      const session = yield* signedIn();
+
+      const created = yield* session.printed([
+        "links",
+        "create",
+        "--platform",
+        "mastodon,bluesky",
+        ...inStudio,
+      ]);
+
+      assert.match(created, /Platforms\s+mastodon, bluesky/u);
+      assert.include(
+        yield* session.refused([
+          "links",
+          "create",
+          "--platform",
+          "mastodon,mastodon",
+          ...inStudio,
+        ]),
+        "--platform names each platform once"
+      );
+      assert.deepStrictEqual(yield* changes(session.studio), [
+        "link:create:mastodon,bluesky",
+      ]);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("lists the links, and says what a used one connected", () =>
     Effect.gen(function* lists() {
       const session = yield* signedIn();
@@ -178,6 +207,7 @@ describe("peal partner", () => {
 
       assert.include(shown, "Partner account of Studio:");
       assert.match(shown, /Name\s+Studio Suite/u);
+      assert.match(shown, /Accent colour\s+#166534/u);
       assert.match(shown, /Return origins\s+https:\/\/app\.example\.test/u);
       assert.match(shown, /Workspaces\s+2/u);
       assert.match(shown, /Channels\s+5/u);

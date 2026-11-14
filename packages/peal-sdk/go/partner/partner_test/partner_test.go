@@ -250,3 +250,31 @@ func TestPartnerUpdateWorkspaceWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestPartnerUpdateWorkspaceWithWireMock", "PATCH", "/api/partner/workspaces/workspaceId", nil, 1)
 }
+
+func TestPartnerMoveChannelWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ChannelMove{
+		WorkspaceID:   "workspaceId",
+		ChannelID:     "channelId",
+		ToWorkspaceID: "toWorkspaceId",
+	}
+	_, invocationErr := client.Partner.MoveChannel(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPartnerMoveChannelWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPartnerMoveChannelWithWireMock", "POST", "/api/partner/workspaces/workspaceId/channels/channelId/move", nil, 1)
+}

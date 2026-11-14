@@ -10,10 +10,11 @@ export type DisconnectedChannel = Pick<
 >;
 
 /**
- * Why a channel is gone: a member disconnected it, or its platform asked
- * for the account's data to be deleted (DataDeletions).
+ * Why a channel is gone: a member disconnected it, its platform asked for
+ * the account's data to be deleted (DataDeletions), or it moved to another
+ * workspace of its pool (ChannelMoves), as a channel of its own there.
  */
-export type DisconnectionCause = "dataDeletion" | "member";
+export type DisconnectionCause = "dataDeletion" | "member" | "moved";
 
 /**
  * Hears that a workspace's channel was connected or disconnected, or turned

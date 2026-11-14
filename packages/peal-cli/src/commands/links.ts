@@ -21,18 +21,27 @@ const decodePlatform = Schema.decodeUnknownOption(PlatformSchema);
 
 const decodeLocale = Schema.decodeUnknownOption(ConnectLinkLocaleSchema);
 
-// `--platform`, when it names one Peal knows: refused before anything is
-// asked of the server otherwise.
-const platformOf = (given: string) =>
-  Option.match(decodePlatform(given), {
-    onNone: () =>
-      Effect.fail(
-        new Refused({
-          reason: `--platform takes one of these: ${PlatformSchema.literals.join(", ")}.`,
-        })
-      ),
-    onSome: Effect.succeed,
-  });
+// `--platform`, one platform Peal knows or several separated by commas,
+// each once: refused before anything is asked of the server otherwise.
+const platformsOf = Effect.fnUntraced(function* platformsOf(given: string) {
+  const named = given.split(",").map((name) => name.trim());
+
+  const known = named.flatMap((name) => Option.toArray(decodePlatform(name)));
+
+  if (known.length !== named.length) {
+    return yield* new Refused({
+      reason: `--platform takes one of these: ${PlatformSchema.literals.join(", ")}; or several, separated by commas.`,
+    });
+  }
+
+  if (new Set(known).size !== known.length) {
+    return yield* new Refused({
+      reason: "--platform names each platform once.",
+    });
+  }
+
+  return known;
+});
 
 // `--locale`, when given: a language the hosted page is written in.
 const localeOf = (given: Option.Option<string>) =>
@@ -70,6 +79,8 @@ const failures: Readonly<Record<HostedConnectFailure, string>> = {
   linkCompleted: "the link was used already",
   linkExpired: "the link had expired",
   linkRevoked: "the link was revoked",
+  platformNotOffered:
+    "the platform is not one the link connects, or it connected it already",
   noAccounts: "the sign-in reached no account Peal can post to",
   notConfigured: "this server is not set up for the platform",
   planLimit: "the workspace's plan has no room for one more channel",
@@ -82,7 +93,12 @@ const failures: Readonly<Record<HostedConnectFailure, string>> = {
 // server shows once, when it is created.
 const linkLines = (link: ConnectLink): string[] =>
   columns([
-    ["  Platform", link.platform],
+    link.platforms.length > 1
+      ? ["  Platforms", link.platforms.join(", ")]
+      : ["  Platform", link.platform],
+    ...(link.platforms.length > 1 && link.connectedPlatforms.length > 0
+      ? [["  Connected on", link.connectedPlatforms.join(", ")]]
+      : []),
     ["  Status", statuses[link.status]],
     ["  Expires", instant(link.expiresAt)],
     ...(link.channelId === null ? [] : [["  Reconnects", link.channelId]]),
@@ -122,7 +138,7 @@ const create = Command.make(
     platform: Flag.String("platform").pipe(
       Flag.withMetavar("<platform>"),
       Flag.withDescription(
-        `The platform of the account to connect: ${PlatformSchema.literals.join(", ")}.`
+        `The platform of the account to connect, or several separated by commas, each connected once: ${PlatformSchema.literals.join(", ")}.`
       )
     ),
     returnUrl: Flag.String("return-url").pipe(
@@ -143,7 +159,7 @@ const create = Command.make(
     returnUrl,
     workspace: choice,
   }) {
-    const known = yield* platformOf(platform);
+    const known = yield* platformsOf(platform);
     const language = yield* localeOf(locale);
 
     const { client, url, workspace } = yield* inWorkspace(choice);
@@ -152,7 +168,9 @@ const create = Command.make(
       .create({
         params: { workspaceId: workspace.id },
         payload: {
-          platform: known,
+          ...(known.length === 1 && known[0] !== undefined
+            ? { platform: known[0] }
+            : { platforms: known }),
           ...Option.match(channel, {
             onNone: () => ({}),
             onSome: (channelId) => ({ channelId }),
@@ -196,7 +214,7 @@ const create = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Create a link to hand to whoever owns a social account: it opens a hosted page where they connect it to the workspace, without a Peal account. It works once."
+    "Create a link to hand to whoever owns social accounts: it opens a hosted page where they connect them to the workspace, without a Peal account. It works once for each platform it names."
   )
 );
 

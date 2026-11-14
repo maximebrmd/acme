@@ -21,4 +21,5 @@ enum HostedConnectFailure: string
     case PlanLimit = "planLimit";
     case ChannelGone = "channelGone";
     case PlatformUnreachable = "platformUnreachable";
+    case PlatformNotOffered = "platformNotOffered";
 }

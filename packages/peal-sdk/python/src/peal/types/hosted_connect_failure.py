@@ -21,6 +21,7 @@ HostedConnectFailure = typing.Union[
         "planLimit",
         "channelGone",
         "platformUnreachable",
+        "platformNotOffered",
     ],
     typing.Any,
 ]

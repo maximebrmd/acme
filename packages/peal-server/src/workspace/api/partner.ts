@@ -3,6 +3,8 @@ import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
+  ChannelAccountTaken,
+  ChannelNotFound,
   DeletionIncomplete,
   ExternalIdTaken,
   IdempotencyKeyReused,
@@ -12,12 +14,14 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 
+import { forbidden } from "#shared/api/forbidden.ts";
 import {
   partnerClosed,
   partnerKeyOnly,
   withoutPartnerScope,
 } from "#shared/api/partner-key.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
+import { MoveCustomerChannel } from "#workspace/application/move-customer-channel.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
 import { PartnerHealth } from "#workspace/application/partner-health.ts";
 import type { HealthRequest } from "#workspace/application/partner-health.ts";
@@ -28,6 +32,7 @@ import { recordMade } from "./activity-recording.ts";
 import {
   customerWorkspacePageView,
   customerWorkspaceView,
+  movedChannelView,
   partnerHealthView,
   partnerUsageView,
   partnerView,
@@ -80,6 +85,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
     const workspaces = yield* PartnerWorkspaces;
     const health = yield* PartnerHealth;
     const offboarding = yield* OffboardWorkspace;
+    const moves = yield* MoveCustomerChannel;
     const activity = yield* ActivityJournal;
 
     return handlers.handleAll({
@@ -225,6 +231,43 @@ export const PartnerHandlers = HttpApiBuilder.group(
           );
 
           return partnerHealthView(page);
+        }),
+      moveChannel: ({ params, payload }) =>
+        Effect.gen(function* moveChannel() {
+          const key = yield* currentKey;
+
+          const moved = yield* moves
+            .move(key, {
+              channelId: params.channelId,
+              from: params.workspaceId,
+              to: payload.toWorkspaceId,
+            })
+            .pipe(
+              Effect.catchTags({
+                AccountConnectedThere: ({ channelId }) =>
+                  Effect.fail(new ChannelAccountTaken({ channelId })),
+                CustomerChannelNotFound: () =>
+                  Effect.fail(new ChannelNotFound()),
+                CustomerWorkspaceNotFound: notFound,
+                DatabaseError: Effect.die,
+                MissingPartnerScope: withoutPartnerScope,
+                MissingPermission: forbidden,
+                WorkspaceBusy: ({ workspaceId }) =>
+                  Effect.fail(new WorkspaceBusy({ workspaceId })),
+              })
+            );
+
+          // Each workspace's log keeps that the channel left it, or came.
+          for (const workspaceId of [moved.from, moved.to]) {
+            yield* recordMade(activity, {
+              operation: "partner.moveChannel",
+              principal: key,
+              status: 200,
+              workspaceId,
+            });
+          }
+
+          return movedChannelView(moved.channel);
         }),
       updateWorkspace: ({ params, payload }) =>
         Effect.gen(function* updateWorkspace() {

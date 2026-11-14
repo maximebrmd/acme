@@ -18,6 +18,7 @@ public class UpdateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "accentColor": "accentColor",
               "createdAt": "createdAt",
               "id": "id",
               "logoUrl": "logoUrl",
@@ -50,6 +51,7 @@ public class UpdateTest : BaseMockServerTest
             new PartnerChange
             {
                 WorkspaceId = "workspaceId",
+                AccentColor = null,
                 LogoUrl = null,
                 Name = null,
                 ReturnOrigins = null,
@@ -67,6 +69,7 @@ public class UpdateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "accentColor": "accentColor",
               "createdAt": "createdAt",
               "id": "id",
               "logoUrl": "logoUrl",

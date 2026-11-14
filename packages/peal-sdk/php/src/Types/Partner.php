@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class Partner extends JsonSerializableType
 {
     /**
+     * @var ?string $accentColor
+     */
+    #[JsonProperty('accentColor')]
+    public ?string $accentColor;
+
+    /**
      * @var string $createdAt
      */
     #[JsonProperty('createdAt')]
@@ -51,12 +57,14 @@ class Partner extends JsonSerializableType
      *   name: string,
      *   returnOrigins: array<string>,
      *   workspaceId: string,
+     *   accentColor?: ?string,
      *   logoUrl?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->accentColor = $values['accentColor'] ?? null;
         $this->createdAt = $values['createdAt'];
         $this->id = $values['id'];
         $this->logoUrl = $values['logoUrl'] ?? null;

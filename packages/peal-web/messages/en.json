@@ -847,6 +847,13 @@
   },
   "ConnectLink": {
     "title": "Connect an account",
+    "headingSeveral": "Connect your accounts",
+    "asksSeveral": "{host} asks to connect your accounts on these platforms, to publish there for you.",
+    "platformName": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformConnected": "Connected",
+    "connectPlatform": "Connect {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "left": "{platforms} {count, plural, one {is} other {are}} left to connect.",
+    "connectAnother": "Connect another account",
     "heading": "Connect your {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account",
     "loading": "Opening the link…",
     "retry": "Try again",
@@ -897,6 +904,7 @@
       "planLimit": "No more accounts can be connected for now. Tell whoever sent you this link.",
       "channelGone": "The account to connect again was removed since. Ask whoever sent this link for a new one.",
       "platformUnreachable": "The platform did not answer. Try again in a moment.",
+      "platformNotOffered": "This link does not connect accounts of this platform, or connected one already.",
       "notFound": "This link opens nothing. Check that you have the whole address, or ask for a new link.",
       "tooMany": "Too many tries from your network for now. Try again in an hour.",
       "unknown": "Something went wrong. Try again."
@@ -2588,7 +2596,7 @@
       "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
       "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes.",
       "partnerClosed": "This server opens partner accounts through its staff: ask the people who run it for one.",
-      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS) and the origins: each as https://host, with nothing after, 20 at most.",
+      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS), the accent colour (#RRGGBB, dark enough to read on white) and the origins: each as https://host, with nothing after, 20 at most.",
       "partnerOwnsWorkspaces": "The partner account of a workspace this would delete still owns workspaces. Delete each through the partner API first."
     },
     "cancellation": {
@@ -2709,6 +2717,8 @@
       "accountTitle": "What your customers see",
       "logo": "Logo address",
       "logoHint": "An HTTPS address, shown from there on the hosted pages. Leave it empty to show the name alone.",
+      "accent": "Accent colour",
+      "accentHint": "Six hexadecimal digits, as #415EEE, drawn as a line above your logo on the hosted pages. It must keep 3:1 contrast with white, so it is seen. Leave it empty for Peal’s own look.",
       "origins": "Return origins",
       "originsHint": "One a line, as https://app.example.com: scheme, host and port, with nothing after. A hosted page sends your customers back only to an address on one of these, exactly.",
       "save": "Save",

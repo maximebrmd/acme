@@ -9,7 +9,12 @@ import type {
   PostRecord,
   SavedItemsRecord,
 } from "#shared/application/personal-data.ts";
-import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
 import type { ExecutionId } from "./publication-scheduler.ts";
 
@@ -49,10 +54,11 @@ export class WorkspacePostStore extends Context.Service<
      * call to its platform is in flight: begun in the journal, and not
      * ended. A call begins by writing its journal row under the target, so
      * none can begin while this transaction holds the target, nor after it
-     * deleted it.
+     * deleted it. With `channelId`, the targets on that channel alone.
      */
     readonly lockRounds: (
-      workspaceId: WorkspaceId
+      workspaceId: WorkspaceId,
+      channelId?: ChannelId
     ) => Effect.Effect<readonly OpenRound[], DatabaseError>;
     /** The workspace's posts with their targets, oldest first. */
     readonly exportAll: (
