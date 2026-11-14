@@ -283,7 +283,7 @@ describe("the reviews' collection, paced by Google", () => {
           assert.strictEqual(report.deferred, 1);
           assert.strictEqual(report.left, 1);
 
-          const [limited] = [...world.state.threads.values()].filter(
+          const limited = [...world.state.threads.values()].find(
             ({ channelId: id }) => id === world.state.reads[0]?.channelId
           );
 
