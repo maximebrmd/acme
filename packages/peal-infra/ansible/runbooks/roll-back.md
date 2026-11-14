@@ -145,24 +145,28 @@ release before it misreads:
 ## Past X's pass-through
 
 The release that bills X at X's rates (migration `x-usage-settings`)
-writes, on a server that bills only, two states the release before cannot
-read: a post target failed as `paymentMethodRequired` or
-`xCeilingReached`, and a notice `XSpendCeiling`. The release before fails
-to decode a post or a notice holding one. A server that does not bill
-(production today) writes neither, and the new table is ignored.
+writes, on a server that bills only, states the release before cannot
+read: a post target failed as `paymentMethodRequired`, `paymentFailed`,
+`perAccountPricingRequired`, `xCeilingReached` or `xThreadCut` (in the
+target and its attempts), a `PostFailed` notice holding one of those
+reasons (a notice outlives its post), and a notice `XSpendCeiling`. The
+release before fails to decode each of them on every read: the
+workspace's posts and the user's notices answer 500 until the release is
+rolled forward. A server that does not bill (production today) writes
+none of them, and the new table is ignored.
 
 1. **Targets that failed for X's meter:**
 
    ```sh
    sudo peal-compose exec postgres psql --username peal --dbname peal --command \
-     "SELECT t.post_id, t.id FROM publishing.post_targets t WHERE t.failure_reason IN ('paymentMethodRequired', 'xCeilingReached') OR EXISTS (SELECT 1 FROM publishing.publication_attempts a WHERE a.target_id = t.id AND (a.detail::text LIKE '%paymentMethodRequired%' OR a.detail::text LIKE '%xCeilingReached%'))"
+     "SELECT t.post_id, t.id FROM publishing.post_targets t WHERE t.failure_reason IN ('paymentMethodRequired', 'xCeilingReached', 'paymentFailed', 'perAccountPricingRequired', 'xThreadCut') OR EXISTS (SELECT 1 FROM publishing.publication_attempts a WHERE a.target_id = t.id AND a.detail::text ~ 'paymentMethodRequired|xCeilingReached|paymentFailed|perAccountPricingRequired|xThreadCut')"
    ```
 
-2. **Notices of X's ceiling:**
+2. **Notices of X's ceiling, and failure notices holding those reasons:**
 
    ```sh
    sudo peal-compose exec postgres psql --username peal --dbname peal --command \
-     "SELECT id, workspace_id FROM notifications.notices WHERE kind = 'XSpendCeiling' OR event->>'_tag' = 'XSpendCeiling'"
+     "SELECT id, workspace_id FROM notifications.notices WHERE kind = 'XSpendCeiling' OR event->>'_tag' = 'XSpendCeiling' OR (event->>'_tag' = 'PostFailed' AND event->>'reason' IN ('paymentMethodRequired', 'xCeilingReached', 'paymentFailed', 'perAccountPricingRequired', 'xThreadCut'))"
    ```
 
 3. **Either lists a row:** do not roll back past this release; release a
