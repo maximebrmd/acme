@@ -60,6 +60,9 @@ const uploadTimeout = Duration.minutes(10);
 // site's clock and Peal's may differ.
 const clockSlack = Duration.minutes(1);
 
+// The site's refusal of a featured image it does not have.
+const lostFileCode = "rest_invalid_featured_media";
+
 // The longest of WordPress's codes kept.
 const maxCodeLength = 100;
 
@@ -75,6 +78,7 @@ const PostSchema = Schema.Struct({
 const FoundPostSchema = Schema.Struct({
   id: Schema.Number,
   link: Schema.optionalKey(Schema.String),
+  modified_gmt: Schema.optionalKey(Schema.String),
   title: Schema.Struct({ raw: Schema.optionalKey(Schema.String) }),
 });
 
@@ -200,14 +204,14 @@ const isoGmt = (instant: DateTime.Utc) =>
  * undefined is not sent, as JSON leaves it out.
  */
 interface PostFields {
-  readonly categories: readonly number[];
+  readonly categories?: readonly number[];
   readonly content: string;
   readonly date_gmt?: string;
   readonly excerpt: string;
   /** 0 for none. */
   readonly featured_media: number;
   readonly status?: string;
-  readonly tags: readonly number[];
+  readonly tags?: readonly number[];
   readonly title: string;
 }
 
@@ -413,10 +417,26 @@ export const WordPressSitePublisherLive = Layer.effect(
         }
       }
 
+      const categories = yield* termIds(
+        token,
+        "categories",
+        content.categories
+      );
+      const tags = yield* termIds(token, "tags", content.tags);
+
+      // A new post naming no category takes the site's default one, which
+      // an empty list would take away; a change on the site sends them
+      // whole, empty included.
+      const terms = withStatus
+        ? {
+            ...(categories.length === 0 ? {} : { categories }),
+            ...(tags.length === 0 ? {} : { tags }),
+          }
+        : { categories, tags };
+
       const fields: PostFields = {
-        categories: yield* termIds(token, "categories", content.categories),
+        ...terms,
         content: articleHtml(content.body, images),
-        tags: yield* termIds(token, "tags", content.tags),
         // None removes the site's, as a change on the site must.
         excerpt: Option.getOrElse(
           content.excerpt.pipe(Option.map(escapeHtml)),
@@ -469,7 +489,7 @@ export const WordPressSitePublisherLive = Layer.effect(
           token,
           HttpClientRequest.get(
             routeUrl(token.root, "/wp/v2/posts", {
-              _fields: "id,link,title",
+              _fields: "id,link,modified_gmt,title",
               author: String(me.id),
               context: "edit",
               modified_after: DateTime.formatIso(
@@ -483,7 +503,15 @@ export const WordPressSitePublisherLive = Layer.effect(
         )
       ).pipe(Effect.flatMap(sentJson(Schema.Array(FoundPostSchema), [200])));
 
-      const titled = posts.filter((post) => post.title.raw?.trim() === title);
+      // A site before WordPress 5.7 ignores `modified_after`: the posts
+      // changed before the attempt are left out here as well.
+      const since = isoGmt(DateTime.subtractDuration(startedAt, clockSlack));
+
+      const titled = posts.filter(
+        (post) =>
+          post.title.raw?.trim() === title &&
+          (post.modified_gmt === undefined || post.modified_gmt >= since)
+      );
 
       const recorded = yield* store
         .recordedOn(
@@ -645,17 +673,33 @@ export const WordPressSitePublisherLive = Layer.effect(
       yield* credentials.withToken(article.channelId, (token) =>
         Effect.gen(function* updating() {
           // What it says, never how it stands: the site keeps its status.
-          const fields = yield* fieldsOf(token, article, false);
+          const send = fieldsOf(token, article, false).pipe(
+            Effect.flatMap((fields) =>
+              execute(
+                api,
+                signed(
+                  token,
+                  HttpClientRequest.post(
+                    postRoute(token, platformPostId, true)
+                  ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
+                )
+              )
+            ),
+            Effect.flatMap(sentJson(PostSchema, [200]))
+          );
 
-          yield* execute(
-            api,
-            signed(
-              token,
-              HttpClientRequest.post(
-                postRoute(token, platformPostId, true)
-              ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
+          // The site lost a file it took, as when its administrator
+          // deleted it: the files are sent once more.
+          yield* send.pipe(
+            Effect.catchTag("BadRequest", (refused) =>
+              refused.code === lostFileCode
+                ? journal.forgetFiles(article.id).pipe(
+                    Effect.mapError(() => new PlatformUnavailable()),
+                    Effect.andThen(send)
+                  )
+                : Effect.fail(refused)
             )
-          ).pipe(Effect.flatMap(sentJson(PostSchema, [200])));
+          );
         })
       );
     });

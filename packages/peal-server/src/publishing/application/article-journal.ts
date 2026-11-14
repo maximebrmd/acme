@@ -70,6 +70,13 @@ export class ArticleJournal extends Context.Service<
     readonly filesSent: (
       articleId: ArticleId
     ) => Effect.Effect<ReadonlyMap<MediaAssetId, SiteFile>, DatabaseError>;
+    /**
+     * Forgets the files the article sent its site, which the site no
+     * longer has: they are sent again.
+     */
+    readonly forgetFiles: (
+      articleId: ArticleId
+    ) => Effect.Effect<void, DatabaseError>;
     /** Records a file the site took for the article. */
     readonly fileSent: (
       articleId: ArticleId,

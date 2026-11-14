@@ -333,6 +333,82 @@ describe("an article", () => {
     )
   );
 
+  it.effect("leaves the site's default category when it names none", () =>
+    onArticles(
+      Effect.gen(function* noCategories() {
+        const { site } = yield* sentTo({}, { categories: [] });
+
+        const made = site
+          .requests()
+          .find(
+            ({ method, query, route }) =>
+              route === "/wp/v2/posts" &&
+              method === "POST" &&
+              query.get("search") === null
+          );
+
+        assert.isFalse(made?.body.toString().includes('"categories"'));
+      })
+    )
+  );
+
+  it.effect(
+    "takes no older post of that title on a site that ignores when posts changed",
+    () =>
+      onArticles(
+        Effect.gen(function* olderSite() {
+          let old = 0;
+
+          const { sent: article } = yield* sentTo(
+            {
+              beforeModifiedAfter: true,
+              drop: (request) =>
+                request.route === "/wp/v2/posts" && request.method === "POST",
+            },
+            {},
+            undefined,
+            (site) => {
+              old = site.addPost({
+                modified_gmt: "2020-01-01T00:00:00",
+                title: "Spring sowing",
+              });
+            }
+          );
+
+          assert.strictEqual(stateOf(article), "published");
+          assert.notStrictEqual(
+            article.state._tag === "published"
+              ? article.state.platformPostId
+              : undefined,
+            String(old)
+          );
+        })
+      )
+  );
+
+  it.effect("sends a file again that the site's library lost", () =>
+    onArticles(
+      Effect.gen(function* lostFile() {
+        const { actor, sent: article, site } = yield* sentTo();
+        const cover = site.posts()[0]?.featured_media ?? 0;
+
+        site.deleteMedia(cover);
+
+        yield* (yield* Articles).updateOnSite(
+          actor,
+          article.id,
+          content({ title: "Spring sowing, revised" })
+        );
+
+        const [post] = site.posts();
+
+        assert.strictEqual(post?.title, "Spring sowing, revised");
+        assert.notStrictEqual(post?.featured_media, cover);
+        assert.isTrue(site.media().some(({ id }) => id === post?.featured_media));
+      })
+    )
+  );
+
   it.effect(
     "takes the site's term whose name holds an ampersand, and the one it made before",
     () =>

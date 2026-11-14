@@ -434,6 +434,11 @@ export const DrizzleArticleJournal = Layer.effect(
             target: [articleFiles.articleId, articleFiles.mediaId],
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      forgetFiles: (articleId) =>
+        db
+          .delete(articleFiles)
+          .where(eq(articleFiles.articleId, articleId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       filesSent: (articleId) =>
         db
           .select()

@@ -76,6 +76,8 @@ export interface FakeWordPressOptions {
    * connection before it answers: an answer lost on the way.
    */
   readonly drop?: (request: FakeWordPressRequest) => boolean;
+  /** Whether the site ignores `modified_after`, as WordPress before 5.7. */
+  readonly beforeModifiedAfter?: boolean;
 }
 
 export interface FakeWordPressAnswer {
@@ -95,6 +97,8 @@ export interface FakeWordPress {
   /** Adds a post made outside Peal, as it would be listed: its id. */
   readonly addPost: (post: Partial<FakeWordPressPost>) => number;
   readonly media: () => readonly FakeWordPressMedia[];
+  /** Deletes a file from the site's library, as its administrator would. */
+  readonly deleteMedia: (id: number) => void;
   readonly posts: () => readonly FakeWordPressPost[];
   readonly requests: () => readonly FakeWordPressRequest[];
   readonly tags: () => ReadonlyMap<number, string>;
@@ -230,6 +234,16 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
       let nextId = 100;
       let origin = "";
 
+      // A featured image the site's library has, or none.
+      const knownMedia = (id: number | undefined) =>
+        id === undefined || id === 0 || files.some((file) => file.id === id);
+
+      const invalidFeaturedMedia = error(
+        400,
+        "rest_invalid_featured_media",
+        "Invalid featured media ID."
+      );
+
       const rootUrl = () =>
         pretty ? `${origin}/wp-json/` : `${origin}/?rest_route=/`;
 
@@ -315,6 +329,10 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
 
         const fields = postFieldsOf(request.body);
 
+        if (!knownMedia(fields.featured_media)) {
+          return invalidFeaturedMedia;
+        }
+
         nextId += 1;
 
         const post: FakeWordPressPost = {
@@ -356,7 +374,9 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
           return {
             body: [...posts.values()].flatMap((post) =>
               post.title.includes(search) &&
-              (after === null || post.modified_gmt > after.slice(0, 19))
+              (after === null ||
+                options.beforeModifiedAfter === true ||
+                post.modified_gmt > after.slice(0, 19))
                 ? [postView(post)]
                 : []
             ),
@@ -399,6 +419,10 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
 
         if (request.method === "POST") {
           const fields = postFieldsOf(request.body);
+
+          if (!knownMedia(fields.featured_media)) {
+            return invalidFeaturedMedia;
+          }
 
           Object.assign(post, {
             ...fields,
@@ -646,6 +670,13 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
         },
         categories: () => new Map(categories),
         home: `${origin}${homePath}`,
+        deleteMedia: (id) => {
+          const index = files.findIndex((file) => file.id === id);
+
+          if (index !== -1) {
+            files.splice(index, 1);
+          }
+        },
         media: () => [...files],
         posts: () => [...posts.values()],
         requests: () => [...received],

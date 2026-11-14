@@ -13,7 +13,10 @@ import { ArticleContent } from "#publishing/domain/article-content.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
-import type { FakeWordPressOptions } from "#test/channels/fakes/fake-wordpress.ts";
+import type {
+  FakeWordPress,
+  FakeWordPressOptions,
+} from "#test/channels/fakes/fake-wordpress.ts";
 import { actorIn, freshWorkspace } from "#test/channels/support.ts";
 import {
   ArticleServerTest,
@@ -72,9 +75,14 @@ export const writer = (workspaceId: Parameters<typeof actorIn>[0]) =>
 export const sentTo = Effect.fn("test.sentTo")(function* sentTo(
   options: FakeWordPressOptions = {},
   fields: Partial<ArticleContent> = {},
-  password?: string
+  password?: string,
+  // What the site holds already, before the article is sent.
+  prepare: (site: FakeWordPress) => void = () => undefined
 ) {
   const site = yield* fakeWordPress(options);
+
+  prepare(site);
+
   const workspaceId = yield* freshWorkspace;
   const channel = yield* siteChannel(workspaceId, site, password);
   const articles = yield* Articles;
