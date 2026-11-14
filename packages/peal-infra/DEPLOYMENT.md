@@ -32,11 +32,11 @@ Postgres archives its write-ahead log to Cloudflare R2 with pgBackRest at least 
 
 ## Alerts
 
-The Grafana of production and of the sandbox sends its alerts to a Telegram chat: when the server answers no requests, fails them or logs errors, when a platform refuses the server's app until it is paid for, when no backup has finished for 30 hours, when the disk is 85% full, when a RAID array is degraded, and when a disk reports that it is failing.
+The Grafana of production and of the sandbox sends its alerts to a Telegram chat, and to the environment's Slack channel once its webhook is set: when the server answers no requests, fails them or logs errors, when a platform refuses the server's app until it is paid for, when no backup has finished for 30 hours, when the disk is 85% full, when a RAID array is degraded, and when a disk reports that it is failing.
 
 ## Uptime
 
-The uptime server watches production and the sandbox as people reach them, through Cloudflare, so its alerts still go out when Cloudflare, a tunnel or a server is down. They go to a Telegram bot of its own. Its configuration is generated from the same inventory as theirs:
+The uptime server watches production and the sandbox as people reach them, through Cloudflare, so its alerts still go out when Cloudflare, a tunnel or a server is down. They go to a Telegram bot of its own, and to Slack once its webhooks are set. It also watches the platforms' changelog pages and posts their changes to Slack. Its configuration is generated from the same inventory as theirs:
 
 | Check                 | Passes when                                                                |
 | --------------------- | -------------------------------------------------------------------------- |

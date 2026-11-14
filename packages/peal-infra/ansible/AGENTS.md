@@ -66,8 +66,18 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   `tests/test_hosting.py` checks: Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
   Telegram bot of its own, the sandbox's checks in the sandbox's chat
-  (`telegram: true`), and only on an incident, never a blip (the role's
-  thresholds); Caddy is its only public entry, for the heartbeat
+  (`telegram: true`), and on Slack beside it once its webhooks are set
+  (the sandbox's in `#alerts-sandbox`, `slack: true`), only on an incident,
+  never a blip (the role's thresholds). Slack is optional, there as in
+  Grafana (`peal_runtime` mounts `telegram-slack.yaml` only with
+  `SLACK_ALERTS_WEBHOOK_URL`, and `release.yml` refuses, before it changes
+  anything, a `host.env` that names it while `credentials.env` lacks the
+  webhook, on which Grafana would not start): with its webhooks unset, every rendered
+  file stays as it was, which `tests/test_uptime.py` checks. The platform
+  watch (`files/platform_watch.py`, the standard library's alone, tested in
+  `tests/test_platform_watch.py` on synthetic pages, never the internet)
+  runs there too, as `gatus`, from a timer installed only with
+  `SLACK_CHANGELOG_WEBHOOK_URL`; Caddy is its only public entry, for the heartbeat
   production's Grafana posts every few minutes, on `uptime_hostname`, and
   for the public status page, on `uptime_status_hostname`
   (status.peal.social, `uptime_public_status: true`). It shares no secret,

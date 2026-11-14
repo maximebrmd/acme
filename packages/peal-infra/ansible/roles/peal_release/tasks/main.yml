@@ -16,6 +16,34 @@
     fail_msg: Run site.yml on {{ inventory_hostname }} before releasing.
     quiet: true
 
+# Grafana stops at start on a contact point whose setting is missing, and the
+# release would only find out once it had replaced the stack: when host.env
+# names the Telegram and Slack contact points, credentials.env must hold
+# Slack's webhook. The files on the server are what Grafana reads, whether
+# the credentials came from the vault or by hand; names only, read-only, so
+# it runs in check mode too.
+- name: Find whether Grafana's contact points lack their Slack webhook
+  ansible.builtin.shell: |
+    set -eu
+    value="=['\"]?[^'\"[:space:]]"
+    if grep -Eqs "^PEAL_GRAFANA_CONTACT_POINTS=['\"]?[^'\"]*/telegram-slack\.yaml['\"]?$" {{ peal_root }}/host.env \
+      && ! grep -Eqs "^SLACK_ALERTS_WEBHOOK_URL${value}" {{ peal_root }}/credentials.env; then
+      echo SLACK_ALERTS_WEBHOOK_URL
+    fi
+  register: peal_release_contact_points
+  changed_when: false
+  check_mode: false
+
+- name: Stop before Grafana would refuse its contact points
+  ansible.builtin.assert:
+    that: peal_release_contact_points.stdout_lines | length == 0
+    fail_msg: >-
+      host.env sends Grafana's alerts to Slack (telegram-slack.yaml), but
+      {{ peal_root }}/credentials.env holds no SLACK_ALERTS_WEBHOOK_URL, and
+      Grafana would not start: run site.yml on {{ inventory_hostname }},
+      which picks the contact points from the credentials, then release.yml.
+    quiet: true
+
 - name: Create the local release folder
   ansible.builtin.file:
     path: "{{ peal_release_local_dir }}"

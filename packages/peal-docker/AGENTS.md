@@ -55,13 +55,16 @@ under Development stack.
 ## Telemetry and alerting
 
 - Telemetry goes through an OpenTelemetry Collector to Loki, Tempo, Prometheus
-  and Grafana; alerts go to a Telegram bot. Grafana's alert rules
+  and Grafana; alerts go to a Telegram bot, and to a Slack channel too
+  where the environment's webhook is set (`alerting/telegram-slack.yaml`,
+  which names rules, states, the environment and labels, never an
+  annotation or a log line). Grafana's alert rules
   (`config/production/grafana/alerting/rules.yaml`) and dashboards
   (`config/production/grafana/dashboards/`) are provisioned from
   `peal-docker`; the web app's error reports have an alert and a dashboard
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
-  its own contact point, never to Telegram.
+  its own contact point, never to Telegram or Slack.
 - A rule queries a server metric by its Prometheus name: dots become
   underscores, and a counter declared `incremental: true` (a monotonic sum)
   gains `_total`; Effect exports no unit, so a gauge gains no suffix.

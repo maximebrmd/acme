@@ -1,7 +1,9 @@
 ---
 # Gatus checks the public endpoints of the environments uptime_environments
-# lists, from outside, and alerts on Telegram; Caddy takes the heartbeats
-# their Grafana sends. The server shares nothing with them: its credentials
+# lists, from outside, and alerts on Telegram, and on Slack too once its
+# webhooks are set; Caddy takes the heartbeats their Grafana sends. The
+# platform watch, at the end, posts the platforms' changelog changes to
+# Slack. The server shares nothing with them: its credentials
 # are its own, from its vault or written on it, and the heartbeat tokens are
 # generated here, then given to each environment as one of its credentials
 # (README.md, "Uptime").
@@ -269,6 +271,22 @@
          | difference(uptime_credentials | dict2items | rejectattr('value', 'equalto', '')
                       | rejectattr('value', 'none') | map(attribute='key') | list)
          if uptime_credentials is defined else uptime_unset.stdout_lines }}
+
+# The optional ones, Slack's webhooks, by name as above: each turns a
+# feature on (uptime_set_credentials), and its absence stops nothing.
+- name: Find the optional credentials set on the server
+  ansible.builtin.shell: |
+    set -eu
+    value="=['\"]?[^'\"[:space:]]"
+    for name in {{ uptime_optional_credentials | join(' ') }}; do
+      if grep -Eqs "^${name}${value}" {{ uptime_root }}/credentials.env; then
+        echo "$name"
+      fi
+    done
+  register: uptime_optional_set
+  changed_when: false
+  check_mode: false
+  when: uptime_credentials is not defined
 
 # The status page's mark, icon and fonts, from the repository: the web
 # app's, and peal-ui's Geist (DESIGN.md). Readable by anyone, as a site's
@@ -544,3 +562,163 @@
     - uptime_shared_host | bool
     - uptime_caddy_reload is changed
     - not ansible_check_mode
+
+# The platform watch (README.md, "The platform watch"): the platforms'
+# changelog pages and feeds, read every 6 hours by a script of the standard
+# library's alone, as the gatus user, and what changed posted to Slack. It
+# runs once SLACK_CHANGELOG_WEBHOOK_URL is set, and stops when it is not.
+- name: Refuse platform watch sources the watch cannot read
+  ansible.builtin.assert:
+    that:
+      - uptime_platform_watch_sources | rejectattr('name', 'defined') | list | length == 0
+      - uptime_platform_watch_sources | rejectattr('platform', 'defined') | list | length == 0
+      - uptime_platform_watch_sources | rejectattr('url', 'defined') | list | length == 0
+      - uptime_platform_watch_sources | map(attribute='url') | reject('match', 'https://[^\s]+$') | list | length == 0
+      - uptime_platform_watch_sources | map(attribute='kind') | reject('in', ['page', 'feed']) | list | length == 0
+      - uptime_platform_watch_sources | map(attribute='url') | unique | list | length == uptime_platform_watch_sources | length
+    fail_msg: >-
+      Give each source of uptime_platform_watch_sources a name, a platform,
+      an https:// URL of its own and a kind, page or feed.
+    quiet: true
+
+- name: Look for the platform watch's timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/peal-platform-watch.timer
+  register: uptime_platform_watch_timer
+
+- name: Stop the platform watch without its webhook
+  ansible.builtin.systemd_service:
+    name: peal-platform-watch.timer
+    state: stopped
+    enabled: false
+  when:
+    - not (uptime_platform_watch | bool)
+    - uptime_platform_watch_timer.stat.exists
+
+# Its copies stay, so a webhook set again posts what changed since.
+- name: Remove the platform watch without its webhook
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/peal-platform-watch.timer
+    - /etc/systemd/system/peal-platform-watch.service
+    - "{{ uptime_root }}/platform-watch.env"
+  notify: Reload systemd for the platform watch
+  when: not (uptime_platform_watch | bool)
+
+# systemd leaves the folder it mounted the watch's on, empty: it goes too,
+# and stays if anything is in it.
+- name: Remove the platform watch's mount point without its webhook
+  ansible.builtin.shell: |
+    set -eu
+    if [ -d {{ uptime_platform_watch_mount }} ] && rmdir {{ uptime_platform_watch_mount }} 2>/dev/null; then
+      echo removed
+    fi
+  register: uptime_platform_watch_unmounted
+  changed_when: uptime_platform_watch_unmounted.stdout == 'removed'
+  when: not (uptime_platform_watch | bool)
+
+- name: Look for the platform watch's Python
+  ansible.builtin.stat:
+    path: "{{ uptime_platform_watch_python }}"
+  register: uptime_platform_watch_python_found
+  when: uptime_platform_watch | bool
+
+- name: Require the platform watch's Python
+  ansible.builtin.assert:
+    that: uptime_platform_watch_python_found.stat.exists
+    fail_msg: >-
+      The platform watch runs on {{ uptime_platform_watch_python }}, which the
+      server lacks: set uptime_platform_watch_python to its Python 3.
+    quiet: true
+  when: uptime_platform_watch | bool
+
+- name: Install the platform watch
+  ansible.builtin.copy:
+    src: platform_watch.py
+    dest: "{{ uptime_platform_watch_bin }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when: uptime_platform_watch | bool
+
+# The folder is root's, readable by gatus; gatus alone reads and writes the
+# copies, in state/.
+- name: Create the platform watch's folders
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: gatus
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ uptime_platform_watch_root }}", owner: root, mode: "0750" }
+    - { path: "{{ uptime_platform_watch_root }}/state", owner: gatus, mode: "0700" }
+  loop_control:
+    label: "{{ item.path }}"
+  register: uptime_platform_watch_folders
+  when: uptime_platform_watch | bool
+
+- name: Write the platform watch's sources
+  ansible.builtin.copy:
+    content: "{{ uptime_platform_watch_sources | to_nice_json }}\n"
+    dest: "{{ uptime_platform_watch_root }}/sources.json"
+    owner: root
+    group: gatus
+    mode: "0640"
+  when:
+    - uptime_platform_watch | bool
+    - not (ansible_check_mode and uptime_platform_watch_folders is changed)
+
+# Its webhook alone, from the credentials, in a file only root reads, which
+# systemd hands the service as its environment. The value goes from one
+# file to the other in the shell, never into Ansible's output.
+- name: Give the platform watch its webhook
+  ansible.builtin.shell: |
+    set -eu
+    umask 077
+    cd {{ uptime_root }}
+    grep '^SLACK_CHANGELOG_WEBHOOK_URL=' credentials.env > platform-watch.env.new
+    if cmp -s platform-watch.env platform-watch.env.new; then
+      rm platform-watch.env.new
+    else
+      mv platform-watch.env.new platform-watch.env
+      echo changed
+    fi
+  register: uptime_platform_watch_webhook
+  changed_when: uptime_platform_watch_webhook.stdout | length > 0
+  when: uptime_platform_watch | bool
+
+# Read-only: the unit lets the watch reach the local resolver alone.
+- name: Read the server's resolvers
+  ansible.builtin.slurp:
+    src: /etc/resolv.conf
+  register: uptime_resolv_conf
+  check_mode: false
+  when: uptime_platform_watch | bool
+
+- name: Write the platform watch's service and timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/systemd/system/{{ item }}
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - peal-platform-watch.service
+    - peal-platform-watch.timer
+  notify: Reload systemd for the platform watch
+  when: uptime_platform_watch | bool
+
+- name: Apply the platform watch's units now
+  ansible.builtin.meta: flush_handlers
+
+- name: Start the platform watch's timer at boot
+  ansible.builtin.systemd_service:
+    name: peal-platform-watch.timer
+    state: started
+    enabled: true
+  when:
+    - uptime_platform_watch | bool
+    - not ansible_check_mode or uptime_platform_watch_timer.stat.exists
