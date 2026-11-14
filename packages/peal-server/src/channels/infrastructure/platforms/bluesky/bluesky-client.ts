@@ -48,11 +48,9 @@ export const blueskyScope = [
  * Protocol's consent takes every scope asked or none.
  */
 export const blueskyScopeWith = (chat: boolean): string =>
-  [
-    blueskyScope,
-    blueskyRepostScope,
-    ...(chat ? blueskyChatScopes : []),
-  ].join(" ");
+  [blueskyScope, blueskyRepostScope, ...(chat ? blueskyChatScopes : [])].join(
+    " "
+  );
 
 /**
  * What one sign-in asks, within the most the client may ask (`most`, its

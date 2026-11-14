@@ -26,9 +26,9 @@ import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-r
 import { newId } from "#shared/application/ids.ts";
 import { Actor, can } from "#shared/domain/access.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
-import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
@@ -816,8 +816,7 @@ describe("follow-up rules", () => {
           yield* FollowUps.use((followUps) => followUps.arm(target));
 
           yield* SqlClient.SqlClient.use(
-            (sql) =>
-              sql`DELETE FROM channels.channels WHERE id = ${mastodon}`
+            (sql) => sql`DELETE FROM channels.channels WHERE id = ${mastodon}`
           ).pipe(Effect.orDie);
 
           assert.strictEqual((yield* runDue).channelGone, 1);

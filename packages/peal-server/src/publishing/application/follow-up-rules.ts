@@ -440,6 +440,8 @@ export class FollowUpRules extends Context.Service<
                 reason: "alreadyFollowedUp",
               });
             }
+
+            return arming;
           })
         );
 

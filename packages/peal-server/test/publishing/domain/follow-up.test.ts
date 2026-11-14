@@ -150,6 +150,16 @@ describe("a follow-up rule", () => {
     );
 
     expect(text.approval._tag).toBe("pending");
+  });
+
+  it("is approved by a change from a member who approves posts, and only theirs", () => {
+    const approved = Result.getOrThrow(
+      approveFollowUpRule(
+        startFollowUpRule(newRule({ needsApproval: true }), now),
+        approver,
+        now
+      )
+    );
 
     // Changed by a member who approves posts: approved by them.
     const byApprover = Result.getOrThrow(

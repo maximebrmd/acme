@@ -230,15 +230,15 @@ export const DrizzleCommentRuleStore = Layer.effect(
           ORDER BY c.received_at, c.id
           LIMIT ${limit}
         `.pipe(
-          Effect.flatMap(decodeCandidates),
-          Effect.map((rows) =>
-            rows.map((row) => ({
-              ...row,
-              authorPlatformId: Option.fromNullOr(row.authorPlatformId),
-            }))
-          ),
-          Effect.mapError(failed)
-        ),
+              Effect.flatMap(decodeCandidates),
+              Effect.map((rows) =>
+                rows.map((row) => ({
+                  ...row,
+                  authorPlatformId: Option.fromNullOr(row.authorPlatformId),
+                }))
+              ),
+              Effect.mapError(failed)
+            ),
       channelsOfPost: (workspaceId, postId) =>
         db
           .selectDistinct({ channelId: threads.channelId })
@@ -371,10 +371,7 @@ export const DrizzleCommentRuleStore = Layer.effect(
           WHERE c.channel_id = ${channelId}
             AND m.outcome = 'replied'
             AND m.looked_at >= ${date(since)}
-        `.pipe(
-          Effect.flatMap(decodeCount),
-          Effect.mapError(failed)
-        ),
+        `.pipe(Effect.flatMap(decodeCount), Effect.mapError(failed)),
       repliedSince: (ruleId, since) =>
         db
           .select({ replied: count() })

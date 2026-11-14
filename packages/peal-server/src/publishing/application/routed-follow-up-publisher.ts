@@ -1,7 +1,7 @@
 import { DateTime, Effect, Layer, Option } from "effect";
 
-import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import type { FollowUp } from "#publishing/domain/follow-up.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
@@ -67,7 +67,9 @@ const livePartsIds = (
 // The key a platform is given: the follow-up's own, and its attempt's
 // after the first, as an attempt after a refusal is a new call.
 const keyOf = (followUp: FollowUp) =>
-  followUp.attempt <= 1 ? followUp.id : `${followUp.id}:${String(followUp.attempt)}`;
+  followUp.attempt <= 1
+    ? followUp.id
+    : `${followUp.id}:${String(followUp.attempt)}`;
 
 // What the platform answered, as it is kept.
 const storable = <R>(

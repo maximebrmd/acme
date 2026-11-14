@@ -138,10 +138,14 @@ export class FollowUp extends Schema.Class<FollowUp>(
 
 type Transition = Result.Result<FollowUp, InvalidFollowUpTransition>;
 
-const withStatus = (followUp: FollowUp, status: FollowUpStatus): FollowUp =>
+const withStatus = (
+  followUp: FollowUp,
+  status: FollowUpStatus,
+  attempt: number = followUp.attempt
+): FollowUp =>
   new FollowUp({
     armedAt: followUp.armedAt,
-    attempt: followUp.attempt,
+    attempt,
     channelId: followUp.channelId,
     id: followUp.id,
     kind: followUp.kind,
@@ -202,13 +206,17 @@ export const triggerFollowUp = (
 ): Transition =>
   followUp.status._tag === "armed" && !isPast(followUp, now)
     ? Result.succeed(
-        withStatus(new FollowUp({ ...followUp, attempt: followUp.attempt + 1 }), {
-          _tag: "sending",
-          attemptedAt: Option.none(),
-          likes,
-          triggeredAt: now,
-          until: followUp.status.until,
-        })
+        withStatus(
+          followUp,
+          {
+            _tag: "sending",
+            attemptedAt: Option.none(),
+            likes,
+            triggeredAt: now,
+            until: followUp.status.until,
+          },
+          followUp.attempt + 1
+        )
       )
     : refused(followUp, "trigger");
 

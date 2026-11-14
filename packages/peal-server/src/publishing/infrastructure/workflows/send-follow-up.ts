@@ -24,7 +24,8 @@ export const FollowUpSendResultSchema = Schema.Literals([
  * put the follow-up off is a new one.
  */
 export const SendFollowUpV1 = Workflow.make("SendFollowUpV1", {
-  idempotencyKey: ({ attempt, followUpId }) => `${followUpId}:${String(attempt)}`,
+  idempotencyKey: ({ attempt, followUpId }) =>
+    `${followUpId}:${String(attempt)}`,
   payload: { attempt: Schema.Int, followUpId: FollowUpIdSchema },
 });
 

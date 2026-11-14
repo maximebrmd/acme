@@ -1,6 +1,5 @@
 import type { DateTime, Option } from "effect";
-import { Duration } from "effect";
-import { Result, Schema } from "effect";
+import { Duration, Result, Schema } from "effect";
 
 import {
   ChannelIdSchema,

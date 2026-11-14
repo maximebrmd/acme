@@ -92,62 +92,60 @@ export const DrizzleEngagementRecords = Layer.effect(
         { discard: true }
       );
 
-    const exportCommentRules = Effect.fn("EngagementRecords.exportCommentRules")(
-      function* exportCommentRules(workspaceId: string) {
-        const rules = yield* db
-          .select()
-          .from(commentRules)
-          .where(eq(commentRules.workspaceId, workspaceId))
-          .orderBy(asc(commentRules.id))
-          .pipe(Effect.mapError(failed));
+    const exportCommentRules = Effect.fn(
+      "EngagementRecords.exportCommentRules"
+    )(function* exportCommentRules(workspaceId: string) {
+      const rules = yield* db
+        .select()
+        .from(commentRules)
+        .where(eq(commentRules.workspaceId, workspaceId))
+        .orderBy(asc(commentRules.id))
+        .pipe(Effect.mapError(failed));
 
-        const matches =
-          rules.length === 0
-            ? []
-            : yield* db
-                .select()
-                .from(commentRuleMatches)
-                .where(
-                  inArray(
-                    commentRuleMatches.ruleId,
-                    rules.map(({ id }) => id)
-                  )
+      const matches =
+        rules.length === 0
+          ? []
+          : yield* db
+              .select()
+              .from(commentRuleMatches)
+              .where(
+                inArray(
+                  commentRuleMatches.ruleId,
+                  rules.map(({ id }) => id)
                 )
-                .orderBy(
-                  asc(commentRuleMatches.lookedAt),
-                  asc(commentRuleMatches.commentId)
-                )
-                .pipe(Effect.mapError(failed));
+              )
+              .orderBy(
+                asc(commentRuleMatches.lookedAt),
+                asc(commentRuleMatches.commentId)
+              )
+              .pipe(Effect.mapError(failed));
 
-        return rules.map(
-          (rule): CommentRuleRecord => ({
-            answersFrom: DateTime.fromDateUnsafe(rule.answersFrom),
-            channelId: rule.channelId,
-            createdAt: DateTime.fromDateUnsafe(rule.createdAt),
-            endedReason: rule.endedReason,
-            id: rule.id,
-            keywords: rule.keywords,
-            matches: matches
-              .filter(({ ruleId }) => ruleId === rule.id)
-              .map((match) => ({
-                code: match.code,
-                commentId: match.commentId,
-                lookedAt: DateTime.fromDateUnsafe(match.lookedAt),
-                outcome: match.outcome,
-                replyId: match.replyId,
-              })),
-            postId: rule.postId,
-            reply: rule.reply,
-            scope: rule.scope,
-            status: rule.status,
-            statusAt:
-              rule.statusAt === null
-                ? null
-                : DateTime.fromDateUnsafe(rule.statusAt),
-          })
-        );
-      }
-    );
+      return rules.map((rule): CommentRuleRecord => ({
+        answersFrom: DateTime.fromDateUnsafe(rule.answersFrom),
+        channelId: rule.channelId,
+        createdAt: DateTime.fromDateUnsafe(rule.createdAt),
+        endedReason: rule.endedReason,
+        id: rule.id,
+        keywords: rule.keywords,
+        matches: matches
+          .filter(({ ruleId }) => ruleId === rule.id)
+          .map((match) => ({
+            code: match.code,
+            commentId: match.commentId,
+            lookedAt: DateTime.fromDateUnsafe(match.lookedAt),
+            outcome: match.outcome,
+            replyId: match.replyId,
+          })),
+        postId: rule.postId,
+        reply: rule.reply,
+        scope: rule.scope,
+        status: rule.status,
+        statusAt:
+          rule.statusAt === null
+            ? null
+            : DateTime.fromDateUnsafe(rule.statusAt),
+      }));
+    });
 
     const exportUser = Effect.fn("EngagementRecords.exportUser")(
       function* exportUser(userId: string) {

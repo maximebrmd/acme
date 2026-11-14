@@ -94,7 +94,11 @@ describe("Bluesky's sign-in", () => {
     );
     // Never more than the client may ask.
     assert.strictEqual(
-      blueskySignInScope(blueskyScope, { messages: true, reposts: true }, Option.none()),
+      blueskySignInScope(
+        blueskyScope,
+        { messages: true, reposts: true },
+        Option.none()
+      ),
       blueskyScope
     );
   });

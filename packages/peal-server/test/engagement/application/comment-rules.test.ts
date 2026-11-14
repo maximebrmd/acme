@@ -4,11 +4,12 @@ import { MessageStorage, ShardingConfig } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
 import { CommentRules } from "#engagement/application/comment-rules.ts";
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementChannels } from "#engagement/application/ports/engagement-channels.ts";
 import { EngagementOutcomes } from "#engagement/application/ports/engagement-outcomes.ts";
-import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
+import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
@@ -16,7 +17,6 @@ import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
-import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { DrizzleCommentRuleStore } from "#engagement/infrastructure/drizzle-comment-rule-store.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
@@ -416,7 +416,11 @@ describe("comment rules", () => {
         });
 
         yield* EngagementRecords.use((records) =>
-          records.channelGone(thread.channelId, "mastodon", DateTime.nowUnsafe())
+          records.channelGone(
+            thread.channelId,
+            "mastodon",
+            DateTime.nowUnsafe()
+          )
         );
 
         const ended = yield* rules.get(actorIn(workspaceId), rule.rule.id);
@@ -429,105 +433,118 @@ describe("comment rules", () => {
     }).pipe(Effect.provide(RulesTest))
   );
 
-  it.live("never answer on a channel whose platform forbids it, on a post that went out on several", () =>
-    Effect.gen(function* refusesThere() {
-      const workspaceId = yield* freshWorkspace;
+  it.live(
+    "never answer on a channel whose platform forbids it, on a post that went out on several",
+    () =>
+      Effect.gen(function* refusesThere() {
+        const workspaceId = yield* freshWorkspace;
 
-      yield* Effect.gen(function* checks() {
-        const mastodon = yield* threadOn(workspaceId, "mastodon");
-        const bluesky = yield* threadOn(workspaceId, "bluesky", mastodon.postId);
-        const rules = yield* CommentRules;
+        yield* Effect.gen(function* checks() {
+          const mastodon = yield* threadOn(workspaceId, "mastodon");
 
-        const rule = yield* rules.start(actorIn(workspaceId), {
-          keywords: ["price"],
-          reply: "On our site.",
-          scope: { _tag: "post", postId: mastodon.postId },
-        });
+          const bluesky = yield* threadOn(
+            workspaceId,
+            "bluesky",
+            mastodon.postId
+          );
 
-        assert.deepStrictEqual(
-          new Map(rule.channels.map(({ platform, reply }) => [platform, reply])),
-          new Map([
-            ["bluesky", "notAllowed"],
-            ["mastodon", "available"],
-          ])
-        );
+          const rules = yield* CommentRules;
 
-        yield* Effect.sleep("5 millis");
+          const rule = yield* rules.start(actorIn(workspaceId), {
+            keywords: ["price"],
+            reply: "On our site.",
+            scope: { _tag: "post", postId: mastodon.postId },
+          });
 
-        const [onBluesky] = yield* received(bluesky, [
-          { author: 5, text: "price?" },
-        ]);
-        const [onMastodon] = yield* received(mastodon, [
-          { author: 6, text: "price?" },
-        ]);
+          assert.deepStrictEqual(
+            new Map(
+              rule.channels.map(({ platform, reply }) => [platform, reply])
+            ),
+            new Map([
+              ["bluesky", "notAllowed"],
+              ["mastodon", "available"],
+            ])
+          );
 
-        const before = (yield* Ref.get(started)).length;
-        const run = yield* rules.runDue;
+          yield* Effect.sleep("5 millis");
 
-        assert.strictEqual(run.replied, 1);
-        assert.strictEqual((yield* Ref.get(started)).length, before + 1);
+          const [onBluesky] = yield* received(bluesky, [
+            { author: 5, text: "price?" },
+          ]);
 
-        const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+          const [onMastodon] = yield* received(mastodon, [
+            { author: 6, text: "price?" },
+          ]);
 
-        assert.deepStrictEqual(
-          after.matches.map(({ commentId }) => commentId),
-          [onMastodon?.id]
-        );
-        assert.isFalse(
-          after.matches.some(({ commentId }) => commentId === onBluesky?.id)
-        );
-      }).pipe(Effect.ensuring(forget(workspaceId)));
-    }).pipe(Effect.provide(RulesTest))
+          const before = (yield* Ref.get(started)).length;
+          const run = yield* rules.runDue;
+
+          assert.strictEqual(run.replied, 1);
+          assert.strictEqual((yield* Ref.get(started)).length, before + 1);
+
+          const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+
+          assert.deepStrictEqual(
+            after.matches.map(({ commentId }) => commentId),
+            [onMastodon?.id]
+          );
+          assert.isFalse(
+            after.matches.some(({ commentId }) => commentId === onBluesky?.id)
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }).pipe(Effect.provide(RulesTest))
   );
 
-  it.live("answer no more than a channel's day allows, every rule together", () =>
-    Effect.gen(function* boundedDay() {
-      const workspaceId = yield* freshWorkspace;
+  it.live(
+    "answer no more than a channel's day allows, every rule together",
+    () =>
+      Effect.gen(function* boundedDay() {
+        const workspaceId = yield* freshWorkspace;
 
-      yield* Effect.gen(function* checks() {
-        const thread = yield* threadOn(workspaceId, "mastodon");
-        const rules = yield* CommentRules;
-        const sql = yield* SqlClient.SqlClient;
+        yield* Effect.gen(function* checks() {
+          const thread = yield* threadOn(workspaceId, "mastodon");
+          const rules = yield* CommentRules;
+          const sql = yield* SqlClient.SqlClient;
 
-        const first = yield* rules.start(actorIn(workspaceId), {
-          keywords: ["hours"],
-          reply: "Nine to five.",
-          scope: { _tag: "channel", channelId: thread.channelId },
-        });
+          const first = yield* rules.start(actorIn(workspaceId), {
+            keywords: ["hours"],
+            reply: "Nine to five.",
+            scope: { _tag: "channel", channelId: thread.channelId },
+          });
 
-        // The channel's day, full: as many replies as it takes, today.
-        const earlier = yield* received(
-          thread,
-          Array.from({ length: maxChannelRepliesPerDay }, (_, n) => ({
-            author: 100 + n,
-            text: `earlier ${String(n)}`,
-          }))
-        );
+          // The channel's day, full: as many replies as it takes, today.
+          const earlier = yield* received(
+            thread,
+            Array.from({ length: maxChannelRepliesPerDay }, (_, n) => ({
+              author: 100 + n,
+              text: `earlier ${String(n)}`,
+            }))
+          );
 
-        for (const comment of earlier) {
-          yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+          for (const comment of earlier) {
+            yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
             VALUES (${first.rule.id}, ${comment.id}, 'replied', now())`;
-        }
+          }
 
-        const second = yield* rules.start(actorIn(workspaceId), {
-          keywords: ["price"],
-          reply: "On our site.",
-          scope: { _tag: "post", postId: thread.postId },
-        });
+          const second = yield* rules.start(actorIn(workspaceId), {
+            keywords: ["price"],
+            reply: "On our site.",
+            scope: { _tag: "post", postId: thread.postId },
+          });
 
-        yield* Effect.sleep("5 millis");
-        yield* received(thread, [{ author: 7, text: "price?" }]);
+          yield* Effect.sleep("5 millis");
+          yield* received(thread, [{ author: 7, text: "price?" }]);
 
-        const before = (yield* Ref.get(started)).length;
+          const before = (yield* Ref.get(started)).length;
 
-        yield* rules.runDue;
+          yield* rules.runDue;
 
-        assert.strictEqual((yield* Ref.get(started)).length, before);
-        assert.deepStrictEqual(
-          (yield* rules.get(actorIn(workspaceId), second.rule.id)).matches,
-          []
-        );
-      }).pipe(Effect.ensuring(forget(workspaceId)));
-    }).pipe(Effect.provide(RulesTest))
+          assert.strictEqual((yield* Ref.get(started)).length, before);
+          assert.deepStrictEqual(
+            (yield* rules.get(actorIn(workspaceId), second.rule.id)).matches,
+            []
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }).pipe(Effect.provide(RulesTest))
   );
 });

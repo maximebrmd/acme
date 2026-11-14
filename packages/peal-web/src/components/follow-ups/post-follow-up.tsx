@@ -49,11 +49,13 @@ const FollowUpForm = ({
   const explain = useFollowUpErrorText();
   const [draft, setDraft] = useState<FollowUpDraft>(freshFollowUp);
   const [error, setError] = useState<string | null>(null);
+
   // The channels that would repost once connected again, as the refusal
   // said: Bluesky asks for reposts when a rule first needs them.
   const [reconnectable, setReconnectable] = useState<
     readonly { readonly channelId: string; readonly platform: Platform }[]
   >([]);
+
   const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
   const [busy, startTransition] = useTransition();
 

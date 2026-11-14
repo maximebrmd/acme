@@ -260,7 +260,10 @@ export const blueskyAuthorizer = Effect.fn("BlueskyAuthorizer.make")(
     ): string =>
       blueskySignInScope(
         options.scope ?? blueskyScope,
-        { messages: request.messages ?? false, reposts: request.reposts ?? false },
+        {
+          messages: request.messages ?? false,
+          reposts: request.reposts ?? false,
+        },
         request.reconnecting.pipe(Option.map((channel) => channel.scopes))
       );
 

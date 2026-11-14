@@ -12,13 +12,13 @@ import {
 import type { FollowUpAsk } from "#publishing/domain/follow-up-ability.ts";
 import { FollowUpIdSchema } from "#publishing/domain/follow-up-id.ts";
 import type { FollowUpId } from "#publishing/domain/follow-up-id.ts";
+import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   actsUntil,
   endFollowUpRule,
   mayAct,
   maxFollowUpsPerChannelDay,
 } from "#publishing/domain/follow-up-rule.ts";
-import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import type { FollowUpRule } from "#publishing/domain/follow-up-rule.ts";
 import {
   armFollowUp,
@@ -596,6 +596,7 @@ export class FollowUps extends Context.Service<
           return yield* transaction(
             Effect.gen(function* end() {
               const now = yield* DateTime.now;
+
               const locked = yield* store.lockRule(
                 candidate.workspaceId,
                 candidate.id

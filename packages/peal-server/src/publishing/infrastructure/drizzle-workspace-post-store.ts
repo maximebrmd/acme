@@ -25,7 +25,7 @@ import {
   feeds,
   queues,
   followUpRules,
-  followUps,
+  followUps as armedFollowUps,
   recyclingRules,
   idempotencyKeys,
   livePostChanges,
@@ -429,41 +429,39 @@ export const DrizzleWorkspacePostStore = Layer.effect(
 
       const armed = yield* db
         .select()
-        .from(followUps)
-        .where(eq(followUps.workspaceId, workspaceId))
-        .orderBy(asc(followUps.id));
+        .from(armedFollowUps)
+        .where(eq(armedFollowUps.workspaceId, workspaceId))
+        .orderBy(asc(armedFollowUps.id));
 
       return yield* Effect.forEach((rule: (typeof rules)[number]) =>
         decodeApproval(rule.approval).pipe(
-          Effect.map(
-            (approval): FollowUpRuleRecord => ({
-              approval: approval._tag,
-              approvedAt: approval.approvedAt ?? null,
-              channelId: rule.channelId,
-              comment: rule.comment,
-              createdAt: DateTime.fromDateUnsafe(rule.createdAt),
-              endedReason: rule.endedReason,
-              followUps: armed
-                .filter(({ ruleId }) => ruleId === rule.id)
-                .map((followUp) => ({
-                  armedAt: DateTime.fromDateUnsafe(followUp.armedAt),
-                  channelId: followUp.channelId,
-                  id: followUp.id,
-                  kind: followUp.kind,
-                  postId: followUp.postId,
-                  state: followUp.state,
-                  status: followUp.status,
-                  targetId: followUp.targetId,
-                })),
-              id: rule.id,
-              likes: rule.likes,
-              postId: rule.postId,
-              repost: rule.repost,
-              scope: rule.scope,
-              status: rule.status,
-              statusAt: utcOrNull(rule.statusAt),
-            })
-          )
+          Effect.map((approval): FollowUpRuleRecord => ({
+            approval: approval._tag,
+            approvedAt: approval.approvedAt ?? null,
+            channelId: rule.channelId,
+            comment: rule.comment,
+            createdAt: DateTime.fromDateUnsafe(rule.createdAt),
+            endedReason: rule.endedReason,
+            followUps: armed
+              .filter(({ ruleId }) => ruleId === rule.id)
+              .map((followUp) => ({
+                armedAt: DateTime.fromDateUnsafe(followUp.armedAt),
+                channelId: followUp.channelId,
+                id: followUp.id,
+                kind: followUp.kind,
+                postId: followUp.postId,
+                state: followUp.state,
+                status: followUp.status,
+                targetId: followUp.targetId,
+              })),
+            id: rule.id,
+            likes: rule.likes,
+            postId: rule.postId,
+            repost: rule.repost,
+            scope: rule.scope,
+            status: rule.status,
+            statusAt: utcOrNull(rule.statusAt),
+          }))
         )
       )(rules);
     });

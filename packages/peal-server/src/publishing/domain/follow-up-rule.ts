@@ -275,11 +275,11 @@ export const approveFollowUpRule = (
   now: DateTime.Utc
 ): Result.Result<FollowUpRule, FollowUpRuleEnded> =>
   Result.map(ended(rule), (open) =>
-    open.approval._tag !== "approved"
-      ? changed(open, {
+    open.approval._tag === "approved"
+      ? open
+      : changed(open, {
           approval: { _tag: "approved", approvedAt: now, approvedBy: by },
         })
-      : open
   );
 
 /** The rule ended at `now` for `reason`; an ended one stays as it ended. */
