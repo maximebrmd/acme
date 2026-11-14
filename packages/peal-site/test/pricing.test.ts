@@ -203,6 +203,7 @@ describe("the pricing page", () => {
     (locale) => {
       const count = (value: number) =>
         new Intl.NumberFormat(locale).format(value);
+
       const { api } = pageOf(locale);
 
       expect(api).toContain(

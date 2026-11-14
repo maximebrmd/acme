@@ -34,21 +34,26 @@ const lineOf = (retirement: Retirement): string => {
     case "retire": {
       return `${apply ? "retired " : "retire  "}  ${held}  ends ${day(retirement.endsAt)}`;
     }
+
     case "retired": {
       return `retired   ${held}  ends ${day(retirement.endsAt)}  ${retirement.told ? "told" : "not told yet"}`;
     }
+
     case "ending": {
       return `ending    ${held}  ends ${Option.match(retirement.endsAt, {
         onNone: () => "with its period",
         onSome: day,
       })} (cancelled already)`;
     }
+
     case "trial": {
       return `trial     ${held}  runs to its end`;
     }
+
     case "unknownPeriod": {
       return `unknown   ${held}  no period end recorded: left to staff`;
     }
+
     default: {
       return held;
     }
