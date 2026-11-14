@@ -4,10 +4,13 @@ import { assert, layer } from "@effect/vitest";
 import { Context, DateTime, Effect, Layer, Option, Ref, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { PaidReads } from "#analytics/application/paid-reads.ts";
+import { billedPaidReads } from "#analytics/infrastructure/billed-paid-reads.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
+import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
 import { meterCharge, rateCard } from "#billing/domain/rate-card.ts";
@@ -672,6 +675,81 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
         );
 
         yield* cleanUp([paid]);
+      })
+  );
+});
+
+// X's reads with every workspace reading X, on the meters above.
+const XReadsOnTest = Layer.succeed(
+  XPassThrough,
+  XPassThrough.of({
+    rates: rateCard.x.rates,
+    readsOf: () => Effect.succeedNone,
+    readsOn: () => Effect.succeed(true),
+    setReads: () => Effect.die("not set in this test"),
+  })
+);
+
+layer(
+  billedPaidReads.pipe(
+    Layer.provideMerge(XReadsOnTest),
+    Layer.provideMerge(metersOn(true))
+  )
+)("X's reads on the meters of a server that bills", (it) => {
+  it.effect(
+    "claim each new read in the reader's transaction, tell the ceiling reached, and give back what X did not return",
+    () =>
+      Effect.gen(function* reads() {
+        const ceilings = yield* SpendCeilings;
+        const paid = yield* PaidReads;
+        const sql = yield* SqlClient.SqlClient;
+        const { payer, workspaceId } = yield* paying;
+
+        yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${workspaceId}`.pipe(
+          Effect.orDie
+        );
+        // One cent: two posts' reads.
+        yield* ceilings.set(ownerOf(workspaceId, payer), "x", 1);
+
+        const covered = yield* paid.claim({
+          platform: "x",
+          resources: ["1", "2", "3"],
+          workspaceId,
+        });
+
+        assert.deepStrictEqual(covered.resources, ["1", "2"]);
+        assert.deepStrictEqual(
+          (yield* keptOf(workspaceId)).meters.find(
+            ({ meter }) => meter === "xApi"
+          )?.used,
+          2 * rateCard.x.rates.postRead
+        );
+
+        // The whole was refused first: the billing managers were told.
+        const told = yield* Told.use(Ref.get);
+
+        assert.isTrue(
+          told.some(
+            ({ key, notice }) =>
+              notice._tag === "XSpendCeiling" &&
+              notice.percent === 100 &&
+              key.includes(workspaceId)
+          )
+        );
+
+        yield* paid.release({ platform: "x", resources: ["2"], workspaceId });
+
+        assert.strictEqual(
+          (yield* keptOf(workspaceId)).meters.find(
+            ({ meter }) => meter === "xApi"
+          )?.used,
+          rateCard.x.rates.postRead
+        );
+
+        yield* sql`DELETE FROM analytics.paid_reads WHERE workspace_id = ${workspaceId}`.pipe(
+          Effect.orDie
+        );
+        yield* cleanUp([workspaceId]);
       })
   );
 });

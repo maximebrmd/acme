@@ -1307,6 +1307,13 @@ layer(BillingIntegration, {
         const off = yield* put(owner, workspaceId, false);
 
         assert.deepInclude(off.body, { reads: false });
+
+        // Who switched it is the activity log's, the row names nobody.
+        const logged = yield* sql<{
+          readonly operation: string;
+        }>`SELECT operation FROM activity.events WHERE workspace_id = ${workspaceId} AND operation = 'billingActions.setXReads'`;
+
+        assert.isAtLeast(logged.length, 2);
       })
   );
 
