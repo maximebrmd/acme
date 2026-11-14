@@ -112,19 +112,21 @@ func (n *NotificationPreferences) String() string {
 }
 
 var (
-	notificationPreferencesEmailFieldChannelReconnect = big.NewInt(1 << 0)
-	notificationPreferencesEmailFieldComments         = big.NewInt(1 << 1)
-	notificationPreferencesEmailFieldFeedStopped      = big.NewInt(1 << 2)
-	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 3)
-	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 4)
-	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 5)
-	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
-	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
-	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 8)
-	notificationPreferencesEmailFieldWeeklyDigest     = big.NewInt(1 << 9)
+	notificationPreferencesEmailFieldAutomations      = big.NewInt(1 << 0)
+	notificationPreferencesEmailFieldChannelReconnect = big.NewInt(1 << 1)
+	notificationPreferencesEmailFieldComments         = big.NewInt(1 << 2)
+	notificationPreferencesEmailFieldFeedStopped      = big.NewInt(1 << 3)
+	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 4)
+	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 5)
+	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 6)
+	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 7)
+	notificationPreferencesEmailFieldRecyclingEnded   = big.NewInt(1 << 8)
+	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 9)
+	notificationPreferencesEmailFieldWeeklyDigest     = big.NewInt(1 << 10)
 )
 
 type NotificationPreferencesEmail struct {
+	Automations      bool `json:"automations" url:"automations"`
 	ChannelReconnect bool `json:"channelReconnect" url:"channelReconnect"`
 	Comments         bool `json:"comments" url:"comments"`
 	FeedStopped      bool `json:"feedStopped" url:"feedStopped"`
@@ -141,6 +143,13 @@ type NotificationPreferencesEmail struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (n *NotificationPreferencesEmail) GetAutomations() bool {
+	if n == nil {
+		return false
+	}
+	return n.Automations
 }
 
 func (n *NotificationPreferencesEmail) GetChannelReconnect() bool {
@@ -227,6 +236,13 @@ func (n *NotificationPreferencesEmail) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	n.explicitFields = next
+}
+
+// SetAutomations sets the Automations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetAutomations(automations bool) {
+	n.Automations = automations
+	n.require(notificationPreferencesEmailFieldAutomations)
 }
 
 // SetChannelReconnect sets the ChannelReconnect field and marks it as non-optional;
@@ -342,19 +358,21 @@ func (n *NotificationPreferencesEmail) String() string {
 }
 
 var (
-	notificationPreferencesChangeEmailFieldChannelReconnect = big.NewInt(1 << 0)
-	notificationPreferencesChangeEmailFieldComments         = big.NewInt(1 << 1)
-	notificationPreferencesChangeEmailFieldFeedStopped      = big.NewInt(1 << 2)
-	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 3)
-	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 4)
-	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 5)
-	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 6)
-	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 7)
-	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 8)
-	notificationPreferencesChangeEmailFieldWeeklyDigest     = big.NewInt(1 << 9)
+	notificationPreferencesChangeEmailFieldAutomations      = big.NewInt(1 << 0)
+	notificationPreferencesChangeEmailFieldChannelReconnect = big.NewInt(1 << 1)
+	notificationPreferencesChangeEmailFieldComments         = big.NewInt(1 << 2)
+	notificationPreferencesChangeEmailFieldFeedStopped      = big.NewInt(1 << 3)
+	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 4)
+	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 5)
+	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 6)
+	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 7)
+	notificationPreferencesChangeEmailFieldRecyclingEnded   = big.NewInt(1 << 8)
+	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 9)
+	notificationPreferencesChangeEmailFieldWeeklyDigest     = big.NewInt(1 << 10)
 )
 
 type NotificationPreferencesChangeEmail struct {
+	Automations      *bool `json:"automations,omitempty" url:"automations,omitempty"`
 	ChannelReconnect *bool `json:"channelReconnect,omitempty" url:"channelReconnect,omitempty"`
 	Comments         *bool `json:"comments,omitempty" url:"comments,omitempty"`
 	FeedStopped      *bool `json:"feedStopped,omitempty" url:"feedStopped,omitempty"`
@@ -371,6 +389,13 @@ type NotificationPreferencesChangeEmail struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (n *NotificationPreferencesChangeEmail) GetAutomations() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.Automations
 }
 
 func (n *NotificationPreferencesChangeEmail) GetChannelReconnect() *bool {
@@ -457,6 +482,13 @@ func (n *NotificationPreferencesChangeEmail) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	n.explicitFields = next
+}
+
+// SetAutomations sets the Automations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetAutomations(automations *bool) {
+	n.Automations = automations
+	n.require(notificationPreferencesChangeEmailFieldAutomations)
 }
 
 // SetChannelReconnect sets the ChannelReconnect field and marks it as non-optional;

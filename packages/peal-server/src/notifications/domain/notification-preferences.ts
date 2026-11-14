@@ -12,6 +12,9 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
   "peal-server/notifications/domain/NotificationPreferences"
 )({
   email: Schema.Struct({
+    // A rule that acts by itself (follow-ups, comment replies) ended by
+    // itself, or follow-ups did not go out.
+    automations: Schema.Boolean,
     channelReconnect: Schema.Boolean,
     // New comments under the posts that went live.
     comments: Schema.Boolean,
@@ -39,12 +42,14 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
  * Until a user chooses: email for what needs them (a post that failed or may
  * not have gone out, a channel to reconnect, a post to approve or what its
  * review brought, a recycling rule that ended or a feed that stopped, as
- * either stops what they expect to go on, deliveries to a webhook endpoint failing for good), and not for posts that went out as planned nor for the
+ * either stops what they expect to go on, a rule acting by itself that
+ * ended or whose follow-ups did not go out, deliveries to a webhook endpoint failing for good), and not for posts that went out as planned nor for the
  * comments they receive, which the app shows, nor the weekly digest; and
  * only the posts they wrote.
  */
 export const defaultPreferences = new NotificationPreferences({
   email: {
+    automations: true,
     channelReconnect: true,
     comments: false,
     feedStopped: true,
@@ -80,6 +85,7 @@ export const changePreferences = (
 
   return new NotificationPreferences({
     email: {
+      automations: asked.automations ?? email.automations,
       channelReconnect: asked.channelReconnect ?? email.channelReconnect,
       comments: asked.comments ?? email.comments,
       feedStopped: asked.feedStopped ?? email.feedStopped,

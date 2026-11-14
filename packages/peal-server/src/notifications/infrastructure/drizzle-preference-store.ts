@@ -22,6 +22,7 @@ type Row = typeof notificationPreferences.$inferSelect;
 const preferencesOf = (row: Row) =>
   new NotificationPreferences({
     email: {
+      automations: row.emailAutomations,
       channelReconnect: row.emailChannelReconnect,
       comments: row.emailComments,
       feedStopped: row.emailFeedStopped,
@@ -86,6 +87,10 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailPostUnconfirmed = email.postUnconfirmed;
           }
 
+          if (email.automations !== undefined) {
+            set.emailAutomations = email.automations;
+          }
+
           if (email.feedStopped !== undefined) {
             set.emailFeedStopped = email.feedStopped;
           }
@@ -115,6 +120,7 @@ export const DrizzlePreferenceStore = Layer.effect(
           const [row] = yield* db
             .insert(notificationPreferences)
             .values({
+              emailAutomations: first.email.automations,
               emailChannelReconnect: first.email.channelReconnect,
               emailComments: first.email.comments,
               emailFeedStopped: first.email.feedStopped,

@@ -14,6 +14,7 @@ public class GetTest : BaseMockServerTest
         const string mockResponse = """
             {
               "email": {
+                "automations": true,
                 "channelReconnect": true,
                 "comments": true,
                 "feedStopped": true,
@@ -53,6 +54,7 @@ public class GetTest : BaseMockServerTest
         const string mockResponse = """
             {
               "email": {
+                "automations": true,
                 "channelReconnect": true,
                 "comments": true,
                 "feedStopped": true,

@@ -29,7 +29,10 @@ export type NoticeEvent =
     | Peal.NoticeEvent.AdBoostChanged
     | Peal.NoticeEvent.AdConnectionReconnectRequired
     | Peal.NoticeEvent.RecyclingEnded
-    | Peal.NoticeEvent.FeedStopped;
+    | Peal.NoticeEvent.FeedStopped
+    | Peal.NoticeEvent.FollowUpsNotSent
+    | Peal.NoticeEvent.FollowUpRuleStopped
+    | Peal.NoticeEvent.CommentRuleStopped;
 
 export namespace NoticeEvent {
     export interface PostPublished extends Peal.NoticeEventPostPublished {
@@ -138,5 +141,17 @@ export namespace NoticeEvent {
 
     export interface FeedStopped extends Peal.NoticeEventFeedStopped {
         _tag: "FeedStopped";
+    }
+
+    export interface FollowUpsNotSent extends Peal.NoticeEventFollowUpsNotSent {
+        _tag: "FollowUpsNotSent";
+    }
+
+    export interface FollowUpRuleStopped extends Peal.NoticeEventFollowUpRuleStopped {
+        _tag: "FollowUpRuleStopped";
+    }
+
+    export interface CommentRuleStopped extends Peal.NoticeEventCommentRuleStopped {
+        _tag: "CommentRuleStopped";
     }
 }

@@ -5,9 +5,13 @@ import type {
   NoticeChannel,
   NoticeEvent,
 } from "#notifications/domain/notice-event.ts";
-import { PostFailureReasonSchema } from "#notifications/domain/notice-event.ts";
+import {
+  AutomationStopReasonSchema,
+  FollowUpNotSentReasonSchema,
+  PostFailureReasonSchema,
+} from "#notifications/domain/notice-event.ts";
 import { renderNoticeEmail } from "#notifications/domain/render-notice-email.ts";
-import { PostIdSchema } from "#shared/domain/ids.ts";
+import { PostIdSchema, Uuid7Schema } from "#shared/domain/ids.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
 const url = "https://app.example.test/app/0b1c/posts/0190";
@@ -52,6 +56,81 @@ describe(renderNoticeEmail, () => {
       "choisissez Lire ses messages pour le canal dans la boîte de réception, puis Autoriser, sur Bluesky"
     );
     expect(`${english.text}${french.text}`).not.toMatch(/\{\w+\}/u);
+  });
+
+  const ruleId = Uuid7Schema.make("00000000-0000-7000-8000-00000000f001");
+
+  it("tells follow-ups that did not go out, how many and why, in both languages", () => {
+    const event: NoticeEvent = {
+      _tag: "FollowUpsNotSent",
+      count: 3,
+      reasons: ["failed", "unconfirmed"],
+      ruleId,
+    };
+
+    const english = render(event, "en");
+    const french = render(event, "fr");
+
+    expect(english.subject).toBe("Follow-ups did not go out");
+    expect(english.text).toContain(
+      "A follow-up rule of Studio Nord has follow-ups that did not go out (3): the platform refused them; Peal could not tell whether they went out: check the platform, as Peal never sends them again."
+    );
+    expect(french.subject).toBe("Des relances ne sont pas parties");
+    expect(french.text).toContain(
+      "Une règle de relance de Studio Nord a des relances qui ne sont pas parties (3) : la plateforme les a refusées ; Peal n’a pas pu savoir si elles sont parties : vérifiez la plateforme, car Peal ne les renvoie jamais."
+    );
+  });
+
+  it("tells a rule that stopped by itself, why, in both languages", () => {
+    const english = render(
+      { _tag: "FollowUpRuleStopped", reason: "channelGone", ruleId },
+      "en"
+    );
+
+    const french = render(
+      { _tag: "CommentRuleStopped", reason: "starterGone", ruleId },
+      "fr"
+    );
+
+    expect(english.subject).toBe("A follow-up rule stopped");
+    expect(english.text).toContain(
+      "A follow-up rule of Studio Nord stopped by itself: its channel was disconnected."
+    );
+    expect(french.subject).toBe(
+      "Une règle de réponse aux commentaires s’est arrêtée"
+    );
+    expect(french.text).toContain(
+      "Une règle de réponse aux commentaires de Studio Nord s’est arrêtée d’elle-même : la personne qui l’a lancée ne peut plus y répondre aux commentaires."
+    );
+  });
+
+  it("words every reason of the rules that act by themselves in every language", () => {
+    const events: readonly NoticeEvent[] = [
+      ...FollowUpNotSentReasonSchema.literals.map(
+        (reason): NoticeEvent => ({
+          _tag: "FollowUpsNotSent",
+          count: 1,
+          reasons: [reason],
+          ruleId,
+        })
+      ),
+      ...AutomationStopReasonSchema.literals.flatMap(
+        (reason): readonly NoticeEvent[] => [
+          { _tag: "FollowUpRuleStopped", reason, ruleId },
+          { _tag: "CommentRuleStopped", reason, ruleId },
+        ]
+      ),
+    ];
+
+    for (const event of events) {
+      for (const locale of locales) {
+        const email = render(event, locale);
+
+        expect(email.subject).not.toMatch(/\{\w+\}/u);
+        expect(email.text).not.toMatch(/\{\w+\}/u);
+        expect(email.text).not.toContain("undefined");
+      }
+    }
   });
 
   it("acknowledges a withdrawal with its date, time and refund", () => {

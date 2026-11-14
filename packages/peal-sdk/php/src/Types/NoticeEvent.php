@@ -36,6 +36,9 @@ class NoticeEvent extends JsonSerializableType
      *   |'AdConnectionReconnectRequired'
      *   |'RecyclingEnded'
      *   |'FeedStopped'
+     *   |'FollowUpsNotSent'
+     *   |'FollowUpRuleStopped'
+     *   |'CommentRuleStopped'
      *   |'_unknown'
      * ) $type
      */
@@ -70,6 +73,9 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventAdConnectionReconnectRequired
      *   |NoticeEventRecyclingEnded
      *   |NoticeEventFeedStopped
+     *   |NoticeEventFollowUpsNotSent
+     *   |NoticeEventFollowUpRuleStopped
+     *   |NoticeEventCommentRuleStopped
      *   |mixed
      * ) $value
      */
@@ -105,6 +111,9 @@ class NoticeEvent extends JsonSerializableType
      *   |'AdConnectionReconnectRequired'
      *   |'RecyclingEnded'
      *   |'FeedStopped'
+     *   |'FollowUpsNotSent'
+     *   |'FollowUpRuleStopped'
+     *   |'CommentRuleStopped'
      *   |'_unknown'
      * ),
      *   value: (
@@ -135,6 +144,9 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventAdConnectionReconnectRequired
      *   |NoticeEventRecyclingEnded
      *   |NoticeEventFeedStopped
+     *   |NoticeEventFollowUpsNotSent
+     *   |NoticeEventFollowUpRuleStopped
+     *   |NoticeEventCommentRuleStopped
      *   |mixed
      * ),
      * } $values
@@ -467,6 +479,42 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'FeedStopped',
             'value' => $feedStopped,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventFollowUpsNotSent $followUpsNotSent
+     * @return NoticeEvent
+     */
+    public static function followUpsNotSent(NoticeEventFollowUpsNotSent $followUpsNotSent): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'FollowUpsNotSent',
+            'value' => $followUpsNotSent,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventFollowUpRuleStopped $followUpRuleStopped
+     * @return NoticeEvent
+     */
+    public static function followUpRuleStopped(NoticeEventFollowUpRuleStopped $followUpRuleStopped): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'FollowUpRuleStopped',
+            'value' => $followUpRuleStopped,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventCommentRuleStopped $commentRuleStopped
+     * @return NoticeEvent
+     */
+    public static function commentRuleStopped(NoticeEventCommentRuleStopped $commentRuleStopped): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'CommentRuleStopped',
+            'value' => $commentRuleStopped,
         ]);
     }
 
@@ -1065,6 +1113,72 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isFollowUpsNotSent(): bool
+    {
+        return $this->value instanceof NoticeEventFollowUpsNotSent && $this->type === 'FollowUpsNotSent';
+    }
+
+    /**
+     * @return NoticeEventFollowUpsNotSent
+     */
+    public function asFollowUpsNotSent(): NoticeEventFollowUpsNotSent
+    {
+        if (!($this->value instanceof NoticeEventFollowUpsNotSent && $this->type === 'FollowUpsNotSent')) {
+            throw new Exception(
+                "Expected FollowUpsNotSent; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFollowUpRuleStopped(): bool
+    {
+        return $this->value instanceof NoticeEventFollowUpRuleStopped && $this->type === 'FollowUpRuleStopped';
+    }
+
+    /**
+     * @return NoticeEventFollowUpRuleStopped
+     */
+    public function asFollowUpRuleStopped(): NoticeEventFollowUpRuleStopped
+    {
+        if (!($this->value instanceof NoticeEventFollowUpRuleStopped && $this->type === 'FollowUpRuleStopped')) {
+            throw new Exception(
+                "Expected FollowUpRuleStopped; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCommentRuleStopped(): bool
+    {
+        return $this->value instanceof NoticeEventCommentRuleStopped && $this->type === 'CommentRuleStopped';
+    }
+
+    /**
+     * @return NoticeEventCommentRuleStopped
+     */
+    public function asCommentRuleStopped(): NoticeEventCommentRuleStopped
+    {
+        if (!($this->value instanceof NoticeEventCommentRuleStopped && $this->type === 'CommentRuleStopped')) {
+            throw new Exception(
+                "Expected CommentRuleStopped; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -1192,6 +1306,18 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asFeedStopped()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'FollowUpsNotSent':
+                $value = $this->asFollowUpsNotSent()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'FollowUpRuleStopped':
+                $value = $this->asFollowUpRuleStopped()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'CommentRuleStopped':
+                $value = $this->asCommentRuleStopped()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case '_unknown':
             default:
                 if (is_null($this->value)) {
@@ -1308,6 +1434,15 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'FeedStopped':
                 $args['value'] = NoticeEventFeedStopped::jsonDeserialize($data);
+                break;
+            case 'FollowUpsNotSent':
+                $args['value'] = NoticeEventFollowUpsNotSent::jsonDeserialize($data);
+                break;
+            case 'FollowUpRuleStopped':
+                $args['value'] = NoticeEventFollowUpRuleStopped::jsonDeserialize($data);
+                break;
+            case 'CommentRuleStopped':
+                $args['value'] = NoticeEventCommentRuleStopped::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

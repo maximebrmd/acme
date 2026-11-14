@@ -62,6 +62,12 @@ module Peal
       member -> { Peal::Types::NoticeEventRecyclingEnded }, key: "RECYCLING_ENDED"
 
       member -> { Peal::Types::NoticeEventFeedStopped }, key: "FEED_STOPPED"
+
+      member -> { Peal::Types::NoticeEventFollowUpsNotSent }, key: "FOLLOW_UPS_NOT_SENT"
+
+      member -> { Peal::Types::NoticeEventFollowUpRuleStopped }, key: "FOLLOW_UP_RULE_STOPPED"
+
+      member -> { Peal::Types::NoticeEventCommentRuleStopped }, key: "COMMENT_RULE_STOPPED"
     end
   end
 end

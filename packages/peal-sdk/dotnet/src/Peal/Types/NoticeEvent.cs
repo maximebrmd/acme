@@ -262,6 +262,33 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.FollowUpsNotSent"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.FollowUpsNotSent value)
+    {
+        Type = "FollowUpsNotSent";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.FollowUpRuleStopped"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.FollowUpRuleStopped value)
+    {
+        Type = "FollowUpRuleStopped";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.CommentRuleStopped"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.CommentRuleStopped value)
+    {
+        Type = "CommentRuleStopped";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -406,6 +433,21 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "FeedStopped"
     /// </summary>
     public bool IsFeedStopped => Type == "FeedStopped";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "FollowUpsNotSent"
+    /// </summary>
+    public bool IsFollowUpsNotSent => Type == "FollowUpsNotSent";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "FollowUpRuleStopped"
+    /// </summary>
+    public bool IsFollowUpRuleStopped => Type == "FollowUpRuleStopped";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "CommentRuleStopped"
+    /// </summary>
+    public bool IsCommentRuleStopped => Type == "CommentRuleStopped";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -658,6 +700,33 @@ public record NoticeEvent
             ? (Peal.NoticeEventFeedStopped)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'FeedStopped'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventFollowUpsNotSent"/> if <see cref="Type"/> is 'FollowUpsNotSent', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FollowUpsNotSent'.</exception>
+    public Peal.NoticeEventFollowUpsNotSent AsFollowUpsNotSent() =>
+        IsFollowUpsNotSent
+            ? (Peal.NoticeEventFollowUpsNotSent)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'FollowUpsNotSent'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventFollowUpRuleStopped"/> if <see cref="Type"/> is 'FollowUpRuleStopped', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FollowUpRuleStopped'.</exception>
+    public Peal.NoticeEventFollowUpRuleStopped AsFollowUpRuleStopped() =>
+        IsFollowUpRuleStopped
+            ? (Peal.NoticeEventFollowUpRuleStopped)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'FollowUpRuleStopped'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventCommentRuleStopped"/> if <see cref="Type"/> is 'CommentRuleStopped', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'CommentRuleStopped'.</exception>
+    public Peal.NoticeEventCommentRuleStopped AsCommentRuleStopped() =>
+        IsCommentRuleStopped
+            ? (Peal.NoticeEventCommentRuleStopped)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'CommentRuleStopped'");
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
@@ -686,6 +755,9 @@ public record NoticeEvent
         Func<Peal.NoticeEventAdConnectionReconnectRequired, T> onAdConnectionReconnectRequired,
         Func<Peal.NoticeEventRecyclingEnded, T> onRecyclingEnded,
         Func<Peal.NoticeEventFeedStopped, T> onFeedStopped,
+        Func<Peal.NoticeEventFollowUpsNotSent, T> onFollowUpsNotSent,
+        Func<Peal.NoticeEventFollowUpRuleStopped, T> onFollowUpRuleStopped,
+        Func<Peal.NoticeEventCommentRuleStopped, T> onCommentRuleStopped,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -720,6 +792,9 @@ public record NoticeEvent
             ),
             "RecyclingEnded" => onRecyclingEnded(AsRecyclingEnded()),
             "FeedStopped" => onFeedStopped(AsFeedStopped()),
+            "FollowUpsNotSent" => onFollowUpsNotSent(AsFollowUpsNotSent()),
+            "FollowUpRuleStopped" => onFollowUpRuleStopped(AsFollowUpRuleStopped()),
+            "CommentRuleStopped" => onCommentRuleStopped(AsCommentRuleStopped()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -752,6 +827,9 @@ public record NoticeEvent
         Action<Peal.NoticeEventAdConnectionReconnectRequired> onAdConnectionReconnectRequired,
         Action<Peal.NoticeEventRecyclingEnded> onRecyclingEnded,
         Action<Peal.NoticeEventFeedStopped> onFeedStopped,
+        Action<Peal.NoticeEventFollowUpsNotSent> onFollowUpsNotSent,
+        Action<Peal.NoticeEventFollowUpRuleStopped> onFollowUpRuleStopped,
+        Action<Peal.NoticeEventCommentRuleStopped> onCommentRuleStopped,
         Action<string, object?> onUnknown_
     )
     {
@@ -837,6 +915,15 @@ public record NoticeEvent
                 break;
             case "FeedStopped":
                 onFeedStopped(AsFeedStopped());
+                break;
+            case "FollowUpsNotSent":
+                onFollowUpsNotSent(AsFollowUpsNotSent());
+                break;
+            case "FollowUpRuleStopped":
+                onFollowUpRuleStopped(AsFollowUpRuleStopped());
+                break;
+            case "CommentRuleStopped":
+                onCommentRuleStopped(AsCommentRuleStopped());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -1224,6 +1311,48 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventFollowUpsNotSent"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsFollowUpsNotSent(out Peal.NoticeEventFollowUpsNotSent? value)
+    {
+        if (Type == "FollowUpsNotSent")
+        {
+            value = (Peal.NoticeEventFollowUpsNotSent)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventFollowUpRuleStopped"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsFollowUpRuleStopped(out Peal.NoticeEventFollowUpRuleStopped? value)
+    {
+        if (Type == "FollowUpRuleStopped")
+        {
+            value = (Peal.NoticeEventFollowUpRuleStopped)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventCommentRuleStopped"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsCommentRuleStopped(out Peal.NoticeEventCommentRuleStopped? value)
+    {
+        if (Type == "CommentRuleStopped")
+        {
+            value = (Peal.NoticeEventCommentRuleStopped)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -1291,6 +1420,13 @@ public record NoticeEvent
     public static implicit operator NoticeEvent(NoticeEvent.RecyclingEnded value) => new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.FeedStopped value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.FollowUpsNotSent value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.FollowUpRuleStopped value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.CommentRuleStopped value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<NoticeEvent>
@@ -1488,6 +1624,25 @@ public record NoticeEvent
                 "FeedStopped" => jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventFeedStopped?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.NoticeEventFeedStopped"),
+                "FollowUpsNotSent" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventFollowUpsNotSent?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventFollowUpsNotSent"
+                        ),
+                "FollowUpRuleStopped" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventFollowUpRuleStopped?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventFollowUpRuleStopped"
+                        ),
+                "CommentRuleStopped" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventCommentRuleStopped?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventCommentRuleStopped"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -1541,6 +1696,9 @@ public record NoticeEvent
                     ),
                     "RecyclingEnded" => JsonSerializer.SerializeToNode(value.Value, options),
                     "FeedStopped" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FollowUpsNotSent" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FollowUpRuleStopped" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "CommentRuleStopped" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -2105,6 +2263,66 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.FeedStopped(
             Peal.NoticeEventFeedStopped value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for FollowUpsNotSent
+    /// </summary>
+    [Serializable]
+    public struct FollowUpsNotSent
+    {
+        public FollowUpsNotSent(Peal.NoticeEventFollowUpsNotSent value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventFollowUpsNotSent Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.FollowUpsNotSent(
+            Peal.NoticeEventFollowUpsNotSent value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for FollowUpRuleStopped
+    /// </summary>
+    [Serializable]
+    public struct FollowUpRuleStopped
+    {
+        public FollowUpRuleStopped(Peal.NoticeEventFollowUpRuleStopped value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventFollowUpRuleStopped Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.FollowUpRuleStopped(
+            Peal.NoticeEventFollowUpRuleStopped value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for CommentRuleStopped
+    /// </summary>
+    [Serializable]
+    public struct CommentRuleStopped
+    {
+        public CommentRuleStopped(Peal.NoticeEventCommentRuleStopped value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventCommentRuleStopped Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.CommentRuleStopped(
+            Peal.NoticeEventCommentRuleStopped value
         ) => new(value);
     }
 }

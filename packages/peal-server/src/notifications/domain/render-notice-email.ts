@@ -252,6 +252,26 @@ const contentOf = (
       messages: catalog.feedStopped,
       values: [["reason", catalog.feedStopReasons[reason]]],
     }),
+    FollowUpsNotSent: ({ count, reasons }): Content => ({
+      messages: catalog.followUpsNotSent,
+      values: [
+        ["count", String(count)],
+        [
+          "reasons",
+          reasons
+            .map((reason) => catalog.followUpNotSentReasons[reason])
+            .join(catalog.reasonsJoint),
+        ],
+      ],
+    }),
+    FollowUpRuleStopped: ({ reason }): Content => ({
+      messages: catalog.followUpRuleStopped,
+      values: [["reason", catalog.followUpRuleStopReasons[reason]]],
+    }),
+    CommentRuleStopped: ({ reason }): Content => ({
+      messages: catalog.commentRuleStopped,
+      values: [["reason", catalog.commentRuleStopReasons[reason]]],
+    }),
     PostApprovalRequested: ({ scheduledAt }): Content => ({
       messages: catalog.postApprovalRequested,
       values: [["scheduledAt", instantIn(scheduledAt, locale)]],

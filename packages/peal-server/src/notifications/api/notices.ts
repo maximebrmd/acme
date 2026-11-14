@@ -114,6 +114,22 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       feedId,
       reason,
     }),
+    FollowUpsNotSent: ({ count, reasons, ruleId }): NoticeEventView => ({
+      _tag: "FollowUpsNotSent",
+      count,
+      reasons,
+      ruleId,
+    }),
+    FollowUpRuleStopped: ({ reason, ruleId }): NoticeEventView => ({
+      _tag: "FollowUpRuleStopped",
+      reason,
+      ruleId,
+    }),
+    CommentRuleStopped: ({ reason, ruleId }): NoticeEventView => ({
+      _tag: "CommentRuleStopped",
+      reason,
+      ruleId,
+    }),
     PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventView => ({
       _tag: "PostApprovalRequested",
       postId,

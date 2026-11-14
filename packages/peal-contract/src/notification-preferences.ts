@@ -11,6 +11,10 @@ import { Forbidden } from "./forbidden.ts";
  */
 export const NotificationPreferencesSchema = Schema.Struct({
   email: Schema.Struct({
+    // A rule that acts by itself (a follow-up rule, a comment rule) that
+    // ended without a member stopping it, and follow-ups that did not go
+    // out.
+    automations: Schema.Boolean,
     // A channel to reconnect, now or soon.
     channelReconnect: Schema.Boolean,
     // New comments under the posts that went live.
@@ -43,6 +47,7 @@ export type NotificationPreferences = typeof NotificationPreferencesSchema.Type;
 export const NotificationPreferencesChangeSchema = Schema.Struct({
   email: Schema.optionalKey(
     Schema.Struct({
+      automations: Schema.optionalKey(Schema.Boolean),
       channelReconnect: Schema.optionalKey(Schema.Boolean),
       comments: Schema.optionalKey(Schema.Boolean),
       feedStopped: Schema.optionalKey(Schema.Boolean),
@@ -72,7 +77,7 @@ export class NotificationPreferencesApi extends HttpApiGroup.make(
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended and webhook deliveries failing, but not published posts nor comments, are emailed, and no weekly digest; and they hear only about the posts they wrote.",
+          "Answers with which notices the user receives by email, and whether they hear about every post. Until they change it: failed and unconfirmed posts, channels to reconnect, posts to review, recycling rules that ended, rules acting by themselves that ended or whose follow-ups did not go out, and webhook deliveries failing, but not published posts nor comments, are emailed, and no weekly digest; and they hear only about the posts they wrote.",
         summary: "Get notification preferences",
       })
     ),

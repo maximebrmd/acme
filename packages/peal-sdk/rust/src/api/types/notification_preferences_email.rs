@@ -2,6 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct NotificationPreferencesEmail {
+    #[serde(default)]
+    pub automations: bool,
     #[serde(rename = "channelReconnect")]
     #[serde(default)]
     pub channel_reconnect: bool,
@@ -42,6 +44,7 @@ impl NotificationPreferencesEmail {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct NotificationPreferencesEmailBuilder {
+    automations: Option<bool>,
     channel_reconnect: Option<bool>,
     comments: Option<bool>,
     feed_stopped: Option<bool>,
@@ -55,6 +58,11 @@ pub struct NotificationPreferencesEmailBuilder {
 }
 
 impl NotificationPreferencesEmailBuilder {
+    pub fn automations(mut self, value: bool) -> Self {
+        self.automations = Some(value);
+        self
+    }
+
     pub fn channel_reconnect(mut self, value: bool) -> Self {
         self.channel_reconnect = Some(value);
         self
@@ -107,6 +115,7 @@ impl NotificationPreferencesEmailBuilder {
 
     /// Consumes the builder and constructs a [`NotificationPreferencesEmail`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`automations`](NotificationPreferencesEmailBuilder::automations)
     /// - [`channel_reconnect`](NotificationPreferencesEmailBuilder::channel_reconnect)
     /// - [`comments`](NotificationPreferencesEmailBuilder::comments)
     /// - [`feed_stopped`](NotificationPreferencesEmailBuilder::feed_stopped)
@@ -119,6 +128,9 @@ impl NotificationPreferencesEmailBuilder {
     /// - [`weekly_digest`](NotificationPreferencesEmailBuilder::weekly_digest)
     pub fn build(self) -> Result<NotificationPreferencesEmail, BuildError> {
         Ok(NotificationPreferencesEmail {
+            automations: self
+                .automations
+                .ok_or_else(|| BuildError::missing_field("automations"))?,
             channel_reconnect: self
                 .channel_reconnect
                 .ok_or_else(|| BuildError::missing_field("channel_reconnect"))?,

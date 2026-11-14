@@ -7,6 +7,7 @@ export interface NotificationPreferences {
 
 export namespace NotificationPreferences {
     export interface Email {
+        automations: boolean;
         channelReconnect: boolean;
         comments: boolean;
         feedStopped: boolean;

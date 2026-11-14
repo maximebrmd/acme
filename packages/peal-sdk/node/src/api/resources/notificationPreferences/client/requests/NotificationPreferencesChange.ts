@@ -11,6 +11,7 @@ export interface NotificationPreferencesChange {
 
 export namespace NotificationPreferencesChange {
     export interface Email {
+        automations?: boolean | undefined;
         channelReconnect?: boolean | undefined;
         comments?: boolean | undefined;
         feedStopped?: boolean | undefined;

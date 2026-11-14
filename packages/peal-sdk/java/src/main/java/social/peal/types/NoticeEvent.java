@@ -134,6 +134,18 @@ public final class NoticeEvent {
         return new NoticeEvent(new FeedStoppedValue(value));
     }
 
+    public static NoticeEvent followUpsNotSent(NoticeEventFollowUpsNotSent value) {
+        return new NoticeEvent(new FollowUpsNotSentValue(value));
+    }
+
+    public static NoticeEvent followUpRuleStopped(NoticeEventFollowUpRuleStopped value) {
+        return new NoticeEvent(new FollowUpRuleStoppedValue(value));
+    }
+
+    public static NoticeEvent commentRuleStopped(NoticeEventCommentRuleStopped value) {
+        return new NoticeEvent(new CommentRuleStoppedValue(value));
+    }
+
     public boolean isPostPublished() {
         return value instanceof PostPublishedValue;
     }
@@ -240,6 +252,18 @@ public final class NoticeEvent {
 
     public boolean isFeedStopped() {
         return value instanceof FeedStoppedValue;
+    }
+
+    public boolean isFollowUpsNotSent() {
+        return value instanceof FollowUpsNotSentValue;
+    }
+
+    public boolean isFollowUpRuleStopped() {
+        return value instanceof FollowUpRuleStoppedValue;
+    }
+
+    public boolean isCommentRuleStopped() {
+        return value instanceof CommentRuleStoppedValue;
     }
 
     public boolean _isUnknown() {
@@ -435,6 +459,27 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventFollowUpsNotSent> getFollowUpsNotSent() {
+        if (isFollowUpsNotSent()) {
+            return Optional.of(((FollowUpsNotSentValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventFollowUpRuleStopped> getFollowUpRuleStopped() {
+        if (isFollowUpRuleStopped()) {
+            return Optional.of(((FollowUpRuleStoppedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventCommentRuleStopped> getCommentRuleStopped() {
+        if (isCommentRuleStopped()) {
+            return Optional.of(((CommentRuleStoppedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -518,6 +563,12 @@ public final class NoticeEvent {
 
         T visitFeedStopped(NoticeEventFeedStopped feedStopped);
 
+        T visitFollowUpsNotSent(NoticeEventFollowUpsNotSent followUpsNotSent);
+
+        T visitFollowUpRuleStopped(NoticeEventFollowUpRuleStopped followUpRuleStopped);
+
+        T visitCommentRuleStopped(NoticeEventCommentRuleStopped commentRuleStopped);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -549,7 +600,10 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(AdBoostChangedValue.class),
         @JsonSubTypes.Type(AdConnectionReconnectRequiredValue.class),
         @JsonSubTypes.Type(RecyclingEndedValue.class),
-        @JsonSubTypes.Type(FeedStoppedValue.class)
+        @JsonSubTypes.Type(FeedStoppedValue.class),
+        @JsonSubTypes.Type(FollowUpsNotSentValue.class),
+        @JsonSubTypes.Type(FollowUpRuleStoppedValue.class),
+        @JsonSubTypes.Type(CommentRuleStoppedValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -1623,6 +1677,126 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(FeedStoppedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("FollowUpsNotSent")
+    @JsonIgnoreProperties("_tag")
+    private static final class FollowUpsNotSentValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventFollowUpsNotSent value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private FollowUpsNotSentValue() {}
+
+        private FollowUpsNotSentValue(NoticeEventFollowUpsNotSent value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitFollowUpsNotSent(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof FollowUpsNotSentValue && equalTo((FollowUpsNotSentValue) other);
+        }
+
+        private boolean equalTo(FollowUpsNotSentValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("FollowUpRuleStopped")
+    @JsonIgnoreProperties("_tag")
+    private static final class FollowUpRuleStoppedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventFollowUpRuleStopped value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private FollowUpRuleStoppedValue() {}
+
+        private FollowUpRuleStoppedValue(NoticeEventFollowUpRuleStopped value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitFollowUpRuleStopped(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof FollowUpRuleStoppedValue && equalTo((FollowUpRuleStoppedValue) other);
+        }
+
+        private boolean equalTo(FollowUpRuleStoppedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("CommentRuleStopped")
+    @JsonIgnoreProperties("_tag")
+    private static final class CommentRuleStoppedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventCommentRuleStopped value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private CommentRuleStoppedValue() {}
+
+        private CommentRuleStoppedValue(NoticeEventCommentRuleStopped value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitCommentRuleStopped(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof CommentRuleStoppedValue && equalTo((CommentRuleStoppedValue) other);
+        }
+
+        private boolean equalTo(CommentRuleStoppedValue other) {
             return value.equals(other.value);
         }
 

@@ -1,0 +1,1 @@
+ALTER TABLE "notifications"."notification_preferences" ADD COLUMN "email_automations" boolean DEFAULT true NOT NULL;

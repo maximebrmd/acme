@@ -79,6 +79,22 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       feedId,
       reason,
     }),
+    FollowUpsNotSent: ({ count, reasons, ruleId }): NoticeEventRecord => ({
+      _tag: "FollowUpsNotSent",
+      count,
+      reasons,
+      ruleId,
+    }),
+    FollowUpRuleStopped: ({ reason, ruleId }): NoticeEventRecord => ({
+      _tag: "FollowUpRuleStopped",
+      reason,
+      ruleId,
+    }),
+    CommentRuleStopped: ({ reason, ruleId }): NoticeEventRecord => ({
+      _tag: "CommentRuleStopped",
+      reason,
+      ruleId,
+    }),
     PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventRecord => ({
       _tag: "PostApprovalRequested",
       postId,
@@ -256,6 +272,7 @@ export const DrizzleNoticeRecords = Layer.effect(
               }
             : {
                 email: {
+                  automations: chosen.emailAutomations,
                   channelReconnect: chosen.emailChannelReconnect,
                   comments: chosen.emailComments,
                   feedStopped: chosen.emailFeedStopped,

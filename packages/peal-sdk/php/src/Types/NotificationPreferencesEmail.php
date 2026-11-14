@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class NotificationPreferencesEmail extends JsonSerializableType
 {
     /**
+     * @var bool $automations
+     */
+    #[JsonProperty('automations')]
+    public bool $automations;
+
+    /**
      * @var bool $channelReconnect
      */
     #[JsonProperty('channelReconnect')]
@@ -69,6 +75,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
 
     /**
      * @param array{
+     *   automations: bool,
      *   channelReconnect: bool,
      *   comments: bool,
      *   feedStopped: bool,
@@ -84,6 +91,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->automations = $values['automations'];
         $this->channelReconnect = $values['channelReconnect'];
         $this->comments = $values['comments'];
         $this->feedStopped = $values['feedStopped'];

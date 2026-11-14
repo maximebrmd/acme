@@ -11,6 +11,9 @@ public record NotificationPreferencesChangeEmail : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("automations")]
+    public bool? Automations { get; set; }
+
     [JsonPropertyName("channelReconnect")]
     public bool? ChannelReconnect { get; set; }
 

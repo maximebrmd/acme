@@ -9,6 +9,7 @@ from ...core.serialization import FieldMetadata
 
 
 class NotificationPreferencesChangeEmail(UniversalBaseModel):
+    automations: typing.Optional[bool] = None
     channel_reconnect: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="channelReconnect"), pydantic.Field(alias="channelReconnect")
     ] = None

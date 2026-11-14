@@ -8,10 +8,12 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .automation_stop_reason import AutomationStopReason
 from .billing_interval import BillingInterval
 from .excess import Excess
 from .failure_reason import FailureReason
 from .feed_stop_reason import FeedStopReason
+from .follow_up_not_sent_reason import FollowUpNotSentReason
 from .meter import Meter
 from .money import Money
 from .notice_channel import NoticeChannel
@@ -515,6 +517,58 @@ class NoticeEvent_FeedStopped(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_FollowUpsNotSent(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["FollowUpsNotSent"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FollowUpsNotSent"
+    count: int
+    reasons: typing.List[FollowUpNotSentReason]
+    rule_id: typing_extensions.Annotated[str, FieldMetadata(alias="ruleId"), pydantic.Field(alias="ruleId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_FollowUpRuleStopped(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["FollowUpRuleStopped"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FollowUpRuleStopped"
+    reason: AutomationStopReason
+    rule_id: typing_extensions.Annotated[str, FieldMetadata(alias="ruleId"), pydantic.Field(alias="ruleId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_CommentRuleStopped(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["CommentRuleStopped"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "CommentRuleStopped"
+    reason: AutomationStopReason
+    rule_id: typing_extensions.Annotated[str, FieldMetadata(alias="ruleId"), pydantic.Field(alias="ruleId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -544,6 +598,9 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_AdConnectionReconnectRequired,
         NoticeEvent_RecyclingEnded,
         NoticeEvent_FeedStopped,
+        NoticeEvent_FollowUpsNotSent,
+        NoticeEvent_FollowUpRuleStopped,
+        NoticeEvent_CommentRuleStopped,
     ],
     pydantic.Field(discriminator="type"),
 ]

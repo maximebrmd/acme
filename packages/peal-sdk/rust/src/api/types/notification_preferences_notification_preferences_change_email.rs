@@ -2,6 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct NotificationPreferencesChangeEmail {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub automations: Option<bool>,
     #[serde(rename = "channelReconnect")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channel_reconnect: Option<bool>,
@@ -42,6 +44,7 @@ impl NotificationPreferencesChangeEmail {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct NotificationPreferencesChangeEmailBuilder {
+    automations: Option<bool>,
     channel_reconnect: Option<bool>,
     comments: Option<bool>,
     feed_stopped: Option<bool>,
@@ -55,6 +58,11 @@ pub struct NotificationPreferencesChangeEmailBuilder {
 }
 
 impl NotificationPreferencesChangeEmailBuilder {
+    pub fn automations(mut self, value: bool) -> Self {
+        self.automations = Some(value);
+        self
+    }
+
     pub fn channel_reconnect(mut self, value: bool) -> Self {
         self.channel_reconnect = Some(value);
         self
@@ -108,6 +116,7 @@ impl NotificationPreferencesChangeEmailBuilder {
     /// Consumes the builder and constructs a [`NotificationPreferencesChangeEmail`].
     pub fn build(self) -> Result<NotificationPreferencesChangeEmail, BuildError> {
         Ok(NotificationPreferencesChangeEmail {
+            automations: self.automations,
             channel_reconnect: self.channel_reconnect,
             comments: self.comments,
             feed_stopped: self.feed_stopped,

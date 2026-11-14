@@ -267,6 +267,33 @@ pub enum NoticeEvent {
         reason: FeedStopReason,
     },
 
+    #[non_exhaustive]
+    FollowUpsNotSent {
+        #[serde(default)]
+        count: i64,
+        #[serde(default)]
+        reasons: Vec<FollowUpNotSentReason>,
+        #[serde(rename = "ruleId")]
+        #[serde(default)]
+        rule_id: String,
+    },
+
+    #[non_exhaustive]
+    FollowUpRuleStopped {
+        reason: AutomationStopReason,
+        #[serde(rename = "ruleId")]
+        #[serde(default)]
+        rule_id: String,
+    },
+
+    #[non_exhaustive]
+    CommentRuleStopped {
+        reason: AutomationStopReason,
+        #[serde(rename = "ruleId")]
+        #[serde(default)]
+        rule_id: String,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -473,6 +500,26 @@ impl NoticeEvent {
 
     pub fn feed_stopped(feed_id: String, reason: FeedStopReason) -> Self {
         Self::FeedStopped { feed_id, reason }
+    }
+
+    pub fn follow_ups_not_sent(
+        count: i64,
+        reasons: Vec<FollowUpNotSentReason>,
+        rule_id: String,
+    ) -> Self {
+        Self::FollowUpsNotSent {
+            count,
+            reasons,
+            rule_id,
+        }
+    }
+
+    pub fn follow_up_rule_stopped(reason: AutomationStopReason, rule_id: String) -> Self {
+        Self::FollowUpRuleStopped { reason, rule_id }
+    }
+
+    pub fn comment_rule_stopped(reason: AutomationStopReason, rule_id: String) -> Self {
+        Self::CommentRuleStopped { reason, rule_id }
     }
 
     pub fn post_published_with_channel(

@@ -20,6 +20,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NotificationPreferencesChangeEmail.Builder.class)
 public final class NotificationPreferencesChangeEmail {
+    private final Optional<Boolean> automations;
+
     private final Optional<Boolean> channelReconnect;
 
     private final Optional<Boolean> comments;
@@ -43,6 +45,7 @@ public final class NotificationPreferencesChangeEmail {
     private final Map<String, Object> additionalProperties;
 
     private NotificationPreferencesChangeEmail(
+            Optional<Boolean> automations,
             Optional<Boolean> channelReconnect,
             Optional<Boolean> comments,
             Optional<Boolean> feedStopped,
@@ -54,6 +57,7 @@ public final class NotificationPreferencesChangeEmail {
             Optional<Boolean> webhookFailing,
             Optional<Boolean> weeklyDigest,
             Map<String, Object> additionalProperties) {
+        this.automations = automations;
         this.channelReconnect = channelReconnect;
         this.comments = comments;
         this.feedStopped = feedStopped;
@@ -65,6 +69,11 @@ public final class NotificationPreferencesChangeEmail {
         this.webhookFailing = webhookFailing;
         this.weeklyDigest = weeklyDigest;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("automations")
+    public Optional<Boolean> getAutomations() {
+        return automations;
     }
 
     @JsonProperty("channelReconnect")
@@ -130,7 +139,8 @@ public final class NotificationPreferencesChangeEmail {
     }
 
     private boolean equalTo(NotificationPreferencesChangeEmail other) {
-        return channelReconnect.equals(other.channelReconnect)
+        return automations.equals(other.automations)
+                && channelReconnect.equals(other.channelReconnect)
                 && comments.equals(other.comments)
                 && feedStopped.equals(other.feedStopped)
                 && postFailed.equals(other.postFailed)
@@ -145,6 +155,7 @@ public final class NotificationPreferencesChangeEmail {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.automations,
                 this.channelReconnect,
                 this.comments,
                 this.feedStopped,
@@ -168,6 +179,8 @@ public final class NotificationPreferencesChangeEmail {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<Boolean> automations = Optional.empty();
+
         private Optional<Boolean> channelReconnect = Optional.empty();
 
         private Optional<Boolean> comments = Optional.empty();
@@ -193,6 +206,7 @@ public final class NotificationPreferencesChangeEmail {
         private Builder() {}
 
         public Builder from(NotificationPreferencesChangeEmail other) {
+            automations(other.getAutomations());
             channelReconnect(other.getChannelReconnect());
             comments(other.getComments());
             feedStopped(other.getFeedStopped());
@@ -203,6 +217,17 @@ public final class NotificationPreferencesChangeEmail {
             recyclingEnded(other.getRecyclingEnded());
             webhookFailing(other.getWebhookFailing());
             weeklyDigest(other.getWeeklyDigest());
+            return this;
+        }
+
+        @JsonSetter(value = "automations", nulls = Nulls.SKIP)
+        public Builder automations(Optional<Boolean> automations) {
+            this.automations = automations;
+            return this;
+        }
+
+        public Builder automations(Boolean automations) {
+            this.automations = Optional.ofNullable(automations);
             return this;
         }
 
@@ -318,6 +343,7 @@ public final class NotificationPreferencesChangeEmail {
 
         public NotificationPreferencesChangeEmail build() {
             return new NotificationPreferencesChangeEmail(
+                    automations,
                     channelReconnect,
                     comments,
                     feedStopped,
@@ -333,7 +359,8 @@ public final class NotificationPreferencesChangeEmail {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelReconnect")
+            if (key.equalsIgnoreCase("automations")
+                    || key.equalsIgnoreCase("channelReconnect")
                     || key.equalsIgnoreCase("comments")
                     || key.equalsIgnoreCase("feedStopped")
                     || key.equalsIgnoreCase("postFailed")

@@ -6,6 +6,8 @@ module Peal
   module NotificationPreferences
     module Types
       class NotificationPreferencesChangeEmail < Internal::Types::Model
+        field :automations, -> { Internal::Types::Boolean }, optional: true, nullable: false
+
         field :channel_reconnect, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "channelReconnect"
 
         field :comments, -> { Internal::Types::Boolean }, optional: true, nullable: false

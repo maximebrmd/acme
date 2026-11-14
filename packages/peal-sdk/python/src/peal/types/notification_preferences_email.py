@@ -9,6 +9,7 @@ from ..core.serialization import FieldMetadata
 
 
 class NotificationPreferencesEmail(UniversalBaseModel):
+    automations: bool
     channel_reconnect: typing_extensions.Annotated[
         bool, FieldMetadata(alias="channelReconnect"), pydantic.Field(alias="channelReconnect")
     ]

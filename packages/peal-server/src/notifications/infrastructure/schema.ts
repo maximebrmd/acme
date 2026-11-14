@@ -75,6 +75,9 @@ export const notices = notificationsSchema.table(
 export const notificationPreferences = notificationsSchema.table(
   "notification_preferences",
   {
+    // A rule acting by itself that ended by itself, or follow-ups that did
+    // not go out: on unless chosen.
+    emailAutomations: boolean("email_automations").notNull().default(true),
     emailChannelReconnect: boolean("email_channel_reconnect").notNull(),
     // New comments under posts: off unless chosen.
     emailComments: boolean("email_comments").notNull().default(false),

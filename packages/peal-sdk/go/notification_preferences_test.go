@@ -153,6 +153,14 @@ func TestSettersMarkExplicitNotificationPreferences(t *testing.T) {
 }
 
 func TestSettersNotificationPreferencesEmail(t *testing.T) {
+	t.Run("SetAutomations", func(t *testing.T) {
+		obj := &NotificationPreferencesEmail{}
+		var fernTestValueAutomations bool
+		obj.SetAutomations(fernTestValueAutomations)
+		assert.Equal(t, fernTestValueAutomations, obj.Automations)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetChannelReconnect", func(t *testing.T) {
 		obj := &NotificationPreferencesEmail{}
 		var fernTestValueChannelReconnect bool
@@ -236,6 +244,29 @@ func TestSettersNotificationPreferencesEmail(t *testing.T) {
 }
 
 func TestGettersNotificationPreferencesEmail(t *testing.T) {
+	t.Run("GetAutomations", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesEmail{}
+		var expected bool
+		obj.Automations = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAutomations(), "getter should return the property value")
+	})
+
+	t.Run("GetAutomations_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NotificationPreferencesEmail
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAutomations() // Should return zero value
+	})
+
 	t.Run("GetChannelReconnect", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -469,6 +500,37 @@ func TestGettersNotificationPreferencesEmail(t *testing.T) {
 }
 
 func TestSettersMarkExplicitNotificationPreferencesEmail(t *testing.T) {
+	t.Run("SetAutomations_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesEmail{}
+		var fernTestValueAutomations bool
+
+		// Act
+		obj.SetAutomations(fernTestValueAutomations)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetChannelReconnect_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -782,6 +844,14 @@ func TestSettersMarkExplicitNotificationPreferencesEmail(t *testing.T) {
 }
 
 func TestSettersNotificationPreferencesChangeEmail(t *testing.T) {
+	t.Run("SetAutomations", func(t *testing.T) {
+		obj := &NotificationPreferencesChangeEmail{}
+		var fernTestValueAutomations *bool
+		obj.SetAutomations(fernTestValueAutomations)
+		assert.Equal(t, fernTestValueAutomations, obj.Automations)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetChannelReconnect", func(t *testing.T) {
 		obj := &NotificationPreferencesChangeEmail{}
 		var fernTestValueChannelReconnect *bool
@@ -865,6 +935,39 @@ func TestSettersNotificationPreferencesChangeEmail(t *testing.T) {
 }
 
 func TestGettersNotificationPreferencesChangeEmail(t *testing.T) {
+	t.Run("GetAutomations", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		var expected *bool
+		obj.Automations = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAutomations(), "getter should return the property value")
+	})
+
+	t.Run("GetAutomations_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		obj.Automations = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAutomations(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAutomations_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NotificationPreferencesChangeEmail
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAutomations() // Should return zero value
+	})
+
 	t.Run("GetChannelReconnect", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -1198,6 +1301,37 @@ func TestGettersNotificationPreferencesChangeEmail(t *testing.T) {
 }
 
 func TestSettersMarkExplicitNotificationPreferencesChangeEmail(t *testing.T) {
+	t.Run("SetAutomations_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NotificationPreferencesChangeEmail{}
+		var fernTestValueAutomations *bool
+
+		// Act
+		obj.SetAutomations(fernTestValueAutomations)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetChannelReconnect_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange

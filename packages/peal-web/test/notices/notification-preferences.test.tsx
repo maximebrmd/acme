@@ -7,6 +7,7 @@ import { loadMessages } from "#i18n/messages.ts";
 
 const preferences = {
   email: {
+    automations: true,
     channelReconnect: true,
     comments: true,
     feedStopped: true,
@@ -79,6 +80,10 @@ describe(PreferencesFields, () => {
         ],
         ["A post stops repeating", { checked: true, labelled: true }],
         ["A feed stops making posts", { checked: true, labelled: true }],
+        [
+          "A follow-up or comment reply rule stops by itself, or follow-ups do not go out",
+          { checked: true, labelled: true },
+        ],
         [
           "A channel must be reconnected, now or soon, or its direct messages were turned off",
           { checked: true, labelled: true },

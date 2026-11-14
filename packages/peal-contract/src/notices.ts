@@ -81,6 +81,36 @@ export const FeedStopReasonSchema = Schema.Literals([
 export type FeedStopReason = typeof FeedStopReasonSchema.Type;
 
 /**
+ * Why follow-ups of a rule did not go out: the platform refused them
+ * (`failed`), they may be live without Peal knowing (`unconfirmed`: check
+ * the platform, Peal never sends them again), or their seven days passed
+ * while the platform put them off (`windowEnded`), their channel was not
+ * connected again for them (`notGranted`) or the rule waited for an
+ * approval (`notApproved`).
+ */
+export const FollowUpNotSentReasonSchema = Schema.Literals([
+  "failed",
+  "unconfirmed",
+  "windowEnded",
+  "notGranted",
+  "notApproved",
+]).annotate({ identifier: "FollowUpNotSentReason" });
+
+export type FollowUpNotSentReason = typeof FollowUpNotSentReasonSchema.Type;
+
+/**
+ * Why a rule that acts by itself ended without a member stopping it:
+ * whoever started it can no longer do what it does (`starterGone`), or its
+ * channel was disconnected (`channelGone`).
+ */
+export const AutomationStopReasonSchema = Schema.Literals([
+  "starterGone",
+  "channelGone",
+]).annotate({ identifier: "AutomationStopReason" });
+
+export type AutomationStopReason = typeof AutomationStopReasonSchema.Type;
+
+/**
  * What happened, as data: clients write it in the reader's language. A post's
  * channel is null when it was disconnected before the notice was made.
  */
@@ -298,6 +328,24 @@ export const NoticeEventSchema = Schema.Union([
   Schema.TaggedStruct("FeedStopped", {
     feedId: Schema.String,
     reason: FeedStopReasonSchema,
+  }),
+  // `count` follow-ups of a follow-up rule (`ruleId`) did not go out, for
+  // `reasons` (each once). Once a rule and UTC day at most: those that end
+  // after are told the next day.
+  Schema.TaggedStruct("FollowUpsNotSent", {
+    count: Schema.Int,
+    reasons: Schema.Array(FollowUpNotSentReasonSchema),
+    ruleId: Schema.String,
+  }),
+  // A follow-up rule (`ruleId`) ended by itself, for `reason`.
+  Schema.TaggedStruct("FollowUpRuleStopped", {
+    reason: AutomationStopReasonSchema,
+    ruleId: Schema.String,
+  }),
+  // A comment rule (`ruleId`) ended by itself, for `reason`.
+  Schema.TaggedStruct("CommentRuleStopped", {
+    reason: AutomationStopReasonSchema,
+    ruleId: Schema.String,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 

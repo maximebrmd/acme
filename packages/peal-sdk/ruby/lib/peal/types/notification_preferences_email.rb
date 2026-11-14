@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class NotificationPreferencesEmail < Internal::Types::Model
+      field :automations, -> { Internal::Types::Boolean }, optional: false, nullable: false
+
       field :channel_reconnect, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "channelReconnect"
 
       field :comments, -> { Internal::Types::Boolean }, optional: false, nullable: false

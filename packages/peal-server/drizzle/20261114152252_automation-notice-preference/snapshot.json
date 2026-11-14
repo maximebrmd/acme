@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "8d58a4c1-8bd8-4f53-953b-42d7b5940b28",
+  "prevIds": [
+    "0f523001-4504-4d52-9970-c9f8d4007a0d"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "notifications",
+        "notification_preferences",
+        "email_automations"
+      ],
+      "writes": [
+        "s|col|notifications.notification_preferences.email_automations",
+        "n|col|notifications.notification_preferences.email_automations",
+        "e|col|notifications.notification_preferences.email_automations"
+      ],
+      "reads": [
+        "n|tbl|notifications.notification_preferences",
+        "n|sch|notifications"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "notifications",
+        "table": "notification_preferences",
+        "name": "email_automations",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

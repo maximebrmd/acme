@@ -93,6 +93,28 @@ func (m *MarkNoticesRead) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
+type AutomationStopReason string
+
+const (
+	AutomationStopReasonStarterGone AutomationStopReason = "starterGone"
+	AutomationStopReasonChannelGone AutomationStopReason = "channelGone"
+)
+
+func NewAutomationStopReasonFromString(s string) (AutomationStopReason, error) {
+	switch s {
+	case "starterGone":
+		return AutomationStopReasonStarterGone, nil
+	case "channelGone":
+		return AutomationStopReasonChannelGone, nil
+	}
+	var t AutomationStopReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AutomationStopReason) Ptr() *AutomationStopReason {
+	return &a
+}
+
 type FeedStopReason string
 
 const (
@@ -121,6 +143,37 @@ func NewFeedStopReasonFromString(s string) (FeedStopReason, error) {
 }
 
 func (f FeedStopReason) Ptr() *FeedStopReason {
+	return &f
+}
+
+type FollowUpNotSentReason string
+
+const (
+	FollowUpNotSentReasonFailed      FollowUpNotSentReason = "failed"
+	FollowUpNotSentReasonUnconfirmed FollowUpNotSentReason = "unconfirmed"
+	FollowUpNotSentReasonWindowEnded FollowUpNotSentReason = "windowEnded"
+	FollowUpNotSentReasonNotGranted  FollowUpNotSentReason = "notGranted"
+	FollowUpNotSentReasonNotApproved FollowUpNotSentReason = "notApproved"
+)
+
+func NewFollowUpNotSentReasonFromString(s string) (FollowUpNotSentReason, error) {
+	switch s {
+	case "failed":
+		return FollowUpNotSentReasonFailed, nil
+	case "unconfirmed":
+		return FollowUpNotSentReasonUnconfirmed, nil
+	case "windowEnded":
+		return FollowUpNotSentReasonWindowEnded, nil
+	case "notGranted":
+		return FollowUpNotSentReasonNotGranted, nil
+	case "notApproved":
+		return FollowUpNotSentReasonNotApproved, nil
+	}
+	var t FollowUpNotSentReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpNotSentReason) Ptr() *FollowUpNotSentReason {
 	return &f
 }
 
@@ -417,6 +470,9 @@ type NoticeEvent struct {
 	AdConnectionReconnectRequired *NoticeEventAdConnectionReconnectRequired
 	RecyclingEnded                *NoticeEventRecyclingEnded
 	FeedStopped                   *NoticeEventFeedStopped
+	FollowUpsNotSent              *NoticeEventFollowUpsNotSent
+	FollowUpRuleStopped           *NoticeEventFollowUpRuleStopped
+	CommentRuleStopped            *NoticeEventCommentRuleStopped
 
 	rawJSON json.RawMessage
 }
@@ -617,6 +673,27 @@ func (n *NoticeEvent) GetFeedStopped() *NoticeEventFeedStopped {
 	return n.FeedStopped
 }
 
+func (n *NoticeEvent) GetFollowUpsNotSent() *NoticeEventFollowUpsNotSent {
+	if n == nil {
+		return nil
+	}
+	return n.FollowUpsNotSent
+}
+
+func (n *NoticeEvent) GetFollowUpRuleStopped() *NoticeEventFollowUpRuleStopped {
+	if n == nil {
+		return nil
+	}
+	return n.FollowUpRuleStopped
+}
+
+func (n *NoticeEvent) GetCommentRuleStopped() *NoticeEventCommentRuleStopped {
+	if n == nil {
+		return nil
+	}
+	return n.CommentRuleStopped
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -791,6 +868,24 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.FeedStopped = value
+	case "FollowUpsNotSent":
+		value := new(NoticeEventFollowUpsNotSent)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.FollowUpsNotSent = value
+	case "FollowUpRuleStopped":
+		value := new(NoticeEventFollowUpRuleStopped)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.FollowUpRuleStopped = value
+	case "CommentRuleStopped":
+		value := new(NoticeEventCommentRuleStopped)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.CommentRuleStopped = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -881,6 +976,15 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.FeedStopped != nil {
 		return internal.MarshalJSONWithExtraProperty(n.FeedStopped, "_tag", "FeedStopped")
 	}
+	if n.FollowUpsNotSent != nil {
+		return internal.MarshalJSONWithExtraProperty(n.FollowUpsNotSent, "_tag", "FollowUpsNotSent")
+	}
+	if n.FollowUpRuleStopped != nil {
+		return internal.MarshalJSONWithExtraProperty(n.FollowUpRuleStopped, "_tag", "FollowUpRuleStopped")
+	}
+	if n.CommentRuleStopped != nil {
+		return internal.MarshalJSONWithExtraProperty(n.CommentRuleStopped, "_tag", "CommentRuleStopped")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -915,6 +1019,9 @@ type NoticeEventVisitor interface {
 	VisitAdConnectionReconnectRequired(*NoticeEventAdConnectionReconnectRequired) error
 	VisitRecyclingEnded(*NoticeEventRecyclingEnded) error
 	VisitFeedStopped(*NoticeEventFeedStopped) error
+	VisitFollowUpsNotSent(*NoticeEventFollowUpsNotSent) error
+	VisitFollowUpRuleStopped(*NoticeEventFollowUpRuleStopped) error
+	VisitCommentRuleStopped(*NoticeEventCommentRuleStopped) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -998,6 +1105,15 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.FeedStopped != nil {
 		return visitor.VisitFeedStopped(n.FeedStopped)
+	}
+	if n.FollowUpsNotSent != nil {
+		return visitor.VisitFollowUpsNotSent(n.FollowUpsNotSent)
+	}
+	if n.FollowUpRuleStopped != nil {
+		return visitor.VisitFollowUpRuleStopped(n.FollowUpRuleStopped)
+	}
+	if n.CommentRuleStopped != nil {
+		return visitor.VisitCommentRuleStopped(n.CommentRuleStopped)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -1087,6 +1203,15 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.FeedStopped != nil {
 		fields = append(fields, "FeedStopped")
+	}
+	if n.FollowUpsNotSent != nil {
+		fields = append(fields, "FollowUpsNotSent")
+	}
+	if n.FollowUpRuleStopped != nil {
+		fields = append(fields, "FollowUpRuleStopped")
+	}
+	if n.CommentRuleStopped != nil {
+		fields = append(fields, "CommentRuleStopped")
 	}
 	if len(fields) == 0 {
 		if n.Type != "" {
@@ -1732,6 +1857,108 @@ func (n *NoticeEventChannelReconnectSoon) String() string {
 }
 
 var (
+	noticeEventCommentRuleStoppedFieldReason = big.NewInt(1 << 0)
+	noticeEventCommentRuleStoppedFieldRuleID = big.NewInt(1 << 1)
+)
+
+type NoticeEventCommentRuleStopped struct {
+	Reason AutomationStopReason `json:"reason" url:"reason"`
+	RuleID string               `json:"ruleId" url:"ruleId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventCommentRuleStopped) GetReason() AutomationStopReason {
+	if n == nil {
+		return ""
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventCommentRuleStopped) GetRuleID() string {
+	if n == nil {
+		return ""
+	}
+	return n.RuleID
+}
+
+func (n *NoticeEventCommentRuleStopped) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventCommentRuleStopped) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventCommentRuleStopped) SetReason(reason AutomationStopReason) {
+	n.Reason = reason
+	n.require(noticeEventCommentRuleStoppedFieldReason)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventCommentRuleStopped) SetRuleID(ruleID string) {
+	n.RuleID = ruleID
+	n.require(noticeEventCommentRuleStoppedFieldRuleID)
+}
+
+func (n *NoticeEventCommentRuleStopped) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventCommentRuleStopped
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventCommentRuleStopped(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventCommentRuleStopped) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventCommentRuleStopped
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventCommentRuleStopped) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
 	noticeEventCommentsReceivedFieldCount    = big.NewInt(1 << 0)
 	noticeEventCommentsReceivedFieldPostID   = big.NewInt(1 << 1)
 	noticeEventCommentsReceivedFieldThreadID = big.NewInt(1 << 2)
@@ -1937,6 +2164,226 @@ func (n *NoticeEventFeedStopped) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventFeedStopped) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventFollowUpRuleStoppedFieldReason = big.NewInt(1 << 0)
+	noticeEventFollowUpRuleStoppedFieldRuleID = big.NewInt(1 << 1)
+)
+
+type NoticeEventFollowUpRuleStopped struct {
+	Reason AutomationStopReason `json:"reason" url:"reason"`
+	RuleID string               `json:"ruleId" url:"ruleId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventFollowUpRuleStopped) GetReason() AutomationStopReason {
+	if n == nil {
+		return ""
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventFollowUpRuleStopped) GetRuleID() string {
+	if n == nil {
+		return ""
+	}
+	return n.RuleID
+}
+
+func (n *NoticeEventFollowUpRuleStopped) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventFollowUpRuleStopped) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFollowUpRuleStopped) SetReason(reason AutomationStopReason) {
+	n.Reason = reason
+	n.require(noticeEventFollowUpRuleStoppedFieldReason)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFollowUpRuleStopped) SetRuleID(ruleID string) {
+	n.RuleID = ruleID
+	n.require(noticeEventFollowUpRuleStoppedFieldRuleID)
+}
+
+func (n *NoticeEventFollowUpRuleStopped) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventFollowUpRuleStopped
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventFollowUpRuleStopped(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventFollowUpRuleStopped) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventFollowUpRuleStopped
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventFollowUpRuleStopped) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventFollowUpsNotSentFieldCount   = big.NewInt(1 << 0)
+	noticeEventFollowUpsNotSentFieldReasons = big.NewInt(1 << 1)
+	noticeEventFollowUpsNotSentFieldRuleID  = big.NewInt(1 << 2)
+)
+
+type NoticeEventFollowUpsNotSent struct {
+	Count   int                     `json:"count" url:"count"`
+	Reasons []FollowUpNotSentReason `json:"reasons" url:"reasons"`
+	RuleID  string                  `json:"ruleId" url:"ruleId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventFollowUpsNotSent) GetCount() int {
+	if n == nil {
+		return 0
+	}
+	return n.Count
+}
+
+func (n *NoticeEventFollowUpsNotSent) GetReasons() []FollowUpNotSentReason {
+	if n == nil {
+		return nil
+	}
+	return n.Reasons
+}
+
+func (n *NoticeEventFollowUpsNotSent) GetRuleID() string {
+	if n == nil {
+		return ""
+	}
+	return n.RuleID
+}
+
+func (n *NoticeEventFollowUpsNotSent) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventFollowUpsNotSent) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFollowUpsNotSent) SetCount(count int) {
+	n.Count = count
+	n.require(noticeEventFollowUpsNotSentFieldCount)
+}
+
+// SetReasons sets the Reasons field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFollowUpsNotSent) SetReasons(reasons []FollowUpNotSentReason) {
+	n.Reasons = reasons
+	n.require(noticeEventFollowUpsNotSentFieldReasons)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFollowUpsNotSent) SetRuleID(ruleID string) {
+	n.RuleID = ruleID
+	n.require(noticeEventFollowUpsNotSentFieldRuleID)
+}
+
+func (n *NoticeEventFollowUpsNotSent) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventFollowUpsNotSent
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventFollowUpsNotSent(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventFollowUpsNotSent) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventFollowUpsNotSent
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventFollowUpsNotSent) String() string {
 	if n == nil {
 		return "<nil>"
 	}

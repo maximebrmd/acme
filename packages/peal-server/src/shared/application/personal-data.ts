@@ -893,6 +893,22 @@ export type NoticeEventRecord =
       readonly reason: string;
     }
   | {
+      readonly _tag: "FollowUpsNotSent";
+      readonly count: number;
+      readonly reasons: readonly string[];
+      readonly ruleId: string;
+    }
+  | {
+      readonly _tag: "FollowUpRuleStopped";
+      readonly reason: string;
+      readonly ruleId: string;
+    }
+  | {
+      readonly _tag: "CommentRuleStopped";
+      readonly reason: string;
+      readonly ruleId: string;
+    }
+  | {
       readonly _tag: "RecyclingEnded";
       readonly reason: string;
       readonly ruleId: string;
@@ -920,6 +936,7 @@ export interface NoticeRecord {
  */
 export interface PreferencesRecord {
   readonly email: {
+    readonly automations: boolean;
     readonly channelReconnect: boolean;
     readonly comments: boolean;
     readonly feedStopped: boolean;

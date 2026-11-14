@@ -101,6 +101,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const followUps = (ruleId: string, text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/follow-ups?rule=${ruleId}`,
+      open: t("open", { page: "followUps" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
@@ -148,6 +154,27 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         inbox(threadId, t("event.CommentsReceived", { count, workspace })),
       FeedStopped: ({ feedId, reason }) =>
         feed(feedId, t("event.FeedStopped", { reason, workspace })),
+      FollowUpsNotSent: ({ count, reasons, ruleId }) =>
+        followUps(
+          ruleId,
+          t("event.FollowUpsNotSent", {
+            count,
+            reasons: reasons
+              .map((reason) => t("followUpReason", { count, reason }))
+              .join(t("reasonsJoint")),
+            workspace,
+          })
+        ),
+      FollowUpRuleStopped: ({ reason, ruleId }) =>
+        followUps(
+          ruleId,
+          t("event.FollowUpRuleStopped", { reason, workspace })
+        ),
+      CommentRuleStopped: ({ reason }) => ({
+        href: `/app/${workspaceId}/settings/comment-rules`,
+        open: t("open", { page: "commentRules" }),
+        text: t("event.CommentRuleStopped", { reason, workspace }),
+      }),
       MessagesReceived: ({ conversationId, count }) =>
         inbox(
           `messages/${conversationId}`,

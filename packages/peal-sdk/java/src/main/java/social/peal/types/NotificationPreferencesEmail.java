@@ -18,6 +18,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NotificationPreferencesEmail.Builder.class)
 public final class NotificationPreferencesEmail {
+    private final boolean automations;
+
     private final boolean channelReconnect;
 
     private final boolean comments;
@@ -41,6 +43,7 @@ public final class NotificationPreferencesEmail {
     private final Map<String, Object> additionalProperties;
 
     private NotificationPreferencesEmail(
+            boolean automations,
             boolean channelReconnect,
             boolean comments,
             boolean feedStopped,
@@ -52,6 +55,7 @@ public final class NotificationPreferencesEmail {
             boolean webhookFailing,
             boolean weeklyDigest,
             Map<String, Object> additionalProperties) {
+        this.automations = automations;
         this.channelReconnect = channelReconnect;
         this.comments = comments;
         this.feedStopped = feedStopped;
@@ -63,6 +67,11 @@ public final class NotificationPreferencesEmail {
         this.webhookFailing = webhookFailing;
         this.weeklyDigest = weeklyDigest;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("automations")
+    public boolean getAutomations() {
+        return automations;
     }
 
     @JsonProperty("channelReconnect")
@@ -127,7 +136,8 @@ public final class NotificationPreferencesEmail {
     }
 
     private boolean equalTo(NotificationPreferencesEmail other) {
-        return channelReconnect == other.channelReconnect
+        return automations == other.automations
+                && channelReconnect == other.channelReconnect
                 && comments == other.comments
                 && feedStopped == other.feedStopped
                 && postFailed == other.postFailed
@@ -142,6 +152,7 @@ public final class NotificationPreferencesEmail {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.automations,
                 this.channelReconnect,
                 this.comments,
                 this.feedStopped,
@@ -159,14 +170,18 @@ public final class NotificationPreferencesEmail {
         return ObjectMappers.stringify(this);
     }
 
-    public static ChannelReconnectStage builder() {
+    public static AutomationsStage builder() {
         return new Builder();
+    }
+
+    public interface AutomationsStage {
+        ChannelReconnectStage automations(boolean automations);
+
+        Builder from(NotificationPreferencesEmail other);
     }
 
     public interface ChannelReconnectStage {
         CommentsStage channelReconnect(boolean channelReconnect);
-
-        Builder from(NotificationPreferencesEmail other);
     }
 
     public interface CommentsStage {
@@ -215,7 +230,8 @@ public final class NotificationPreferencesEmail {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements ChannelReconnectStage,
+            implements AutomationsStage,
+                    ChannelReconnectStage,
                     CommentsStage,
                     FeedStoppedStage,
                     PostFailedStage,
@@ -226,6 +242,8 @@ public final class NotificationPreferencesEmail {
                     WebhookFailingStage,
                     WeeklyDigestStage,
                     _FinalStage {
+        private boolean automations;
+
         private boolean channelReconnect;
 
         private boolean comments;
@@ -252,6 +270,7 @@ public final class NotificationPreferencesEmail {
 
         @java.lang.Override
         public Builder from(NotificationPreferencesEmail other) {
+            automations(other.getAutomations());
             channelReconnect(other.getChannelReconnect());
             comments(other.getComments());
             feedStopped(other.getFeedStopped());
@@ -262,6 +281,13 @@ public final class NotificationPreferencesEmail {
             recyclingEnded(other.getRecyclingEnded());
             webhookFailing(other.getWebhookFailing());
             weeklyDigest(other.getWeeklyDigest());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("automations")
+        public ChannelReconnectStage automations(boolean automations) {
+            this.automations = automations;
             return this;
         }
 
@@ -338,6 +364,7 @@ public final class NotificationPreferencesEmail {
         @java.lang.Override
         public NotificationPreferencesEmail build() {
             return new NotificationPreferencesEmail(
+                    automations,
                     channelReconnect,
                     comments,
                     feedStopped,
@@ -353,7 +380,8 @@ public final class NotificationPreferencesEmail {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelReconnect")
+            if (key.equalsIgnoreCase("automations")
+                    || key.equalsIgnoreCase("channelReconnect")
                     || key.equalsIgnoreCase("comments")
                     || key.equalsIgnoreCase("feedStopped")
                     || key.equalsIgnoreCase("postFailed")

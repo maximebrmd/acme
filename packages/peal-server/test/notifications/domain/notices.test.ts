@@ -86,6 +86,22 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     feedId: Uuid7Schema.make("00000000-0000-7000-8000-00000000fe01"),
     reason: "unreachable",
   },
+  FollowUpsNotSent: {
+    _tag: "FollowUpsNotSent",
+    count: 3,
+    reasons: ["failed", "windowEnded"],
+    ruleId: Uuid7Schema.make("00000000-0000-7000-8000-00000000f001"),
+  },
+  FollowUpRuleStopped: {
+    _tag: "FollowUpRuleStopped",
+    reason: "channelGone",
+    ruleId: Uuid7Schema.make("00000000-0000-7000-8000-00000000f001"),
+  },
+  CommentRuleStopped: {
+    _tag: "CommentRuleStopped",
+    reason: "starterGone",
+    ruleId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c001"),
+  },
   PostApprovalRequested: {
     _tag: "PostApprovalRequested",
     postId,
@@ -269,6 +285,58 @@ describe("notice events", () => {
     expect(wantsEmail(off, events.FeedStopped)).toBeFalsy();
   });
 
+  it("tell those who schedule posts that a follow-up rule stopped or its follow-ups did not go out, and those who answer comments that a comment rule stopped, by email unless they turned it off", () => {
+    const off = changePreferences(defaultPreferences, {
+      email: { automations: false },
+    });
+
+    const told = (event: NoticeEvent) => ({
+      about: isAboutPost(event),
+      audience: audienceOf(event),
+      byDefault: wantsEmail(defaultPreferences, event),
+      email: emailKindOf(event),
+      page: pageOf(event, workspaceId),
+      reader: readerPermissionOf(event),
+      turnedOff: wantsEmail(off, event),
+    });
+
+    const followUps = `/app/${workspaceId}/settings/follow-ups?rule=00000000-0000-7000-8000-00000000f001`;
+
+    expect([
+      told(events.FollowUpsNotSent),
+      told(events.FollowUpRuleStopped),
+      told(events.CommentRuleStopped),
+    ]).toStrictEqual([
+      {
+        about: true,
+        audience: "post:schedule",
+        byDefault: true,
+        email: Option.some("automations"),
+        page: followUps,
+        reader: "post:read",
+        turnedOff: false,
+      },
+      {
+        about: true,
+        audience: "post:schedule",
+        byDefault: true,
+        email: Option.some("automations"),
+        page: followUps,
+        reader: "post:read",
+        turnedOff: false,
+      },
+      {
+        about: true,
+        audience: "engagement:reply",
+        byDefault: true,
+        email: Option.some("automations"),
+        page: `/app/${workspaceId}/settings/comment-rules`,
+        reader: "engagement:read",
+        turnedOff: false,
+      },
+    ]);
+  });
+
   it("tell those who manage webhooks that deliveries fail, by email unless they turned it off", () => {
     const off = changePreferences(defaultPreferences, {
       email: { webhookFailing: false },
@@ -395,6 +463,22 @@ describe(recipientsOf, () => {
     ]);
   });
 
+  it("tell whoever started an automation that it stopped, or every member who may act once they left", () => {
+    expect([
+      recipientsOf(events.FollowUpsNotSent, Option.some(author), members),
+      recipientsOf(events.FollowUpRuleStopped, Option.none(), members),
+      recipientsOf(
+        events.CommentRuleStopped,
+        Option.some(UserIdSchema.make("9a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f")),
+        members
+      ),
+    ]).toStrictEqual([
+      [author, follower],
+      [follower, scheduler],
+      [follower, scheduler],
+    ]);
+  });
+
   it("tell every member who may act about a channel, whatever they follow", () => {
     expect(
       recipientsOf(
@@ -462,6 +546,11 @@ describe("notification preferences", () => {
       // A channel's messages turned off, to reconnect it for them.
       Option.some("channelReconnect"),
       Option.some("feedStopped"),
+      // A follow-up rule's follow-ups not sent, the rule stopped, a comment
+      // rule stopped.
+      Option.some("automations"),
+      Option.some("automations"),
+      Option.some("automations"),
       Option.some("postReview"),
       Option.some("postReview"),
       Option.some("postReview"),
@@ -491,6 +580,7 @@ describe("notification preferences", () => {
     });
 
     expect(changed.email).toStrictEqual({
+      automations: true,
       channelReconnect: true,
       comments: false,
       feedStopped: true,

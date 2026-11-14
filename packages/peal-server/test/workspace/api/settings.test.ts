@@ -248,6 +248,7 @@ const PortsLive = Layer.mergeAll(
             notices: [],
             preferences: {
               email: {
+                automations: true,
                 channelReconnect: true,
                 comments: false,
                 feedStopped: true,

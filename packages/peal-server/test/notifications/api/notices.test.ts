@@ -317,6 +317,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
 
       assert.deepStrictEqual(yield* client.notificationPreferences.get(), {
         email: {
+          automations: true,
           channelReconnect: true,
           comments: false,
           feedStopped: true,
@@ -341,6 +342,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
         }),
         {
           email: {
+            automations: true,
             channelReconnect: true,
             comments: false,
             feedStopped: true,
@@ -368,6 +370,15 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
       assert.isTrue(following.everyPost);
       assert.isFalse(following.email.postFailed);
       assert.isTrue(following.email.postPublished);
+
+      // Rules acting by themselves are turned off as any other email.
+      yield* client.notificationPreferences.update({
+        payload: { email: { automations: false } },
+      });
+
+      assert.isFalse(
+        (yield* client.notificationPreferences.get()).email.automations
+      );
 
       // The weekly digest is asked for, and stopped, as any other email.
       const digest = yield* client.notificationPreferences.update({
