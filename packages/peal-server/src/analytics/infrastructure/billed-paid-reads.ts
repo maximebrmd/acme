@@ -2,7 +2,10 @@ import { DateTime, Effect, Layer, Metric, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PaidReads } from "#analytics/application/paid-reads.ts";
-import type { PaidReadClaim } from "#analytics/application/paid-reads.ts";
+import type {
+  PaidReadClaim,
+  PaidReadsCovered,
+} from "#analytics/application/paid-reads.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -92,17 +95,37 @@ export const billedPaidReads = Layer.effect(
           spent += cost;
         }
 
-        // Claimed together; refused (another claim took the room first),
-        // nothing new is read.
-        const taken =
-          affordable.length === 0
-            ? []
-            : yield* meters.claim(workspaceId, "xApi", spent).pipe(
-                Effect.as(affordable),
+        let total = 0;
+
+        for (const resource of fresh) {
+          total += unitsOf(resource);
+        }
+
+        // Claimed together. Where they do not all fit, the whole is asked
+        // first, so its refusal tells the billing managers the ceiling is
+        // reached (reads that stop short of it would never be refused),
+        // then what fits; refused again (another claim took the room
+        // first), nothing new is read.
+        const claimed = (resources: readonly string[], units: number) =>
+          resources.length === 0
+            ? Effect.succeed<readonly string[]>([])
+            : meters.claim(workspaceId, "xApi", units).pipe(
+                Effect.as(resources),
                 Effect.catchTag("AllowanceReached", () =>
-                  Effect.succeed<string[]>([])
+                  Effect.succeed<readonly string[]>([])
                 )
               );
+
+        const taken =
+          affordable.length < fresh.length
+            ? yield* claimed(fresh, total).pipe(
+                Effect.flatMap((all) =>
+                  all.length > 0
+                    ? Effect.succeed(all)
+                    : claimed(affordable, spent)
+                )
+              )
+            : yield* claimed(affordable, spent);
 
         if (taken.length > 0) {
           yield* sql`
@@ -116,16 +139,18 @@ export const billedPaidReads = Layer.effect(
       }
     );
 
+    const none: PaidReadsCovered = { fresh: [], resources: [] };
+
     const claim = Effect.fn("PaidReads.claim")(function* claim(
       asked: PaidReadClaim
     ) {
       if (asked.resources.length === 0) {
-        return [];
+        return none;
       }
 
       // A workspace that did not turn its reads on reads nothing.
       if (!(yield* xPassThrough.readsOn(asked.workspaceId))) {
-        return [];
+        return none;
       }
 
       const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
@@ -143,10 +168,67 @@ export const billedPaidReads = Layer.effect(
 
       const allowed = new Set([...had, ...taken]);
 
-      return asked.resources.filter((resource) => allowed.has(resource));
+      const covered: PaidReadsCovered = {
+        fresh: taken,
+        resources: asked.resources.filter((resource) => allowed.has(resource)),
+      };
+
+      return covered;
     });
 
-    return PaidReads.of({ claim });
+    // The resources X did not return are neither billed by X nor read:
+    // their rows of the day go, and their units back, in one transaction.
+    const releaseLocked = Effect.fn("PaidReads.releaseBilled")(
+      function* releaseLocked(released: PaidReadClaim, day: string) {
+        const { platform, workspaceId } = released;
+
+        const rows = yield* sql<{ readonly resource: string }>`
+          DELETE FROM analytics.paid_reads
+          WHERE workspace_id = ${workspaceId}
+            AND platform = ${platform}
+            AND day = ${day}::date
+            AND resource = ANY(string_to_array(${released.resources.join(",")}, ','))
+          RETURNING resource
+        `.pipe(Effect.orDie);
+
+        let units = 0;
+
+        for (const { resource } of rows) {
+          units += unitsOf(resource);
+        }
+
+        if (units > 0) {
+          yield* meters.giveBack({
+            at: yield* DateTime.now,
+            meter: "xApi",
+            units,
+            workspaceId,
+          });
+        }
+      }
+    );
+
+    const release = Effect.fn("PaidReads.release")(function* release(
+      released: PaidReadClaim
+    ) {
+      if (released.resources.length === 0) {
+        return;
+      }
+
+      const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
+
+      yield* sql
+        .withTransaction(releaseLocked(released, day))
+        .pipe(
+          Effect.catchTag("SqlError", (cause) => Effect.fail(failed(cause)))
+        );
+    });
+
+    return PaidReads.of({
+      claim,
+      reads: (workspaceId) => xPassThrough.readsOn(workspaceId),
+      release,
+    });
   })
 );
 

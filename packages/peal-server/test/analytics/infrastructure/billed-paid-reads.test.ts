@@ -39,7 +39,7 @@ const forget = (workspaceId: WorkspaceId) =>
 const claiming = (workspaceId: WorkspaceId, resources: readonly string[]) =>
   PaidReads.use((paid) =>
     paid.claim({ platform: "x", resources, workspaceId })
-  );
+  ).pipe(Effect.map((covered) => covered.resources));
 
 const turnOn = (workspaceId: WorkspaceId) =>
   Ref.update(turnedOn, (all) => new Set([...all, workspaceId]));
@@ -101,6 +101,73 @@ layer(
           assert.deepStrictEqual(yield* claiming(workspaceId, ["3", "2"]), [
             "2",
           ]);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+});
+
+// The same, with no end to the meter: what is given back.
+layer(
+  billedPaidReads.pipe(
+    Layer.provideMerge(
+      Layer.mergeAll(readsFor(turnedOn), fakeMeters({ allowed: Option.none() }))
+    ),
+    Layer.provideMerge(DatabaseTest)
+  ),
+  { excludeTestServices: true }
+)("X's reads it did not return", (it) => {
+  it.effect("says a workspace reads X only once it turned its reads on", () =>
+    Effect.gen(function* reads() {
+      const workspaceId = yield* freshWorkspace;
+      const paid = yield* PaidReads;
+
+      assert.isFalse(yield* paid.reads(workspaceId, "x"));
+
+      yield* turnOn(workspaceId);
+
+      assert.isTrue(yield* paid.reads(workspaceId, "x"));
+    })
+  );
+
+  it.effect(
+    "gives back what X did not return, so it is neither billed nor read today",
+    () =>
+      Effect.gen(function* released() {
+        const workspaceId = yield* freshWorkspace;
+        const paid = yield* PaidReads;
+
+        yield* turnOn(workspaceId);
+
+        yield* Effect.gen(function* checks() {
+          const before = (yield* FakeMetersLedger.use(Ref.get)).givenBack
+            .length;
+
+          const covered = yield* paid.claim({
+            platform: "x",
+            resources: ["7", "8"],
+            workspaceId,
+          });
+
+          assert.deepStrictEqual(covered.fresh, ["7", "8"]);
+
+          // X answered nothing for the second.
+          yield* paid.release({ platform: "x", resources: ["8"], workspaceId });
+
+          const { givenBack } = yield* FakeMetersLedger.use(Ref.get);
+
+          assert.deepStrictEqual(
+            givenBack.slice(before).map((back) => back.units),
+            [postRead]
+          );
+
+          // Asked again, it is fresh again, and the first is not.
+          const again = yield* paid.claim({
+            platform: "x",
+            resources: ["7", "8"],
+            workspaceId,
+          });
+
+          assert.deepStrictEqual(again.fresh, ["8"]);
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );

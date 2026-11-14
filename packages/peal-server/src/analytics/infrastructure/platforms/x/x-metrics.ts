@@ -92,7 +92,12 @@ const metricsOf = (
   );
 
 type Call =
-  | { readonly _tag: "read"; readonly readings: readonly PostReading[] }
+  | {
+      readonly _tag: "read";
+      readonly readings: readonly PostReading[];
+      // The posts X returned, which it bills.
+      readonly returned: readonly string[];
+    }
   | { readonly _tag: "failed"; readonly readings: readonly PostReading[] }
   | { readonly _tag: "halt" };
 
@@ -177,6 +182,9 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
         return {
           _tag: "read",
+          returned: posts.flatMap(({ platformPostId }) =>
+            byId.has(platformPostId) ? [platformPostId] : []
+          ),
           readings: posts.map((post): PostReading => {
             const metrics = byId.get(post.platformPostId)?.public_metrics;
 
@@ -206,6 +214,7 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
     token: Redacted.Redacted
   ) {
     const readings: PostReading[] = [];
+    const returned: string[] = [];
 
     for (const some of Arr.chunksOf(posts, idsPerCall)) {
       const call = yield* readSome(some, token);
@@ -215,11 +224,13 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
       }
 
       if (call._tag !== "read") {
-        return { halted: true, readings };
+        return { halted: true, readings, returned };
       }
+
+      returned.push(...call.returned);
     }
 
-    return { halted: false, readings };
+    return { halted: false, readings, returned };
   });
 
   const read = (
@@ -239,6 +250,18 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         return yield* new ChannelUnreadable({ reason: "paused" });
       }
 
+      const { workspaceId } = request;
+
+      // A workspace that does not read X (on a server that bills, its X
+      // reads off) is skipped as paused, before anything is claimed.
+      if (
+        !(yield* paid
+          .reads(workspaceId, "x")
+          .pipe(Effect.catchTag("DatabaseError", databaseDown)))
+      ) {
+        return yield* new ChannelUnreadable({ reason: "paused" });
+      }
+
       const known = request.posts.filter(({ platformPostId }) =>
         postId.test(platformPostId)
       );
@@ -247,15 +270,26 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         .filter(({ platformPostId }) => !postId.test(platformPostId))
         .map(missing);
 
-      const covered = new Set(
-        yield* paid
-          .claim({
+      const claimed = yield* paid
+        .claim({
+          platform: "x",
+          resources: known.map(({ platformPostId }) => platformPostId),
+          workspaceId,
+        })
+        .pipe(Effect.catchTag("DatabaseError", databaseDown));
+
+      const covered = new Set(claimed.resources);
+
+      // X bills only the posts it returns: those counted fresh for the
+      // day that it did not return go back.
+      const releaseUnless = (returned: ReadonlySet<string>) =>
+        paid
+          .release({
             platform: "x",
-            resources: known.map(({ platformPostId }) => platformPostId),
-            workspaceId: request.workspaceId,
+            resources: claimed.fresh.filter((id) => !returned.has(id)),
+            workspaceId,
           })
-          .pipe(Effect.catchTag("DatabaseError", databaseDown))
-      );
+          .pipe(Effect.catchTag("DatabaseError", databaseDown));
 
       const allowed = known.filter(({ platformPostId }) =>
         covered.has(platformPostId)
@@ -277,12 +311,15 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
           readAll(allowed, accessToken)
         )
         .pipe(
+          Effect.tapError(() => releaseUnless(new Set())),
           Effect.catchTags({
             ChannelUnusable: unusable,
             DatabaseError: databaseDown,
             TokenExpired: needsReconnect,
           })
         );
+
+      yield* releaseUnless(new Set(batch.returned));
 
       return {
         halted: batch.halted,

@@ -224,15 +224,31 @@ export const xAccounts = Effect.fn("XAccounts.make")(
             return yield* paused;
           }
 
+          // A workspace that does not read X (on a server that bills, its
+          // X reads off) is skipped as paused, before anything is claimed.
+          if (
+            !(yield* paid
+              .reads(workspaceId, "x")
+              .pipe(Effect.catchTag("DatabaseError", databaseDown)))
+          ) {
+            return yield* paused;
+          }
+
           const resource = `user:${account.accountId}`;
 
           const covered = yield* paid
             .claim({ platform: "x", resources: [resource], workspaceId })
             .pipe(Effect.catchTag("DatabaseError", databaseDown));
 
-          if (!covered.includes(resource)) {
+          if (!covered.resources.includes(resource)) {
             return yield* new PlatformUnavailable();
           }
+
+          // X bills the account only when it returns it: one counted fresh
+          // today goes back when the read brings nothing.
+          const released = paid
+            .release({ platform: "x", resources: covered.fresh, workspaceId })
+            .pipe(Effect.catchTag("DatabaseError", databaseDown));
 
           return yield* withChannelToken(access, account, ({ accessToken }) =>
             Effect.gen(function* asking() {
@@ -265,7 +281,7 @@ export const xAccounts = Effect.fn("XAccounts.make")(
                 days: [],
               };
             })
-          );
+          ).pipe(Effect.tapError(() => released));
         });
 
     return reader;

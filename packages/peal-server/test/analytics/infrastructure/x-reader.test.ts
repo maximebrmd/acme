@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Ref, Result } from "effect";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
@@ -128,11 +128,15 @@ const reading = (
     allowance = 1000,
     enabled = true,
     owner = account,
+    reads = true,
+    released,
     tokens = ["x-access-synthetic-1"],
   }: {
     readonly allowance?: number;
     readonly enabled?: boolean;
     readonly owner?: ChannelAccount;
+    readonly reads?: boolean;
+    readonly released?: Ref.Ref<readonly string[]>;
     readonly tokens?: readonly string[];
   } = {}
 ) =>
@@ -145,7 +149,10 @@ const reading = (
   }).pipe(
     Effect.provide(
       readersWith({
-        paidReads: paidReadsOf(allowance),
+        paidReads:
+          released === undefined
+            ? paidReadsOf(allowance, { reads })
+            : paidReadsOf(allowance, { reads, released }),
         xApi: url,
         xReads: enabled,
       }).pipe(Layer.provideMerge(channelAccessOf(owner, tokens)))
@@ -453,6 +460,53 @@ describe("reading counts on X", () => {
         new ChannelUnreadable({ reason: "paused" })
       );
       assert.lengthOf(server.requests(), 0);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "gives back the posts X did not return: refused, failed or gone, never one it counted",
+    () =>
+      Effect.gen(function* releases() {
+        const server = yield* fakePosts(new Map([[idOf(0), 5]]));
+        const released = yield* Ref.make<readonly string[]>([]);
+
+        server.script([
+          json({ title: "Payment Required", type: "about:blank" }, 402),
+        ]);
+
+        yield* reading(server.url, [toRead(idOf(0), 0)], {
+          allowance: 1000,
+          released,
+        });
+
+        assert.deepStrictEqual(yield* Ref.get(released), [idOf(0)]);
+
+        // Answered: the post counted is kept, the one X left out goes back.
+        yield* Ref.set(released, []);
+
+        yield* reading(server.url, [toRead(idOf(0), 0), toRead(idOf(1), 1)], {
+          released,
+        });
+
+        assert.deepStrictEqual(yield* Ref.get(released), [idOf(1)]);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("skips, as paused, a workspace that does not read X", () =>
+    Effect.gen(function* off() {
+      const server = yield* fakePosts(new Map([[idOf(0), 5]]));
+
+      const { batch, handed } = yield* reading(
+        server.url,
+        [toRead(idOf(0), 0)],
+        { reads: false }
+      );
+
+      assert.deepInclude(Option.getOrUndefined(Result.getFailure(batch)), {
+        _tag: "ChannelUnreadable",
+        reason: "paused",
+      });
+      assert.deepStrictEqual(handed, []);
     }).pipe(Effect.scoped)
   );
 });

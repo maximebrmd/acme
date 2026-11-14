@@ -51,14 +51,21 @@
   and resource, under an advisory lock; `X_ANALYTICS_DAILY_READS` a
   workspace and day). What the allowance does not cover is answered `unpaid`, post by post, and waits for its next turn: a spent allowance never halts a channel, whose posts already paid for that day are read on. On a
   server that bills, `PaidReads` is `billedPaidReads` instead (chosen
-  once by `BillingMode`): nothing unless the workspace turned its X reads
-  on (billing's `XPassThrough`), and each resource new that day claims X's rate
-  on the `xApi` meter (`userRead` for `user:<id>`, `postRead` for a
-  post) in the locked transaction, the claim's room read first; what the
-  meter has no room for (no payment method, the ceiling) is `unpaid` as
-  above. A read X then fails is not given back: the day's row stays, so
-  it costs nothing more that day. `X_ANALYTICS` stays the operator's
-  switch on both, and `X_ANALYTICS_DAILY_READS` applies only where the
+  once by `BillingMode`): a workspace that did not turn its X reads on
+  (billing's `XReads`) is skipped as `paused` before anything is claimed
+  (`PaidReads.reads`, asked by both X readers), and each resource new that
+  day claims X's rate on the `xApi` meter (`userRead` for `user:<id>`,
+  `postRead` for a post) in the locked transaction, the claim's room read
+  first; where not all fit, the whole is claimed first, so its refusal
+  tells the billing managers the ceiling is reached, then what fits. What
+  the meter has no room for (no payment method, the ceiling) is `unpaid`
+  as above. X bills only what it returns: what a claim counted fresh
+  (`PaidReadsCovered.fresh`) and X did not return (a refusal, a failed
+  call, a token refused, a post gone) goes back through `PaidReads.release`
+  (its rows of the day deleted, its units given back, in one transaction);
+  where the server does not bill, release does nothing, as the operator's
+  allowance always counted it. `X_ANALYTICS` stays the operator's switch
+  on both, and `X_ANALYTICS_DAILY_READS` applies only where the
   server does not bill. A new
   platform that bills reads goes through `PaidReads` and `BilledReads`.
 - Platforms without a reader (Google Business Profile, and LinkedIn

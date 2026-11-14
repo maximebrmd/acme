@@ -2,7 +2,10 @@ import { DateTime, Effect, Layer, Metric, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PaidReads } from "#analytics/application/paid-reads.ts";
-import type { PaidReadClaim } from "#analytics/application/paid-reads.ts";
+import type {
+  PaidReadClaim,
+  PaidReadsCovered,
+} from "#analytics/application/paid-reads.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 
 import { xDailyReadsConfig } from "./x-daily-reads.ts";
@@ -84,7 +87,9 @@ export const sqlPaidReadsWith = (allowance: number) =>
         asked: PaidReadClaim
       ) {
         if (asked.resources.length === 0) {
-          return [];
+          const none: PaidReadsCovered = { fresh: [], resources: [] };
+
+          return none;
         }
 
         const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
@@ -100,10 +105,25 @@ export const sqlPaidReadsWith = (allowance: number) =>
 
         const allowed = new Set(covered.map(({ resource }) => resource));
 
-        return asked.resources.filter((resource) => allowed.has(resource));
+        const result: PaidReadsCovered = {
+          fresh: covered
+            .filter(({ fresh }) => fresh)
+            .map(({ resource }) => resource),
+          resources: asked.resources.filter((resource) =>
+            allowed.has(resource)
+          ),
+        };
+
+        return result;
       });
 
-      return PaidReads.of({ claim });
+      // The operator's daily allowance counts what was asked, returned or
+      // not, as it always did; every workspace reads.
+      return PaidReads.of({
+        claim,
+        reads: () => Effect.succeed(true),
+        release: () => Effect.void,
+      });
     })
   );
 
