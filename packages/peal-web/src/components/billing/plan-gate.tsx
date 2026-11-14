@@ -21,6 +21,15 @@ interface PlanGateProps {
   readonly workspace: UpgradeWorkspace;
 }
 
+// The free accounts the standing allows, when it says.
+const freeAccountsIn = (standing: Standing) => {
+  const allowed = standing.over.find(
+    ({ limit }) => limit === "channels"
+  )?.allowed;
+
+  return allowed === undefined ? {} : { freeAccounts: allowed };
+};
+
 /**
  * Around a workspace's pages: while the workspace must come back within
  * its plan, every page shows the over-plan screen instead, but billing's,
@@ -41,7 +50,7 @@ export const PlanGate = ({
   if (standing !== null && graceUntil !== null) {
     return (
       <>
-        <GraceBanner graceUntil={graceUntil} />
+        <GraceBanner graceUntil={graceUntil} {...freeAccountsIn(standing)} />
         {children}
       </>
     );

@@ -493,37 +493,87 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   stored as off. `AiLabelsNotice` says where the label is on, where it is
   not, and when one outlived the media.
 - A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
-  `UpgradeView`): the limit with usage and plan, the smallest plan with
-  room priced with VAT first (`offerOf`, from the contract's catalogue),
-  the consent and the order button of the billing page, then checkout
-  (`useCheckout`), back to the page the person was on; who can order, for
-  a member who cannot; how to ask for more on the largest plan
-  (`PEAL_CONTACT_URL`). `UpgradePrompts` puts it around a workspace's pages
+  `UpgradeView`): the limit reached with what the billing account holds
+  and its plan (the free tier's accounts or storage, the ceiling before a
+  first paid invoice, a legacy plan's own words), then what a payment
+  method changes, from the rate card the server answered (`card`, the
+  app's own for a member who cannot read billing): for accounts, what the
+  order bills for those held (`accountsMonthly`), then the next one
+  (`nextAccountOf`, `#billing/ladder.ts`; "free" while it is), or storage,
+  every price excluding VAT with France's VAT beside it; the VAT line
+  (`VatNote`) and the two currency sentences (`CurrencyNote`), the
+  consent box and the order button of the billing page (`Consent`,
+  `OrderButton`), then checkout (`useCheckout`:
+  `payAsYouGo`, monthly, the one plan sold), back to the page the person
+  was on. Where another workspace bills the account (`billedElsewhereOf`
+  on the `account` of `GET …/billing/standing`, which every member
+  reads), the dialog names and links it and orders nothing; to a
+  member who cannot order, who can; past what any plan holds, how to ask
+  for more (`PEAL_CONTACT_URL`). No plan, period or trial is ever
+  offered. `UpgradePrompts` puts it around a workspace's pages
   (`app/[workspaceId]/layout.tsx`), the workspaces list and the connect
   callback. A place that sends something a plan can refuse calls
   `useOfferUpgrade()(exit)` (`useOfferAuthUpgrade` for Better Auth's
   errors), or renders `OfferUpgrade` with the failure it keeps in state,
-  beside its own message: add it to every new such place. The same layout's
-  `PlanGate` shows `OverPlanScreen` instead of the page, billing's aside,
-  while the workspace must come back within its plan
-  (`standingOfWorkspace`, read with the visitor's cookies). The billing
-  page orders smaller plans too, and lists what a `PlanTooSmall` names.
-- The billing page shows `GET …/billing` (`BillingView` renders each state,
-  `BillingStep` the cancellation and withdrawal steps) with prices
-  including VAT first and excluding VAT beside them, a monthly and yearly
-  switch, the unticked box asking to start at once, and **Order with
-  obligation to pay**; it places the order (`#billing/api.ts`), then opens
-  Stripe's checkout and customer portal through `billingClient`
-  (`#auth/billing-client.ts`, Better Auth's Stripe client), with
-  `disableRedirect` and the page as the way back. It links the terms of
-  service at `PEAL_TERMS_URL`. Above it, `BillingAccountView` says whose
-  billing account the workspace is on, links the billing workspace and the
-  others for their members (`linkTo`), and holds the offer to hand the
-  workspace over (offer, accept, decline, withdraw); a workspace another
-  bills orders nothing (`canManage` only where it bills). Explain a
-  `PlanLimitReached`, and Better
-  Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
-  catalogue and `Auth.errors`.
+  beside its own message: add it to every new such place. The same
+  layout's `PlanGate` shows `OverPlanScreen` instead of the page,
+  billing's aside, while the workspace must come back within its plan
+  (`standingOfWorkspace`, read with the visitor's cookies): on the free
+  tier it says the account holds more than its free accounts without a
+  payment method; a grace shows `GraceBanner` above every page instead.
+- A meter's refusal (`UsageAllowanceReached`) opens the same dialog when
+  it asks for a payment method (`MeterReached`, `isMeterReason` in
+  `#billing/upgrade.ts`: what the month allowed, when it starts again, what
+  a payment method includes, never an unconfirmed price); a ceiling
+  reached is the page's own message (raise it on the billing page). The
+  composer's assistant, the image dialog and the inbox reply box offer it.
+  The billing page's `MeterTable` lists `meters`: counts and allowances
+  for every member, each unit price excluding VAT and with France's VAT,
+  "coming" while `priceConfirmed` is false, and the money so far for the
+  workspace that bills the account only; its managers with a payment
+  method set the assistant's ceiling (`setSpendCeiling`).
+- Dialogs fit the window (`DialogContent`: at most the viewport's height,
+  scrolling): check a new one at 320 and 375 px wide, in English and
+  French, as `upgrade-prompt.e2e.ts` does.
+- The billing page shows `GET …/billing` (`BillingView` renders each
+  state, `BillingStep` the cancellation and withdrawal steps): the plan
+  (the free tier, per-account pricing with its next invoice, or a legacy
+  plan read as it is, with its period's end and no order); the billing
+  account's month (`ThisMonth`) for the members of the workspace that
+  bills it only, as the server answers `accountDays` to them alone
+  (connected accounts, account-days so far, `estimate` excluding tax,
+  the next account's price, Stripe's `upcomingInvoice` tax included,
+  "the invoice is the one that counts"), any other workspace of the
+  account, a partner's customer included, the account's pool and limits
+  as its usage does, and never the account's plan card, contract or
+  money (the server answers none of them there); a contract whose payment failed
+  (`paymentFailed`: past due shows its alert and the portal, unpaid also
+  replaces the order), or
+  an order refused as `AlreadySubscribed`, sends to the portal; the free
+  tier's accounts are the answer's `allowances.channels` (none once staff
+  required a payment method, `freeWithoutCard`); a legacy plan shows its
+  channels against its allowance and no per-account figures; adding a
+  payment method, on the free tier only, behind the unticked box, and
+  **Order with obligation to pay**, its refusal beside it;
+  the ladder (`ladderOf`, from the answer's `rateCard`) with the day rule
+  and the two currency sentences; and the other limits. Every price comes
+  from the rate card, in US dollars, excluding tax with the amount with
+  France's VAT beside it (`withDisplayVat`, `displayVatRate`, labelled
+  as France's, with the line that the VAT paid depends on the country
+  and that a business with a valid VAT number pays the price excluding
+  it): the server knows no customer's own rate. Never type a price. The
+  meters (assistant, messages, ads) are left out until they are built.
+  It places the order (`#billing/api.ts`), then opens Stripe's checkout
+  and customer portal through `billingClient` (`#auth/billing-client.ts`,
+  Better Auth's Stripe client), with `disableRedirect` and the page as
+  the way back. It links the terms of service at `PEAL_TERMS_URL`. Above
+  it, `BillingAccountView` says whose billing account the workspace is
+  on, links the billing workspace and the others for their members
+  (`linkTo`), and holds the offer to hand the workspace over (offer,
+  accept, decline, withdraw); a workspace another bills orders nothing
+  (`canManage` only where it bills). Explain a `PlanLimitReached`, and
+  Better Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the
+  `Billing` catalogue and `Auth.errors`.
 - Below it, on a server that bills or not, `UsageHistoryScreen` reads
   `GET …/usage` for the last 7, 30 or 90 UTC days (`usageOf`): the
   totals, a partner's plan when `sharedWith` says so, and

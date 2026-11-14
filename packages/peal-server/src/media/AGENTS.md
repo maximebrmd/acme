@@ -108,3 +108,56 @@
   across every workspace's files; text under three characters has no
   trigram and walks the workspace's files, about 30 ms for no match in
   100,000.
+- Four hourly `ClusterCron`s sweep the store (`MediaSweeps`,
+  `infrastructure/crons.ts`), each bounded (`PEAL_MEDIA_SWEEP_BATCH`, 500 a
+  run; ten pages) and safe to run again; one thing the store refuses is
+  counted and skipped, never blocking the rest. `PEAL_MEDIA_SWEEPS`
+  (`on` in production, `off` elsewhere) switches them all: off, nothing
+  is listed. `media.pending-sweep` takes assets pending since
+  `PEAL_MEDIA_SWEEP_PENDING_AFTER` (a day): one a scheduled post shows is
+  paged past; otherwise the row goes first, only while still pending
+  (`forgetExpired`), then `MediaUsage.release` (drafts), then the upload
+  and the file. `media.upload-sweep` aborts multipart uploads open since
+  `PEAL_MEDIA_SWEEP_UPLOADS_AFTER`. `media.orphan-sweep` deletes files the
+  store dated `PEAL_MEDIA_SWEEP_ORPHANS_AFTER` ago that no asset holds, or
+  a rejected one, checking each key again before it goes, and stops
+  deleting nothing (`breaker`) on a page with more unheld files than
+  `PEAL_MEDIA_SWEEP_ORPHANS_LIMIT` (100) or a fifth of 50 old ones.
+  `media.folder-sweep` empties the folders of erased workspaces
+  (`media.erased_folders`, written in the erasure's transaction by
+  `MediaRecords.eraseWorkspace`, deleted once emptied; 15 minutes' grace),
+  leaving one whose workspace still has assets, so a store that fails
+  after an erasure commits never keeps its files. Ages must be finite and
+  at least the part URLs' six hours and an hour (`minimumSweepAge`).
+- The pending and orphan sweeps delete what this database does not know
+  of, so they run only while `<prefix>media/.owner` (JSON: `id`, `epoch`,
+  `system`, `timeline`) agrees with this database: its id
+  (`media.store_identity`, made once, kept through restores), its Postgres
+  cluster (`pg_control_system()`'s system identifier, and the timeline of
+  `pg_walfile_name(pg_current_wal_lsn())`, which a promotion changes at
+  once where the control file waits for a checkpoint: `restored` otherwise, as after any
+  pgBackRest restore, a failover, `pg_upgrade` or a dump loaded), and an
+  epoch no greater than the database's (`rewound` otherwise). Each owned
+  run commits `epoch + 1`, then writes the marker with `If-Match` on the
+  version it read, and reads it back (`contended` if it changed). The
+  first run writes it create-only; another id (`foreign`) or none once
+  claimed (`unmarked`) stops them too, and each page of a long run reads
+  the marker again (`contended` once it changed). The pending sweep also
+  stops when more than `PEAL_MEDIA_SWEEP_PENDING_LIMIT` workspaces hold
+  expired uploads (never a count of uploads, which one user can raise).
+  Never replace the marker but through `claimMediaFolder`
+  (`bun src/claim-media-folder.ts`: read only, migrating and creating
+  nothing, unless `--yes`, then failing unless the store holds the marker
+  it wrote), an operator's act.
+- Listing sweeps keep where they stopped (`media.sweep_cursors`, keys
+  relative to the prefix). `MediaBucket` lists `<prefix>media/` only and
+  hands out only what `mediaKeyOf` reads as a key Peal writes: never widen
+  either, the erasure ledger and other instances share the bucket.
+  Metrics `peal.media.sweep.{objects,bytes,failures}` (by `sweep`, counted
+  as each goes; each key at debug) and `peal.media.sweep.refusals` (by
+  `sweep` and `reason`); alerts `peal-media-sweep-failing` and
+  `peal-media-sweep-refused`.
+- Sweep tests (`test/media/infrastructure/media-sweeps.test.ts`) give the
+  sweeps a prefix of the run's own and delete it after, and forget the
+  database's claim and cursors; rows they sweep are dated before 1970,
+  which no other suite writes.

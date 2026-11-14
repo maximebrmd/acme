@@ -19,6 +19,7 @@ import { PersonRequired } from "#ads/domain/person-required.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage, pausedOf } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId } from "#shared/domain/ids.ts";
@@ -198,6 +199,17 @@ export class AdConnections extends Context.Service<
       AuthorizedAccount,
       AdAccountNotFound | DatabaseError | MissingPermission
     >;
+    /**
+     * Until when the workspace's new ads are not tracked, as its billing
+     * account used the managed ads its month allows; none while they are,
+     * and where no billing counts.
+     */
+    readonly untrackedUntil: (
+      actor: Actor
+    ) => Effect.Effect<
+      Option.Option<DateTime.Utc>,
+      DatabaseError | MissingPermission
+    >;
     /** Removes a sign-in, its token and the accounts it connects. */
     readonly disconnect: (
       actor: Actor,
@@ -225,6 +237,7 @@ export class AdConnections extends Context.Service<
       const boosts = yield* BoostStore;
       const allowance = yield* AdAllowance;
       const notices = yield* AdNotices;
+      const meters = yield* MeteredUsage;
       const ids = yield* Effect.context<Ids>();
 
       const clientFor = (network: AdNetwork) =>
@@ -372,6 +385,18 @@ export class AdConnections extends Context.Service<
       );
 
       return AdConnections.of({
+        untrackedUntil: Effect.fn("AdConnections.untrackedUntil")(
+          function* untrackedUntil(actor) {
+            yield* reading(actor);
+
+            const state = yield* meters.state(actor.workspaceId, "managedAds");
+
+            return state.pipe(
+              Option.flatMap(pausedOf),
+              Option.map(({ resetsAt }) => resetsAt)
+            );
+          }
+        ),
         account: Effect.fn("AdConnections.account")(
           function* account(actor, accountId) {
             yield* reading(actor);

@@ -405,6 +405,20 @@ export const french: EmailCatalog = {
     subject:
       "Ajoutez un moyen de paiement à {workspaceName} avant le {graceUntil}",
   },
+  allowanceReached: {
+    action: "Ajouter un moyen de paiement",
+    body: "{workspaceName} a utilisé les {allowed} {meter} que son compte de facturation inclut ce mois-ci sans moyen de paiement. Jusqu’au {resetsAt}, le compteur s’arrête : plus aucun message n’est envoyé et aucune nouvelle publicité n’est suivie ; la lecture, la publication et tout le reste continuent. Ajoutez un moyen de paiement sur la page de facturation pour continuer dès maintenant : ce qui est utilisé au-delà de l’inclus est alors facturé au prix de la grille tarifaire.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "{workspaceName} a utilisé ses {meter} du mois",
+  },
+  meters: {
+    assistantImages: "images de l’assistant de rédaction",
+    assistantRequests: "demandes à l’assistant de rédaction",
+    managedAds: "publicités gérées",
+    outboundMessages: "messages envoyés depuis la boîte de réception",
+    xApi: "utilisations de l’API de X",
+  },
   trialStarted: {
     action: "Ouvrir la facturation",
     body: "{workspaceName} essaie {plan} depuis le {startedAt}, jusqu’au {endsAt}. Rien n’est facturé, et aucun moyen de paiement n’a été demandé. Sauf si quelqu’un commande {plan} ({price} HT par mois) d’ici là, l’espace de travail repasse à l’offre gratuite à la fin de l’essai. Vous pouvez mettre fin à l’essai à tout moment depuis la page de facturation, ou avec Résilier votre contrat, au pied de chaque page.",

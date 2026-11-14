@@ -32,6 +32,7 @@ import social.peal.errors.BadRequestError;
 import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.PaymentRequiredError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
@@ -456,7 +457,7 @@ public class AsyncRawInboxClient {
     }
 
     /**
-     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 <code>UsageAllowanceReached</code>) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<PealClientHttpResponse<InboxReply>> reply(
             String workspaceId, String commentId, NewInboxReply request) {
@@ -464,7 +465,7 @@ public class AsyncRawInboxClient {
     }
 
     /**
-     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 <code>UsageAllowanceReached</code>) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<PealClientHttpResponse<InboxReply>> reply(
             String workspaceId, String commentId, NewInboxReply request, RequestOptions requestOptions) {
@@ -526,6 +527,11 @@ public class AsyncRawInboxClient {
                                 future.completeExceptionally(new UnauthorizedError(
                                         ObjectMappers.JSON_MAPPER.readValue(
                                                 responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:

@@ -526,6 +526,17 @@ export interface BillingRecord {
    * The posts it made on platforms that bill the server per post, and how
    * many held a link, by month (its first instant).
    */
+  /**
+   * Its billing account's meters by month (UTC, YYYY-MM-DD, the first day),
+   * kept on it as the account's billing workspace: the units used, and
+   * those past the allowance reported to the payment provider.
+   */
+  readonly meterMonths: readonly {
+    readonly meter: string;
+    readonly month: string;
+    readonly reported: number;
+    readonly used: number;
+  }[];
   readonly meteredPosts: readonly {
     readonly month: DateTime.Utc;
     readonly platform: string;
@@ -533,6 +544,12 @@ export interface BillingRecord {
     readonly postsWithLinks: number;
   }[];
   readonly plan: string | null;
+  /** The monthly ceilings its billing account set, in US dollar cents. */
+  readonly spendCeilings: readonly {
+    readonly cents: number;
+    readonly group: string;
+    readonly setAt: DateTime.Utc;
+  }[];
   readonly subscriptions: readonly {
     readonly cancelAtPeriodEnd: boolean;
     readonly currentPeriodEnd: DateTime.Utc | null;
@@ -710,6 +727,12 @@ export type NoticeEventRecord =
       readonly accounts: number;
       readonly allowed: number;
       readonly graceUntil: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "AllowanceReached";
+      readonly allowed: number;
+      readonly meter: string;
+      readonly resetsAt: DateTime.Utc;
     }
   | {
       readonly _tag: "TrialEnding";

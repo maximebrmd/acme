@@ -1,5 +1,6 @@
 import { DateTime, Option, Result, Schema } from "effect";
 
+import type { Meter } from "#shared/domain/meter.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
@@ -20,8 +21,15 @@ import { billableAccountDays } from "./rate-card.ts";
  *   the day's requests to the writing assistant, which it copies from the
  *   assistant's count. A day the snapshot did not run has none.
  *
- * A meter added later (messages, calls to a platform that bills per call)
- * is a new value of `meter`, with its own dimension.
+ * - `assistantImages`, `outboundMessages` and `managedAds` are counters of
+ *   the billing meters a workspace claims (`MeteredUsage`), on a server
+ *   that bills: each unit granted adds one under the workspace that
+ *   claimed it, on the day it did, and one given back takes it away, so
+ *   a billing account's report still says which workspace used what.
+ *   The assistant's requests are the snapshot's copy above.
+ *
+ * A meter added later (calls to a platform that bills per call) is a new
+ * value of `meter`, with its own dimension.
  */
 export const UsageStateSchema = Schema.Literals([
   "assistantRequests",
@@ -31,6 +39,23 @@ export const UsageStateSchema = Schema.Literals([
 ]);
 
 export type UsageState = typeof UsageStateSchema.Type;
+
+/** The billing meters the ledger counts as they are claimed. */
+export const UsageCounterSchema = Schema.Literals([
+  "assistantImages",
+  "managedAds",
+  "outboundMessages",
+]);
+
+export type UsageCounter = typeof UsageCounterSchema.Type;
+
+/**
+ * The ledger's counter of a billing meter, where it counts one as it is
+ * claimed: the assistant's requests are copied by the snapshot instead,
+ * and X's calls are not counted here.
+ */
+export const usageCounterOf = (meter: Meter): Option.Option<UsageCounter> =>
+  Schema.is(UsageCounterSchema)(meter) ? Option.some(meter) : Option.none();
 
 /** One count of the ledger: a meter's quantity on a day, by dimension. */
 export const UsageRecordSchema = Schema.Union([
@@ -44,6 +69,12 @@ export const UsageRecordSchema = Schema.Union([
     day: Schema.DateTimeUtc,
     dimension: Schema.Literal(""),
     meter: UsageStateSchema,
+    quantity: Schema.Int,
+  }),
+  Schema.Struct({
+    day: Schema.DateTimeUtc,
+    dimension: Schema.Literal(""),
+    meter: UsageCounterSchema,
     quantity: Schema.Int,
   }),
 ]);
@@ -129,6 +160,8 @@ export interface UsageDay {
    * other workspace, and for a day not counted.
    */
   readonly billableAccounts: Option.Option<number>;
+  /** The images the assistant made with the server's model that day. */
+  readonly assistantImages: number;
   /** The day's posts by platform, in the platforms' order by name. */
   readonly byPlatform: readonly PlatformPosts[];
   /**
@@ -140,12 +173,16 @@ export interface UsageDay {
   /** Bytes stored when the day's snapshot ran. */
   readonly mediaStorage: Option.Option<number>;
   readonly members: Option.Option<number>;
+  /** The inbox messages sent that day, comment replies included. */
+  readonly outboundMessages: number;
   /** The posts that went out that day, one per channel. */
   readonly publishedPosts: number;
 }
 
 /** A period's usage, added up. */
 export interface UsageTotals {
+  /** The images the assistant made with the server's model. */
+  readonly assistantImages: number;
   /** The days' `billableAccounts` added up; none when no day has one. */
   readonly billableAccountDays: Option.Option<number>;
   readonly byPlatform: readonly PlatformPosts[];
@@ -156,6 +193,12 @@ export interface UsageTotals {
   readonly channelDays: number;
   /** The days whose channels `channelDays` adds up. */
   readonly daysCounted: number;
+  /**
+   * The managed ads counted active: each counts once in the month a sync
+   * first saw it running in, on that day.
+   */
+  readonly managedAds: number;
+  readonly outboundMessages: number;
   readonly publishedPosts: number;
 }
 
@@ -183,6 +226,7 @@ const addTo = (
 
 interface DayTally {
   readonly byPlatform: Map<Platform, number>;
+  readonly counters: Map<UsageCounter, number>;
   readonly states: Map<UsageState, number>;
 }
 
@@ -209,7 +253,7 @@ export const reportOf = (
   for (let index = 0; index < days; index += 1) {
     tallies.set(
       DateTime.toEpochMillis(DateTime.add(period.from, { days: index })),
-      { byPlatform: new Map(), states: new Map() }
+      { byPlatform: new Map(), counters: new Map(), states: new Map() }
     );
   }
 
@@ -219,6 +263,11 @@ export const reportOf = (
     if (tally !== undefined) {
       if (record.meter === "publishedPosts") {
         addTo(tally.byPlatform, record.dimension, record.quantity);
+      } else if (Schema.is(UsageCounterSchema)(record.meter)) {
+        tally.counters.set(
+          record.meter,
+          (tally.counters.get(record.meter) ?? 0) + record.quantity
+        );
       } else {
         tally.states.set(record.meter, record.quantity);
       }
@@ -236,6 +285,7 @@ export const reportOf = (
   let channelDays = 0;
   let daysCounted = 0;
   let billable = Option.none<number>();
+  const counters = { assistantImages: 0, managedAds: 0, outboundMessages: 0 };
 
   const usageDays = [...tallies.entries()].map(([millis, tally]): UsageDay => {
     const channels = Option.fromUndefinedOr(tally.states.get("channels"));
@@ -251,6 +301,10 @@ export const reportOf = (
 
     const billableAccounts = Option.fromUndefinedOr(peaks.get(millis));
 
+    for (const counter of UsageCounterSchema.literals) {
+      counters[counter] += tally.counters.get(counter) ?? 0;
+    }
+
     if (Option.isSome(billableAccounts)) {
       billable = Option.some(
         Option.getOrElse(billable, () => 0) + billableAccounts.value
@@ -258,6 +312,7 @@ export const reportOf = (
     }
 
     return {
+      assistantImages: tally.counters.get("assistantImages") ?? 0,
       assistantRequests: Option.fromUndefinedOr(
         tally.states.get("assistantRequests")
       ),
@@ -267,6 +322,7 @@ export const reportOf = (
       day: DateTime.makeUnsafe(millis),
       mediaStorage: Option.fromUndefinedOr(tally.states.get("mediaStorage")),
       members: Option.fromUndefinedOr(tally.states.get("members")),
+      outboundMessages: tally.counters.get("outboundMessages") ?? 0,
       publishedPosts: [...tally.byPlatform.values()].reduce(
         (sum, posts) => sum + posts,
         0
@@ -279,10 +335,13 @@ export const reportOf = (
   return {
     days: usageDays,
     totals: {
+      assistantImages: counters.assistantImages,
       billableAccountDays: billable,
       byPlatform,
       channelDays,
       daysCounted,
+      managedAds: counters.managedAds,
+      outboundMessages: counters.outboundMessages,
       publishedPosts: byPlatform.reduce((sum, { posts }) => sum + posts, 0),
     },
   };

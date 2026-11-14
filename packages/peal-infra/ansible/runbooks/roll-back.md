@@ -11,6 +11,12 @@ Run every command on the server, as `ops`, through the tunnel
 (`ssh ops@ssh.peal.social`, or `ssh ops@sandbox-ssh.peal.social` for the
 sandbox). The checks only read.
 
+A roll-back that also restores the database (`restore-database.md`) turns
+the media sweeps off first, as that runbook's step 7 says: the restored
+database does not know the files uploaded after its restore point. A
+roll-back of the release alone leaves them on; a release older than the
+media sweeps has none, and ignores `PEAL_MEDIA_SWEEPS`.
+
 ## Past per-channel posts
 
 The release that gives a channel media of its own on a post and takes one

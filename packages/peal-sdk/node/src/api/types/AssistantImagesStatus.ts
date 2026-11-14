@@ -8,5 +8,7 @@ export interface AssistantImagesStatus {
     dailyLimit: number;
     maxPromptLength: number;
     requestCost: number;
+    month: Peal.AssistantMonth | null;
+    reason: Peal.AssistantOffReason | null;
     source: Peal.AssistantImageSource | null;
 }

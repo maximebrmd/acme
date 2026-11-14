@@ -6,6 +6,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
 import { AccountDayStore } from "./ports/account-day-store.ts";
+import { MeterUsageStore } from "./ports/meter-usage-store.ts";
 import { UsageLedger } from "./ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "./ports/usage-ledger.ts";
 import { UsageStates } from "./ports/usage-states.ts";
@@ -62,8 +63,8 @@ const recordsOf = (
  * their billing account, those nobody read yet included (the sweep). Then
  * it starts today's account-days of every billing account
  * (`StartAccountDays`, on a server that bills), and, whether the snapshot
- * went through or not, it deletes the ledger's rows, the account-days and
- * the reports sent past their 400 days.
+ * went through or not, it deletes the ledger's rows, the account-days, the
+ * meters' months and the reports sent past their 400 days.
  */
 export class SnapshotUsage extends Context.Service<
   SnapshotUsage,
@@ -78,6 +79,7 @@ export class SnapshotUsage extends Context.Service<
         const ledger = yield* UsageLedger;
         const accounts = yield* BillingAccounts;
         const startDays = yield* StartAccountDays;
+        const meterUsage = yield* MeterUsageStore;
         const accountDays = yield* AccountDayStore;
 
         // Every workspace's states, batch by batch: how many it wrote.
@@ -155,9 +157,10 @@ export class SnapshotUsage extends Context.Service<
 
           const purged = yield* ledger.purgeBefore(usageCutoff(now));
 
-          const accountDaysPurged = yield* accountDays.purgeBefore(
-            usageCutoff(now)
-          );
+          // The meters' months go with the days, by their month.
+          const accountDaysPurged =
+            (yield* accountDays.purgeBefore(usageCutoff(now))) +
+            (yield* meterUsage.purgeBefore(usageCutoff(now)));
 
           const workspaces = yield* taken;
 

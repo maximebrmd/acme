@@ -38,6 +38,7 @@ import { withoutRefresh } from "#engagement/domain/thread.ts";
 import type { FollowedPost, Thread } from "#engagement/domain/thread.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -141,7 +142,9 @@ const matches = (
   });
 
 /** A world of its own for one test. */
-export const makeWorld = () => {
+export const makeWorld = (
+  meters: Layer.Layer<MeteredUsage> = MeteredUsage.layerUnmetered
+) => {
   const state: WorldState = {
     cancelled: [],
     channelOwners: new Map(),
@@ -615,7 +618,8 @@ export const makeWorld = () => {
       TransactionRunner,
       TransactionRunner.of({ transaction: (effect) => effect })
     ),
-    Ids.layerTest
+    Ids.layerTest,
+    meters
   );
 
   const layer = Layer.mergeAll(

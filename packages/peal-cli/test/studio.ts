@@ -707,6 +707,7 @@ const billing: Billing = {
   currency: "eur",
   enabled: true,
   estimate: { amount: 0, currency: "usd" },
+  meters: null,
   paymentMethod: false,
   plan: "free",
   plans: [],
@@ -725,6 +726,38 @@ const billing: Billing = {
   withdrawableUntil: null,
 };
 
+// The studio on a partner's account that pays per account, billed by the
+// partner's home: the pool's counts and limits, none of its money or
+// contract.
+const billedByHome: Billing = {
+  ...billing,
+  account: {
+    ...account,
+    billingWorkspaceId: "0190f3a0-0000-7000-8000-0000000c0001",
+    billingWorkspaceName: "Home",
+    partner: true,
+    payer: false,
+    workspaces: 3,
+  },
+  accounts: {
+    accountDays: null,
+    connected: 2,
+    estimate: null,
+    nextAccount: null,
+    pooled: 12,
+  },
+  allowances: {
+    ...billing.allowances,
+    channels: 100,
+    mediaStorage: 60_000_000_000,
+  },
+  estimate: null,
+  paymentFailed: false,
+  paymentMethod: true,
+  plan: "payAsYouGo",
+  usage: { ...billing.usage, channels: 12, mediaStorage: 4_000_000_000 },
+};
+
 // The workspace's usage over three days: two with posts, the last
 // without a snapshot.
 const usageReport = (period: {
@@ -735,6 +768,7 @@ const usageReport = (period: {
   current: billing.usage,
   days: [
     {
+      assistantImages: 0,
       assistantRequests: 1,
       billableAccounts: 2,
       byPlatform: [
@@ -745,9 +779,11 @@ const usageReport = (period: {
       day: "2026-11-01",
       mediaStorage: 125_000_000,
       members: 2,
+      outboundMessages: 0,
       publishedPosts: 3,
     },
     {
+      assistantImages: 0,
       assistantRequests: 0,
       billableAccounts: 2,
       byPlatform: [],
@@ -755,9 +791,11 @@ const usageReport = (period: {
       day: "2026-11-02",
       mediaStorage: 125_000_000,
       members: 2,
+      outboundMessages: 0,
       publishedPosts: 0,
     },
     {
+      assistantImages: 0,
       assistantRequests: null,
       billableAccounts: null,
       byPlatform: [],
@@ -765,6 +803,7 @@ const usageReport = (period: {
       day: "2026-11-03",
       mediaStorage: null,
       members: null,
+      outboundMessages: 0,
       publishedPosts: 0,
     },
   ],
@@ -772,6 +811,7 @@ const usageReport = (period: {
   plan: billing.plan,
   sharedWith: null,
   totals: {
+    assistantImages: 0,
     billableAccountDays: 4,
     byPlatform: [
       { platform: "bluesky", posts: 1 },
@@ -779,6 +819,8 @@ const usageReport = (period: {
     ],
     channelDays: 4,
     daysCounted: 2,
+    managedAds: 0,
+    outboundMessages: 0,
     meteredPosts: [
       { month: "2026-11-01", platform: "x", posts: 2, postsWithLinks: 1 },
     ],
@@ -1157,11 +1199,14 @@ const tenantUsage = (
   connected: number,
   publishedPosts: number
 ): TenantUsage => ({
+  assistantImages: 0,
   assistantRequests: 0,
   byPlatform: [{ platform: "x", posts: publishedPosts }],
   channelDays: connected * 2,
   channels: connected,
   daysCounted: 2,
+  managedAds: 0,
+  outboundMessages: 0,
   externalId,
   home: workspaceId === studioId,
   mediaStorage: null,
@@ -1214,6 +1259,7 @@ const partnerUsageReport = (
     totals: later
       ? null
       : {
+          assistantImages: 0,
           billableAccountDays: null,
           byPlatform: [
             { platform: "bluesky", posts: 3 },
@@ -1221,6 +1267,8 @@ const partnerUsageReport = (
           ],
           channelDays: 14,
           daysCounted: 2,
+          managedAds: 0,
+          outboundMessages: 0,
           meteredPosts: [],
           publishedPosts: 7,
         },
@@ -1269,6 +1317,11 @@ export interface StudioState {
   /** The channels' default options, by channel. */
   readonly defaults: Readonly<Record<string, TargetOptions>>;
   readonly deliveries: readonly StudioDelivery[];
+  /**
+   * Whether another workspace of the studio's billing account bills it,
+   * as a test sets it: a partner's customer, a person's other workspace.
+   */
+  readonly billedElsewhere: boolean;
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   /** Whether its new posts ask for short links unless they say. */
@@ -1390,6 +1443,7 @@ export const makeStudio = (
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
+      billedElsewhere: false,
       overPlan: false,
       policy: "contributorsAndApplications",
       posts,
@@ -4823,7 +4877,13 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "billing", (handlers) =>
       handlers.handleAll({
-        get: () => allowed("billing:read").pipe(Effect.as(billing)),
+        get: () =>
+          allowed("billing:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ billedElsewhere }) =>
+              billedElsewhere ? billedByHome : billing
+            )
+          ),
         standing: () =>
           Ref.get(studio.state).pipe(
             Effect.map(({ overPlan }) => (overPlan ? over : within))

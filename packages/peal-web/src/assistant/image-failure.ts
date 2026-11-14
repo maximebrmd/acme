@@ -13,6 +13,7 @@ import type {
   PlanLimitReached,
   TooManyRequests,
   Unauthenticated,
+  UsageAllowanceReached,
   WorkspaceNotFound,
 } from "peal-contract";
 
@@ -30,6 +31,7 @@ export type ImageFailure =
   | PlanLimitReached
   | TooManyRequests
   | Unauthenticated
+  | UsageAllowanceReached
   | WorkspaceNotFound
   // The request failed in a way the API does not declare.
   | { readonly _tag: "Unexpected" };
@@ -45,6 +47,7 @@ const providerKeys = {
 
 /** The message of `Assistant.images.errors` that says why. */
 export type ImageFailureKey =
+  | "allowance"
   | "busy"
   | "declined"
   | "empty"
@@ -52,6 +55,8 @@ export type ImageFailureKey =
   | "generic"
   | "invalidAnswer"
   | "ownLimit"
+  | "paymentFailed"
+  | "paymentMethod"
   | "providerAddress"
   | "providerKey"
   | "providerRedirected"
@@ -83,6 +88,13 @@ export const imageFailureKey = (failure: ImageFailure): ImageFailureKey =>
     TooManyRequests: (): ImageFailureKey => "generic",
     Unauthenticated: (): ImageFailureKey => "generic",
     Unexpected: (): ImageFailureKey => "generic",
+    UsageAllowanceReached: ({ reason }): ImageFailureKey => {
+      if (reason === "paymentMethodRequired") {
+        return "paymentMethod";
+      }
+
+      return reason === "paymentFailed" ? "paymentFailed" : "allowance";
+    },
     WorkspaceNotFound: (): ImageFailureKey => "generic",
   });
 
@@ -118,12 +130,21 @@ export const imageAllowanceHint = ({
 }: {
   readonly images: Pick<
     AssistantImagesStatus,
-    "dailyLimit" | "requestCost" | "source"
+    "dailyLimit" | "month" | "requestCost" | "source"
   >;
   readonly remaining: number;
 }): "noImagesOnPlan" | "notEnoughToday" | null => {
   if (images.source === "workspace") {
     return null;
+  }
+
+  // On a server that bills, images have a month of their own.
+  if (images.month !== null) {
+    if (images.month.most === 0) {
+      return "noImagesOnPlan";
+    }
+
+    return images.month.used >= images.month.most ? "notEnoughToday" : null;
   }
 
   if (images.dailyLimit < images.requestCost) {

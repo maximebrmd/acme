@@ -79,6 +79,7 @@ if typing.TYPE_CHECKING:
     from .ads_unavailable_encoded import AdsUnavailableEncoded
     from .agenda_item import AgendaItem
     from .agenda_page import AgendaPage
+    from .allowance_reason import AllowanceReason
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
@@ -119,6 +120,8 @@ if typing.TYPE_CHECKING:
     from .assistant_input_rejected_encoded import AssistantInputRejectedEncoded
     from .assistant_input_rejected_encoded_reason import AssistantInputRejectedEncodedReason
     from .assistant_input_rejected_encoded_tag import AssistantInputRejectedEncodedTag
+    from .assistant_month import AssistantMonth
+    from .assistant_off_reason import AssistantOffReason
     from .assistant_quota_exceeded_encoded import AssistantQuotaExceededEncoded
     from .assistant_secrets_not_configured_encoded import AssistantSecretsNotConfiguredEncoded
     from .assistant_secrets_not_configured_encoded_tag import AssistantSecretsNotConfiguredEncodedTag
@@ -146,6 +149,7 @@ if typing.TYPE_CHECKING:
     from .billing_account import BillingAccount
     from .billing_accounts_usage import BillingAccountsUsage
     from .billing_interval import BillingInterval
+    from .billing_meter import BillingMeter
     from .billing_subscription import BillingSubscription
     from .billing_transfer import BillingTransfer
     from .billing_unavailable_encoded import BillingUnavailableEncoded
@@ -516,6 +520,7 @@ if typing.TYPE_CHECKING:
     from .media_too_large_encoded_kind import MediaTooLargeEncodedKind
     from .media_usage import MediaUsage
     from .membership import Membership
+    from .meter import Meter
     from .meter_terms import MeterTerms
     from .metered_posts import MeteredPosts
     from .metric_totals import MetricTotals
@@ -535,6 +540,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent,
         NoticeEvent_AdBoostChanged,
         NoticeEvent_AdConnectionReconnectRequired,
+        NoticeEvent_AllowanceReached,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_CommentsReceived,
@@ -559,6 +565,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_ad_boost_changed import NoticeEventAdBoostChanged
     from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
     from .notice_event_ad_connection_reconnect_required import NoticeEventAdConnectionReconnectRequired
+    from .notice_event_allowance_reached import NoticeEventAllowanceReached
     from .notice_event_channel_reconnect_required import NoticeEventChannelReconnectRequired
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
     from .notice_event_comments_received import NoticeEventCommentsReceived
@@ -624,6 +631,11 @@ if typing.TYPE_CHECKING:
     from .partner_usage_day import PartnerUsageDay
     from .partner_usage_report import PartnerUsageReport
     from .partner_usage_report_day import PartnerUsageReportDay
+    from .payment_required_error_body import (
+        PaymentRequiredErrorBody,
+        PaymentRequiredErrorBody_PlanLimitReached,
+        PaymentRequiredErrorBody_UsageAllowanceReached,
+    )
     from .period_usage import PeriodUsage
     from .permission import Permission
     from .pinterest_board import PinterestBoard
@@ -806,6 +818,7 @@ if typing.TYPE_CHECKING:
     from .slot_time import SlotTime
     from .special_ad_category import SpecialAdCategory
     from .spend_ceiling_exceeded_encoded import SpendCeilingExceededEncoded
+    from .spend_group import SpendGroup
     from .standing import Standing
     from .subscribable_webhook_event_type import SubscribableWebhookEventType
     from .subscription_status import SubscriptionStatus
@@ -914,6 +927,8 @@ if typing.TYPE_CHECKING:
     from .upload_target_multipart import UploadTargetMultipart
     from .upload_target_single import UploadTargetSingle
     from .usage import Usage
+    from .usage_allowance_reached_encoded import UsageAllowanceReachedEncoded
+    from .usage_allowance_reached_encoded_tag import UsageAllowanceReachedEncodedTag
     from .usage_day import UsageDay
     from .usage_period import UsagePeriod
     from .usage_sharing import UsageSharing
@@ -1038,6 +1053,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AdsUnavailableEncoded": ".ads_unavailable_encoded",
     "AgendaItem": ".agenda_item",
     "AgendaPage": ".agenda_page",
+    "AllowanceReason": ".allowance_reason",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
@@ -1076,6 +1092,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantInputRejectedEncoded": ".assistant_input_rejected_encoded",
     "AssistantInputRejectedEncodedReason": ".assistant_input_rejected_encoded_reason",
     "AssistantInputRejectedEncodedTag": ".assistant_input_rejected_encoded_tag",
+    "AssistantMonth": ".assistant_month",
+    "AssistantOffReason": ".assistant_off_reason",
     "AssistantQuotaExceededEncoded": ".assistant_quota_exceeded_encoded",
     "AssistantSecretsNotConfiguredEncoded": ".assistant_secrets_not_configured_encoded",
     "AssistantSecretsNotConfiguredEncodedTag": ".assistant_secrets_not_configured_encoded_tag",
@@ -1099,6 +1117,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingAccount": ".billing_account",
     "BillingAccountsUsage": ".billing_accounts_usage",
     "BillingInterval": ".billing_interval",
+    "BillingMeter": ".billing_meter",
     "BillingSubscription": ".billing_subscription",
     "BillingTransfer": ".billing_transfer",
     "BillingUnavailableEncoded": ".billing_unavailable_encoded",
@@ -1465,6 +1484,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaTooLargeEncodedKind": ".media_too_large_encoded_kind",
     "MediaUsage": ".media_usage",
     "Membership": ".membership",
+    "Meter": ".meter",
     "MeterTerms": ".meter_terms",
     "MeteredPosts": ".metered_posts",
     "MetricTotals": ".metric_totals",
@@ -1482,6 +1502,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventAdBoostChanged": ".notice_event_ad_boost_changed",
     "NoticeEventAdBoostChangedChange": ".notice_event_ad_boost_changed_change",
     "NoticeEventAdConnectionReconnectRequired": ".notice_event_ad_connection_reconnect_required",
+    "NoticeEventAllowanceReached": ".notice_event_allowance_reached",
     "NoticeEventChannelReconnectRequired": ".notice_event_channel_reconnect_required",
     "NoticeEventChannelReconnectSoon": ".notice_event_channel_reconnect_soon",
     "NoticeEventCommentsReceived": ".notice_event_comments_received",
@@ -1504,6 +1525,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
     "NoticeEvent_AdBoostChanged": ".notice_event",
     "NoticeEvent_AdConnectionReconnectRequired": ".notice_event",
+    "NoticeEvent_AllowanceReached": ".notice_event",
     "NoticeEvent_ChannelReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
     "NoticeEvent_CommentsReceived": ".notice_event",
@@ -1567,6 +1589,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PartnerUsageDay": ".partner_usage_day",
     "PartnerUsageReport": ".partner_usage_report",
     "PartnerUsageReportDay": ".partner_usage_report_day",
+    "PaymentRequiredErrorBody": ".payment_required_error_body",
+    "PaymentRequiredErrorBody_PlanLimitReached": ".payment_required_error_body",
+    "PaymentRequiredErrorBody_UsageAllowanceReached": ".payment_required_error_body",
     "PeriodUsage": ".period_usage",
     "Permission": ".permission",
     "PinterestBoard": ".pinterest_board",
@@ -1748,6 +1773,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "SlotTime": ".slot_time",
     "SpecialAdCategory": ".special_ad_category",
     "SpendCeilingExceededEncoded": ".spend_ceiling_exceeded_encoded",
+    "SpendGroup": ".spend_group",
     "Standing": ".standing",
     "SubscribableWebhookEventType": ".subscribable_webhook_event_type",
     "SubscriptionStatus": ".subscription_status",
@@ -1858,6 +1884,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "UploadTarget_Multipart": ".upload_target",
     "UploadTarget_Single": ".upload_target",
     "Usage": ".usage",
+    "UsageAllowanceReachedEncoded": ".usage_allowance_reached_encoded",
+    "UsageAllowanceReachedEncodedTag": ".usage_allowance_reached_encoded_tag",
     "UsageDay": ".usage_day",
     "UsagePeriod": ".usage_period",
     "UsageSharing": ".usage_sharing",
@@ -2006,6 +2034,7 @@ __all__ = [
     "AdsUnavailableEncoded",
     "AgendaItem",
     "AgendaPage",
+    "AllowanceReason",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
@@ -2044,6 +2073,8 @@ __all__ = [
     "AssistantInputRejectedEncoded",
     "AssistantInputRejectedEncodedReason",
     "AssistantInputRejectedEncodedTag",
+    "AssistantMonth",
+    "AssistantOffReason",
     "AssistantQuotaExceededEncoded",
     "AssistantSecretsNotConfiguredEncoded",
     "AssistantSecretsNotConfiguredEncodedTag",
@@ -2067,6 +2098,7 @@ __all__ = [
     "BillingAccount",
     "BillingAccountsUsage",
     "BillingInterval",
+    "BillingMeter",
     "BillingSubscription",
     "BillingTransfer",
     "BillingUnavailableEncoded",
@@ -2433,6 +2465,7 @@ __all__ = [
     "MediaTooLargeEncodedKind",
     "MediaUsage",
     "Membership",
+    "Meter",
     "MeterTerms",
     "MeteredPosts",
     "MetricTotals",
@@ -2450,6 +2483,7 @@ __all__ = [
     "NoticeEventAdBoostChanged",
     "NoticeEventAdBoostChangedChange",
     "NoticeEventAdConnectionReconnectRequired",
+    "NoticeEventAllowanceReached",
     "NoticeEventChannelReconnectRequired",
     "NoticeEventChannelReconnectSoon",
     "NoticeEventCommentsReceived",
@@ -2472,6 +2506,7 @@ __all__ = [
     "NoticeEventWebhookEndpointDisabled",
     "NoticeEvent_AdBoostChanged",
     "NoticeEvent_AdConnectionReconnectRequired",
+    "NoticeEvent_AllowanceReached",
     "NoticeEvent_ChannelReconnectRequired",
     "NoticeEvent_ChannelReconnectSoon",
     "NoticeEvent_CommentsReceived",
@@ -2535,6 +2570,9 @@ __all__ = [
     "PartnerUsageDay",
     "PartnerUsageReport",
     "PartnerUsageReportDay",
+    "PaymentRequiredErrorBody",
+    "PaymentRequiredErrorBody_PlanLimitReached",
+    "PaymentRequiredErrorBody_UsageAllowanceReached",
     "PeriodUsage",
     "Permission",
     "PinterestBoard",
@@ -2716,6 +2754,7 @@ __all__ = [
     "SlotTime",
     "SpecialAdCategory",
     "SpendCeilingExceededEncoded",
+    "SpendGroup",
     "Standing",
     "SubscribableWebhookEventType",
     "SubscriptionStatus",
@@ -2826,6 +2865,8 @@ __all__ = [
     "UploadTarget_Multipart",
     "UploadTarget_Single",
     "Usage",
+    "UsageAllowanceReachedEncoded",
+    "UsageAllowanceReachedEncodedTag",
     "UsageDay",
     "UsagePeriod",
     "UsageSharing",

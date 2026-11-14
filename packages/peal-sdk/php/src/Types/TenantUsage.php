@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class TenantUsage extends JsonSerializableType
 {
     /**
+     * @var int $assistantImages
+     */
+    #[JsonProperty('assistantImages')]
+    public int $assistantImages;
+
+    /**
      * @var int $assistantRequests
      */
     #[JsonProperty('assistantRequests')]
@@ -37,6 +43,12 @@ class TenantUsage extends JsonSerializableType
      */
     #[JsonProperty('daysCounted')]
     public int $daysCounted;
+
+    /**
+     * @var int $managedAds
+     */
+    #[JsonProperty('managedAds')]
+    public int $managedAds;
 
     /**
      * @var ?string $externalId
@@ -69,6 +81,12 @@ class TenantUsage extends JsonSerializableType
     public string $name;
 
     /**
+     * @var int $outboundMessages
+     */
+    #[JsonProperty('outboundMessages')]
+    public int $outboundMessages;
+
+    /**
      * @var int $publishedPosts
      */
     #[JsonProperty('publishedPosts')]
@@ -82,14 +100,17 @@ class TenantUsage extends JsonSerializableType
 
     /**
      * @param array{
+     *   assistantImages: int,
      *   assistantRequests: int,
      *   byPlatform: array<PlatformPosts>,
      *   channelDays: int,
      *   channels: int,
      *   daysCounted: int,
+     *   managedAds: int,
      *   home: bool,
      *   meteredPosts: array<MeteredPosts>,
      *   name: string,
+     *   outboundMessages: int,
      *   publishedPosts: int,
      *   workspaceId: string,
      *   externalId?: ?string,
@@ -99,16 +120,19 @@ class TenantUsage extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->assistantImages = $values['assistantImages'];
         $this->assistantRequests = $values['assistantRequests'];
         $this->byPlatform = $values['byPlatform'];
         $this->channelDays = $values['channelDays'];
         $this->channels = $values['channels'];
         $this->daysCounted = $values['daysCounted'];
+        $this->managedAds = $values['managedAds'];
         $this->externalId = $values['externalId'] ?? null;
         $this->home = $values['home'];
         $this->mediaStorage = $values['mediaStorage'] ?? null;
         $this->meteredPosts = $values['meteredPosts'];
         $this->name = $values['name'];
+        $this->outboundMessages = $values['outboundMessages'];
         $this->publishedPosts = $values['publishedPosts'];
         $this->workspaceId = $values['workspaceId'];
     }

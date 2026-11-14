@@ -1,5 +1,4 @@
-import { DateTime, Effect, Option } from "effect";
-import type { Schema } from "effect";
+import { Cause, DateTime, Effect, Option, Schema } from "effect";
 
 import { AssistantQuotaExceeded } from "#assistant/application/assistant-quota-exceeded.ts";
 import { AssistantUnavailable } from "#assistant/application/assistant-unavailable.ts";
@@ -9,7 +8,7 @@ import { PlatformLimits } from "#assistant/application/ports/platform-limits.ts"
 import { TextProviders } from "#assistant/application/ports/text-providers.ts";
 import { WritingModel } from "#assistant/application/ports/writing-model.ts";
 import { askOwnProvider } from "#assistant/application/use-cases/own-suggestion.ts";
-import type { WritingFailed } from "#assistant/application/writing-failed.ts";
+import { WritingFailed } from "#assistant/application/writing-failed.ts";
 import type { AssistantAction } from "#assistant/domain/assistant-action.ts";
 import { checkDraft } from "#assistant/domain/draft.ts";
 import type { Draft } from "#assistant/domain/draft.ts";
@@ -22,6 +21,7 @@ import {
 import type { TextLimit } from "#assistant/domain/text-limit.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import { planFor } from "#assistant/domain/writing-prompt.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 
 /** What to do with which text, for whom. */
@@ -33,6 +33,8 @@ export interface SuggestionRequest {
 }
 
 const noLimits: readonly TextLimit[] = [];
+
+const isWritingFailed = Schema.is(WritingFailed);
 
 // The limits of the platform a post is shortened or written for; the other
 // actions have none.
@@ -68,10 +70,11 @@ const acceptedFrom = <E, R>(
 /**
  * Asks for a suggestion on a post's text, and checks what the model
  * answers before anyone sees it. With the workspace's own text provider
- * when it brought one (`askOwnProvider`: none of Peal's daily requests,
- * on any plan); otherwise with the server's model, in order: the
+ * when it brought one (`askOwnProvider`: none of Peal's requests, on any
+ * plan, and no meter); otherwise with the server's model, in order: the
  * assistant must be on, the text must be one it takes, and the workspace
- * must have requests left today. A request of Peal's counts once it is
+ * must have requests left: this month's of its billing account on a
+ * server that bills, today's elsewhere. A request of Peal's counts once it is
  * sent; one the provider never ran is taken back. Nothing is saved: the
  * person accepts the suggestion or not.
  */
@@ -108,6 +111,46 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
   const window = usageWindowAt(yield* DateTime.now);
 
   const allowance = yield* AssistantAllowance;
+
+  // On a server that bills: one of the billing account's requests this
+  // month, claimed before the model is asked (none without a payment
+  // method). One the provider never ran is given back; one that failed
+  // once it had it (a timeout, a refusal, an unusable answer, the caller
+  // gone) is forgiven, up to the meter's allowance a month. The day's
+  // count is kept too, unbounded, for the usage ledger's snapshot.
+  if (yield* allowance.metered(workspaceId)) {
+    const meters = yield* MeteredUsage;
+
+    // A database failure is a defect here, as the day's count's are.
+    const claim = yield* meters
+      .claim(workspaceId, "assistantRequests", 1)
+      .pipe(Effect.catchTag("DatabaseError", Effect.die));
+
+    yield* usage
+      .claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1)
+      .pipe(Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie)));
+
+    const takenBack = (cause: Cause.Cause<unknown>) =>
+      Option.exists(
+        Cause.findErrorOption(cause),
+        (failure) =>
+          isWritingFailed(failure) && failure.reason === "unreachable"
+      )
+        ? meters.giveBack(claim)
+        : meters.forgive(claim);
+
+    return yield* acceptedFrom(plan, draft, (answer) =>
+      model.write(plan.prompt, answer)
+    ).pipe(
+      Effect.onError((cause) =>
+        takenBack(cause).pipe(
+          Effect.andThen(usage.release(workspaceId, window.day, 1)),
+          Effect.orDie
+        )
+      )
+    );
+  }
+
   const dailyLimit = yield* allowance.dailyRequests(workspaceId);
 
   const claimed =

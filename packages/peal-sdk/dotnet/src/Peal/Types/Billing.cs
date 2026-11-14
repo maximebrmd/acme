@@ -29,6 +29,12 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("estimate")]
     public Money? Estimate { get; set; }
 
+    [JsonPropertyName("meters")]
+    public IEnumerable<BillingMeter>? Meters { get; set; }
+
+    [JsonPropertyName("paymentFailed")]
+    public bool? PaymentFailed { get; set; }
+
     [JsonPropertyName("paymentMethod")]
     public required bool PaymentMethod { get; set; }
 

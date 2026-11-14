@@ -40,6 +40,7 @@ import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
+import { MediaSweeps } from "#media/application/media-sweeps.ts";
 import { SendWeeklyDigests } from "#notifications/application/send-weekly-digests.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
@@ -115,6 +116,14 @@ const Ticks = ClusterCron.make({
 // refresh, or mark, the channels other suites keep in this database, a
 // real collection read their posts, a real purge delete their audit
 // events, and real reminders tell their members.
+const swept = {
+  bytes: 0,
+  failed: 0,
+  left: false,
+  refused: Option.none(),
+  swept: 0,
+};
+
 const ChannelJobsTest = Layer.mergeAll(
   // A server that does not bill: the reporter of usage is not registered.
   Layer.succeed(
@@ -287,6 +296,16 @@ const ChannelJobsTest = Layer.mergeAll(
           refreshed: 0,
           unavailable: 0,
         }),
+    })
+  ),
+  // The store's sweeps reach the bucket other suites write to.
+  Layer.succeed(
+    MediaSweeps,
+    MediaSweeps.of({
+      folders: Effect.succeed(swept),
+      orphans: Effect.succeed(swept),
+      pending: Effect.succeed(swept),
+      uploads: Effect.succeed(swept),
     })
   ),
   Layer.succeed(

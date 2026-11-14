@@ -32,6 +32,18 @@ class AssistantStatus extends JsonSerializableType
     public int $maxTextLength;
 
     /**
+     * @var ?AssistantMonth $month
+     */
+    #[JsonProperty('month')]
+    public ?AssistantMonth $month;
+
+    /**
+     * @var ?value-of<AssistantOffReason> $reason
+     */
+    #[JsonProperty('reason')]
+    public ?string $reason;
+
+    /**
      * @var int $remaining
      */
     #[JsonProperty('remaining')]
@@ -57,6 +69,8 @@ class AssistantStatus extends JsonSerializableType
      *   maxTextLength: int,
      *   remaining: int,
      *   resetsAt: string,
+     *   month?: ?AssistantMonth,
+     *   reason?: ?value-of<AssistantOffReason>,
      *   source?: ?value-of<AssistantTextSource>,
      * } $values
      */
@@ -67,6 +81,8 @@ class AssistantStatus extends JsonSerializableType
         $this->dailyLimit = $values['dailyLimit'];
         $this->images = $values['images'];
         $this->maxTextLength = $values['maxTextLength'];
+        $this->month = $values['month'] ?? null;
+        $this->reason = $values['reason'] ?? null;
         $this->remaining = $values['remaining'];
         $this->resetsAt = $values['resetsAt'];
         $this->source = $values['source'] ?? null;

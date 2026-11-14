@@ -64,6 +64,53 @@ public class GetTest : BaseMockServerTest
                 "amount": 1,
                 "currency": "currency"
               },
+              "meters": [
+                {
+                  "allowance": 1,
+                  "billable": 1,
+                  "ceiling": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "estimate": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "group": "assistant",
+                  "meter": "assistantRequests",
+                  "most": 1,
+                  "price": {
+                    "cents": 1,
+                    "per": 1
+                  },
+                  "priceConfirmed": true,
+                  "resetsAt": "resetsAt",
+                  "used": 1
+                },
+                {
+                  "allowance": 1,
+                  "billable": 1,
+                  "ceiling": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "estimate": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "group": "assistant",
+                  "meter": "assistantRequests",
+                  "most": 1,
+                  "price": {
+                    "cents": 1,
+                    "per": 1
+                  },
+                  "priceConfirmed": true,
+                  "resetsAt": "resetsAt",
+                  "used": 1
+                }
+              ],
+              "paymentFailed": true,
               "paymentMethod": true,
               "plan": "free",
               "plans": [
@@ -298,6 +345,31 @@ public class GetTest : BaseMockServerTest
                 "amount": 1,
                 "currency": "currency"
               },
+              "meters": [
+                {
+                  "allowance": 1,
+                  "billable": 1,
+                  "ceiling": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "estimate": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "group": "assistant",
+                  "meter": "assistantRequests",
+                  "most": 1,
+                  "price": {
+                    "cents": 1,
+                    "per": 1
+                  },
+                  "priceConfirmed": true,
+                  "resetsAt": "resetsAt",
+                  "used": 1
+                }
+              ],
+              "paymentFailed": true,
               "paymentMethod": true,
               "plan": "free",
               "plans": [

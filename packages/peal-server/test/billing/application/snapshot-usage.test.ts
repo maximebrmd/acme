@@ -18,6 +18,7 @@ import type { UsageRecord, UsageState } from "#billing/domain/usage-meter.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { NoMetersTest } from "#test/billing/support.ts";
 import { DatabaseTest } from "#test/channels/support.ts";
 
 const day = (written: string) => DateTime.makeUnsafe(`${written}T00:00:00Z`);
@@ -146,7 +147,8 @@ const SnapshotTest = SnapshotUsage.make(2).pipe(
       StatesTest,
       RecordingLedger,
       AccountsResolvedTest,
-      AccountDaysTest
+      AccountDaysTest,
+      NoMetersTest
     )
   ),
   Layer.provideMerge(DrizzleUsageLedgerLive),

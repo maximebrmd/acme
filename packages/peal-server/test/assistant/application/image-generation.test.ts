@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Fiber, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Fiber, Layer, Option, Ref, Result } from "effect";
 import { SqlClient } from "effect/sql";
 import sharp from "sharp";
 
@@ -34,6 +34,7 @@ import type { ImageReply, OwnImageReply } from "#test/assistant/support.ts";
 import { everyWorkspaceOn } from "#test/billing/support.ts";
 import { syntheticPdf } from "#test/media/pdf.ts";
 import { storageSettings } from "#test/media/support.ts";
+import { FakeMetersLedger, fakeMeters } from "#test/shared/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // Images made by the assistant: on Postgres and the development stack's
@@ -244,6 +245,8 @@ layer(ImagesTest, { timeout: "60 seconds" })(
           available: false,
           dailyLimit: 10,
           maxPromptLength: 1000,
+          month: null,
+          reason: null,
           requestCost: 5,
           source: null,
         });
@@ -854,6 +857,101 @@ layer(ImagesTest, { timeout: "60 seconds" })(
       }).pipe(
         Effect.provide(imagesTest({ entitlements: everyWorkspaceOn("free") }))
       )
+    );
+  }
+);
+
+// On a server that bills, the server's images are the billing account's
+// meter: one a stored image, none for one that failed.
+layer(ImagesTest, { timeout: "60 seconds" })(
+  "images on a server that bills",
+  (it) => {
+    it.effect("claims one of the month's images for a stored image", () =>
+      Effect.gen(function* stored() {
+        const workspaceId = yield* freshWorkspace;
+
+        yield* cleanedUp(workspaceId);
+        yield* ask(workspaceId, image(yield* madePng));
+
+        const { claims, givenBack } = yield* FakeMetersLedger.use(Ref.get);
+
+        assert.deepStrictEqual(
+          claims.map(({ meter, units }) => [meter, units]),
+          [["assistantImages", 1]]
+        );
+        assert.lengthOf(givenBack, 0);
+      }).pipe(
+        Effect.provide(
+          imagesTest({
+            meters: fakeMeters({ allowed: Option.some(3) }),
+            metered: true,
+          })
+        )
+      )
+    );
+
+    it.effect("forgives an image that came back unusable", () =>
+      Effect.gen(function* failed() {
+        const workspaceId = yield* freshWorkspace;
+
+        yield* cleanedUp(workspaceId);
+
+        const refusal = yield* ask(workspaceId, {
+          _tag: "failure",
+          reason: "unusableAnswer",
+        }).pipe(Effect.flip);
+
+        assert.strictEqual(refusal._tag, "ImageFailed");
+
+        const { forgiven, used } = yield* FakeMetersLedger.use(Ref.get);
+
+        assert.lengthOf(forgiven, 1);
+        assert.strictEqual(used.get("assistantImages"), 0);
+      }).pipe(
+        Effect.provide(
+          imagesTest({
+            meters: fakeMeters({ allowed: Option.some(3) }),
+            metered: true,
+          })
+        )
+      )
+    );
+
+    it.effect(
+      "makes none without a payment method, and with the workspace's own provider claims nothing",
+      () =>
+        Effect.gen(function* own() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* cleanedUp(workspaceId);
+
+          const refusal = yield* ask(workspaceId, image(yield* madePng)).pipe(
+            Effect.flip
+          );
+
+          assert.strictEqual(refusal._tag, "AllowanceReached");
+          assert.lengthOf(yield* sentRequests, 0);
+
+          yield* bringProvider(workspaceId);
+
+          const made = yield* askOwn(workspaceId, {
+            _tag: "image",
+            bytes: yield* madePng,
+          });
+
+          assert.isTrue(made.aiGenerated);
+          assert.lengthOf((yield* FakeMetersLedger.use(Ref.get)).claims, 0);
+        }).pipe(
+          Effect.provide(
+            imagesTest({
+              meters: fakeMeters({
+                allowed: Option.some(0),
+                paymentMethod: false,
+              }),
+              metered: true,
+            })
+          )
+        )
     );
   }
 );

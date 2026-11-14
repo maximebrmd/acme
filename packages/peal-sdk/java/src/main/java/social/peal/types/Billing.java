@@ -38,6 +38,10 @@ public final class Billing {
 
     private final Optional<Money> estimate;
 
+    private final Optional<List<BillingMeter>> meters;
+
+    private final Optional<Boolean> paymentFailed;
+
     private final boolean paymentMethod;
 
     private final Optional<Plan> plan;
@@ -67,6 +71,8 @@ public final class Billing {
             String currency,
             boolean enabled,
             Optional<Money> estimate,
+            Optional<List<BillingMeter>> meters,
+            Optional<Boolean> paymentFailed,
             boolean paymentMethod,
             Optional<Plan> plan,
             List<PlanOffer> plans,
@@ -84,6 +90,8 @@ public final class Billing {
         this.currency = currency;
         this.enabled = enabled;
         this.estimate = estimate;
+        this.meters = meters;
+        this.paymentFailed = paymentFailed;
         this.paymentMethod = paymentMethod;
         this.plan = plan;
         this.plans = plans;
@@ -128,6 +136,19 @@ public final class Billing {
             return Optional.empty();
         }
         return estimate;
+    }
+
+    @JsonIgnore
+    public Optional<List<BillingMeter>> getMeters() {
+        if (meters == null) {
+            return Optional.empty();
+        }
+        return meters;
+    }
+
+    @JsonProperty("paymentFailed")
+    public Optional<Boolean> getPaymentFailed() {
+        return paymentFailed;
     }
 
     @JsonProperty("paymentMethod")
@@ -205,6 +226,12 @@ public final class Billing {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("meters")
+    private Optional<List<BillingMeter>> _getMeters() {
+        return meters;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("plan")
     private Optional<Plan> _getPlan() {
         return plan;
@@ -258,6 +285,8 @@ public final class Billing {
                 && currency.equals(other.currency)
                 && enabled == other.enabled
                 && estimate.equals(other.estimate)
+                && meters.equals(other.meters)
+                && paymentFailed.equals(other.paymentFailed)
                 && paymentMethod == other.paymentMethod
                 && plan.equals(other.plan)
                 && plans.equals(other.plans)
@@ -279,6 +308,8 @@ public final class Billing {
                 this.currency,
                 this.enabled,
                 this.estimate,
+                this.meters,
+                this.paymentFailed,
                 this.paymentMethod,
                 this.plan,
                 this.plans,
@@ -346,6 +377,16 @@ public final class Billing {
         _FinalStage estimate(Money estimate);
 
         _FinalStage estimate(Nullable<Money> estimate);
+
+        _FinalStage meters(Optional<List<BillingMeter>> meters);
+
+        _FinalStage meters(List<BillingMeter> meters);
+
+        _FinalStage meters(Nullable<List<BillingMeter>> meters);
+
+        _FinalStage paymentFailed(Optional<Boolean> paymentFailed);
+
+        _FinalStage paymentFailed(Boolean paymentFailed);
 
         _FinalStage plan(Optional<Plan> plan);
 
@@ -428,6 +469,10 @@ public final class Billing {
 
         private Optional<Plan> plan = Optional.empty();
 
+        private Optional<Boolean> paymentFailed = Optional.empty();
+
+        private Optional<List<BillingMeter>> meters = Optional.empty();
+
         private Optional<Money> estimate = Optional.empty();
 
         private Optional<BillingAccount> account = Optional.empty();
@@ -444,6 +489,8 @@ public final class Billing {
             currency(other.getCurrency());
             enabled(other.getEnabled());
             estimate(other.getEstimate());
+            meters(other.getMeters());
+            paymentFailed(other.getPaymentFailed());
             paymentMethod(other.getPaymentMethod());
             plan(other.getPlan());
             plans(other.getPlans());
@@ -681,6 +728,44 @@ public final class Billing {
         }
 
         @java.lang.Override
+        public _FinalStage paymentFailed(Boolean paymentFailed) {
+            this.paymentFailed = Optional.ofNullable(paymentFailed);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "paymentFailed", nulls = Nulls.SKIP)
+        public _FinalStage paymentFailed(Optional<Boolean> paymentFailed) {
+            this.paymentFailed = paymentFailed;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage meters(Nullable<List<BillingMeter>> meters) {
+            if (meters.isNull()) {
+                this.meters = null;
+            } else if (meters.isEmpty()) {
+                this.meters = Optional.empty();
+            } else {
+                this.meters = Optional.of(meters.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage meters(List<BillingMeter> meters) {
+            this.meters = Optional.ofNullable(meters);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "meters", nulls = Nulls.SKIP)
+        public _FinalStage meters(Optional<List<BillingMeter>> meters) {
+            this.meters = meters;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage estimate(Nullable<Money> estimate) {
             if (estimate.isNull()) {
                 this.estimate = null;
@@ -727,6 +812,8 @@ public final class Billing {
                     currency,
                     enabled,
                     estimate,
+                    meters,
+                    paymentFailed,
                     paymentMethod,
                     plan,
                     plans,
@@ -748,6 +835,8 @@ public final class Billing {
                     || key.equalsIgnoreCase("currency")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("estimate")
+                    || key.equalsIgnoreCase("meters")
+                    || key.equalsIgnoreCase("paymentFailed")
                     || key.equalsIgnoreCase("paymentMethod")
                     || key.equalsIgnoreCase("plan")
                     || key.equalsIgnoreCase("plans")

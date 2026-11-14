@@ -25,6 +25,7 @@ import { ReportUsage } from "#billing/application/report-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
 import { StartAccountDays } from "#billing/application/start-account-days.ts";
 import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
@@ -48,6 +49,7 @@ import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-acco
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
+import { DrizzleMeterUsageStoreLive } from "#billing/infrastructure/drizzle-meter-usage-store.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
 import { DrizzleStripeEventLedgerLive } from "#billing/infrastructure/drizzle-stripe-event-ledger.ts";
@@ -57,6 +59,7 @@ import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-le
 import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdrawals.ts";
 import { EmailedRequestMailLive } from "#billing/infrastructure/emailed-request-mail.ts";
 import { KeyedContractReferencesLive } from "#billing/infrastructure/keyed-contract-references.ts";
+import { MeteredUsageLive } from "#billing/infrastructure/metered-usage-live.ts";
 import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-billing-notices.ts";
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
@@ -80,6 +83,7 @@ const RecordsLive = Layer.mergeAll(
   DrizzleMeteredPostLedgerLive,
   DrizzleUsageLedgerLive,
   DrizzleAccountDayStoreLive,
+  DrizzleMeterUsageStoreLive,
   ConfiguredBillingModeLive
 );
 
@@ -196,6 +200,26 @@ export const BillingLive = Layer.mergeAll(
   )
 );
 
+/**
+ * The meters every context claims through (`MeteredUsage`): each billing
+ * account's units by month, its allowances and ceilings, the usage
+ * ledger's counters, the outbox to Stripe, and the notice to its billing
+ * managers when a meter pauses a free account. On a server that does not
+ * bill, nothing is counted or refused. The composition root provides the
+ * notifications context's Notify, PartnerOwnership and WorkspaceOwners
+ * (whose plan a workspace is on), Ids and the TransactionRunner.
+ */
+export const BillingMetersLive = MeteredUsageLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      RecordsLive,
+      HoldersLive,
+      StripeUsageBillingLive,
+      NotifiedBillingNoticesLive
+    )
+  )
+);
+
 // Hands the checkout the counts of what each workspace holds, once the
 // contexts that count are built (see UsageAtCheckout).
 const UsageAtCheckoutBound = Layer.effectDiscard(
@@ -243,6 +267,7 @@ export const BillingOverviewLive = Layer.mergeAll(
   Withdraw.layer,
   SendBillingReminders.layer,
   ReportUsage.layer,
+  SpendCeilings.layer,
   // Stripe's reports of meter events it took and could not count.
   ReceiveMeterErrors.layer.pipe(
     Layer.provide(

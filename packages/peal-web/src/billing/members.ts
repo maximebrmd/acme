@@ -10,7 +10,11 @@ export const membersOf = Atom.family((workspaceId: string) =>
   })
 );
 
-/** Where the workspace stands against its plan, for every member. */
+/**
+ * Where the workspace stands against its plan, with its billing account,
+ * for every member: the over-plan screen reads it, and the upgrade dialog
+ * names the workspace that bills from it.
+ */
 export const standingOf = Atom.family((workspaceId: string) =>
   PealApi.query("billing", "standing", {
     params: { workspaceId },

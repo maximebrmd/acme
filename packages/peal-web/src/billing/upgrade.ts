@@ -1,16 +1,15 @@
 import { Cause, Exit, Option, Schema } from "effect";
+import type { DateTime } from "effect";
+import type { BillingAccount } from "peal-contract";
 import {
   AssistantQuotaExceeded,
-  freeAccountsOf,
   PaidPlanSchema,
-  planCatalogue,
   PlanLimitReached,
   PlanLimitSchema,
   PlanSchema,
-  rateCard,
+  UsageAllowanceReached,
   withDisplayVat,
 } from "peal-contract";
-import type { PaidPlan } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -29,8 +28,32 @@ export const LimitReachedSchema = Schema.Struct({
 
 export type LimitReached = typeof LimitReachedSchema.Type;
 
-/** Why something was refused that a larger plan allows. */
-export type UpgradeReason = LimitReached;
+/**
+ * A meter the billing account, without a payment method, used for the
+ * month (UTC): what it allows and used, and when it starts again. A
+ * payment method lets it go on.
+ */
+export interface MeterReached {
+  readonly allowed: number;
+  readonly kind: "meter";
+  readonly meter: UsageAllowanceReached["meter"];
+  readonly plan: "free";
+  readonly planWithRoom: "payAsYouGo";
+  readonly resetsAt: DateTime.Utc;
+  readonly used: number;
+}
+
+/**
+ * Why something was refused that a larger plan, or a payment method,
+ * allows.
+ */
+export type UpgradeReason = LimitReached | MeterReached;
+
+/** Whether the reason is a meter's, rather than a plan's limit. */
+export const isMeterReason = (reason: UpgradeReason): reason is MeterReached =>
+  "kind" in reason;
+
+const isUsage = Schema.is(UsageAllowanceReached);
 
 const isLimit = Schema.is(PlanLimitReached);
 
@@ -41,7 +64,23 @@ interface Tagged {
   readonly _tag: string;
 }
 
-const reasonOf = (failure: Tagged): Option.Option<LimitReached> => {
+const reasonOf = (failure: Tagged): Option.Option<UpgradeReason> => {
+  // Only the lack of a payment method is a way out the dialog offers: a
+  // ceiling is raised on the billing page.
+  if (isUsage(failure)) {
+    return failure.reason === "paymentMethodRequired"
+      ? Option.some({
+          allowed: failure.allowed,
+          kind: "meter",
+          meter: failure.meter,
+          plan: "free",
+          planWithRoom: "payAsYouGo",
+          resetsAt: failure.resetsAt,
+          used: failure.used,
+        })
+      : Option.none();
+  }
+
   if (isLimit(failure)) {
     return Option.some({
       allowed: failure.allowed,
@@ -71,7 +110,7 @@ const reasonOf = (failure: Tagged): Option.Option<LimitReached> => {
  */
 export const limitIn = <A, E extends Tagged>(
   exit: Exit.Exit<A, E>
-): Option.Option<LimitReached> =>
+): Option.Option<UpgradeReason> =>
   Exit.isFailure(exit)
     ? Cause.findErrorOption(exit.cause).pipe(Option.flatMap(reasonOf))
     : Option.none();
@@ -119,45 +158,31 @@ export interface OfferPrice {
   readonly included: number;
 }
 
-/** A plan to order, with what it costs each month or each year. */
-export interface PlanOffer {
-  readonly month: OfferPrice;
-  readonly plan: PaidPlan;
-  readonly year: OfferPrice;
-}
-
-const priced = (cents: number): OfferPrice => ({
+/** `cents` excluding VAT, with the VAT pages show beside (France's). */
+export const priced = (cents: number): OfferPrice => ({
   excluded: cents,
   included: withDisplayVat(cents),
 });
 
-/** What a legacy plan cost, as Peal published it. */
-export const offerOf = (plan: Exclude<PaidPlan, "payAsYouGo">): PlanOffer => {
-  // Every legacy paid plan had a price; only the free plan had none.
-  const price = planCatalogue[plan].price ?? { month: 0, year: 0 };
-
-  return { month: priced(price.month), plan, year: priced(price.year) };
-};
-
-/**
- * What per-account pricing costs, from the rate card, never typed: the
- * accounts free, what each account past them costs a month (with the VAT
- * shown first and without), and the account from which they cost less.
- */
-export interface PerAccountOffer {
-  readonly free: number;
-  readonly lessFrom: number;
-  readonly next: OfferPrice;
+/** The workspace that bills an account, when it is another. */
+export interface BillingWorkspace {
+  /** Its name, for a member of it; null for anyone else. */
+  readonly name: string | null;
+  readonly workspaceId: string;
 }
 
-export const perAccountOffer = (): PerAccountOffer => {
-  const { bands } = rateCard.prices.usd.accounts;
-  const free = freeAccountsOf(rateCard);
-  const paid = bands.find(({ monthly }) => monthly > 0);
-
-  return {
-    free,
-    lessFrom: (paid?.upTo ?? free) + 1,
-    next: priced(paid?.monthly ?? 0),
-  };
-};
+/**
+ * The workspace that bills the account `workspaceId` is on, when it is
+ * another, from the account the standing tells every member: none where
+ * the workspace bills its account, or a server says nothing of it.
+ */
+export const billedElsewhereOf = (
+  account: BillingAccount | undefined,
+  workspaceId: string
+): Option.Option<BillingWorkspace> =>
+  account === undefined || account.billingWorkspaceId === workspaceId
+    ? Option.none()
+    : Option.some({
+        name: account.billingWorkspaceName,
+        workspaceId: account.billingWorkspaceId,
+      });

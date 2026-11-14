@@ -1,20 +1,22 @@
 "use client";
 
-import { DateTime, Schema } from "effect";
+import { DateTime } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 import type {
   Billing,
-  BillingInterval,
+  BillingAccountsUsage,
   BillingSubscription,
-  Excess,
   Money,
-  PaidPlan,
-  PlanAllowances,
   PlanLimit,
-  PlanPrice,
   WithdrawalPreview,
+  RateCard,
 } from "peal-contract";
-import { PaidPlanSchema } from "peal-contract";
+import {
+  displayVatRate,
+  freeAccountsOf,
+  rateCard as publishedCard,
+  withDisplayVat,
+} from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
@@ -34,19 +36,25 @@ import {
   ProgressLabel,
   ProgressValue,
 } from "peal-ui/components/progress";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "peal-ui/components/table";
 import { useId } from "react";
+import type { ReactElement } from "react";
 
+import { ladderOf, nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
-import { ExcessList } from "#components/billing/excess-list.tsx";
-import { PerAccountPrice } from "#components/billing/per-account-price.tsx";
+import { MeterTable } from "#components/billing/meter-table.tsx";
 
 /** What the person asked for, while it is under way. */
 export type BillingAction =
-  | {
-      readonly _tag: "order";
-      readonly plan: PaidPlan;
-      readonly trial: boolean;
-    }
+  | { readonly _tag: "order" }
   | { readonly _tag: "cancel" }
   | { readonly _tag: "portal" }
   | { readonly _tag: "withdraw" };
@@ -54,13 +62,17 @@ export type BillingAction =
 /** Why the last request failed. */
 export type BillingError =
   | "alreadySubscribed"
+  | "billedElsewhere"
   | "consentChanged"
   | "forbidden"
   | "generic"
   | "noInvoices"
+  | "notEnabled"
   | "nothingToCancel"
+  | "planNotSold"
   | "planTooSmall"
   | "trialUsed"
+  | "unknown"
   | "withdrawalBusiness"
   | "withdrawalExpired";
 
@@ -80,49 +92,44 @@ export type BillingStep =
 
 export interface BillingViewProps {
   readonly billing: Billing;
-  /** Whether the member may order, cancel or withdraw (billing:manage). */
+  /**
+   * Whether the member may order, cancel or withdraw (billing:manage, on
+   * the workspace that bills its account).
+   */
   readonly canManage: boolean;
   /** Whether the person just came back from a checkout. */
   readonly checkedOut: boolean;
   /** Whether the box asking to start at once is ticked. */
   readonly consented: boolean;
   readonly error: BillingError | null;
-  /** How often the plans shown are paid for. */
-  readonly interval: BillingInterval;
   readonly onBack: () => void;
   readonly onCancel: () => void;
   readonly onConfirmCancel: () => void;
   readonly onConfirmWithdrawal: () => void;
   readonly onConsent: (consented: boolean) => void;
-  readonly onInterval: (interval: BillingInterval) => void;
   readonly onManage: () => void;
-  readonly onOrder: (plan: PaidPlan, trial: boolean) => void;
+  /** Orders per-account pricing, then opens Stripe's checkout. */
+  readonly onOrder: () => void;
   readonly onRefresh: () => void;
   readonly onWithdraw: () => void;
   readonly pending: BillingAction | null;
   readonly step: BillingStep;
   /** The terms of service, where the operator publishes them. */
   readonly termsUrl: string | null;
-  /** What the workspace holds beyond the plan just ordered, if refused. */
-  readonly tooSmall: readonly Excess[] | null;
 }
 
-const limits: readonly PlanLimit[] = [
-  "channels",
+// The limits the usage card lists once billing is on: the accounts have a
+// card of their own.
+const usageLimits: readonly PlanLimit[] = [
   "members",
   "scheduledPosts",
   "assistantRequests",
   "mediaStorage",
 ];
 
-const intervals: readonly BillingInterval[] = ["month", "year"];
-
-const isPaidPlan = Schema.is(PaidPlanSchema);
+const everyLimit: readonly PlanLimit[] = ["channels", ...usageLimits];
 
 const dateOf = (instant: DateTime.Utc) => DateTime.toDate(instant);
-
-const withVat = (cents: number, rate: number) =>
-  Math.round((cents * (100 + rate)) / 100);
 
 const useDate = () => {
   const format = useFormatter();
@@ -130,6 +137,26 @@ const useDate = () => {
   return (instant: DateTime.Utc) =>
     format.dateTime(dateOf(instant), { dateStyle: "long" });
 };
+
+// The rate card the server answers, else the one this app was built with.
+const cardOf = (billing: Billing): RateCard =>
+  billing.rateCard ?? publishedCard;
+
+/**
+ * The accounts the billing account connects without a payment method: the
+ * answer's allowance on the free tier (none once staff required a payment
+ * method), else the rate card's free accounts.
+ */
+export const freeWithoutCard = (billing: Billing): number =>
+  billing.plan === "free"
+    ? (billing.allowances.channels ?? freeAccountsOf(cardOf(billing)))
+    : freeAccountsOf(cardOf(billing));
+
+// A plan priced by tiers of channels, no longer sold.
+const isLegacy = (billing: Billing): boolean =>
+  billing.plan !== null &&
+  billing.plan !== "free" &&
+  billing.plan !== "payAsYouGo";
 
 const SubscriptionLines = ({
   subscription,
@@ -149,11 +176,13 @@ const SubscriptionLines = ({
     // Cancelled for a later day, it ends then, not with this period.
     const date = dateIn(subscription.endsAt ?? subscription.currentPeriodEnd);
 
-    lines.push(
-      subscription.cancelAtPeriodEnd
-        ? t("ends", { date })
-        : t("renews", { date, interval: subscription.interval })
-    );
+    if (subscription.cancelAtPeriodEnd) {
+      lines.push(t("ends", { date }));
+    } else if (subscription.plan === "payAsYouGo") {
+      lines.push(t("nextInvoice", { date }));
+    } else {
+      lines.push(t("renews", { date, interval: subscription.interval }));
+    }
   }
 
   if (withdrawableUntil !== null) {
@@ -171,101 +200,81 @@ const SubscriptionLines = ({
   );
 };
 
-const StepPanel = ({
+const CancelPanel = ({
   billing,
   onBack,
   onConfirmCancel,
-  onConfirmWithdrawal,
   pending,
-  step,
+  subscription,
 }: Pick<
   BillingViewProps,
-  | "billing"
-  | "onBack"
-  | "onConfirmCancel"
-  | "onConfirmWithdrawal"
-  | "pending"
-  | "step"
->) => {
+  "billing" | "onBack" | "onConfirmCancel" | "pending"
+> & { readonly subscription: BillingSubscription }) => {
   const t = useTranslations("Billing");
-  const money = useMoney(billing.currency);
   const dateIn = useDate();
-  const { subscription } = billing;
-
-  if (step._tag === "cancelled") {
-    return (
-      <Alert aria-live="polite">
-        <AlertTitle>{t("cancel.doneTitle")}</AlertTitle>
-        <AlertDescription>
-          {t("cancel.done", { date: dateIn(step.endsAt) })}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (step._tag === "withdrawn") {
-    return (
-      <Alert aria-live="polite">
-        <AlertTitle>{t("withdraw.doneTitle")}</AlertTitle>
-        <AlertDescription>
-          {t("withdraw.done", { refund: money(step.refunded.amount) })}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (step._tag === "idle" || subscription === null) {
-    return null;
-  }
-
   const busy = pending !== null;
+  const plan = t("plan", { plan: subscription.plan });
 
-  if (step._tag === "confirmCancel") {
-    const plan = t("plan", { plan: subscription.plan });
-
-    const summary =
+  const summary = () => {
+    if (
       subscription.status === "trialing" ||
       subscription.currentPeriodEnd === null
-        ? t("cancel.summaryNow", { plan })
-        : t("cancel.summary", {
-            date: dateIn(subscription.currentPeriodEnd),
-            plan,
-          });
+    ) {
+      return t("cancel.summaryNow", { plan });
+    }
 
-    return (
-      <section aria-labelledby="billing-cancel">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <h2 id="billing-cancel">{t("cancel.title")}</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{summary}</p>
-          </CardContent>
-          <CardFooter>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="destructive"
-                disabled={busy}
-                focusableWhenDisabled
-                onClick={onConfirmCancel}
-              >
-                {pending?._tag === "cancel"
-                  ? t("cancel.confirming")
-                  : t("cancel.confirm")}
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={onBack}>
-                {t("keep")}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      </section>
-    );
-  }
+    const date = dateIn(subscription.currentPeriodEnd);
 
-  const { preview } = step;
+    return billing.plan === "payAsYouGo"
+      ? t("cancel.summaryPerAccount", { date })
+      : t("cancel.summary", { date, plan });
+  };
+
+  return (
+    <section aria-labelledby="billing-cancel">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id="billing-cancel">{t("cancel.title")}</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">{summary()}</p>
+        </CardContent>
+        <CardFooter>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="destructive"
+              disabled={busy}
+              focusableWhenDisabled
+              onClick={onConfirmCancel}
+            >
+              {pending?._tag === "cancel"
+                ? t("cancel.confirming")
+                : t("cancel.confirm")}
+            </Button>
+            <Button variant="outline" disabled={busy} onClick={onBack}>
+              {t("keep")}
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+    </section>
+  );
+};
+
+const WithdrawPanel = ({
+  onBack,
+  onConfirmWithdrawal,
+  pending,
+  preview,
+}: Pick<BillingViewProps, "onBack" | "onConfirmWithdrawal" | "pending"> & {
+  readonly preview: WithdrawalPreview;
+}) => {
+  const t = useTranslations("Billing");
+  const money = useMoney(preview.refund.currency);
+  const dateIn = useDate();
+  const busy = pending !== null;
 
   return (
     <section aria-labelledby="billing-withdraw">
@@ -277,11 +286,15 @@ const StepPanel = ({
         </CardHeader>
         <CardContent>
           <p className="text-sm">
-            {t("withdraw.summary", {
-              plan: t("plan", { plan: preview.plan }),
-              refund: money(preview.refund.amount),
-              started: dateIn(preview.startedAt),
-            })}
+            {preview.plan === "payAsYouGo"
+              ? t("withdraw.summaryPerAccount", {
+                  started: dateIn(preview.startedAt),
+                })
+              : t("withdraw.summary", {
+                  plan: t("plan", { plan: preview.plan }),
+                  refund: money(preview.refund.amount),
+                  started: dateIn(preview.startedAt),
+                })}
           </p>
         </CardContent>
         <CardFooter>
@@ -306,7 +319,103 @@ const StepPanel = ({
   );
 };
 
-// A workspace whose plan ended keeps its invoices at Stripe: the way to
+const Done = ({ step }: { readonly step: BillingStep }) => {
+  const t = useTranslations("Billing");
+  const dateIn = useDate();
+
+  const money = useMoney(
+    step._tag === "withdrawn" ? step.refunded.currency : "usd"
+  );
+
+  if (step._tag === "cancelled") {
+    return (
+      <Alert aria-live="polite">
+        <AlertTitle>{t("cancel.doneTitle")}</AlertTitle>
+        <AlertDescription>
+          {t("cancel.done", { date: dateIn(step.endsAt) })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (step._tag !== "withdrawn") {
+    return null;
+  }
+
+  return (
+    <Alert aria-live="polite">
+      <AlertTitle>{t("withdraw.doneTitle")}</AlertTitle>
+      <AlertDescription>
+        {step.refunded.amount === 0
+          ? t("withdraw.doneNothing")
+          : t("withdraw.done", { refund: money(step.refunded.amount) })}
+      </AlertDescription>
+    </Alert>
+  );
+};
+
+const StepPanel = (
+  props: Pick<
+    BillingViewProps,
+    | "billing"
+    | "onBack"
+    | "onConfirmCancel"
+    | "onConfirmWithdrawal"
+    | "pending"
+    | "step"
+  >
+) => {
+  const { billing, step } = props;
+  const { subscription } = billing;
+
+  if (step._tag === "cancelled" || step._tag === "withdrawn") {
+    return <Done step={step} />;
+  }
+
+  if (step._tag === "idle" || subscription === null) {
+    return null;
+  }
+
+  return step._tag === "confirmCancel" ? (
+    <CancelPanel {...props} subscription={subscription} />
+  ) : (
+    <WithdrawPanel {...props} preview={step.preview} />
+  );
+};
+
+// What the plan the workspace is on gives, in a line.
+const PlanSummary = ({ billing }: { readonly billing: Billing }) => {
+  const t = useTranslations("Billing");
+  const plan = billing.plan ?? "free";
+
+  if (plan === "free") {
+    const free = freeWithoutCard(billing);
+
+    return (
+      <p className="text-sm">
+        {free === 0
+          ? t("current.freeTierRevoked")
+          : t("current.freeTier", { free })}
+      </p>
+    );
+  }
+
+  if (plan === "payAsYouGo") {
+    return (
+      <p className="text-sm">
+        {t("current.perAccount", { free: freeAccountsOf(cardOf(billing)) })}
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-sm">
+      {t("current.legacy", { plan: t("plan", { plan }) })}
+    </p>
+  );
+};
+
+// A workspace whose contract ended keeps its invoices at Stripe: the way to
 // them stays.
 const PastInvoices = ({
   billing,
@@ -319,7 +428,11 @@ const PastInvoices = ({
 }) => {
   const t = useTranslations("Billing.current");
 
-  if (!canManage || billing.subscription !== null) {
+  if (
+    !canManage ||
+    billing.subscription !== null ||
+    billing.paymentFailed === true
+  ) {
     return null;
   }
 
@@ -335,6 +448,97 @@ const PastInvoices = ({
           {pending?._tag === "portal" ? t("managing") : t("invoices")}
         </Button>
         <p className="text-muted-foreground text-xs">{t("invoicesHint")}</p>
+      </div>
+    </CardFooter>
+  );
+};
+
+/** The way to the portal, where a failed payment method is replaced. */
+const UpdatePaymentMethod = ({
+  busy,
+  onManage,
+  pending,
+}: Pick<BillingViewProps, "onManage" | "pending"> & {
+  readonly busy: boolean;
+}) => {
+  const t = useTranslations("Billing.current");
+
+  return (
+    <Button
+      variant="outline"
+      disabled={busy}
+      focusableWhenDisabled
+      onClick={onManage}
+    >
+      {pending?._tag === "portal" ? t("managing") : t("updatePaymentMethod")}
+    </Button>
+  );
+};
+
+// What a member who manages billing does with the contract: the portal
+// (payment method, invoices), cancelling and, within 14 days, withdrawing.
+const ContractActions = ({
+  busy,
+  onCancel,
+  onManage,
+  onWithdraw,
+  pending,
+  step,
+  subscription,
+  withdrawableUntil,
+}: Pick<
+  BillingViewProps,
+  "onCancel" | "onManage" | "onWithdraw" | "pending" | "step"
+> & {
+  readonly busy: boolean;
+  readonly subscription: BillingSubscription;
+  readonly withdrawableUntil: DateTime.Utc | null;
+}) => {
+  const t = useTranslations("Billing");
+  const trial = subscription.status === "trialing";
+
+  return (
+    <CardFooter>
+      <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-wrap gap-2">
+          {trial ? null : (
+            <Button
+              variant="outline"
+              disabled={busy}
+              focusableWhenDisabled
+              onClick={onManage}
+            >
+              {pending?._tag === "portal"
+                ? t("current.managing")
+                : t("current.manage")}
+            </Button>
+          )}
+          {subscription.cancelAtPeriodEnd ? null : (
+            <Button
+              variant="outline"
+              disabled={busy}
+              focusableWhenDisabled
+              onClick={onCancel}
+            >
+              {t("cancel.open")}
+            </Button>
+          )}
+          {withdrawableUntil === null ? null : (
+            <Button
+              variant="outline"
+              disabled={busy}
+              focusableWhenDisabled
+              onClick={onWithdraw}
+            >
+              {pending?._tag === "withdraw" && step._tag === "idle"
+                ? t("withdraw.loading")
+                : t("withdraw.open")}
+            </Button>
+          )}
+        </div>
+        <p className="text-muted-foreground text-xs">
+          {trial ? t("current.trialHint") : t("current.manageHint")}
+        </p>
       </div>
     </CardFooter>
   );
@@ -361,7 +565,6 @@ const CurrentPlan = ({
   const t = useTranslations("Billing");
   const { subscription, withdrawableUntil } = billing;
   const busy = pending !== null || step._tag !== "idle";
-  const trial = subscription?.status === "trialing";
 
   return (
     <Card>
@@ -374,11 +577,7 @@ const CurrentPlan = ({
         </CardDescription>
         {subscription === null ? null : (
           <CardAction>
-            <Badge
-              variant={
-                subscription.status === "past_due" ? "destructive" : "outline"
-              }
-            >
+            <Badge variant="outline">
               {t("current.status", { status: subscription.status })}
             </Badge>
           </CardAction>
@@ -386,9 +585,8 @@ const CurrentPlan = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3">
-          {subscription === null ? (
-            <p className="text-muted-foreground text-sm">{t("current.free")}</p>
-          ) : (
+          <PlanSummary billing={billing} />
+          {subscription === null ? null : (
             <SubscriptionLines
               subscription={subscription}
               withdrawableUntil={withdrawableUntil}
@@ -399,8 +597,22 @@ const CurrentPlan = ({
               <AlertDescription>{t("current.pastDue")}</AlertDescription>
             </Alert>
           ) : null}
+          {billing.paymentFailed === true && subscription === null ? (
+            <Alert variant="destructive">
+              <AlertDescription>{t("current.unpaid")}</AlertDescription>
+            </Alert>
+          ) : null}
         </div>
       </CardContent>
+      {canManage && billing.paymentFailed === true && subscription === null ? (
+        <CardFooter>
+          <UpdatePaymentMethod
+            busy={busy}
+            pending={pending}
+            onManage={onManage}
+          />
+        </CardFooter>
+      ) : null}
       <PastInvoices
         billing={billing}
         busy={busy}
@@ -409,51 +621,389 @@ const CurrentPlan = ({
         onManage={onManage}
       />
       {canManage && subscription !== null ? (
-        <CardFooter>
-          <div className="flex flex-col items-start gap-3">
-            <div className="flex flex-wrap gap-2">
-              {subscription.cancelAtPeriodEnd ? null : (
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  focusableWhenDisabled
-                  onClick={onCancel}
-                >
-                  {t("cancel.open")}
-                </Button>
-              )}
-              {withdrawableUntil === null ? null : (
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  focusableWhenDisabled
-                  onClick={onWithdraw}
-                >
-                  {pending?._tag === "withdraw" && step._tag === "idle"
-                    ? t("withdraw.loading")
-                    : t("withdraw.open")}
-                </Button>
-              )}
-              {trial ? null : (
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  focusableWhenDisabled
-                  onClick={onManage}
-                >
-                  {pending?._tag === "portal"
-                    ? t("current.managing")
-                    : t("current.manage")}
-                </Button>
-              )}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {trial ? t("current.trialHint") : t("current.manageHint")}
-            </p>
-          </div>
-        </CardFooter>
+        <ContractActions
+          busy={busy}
+          pending={pending}
+          step={step}
+          subscription={subscription}
+          withdrawableUntil={withdrawableUntil}
+          onCancel={onCancel}
+          onManage={onManage}
+          onWithdraw={onWithdraw}
+        />
       ) : null}
     </Card>
+  );
+};
+
+// The billing account's accounts this month, for the members of the
+// workspace that bills it: what is connected, the account-days counted,
+// what they cost by the ladder, and Stripe's next invoice when it says.
+const MonthFigures = ({
+  accountDays,
+  accounts,
+  billing,
+}: {
+  readonly accountDays: number;
+  readonly accounts: BillingAccountsUsage;
+  readonly billing: Billing;
+}) => {
+  const t = useTranslations("Billing.month");
+  const usage = useTranslations("Billing.usage");
+  const dollars = useMoney("usd");
+  const upcoming = useMoney(billing.upcomingInvoice?.currency ?? "usd");
+  const card = cardOf(billing);
+  const free = freeAccountsOf(card);
+  const allowed = freeWithoutCard(billing);
+  const workspaces = billing.account?.workspaces ?? 1;
+  const next = nextAccountOf(accounts.pooled, card);
+  const paying = billing.plan === "payAsYouGo";
+  const cents = accounts.estimate?.amount ?? 0;
+
+  // Every figure with France's VAT beside it: the server knows no
+  // customer's own rate, so the rate shown is France's, and says so.
+  const estimate = {
+    estimate: dollars(cents),
+    included: dollars(withDisplayVat(cents)),
+    rate: displayVatRate,
+  };
+
+  const pooledLine = (
+    <p className="text-sm">
+      {workspaces > 1
+        ? t("pooledAcross", {
+            connected: accounts.connected,
+            pooled: accounts.pooled,
+            workspaces,
+          })
+        : t("pooledHere", { pooled: accounts.pooled })}
+    </p>
+  );
+
+  // A legacy plan holds its channels and is not priced by the day.
+  if (isLegacy(billing)) {
+    const { channels } = billing.allowances;
+
+    return (
+      <div className="flex flex-col gap-4">
+        {channels === null ? null : (
+          <Progress
+            value={Math.min(accounts.pooled, channels)}
+            max={Math.max(channels, 1)}
+          >
+            <ProgressLabel>
+              {usage("limit", { limit: "channels" })}
+            </ProgressLabel>
+            <ProgressValue>
+              {() => usage("of", { allowed: channels, used: accounts.pooled })}
+            </ProgressValue>
+          </Progress>
+        )}
+        {pooledLine}
+      </div>
+    );
+  }
+
+  // The next account's price; nothing to say of a free one where staff
+  // required a payment method, as nothing is free without one.
+  const nextLine = () => {
+    if (next.price.excluded > 0) {
+      return t("nextAccount", {
+        included: dollars(next.price.included),
+        position: next.position,
+        price: dollars(next.price.excluded),
+        rate: displayVatRate,
+      });
+    }
+
+    return billing.plan === "free" && allowed === 0
+      ? null
+      : t("nextAccountFree", { free, position: next.position });
+  };
+
+  const nextText = nextLine();
+
+  return (
+    <div className="flex flex-col gap-4">
+      {billing.plan === "free" && allowed > 0 ? (
+        <Progress
+          value={Math.min(accounts.pooled, allowed)}
+          max={Math.max(allowed, 1)}
+        >
+          <ProgressLabel>{t("accounts")}</ProgressLabel>
+          <ProgressValue>
+            {() => usage("of", { allowed, used: accounts.pooled })}
+          </ProgressValue>
+        </Progress>
+      ) : null}
+      {pooledLine}
+      <p className="text-2xl font-semibold tabular-nums">
+        {t("accountDays", { days: accountDays })}
+      </p>
+      <p className="text-sm tabular-nums">
+        {paying ? t("estimatePaying", estimate) : t("estimateFree", estimate)}
+      </p>
+      {nextText === null ? null : (
+        <p className="text-muted-foreground text-sm tabular-nums">{nextText}</p>
+      )}
+      {billing.upcomingInvoice === null ? null : (
+        <p className="text-sm tabular-nums">
+          {t("upcoming", { amount: upcoming(billing.upcomingInvoice.amount) })}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const ThisMonth = ({ billing }: { readonly billing: Billing }) => {
+  const t = useTranslations("Billing.month");
+  const { accounts } = billing;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2>{t("title")}</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {accounts.accountDays === null ? (
+          // Another workspace bills the account: this one reads its own
+          // accounts, never the account's money.
+          <div className="flex flex-col gap-2">
+            <p className="text-sm">
+              {t("pooledAcross", {
+                connected: accounts.connected,
+                pooled: accounts.pooled,
+                workspaces: billing.account?.workspaces ?? 1,
+              })}
+            </p>
+            <p className="text-muted-foreground text-sm">{t("elsewhere")}</p>
+          </div>
+        ) : (
+          <MonthFigures
+            accountDays={accounts.accountDays}
+            accounts={accounts}
+            billing={billing}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+/**
+ * The rule every price with VAT follows: France's rate, named, as the
+ * server knows no customer's own; what is paid depends on the country.
+ */
+export const VatNote = () => {
+  const t = useTranslations("Billing.ladder");
+
+  return (
+    <p className="text-muted-foreground text-xs">
+      {t("vatNote", { rate: displayVatRate })}
+    </p>
+  );
+};
+
+/** The two sentences every price in dollars comes with. */
+export const CurrencyNote = () => {
+  const t = useTranslations("Billing.prices");
+
+  return <p className="text-muted-foreground text-xs">{t("perAccountNote")}</p>;
+};
+
+const Ladder = ({ billing }: { readonly billing: Billing }) => {
+  const t = useTranslations("Billing.ladder");
+  const dollars = useMoney("usd");
+  const card = cardOf(billing);
+
+  return (
+    <section className="flex flex-col gap-4" aria-labelledby="billing-ladder">
+      <div className="flex flex-col gap-1">
+        <h2
+          id="billing-ladder"
+          className="text-xl font-semibold tracking-tight"
+        >
+          {t("title")}
+        </h2>
+        <p className="text-muted-foreground text-sm">{t("description")}</p>
+      </div>
+      <div className="bg-card rounded-md border">
+        <Table>
+          <TableCaption>{t("caption")}</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("accounts")}</TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("price")}
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("priceIncluded", { rate: displayVatRate })}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ladderOf(card).map(({ from, monthly, to }) => (
+              <TableRow key={from}>
+                <TableHead scope="row">
+                  {to === null ? t("from", { from }) : t("band", { from, to })}
+                </TableHead>
+                <TableCell variant="numeric">
+                  {monthly.excluded === 0
+                    ? t("free")
+                    : dollars(monthly.excluded)}
+                </TableCell>
+                <TableCell variant="numeric">
+                  {monthly.included === 0
+                    ? t("free")
+                    : dollars(monthly.included)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <p className="text-sm">
+        {t("dayRule", {
+          after: card.daysPerMonth + 1,
+          days: card.daysPerMonth,
+        })}
+      </p>
+      <VatNote />
+      <CurrencyNote />
+    </section>
+  );
+};
+
+export const Consent = ({
+  consented,
+  onConsent,
+  termsUrl,
+}: Pick<BillingViewProps, "consented" | "onConsent" | "termsUrl">) => {
+  const t = useTranslations("Billing.consent");
+  const id = useId();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id={id}
+          checked={consented}
+          onCheckedChange={(checked) => {
+            onConsent(checked === true);
+          }}
+        />
+        <Label htmlFor={id}>{t("startNow")}</Label>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {termsUrl === null ? (
+          t("terms")
+        ) : (
+          <a className="underline underline-offset-4" href={termsUrl}>
+            {t("termsLink")}
+          </a>
+        )}
+      </p>
+    </div>
+  );
+};
+
+/** The order button, worded as the law asks, with what follows it. */
+export const OrderButton = ({
+  consented,
+  onOrder,
+  ordering,
+}: {
+  readonly consented: boolean;
+  readonly onOrder: () => void;
+  readonly ordering: boolean;
+}) => {
+  const t = useTranslations("Billing.payment");
+
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <Button
+        className="h-auto min-h-8 whitespace-normal"
+        disabled={!consented || ordering}
+        focusableWhenDisabled
+        onClick={onOrder}
+      >
+        {/* Wraps in a narrow dialog rather than overflow it. */}
+        <span className="py-1.5">{ordering ? t("ordering") : t("order")}</span>
+      </Button>
+      {consented ? null : (
+        <p className="text-muted-foreground text-xs">{t("needed")}</p>
+      )}
+      <p className="text-muted-foreground text-xs">{t("card")}</p>
+    </div>
+  );
+};
+
+const AddPaymentMethod = ({
+  billing,
+  canManage,
+  consented,
+  onConsent,
+  onOrder,
+  pending,
+  refusal,
+  termsUrl,
+}: Pick<
+  BillingViewProps,
+  | "billing"
+  | "canManage"
+  | "consented"
+  | "onConsent"
+  | "onOrder"
+  | "pending"
+  | "termsUrl"
+> & {
+  /** Why the last order failed, beside the button that sent it. */
+  readonly refusal: ReactElement | null;
+}) => {
+  const t = useTranslations("Billing.payment");
+  const card = cardOf(billing);
+
+  return (
+    <section aria-labelledby="billing-payment">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id="billing-payment">{t("title")}</h2>
+          </CardTitle>
+          <CardDescription>
+            {t("description", {
+              ceiling: card.unverifiedCeiling,
+              free: freeAccountsOf(card),
+            })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {canManage ? (
+            <Consent
+              consented={consented}
+              onConsent={onConsent}
+              termsUrl={termsUrl}
+            />
+          ) : (
+            <p className="text-sm">{t("askAdmin")}</p>
+          )}
+        </CardContent>
+        {canManage ? (
+          <CardFooter>
+            <div className="flex flex-col items-start gap-3">
+              {refusal}
+              <OrderButton
+                consented={consented}
+                ordering={pending?._tag === "order"}
+                onOrder={onOrder}
+              />
+            </div>
+          </CardFooter>
+        ) : null}
+      </Card>
+    </section>
   );
 };
 
@@ -515,7 +1065,13 @@ const UsageMeter = ({
   );
 };
 
-const Usage = ({ billing }: { readonly billing: Billing }) => {
+const Usage = ({
+  billing,
+  limits,
+}: {
+  readonly billing: Billing;
+  readonly limits: readonly PlanLimit[];
+}) => {
   const t = useTranslations("Billing.usage");
   const { allowances, usage } = billing;
 
@@ -559,317 +1115,18 @@ const Usage = ({ billing }: { readonly billing: Billing }) => {
   );
 };
 
-const AllowanceList = ({
-  allowances,
-}: {
-  readonly allowances: PlanAllowances;
-}) => {
-  const t = useTranslations("Billing.plans");
-  const size = useSize();
-
-  return (
-    <ul className="text-muted-foreground flex flex-col gap-1 text-sm">
-      {limits.map((limit) => {
-        const count = allowances[limit];
-
-        if (count === null) {
-          return <li key={limit}>{t("unlimited", { limit })}</li>;
-        }
-
-        return (
-          <li key={limit}>
-            {limit === "mediaStorage"
-              ? t("storage", { size: size(count) })
-              : t("allowance", { count, limit })}
-          </li>
-        );
-      })}
-    </ul>
-  );
-};
-
-const PriceLines = ({
-  allowances,
-  billing,
-  interval,
-  price,
-}: {
-  readonly allowances: PlanAllowances;
-  readonly billing: Billing;
-  readonly interval: BillingInterval;
-  readonly price: PlanPrice;
-}) => {
-  const t = useTranslations("Billing.prices");
-  const money = useMoney(billing.currency);
-  const excluded = price[interval];
-  const included = withVat(excluded, billing.vatRate);
-  const monthly = interval === "year" ? included / 12 : included;
-  const channels = allowances.channels ?? 1;
-
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-2xl font-semibold tabular-nums">
-        {t("included", { interval, price: money(included) })}
-      </p>
-      <p className="text-muted-foreground text-sm tabular-nums">
-        {t("excluded", { price: money(excluded) })}
-      </p>
-      {interval === "year" ? (
-        <p className="text-muted-foreground text-sm">
-          {t("yearlyMonth", { price: money(Math.round(monthly)) })}
-        </p>
-      ) : null}
-      <p className="text-muted-foreground text-sm">
-        {t("perChannel", { price: money(Math.round(monthly / channels)) })}
-      </p>
-    </div>
-  );
-};
-
-export const IntervalSwitch = ({
-  interval,
-  onInterval,
-}: Pick<BillingViewProps, "interval" | "onInterval">) => {
-  const t = useTranslations("Billing.prices");
-
-  return (
-    <fieldset className="flex flex-wrap gap-2">
-      <legend className="sr-only">{t("intervalLabel")}</legend>
-      {intervals.map((each) => (
-        <Button
-          key={each}
-          size="sm"
-          variant={interval === each ? "default" : "outline"}
-          aria-pressed={interval === each}
-          onClick={() => {
-            onInterval(each);
-          }}
-        >
-          {t("interval", { interval: each })}
-        </Button>
-      ))}
-    </fieldset>
-  );
-};
-
-export const Consent = ({
-  consented,
-  onConsent,
-  termsUrl,
-}: Pick<BillingViewProps, "consented" | "onConsent" | "termsUrl">) => {
-  const t = useTranslations("Billing.consent");
-  const id = useId();
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-3">
-        <Checkbox
-          id={id}
-          checked={consented}
-          onCheckedChange={(checked) => {
-            onConsent(checked === true);
-          }}
-        />
-        <Label htmlFor={id}>{t("startNow")}</Label>
-      </div>
-      <p className="text-muted-foreground text-xs">
-        {termsUrl === null ? (
-          t("terms")
-        ) : (
-          <a className="underline underline-offset-4" href={termsUrl}>
-            {t("termsLink")}
-          </a>
-        )}
-      </p>
-    </div>
-  );
-};
-
-const TrialOffer = ({
-  billing,
-  consented,
-  onOrder,
-  pending,
-}: Pick<BillingViewProps, "billing" | "consented" | "onOrder" | "pending">) => {
-  const t = useTranslations("Billing");
-  const { trial } = billing;
-
-  if (trial === null || !trial.available || billing.subscription !== null) {
-    return null;
-  }
-
-  const plan = t("plan", { plan: trial.plan });
-  const starting = pending?._tag === "order" && pending.trial;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h3>{t("trial.title", { days: trial.days, plan })}</h3>
-        </CardTitle>
-        <CardDescription>{t("trial.description", { plan })}</CardDescription>
-      </CardHeader>
-      <CardFooter>
-        <Button
-          variant="outline"
-          disabled={!consented || pending !== null}
-          focusableWhenDisabled
-          onClick={() => {
-            onOrder(trial.plan, true);
-          }}
-        >
-          {starting ? t("trial.starting") : t("trial.start")}
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-};
-
-const Plans = ({
-  billing,
-  canManage,
-  consented,
-  interval,
-  onConsent,
-  onInterval,
-  onOrder,
-  pending,
-  termsUrl,
-}: BillingViewProps) => {
-  const t = useTranslations("Billing");
-  const order = billing.plans.map(({ plan }) => plan);
-  const current = order.indexOf(billing.plan ?? "free");
-
-  const subscribed =
-    billing.subscription !== null && billing.subscription.status !== "trialing";
-
-  const hint = canManage
-    ? t(consented ? "plans.inPortal" : "consent.needed")
-    : t("plans.askAdmin");
-
-  return (
-    <section className="flex flex-col gap-4" aria-labelledby="billing-plans">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h2
-              id="billing-plans"
-              className="text-xl font-semibold tracking-tight"
-            >
-              {t("plans.title")}
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {t("prices.vat", { rate: billing.vatRate })}
-            </p>
-          </div>
-          {billing.plans.some(({ price }) => price !== null) ? (
-            <IntervalSwitch interval={interval} onInterval={onInterval} />
-          ) : null}
-        </div>
-        {canManage ? (
-          <Consent
-            consented={consented}
-            onConsent={onConsent}
-            termsUrl={termsUrl}
-          />
-        ) : null}
-      </div>
-      {canManage ? (
-        <TrialOffer
-          billing={billing}
-          consented={consented}
-          onOrder={onOrder}
-          pending={pending}
-        />
-      ) : null}
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {billing.plans.map(({ allowances, plan, price }, index) => {
-          const ordering =
-            pending?._tag === "order" &&
-            !pending.trial &&
-            pending.plan === plan;
-
-          // A smaller plan is ordered as a larger one is: the order is
-          // refused while the workspace does not fit it, saying what to
-          // remove first.
-          const orderable =
-            canManage &&
-            isPaidPlan(plan) &&
-            (price !== null || plan === "payAsYouGo") &&
-            (!subscribed || index !== current);
-
-          return (
-            <li key={plan}>
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>
-                    <h3>{t("plan", { plan })}</h3>
-                  </CardTitle>
-                  {index === current ? (
-                    <CardAction>
-                      <Badge>{t("plans.yours")}</Badge>
-                    </CardAction>
-                  ) : null}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-4">
-                    {plan === "payAsYouGo" ? <PerAccountPrice /> : null}
-                    {plan !== "payAsYouGo" && price === null ? (
-                      <p className="text-2xl font-semibold">
-                        {t("prices.free")}
-                      </p>
-                    ) : null}
-                    {price === null ? null : (
-                      <PriceLines
-                        allowances={allowances}
-                        billing={billing}
-                        interval={interval}
-                        price={price}
-                      />
-                    )}
-                    <AllowanceList allowances={allowances} />
-                  </div>
-                </CardContent>
-                {orderable && isPaidPlan(plan) ? (
-                  <CardFooter>
-                    <div className="flex flex-col items-start gap-2">
-                      <Button
-                        disabled={!consented || pending !== null}
-                        focusableWhenDisabled
-                        onClick={() => {
-                          onOrder(plan, false);
-                        }}
-                      >
-                        {ordering ? t("plans.ordering") : t("plans.order")}
-                      </Button>
-                      <p className="text-muted-foreground text-xs">
-                        {t("plans.renewal", {
-                          interval: plan === "payAsYouGo" ? "month" : interval,
-                        })}
-                      </p>
-                    </div>
-                  </CardFooter>
-                ) : null}
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="text-muted-foreground text-sm">{hint}</p>
-    </section>
-  );
-};
-
 /**
- * A workspace's billing: its plan and subscription, with cancelling and the
- * consumer's withdrawal; what it uses of each limit; and the plans, priced
- * with VAT first, to order or try. On a server that does not bill, only
- * what the workspace uses, without limits.
+ * A workspace's billing on per-account pricing's rate card: the plan it is
+ * on (the free tier, per-account pricing, or a legacy plan read as it is)
+ * with cancelling and the consumer's withdrawal; the billing account's
+ * month, its account-days and their cost, for the members of the workspace
+ * that bills it only; adding a payment method, behind the consent box; the
+ * ladder; and what the workspace uses of each other limit. On a server that
+ * does not bill, only what the workspace uses, without limits.
  */
 export const BillingView = (props: BillingViewProps) => {
-  const { billing, checkedOut, error, onRefresh, tooSmall } = props;
+  const { billing, canManage, checkedOut, error, onRefresh } = props;
   const t = useTranslations("Billing");
-  const upgrade = useTranslations("Upgrade");
 
   if (!billing.enabled) {
     return (
@@ -878,10 +1135,42 @@ export const BillingView = (props: BillingViewProps) => {
           <AlertTitle>{t("off.title")}</AlertTitle>
           <AlertDescription>{t("off.description")}</AlertDescription>
         </Alert>
-        <Usage billing={billing} />
+        <Usage billing={billing} limits={everyLimit} />
       </div>
     );
   }
+
+  // The workspace that bills the account reads its month and contract;
+  // only it orders. Another reads its own accounts, and who pays above.
+  const billsHere = billing.accounts.accountDays !== null;
+
+  const offersPaymentMethod =
+    billsHere &&
+    billing.plan === "free" &&
+    billing.subscription === null &&
+    billing.paymentFailed !== true;
+
+  const busy = props.pending !== null || props.step._tag !== "idle";
+
+  // A refusal says why, with the way out where there is one: a contract
+  // that already exists is paid for in the portal.
+  const refusal =
+    error === null ? null : (
+      <Alert variant="destructive" aria-live="assertive">
+        <AlertDescription>
+          <div className="flex flex-col items-start gap-3">
+            {t(`errors.${error}`)}
+            {error === "alreadySubscribed" && canManage && billsHere ? (
+              <UpdatePaymentMethod
+                busy={busy}
+                pending={props.pending}
+                onManage={props.onManage}
+              />
+            ) : null}
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
 
   return (
     <div className="flex flex-col gap-8">
@@ -897,25 +1186,22 @@ export const BillingView = (props: BillingViewProps) => {
           </AlertDescription>
         </Alert>
       ) : null}
-      {error === null ? null : (
-        <Alert variant="destructive" aria-live="assertive">
-          <AlertDescription>{t(`errors.${error}`)}</AlertDescription>
-        </Alert>
-      )}
-      {tooSmall === null ? null : (
-        <Alert variant="destructive" aria-live="assertive">
-          <AlertDescription>
-            <p>{upgrade("tooSmall")}</p>
-            <ExcessList excesses={tooSmall} namespace="Upgrade" />
-          </AlertDescription>
-        </Alert>
-      )}
+      {offersPaymentMethod ? null : refusal}
       <StepPanel {...props} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <CurrentPlan {...props} />
-        <Usage billing={billing} />
-      </div>
-      <Plans {...props} />
+      {billsHere ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          <CurrentPlan {...props} canManage={canManage} />
+          <ThisMonth billing={billing} />
+        </div>
+      ) : (
+        <ThisMonth billing={billing} />
+      )}
+      {offersPaymentMethod ? (
+        <AddPaymentMethod {...props} refusal={refusal} />
+      ) : null}
+      <Ladder billing={billing} />
+      <MeterTable billing={billing} canManage={canManage} />
+      <Usage billing={billing} limits={usageLimits} />
     </div>
   );
 };

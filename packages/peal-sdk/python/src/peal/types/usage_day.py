@@ -11,6 +11,9 @@ from .platform_posts import PlatformPosts
 
 
 class UsageDay(UniversalBaseModel):
+    assistant_images: typing_extensions.Annotated[
+        int, FieldMetadata(alias="assistantImages"), pydantic.Field(alias="assistantImages")
+    ]
     assistant_requests: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
     ] = None
@@ -26,6 +29,9 @@ class UsageDay(UniversalBaseModel):
         typing.Optional[int], FieldMetadata(alias="mediaStorage"), pydantic.Field(alias="mediaStorage")
     ] = None
     members: typing.Optional[int] = None
+    outbound_messages: typing_extensions.Annotated[
+        int, FieldMetadata(alias="outboundMessages"), pydantic.Field(alias="outboundMessages")
+    ]
     published_posts: typing_extensions.Annotated[
         int, FieldMetadata(alias="publishedPosts"), pydantic.Field(alias="publishedPosts")
     ]

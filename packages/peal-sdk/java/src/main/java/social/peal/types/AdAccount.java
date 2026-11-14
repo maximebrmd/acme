@@ -46,6 +46,8 @@ public final class AdAccount {
 
     private final AdNetwork network;
 
+    private final Optional<String> newAdsUntrackedUntil;
+
     private final Optional<Long> spendCap;
 
     private final boolean spendingEnabled;
@@ -70,6 +72,7 @@ public final class AdAccount {
             Optional<Long> monthlyCeiling,
             String name,
             AdNetwork network,
+            Optional<String> newAdsUntrackedUntil,
             Optional<Long> spendCap,
             boolean spendingEnabled,
             AdAccountStatus status,
@@ -87,6 +90,7 @@ public final class AdAccount {
         this.monthlyCeiling = monthlyCeiling;
         this.name = name;
         this.network = network;
+        this.newAdsUntrackedUntil = newAdsUntrackedUntil;
         this.spendCap = spendCap;
         this.spendingEnabled = spendingEnabled;
         this.status = status;
@@ -165,6 +169,14 @@ public final class AdAccount {
         return network;
     }
 
+    @JsonIgnore
+    public Optional<String> getNewAdsUntrackedUntil() {
+        if (newAdsUntrackedUntil == null) {
+            return Optional.empty();
+        }
+        return newAdsUntrackedUntil;
+    }
+
     /**
      * @return An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's <code>minorUnitDigits</code> to show it.
      */
@@ -212,6 +224,12 @@ public final class AdAccount {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("newAdsUntrackedUntil")
+    private Optional<String> _getNewAdsUntrackedUntil() {
+        return newAdsUntrackedUntil;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spendCap")
     private Optional<Long> _getSpendCap() {
         return spendCap;
@@ -246,6 +264,7 @@ public final class AdAccount {
                 && monthlyCeiling.equals(other.monthlyCeiling)
                 && name.equals(other.name)
                 && network.equals(other.network)
+                && newAdsUntrackedUntil.equals(other.newAdsUntrackedUntil)
                 && spendCap.equals(other.spendCap)
                 && spendingEnabled == other.spendingEnabled
                 && status.equals(other.status)
@@ -267,6 +286,7 @@ public final class AdAccount {
                 this.monthlyCeiling,
                 this.name,
                 this.network,
+                this.newAdsUntrackedUntil,
                 this.spendCap,
                 this.spendingEnabled,
                 this.status,
@@ -361,6 +381,12 @@ public final class AdAccount {
 
         _FinalStage monthlyCeiling(Nullable<Long> monthlyCeiling);
 
+        _FinalStage newAdsUntrackedUntil(Optional<String> newAdsUntrackedUntil);
+
+        _FinalStage newAdsUntrackedUntil(String newAdsUntrackedUntil);
+
+        _FinalStage newAdsUntrackedUntil(Nullable<String> newAdsUntrackedUntil);
+
         /**
          * <p>An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's <code>minorUnitDigits</code> to show it.</p>
          */
@@ -420,6 +446,8 @@ public final class AdAccount {
 
         private Optional<Long> spendCap = Optional.empty();
 
+        private Optional<String> newAdsUntrackedUntil = Optional.empty();
+
         private Optional<Long> monthlyCeiling = Optional.empty();
 
         private Optional<Long> amountSpent = Optional.empty();
@@ -441,6 +469,7 @@ public final class AdAccount {
             monthlyCeiling(other.getMonthlyCeiling());
             name(other.getName());
             network(other.getNetwork());
+            newAdsUntrackedUntil(other.getNewAdsUntrackedUntil());
             spendCap(other.getSpendCap());
             spendingEnabled(other.getSpendingEnabled());
             status(other.getStatus());
@@ -598,6 +627,31 @@ public final class AdAccount {
             return this;
         }
 
+        @java.lang.Override
+        public _FinalStage newAdsUntrackedUntil(Nullable<String> newAdsUntrackedUntil) {
+            if (newAdsUntrackedUntil.isNull()) {
+                this.newAdsUntrackedUntil = null;
+            } else if (newAdsUntrackedUntil.isEmpty()) {
+                this.newAdsUntrackedUntil = Optional.empty();
+            } else {
+                this.newAdsUntrackedUntil = Optional.of(newAdsUntrackedUntil.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage newAdsUntrackedUntil(String newAdsUntrackedUntil) {
+            this.newAdsUntrackedUntil = Optional.ofNullable(newAdsUntrackedUntil);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "newAdsUntrackedUntil", nulls = Nulls.SKIP)
+        public _FinalStage newAdsUntrackedUntil(Optional<String> newAdsUntrackedUntil) {
+            this.newAdsUntrackedUntil = newAdsUntrackedUntil;
+            return this;
+        }
+
         /**
          * <p>An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's <code>minorUnitDigits</code> to show it.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
@@ -684,6 +738,7 @@ public final class AdAccount {
                     monthlyCeiling,
                     name,
                     network,
+                    newAdsUntrackedUntil,
                     spendCap,
                     spendingEnabled,
                     status,
@@ -705,6 +760,7 @@ public final class AdAccount {
                     || key.equalsIgnoreCase("monthlyCeiling")
                     || key.equalsIgnoreCase("name")
                     || key.equalsIgnoreCase("network")
+                    || key.equalsIgnoreCase("newAdsUntrackedUntil")
                     || key.equalsIgnoreCase("spendCap")
                     || key.equalsIgnoreCase("spendingEnabled")
                     || key.equalsIgnoreCase("status")

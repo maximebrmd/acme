@@ -690,6 +690,11 @@
     "tag": "SpendCeilingExceeded"
   },
   {
+    "code": "spend_ceiling_not_offered",
+    "status": 409,
+    "tag": "SpendCeilingNotOffered"
+  },
+  {
     "code": "staff_action_refused",
     "status": 409,
     "tag": "StaffActionRefused"
@@ -868,6 +873,11 @@
     "code": "upload_rejected",
     "status": 422,
     "tag": "UploadRejected"
+  },
+  {
+    "code": "usage_allowance_reached",
+    "status": 402,
+    "tag": "UsageAllowanceReached"
   },
   {
     "code": "user_not_found",

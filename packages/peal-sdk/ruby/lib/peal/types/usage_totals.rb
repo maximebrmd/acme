@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class UsageTotals < Internal::Types::Model
+      field :assistant_images, -> { Integer }, optional: false, nullable: false, api_name: "assistantImages"
+
       field :billable_account_days, -> { Integer }, optional: false, nullable: true, api_name: "billableAccountDays"
 
       field :by_platform, -> { Internal::Types::Array[Peal::Types::PlatformPosts] }, optional: false, nullable: false, api_name: "byPlatform"
@@ -13,7 +15,11 @@ module Peal
 
       field :days_counted, -> { Integer }, optional: false, nullable: false, api_name: "daysCounted"
 
+      field :managed_ads, -> { Integer }, optional: false, nullable: false, api_name: "managedAds"
+
       field :metered_posts, -> { Internal::Types::Array[Peal::Types::MeteredPosts] }, optional: false, nullable: false, api_name: "meteredPosts"
+
+      field :outbound_messages, -> { Integer }, optional: false, nullable: false, api_name: "outboundMessages"
 
       field :published_posts, -> { Integer }, optional: false, nullable: false, api_name: "publishedPosts"
     end

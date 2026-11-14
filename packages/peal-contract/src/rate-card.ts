@@ -151,6 +151,16 @@ const awaitingDecision = {
   xCeiling: 2500,
 } as const;
 
+/**
+ * The meters whose allowance and price are placeholders until the owner
+ * confirms them (`awaitingDecision`): pages show them as coming, never as
+ * a price.
+ */
+export const unconfirmedMeters: readonly Meter[] = [
+  "assistantImages",
+  "assistantRequests",
+];
+
 /** Peal Cloud's rate card. */
 export const rateCard: RateCard = {
   apiRequestsPerMinute: awaitingDecision.apiRequestsPerMinute,

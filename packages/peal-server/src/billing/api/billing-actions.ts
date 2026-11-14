@@ -14,6 +14,7 @@ import {
   PlanNotSold,
   PlanTooSmall,
   ReductionRefused,
+  SpendCeilingNotOffered,
   TransferNotFound,
   TransferRefused,
   TrialUnavailable,
@@ -25,6 +26,7 @@ import { AccountViews } from "#billing/application/account-views.ts";
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
+import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
 import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { withinHorizon } from "#billing/domain/desired-day.ts";
@@ -74,6 +76,7 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
     const reductions = yield* ReduceWorkspace;
     const transfers = yield* TransferWorkspace;
     const accounts = yield* AccountViews;
+    const ceilings = yield* SpendCeilings;
     const limitReached = yield* limitRefusal;
 
     const withdrawalErrors = {
@@ -267,6 +270,32 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
               TransferNotFound: () => Effect.fail(new TransferNotFound()),
             })
           );
+        })
+      )
+      .handle("setCeiling", ({ params, payload }) =>
+        Effect.gen(function* setCeiling() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          const set = yield* ceilings
+            .set(actor, params.group, payload.cents)
+            .pipe(
+              Effect.catchTags({
+                BilledElsewhere: ({ billingWorkspaceId }) =>
+                  Effect.fail(new BilledElsewhere({ billingWorkspaceId })),
+                BillingOff: notEnabled,
+                CeilingNotOffered: ({ group }) =>
+                  Effect.fail(new SpendCeilingNotOffered({ group })),
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                PersonRequired: forbidden,
+              })
+            );
+
+          return {
+            ceiling: { amount: set.cents, currency: "usd" },
+            group: set.group,
+            setAt: set.setAt,
+          };
         })
       );
   })

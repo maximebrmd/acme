@@ -25,7 +25,6 @@ from ..types.channel_page import ChannelPage
 from ..types.channel_status_name import ChannelStatusName
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -407,9 +406,9 @@ class RawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -557,9 +556,9 @@ class RawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -699,9 +698,9 @@ class RawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1624,9 +1623,9 @@ class AsyncRawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1774,9 +1773,9 @@ class AsyncRawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1916,9 +1915,9 @@ class AsyncRawChannelsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

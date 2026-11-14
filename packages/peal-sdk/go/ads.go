@@ -1252,30 +1252,32 @@ func (a AdAccess) Ptr() *AdAccess {
 }
 
 var (
-	adAccountFieldAccess          = big.NewInt(1 << 0)
-	adAccountFieldAmountSpent     = big.NewInt(1 << 1)
-	adAccountFieldConnectedAt     = big.NewInt(1 << 2)
-	adAccountFieldConnectionID    = big.NewInt(1 << 3)
-	adAccountFieldCurrency        = big.NewInt(1 << 4)
-	adAccountFieldExternalID      = big.NewInt(1 << 5)
-	adAccountFieldID              = big.NewInt(1 << 6)
-	adAccountFieldMinorUnitDigits = big.NewInt(1 << 7)
-	adAccountFieldMonthlyCeiling  = big.NewInt(1 << 8)
-	adAccountFieldName            = big.NewInt(1 << 9)
-	adAccountFieldNetwork         = big.NewInt(1 << 10)
-	adAccountFieldSpendCap        = big.NewInt(1 << 11)
-	adAccountFieldSpendingEnabled = big.NewInt(1 << 12)
-	adAccountFieldStatus          = big.NewInt(1 << 13)
-	adAccountFieldSyncedAt        = big.NewInt(1 << 14)
-	adAccountFieldTimeZone        = big.NewInt(1 << 15)
+	adAccountFieldAccess               = big.NewInt(1 << 0)
+	adAccountFieldAmountSpent          = big.NewInt(1 << 1)
+	adAccountFieldConnectedAt          = big.NewInt(1 << 2)
+	adAccountFieldConnectionID         = big.NewInt(1 << 3)
+	adAccountFieldCurrency             = big.NewInt(1 << 4)
+	adAccountFieldExternalID           = big.NewInt(1 << 5)
+	adAccountFieldID                   = big.NewInt(1 << 6)
+	adAccountFieldMinorUnitDigits      = big.NewInt(1 << 7)
+	adAccountFieldMonthlyCeiling       = big.NewInt(1 << 8)
+	adAccountFieldName                 = big.NewInt(1 << 9)
+	adAccountFieldNetwork              = big.NewInt(1 << 10)
+	adAccountFieldNewAdsUntrackedUntil = big.NewInt(1 << 11)
+	adAccountFieldSpendCap             = big.NewInt(1 << 12)
+	adAccountFieldSpendingEnabled      = big.NewInt(1 << 13)
+	adAccountFieldStatus               = big.NewInt(1 << 14)
+	adAccountFieldSyncedAt             = big.NewInt(1 << 15)
+	adAccountFieldTimeZone             = big.NewInt(1 << 16)
 )
 
 // adAccountNullableFields maps the wire names of AdAccount's nullable fields (required or optional) to their field bits.
 var adAccountNullableFields = map[string]*big.Int{
-	"amountSpent":    adAccountFieldAmountSpent,
-	"monthlyCeiling": adAccountFieldMonthlyCeiling,
-	"spendCap":       adAccountFieldSpendCap,
-	"syncedAt":       adAccountFieldSyncedAt,
+	"amountSpent":          adAccountFieldAmountSpent,
+	"monthlyCeiling":       adAccountFieldMonthlyCeiling,
+	"newAdsUntrackedUntil": adAccountFieldNewAdsUntrackedUntil,
+	"spendCap":             adAccountFieldSpendCap,
+	"syncedAt":             adAccountFieldSyncedAt,
 }
 
 type AdAccount struct {
@@ -1290,9 +1292,10 @@ type AdAccount struct {
 	ID              string  `json:"id" url:"id"`
 	MinorUnitDigits float64 `json:"minorUnitDigits" url:"minorUnitDigits"`
 	// An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it.
-	MonthlyCeiling *int64    `json:"monthlyCeiling,omitempty" url:"monthlyCeiling,omitempty"`
-	Name           string    `json:"name" url:"name"`
-	Network        AdNetwork `json:"network" url:"network"`
+	MonthlyCeiling       *int64    `json:"monthlyCeiling,omitempty" url:"monthlyCeiling,omitempty"`
+	Name                 string    `json:"name" url:"name"`
+	Network              AdNetwork `json:"network" url:"network"`
+	NewAdsUntrackedUntil *string   `json:"newAdsUntrackedUntil,omitempty" url:"newAdsUntrackedUntil,omitempty"`
 	// An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it.
 	SpendCap        *int64          `json:"spendCap,omitempty" url:"spendCap,omitempty"`
 	SpendingEnabled bool            `json:"spendingEnabled" url:"spendingEnabled"`
@@ -1382,6 +1385,13 @@ func (a *AdAccount) GetNetwork() AdNetwork {
 		return ""
 	}
 	return a.Network
+}
+
+func (a *AdAccount) GetNewAdsUntrackedUntil() *string {
+	if a == nil {
+		return nil
+	}
+	return a.NewAdsUntrackedUntil
 }
 
 func (a *AdAccount) GetSpendCap() *int64 {
@@ -1510,6 +1520,13 @@ func (a *AdAccount) SetName(name string) {
 func (a *AdAccount) SetNetwork(network AdNetwork) {
 	a.Network = network
 	a.require(adAccountFieldNetwork)
+}
+
+// SetNewAdsUntrackedUntil sets the NewAdsUntrackedUntil field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AdAccount) SetNewAdsUntrackedUntil(newAdsUntrackedUntil *string) {
+	a.NewAdsUntrackedUntil = newAdsUntrackedUntil
+	a.require(adAccountFieldNewAdsUntrackedUntil)
 }
 
 // SetSpendCap sets the SpendCap field and marks it as non-optional;

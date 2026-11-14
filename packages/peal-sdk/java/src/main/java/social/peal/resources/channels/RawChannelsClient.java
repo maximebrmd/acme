@@ -49,7 +49,6 @@ import social.peal.types.Channel;
 import social.peal.types.ChannelPage;
 import social.peal.types.ConnectOutcome;
 import social.peal.types.ConnectablePlatforms;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Platform;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -437,8 +436,7 @@ public class RawChannelsClient {
                                 response);
                     case 402:
                         throw new PaymentRequiredError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -532,8 +530,7 @@ public class RawChannelsClient {
                                 response);
                     case 402:
                         throw new PaymentRequiredError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -628,8 +625,7 @@ public class RawChannelsClient {
                                 response);
                     case 402:
                         throw new PaymentRequiredError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

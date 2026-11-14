@@ -13,6 +13,10 @@ module Peal
 
       field :max_text_length, -> { Integer }, optional: false, nullable: false, api_name: "maxTextLength"
 
+      field :month, -> { Peal::Types::AssistantMonth }, optional: false, nullable: true
+
+      field :reason, -> { Peal::Types::AssistantOffReason }, optional: false, nullable: true
+
       field :remaining, -> { Integer }, optional: false, nullable: false
 
       field :resets_at, -> { String }, optional: false, nullable: false, api_name: "resetsAt"

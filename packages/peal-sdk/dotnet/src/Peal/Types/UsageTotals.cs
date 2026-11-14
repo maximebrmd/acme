@@ -11,6 +11,9 @@ public record UsageTotals : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("assistantImages")]
+    public required int AssistantImages { get; set; }
+
     [JsonPropertyName("billableAccountDays")]
     public long? BillableAccountDays { get; set; }
 
@@ -23,8 +26,14 @@ public record UsageTotals : IJsonOnDeserialized
     [JsonPropertyName("daysCounted")]
     public required int DaysCounted { get; set; }
 
+    [JsonPropertyName("managedAds")]
+    public required int ManagedAds { get; set; }
+
     [JsonPropertyName("meteredPosts")]
     public IEnumerable<MeteredPosts> MeteredPosts { get; set; } = new List<MeteredPosts>();
+
+    [JsonPropertyName("outboundMessages")]
+    public required int OutboundMessages { get; set; }
 
     [JsonPropertyName("publishedPosts")]
     public required int PublishedPosts { get; set; }

@@ -36,6 +36,7 @@ public class GetTest : BaseMockServerTest
               },
               "days": [
                 {
+                  "assistantImages": 1,
                   "assistantRequests": 1,
                   "billableAccounts": 1,
                   "byPlatform": [
@@ -52,9 +53,11 @@ public class GetTest : BaseMockServerTest
                   "day": "day",
                   "mediaStorage": 1000000,
                   "members": 1,
+                  "outboundMessages": 1,
                   "publishedPosts": 1
                 },
                 {
+                  "assistantImages": 1,
                   "assistantRequests": 1,
                   "billableAccounts": 1,
                   "byPlatform": [
@@ -71,6 +74,7 @@ public class GetTest : BaseMockServerTest
                   "day": "day",
                   "mediaStorage": 1000000,
                   "members": 1,
+                  "outboundMessages": 1,
                   "publishedPosts": 1
                 }
               ],
@@ -83,6 +87,7 @@ public class GetTest : BaseMockServerTest
                 "partnerWorkspaceId": "partnerWorkspaceId"
               },
               "totals": {
+                "assistantImages": 1,
                 "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
@@ -96,6 +101,7 @@ public class GetTest : BaseMockServerTest
                 ],
                 "channelDays": 1000000,
                 "daysCounted": 1,
+                "managedAds": 1,
                 "meteredPosts": [
                   {
                     "month": "month",
@@ -110,6 +116,7 @@ public class GetTest : BaseMockServerTest
                     "postsWithLinks": 1
                   }
                 ],
+                "outboundMessages": 1,
                 "publishedPosts": 1
               }
             }
@@ -162,6 +169,7 @@ public class GetTest : BaseMockServerTest
               },
               "days": [
                 {
+                  "assistantImages": 1,
                   "assistantRequests": 1,
                   "billableAccounts": 1,
                   "byPlatform": [
@@ -174,6 +182,7 @@ public class GetTest : BaseMockServerTest
                   "day": "day",
                   "mediaStorage": 1000000,
                   "members": 1,
+                  "outboundMessages": 1,
                   "publishedPosts": 1
                 }
               ],
@@ -186,6 +195,7 @@ public class GetTest : BaseMockServerTest
                 "partnerWorkspaceId": "partnerWorkspaceId"
               },
               "totals": {
+                "assistantImages": 1,
                 "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
@@ -195,6 +205,7 @@ public class GetTest : BaseMockServerTest
                 ],
                 "channelDays": 1000000,
                 "daysCounted": 1,
+                "managedAds": 1,
                 "meteredPosts": [
                   {
                     "month": "month",
@@ -203,6 +214,7 @@ public class GetTest : BaseMockServerTest
                     "postsWithLinks": 1
                   }
                 ],
+                "outboundMessages": 1,
                 "publishedPosts": 1
               }
             }

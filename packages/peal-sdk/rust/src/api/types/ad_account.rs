@@ -32,6 +32,9 @@ pub struct AdAccount {
     #[serde(default)]
     pub name: String,
     pub network: AdNetwork,
+    #[serde(rename = "newAdsUntrackedUntil")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new_ads_untracked_until: Option<String>,
     /// An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it.
     #[serde(rename = "spendCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -68,6 +71,7 @@ pub struct AdAccountBuilder {
     monthly_ceiling: Option<i64>,
     name: Option<String>,
     network: Option<AdNetwork>,
+    new_ads_untracked_until: Option<String>,
     spend_cap: Option<i64>,
     spending_enabled: Option<bool>,
     status: Option<AdAccountStatus>,
@@ -128,6 +132,11 @@ impl AdAccountBuilder {
 
     pub fn network(mut self, value: AdNetwork) -> Self {
         self.network = Some(value);
+        self
+    }
+
+    pub fn new_ads_untracked_until(mut self, value: impl Into<String>) -> Self {
+        self.new_ads_untracked_until = Some(value.into());
         self
     }
 
@@ -197,6 +206,7 @@ impl AdAccountBuilder {
             network: self
                 .network
                 .ok_or_else(|| BuildError::missing_field("network"))?,
+            new_ads_untracked_until: self.new_ads_untracked_until,
             spend_cap: self.spend_cap,
             spending_enabled: self
                 .spending_enabled

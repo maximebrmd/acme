@@ -23,6 +23,12 @@ public record AssistantStatus : IJsonOnDeserialized
     [JsonPropertyName("maxTextLength")]
     public required int MaxTextLength { get; set; }
 
+    [JsonPropertyName("month")]
+    public AssistantMonth? Month { get; set; }
+
+    [JsonPropertyName("reason")]
+    public AssistantOffReason? Reason { get; set; }
+
     [JsonPropertyName("remaining")]
     public required int Remaining { get; set; }
 

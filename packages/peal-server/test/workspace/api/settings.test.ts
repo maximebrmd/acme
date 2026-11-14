@@ -288,6 +288,7 @@ const PortsLive = Layer.mergeAll(
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
               accountDays: [],
+              meterMonths: [],
               meteredPosts: [
                 {
                   month: at,
@@ -297,6 +298,7 @@ const PortsLive = Layer.mergeAll(
                 },
               ],
               plan: "pro",
+              spendCeilings: [],
               subscriptions: [
                 {
                   cancelAtPeriodEnd: false,

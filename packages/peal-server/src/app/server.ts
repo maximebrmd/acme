@@ -45,6 +45,7 @@ import {
   StripePricesCheckedLive,
   BillingActionsApiLive,
   BillingLive,
+  BillingMetersLive,
   BillingOverviewLive,
   PartnerUsageApiLive,
   UsageApiLive,
@@ -343,15 +344,32 @@ const ReviewContextLive = ReviewLive.pipe(
   )
 );
 
+// The meters the assistant, the inbox and ads claim, on billing's
+// accounts, telling billing managers through the notices when one pauses.
+const MetersContextLive = BillingMetersLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PartnerOwnershipLive,
+      WorkspaceOwnersLive
+    )
+  )
+);
+
 // Engagement: the comments under the posts publishing lists, read and
 // answered on the channels of the channels context, and told through the
-// notices and the webhooks. `gated` is how it reaches the platforms.
+// notices and the webhooks; each reply claims an outbound message.
+// `gated` is how it reaches the platforms.
 const engagementOver = <E, R>(
   gated: Layer.Layer<Layer.Success<typeof UnreadComments>, E, R>
 ) =>
   engagementLive(gated).pipe(
     Layer.provide(
-      Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive)
+      Layer.mergeAll(
+        ChannelsWithNoticesLive,
+        PublishingContextLive,
+        MetersContextLive
+      )
     )
   );
 
@@ -363,12 +381,14 @@ const EngagementContextLive = engagementOver(
 // As AppLive runs it, without workers: nothing is read or sent.
 const EngagementWithoutPlatformsLive = engagementOver(UnreadComments);
 
-// The assistant, whose daily quota is the workspace plan's, whose images
-// the media context keeps, and whose workspaces' provider keys the
-// channels context's cipher seals.
+// The assistant, whose daily quota is the workspace plan's, or billing's
+// meters on a server that bills, whose images the media context keeps,
+// and whose workspaces' provider keys the channels context's cipher
+// seals.
 const AssistantContextLive = AssistantLive.pipe(
   Layer.provide(MediaContextLive),
   Layer.provide(TokenCipherLive),
+  Layer.provide(MetersContextLive),
   Layer.provideMerge(BillingContextsLive)
 );
 
@@ -377,14 +397,15 @@ const AssistantContextLive = AssistantLive.pipe(
 // asked. They reach networks with the tokens the channels context
 // encrypts, promote the posts publishing lists, show the counts analytics
 // keeps beside theirs, and tell workspaces through the notices and the
-// webhooks.
+// webhooks; each ad seen running in a month claims a managed ad.
 const adsContext = <GOut, GE, GR>(gate: Layer.Layer<GOut, GE, GR>) =>
   adsLive(gate).pipe(
     Layer.provide(
       Layer.mergeAll(
         ChannelsWithNoticesLive,
         PublishingContextLive,
-        AnalyticsLive
+        AnalyticsLive,
+        MetersContextLive
       )
     )
   );

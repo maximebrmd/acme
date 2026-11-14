@@ -324,6 +324,27 @@ layer(AdsTest, { excludeTestServices: true })("the ads endpoints", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "list the accounts with their new ads tracked, where no billing pauses them",
+    () =>
+      Effect.gen(function* listed() {
+        yield* onMeta();
+
+        const workspaceId = yield* freshWorkspace;
+        const { owner } = yield* ready(workspaceId);
+
+        const accounts = yield* owner.ads.listAccounts({
+          params: { workspaceId },
+        });
+
+        assert.isAbove(accounts.length, 0);
+        assert.deepStrictEqual(
+          accounts.map(({ newAdsUntrackedUntil }) => newAdsUntrackedUntil),
+          accounts.map(() => null)
+        );
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("refuse a boost with what a client needs to explain it", () =>
     Effect.gen(function* refusing() {
       const workspaceId = yield* freshWorkspace;

@@ -22,8 +22,10 @@ import type { SpecialAdCategory } from "#ads/domain/special-ad-category.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage, pausedOf } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -181,7 +183,7 @@ export class Boosts extends Context.Service<
       actor: Actor,
       ask: BoostAsk,
       idempotencyKey: string
-    ) => Effect.Effect<Boost, BoostKeyReused | BoostRefusal>;
+    ) => Effect.Effect<Boost, AllowanceReached | BoostKeyReused | BoostRefusal>;
     readonly get: (
       actor: Actor,
       boostId: string
@@ -218,6 +220,7 @@ export class Boosts extends Context.Service<
       const jobs = yield* BoostJobs;
       const gateway = yield* BoostGateway;
       const { transaction } = yield* TransactionRunner;
+      const meters = yield* MeteredUsage;
       const ports = yield* Effect.context<BoostStore | Ids>();
 
       const found = Effect.fn("Boosts.found")(function* found(
@@ -389,6 +392,15 @@ export class Boosts extends Context.Service<
 
             const { authorized, now, on, plan } = yield* prepared(actor, ask);
             const { account } = authorized;
+
+            // The billing account's managed ads paused (no payment method,
+            // the month's allowance used): nothing is reserved.
+            const meter = yield* meters.state(actor.workspaceId, "managedAds");
+            const paused = meter.pipe(Option.flatMap(pausedOf));
+
+            if (Option.isSome(paused)) {
+              return yield* paused.value;
+            }
 
             const boost = new Boost({
               activatedAt: Option.none(),

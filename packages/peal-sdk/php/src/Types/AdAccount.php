@@ -74,6 +74,12 @@ class AdAccount extends JsonSerializableType
     public string $network;
 
     /**
+     * @var ?string $newAdsUntrackedUntil
+     */
+    #[JsonProperty('newAdsUntrackedUntil')]
+    public ?string $newAdsUntrackedUntil;
+
+    /**
      * @var ?int $spendCap An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it.
      */
     #[JsonProperty('spendCap')]
@@ -119,6 +125,7 @@ class AdAccount extends JsonSerializableType
      *   timeZone: string,
      *   amountSpent?: ?int,
      *   monthlyCeiling?: ?int,
+     *   newAdsUntrackedUntil?: ?string,
      *   spendCap?: ?int,
      *   syncedAt?: ?string,
      * } $values
@@ -137,6 +144,7 @@ class AdAccount extends JsonSerializableType
         $this->monthlyCeiling = $values['monthlyCeiling'] ?? null;
         $this->name = $values['name'];
         $this->network = $values['network'];
+        $this->newAdsUntrackedUntil = $values['newAdsUntrackedUntil'] ?? null;
         $this->spendCap = $values['spendCap'] ?? null;
         $this->spendingEnabled = $values['spendingEnabled'];
         $this->status = $values['status'];

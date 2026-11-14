@@ -16,6 +16,7 @@ import type {
   TextProviderRefused,
   TooManyRequests,
   Unauthenticated,
+  UsageAllowanceReached,
   WorkspaceNotFound,
 } from "peal-contract";
 import { platformRules } from "peal-contract/post-text";
@@ -35,6 +36,9 @@ export type AssistantFailure =
   // session, whose requests are not counted.
   | TooManyRequests
   | Unauthenticated
+  // On a server that bills: the billing account has no payment method,
+  // or reached its monthly ceiling.
+  | UsageAllowanceReached
   | WorkspaceNotFound
   // The request failed in a way the API does not declare: the network, or
   // an answer that could not be read.

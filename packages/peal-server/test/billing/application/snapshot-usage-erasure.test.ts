@@ -14,7 +14,7 @@ import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-le
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { AloneInAccountsTest } from "#test/billing/support.ts";
+import { AloneInAccountsTest, NoMetersTest } from "#test/billing/support.ts";
 import { DatabaseTest } from "#test/channels/support.ts";
 
 // The snapshot against erasure: a workspace erased while its batch is
@@ -77,7 +77,12 @@ const NoAccountDaysTest = Layer.mergeAll(
 const snapshotOn = (states: typeof ErasedMeanwhile) =>
   SnapshotUsage.make(10).pipe(
     Layer.provide(
-      Layer.mergeAll(states, AloneInAccountsTest, NoAccountDaysTest)
+      Layer.mergeAll(
+        states,
+        AloneInAccountsTest,
+        NoAccountDaysTest,
+        NoMetersTest
+      )
     ),
     Layer.provideMerge(DrizzleUsageLedgerLive),
     Layer.provideMerge(DatabaseTest)

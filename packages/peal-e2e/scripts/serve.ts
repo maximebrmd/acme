@@ -11,7 +11,7 @@ import path from "node:path";
 
 import { Schema } from "effect";
 
-import { startStripe } from "./stripe.ts";
+import { startStripe, webhookSecret } from "./stripe.ts";
 
 const packages = path.join(import.meta.dirname, "..", "..");
 
@@ -57,7 +57,7 @@ const server = spawn(process.execPath, ["src/main.ts"], {
     PORT: String(serverPort),
     STRIPE_API_URL: stripe.url,
     STRIPE_SECRET_KEY: "sk_test_0123456789syntheticendtoend",
-    STRIPE_WEBHOOK_SECRET: "whsec_synthetic_end_to_end",
+    STRIPE_WEBHOOK_SECRET: webhookSecret,
   },
   stdio: "inherit",
 });
