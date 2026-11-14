@@ -2976,6 +2976,10 @@
         "received": "Un avis sur un établissement est lu",
         "replied": "Une réponse à un avis part de Peal"
       },
+      "message": {
+        "received": "Un message privé adressé à un canal est lu",
+        "sent": "Un message privé part de Peal"
+      },
       "webhook": {
         "test": "Événement de test"
       }
@@ -4101,7 +4105,9 @@
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
       "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain.",
-      "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve."
+      "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve.",
+      "conversationNotFound": "Cette conversation n’existe plus : elle est partie avec son canal, ou a dépassé la durée pendant laquelle Peal la conserve.",
+      "messagePending": "Un message à cette conversation est en route, ou est peut-être parti. Attendez qu’il soit réglé avant d’en écrire un autre, pour que le même message ne parte jamais deux fois."
     }
   },
   "InboxReviews": {
@@ -4146,6 +4152,47 @@
       "sending": "Envoi…",
       "sent": "La réponse est en cours d’envoi.",
       "pending": "Une réponse à cet avis est en cours d’envoi. Attendez qu’elle soit partie pour en écrire une autre."
+    }
+  },
+  "InboxMessages": {
+    "title": "Messages privés",
+    "description": "Les conversations privées que des personnes tiennent avec vos comptes Mastodon et Bluesky. Peal conserve une conversation {days, number} jours après son dernier message, et n’en engage jamais.",
+    "loadFailed": "Les conversations n’ont pas pu être chargées.",
+    "retry": "Réessayer",
+    "row": {
+      "with": "Avec {people}",
+      "unread": "Non lue",
+      "read": "Lue",
+      "lastMessage": "Dernier message {at}",
+      "count": "{count, plural, one {# message} other {# messages}}"
+    },
+    "thread": {
+      "back": "Retour à la boîte de réception",
+      "title": "Une conversation",
+      "readOnly": "Votre rôle permet de lire les messages, pas d’y répondre.",
+      "private": "Ces messages sont privés : ne les montrez qu’aux personnes qui en ont besoin.",
+      "markRead": "Marquer comme lue",
+      "markUnread": "Marquer comme non lue",
+      "request": "Cette personne n’a pas encore été acceptée : répondre accepte la conversation."
+    },
+    "message": {
+      "them": "Eux",
+      "account": "Le compte",
+      "files": "{count, plural, one {# fichier, non affiché} other {# fichiers, non affichés}}",
+      "noText": "Des fichiers seulement.",
+      "sent": "{status, select, sending {Message en route} sent {Message envoyé} failed {Message non envoyé} unconfirmed {Message pas encore confirmé : vérifiez sur la plateforme} other {}}",
+      "confirmSent": "Il est parti",
+      "confirmNotSent": "Il n’est jamais parti"
+    },
+    "box": {
+      "label": "Répondre au nom du compte",
+      "private": "Le message ne va qu’aux personnes de cette conversation, et ne peut pas être repris.",
+      "count": "{length, number} sur {maximum, number} caractères",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "sentToast": "Le message est en route.",
+      "pending": "Un message à cette conversation est en route. Attendez qu’il soit parti pour en écrire un autre.",
+      "closed": "La plateforme ne permet plus au compte de répondre à cette conversation."
     }
   },
   "TwoStep": {

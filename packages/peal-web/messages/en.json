@@ -2976,6 +2976,10 @@
         "received": "A review of a location is read",
         "replied": "A reply to a review goes out from Peal"
       },
+      "message": {
+        "received": "A direct message to a channel is read",
+        "sent": "A direct message goes out from Peal"
+      },
       "webhook": {
         "test": "Test event"
       }
@@ -4101,7 +4105,9 @@
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
       "unknown": "Something went wrong. Try again.",
       "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month.",
-      "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one."
+      "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one.",
+      "conversationNotFound": "This conversation no longer exists: it went with its channel, or past the time Peal keeps one.",
+      "messagePending": "A message to this conversation is on its way, or may have gone out. Wait until it is settled before writing another, so the same message never goes twice."
     }
   },
   "InboxReviews": {
@@ -4146,6 +4152,47 @@
       "sending": "Sending…",
       "sent": "The reply is on its way.",
       "pending": "A reply to this review is on its way. Wait until it has gone out to write another."
+    }
+  },
+  "InboxMessages": {
+    "title": "Direct messages",
+    "description": "The private conversations people hold with your Mastodon and Bluesky accounts. Peal keeps a conversation {days, number} days after its last message, and never starts one.",
+    "loadFailed": "The conversations could not be loaded.",
+    "retry": "Try again",
+    "row": {
+      "with": "With {people}",
+      "unread": "Unread",
+      "read": "Read",
+      "lastMessage": "Latest message {at}",
+      "count": "{count, plural, one {# message} other {# messages}}"
+    },
+    "thread": {
+      "back": "Back to the inbox",
+      "title": "A conversation",
+      "readOnly": "Your role may read messages but not answer them.",
+      "private": "These messages are private: show them only to the people who need them.",
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "request": "This person has not been accepted yet: answering accepts the conversation."
+    },
+    "message": {
+      "them": "Them",
+      "account": "The account",
+      "files": "{count, plural, one {# file, not shown} other {# files, not shown}}",
+      "noText": "Files only.",
+      "sent": "{status, select, sending {Message on its way} sent {Message sent} failed {Message not sent} unconfirmed {Message not confirmed yet: check the platform} other {}}",
+      "confirmSent": "It went out",
+      "confirmNotSent": "It never went out"
+    },
+    "box": {
+      "label": "Answer as the account",
+      "private": "The message goes to the people in this conversation only, and cannot be taken back.",
+      "count": "{length, number} of {maximum, number} characters",
+      "send": "Send",
+      "sending": "Sending…",
+      "sentToast": "The message is on its way.",
+      "pending": "A message to this conversation is on its way. Wait until it has gone out to write another.",
+      "closed": "The platform no longer lets the account answer this conversation."
     }
   },
   "TwoStep": {
