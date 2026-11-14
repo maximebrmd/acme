@@ -24,3 +24,10 @@ policies:
     group_wait: 30s
     group_interval: 5m
     repeat_interval: 4h
+
+# telegram-slack.yaml's Slack receiver, once that file is no longer
+# mounted: Grafana keeps what it provisioned, so it would linger. Grafana
+# starts as well where it never was.
+deleteContactPoints:
+  - orgId: 1
+    uid: slack
