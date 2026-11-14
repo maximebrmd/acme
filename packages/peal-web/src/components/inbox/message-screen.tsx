@@ -16,6 +16,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { useHydrated } from "#components/media/use-hydrated.ts";
+import { Link } from "#i18n/navigation.ts";
 import { inboxErrorOf } from "#inbox/errors.ts";
 import {
   confirmMessage,
@@ -66,11 +67,45 @@ const useActions = (workspaceId: string, conversationId: string) => {
   };
 };
 
+// The links between a conversation's pages: to older messages while some
+// are left, and back to the latest from an older page.
+const PagesView = ({
+  cursor,
+  href,
+  nextCursor,
+}: {
+  readonly cursor: string;
+  readonly href: string;
+  readonly nextCursor: string | null;
+}) => {
+  const t = useTranslations("InboxMessages.thread");
+
+  return nextCursor === null && cursor === "" ? null : (
+    <nav className="flex flex-wrap gap-4 text-sm">
+      {nextCursor === null ? null : (
+        <Link
+          href={`${href}?cursor=${encodeURIComponent(nextCursor)}`}
+          className="underline-offset-4 hover:underline"
+        >
+          {t("older")}
+        </Link>
+      )}
+      {cursor === "" ? null : (
+        <Link href={href} className="underline-offset-4 hover:underline">
+          {t("latest")}
+        </Link>
+      )}
+    </nav>
+  );
+};
+
 const LoadedConversation = ({
+  cursor,
   detail,
   mayAnswer,
   workspaceId,
 }: {
+  readonly cursor: string;
   readonly detail: InboxConversationDetail;
   readonly mayAnswer: boolean;
   readonly workspaceId: string;
@@ -169,6 +204,11 @@ const LoadedConversation = ({
       ) : (
         <p className="text-muted-foreground text-sm">{t("thread.readOnly")}</p>
       )}
+      <PagesView
+        cursor={cursor}
+        href={`/app/${workspaceId}/inbox/messages/${conversation.id}`}
+        nextCursor={detail.nextCursor}
+      />
       <ul className="flex flex-col gap-2">
         {detail.messages.map((message) => (
           <DirectMessageView
@@ -232,20 +272,22 @@ const LoadedConversation = ({
  * A conversation whole: its messages, those sent from Peal and how each
  * ended, and, for a member who may answer and where the channel can, the
  * box to answer in. Rendered in the browser, where the reader's time zone
- * is known.
+ * is known. `cursor` shows the page of older messages it names.
  */
 export const MessageScreen = ({
   conversationId,
+  cursor,
   mayAnswer,
   workspaceId,
 }: {
   readonly conversationId: string;
+  readonly cursor: string;
   readonly mayAnswer: boolean;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("InboxMessages");
   const hydrated = useHydrated();
-  const atom = conversationDetail(workspaceId, conversationId);
+  const atom = conversationDetail(workspaceId, conversationId, cursor);
   const result = useAtomValue(atom);
   const reload = useAtomRefresh(atom);
 
@@ -272,6 +314,7 @@ export const MessageScreen = ({
 
   return (
     <LoadedConversation
+      cursor={cursor}
       detail={result.value}
       mayAnswer={mayAnswer}
       workspaceId={workspaceId}

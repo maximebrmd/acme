@@ -10,6 +10,7 @@ import type {
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { ChannelMessagesView } from "#components/inbox/message-settings.tsx";
 import {
   ConversationRowView,
   DirectMessageView,
@@ -126,5 +127,27 @@ describe("the direct messages' views", () => {
     expect(html).toContain("ne peut pas être repris");
     expect(html).toMatch(/7 sur 5\s000 caractères/u);
     expect(html).toContain("disabled");
+  });
+
+  it("say whether a channel's messages are read, and that turning them off deletes them", async () => {
+    const off = await render(
+      "en",
+      <ChannelMessagesView
+        channel={channel}
+        disabled={false}
+        on={false}
+        onSwitch={constVoid}
+      />
+    );
+
+    const on = await render(
+      "fr",
+      <ChannelMessagesView channel={channel} disabled on onSwitch={constVoid} />
+    );
+
+    expect(off).toContain("Not read");
+    expect(off).toContain("Read its messages");
+    expect(on).toContain("supprimer");
+    expect(on).toContain("disabled");
   });
 });

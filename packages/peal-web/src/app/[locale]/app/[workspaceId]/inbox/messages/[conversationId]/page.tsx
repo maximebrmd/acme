@@ -1,3 +1,4 @@
+import { Option, Schema } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -7,12 +8,23 @@ import { Link } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 import { membershipOf } from "#posts/membership.ts";
 
-// One conversation, for members who may read the inbox
-// (engagement:read). Answering takes engagement:message.
+// The page's query: `cursor` names a page of older messages.
+const QuerySchema = Schema.Struct({ cursor: Schema.optional(Schema.String) });
+
+// One conversation, for members who may read direct messages
+// (engagement:readMessages). Answering takes engagement:message.
 const InboxConversationPage = async ({
   params,
+  searchParams,
 }: PageProps<"/[locale]/app/[workspaceId]/inbox/messages/[conversationId]">) => {
   const { conversationId, locale, workspaceId } = await params;
+
+  const cursor = Schema.decodeUnknownOption(QuerySchema)(
+    await searchParams
+  ).pipe(
+    Option.flatMapNullishOr(({ cursor: named }) => named),
+    Option.getOrElse(() => "")
+  );
 
   if (!hasLocale(routing.locales, locale)) {
     notFound();
@@ -21,7 +33,7 @@ const InboxConversationPage = async ({
   const membership = await membershipOf(locale, workspaceId);
   const may = new Set(membership.permissions);
 
-  if (!may.has("engagement:read")) {
+  if (!may.has("engagement:readMessages")) {
     notFound();
   }
 
@@ -42,6 +54,7 @@ const InboxConversationPage = async ({
       </div>
       <MessageScreen
         conversationId={conversationId}
+        cursor={cursor}
         mayAnswer={may.has("engagement:message")}
         workspaceId={membership.id}
       />
