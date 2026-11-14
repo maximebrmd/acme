@@ -7,6 +7,8 @@ module Peal
         field :workspace_id, -> { String }, optional: false, nullable: false, api_name: "workspaceId"
 
         field :channel_id, -> { String }, optional: false, nullable: false, api_name: "channelId"
+
+        field :messages, -> { Peal::Channels::Types::ReconnectChannelsRequestMessages }, optional: true, nullable: false
       end
     end
   end

@@ -575,7 +575,7 @@ client.api_keys.revoke(
 </details>
 
 ## channels
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L36-L66">list</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L37-L67">list</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -648,7 +648,7 @@ client.channels.list(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L68-L124">find</a>(...) -> ChannelPage</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L69-L125">find</a>(...) -> ChannelPage</code></summary>
 <dl>
 <dd>
 
@@ -761,7 +761,7 @@ client.channels.find(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L126-L156">platforms</a>(...) -> ConnectablePlatforms</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L127-L157">platforms</a>(...) -> ConnectablePlatforms</code></summary>
 <dl>
 <dd>
 
@@ -834,7 +834,7 @@ client.channels.platforms(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L158-L211">connect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L159-L212">connect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -940,7 +940,7 @@ client.channels.connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L213-L265">complete_connect</a>(...) -> ConnectOutcome</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L214-L266">complete_connect</a>(...) -> ConnectOutcome</code></summary>
 <dl>
 <dd>
 
@@ -1055,7 +1055,7 @@ client.channels.complete_connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L267-L314">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L268-L315">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -1157,7 +1157,7 @@ client.channels.choose_accounts(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L316-L349">reconnect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L317-L359">reconnect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -1169,7 +1169,7 @@ client.channels.choose_accounts(
 <dl>
 <dd>
 
-Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 </dd>
 </dl>
 </dd>
@@ -1227,6 +1227,14 @@ client.channels.reconnect(
 <dl>
 <dd>
 
+**messages:** `typing.Optional[ReconnectChannelsRequestMessages]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -1239,7 +1247,7 @@ client.channels.reconnect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L351-L383">disconnect</a>(...)</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L361-L393">disconnect</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -1321,7 +1329,7 @@ client.channels.disconnect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L385-L425">update</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L395-L435">update</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -1412,7 +1420,7 @@ client.channels.update(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L427-L460">disable</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L437-L470">disable</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -1494,7 +1502,7 @@ client.channels.disable(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L462-L495">enable</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L472-L505">enable</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -10860,7 +10868,7 @@ client.inbox_reviews.set_review_answered(
 <dl>
 <dd>
 
-Lists the workspace's conversations, the latest message first, 30 a page unless `limit` (at most 100) says otherwise. `channelId` and `unread` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Who is in each and how many messages it holds are listed; what they say, never: read a conversation for that. Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message 30 days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off, and, within a day, a message or a conversation the platform no longer shows. Peal never starts a conversation: it answers those someone else began. Needs engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope workspace:publish, and staff acting as a member never.
+Lists the workspace's conversations, the latest message first, 30 a page unless `limit` (at most 100) says otherwise. `channelId` and `unread` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Who is in each and how many messages it holds are listed; what they say, never: read a conversation for that. Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message 30 days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off; a message the platform no longer shows within a day, and a conversation once two whole listings in a row no longer show it, where Peal can read them whole (otherwise by the 30 days). Peal never starts a conversation: it answers those someone else began. Needs engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope workspace:publish, and staff acting as a member never.
 </dd>
 </dl>
 </dd>
@@ -11326,7 +11334,7 @@ client.inbox_messages.get_message_settings(
 <dl>
 <dd>
 
-Turns a channel's direct messages on (`enabled: true`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 `InboxActionUnavailable`). Needs channel:connect. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).
+Turns a channel's direct messages on (`enabled: true`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 `InboxActionUnavailable`, `unsupported`), and a Bluesky channel whose account has not granted the chat methods' permissions too (`reconnect`): reconnect it with `messages=true`, then turn its messages on. Needs channel:connect. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).
 </dd>
 </dl>
 </dd>

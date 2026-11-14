@@ -942,7 +942,7 @@ _, err := client.Channels.ChooseAccounts(
 <dl>
 <dd>
 
-Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
 </dd>
 </dl>
 </dd>
@@ -988,6 +988,14 @@ _, err := client.Channels.Reconnect(
 <dd>
 
 **channelID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**messages:** `*peal.ReconnectChannelsRequestMessages` 
     
 </dd>
 </dl>
@@ -9266,7 +9274,7 @@ _, err := client.InboxReviews.SetReviewAnswered(
 <dl>
 <dd>
 
-Lists the workspace's conversations, the latest message first, 30 a page unless `limit` (at most 100) says otherwise. `channelId` and `unread` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Who is in each and how many messages it holds are listed; what they say, never: read a conversation for that. Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message 30 days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off, and, within a day, a message or a conversation the platform no longer shows. Peal never starts a conversation: it answers those someone else began. Needs engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope workspace:publish, and staff acting as a member never.
+Lists the workspace's conversations, the latest message first, 30 a page unless `limit` (at most 100) says otherwise. `channelId` and `unread` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Who is in each and how many messages it holds are listed; what they say, never: read a conversation for that. Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message 30 days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off; a message the platform no longer shows within a day, and a conversation once two whole listings in a row no longer show it, where Peal can read them whole (otherwise by the 30 days). Peal never starts a conversation: it answers those someone else began. Needs engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope workspace:publish, and staff acting as a member never.
 </dd>
 </dl>
 </dd>
@@ -9667,7 +9675,7 @@ _, err := client.InboxMessages.GetMessageSettings(
 <dl>
 <dd>
 
-Turns a channel's direct messages on (`enabled: true`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 `InboxActionUnavailable`). Needs channel:connect. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).
+Turns a channel's direct messages on (`enabled: true`): Peal reads its conversations from the next run, and tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the channel. A channel on a platform whose messages the server does not read is refused (409 `InboxActionUnavailable`, `unsupported`), and a Bluesky channel whose account has not granted the chat methods' permissions too (`reconnect`): reconnect it with `messages=true`, then turn its messages on. Needs channel:connect. Only a member signed in in person (a session of the web app) may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).
 </dd>
 </dl>
 </dd>

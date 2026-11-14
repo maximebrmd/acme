@@ -16,6 +16,7 @@ export * as channelDefaults from "./channelDefaults/index.js";
 export * from "./channelDefaults/client/requests/index.js";
 export * as channels from "./channels/index.js";
 export * from "./channels/client/requests/index.js";
+export * from "./channels/types/index.js";
 export * as channelSets from "./channelSets/index.js";
 export * from "./channelSets/client/requests/index.js";
 export * as connectLinks from "./connectLinks/index.js";

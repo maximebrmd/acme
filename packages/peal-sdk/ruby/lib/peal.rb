@@ -292,6 +292,12 @@ require_relative "peal/short_links/types/get_short_links_request"
 require_relative "peal/environment"
 
 module Peal
+  module Channels
+    module Types
+      autoload :ReconnectChannelsRequestMessages, ::File.join(__dir__, "peal/channels/types/reconnect_channels_request_messages")
+    end
+  end
+
   module Posts
     module Types
       autoload :SearchPostsRequestRemoved, ::File.join(__dir__, "peal/posts/types/search_posts_request_removed")

@@ -16,8 +16,9 @@ module Peal
       # Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only
       # once a member turned them on for that channel. It keeps each message 30 days after it was sent, and a
       # conversation until its last message is that old; it deletes a channel's conversations at once when the channel
-      # is disconnected or its messages turned off, and, within a day, a message or a conversation the platform no
-      # longer shows. Peal never starts a conversation: it answers those someone else began. Needs
+      # is disconnected or its messages turned off; a message the platform no longer shows within a day, and a
+      # conversation once two whole listings in a row no longer show it, where Peal can read them whole (otherwise by
+      # the 30 days). Peal never starts a conversation: it answers those someone else began. Needs
       # engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope
       # workspace:publish, and staff acting as a member never.
       #
@@ -301,8 +302,10 @@ module Peal
       # Turns a channel's direct messages on (`enabled: true`): Peal reads its conversations from the next run, and
       # tells of the messages sent after that. Turning them off deletes at once every conversation Peal kept of the
       # channel. A channel on a platform whose messages the server does not read is refused (409
-      # `InboxActionUnavailable`). Needs channel:connect. Only a member signed in in person (a session of the web app)
-      # may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).
+      # `InboxActionUnavailable`, `unsupported`), and a Bluesky channel whose account has not granted the chat methods'
+      # permissions too (`reconnect`): reconnect it with `messages=true`, then turn its messages on. Needs
+      # channel:connect. Only a member signed in in person (a session of the web app) may: an API key or an OAuth
+      # application is refused (403 `Forbidden`, `personRequired`).
       #
       # @param request_options [Hash]
       # @param params [Peal::InboxMessages::Types::SetChannelMessagesInboxMessagesRequest]

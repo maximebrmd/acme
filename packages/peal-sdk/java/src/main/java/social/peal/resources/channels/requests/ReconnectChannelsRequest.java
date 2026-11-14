@@ -7,29 +7,53 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.resources.channels.types.ReconnectChannelsRequestMessages;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ReconnectChannelsRequest.Builder.class)
 public final class ReconnectChannelsRequest {
+    private final Optional<ReconnectChannelsRequestMessages> messages;
+
     private final Map<String, Object> additionalProperties;
 
-    private ReconnectChannelsRequest(Map<String, Object> additionalProperties) {
+    private ReconnectChannelsRequest(
+            Optional<ReconnectChannelsRequestMessages> messages, Map<String, Object> additionalProperties) {
+        this.messages = messages;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("messages")
+    public Optional<ReconnectChannelsRequestMessages> getMessages() {
+        return messages;
     }
 
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof ReconnectChannelsRequest;
+        return other instanceof ReconnectChannelsRequest && equalTo((ReconnectChannelsRequest) other);
     }
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
+    }
+
+    private boolean equalTo(ReconnectChannelsRequest other) {
+        return messages.equals(other.messages);
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+        return Objects.hash(this.messages);
     }
 
     @java.lang.Override
@@ -43,20 +67,37 @@ public final class ReconnectChannelsRequest {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<ReconnectChannelsRequestMessages> messages = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         public Builder from(ReconnectChannelsRequest other) {
+            messages(other.getMessages());
+            return this;
+        }
+
+        @JsonSetter(value = "messages", nulls = Nulls.SKIP)
+        public Builder messages(Optional<ReconnectChannelsRequestMessages> messages) {
+            this.messages = messages;
+            return this;
+        }
+
+        public Builder messages(ReconnectChannelsRequestMessages messages) {
+            this.messages = Optional.ofNullable(messages);
             return this;
         }
 
         public ReconnectChannelsRequest build() {
-            return new ReconnectChannelsRequest(additionalProperties);
+            return new ReconnectChannelsRequest(messages, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
+            if (key.equalsIgnoreCase("messages")) {
+                return;
+            }
             this.additionalProperties.put(key, value);
         }
 
