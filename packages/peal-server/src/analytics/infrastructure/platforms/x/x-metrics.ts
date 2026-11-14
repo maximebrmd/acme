@@ -284,20 +284,20 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
       const covered = new Set(claimed.resources);
 
-      // X bills only the posts it returns: those counted fresh for the
-      // day that it did not return go back.
-      // What X returned of them, which it bills: the rest goes back.
+      // X bills only the posts it returns: what it returned of them is
+      // kept here, and those counted fresh for the day that it did not
+      // return go back, however the read ends.
       const returned = new Set<string>();
 
-      const releaseUnless = (returned: ReadonlySet<string>) =>
-        paid
-          .release({
-            at: claimed.at,
-            platform: "x",
-            resources: claimed.fresh.filter((id) => !returned.has(id)),
-            workspaceId,
-          })
-          .pipe(Effect.catchTag("DatabaseError", databaseDown));
+      // Built when it runs: by then `returned` holds what X answered.
+      const releaseRest = Effect.suspend(() =>
+        paid.release({
+          at: claimed.at,
+          platform: "x",
+          resources: claimed.fresh.filter((id) => !returned.has(id)),
+          workspaceId,
+        })
+      ).pipe(Effect.catchTag("DatabaseError", databaseDown));
 
       const allowed = known.filter(({ platformPostId }) =>
         covered.has(platformPostId)
@@ -319,7 +319,7 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
           readAll(allowed, accessToken, returned)
         )
         .pipe(
-          Effect.tapError(() => releaseUnless(returned)),
+          Effect.tapError(() => releaseRest),
           Effect.catchTags({
             ChannelUnusable: unusable,
             DatabaseError: databaseDown,
@@ -327,7 +327,7 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
           })
         );
 
-      yield* releaseUnless(returned);
+      yield* releaseRest;
 
       return {
         halted: batch.halted,
