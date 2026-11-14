@@ -8,6 +8,7 @@ pub enum FollowUpRefusal {
     PostCancelled,
     NoChannel,
     AlreadyFollowedUp,
+    WindowPassed,
     Channels,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
@@ -22,6 +23,7 @@ impl Serialize for FollowUpRefusal {
             Self::PostCancelled => serializer.serialize_str("postCancelled"),
             Self::NoChannel => serializer.serialize_str("noChannel"),
             Self::AlreadyFollowedUp => serializer.serialize_str("alreadyFollowedUp"),
+            Self::WindowPassed => serializer.serialize_str("windowPassed"),
             Self::Channels => serializer.serialize_str("channels"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
@@ -37,6 +39,7 @@ impl<'de> Deserialize<'de> for FollowUpRefusal {
             "postCancelled" => Ok(Self::PostCancelled),
             "noChannel" => Ok(Self::NoChannel),
             "alreadyFollowedUp" => Ok(Self::AlreadyFollowedUp),
+            "windowPassed" => Ok(Self::WindowPassed),
             "channels" => Ok(Self::Channels),
             _ => Ok(Self::__Unknown(value)),
         }
@@ -51,6 +54,7 @@ impl fmt::Display for FollowUpRefusal {
             Self::PostCancelled => write!(f, "postCancelled"),
             Self::NoChannel => write!(f, "noChannel"),
             Self::AlreadyFollowedUp => write!(f, "alreadyFollowedUp"),
+            Self::WindowPassed => write!(f, "windowPassed"),
             Self::Channels => write!(f, "channels"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }

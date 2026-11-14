@@ -12,6 +12,7 @@ module Peal
       POST_CANCELLED = "postCancelled"
       NO_CHANNEL = "noChannel"
       ALREADY_FOLLOWED_UP = "alreadyFollowedUp"
+      WINDOW_PASSED = "windowPassed"
       CHANNELS = "channels"
     end
   end

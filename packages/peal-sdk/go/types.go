@@ -9228,6 +9228,7 @@ const (
 	FollowUpRefusalPostCancelled     FollowUpRefusal = "postCancelled"
 	FollowUpRefusalNoChannel         FollowUpRefusal = "noChannel"
 	FollowUpRefusalAlreadyFollowedUp FollowUpRefusal = "alreadyFollowedUp"
+	FollowUpRefusalWindowPassed      FollowUpRefusal = "windowPassed"
 	FollowUpRefusalChannels          FollowUpRefusal = "channels"
 )
 
@@ -9243,6 +9244,8 @@ func NewFollowUpRefusalFromString(s string) (FollowUpRefusal, error) {
 		return FollowUpRefusalNoChannel, nil
 	case "alreadyFollowedUp":
 		return FollowUpRefusalAlreadyFollowedUp, nil
+	case "windowPassed":
+		return FollowUpRefusalWindowPassed, nil
 	case "channels":
 		return FollowUpRefusalChannels, nil
 	}

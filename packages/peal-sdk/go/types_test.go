@@ -74579,6 +74579,13 @@ func TestEnumFollowUpRefusal(t *testing.T) {
 		assert.Equal(t, FollowUpRefusal("alreadyFollowedUp"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_windowPassed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFollowUpRefusalFromString("windowPassed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FollowUpRefusal("windowPassed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_channels", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewFollowUpRefusalFromString("channels")

@@ -3,6 +3,8 @@
 import typing
 
 FollowUpRefusal = typing.Union[
-    typing.Literal["noAction", "emptyComment", "postCancelled", "noChannel", "alreadyFollowedUp", "channels"],
+    typing.Literal[
+        "noAction", "emptyComment", "postCancelled", "noChannel", "alreadyFollowedUp", "windowPassed", "channels"
+    ],
     typing.Any,
 ]

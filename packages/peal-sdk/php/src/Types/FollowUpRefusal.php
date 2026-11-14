@@ -9,5 +9,6 @@ enum FollowUpRefusal: string
     case PostCancelled = "postCancelled";
     case NoChannel = "noChannel";
     case AlreadyFollowedUp = "alreadyFollowedUp";
+    case WindowPassed = "windowPassed";
     case Channels = "channels";
 }

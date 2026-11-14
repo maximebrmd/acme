@@ -16,6 +16,8 @@ public final class FollowUpRefusal {
 
     public static final FollowUpRefusal POST_CANCELLED = new FollowUpRefusal(Value.POST_CANCELLED, "postCancelled");
 
+    public static final FollowUpRefusal WINDOW_PASSED = new FollowUpRefusal(Value.WINDOW_PASSED, "windowPassed");
+
     public static final FollowUpRefusal NO_CHANNEL = new FollowUpRefusal(Value.NO_CHANNEL, "noChannel");
 
     public static final FollowUpRefusal NO_ACTION = new FollowUpRefusal(Value.NO_ACTION, "noAction");
@@ -60,6 +62,8 @@ public final class FollowUpRefusal {
                 return visitor.visitChannels();
             case POST_CANCELLED:
                 return visitor.visitPostCancelled();
+            case WINDOW_PASSED:
+                return visitor.visitWindowPassed();
             case NO_CHANNEL:
                 return visitor.visitNoChannel();
             case NO_ACTION:
@@ -81,6 +85,8 @@ public final class FollowUpRefusal {
                 return CHANNELS;
             case "postCancelled":
                 return POST_CANCELLED;
+            case "windowPassed":
+                return WINDOW_PASSED;
             case "noChannel":
                 return NO_CHANNEL;
             case "noAction":
@@ -101,6 +107,8 @@ public final class FollowUpRefusal {
 
         ALREADY_FOLLOWED_UP,
 
+        WINDOW_PASSED,
+
         CHANNELS,
 
         UNKNOWN
@@ -116,6 +124,8 @@ public final class FollowUpRefusal {
         T visitNoChannel();
 
         T visitAlreadyFollowedUp();
+
+        T visitWindowPassed();
 
         T visitChannels();
 

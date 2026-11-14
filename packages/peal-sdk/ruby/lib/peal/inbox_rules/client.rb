@@ -64,8 +64,8 @@ module Peal
 
       # Starts a rule on the comments of a post that went out (`postId`) or of every post of a channel (`channelId`),
       # exactly one of them, with 1 to 10 `keywords` and a `reply`. A rule answers, by itself and in public, as the
-      # channel's account, a comment received after it started or was last set going again, under a post it answers on
-      # (a post's rule acts on the channels the post is for, scheduled or out), that holds one of its keywords as a word
+      # channel's account, a comment written after it started or was last set going again, under a post it answers on (a
+      # post's rule acts on the channels the post is for, scheduled or out), that holds one of its keywords as a word
       # (whatever its case and accents): with its `reply`, once a comment and once a person, 25 replies a day at most,
       # and 100 a day for every rule of a channel together, through the inbox's own replies (their journal, one reply a
       # comment, each one of the billing account's outbound messages). It answers on Mastodon, and on Facebook Pages and
