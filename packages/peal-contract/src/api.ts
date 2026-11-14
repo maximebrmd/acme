@@ -23,6 +23,7 @@ import { ContractRequestsApi } from "./contract-requests.ts";
 import { CredentialApi } from "./credential.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { FeedsApi } from "./feeds.ts";
+import { FollowUpsApi } from "./follow-ups.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
 import { InboxReviewsApi } from "./inbox-reviews.ts";
 import { InboxApi } from "./inbox.ts";
@@ -222,6 +223,59 @@ export {
 export type { NotRecyclableReason } from "./post-not-recyclable.ts";
 
 export { RecyclingEndsTooSoon } from "./recycling-ends-too-soon.ts";
+
+export { FollowUpsApi } from "./follow-ups.ts";
+
+export {
+  ChannelFollowUpsSchema,
+  defaultFollowUpPageSize,
+  FollowUpAbilitySchema,
+  FollowUpApprovalStateSchema,
+  FollowUpEndReasonSchema,
+  FollowUpKindSchema,
+  FollowUpRefusalSchema,
+  FollowUpRuleChangeSchema,
+  FollowUpRulePageSchema,
+  FollowUpRuleSchema,
+  FollowUpRuleStatusSchema,
+  FollowUpSchema,
+  FollowUpStatusSchema,
+  followUpsShown,
+  followUpWindowDays,
+  maxFollowUpCommentLength,
+  maxFollowUpPageSize,
+  maxFollowUpRulesPerWorkspace,
+  maxFollowUpsPerChannelDay,
+  maxLikesThreshold,
+  minLikesThreshold,
+  NewFollowUpRuleSchema,
+} from "./follow-up-rule.ts";
+
+export type {
+  ChannelFollowUps,
+  FollowUp,
+  FollowUpAbility,
+  FollowUpApprovalState,
+  FollowUpEndReason,
+  FollowUpKind,
+  FollowUpRefusal,
+  FollowUpRule,
+  FollowUpRuleChange,
+  FollowUpRulePage,
+  FollowUpRuleStatus,
+  FollowUpStatus,
+  NewFollowUpRule,
+} from "./follow-up-rule.ts";
+
+export { FollowUpNotPossible } from "./follow-up-not-possible.ts";
+
+export { FollowUpRuleEnded } from "./follow-up-rule-ended.ts";
+
+export { FollowUpRuleNotFound } from "./follow-up-rule-not-found.ts";
+
+export { FollowUpRuleTaken } from "./follow-up-rule-taken.ts";
+
+export { TooManyFollowUpRules } from "./too-many-follow-up-rules.ts";
 
 export { RecyclingRuleEnded } from "./recycling-rule-ended.ts";
 
@@ -2298,6 +2352,7 @@ export class Api extends HttpApi.make("peal")
   .add(ChannelSetsApi)
   .add(QueuesApi)
   .add(RecyclingApi)
+  .add(FollowUpsApi)
   .add(FeedsApi)
   .add(ChannelDefaultsApi)
   .add(ShortLinksApi)

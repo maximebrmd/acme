@@ -25,7 +25,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { storableText } from "#shared/domain/platform-text.ts";
 
@@ -77,6 +77,8 @@ export interface ChangeFollowUpRequest {
 export interface ListFollowUpRequest {
   readonly after: Option.Option<FollowUpRuleId>;
   readonly limit: number;
+  /** One post's rules alone. */
+  readonly postId: Option.Option<PostId>;
   readonly status: Option.Option<FollowUpRuleStatus["_tag"]>;
 }
 

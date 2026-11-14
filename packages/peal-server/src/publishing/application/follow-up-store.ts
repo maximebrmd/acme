@@ -15,6 +15,8 @@ import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 export interface FollowUpRulePage {
   readonly after: Option.Option<FollowUpRuleId>;
   readonly limit: number;
+  /** One post's rules alone. */
+  readonly postId: Option.Option<PostId>;
   readonly status: Option.Option<FollowUpRuleStatus["_tag"]>;
 }
 

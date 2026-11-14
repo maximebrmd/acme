@@ -13,6 +13,7 @@ import { channels } from "#commands/channels.ts";
 import { doctor } from "#commands/doctor.ts";
 import { drafts } from "#commands/drafts.ts";
 import { feeds } from "#commands/feeds.ts";
+import { followUps } from "#commands/follow-ups.ts";
 import { health } from "#commands/health.ts";
 import { inbox } from "#commands/inbox.ts";
 import { invitations } from "#commands/invitations.ts";
@@ -66,6 +67,7 @@ export const cli = peal.pipe(
     sets,
     queues,
     recycling,
+    followUps,
     feeds,
     approvals,
     review,

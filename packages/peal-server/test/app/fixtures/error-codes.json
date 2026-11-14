@@ -285,6 +285,26 @@
     "tag": "FeedUnreadable"
   },
   {
+    "code": "follow_up_not_possible",
+    "status": 422,
+    "tag": "FollowUpNotPossible"
+  },
+  {
+    "code": "follow_up_rule_ended",
+    "status": 409,
+    "tag": "FollowUpRuleEnded"
+  },
+  {
+    "code": "follow_up_rule_not_found",
+    "status": 404,
+    "tag": "FollowUpRuleNotFound"
+  },
+  {
+    "code": "follow_up_rule_taken",
+    "status": 409,
+    "tag": "FollowUpRuleTaken"
+  },
+  {
     "code": "forbidden",
     "status": 403,
     "tag": "Forbidden"
@@ -778,6 +798,11 @@
     "code": "too_many_feeds",
     "status": 409,
     "tag": "TooManyFeeds"
+  },
+  {
+    "code": "too_many_follow_up_rules",
+    "status": 409,
+    "tag": "TooManyFollowUpRules"
   },
   {
     "code": "too_many_invitations",

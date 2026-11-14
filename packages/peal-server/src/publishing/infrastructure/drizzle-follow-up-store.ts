@@ -320,7 +320,7 @@ export const DrizzleFollowUpStore = Layer.effect(
             workspaceId: rule.workspaceId,
           })
           .pipe(Effect.asVoid, Effect.mapError(failed)),
-      listRules: (workspaceId, { after, limit, status }) =>
+      listRules: (workspaceId, { after, limit, postId, status }) =>
         db
           .select()
           .from(followUpRules)
@@ -329,6 +329,9 @@ export const DrizzleFollowUpStore = Layer.effect(
               eq(followUpRules.workspaceId, workspaceId),
               ...Option.toArray(
                 status.pipe(Option.map((tag) => eq(followUpRules.status, tag)))
+              ),
+              ...Option.toArray(
+                postId.pipe(Option.map((id) => eq(followUpRules.postId, id)))
               ),
               ...Option.toArray(
                 after.pipe(Option.map((id) => gt(followUpRules.id, id)))

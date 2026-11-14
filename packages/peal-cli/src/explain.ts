@@ -18,6 +18,7 @@ import type {
   ImageProviderRefused,
   ImportUnreadable,
   MediaSourceFailure,
+  FollowUpRefusal,
   NotRecyclableReason,
   PostNotPromotable,
   TextProviderAddressRefused,
@@ -150,6 +151,18 @@ const urlRefusals: Readonly<Record<WebhookUrlRefused["reason"], string>> = {
   tooLong: "The address is longer than 2048 characters.",
   unknownHost:
     "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why a follow-up rule was refused, as the user puts it right.
+const followUpRefusals: Readonly<Record<FollowUpRefusal, string>> = {
+  channels:
+    "No channel can carry what the rule asks, or its comment is too long for one that could: each channel says, kind by kind. Nothing was saved.",
+  emptyComment:
+    "The comment is empty: give it some text, or take --comment away.",
+  noAction: "The rule does nothing: give --comment, --repost or both.",
+  noChannel:
+    "The rule acts on no channel of the workspace: peal channels list shows them.",
+  postCancelled: "The post was cancelled: nothing of it can be followed up.",
 };
 
 // Why a post cannot repeat, as the user puts it right.
@@ -752,6 +765,28 @@ const reasonOf =
         refused(
           "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
         ),
+      FollowUpNotPossible: ({ channels, reason }) =>
+        refused(
+          [
+            followUpRefusals[reason],
+            ...channels.map(
+              ({ channelId, comment, platform, repost }) =>
+                `  ${platform} ${channelId}: comment ${comment}, repost ${repost}`
+            ),
+          ].join("\n")
+        ),
+      FollowUpRuleEnded: ({ reason }) =>
+        refused(
+          `The follow-up rule ended (${reason}) and changes no more: peal follow-ups start makes another.`
+        ),
+      FollowUpRuleNotFound: () =>
+        refused(
+          "The workspace has no such follow-up rule: peal follow-ups list shows them."
+        ),
+      FollowUpRuleTaken: ({ ruleId }) =>
+        refused(
+          `Rule ${ruleId} already follows this post or channel up: change it with peal follow-ups update, or stop it first.`
+        ),
       RecyclingEndsTooSoon: ({ firstDueAt }) =>
         refused(
           `The rule's --until or --count leaves no post to make: the next would be due at ${DateTime.formatIso(firstDueAt)}. Nothing was changed.`
@@ -867,6 +902,10 @@ const reasonOf =
       TooManyQueues: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
+        ),
+      TooManyFollowUpRules: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} follow-up rules going, the most it may: stop one first, with peal follow-ups stop.`
         ),
       TooManyRecyclingRules: ({ allowed }) =>
         refused(
