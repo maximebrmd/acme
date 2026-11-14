@@ -5,6 +5,7 @@ export const AllowanceReason = {
         CeilingReached: "ceilingReached",
         NotEnabled: "notEnabled",
         PlanAllowance: "planAllowance",
-        PaymentFailed: "paymentFailed"
+        PaymentFailed: "paymentFailed",
+        SpendCapReached: "spendCapReached"
     } as const;
 export type AllowanceReason = typeof AllowanceReason[keyof typeof AllowanceReason];

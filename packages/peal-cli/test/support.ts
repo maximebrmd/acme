@@ -269,6 +269,7 @@ const signedInGroupsLive = (
         order: () => refusing,
         reduce: () => refusing,
         setCeiling: () => refusing,
+        setXReads: () => refusing,
         withdraw: () => refusing,
         withdrawTransfer: () => refusing,
         withdrawal: () => refusing,

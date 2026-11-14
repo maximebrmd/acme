@@ -142,6 +142,17 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    XSpendCeiling {
+        #[serde(default)]
+        ceiling: i64,
+        #[serde(default)]
+        percent: i64,
+        #[serde(rename = "resetsAt")]
+        #[serde(default)]
+        resets_at: String,
+    },
+
+    #[non_exhaustive]
     SubscriptionRenewing {
         plan: PaidPlan,
         #[serde(default)]
@@ -340,6 +351,14 @@ impl NoticeEvent {
         Self::AllowanceReached {
             allowed,
             meter,
+            resets_at,
+        }
+    }
+
+    pub fn x_spend_ceiling(ceiling: i64, percent: i64, resets_at: String) -> Self {
+        Self::XSpendCeiling {
+            ceiling,
+            percent,
             resets_at,
         }
     }

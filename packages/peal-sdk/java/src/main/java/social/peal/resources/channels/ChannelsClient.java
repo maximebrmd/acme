@@ -127,28 +127,28 @@ public class ChannelsClient {
     }
 
     /**
-     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached, and an X account needs a payment method on per-account pricing, as X's calls are billed at X's rates (UsageAllowanceReached <code>xApi</code>, <code>paymentMethodRequired</code> without one). Needs channel:connect.
      */
     public Authorization connect(String workspaceId, Platform platform) {
         return this.rawClient.connect(workspaceId, platform).body();
     }
 
     /**
-     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached, and an X account needs a payment method on per-account pricing, as X's calls are billed at X's rates (UsageAllowanceReached <code>xApi</code>, <code>paymentMethodRequired</code> without one). Needs channel:connect.
      */
     public Authorization connect(String workspaceId, Platform platform, RequestOptions requestOptions) {
         return this.rawClient.connect(workspaceId, platform, requestOptions).body();
     }
 
     /**
-     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached, and an X account needs a payment method on per-account pricing, as X's calls are billed at X's rates (UsageAllowanceReached <code>xApi</code>, <code>paymentMethodRequired</code> without one). Needs channel:connect.
      */
     public Authorization connect(String workspaceId, Platform platform, ConnectChannel request) {
         return this.rawClient.connect(workspaceId, platform, request).body();
     }
 
     /**
-     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, <code>connection</code> picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached, and an X account needs a payment method on per-account pricing, as X's calls are billed at X's rates (UsageAllowanceReached <code>xApi</code>, <code>paymentMethodRequired</code> without one). Needs channel:connect.
      */
     public Authorization connect(
             String workspaceId, Platform platform, ConnectChannel request, RequestOptions requestOptions) {
@@ -158,14 +158,14 @@ public class ChannelsClient {
     }
 
     /**
-     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached), and, on a server that bills, an X account a payment method (UsageAllowanceReached <code>xApi</code>). Needs channel:connect.
      */
     public ConnectOutcome completeConnect(String workspaceId, Platform platform, ConnectCallback request) {
         return this.rawClient.completeConnect(workspaceId, platform, request).body();
     }
 
     /**
-     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached), and, on a server that bills, an X account a payment method (UsageAllowanceReached <code>xApi</code>). Needs channel:connect.
      */
     public ConnectOutcome completeConnect(
             String workspaceId, Platform platform, ConnectCallback request, RequestOptions requestOptions) {

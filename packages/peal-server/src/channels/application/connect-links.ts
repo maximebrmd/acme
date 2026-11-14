@@ -160,6 +160,9 @@ const unusableReasons = {
 // defect, and for a permission a link always has.
 const reasonOf = (failure: Failure): Option.Option<HostedFailureReason> =>
   Match.valueTags(failure, {
+    // A platform the billing account cannot pay for yet (X without a
+    // payment method): to whoever holds the link, no room, as for the plan.
+    AllowanceReached: () => Option.some<HostedFailureReason>("planLimit"),
     AuthorizationDenied: () => Option.some<HostedFailureReason>("denied"),
     AuthorizationFailed: () =>
       Option.some<HostedFailureReason>("authorizationFailed"),

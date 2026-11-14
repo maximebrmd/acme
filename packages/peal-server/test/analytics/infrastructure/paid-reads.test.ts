@@ -19,7 +19,7 @@ const forget = (workspaceId: WorkspaceId) =>
 const claiming = (workspaceId: WorkspaceId, resources: readonly string[]) =>
   PaidReads.use((paid) =>
     paid.claim({ platform: "x", resources, workspaceId })
-  );
+  ).pipe(Effect.map((covered) => covered.resources));
 
 layer(sqlPaidReadsWith(3).pipe(Layer.provideMerge(DatabaseTest)), {
   excludeTestServices: true,

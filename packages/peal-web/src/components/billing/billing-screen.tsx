@@ -275,6 +275,9 @@ const LoadedBilling = ({
           pending={pending}
           step={step}
           termsUrl={termsUrl}
+          // Each workspace reads its own X channels: its billing managers
+          // switch them, whichever workspace bills the account.
+          xReads={{ canSwitch: canManage, workspaceId }}
           onBack={() => {
             setStep(idle);
           }}

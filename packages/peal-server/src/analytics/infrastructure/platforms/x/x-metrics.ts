@@ -92,7 +92,12 @@ const metricsOf = (
   );
 
 type Call =
-  | { readonly _tag: "read"; readonly readings: readonly PostReading[] }
+  | {
+      readonly _tag: "read";
+      readonly readings: readonly PostReading[];
+      // The posts X returned, which it bills.
+      readonly returned: readonly string[];
+    }
   | { readonly _tag: "failed"; readonly readings: readonly PostReading[] }
   | { readonly _tag: "halt" };
 
@@ -177,6 +182,9 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
         return {
           _tag: "read",
+          returned: posts.flatMap(({ platformPostId }) =>
+            byId.has(platformPostId) ? [platformPostId] : []
+          ),
           readings: posts.map((post): PostReading => {
             const metrics = byId.get(post.platformPostId)?.public_metrics;
 
@@ -201,9 +209,12 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
     });
   });
 
+  // `returned` keeps every post X returned, across the calls and the
+  // retries a renewed token makes, whatever ends the read after them.
   const readAll = Effect.fn("XMetrics.readAll")(function* readAll(
     posts: readonly PostToRead[],
-    token: Redacted.Redacted
+    token: Redacted.Redacted,
+    returned: Set<string>
   ) {
     const readings: PostReading[] = [];
 
@@ -216,6 +227,10 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
       if (call._tag !== "read") {
         return { halted: true, readings };
+      }
+
+      for (const id of call.returned) {
+        returned.add(id);
       }
     }
 
@@ -239,6 +254,18 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         return yield* new ChannelUnreadable({ reason: "paused" });
       }
 
+      const { workspaceId } = request;
+
+      // A workspace that does not read X (on a server that bills, its X
+      // reads off) is skipped as paused, before anything is claimed.
+      if (
+        !(yield* paid
+          .reads(workspaceId, "x")
+          .pipe(Effect.catchTag("DatabaseError", databaseDown)))
+      ) {
+        return yield* new ChannelUnreadable({ reason: "paused" });
+      }
+
       const known = request.posts.filter(({ platformPostId }) =>
         postId.test(platformPostId)
       );
@@ -247,15 +274,30 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         .filter(({ platformPostId }) => !postId.test(platformPostId))
         .map(missing);
 
-      const covered = new Set(
-        yield* paid
-          .claim({
-            platform: "x",
-            resources: known.map(({ platformPostId }) => platformPostId),
-            workspaceId: request.workspaceId,
-          })
-          .pipe(Effect.catchTag("DatabaseError", databaseDown))
-      );
+      const claimed = yield* paid
+        .claim({
+          platform: "x",
+          resources: known.map(({ platformPostId }) => platformPostId),
+          workspaceId,
+        })
+        .pipe(Effect.catchTag("DatabaseError", databaseDown));
+
+      const covered = new Set(claimed.resources);
+
+      // X bills only the posts it returns: what it returned of them is
+      // kept here, and those counted fresh for the day that it did not
+      // return go back, however the read ends.
+      const returned = new Set<string>();
+
+      // Built when it runs: by then `returned` holds what X answered.
+      const releaseRest = Effect.suspend(() =>
+        paid.release({
+          at: claimed.at,
+          platform: "x",
+          resources: claimed.fresh.filter((id) => !returned.has(id)),
+          workspaceId,
+        })
+      ).pipe(Effect.catchTag("DatabaseError", databaseDown));
 
       const allowed = known.filter(({ platformPostId }) =>
         covered.has(platformPostId)
@@ -274,15 +316,18 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
       const batch = yield* access
         .withToken(account.channelId, ({ accessToken }) =>
-          readAll(allowed, accessToken)
+          readAll(allowed, accessToken, returned)
         )
         .pipe(
+          Effect.tapError(() => releaseRest),
           Effect.catchTags({
             ChannelUnusable: unusable,
             DatabaseError: databaseDown,
             TokenExpired: needsReconnect,
           })
         );
+
+      yield* releaseRest;
 
       return {
         halted: batch.halted,

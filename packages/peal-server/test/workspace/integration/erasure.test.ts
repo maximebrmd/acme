@@ -166,6 +166,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM billing.spend_ceilings WHERE holder_workspace_id = ${id}`,
   "billing.subscriptions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${id}`,
+  "billing.x_usage_settings": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.x_usage_settings WHERE workspace_id = ${id}`,
   // A trial an account started stays, without the workspace, so the
   // account starts no second one.
   "billing.trials": (sql, id) =>
@@ -664,6 +666,8 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${workspaceId}, date_trunc('month', now())::date, 'outboundMessages', 4, 0)`;
   yield* sql`INSERT INTO billing.spend_ceilings (holder_workspace_id, "group", cents, currency, set_at)
     VALUES (${workspaceId}, 'assistant', 500, 'usd', now())`;
+  yield* sql`INSERT INTO billing.x_usage_settings (workspace_id, reads, set_at)
+    VALUES (${workspaceId}, true, now())`;
   yield* sql`INSERT INTO billing.meter_reports (identifier, holder_workspace_id, stripe_customer_id, event_name, value, occurred_at, created_at, sent_at)
     VALUES (${`acc:${workspaceId}:synthetic:3`}, ${workspaceId}, 'cus_synthetic', 'peal_accounts', 3, now(), now(), now())`;
   // An order with its consent, a trial (one per account: the user's

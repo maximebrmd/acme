@@ -19,7 +19,7 @@ import {
 } from "peal-ui/components/table";
 import { useId, useState, useTransition } from "react";
 
-import { setSpendCeiling } from "#billing/api.ts";
+import { setSpendCeiling, setXReads } from "#billing/api.ts";
 
 // A unit price, in dollars, with as many decimals as it needs: $1.00 for
 // 10,000 messages is a hundredth of a cent each.
@@ -53,6 +53,39 @@ const MeterRow = ({
     dateStyle: "medium",
     timeZone: "UTC",
   });
+
+  // X's units are thousandths of a dollar at X's rates: told as money.
+  if (meter.meter === "xApi") {
+    const dollars = (units: number) =>
+      price((units * meter.price.cents) / meter.price.per);
+
+    return (
+      <TableRow>
+        <TableHead scope="row">{t("names.xApi")}</TableHead>
+        <TableCell variant="numeric">
+          {billsHere && meter.most !== null
+            ? t("usedOfMoney", {
+                most: dollars(meter.most),
+                used: dollars(meter.used),
+              })
+            : dollars(meter.used)}
+        </TableCell>
+        <TableCell variant="numeric">{t("xIncluded")}</TableCell>
+        <TableCell variant="numeric">{t("xRates")}</TableCell>
+        <TableCell variant="numeric">{t("xRates")}</TableCell>
+        <TableCell variant="numeric">
+          {billsHere && meter.estimate !== null
+            ? t("estimate", {
+                estimate: price(meter.estimate.amount),
+                included: price(withVat(meter.estimate.amount)),
+                rate: displayVatRate,
+              })
+            : t("billedThere")}
+        </TableCell>
+        <TableCell variant="numeric">{resetsOn}</TableCell>
+      </TableRow>
+    );
+  }
 
   // A placeholder price is never shown as one.
   const priced = meter.priceConfirmed
@@ -171,6 +204,172 @@ const CeilingForm = ({
 };
 
 /**
+ * Who may turn the workspace's X reads on or off: a member who manages
+ * its billing, on this workspace (each reads its own channels).
+ */
+export interface XReadsControl {
+  readonly canSwitch: boolean;
+  readonly workspaceId: string;
+}
+
+// A thousandth of a dollar is a tenth of a cent.
+const centsOf = (thousandths: number) => thousandths / 10;
+
+// Nobody switches X's reads unless the screen says who may.
+const noXReads: XReadsControl = { canSwitch: false, workspaceId: "" };
+
+// X's rates, passed on with nothing added, in the rate card's
+// thousandths of a dollar: those a post and a read cost.
+const xItems = [
+  "postCreate",
+  "postCreateWithUrl",
+  "postRead",
+  "userRead",
+] as const;
+
+// The workspace's reading of its X channels, on or off, for those who
+// manage its billing.
+const XReadsSwitch = ({
+  reads,
+  workspaceId,
+}: {
+  readonly reads: boolean;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Billing.meters.xPassThrough");
+  const set = useAtomSet(setXReads, { mode: "promiseExit" });
+  const [failed, setFailed] = useState(false);
+  const [saving, startTransition] = useTransition();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={saving}
+          onClick={() => {
+            startTransition(async () => {
+              const exit = await set({
+                params: { workspaceId },
+                payload: { reads: !reads },
+                reactivityKeys: [`billing:${workspaceId}`],
+              });
+
+              setFailed(Exit.isFailure(exit));
+            });
+          }}
+        >
+          {reads ? t("turnOff") : t("turnOn")}
+        </Button>
+      </div>
+      {failed ? (
+        <p className="text-destructive text-sm" aria-live="assertive">
+          {t("failed")}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+/**
+ * X passed through at its rates: the rates, with the day they were read
+ * and France's VAT beside them, whether the workspace reads its X
+ * channels (its billing managers switch it), and, on the workspace that
+ * bills the account, the ceiling for X.
+ */
+const XPassThrough = ({
+  billing,
+  billsHere,
+  canManage,
+  meter,
+  xReads,
+}: {
+  readonly billing: Billing;
+  readonly billsHere: boolean;
+  readonly canManage: boolean;
+  readonly meter: BillingMeter;
+  readonly xReads: XReadsControl;
+}) => {
+  const t = useTranslations("Billing.meters.xPassThrough");
+  const price = usePrice();
+  const format = useFormatter();
+  const { rateCard, x } = billing;
+
+  // Set on the workspace that bills the account, with a payment method,
+  // by those who manage its billing.
+  const ceiling =
+    billsHere && canManage && billing.paymentMethod
+      ? (meter.ceiling?.amount ?? null)
+      : null;
+
+  if (rateCard === null) {
+    return null;
+  }
+
+  const day = format.dateTime(
+    DateTime.toDate(DateTime.makeUnsafe(`${rateCard.x.ratesReadOn}T00:00:00Z`)),
+    { dateStyle: "long", timeZone: "UTC" }
+  );
+
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="billing-x">
+      <div className="flex flex-col gap-1">
+        <h3 id="billing-x" className="text-base font-semibold">
+          {t("title")}
+        </h3>
+        <p className="text-muted-foreground text-sm">{t("description")}</p>
+      </div>
+      <div className="bg-card rounded-md border">
+        <Table>
+          <TableCaption>{t("caption")}</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t("item")}</TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("rate")}
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                {t("rateIncluded", { rate: displayVatRate })}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {xItems.map((item) => (
+              <TableRow key={item}>
+                <TableHead scope="row">{t(`names.${item}`)}</TableHead>
+                <TableCell variant="numeric">
+                  {price(centsOf(rateCard.x.rates[item]))}
+                </TableCell>
+                <TableCell variant="numeric">
+                  {price(withVat(centsOf(rateCard.x.rates[item])))}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <p className="text-muted-foreground text-sm">{t("readOn", { day })}</p>
+      {x === undefined || x === null ? null : (
+        <>
+          <p className="text-sm">{x.reads ? t("readsOn") : t("readsOff")}</p>
+          {xReads.canSwitch ? (
+            <XReadsSwitch reads={x.reads} workspaceId={xReads.workspaceId} />
+          ) : null}
+        </>
+      )}
+      {ceiling !== null && billing.account !== undefined ? (
+        <CeilingForm
+          ceiling={ceiling}
+          group="x"
+          workspaceId={billing.account.billingWorkspaceId}
+        />
+      ) : null}
+    </section>
+  );
+};
+
+/**
  * The billing account's meters this month: what each counted across its
  * workspaces and includes, its price past the allowance, excluding VAT
  * and with France's VAT, and, for the workspace that bills the account
@@ -181,9 +380,11 @@ const CeilingForm = ({
 export const MeterTable = ({
   billing,
   canManage,
+  xReads = noXReads,
 }: {
   readonly billing: Billing;
   readonly canManage: boolean;
+  readonly xReads?: XReadsControl;
 }) => {
   const t = useTranslations("Billing.meters");
   const { meters } = billing;
@@ -196,6 +397,7 @@ export const MeterTable = ({
   const billsHere = billing.accounts.accountDays !== null;
 
   const assistantMeters = meters.filter(({ group }) => group === "assistant");
+  const xMeter = meters.find(({ meter }) => meter === "xApi");
   const assistant = assistantMeters[0]?.ceiling;
 
   // A price not confirmed bills nothing past the allowance: no ceiling to
@@ -268,6 +470,15 @@ export const MeterTable = ({
           workspaceId={billing.account.billingWorkspaceId}
         />
       ) : null}
+      {xMeter === undefined ? null : (
+        <XPassThrough
+          billing={billing}
+          billsHere={billsHere}
+          canManage={canManage}
+          meter={xMeter}
+          xReads={xReads}
+        />
+      )}
     </section>
   );
 };

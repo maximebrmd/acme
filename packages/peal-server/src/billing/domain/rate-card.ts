@@ -96,7 +96,17 @@ export interface RateCard {
   readonly x: {
     /** What a billing account spends on X a month unless it changes it, in cents. */
     readonly defaultCeiling: number;
+    /**
+     * X's published pay-per-use rates, passed through with nothing added:
+     * the meter's unit is a thousandth of a dollar, so a rate is its units.
+     */
     readonly rates: XRates;
+    /**
+     * The UTC day the rates were read on X's developer pricing page
+     * (docs.x.com/x-api/getting-started/pricing), which carries no date of
+     * its own: read it again before each release that touches them.
+     */
+    readonly ratesReadOn: string;
   };
 }
 
@@ -209,6 +219,7 @@ export const rateCard: RateCard = {
       postRead: 5,
       userRead: 10,
     },
+    ratesReadOn: "2026-11-14",
   },
 };
 

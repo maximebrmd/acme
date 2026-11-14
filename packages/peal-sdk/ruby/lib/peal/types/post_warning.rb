@@ -12,6 +12,8 @@ module Peal
       member -> { Peal::Types::PostWarningChannelsDropped }, key: "CHANNELS_DROPPED"
 
       member -> { Peal::Types::PostWarningQueueChannelsDropped }, key: "QUEUE_CHANNELS_DROPPED"
+
+      member -> { Peal::Types::PostWarningXNotBilled }, key: "X_NOT_BILLED"
     end
   end
 end

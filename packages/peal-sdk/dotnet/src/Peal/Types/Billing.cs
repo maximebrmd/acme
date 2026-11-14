@@ -65,6 +65,9 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("withdrawableUntil")]
     public string? WithdrawableUntil { get; set; }
 
+    [JsonPropertyName("x")]
+    public XUsage? X { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

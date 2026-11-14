@@ -5,6 +5,7 @@ import type {
   LimitedCount as CountView,
   PlanShortfall,
   PostValidation,
+  PostWarning,
 } from "peal-contract";
 
 import { isSendable } from "#publishing/application/post-checks.ts";
@@ -99,9 +100,18 @@ const validationView = (
       }),
   });
 
-  return check.dropped.length === 0
-    ? placed
-    : { ...placed, warnings: droppedWarnings(check.dropped) };
+  const warnings: readonly PostWarning[] = [
+    ...droppedWarnings(check.dropped),
+    ...Option.toArray(check.unbilled).map(
+      ({ channelIds, reason }): PostWarning => ({
+        _tag: "xNotBilled",
+        channelIds: [...channelIds],
+        reason,
+      })
+    ),
+  ];
+
+  return warnings.length === 0 ? placed : { ...placed, warnings };
 };
 
 /**

@@ -27,10 +27,22 @@ export const pricedMeters: readonly Meter[] = [
 /**
  * The meters the page names without a figure, as the rate card marks
  * them (`unconfirmedMeters`): the writing assistant's allowance and prices
- * are placeholders until the owner sets them. X's API is not on the page
- * until its pass-through is billed.
+ * are placeholders until the owner sets them.
  */
 export const comingMeters: readonly Meter[] = unconfirmedMeters;
+
+/** X's API, passed on at X's rates: its own rows (`XRates`), no unit price. */
+export const passedThroughMeters: readonly Meter[] = ["xApi"];
+
+/** The X calls a scheduler makes, whose rates the page lists. */
+export const xItems = [
+  "postCreate",
+  "postCreateWithUrl",
+  "postRead",
+  "userRead",
+] as const;
+
+export type XItem = (typeof xItems)[number];
 
 type PricingMessages = Messages["pricing"];
 
@@ -222,6 +234,19 @@ const meterRow = (
   const note = t.meters.notes[meter];
   const { cents, per } = rateCard.prices.usd.meters[meter];
 
+  // At X's rates, listed apart: nothing included, no unit price.
+  if (passedThroughMeters.includes(meter)) {
+    return {
+      allowance: t.meters.xIncluded,
+      meter,
+      name,
+      note,
+      per,
+      price: null,
+      priceText: t.meters.prices[meter],
+    };
+  }
+
   if (comingMeters.includes(meter)) {
     return {
       allowance: t.coming,
@@ -258,6 +283,35 @@ const meterRow = (
   };
 };
 
+/** X's rates as the page lists them, and what bounds them. */
+export interface XRates {
+  readonly ceiling: string;
+  readonly rates: readonly {
+    readonly item: XItem;
+    readonly name: string;
+    readonly price: Amount;
+  }[];
+  readonly readOn: string;
+}
+
+const xRatesOf = (locale: Locale, t: PricingMessages): XRates => ({
+  ceiling: fill(t.meters.x.ceiling, {
+    ceiling: dollars(locale, rateCard.x.defaultCeiling),
+  }),
+  // A rate is in thousandths of a dollar: a tenth of a cent.
+  rates: xItems.map((item) => ({
+    item,
+    name: t.meters.x.names[item],
+    price: amountOf(locale, t, rateCard.x.rates[item] / 10),
+  })),
+  readOn: fill(t.meters.x.readOn, {
+    day: new Intl.DateTimeFormat(locale, {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(new Date(`${rateCard.x.ratesReadOn}T00:00:00Z`)),
+  }),
+});
+
 /** Everything the pricing page states, in the reader's language. */
 export interface PricingPage {
   readonly dayRule: string;
@@ -269,6 +323,7 @@ export interface PricingPage {
   readonly storage: string;
   /** How amounts show France's VAT. */
   readonly vat: string;
+  readonly x: XRates;
 }
 
 /** The pricing page's figures, from the rate card, in the reader's language. */
@@ -293,8 +348,8 @@ export const pricingPage = (
       ladderRow(locale, t, band, (bands[index - 1]?.upTo ?? 0) + 1)
     ),
     lead: fill(t.lead, { free: count(locale, freeAccountsOf(rateCard)) }),
-    meters: [...pricedMeters, ...comingMeters].map((meter) =>
-      meterRow(locale, t, meter)
+    meters: [...pricedMeters, ...comingMeters, ...passedThroughMeters].map(
+      (meter) => meterRow(locale, t, meter)
     ),
     partMonth: partMonthOf(locale, t),
     storage: fill(t.storage.body, {
@@ -303,5 +358,6 @@ export const pricingPage = (
       without: size(locale, storage.withoutPaymentMethod),
     }),
     vat: fill(t.taxes.shown, { rate: count(locale, rateCard.displayVatRate) }),
+    x: xRatesOf(locale, t),
   };
 };

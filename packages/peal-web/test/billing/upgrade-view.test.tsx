@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import { rateCard } from "peal-contract/rate-card";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -289,5 +290,34 @@ describe(UpgradeView, () => {
     expect(html).toContain(
       "Studio Nord is in its trial: ordering starts per-account pricing"
     );
+  });
+
+  it("asks for a payment method before an X account, at X's rates up to the ceiling, never a count of units", async () => {
+    const reason: UpgradeReason = {
+      allowed: 0,
+      kind: "meter",
+      meter: "xApi",
+      plan: "free",
+      planWithRoom: "payAsYouGo",
+      resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+      used: 0,
+    };
+
+    const english = await render("en", { reason });
+
+    expect(
+      missing(english, [
+        "X’s API is billed at X’s own rates",
+        "with nothing added",
+        "$25.00",
+      ])
+    ).toStrictEqual([]);
+    expect(english).not.toContain("units");
+
+    const french = await render("fr", { reason });
+
+    expect(
+      missing(french, ["aux tarifs de X", "sans rien ajouter"])
+    ).toStrictEqual([]);
   });
 });

@@ -520,3 +520,15 @@ export const spendCeilings = billing.table(
     check("spend_ceilings_cents", sql`${table.cents} >= 0`),
   ]
 );
+
+/**
+ * Whether a workspace reads its X channels' counts on a server that bills
+ * (X bills each read, passed through at its rates): off unless a member
+ * who manages its billing turned it on. The row names nobody; the
+ * activity log keeps who. No row is off.
+ */
+export const xUsageSettings = billing.table("x_usage_settings", {
+  reads: boolean("reads").notNull().default(false),
+  setAt: instant("set_at").notNull(),
+  workspaceId: uuid("workspace_id").primaryKey(),
+});

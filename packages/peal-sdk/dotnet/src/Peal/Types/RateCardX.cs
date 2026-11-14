@@ -17,6 +17,9 @@ public record RateCardX : IJsonOnDeserialized
     [JsonPropertyName("rates")]
     public required RateCardXRates Rates { get; set; }
 
+    [JsonPropertyName("ratesReadOn")]
+    public required string RatesReadOn { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

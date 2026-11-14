@@ -4,7 +4,8 @@ import * as Peal from "../index.js";
 
 export type PostWarning = 
     | Peal.PostWarning.ChannelsDropped
-    | Peal.PostWarning.QueueChannelsDropped;
+    | Peal.PostWarning.QueueChannelsDropped
+    | Peal.PostWarning.XNotBilled;
 
 export namespace PostWarning {
     export interface ChannelsDropped extends Peal.PostWarningChannelsDropped {
@@ -13,5 +14,9 @@ export namespace PostWarning {
 
     export interface QueueChannelsDropped extends Peal.PostWarningQueueChannelsDropped {
         _tag: "queueChannelsDropped";
+    }
+
+    export interface XNotBilled extends Peal.PostWarningXNotBilled {
+        _tag: "xNotBilled";
     }
 }

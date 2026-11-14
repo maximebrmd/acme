@@ -261,6 +261,20 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
+      XSpendCeiling: ({ ceiling, percent, resetsAt }) =>
+        billing(
+          t("event.XSpendCeiling", {
+            ceiling: money(ceiling, "usd"),
+            percent,
+            // The first of next month, in UTC.
+            resetsAt: DateTime.format(resetsAt, {
+              dateStyle: "long",
+              locale,
+              timeZone: "UTC",
+            }),
+            workspace,
+          })
+        ),
       TrialEnding: ({ endsAt, over, plan: name }) =>
         billing(
           over.length === 0

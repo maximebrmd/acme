@@ -1471,37 +1471,6 @@ func (a *AdsUnavailableEncoded) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type AllowanceReason string
-
-const (
-	AllowanceReasonPaymentMethodRequired AllowanceReason = "paymentMethodRequired"
-	AllowanceReasonCeilingReached        AllowanceReason = "ceilingReached"
-	AllowanceReasonNotEnabled            AllowanceReason = "notEnabled"
-	AllowanceReasonPlanAllowance         AllowanceReason = "planAllowance"
-	AllowanceReasonPaymentFailed         AllowanceReason = "paymentFailed"
-)
-
-func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
-	switch s {
-	case "paymentMethodRequired":
-		return AllowanceReasonPaymentMethodRequired, nil
-	case "ceilingReached":
-		return AllowanceReasonCeilingReached, nil
-	case "notEnabled":
-		return AllowanceReasonNotEnabled, nil
-	case "planAllowance":
-		return AllowanceReasonPlanAllowance, nil
-	case "paymentFailed":
-		return AllowanceReasonPaymentFailed, nil
-	}
-	var t AllowanceReason
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a AllowanceReason) Ptr() *AllowanceReason {
-	return &a
-}
-
 var (
 	alreadyMemberEncodedFieldCode      = big.NewInt(1 << 0)
 	alreadyMemberEncodedFieldMessage   = big.NewInt(1 << 1)
@@ -7350,22 +7319,27 @@ func (f *FacebookOptions) String() string {
 type FailureReason string
 
 const (
-	FailureReasonContentRejected     FailureReason = "contentRejected"
-	FailureReasonChannelDisconnected FailureReason = "channelDisconnected"
-	FailureReasonChannelDisabled     FailureReason = "channelDisabled"
-	FailureReasonMediaRemoved        FailureReason = "mediaRemoved"
-	FailureReasonMediaRejected       FailureReason = "mediaRejected"
-	FailureReasonMissed              FailureReason = "missed"
-	FailureReasonNotPublished        FailureReason = "notPublished"
-	FailureReasonRateLimited         FailureReason = "rateLimited"
-	FailureReasonTokenExpired        FailureReason = "tokenExpired"
-	FailureReasonUnavailable         FailureReason = "unavailable"
-	FailureReasonAppNotAudited       FailureReason = "appNotAudited"
-	FailureReasonQuotaExceeded       FailureReason = "quotaExceeded"
-	FailureReasonAppBillingLimit     FailureReason = "appBillingLimit"
-	FailureReasonPlanLimit           FailureReason = "planLimit"
-	FailureReasonPartsNotSent        FailureReason = "partsNotSent"
-	FailureReasonRepliesNotAllowed   FailureReason = "repliesNotAllowed"
+	FailureReasonContentRejected           FailureReason = "contentRejected"
+	FailureReasonChannelDisconnected       FailureReason = "channelDisconnected"
+	FailureReasonChannelDisabled           FailureReason = "channelDisabled"
+	FailureReasonMediaRemoved              FailureReason = "mediaRemoved"
+	FailureReasonMediaRejected             FailureReason = "mediaRejected"
+	FailureReasonMissed                    FailureReason = "missed"
+	FailureReasonNotPublished              FailureReason = "notPublished"
+	FailureReasonRateLimited               FailureReason = "rateLimited"
+	FailureReasonTokenExpired              FailureReason = "tokenExpired"
+	FailureReasonUnavailable               FailureReason = "unavailable"
+	FailureReasonAppNotAudited             FailureReason = "appNotAudited"
+	FailureReasonQuotaExceeded             FailureReason = "quotaExceeded"
+	FailureReasonAppBillingLimit           FailureReason = "appBillingLimit"
+	FailureReasonPlanLimit                 FailureReason = "planLimit"
+	FailureReasonPartsNotSent              FailureReason = "partsNotSent"
+	FailureReasonRepliesNotAllowed         FailureReason = "repliesNotAllowed"
+	FailureReasonPaymentMethodRequired     FailureReason = "paymentMethodRequired"
+	FailureReasonXCeilingReached           FailureReason = "xCeilingReached"
+	FailureReasonPaymentFailed             FailureReason = "paymentFailed"
+	FailureReasonPerAccountPricingRequired FailureReason = "perAccountPricingRequired"
+	FailureReasonXThreadCut                FailureReason = "xThreadCut"
 )
 
 func NewFailureReasonFromString(s string) (FailureReason, error) {
@@ -7402,6 +7376,16 @@ func NewFailureReasonFromString(s string) (FailureReason, error) {
 		return FailureReasonPartsNotSent, nil
 	case "repliesNotAllowed":
 		return FailureReasonRepliesNotAllowed, nil
+	case "paymentMethodRequired":
+		return FailureReasonPaymentMethodRequired, nil
+	case "xCeilingReached":
+		return FailureReasonXCeilingReached, nil
+	case "paymentFailed":
+		return FailureReasonPaymentFailed, nil
+	case "perAccountPricingRequired":
+		return FailureReasonPerAccountPricingRequired, nil
+	case "xThreadCut":
+		return FailureReasonXThreadCut, nil
 	}
 	var t FailureReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

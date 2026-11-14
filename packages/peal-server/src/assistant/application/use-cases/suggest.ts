@@ -22,6 +22,7 @@ import type { TextLimit } from "#assistant/domain/text-limit.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import { planFor } from "#assistant/domain/writing-prompt.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
+import type { MeterClaim } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
 
 /** What to do with which text, for whom. */
@@ -121,16 +122,7 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
   if (yield* allowance.metered(workspaceId)) {
     const meters = yield* MeteredUsage;
 
-    // A database failure is a defect here, as the day's count's are.
-    const claim = yield* meters
-      .claim(workspaceId, "assistantRequests", 1)
-      .pipe(Effect.catchTag("DatabaseError", Effect.die));
-
-    yield* usage
-      .claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1)
-      .pipe(Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie)));
-
-    const takenBack = (cause: Cause.Cause<unknown>) =>
+    const takenBack = (claim: MeterClaim, cause: Cause.Cause<unknown>) =>
       Option.exists(
         Cause.findErrorOption(cause),
         (failure) =>
@@ -139,15 +131,35 @@ export const suggest = Effect.fn("WritingAssistant.suggest")(function* suggest({
         ? meters.giveBack(claim)
         : meters.forgive(claim);
 
-    return yield* acceptedFrom(plan, draft, (answer) =>
-      model.write(plan.prompt, answer)
-    ).pipe(
-      Effect.onError((cause) =>
-        takenBack(cause).pipe(
-          Effect.andThen(usage.release(workspaceId, window.day, 1)),
-          Effect.orDie
-        )
-      )
+    // Uninterruptible until the model is asked, so an interruption never
+    // leaves the unit claimed: between the claim and the day's count, or
+    // the count and the finalizer that takes them back, nothing stops.
+    return yield* Effect.uninterruptibleMask((restore) =>
+      Effect.gen(function* metered() {
+        // A database failure is a defect here, as the day's count's are.
+        const claim = yield* meters
+          .claim(workspaceId, "assistantRequests", 1)
+          .pipe(Effect.catchTag("DatabaseError", Effect.die));
+
+        yield* usage
+          .claim(workspaceId, window.day, Number.MAX_SAFE_INTEGER, 1)
+          .pipe(
+            Effect.onError(() => meters.giveBack(claim).pipe(Effect.orDie))
+          );
+
+        return yield* restore(
+          acceptedFrom(plan, draft, (answer) =>
+            model.write(plan.prompt, answer)
+          )
+        ).pipe(
+          Effect.onError((cause) =>
+            takenBack(claim, cause).pipe(
+              Effect.andThen(usage.release(workspaceId, window.day, 1)),
+              Effect.orDie
+            )
+          )
+        );
+      })
     );
   }
 

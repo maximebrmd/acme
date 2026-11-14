@@ -561,6 +561,14 @@ export interface BillingRecord {
     readonly postsWithLinks: number;
   }[];
   readonly plan: string | null;
+  /**
+   * Whether it reads its X channels at X's rates, and when that last
+   * changed; null: never set.
+   */
+  readonly xReads: {
+    readonly reads: boolean;
+    readonly setAt: DateTime.Utc;
+  } | null;
   /** The monthly ceilings its billing account set, in US dollar cents. */
   readonly spendCeilings: readonly {
     readonly cents: number;
@@ -749,6 +757,12 @@ export type NoticeEventRecord =
       readonly _tag: "AllowanceReached";
       readonly allowed: number;
       readonly meter: string;
+      readonly resetsAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "XSpendCeiling";
+      readonly ceiling: number;
+      readonly percent: number;
       readonly resetsAt: DateTime.Utc;
     }
   | {

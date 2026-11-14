@@ -201,7 +201,16 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * credits are used up or its spending cap reached), which is not the
  * post's fault; or the workspace's plan had no room for it when it was due
  * (`planLimit`: more channels than the plan allows, or the month's posts
- * used up, as after a trial), and nothing was sent.
+ * used up, as after a trial), and nothing was sent; or, on a server that
+ * bills, X's posts, passed through to the billing account at X's rates,
+ * could not be billed, and nothing was sent: no payment method
+ * (`paymentMethodRequired`), its last payment failing (`paymentFailed`), a
+ * plan from before per-account pricing (`perAccountPricingRequired`), or
+ * the account's monthly ceiling for X reached (`xCeilingReached`); a
+ * thread's room for its parts still to go is checked before each part, so
+ * one refused at a later part (room taken by another claim of the account
+ * since, or the standing changed: the check holds nothing) was cut there,
+ * its first parts live (`xThreadCut`).
  */
 export const FailureReasonSchema = Schema.Literals([
   "contentRejected",
@@ -220,6 +229,11 @@ export const FailureReasonSchema = Schema.Literals([
   "planLimit",
   "partsNotSent",
   "repliesNotAllowed",
+  "paymentMethodRequired",
+  "xCeilingReached",
+  "paymentFailed",
+  "perAccountPricingRequired",
+  "xThreadCut",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -769,6 +783,11 @@ export const AttemptResultSchema = Schema.Literals([
   "planLimit",
   "partsNotSent",
   "repliesNotAllowed",
+  "paymentMethodRequired",
+  "xCeilingReached",
+  "paymentFailed",
+  "perAccountPricingRequired",
+  "xThreadCut",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;

@@ -44,6 +44,8 @@ pub struct Billing {
     #[serde(rename = "withdrawableUntil")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub withdrawable_until: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x: Option<XUsage>,
 }
 
 impl Billing {
@@ -73,6 +75,7 @@ pub struct BillingBuilder {
     usage: Option<Usage>,
     vat_rate: Option<i64>,
     withdrawable_until: Option<String>,
+    x: Option<XUsage>,
 }
 
 impl BillingBuilder {
@@ -166,6 +169,11 @@ impl BillingBuilder {
         self
     }
 
+    pub fn x(mut self, value: XUsage) -> Self {
+        self.x = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`Billing`].
     /// This method will fail if any of the following fields are not set:
     /// - [`accounts`](BillingBuilder::accounts)
@@ -212,6 +220,7 @@ impl BillingBuilder {
                 .vat_rate
                 .ok_or_else(|| BuildError::missing_field("vat_rate"))?,
             withdrawable_until: self.withdrawable_until,
+            x: self.x,
         })
     }
 }
