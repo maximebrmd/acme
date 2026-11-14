@@ -28,6 +28,8 @@ const refusals: Readonly<Record<FollowUpRefusal, string>> = {
   noAction: "The rule does nothing: give a comment, repost, or both.",
   noChannel:
     "The rule acts on no channel of the workspace: give a post of the workspace or one of its channels.",
+  alreadyFollowedUp:
+    "Another rule already follows the post up this way: stop it first.",
   postCancelled: "The post was cancelled: nothing of it can be followed up.",
 };
 

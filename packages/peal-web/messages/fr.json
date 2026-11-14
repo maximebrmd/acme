@@ -4439,7 +4439,7 @@
       "nothing": "Écrivez un commentaire, demandez un repartage, ou les deux."
     },
     "errors": {
-      "notPossible": "{reason, select, noAction {Écrivez un commentaire, demandez un repartage, ou les deux.} emptyComment {Le commentaire est vide.} postCancelled {La publication a été annulée.} noChannel {La règle n’agit sur aucun canal de l’espace de travail.} other {Aucun canal de la publication ne peut porter ceci, ou le commentaire est trop long pour l’un d’eux.}}",
+      "notPossible": "{reason, select, noAction {Écrivez un commentaire, demandez un repartage, ou les deux.} emptyComment {Le commentaire est vide.} postCancelled {La publication a été annulée.} noChannel {La règle n’agit sur aucun canal de l’espace de travail.} alreadyFollowedUp {Une autre règle donne déjà cette suite à la publication : arrêtez-la d’abord.} other {Aucun canal de la publication ne peut porter ceci, ou le commentaire est trop long pour l’un d’eux.}}",
       "tooMany": "L’espace de travail a {allowed} règles en cours, le maximum permis : arrêtez-en une d’abord.",
       "ended": "La règle a pris fin et ne change plus.",
       "forbidden": "Votre rôle ne permet pas cela.",

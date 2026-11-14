@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
@@ -9,6 +9,7 @@ import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-boun
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type {
+  CommentRuleRecord,
   SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
@@ -19,6 +20,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
 import {
+  commentRuleMatches,
   commentRules,
   conversations,
   erasedWorkspaces,
@@ -88,6 +90,63 @@ export const DrizzleEngagementRecords = Layer.effect(
           }),
         { discard: true }
       );
+
+    const exportCommentRules = Effect.fn("EngagementRecords.exportCommentRules")(
+      function* exportCommentRules(workspaceId: string) {
+        const rules = yield* db
+          .select()
+          .from(commentRules)
+          .where(eq(commentRules.workspaceId, workspaceId))
+          .orderBy(asc(commentRules.id))
+          .pipe(Effect.mapError(failed));
+
+        const matches =
+          rules.length === 0
+            ? []
+            : yield* db
+                .select()
+                .from(commentRuleMatches)
+                .where(
+                  inArray(
+                    commentRuleMatches.ruleId,
+                    rules.map(({ id }) => id)
+                  )
+                )
+                .orderBy(
+                  asc(commentRuleMatches.lookedAt),
+                  asc(commentRuleMatches.commentId)
+                )
+                .pipe(Effect.mapError(failed));
+
+        return rules.map(
+          (rule): CommentRuleRecord => ({
+            answersFrom: DateTime.fromDateUnsafe(rule.answersFrom),
+            channelId: rule.channelId,
+            createdAt: DateTime.fromDateUnsafe(rule.createdAt),
+            endedReason: rule.endedReason,
+            id: rule.id,
+            keywords: rule.keywords,
+            matches: matches
+              .filter(({ ruleId }) => ruleId === rule.id)
+              .map((match) => ({
+                code: match.code,
+                commentId: match.commentId,
+                lookedAt: DateTime.fromDateUnsafe(match.lookedAt),
+                outcome: match.outcome,
+                replyId: match.replyId,
+              })),
+            postId: rule.postId,
+            reply: rule.reply,
+            scope: rule.scope,
+            status: rule.status,
+            statusAt:
+              rule.statusAt === null
+                ? null
+                : DateTime.fromDateUnsafe(rule.statusAt),
+          })
+        );
+      }
+    );
 
     const exportUser = Effect.fn("EngagementRecords.exportUser")(
       function* exportUser(userId: string) {
@@ -388,6 +447,7 @@ export const DrizzleEngagementRecords = Layer.effect(
     return EngagementRecords.of({
       channelGone,
       eraseWorkspace,
+      exportCommentRules,
       exportUser,
       exportUserMessages,
       exportUserReviewReplies,

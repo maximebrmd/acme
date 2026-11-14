@@ -4439,7 +4439,7 @@
       "nothing": "Write a comment, ask for a repost, or both."
     },
     "errors": {
-      "notPossible": "{reason, select, noAction {Write a comment, ask for a repost, or both.} emptyComment {The comment is empty.} postCancelled {The post was cancelled.} noChannel {The rule acts on no channel of the workspace.} other {None of the post’s channels can carry this, or the comment is too long for one of them.}}",
+      "notPossible": "{reason, select, noAction {Write a comment, ask for a repost, or both.} emptyComment {The comment is empty.} postCancelled {The post was cancelled.} noChannel {The rule acts on no channel of the workspace.} alreadyFollowedUp {Another rule already follows this post up this way: stop it first.} other {None of the post’s channels can carry this, or the comment is too long for one of them.}}",
       "tooMany": "The workspace has {allowed} rules going, the most it may: stop one first.",
       "ended": "The rule ended and changes no more.",
       "forbidden": "Your role cannot do that.",

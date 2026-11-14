@@ -58,8 +58,7 @@ CREATE TABLE "publishing"."follow_ups" (
 	"target_id" uuid NOT NULL,
 	"triggered_at" timestamp with time zone,
 	"until" timestamp with time zone,
-	"workspace_id" uuid NOT NULL,
-	CONSTRAINT "follow_ups_target_kind" UNIQUE("target_id","kind")
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX "comment_rule_matches_rule_comment" ON "engagement"."comment_rule_matches" ("rule_id","comment_id");--> statement-breakpoint
@@ -70,6 +69,7 @@ CREATE INDEX "comment_rules_active" ON "engagement"."comment_rules" ("id") WHERE
 CREATE UNIQUE INDEX "follow_up_rules_post" ON "publishing"."follow_up_rules" ("post_id") WHERE "status" <> 'ended' AND "scope" = 'post';--> statement-breakpoint
 CREATE UNIQUE INDEX "follow_up_rules_channel" ON "publishing"."follow_up_rules" ("channel_id") WHERE "status" <> 'ended' AND "scope" = 'channel';--> statement-breakpoint
 CREATE INDEX "follow_up_rules_workspace_id" ON "publishing"."follow_up_rules" ("workspace_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "follow_ups_target_kind" ON "publishing"."follow_ups" ("target_id","kind") WHERE "status" <> 'cancelled';--> statement-breakpoint
 CREATE INDEX "follow_ups_armed" ON "publishing"."follow_ups" ("id") WHERE "status" = 'armed';--> statement-breakpoint
 CREATE INDEX "follow_ups_channel_triggered" ON "publishing"."follow_ups" ("channel_id","triggered_at") WHERE "triggered_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "follow_ups_sending" ON "publishing"."follow_ups" ("triggered_at") WHERE "status" = 'sending';--> statement-breakpoint

@@ -749,6 +749,46 @@ const ExportedSavedItemsSchema = Schema.Struct({
       variants: Schema.Unknown,
     })
   ),
+  // The rules that comment under or repost the workspace's own posts once
+  // they have enough likes, with each follow-up they armed. Who started
+  // or approved one is not said. Absent from exports made before them.
+  followUpRules: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        // `notNeeded`, `pending` or `approved`.
+        approval: Schema.String,
+        approvedAt: nullable(instant),
+        channelId: nullable(Schema.String),
+        comment: nullable(Schema.String),
+        createdAt: instant,
+        endedReason: nullable(Schema.String),
+        followUps: Schema.Array(
+          Schema.Struct({
+            armedAt: instant,
+            channelId: Schema.String,
+            id: Schema.String,
+            // `comment` or `repost`.
+            kind: Schema.String,
+            postId: Schema.String,
+            // As stored: its status, with ids, counts, instants and a
+            // platform's code, never text.
+            state: Schema.Unknown,
+            status: Schema.String,
+            targetId: Schema.String,
+          })
+        ),
+        id: Schema.String,
+        likes: Schema.Int,
+        postId: nullable(Schema.String),
+        repost: Schema.Boolean,
+        // `post` or `channel`.
+        scope: Schema.String,
+        // `active`, `paused` or `ended`.
+        status: Schema.String,
+        statusAt: nullable(instant),
+      })
+    )
+  ),
   signatures: Schema.Array(
     Schema.Struct({
       createdAt: instant,
@@ -834,6 +874,38 @@ const ExportedWorkspaceSchema = Schema.Struct({
   ads: ExportedAdsSchema,
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
+  // The rules that answer comments by keyword, with the comments each
+  // looked at, by id: what came of each, never what it says. Who started
+  // one is not said. Absent from exports made before them.
+  commentRules: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        answersFrom: instant,
+        channelId: nullable(Schema.String),
+        createdAt: instant,
+        endedReason: nullable(Schema.String),
+        id: Schema.String,
+        keywords: Schema.Array(Schema.String),
+        matches: Schema.Array(
+          Schema.Struct({
+            code: nullable(Schema.String),
+            commentId: Schema.String,
+            lookedAt: instant,
+            // `claimed`, `replied`, `noMatch`, `samePerson` or `refused`.
+            outcome: Schema.String,
+            replyId: nullable(Schema.String),
+          })
+        ),
+        postId: nullable(Schema.String),
+        reply: Schema.String,
+        // `post` or `channel`.
+        scope: Schema.String,
+        // `active`, `paused` or `ended`.
+        status: Schema.String,
+        statusAt: nullable(instant),
+      })
+    )
+  ),
   // The image provider the workspace brought, or null; absent from exports
   // made before workspaces could bring one.
   assistantImageProvider: Schema.optionalKey(
@@ -875,8 +947,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
-  // Its tags, signatures, channel sets, queues, recycling rules and
-  // channels' default options.
+  // Its tags, signatures, channel sets, queues, recycling and follow-up
+  // rules and channels' default options.
   saved: ExportedSavedItemsSchema,
   // The short links its published posts went out with.
   shortLinks: Schema.Array(ExportedShortLinkSchema),

@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "f00819ac-4f22-4821-890c-d6150cc50771",
+  "id": "a4c0bb4f-1b2d-4c99-83ef-7f192b6b48c3",
   "prevIds": [
     "0f406c84-447d-45d0-ac3f-0a9933564aba"
   ],
@@ -76,8 +76,7 @@
         "e|tbl|publishing.follow_ups",
         "n|rel|publishing.follow_ups",
         "n|type|publishing.follow_ups",
-        "n|rel|publishing.follow_ups_pkey",
-        "n|rel|publishing.follow_ups_target_kind"
+        "n|rel|publishing.follow_ups_pkey"
       ],
       "reads": [
         "n|sch|publishing"
@@ -245,6 +244,27 @@
         "n|sch|publishing",
         "n|col|publishing.follow_up_rules.workspace_id",
         "n|col|publishing.follow_up_rules.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "follow_ups",
+        "follow_ups_target_kind"
+      ],
+      "writes": [
+        "s|idx|publishing.follow_ups_target_kind",
+        "n|idx|publishing.follow_ups_target_kind",
+        "e|idx|publishing.follow_ups_target_kind",
+        "n|rel|publishing.follow_ups_target_kind"
+      ],
+      "reads": [
+        "n|tbl|publishing.follow_ups",
+        "n|sch|publishing",
+        "n|col|publishing.follow_ups.target_id",
+        "n|col|publishing.follow_ups.kind"
       ]
     },
     {
@@ -1491,6 +1511,37 @@
       "row": {
         "schema": "publishing",
         "table": "follow_ups",
+        "name": "follow_ups_target_kind",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "target_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"status\" <> 'cancelled'",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "follow_ups",
         "name": "follow_ups_armed",
         "nameExplicit": true,
         "columns": [
@@ -1733,21 +1784,6 @@
         ],
         "nameExplicit": false,
         "entityType": "pks"
-      }
-    },
-    {
-      "op": "create",
-      "row": {
-        "schema": "publishing",
-        "table": "follow_ups",
-        "name": "follow_ups_target_kind",
-        "nameExplicit": true,
-        "columns": [
-          "target_id",
-          "kind"
-        ],
-        "nullsNotDistinct": false,
-        "entityType": "uniques"
       }
     },
     {

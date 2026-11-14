@@ -118,6 +118,7 @@ export const FollowUpRefusalSchema = Schema.Literals([
   "emptyComment",
   "postCancelled",
   "noChannel",
+  "alreadyFollowedUp",
   "channels",
 ]).annotate({ identifier: "FollowUpRefusal" });
 
@@ -174,7 +175,8 @@ export type FollowUp = typeof FollowUpSchema.Type;
 /** A rule that follows posts up once they have enough likes. */
 export const FollowUpRuleSchema = Schema.Struct({
   approval: FollowUpApprovalStateSchema,
-  // When and by whom it was approved; null unless approved.
+  // When and by whom it was approved; null unless approved, and who once
+  // their account closed.
   approvedAt: Schema.NullOr(Schema.DateTimeUtc),
   approvedBy: Schema.NullOr(Schema.String),
   // What each channel it acts on can carry, kind by kind: those of its

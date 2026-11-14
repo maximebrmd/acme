@@ -194,6 +194,8 @@ export interface SavedItemsRecord {
     /** As stored: plain JSON, each variant's text and texts by channel. */
     readonly variants: unknown;
   }[];
+  /** The rules that follow its posts up, with what each armed. */
+  readonly followUpRules: readonly FollowUpRuleRecord[];
   readonly signatures: readonly {
     readonly createdAt: DateTime.Utc;
     readonly id: string;
@@ -211,6 +213,60 @@ export interface SavedItemsRecord {
     readonly id: string;
     readonly name: string;
   }[];
+}
+
+/** A rule that follows a workspace's posts up, without who started it. */
+export interface FollowUpRuleRecord {
+  /** `notNeeded`, `pending` or `approved`. */
+  readonly approval: string;
+  readonly approvedAt: DateTime.Utc | null;
+  readonly channelId: string | null;
+  readonly comment: string | null;
+  readonly createdAt: DateTime.Utc;
+  readonly endedReason: string | null;
+  readonly followUps: readonly {
+    readonly armedAt: DateTime.Utc;
+    readonly channelId: string;
+    readonly id: string;
+    readonly kind: string;
+    readonly postId: string;
+    /** As stored: plain JSON, ids, counts, instants and codes. */
+    readonly state: unknown;
+    readonly status: string;
+    readonly targetId: string;
+  }[];
+  readonly id: string;
+  readonly likes: number;
+  readonly postId: string | null;
+  readonly repost: boolean;
+  readonly scope: string;
+  readonly status: string;
+  readonly statusAt: DateTime.Utc | null;
+}
+
+/**
+ * A rule that answers a workspace's comments by keyword, without who
+ * started it, with the comments it looked at by id.
+ */
+export interface CommentRuleRecord {
+  readonly answersFrom: DateTime.Utc;
+  readonly channelId: string | null;
+  readonly createdAt: DateTime.Utc;
+  readonly endedReason: string | null;
+  readonly id: string;
+  readonly keywords: readonly string[];
+  readonly matches: readonly {
+    readonly code: string | null;
+    readonly commentId: string;
+    readonly lookedAt: DateTime.Utc;
+    readonly outcome: string;
+    readonly replyId: string | null;
+  }[];
+  readonly postId: string | null;
+  readonly reply: string;
+  readonly scope: string;
+  readonly status: string;
+  readonly statusAt: DateTime.Utc | null;
 }
 
 /** A media asset of a workspace: what is known of the file, not the file. */

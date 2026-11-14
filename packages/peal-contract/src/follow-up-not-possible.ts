@@ -16,7 +16,7 @@ export class FollowUpNotPossible extends Schema.TaggedError<FollowUpNotPossible>
   },
   {
     description:
-      "The rule cannot act, for `reason`: it asks for neither a comment nor a repost (`noAction`), its comment is empty (`emptyComment`), its post was cancelled (`postCancelled`) or goes to no channel (`noChannel`), or (`channels`) no channel can carry what it asks, or its comment is longer than a channel that could carry it takes: `channels` says, for each channel and kind, why not. Nothing was started or changed.",
+      "The rule cannot act, for `reason`: it asks for neither a comment nor a repost (`noAction`), its comment is empty (`emptyComment`), its post was cancelled (`postCancelled`) or goes to no channel (`noChannel`), another rule already follows up all it asks on the post (`alreadyFollowedUp`: stop that one first), or (`channels`) no channel can carry what it asks, or its comment is longer than a channel that could carry it takes: `channels` says, for each channel and kind, why not. Nothing was started or changed.",
     httpApiStatus: 422,
   }
 ) {}

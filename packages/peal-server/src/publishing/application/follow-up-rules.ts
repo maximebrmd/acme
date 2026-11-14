@@ -430,7 +430,16 @@ export class FollowUpRules extends Context.Service<
 
             yield* store.insertRule(rule);
 
-            return yield* followUps.armPublished(rule);
+            const arming = yield* followUps.armPublished(rule);
+
+            // Another rule already follows up all the post asks: this one
+            // would do nothing, and hold the post.
+            if (arming.armed.length === 0 && arming.taken > 0) {
+              return yield* new FollowUpNotPossible({
+                channels: [],
+                reason: "alreadyFollowedUp",
+              });
+            }
           })
         );
 
@@ -484,6 +493,8 @@ export class FollowUpRules extends Context.Service<
             }
 
             yield* store.updateRule(next);
+            // A kind it now asks goes on what of its post is already out.
+            yield* followUps.armPublished(next);
 
             return next;
           })
@@ -516,6 +527,8 @@ export class FollowUpRules extends Context.Service<
             );
 
             yield* store.updateRule(next);
+            // A kind it now asks goes on what of its post is already out.
+            yield* followUps.armPublished(next);
 
             return next;
           })

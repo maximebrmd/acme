@@ -42,6 +42,7 @@ describe("a channel gone, as engagement hears it", () => {
               `gone:${channelId}:${platform}:${DateTime.formatIso(at)}`,
             ]),
           eraseWorkspace: () => Effect.void,
+          exportCommentRules: () => Effect.succeed([]),
           exportUser: () => Effect.succeed([]),
           exportUserMessages: () => Effect.succeed([]),
           exportUserReviewReplies: () => Effect.succeed([]),

@@ -70,7 +70,8 @@ export const FollowUpApprovalSchema = Schema.Union([
   Schema.TaggedStruct("pending", {}),
   Schema.TaggedStruct("approved", {
     approvedAt: Schema.DateTimeUtc,
-    approvedBy: UserIdSchema,
+    // None once the member who approved it is forgotten (account closed).
+    approvedBy: Schema.optionalKey(UserIdSchema),
   }),
 ]);
 

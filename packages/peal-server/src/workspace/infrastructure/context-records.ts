@@ -158,6 +158,7 @@ export const ContextRecordsLive = Layer.effect(
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),
           channels: channels.exportWorkspace(workspaceId),
+          commentRules: engagement.exportCommentRules(workspaceId),
           media: media.exportWorkspace(workspaceId),
           posts: posts.exportWorkspace(workspaceId),
           review: reviews.exportWorkspace(workspaceId),

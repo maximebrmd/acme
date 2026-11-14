@@ -652,6 +652,88 @@ describe("follow-up rules", () => {
   );
 
   it.effect(
+    "arm a post again for a rule started after one stopped, and refuse one with nothing left to arm",
+    () =>
+      onServer(
+        Effect.gen(function* startedAgain() {
+          const workspaceId = yield* freshWorkspace;
+          const editor = actorIn(workspaceId);
+          const mastodon = yield* connected(workspaceId, "mastodon");
+
+          const channelRule = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, {
+              comment: Option.some("Thank you all for reading!"),
+              likes: 10,
+              repost: true,
+              scope: { _tag: "channel", channelId: mastodon },
+            })
+          );
+
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          // As the settlement does on the server: the channel's rule arms
+          // both kinds on the post, so a rule of the post's own would arm
+          // nothing.
+          yield* FollowUps.use((followUps) => followUps.arm(target));
+
+          const refused = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, onPost(postId))
+          ).pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            refused._tag === "FollowUpNotPossible" ? refused.reason : refused,
+            "alreadyFollowedUp"
+          );
+
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(editor, channelRule.rule.id)
+          );
+
+          const first = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, onPost(postId))
+          );
+
+          assert.strictEqual(first.followUps.length, 2);
+
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(editor, first.rule.id)
+          );
+
+          const second = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, onPost(postId, { repost: false }))
+          );
+
+          assert.deepStrictEqual(
+            second.followUps.map(({ kind, status }) => [kind, status._tag]),
+            [["comment", "armed"]]
+          );
+
+          // The stopped rule keeps what it gave up.
+          const stopped = yield* ruleNow(workspaceId, first.rule.id);
+
+          assert.isTrue(
+            stopped.followUps.every(({ status }) => status._tag === "cancelled")
+          );
+          assert.strictEqual(stopped.followUps.length, 2);
+
+          // Adding a kind arms it on what is already out.
+          const changed = yield* FollowUpRules.use((rules) =>
+            rules.change(editor, second.rule.id, { repost: true })
+          );
+
+          assert.sameMembers(
+            changed.followUps.map(({ kind }) => kind),
+            ["comment", "repost"]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "give up what a stopped rule armed, and fail a follow-up the platform refuses",
     () =>
       onServer(

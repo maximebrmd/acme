@@ -10,6 +10,7 @@ import type {
   AuthoredPostRecord,
   BillingRecord,
   ChannelRecord,
+  CommentRuleRecord,
   ContractsRecord,
   IdentificationRecord,
   ImageProviderRecord,
@@ -73,11 +74,16 @@ export interface WorkspaceContent {
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];
+  /** Its rules that answer comments by keyword, with what each did. */
+  readonly commentRules: readonly CommentRuleRecord[];
   readonly media: readonly MediaRecord[];
   readonly posts: readonly PostRecord[];
   /** Its approval policy, review links, comments and approvals. */
   readonly review: ReviewRecord;
-  /** Its tags, signatures, channel sets and channels' default options. */
+  /**
+   * Its tags, signatures, channel sets, queues, recycling and follow-up
+   * rules and channels' default options.
+   */
   readonly saved: SavedItemsRecord;
   /** The short links its published posts went out with, without counts. */
   readonly shortLinks: readonly ShortLinkRecord[];

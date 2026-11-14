@@ -775,8 +775,9 @@ export const followUpRules = publishing.table(
 
 /**
  * What a rule armed on one published target (the domain's `FollowUp`): a
- * `comment` or a `repost`, one of each kind a target whatever the rules,
- * so a post is never followed up twice the same way. `status` is the
+ * `comment` or a `repost`, one of each kind a target whatever the rules
+ * but for those given up (`cancelled`), so a post is never followed up
+ * twice the same way. `status` is the
  * state's tag, `state` the domain's JSON of it (ids, counts, instants and
  * a platform's code, never text); `until` is an armed one's window,
  * `triggered_at` when its threshold was reached, for the channel's day,
@@ -806,7 +807,11 @@ export const followUps = publishing.table(
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
-    unique("follow_ups_target_kind").on(table.targetId, table.kind),
+    // One live follow-up of each kind a target: one given up stays in its
+    // rule's history and leaves the kind to a later rule.
+    uniqueIndex("follow_ups_target_kind")
+      .on(table.targetId, table.kind)
+      .where(sql`${table.status} <> 'cancelled'`),
     // The run's read: armed ones, by id.
     index("follow_ups_armed")
       .on(table.id)

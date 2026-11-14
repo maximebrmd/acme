@@ -127,6 +127,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       assistantUsage: workspace.assistantUsage,
       billing: workspace.billing,
       channels: workspace.channels,
+      commentRules: workspace.commentRules,
       createdAt: workspace.createdAt,
       id: workspace.id,
       media: workspace.media,

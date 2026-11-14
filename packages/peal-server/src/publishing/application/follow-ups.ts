@@ -80,6 +80,13 @@ export const armedPageSize = 200;
 const completedPerRun = 100;
 
 /** What a run of the follow-ups did. */
+/** What arming a rule on its published post did. */
+export interface ArmedPublished {
+  readonly armed: readonly FollowUp[];
+  /** The kinds it asks that other follow-ups already hold there. */
+  readonly taken: number;
+}
+
 export interface FollowUpRun {
   /** Set out to be sent: their job started. */
   readonly triggered: number;
@@ -166,12 +173,14 @@ export class FollowUps extends Context.Service<
       target: PostTarget
     ) => Effect.Effect<readonly FollowUp[], DatabaseError>;
     /**
-     * Arms what a rule just started acts on that is already published:
-     * the targets of its post, while their windows last.
+     * Arms what a rule just started, or given a kind, acts on that is
+     * already published: the targets of its post, while their windows
+     * last. A kind another rule's follow-up already holds on a target is
+     * left to it, and counted in `taken`.
      */
     readonly armPublished: (
       rule: FollowUpRule
-    ) => Effect.Effect<readonly FollowUp[], DatabaseError>;
+    ) => Effect.Effect<ArmedPublished, DatabaseError>;
     /** The cron's run. */
     readonly runDue: Effect.Effect<FollowUpRun, DatabaseError>;
     /**
@@ -254,7 +263,9 @@ export class FollowUps extends Context.Service<
         )(kinds);
       });
 
-      const armWith = Effect.fn("FollowUps.armWith")(function* armWith(
+      // What the rules would arm on the target: each kind they ask, while
+      // its window lasts.
+      const armingsFor = Effect.fn("FollowUps.armingsFor")(function* armingsFor(
         rules: readonly FollowUpRule[],
         target: PostTarget
       ) {
@@ -283,7 +294,14 @@ export class FollowUps extends Context.Service<
           armingsOf(rule, target, until, now)
         )(acting);
 
-        return yield* store.arm(armings.flat());
+        return armings.flat();
+      });
+
+      const armWith = Effect.fn("FollowUps.armWith")(function* armWith(
+        rules: readonly FollowUpRule[],
+        target: PostTarget
+      ) {
+        return yield* store.arm(yield* armingsFor(rules, target));
       });
 
       const arm = Effect.fn("FollowUps.arm")(function* arm(target: PostTarget) {
@@ -315,16 +333,22 @@ export class FollowUps extends Context.Service<
       const armPublished = Effect.fn("FollowUps.armPublished")(
         function* armPublished(rule: FollowUpRule) {
           if (rule.scope._tag !== "post") {
-            return [];
+            return { armed: [], taken: 0 } satisfies ArmedPublished;
           }
 
           const targets = yield* posts.targets(rule.scope.postId);
 
-          const armed = yield* Effect.forEach((target: PostTarget) =>
-            armWith([rule], target)
+          const armings = yield* Effect.forEach((target: PostTarget) =>
+            armingsFor([rule], target)
           )(targets);
 
-          return armed.flat();
+          const wanted = armings.flat();
+          const armed = yield* store.arm(wanted);
+
+          return {
+            armed,
+            taken: wanted.length - armed.length,
+          } satisfies ArmedPublished;
         }
       );
 

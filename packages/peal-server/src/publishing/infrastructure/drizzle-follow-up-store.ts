@@ -230,6 +230,7 @@ export const DrizzleFollowUpStore = Layer.effect(
               )
               .onConflictDoNothing({
                 target: [followUps.targetId, followUps.kind],
+                where: sql`${followUps.status} <> 'cancelled'`,
               })
               .returning()
               .pipe(Effect.mapError(failed), Effect.flatMap(followUpsOf)),

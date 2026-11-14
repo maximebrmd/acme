@@ -414,10 +414,10 @@ const userRows = {
   // run stops each, its starter gone.
   "publishing.feeds": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.feeds WHERE started_by = ${id}`,
-  // The follow-up rules they started stay, without them: the next run
-  // ends each, its starter gone.
+  // The follow-up rules they started or approved stay, without them: the
+  // next run ends each they started, its starter gone.
   "publishing.follow_up_rules": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.follow_up_rules WHERE started_by = ${id}`,
+    sql`SELECT count(*)::int AS count FROM publishing.follow_up_rules WHERE started_by = ${id} OR approval->>'approvedBy' = ${id}`,
   // The changes they asked of live posts stay, without them.
   "publishing.live_post_changes": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
@@ -638,12 +638,18 @@ const fill = Effect.fn("fill")(function* fill(
 
   const targetId = target?.id ?? "";
 
-  // A rule that follows the post up, started by the person, and what it
-  // armed on the target.
+  // A rule that follows the post up, started and approved by the person,
+  // and what it armed on the target.
   const followUpRuleId = uuid7();
 
+  const approval = JSON.stringify({
+    _tag: "approved",
+    approvedAt: "2026-07-06T07:00:00.000Z",
+    approvedBy: person.id,
+  });
+
   yield* sql`INSERT INTO publishing.follow_up_rules (id, workspace_id, scope, post_id, likes, comment, repost, approval, status, started_by, started_via, created_at)
-    VALUES (${followUpRuleId}, ${workspaceId}, 'post', ${postId}, 50, 'A synthetic follow-up', false, '{"_tag":"notNeeded"}'::jsonb, 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
+    VALUES (${followUpRuleId}, ${workspaceId}, 'post', ${postId}, 50, 'A synthetic follow-up', false, ${approval}::jsonb, 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
 
   yield* sql`INSERT INTO publishing.follow_ups (id, rule_id, workspace_id, post_id, target_id, channel_id, kind, status, state, armed_at, until)
     VALUES (${uuid7()}, ${followUpRuleId}, ${workspaceId}, ${postId}, ${targetId}, ${uuid7()}, 'comment', 'armed', '{"_tag":"armed","until":"2030-01-01T00:00:00.000Z"}'::jsonb, now(), now() + interval '7 days')`;
@@ -1303,6 +1309,63 @@ layer(RetainingLive, {
         for (const { secret } of secrets) {
           assert.notInclude(text, secret);
         }
+
+        // The rules that act by themselves in Lee's own workspace, with
+        // what they did.
+        const exported = yield* Schema.decodeUnknownEffect(
+          Schema.Struct({
+            workspaces: Schema.Array(
+              Schema.Struct({
+                commentRules: Schema.Array(
+                  Schema.Struct({
+                    keywords: Schema.Array(Schema.String),
+                    matches: Schema.Array(
+                      Schema.Struct({ outcome: Schema.String })
+                    ),
+                    reply: Schema.String,
+                  })
+                ),
+                name: Schema.String,
+                saved: Schema.Struct({
+                  followUpRules: Schema.Array(
+                    Schema.Struct({
+                      comment: Schema.NullOr(Schema.String),
+                      followUps: Schema.Array(
+                        Schema.Struct({ kind: Schema.String })
+                      ),
+                    })
+                  ),
+                }),
+              })
+            ),
+          })
+        )(reply.body).pipe(Effect.orDie);
+
+        assert.deepStrictEqual(
+          exported.workspaces.map(({ commentRules, name, saved }) => ({
+            commentRules,
+            followUpRules: saved.followUpRules,
+            name,
+          })),
+          [
+            {
+              commentRules: [
+                {
+                  keywords: ["price"],
+                  matches: [{ outcome: "noMatch" }],
+                  reply: "A synthetic reply",
+                },
+              ],
+              followUpRules: [
+                {
+                  comment: "A synthetic follow-up",
+                  followUps: [{ kind: "comment" }],
+                },
+              ],
+              name: "Studio",
+            },
+          ]
+        );
 
         // Kim's address and notices are Kim's, though Lee works with Kim.
         assert.notInclude(text, kim.email);

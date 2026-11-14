@@ -99,7 +99,9 @@ export const followUpRuleView = ({
   approvedAt:
     rule.approval._tag === "approved" ? rule.approval.approvedAt : null,
   approvedBy:
-    rule.approval._tag === "approved" ? rule.approval.approvedBy : null,
+    rule.approval._tag === "approved"
+      ? (rule.approval.approvedBy ?? null)
+      : null,
   channelId: rule.scope._tag === "channel" ? rule.scope.channelId : null,
   channels: channels.map(({ channelId, comment, platform, repost }) => ({
     channelId,
