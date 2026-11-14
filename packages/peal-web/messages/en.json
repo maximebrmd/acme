@@ -1774,7 +1774,11 @@
       "conflict": "The post changed meanwhile: reload it to see where it is."
     },
     "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio.",
-    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image."
+    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image.",
+    "partsLeftOut": "Published without what did not go out after its first part: a member left it out.",
+    "leaveOutComment": "Publish without the first comment",
+    "leaveOutRest": "Publish without the rest",
+    "leftOut": "Published on {channel} without what did not go out."
   },
   "Media": {
     "page": {

@@ -51,6 +51,9 @@ const dueAt = (post: Post) =>
     ? Option.some(post.status.schedule.at)
     : Option.none();
 
+// A first comment on a platform this server sends none to now.
+const firstCommentsOff = "firstCommentsOff";
+
 // The platform's own word for a poll it takes none of.
 const pollNotSupported = "pollNotSupported";
 
@@ -236,6 +239,39 @@ export const RoutedPlatformPublisher = Layer.effect(
         return yield* new BadRequest({
           code: ownRefusalCodes.partsNotSupported,
         });
+      }
+
+      // A post with a first comment where this server no longer sends
+      // comments (its operator took the platform out of
+      // PEAL_INBOX_PLATFORMS since it was scheduled) is refused before
+      // anything goes out: never a post whose comment then cannot follow.
+      if (
+        part.index === 0 &&
+        post.content.followUps.length > 0 &&
+        followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        )?.kind === "comment" &&
+        !threaded.takesParts(account.platform)
+      ) {
+        return yield* new BadRequest({ code: firstCommentsOff });
+      }
+
+      // A first comment goes under a post that is live: the target is
+      // marked so before the comment is sent, so its post counts as live
+      // whatever becomes of the comment.
+      if (
+        part.index > 0 &&
+        followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        )?.kind === "comment"
+      ) {
+        yield* posts
+          .markFirstComment(request.targetId)
+          .pipe(Effect.catchTag("DatabaseError", databaseDown));
       }
 
       // Scheduling refuses a poll where Peal sends none; one that came

@@ -647,6 +647,27 @@ describe("peal posts", () => {
   );
 
   it.effect(
+    "leaves out what did not go out only once a target's post is live",
+    () =>
+      Effect.gen(function* leavesOut() {
+        const session = yield* signedIn();
+
+        // The failed target's post did not go out at all: nothing is live.
+        assert.include(
+          yield* session.refused([
+            "posts",
+            "leave-out-rest",
+            finishedId,
+            failedTargetId,
+            ...inStudio,
+          ]),
+          "on that channel"
+        );
+        assert.deepStrictEqual(yield* changes(session.studio), []);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "confirms what the user found for an unconfirmed target, with its address",
     () =>
       Effect.gen(function* confirms() {

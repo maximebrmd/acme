@@ -1,5 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Ref, Result, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { LinkShortener } from "#publishing/application/link-shortener.ts";
 import { PlatformClients } from "#publishing/application/platform-client.ts";
@@ -554,6 +555,112 @@ layer(
       assert.deepStrictEqual(
         refused,
         new BadRequest({ code: "partsNotSupported" })
+      );
+      assert.lengthOf(yield* Ref.get(handed), before);
+    })
+  );
+});
+
+// A post with a first comment, on a Facebook Page, in a workspace of its own.
+const commentedPost = Effect.gen(function* commentedPost() {
+  const posts = yield* PostRepository;
+  const postId = yield* newId(PostIdSchema);
+  const channelId = yield* newId(ChannelIdSchema);
+  const target = createTarget(
+    yield* newId(PostTargetIdSchema),
+    postId,
+    channelId
+  );
+
+  yield* posts.insert(
+    createDraft(
+      postId,
+      yield* freshWorkspace,
+      new PostContent({
+        followUps: [part("The first comment")],
+        media: [],
+        overrides: [],
+        text: "A page's post",
+      }),
+      Option.none()
+    ),
+    [target]
+  );
+
+  return { channelId, postId, target };
+});
+
+const firstCommentOf = (targetId: string) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql<{
+        readonly first_comment: boolean;
+      }>`SELECT first_comment FROM publishing.post_targets WHERE id = ${targetId}`
+  ).pipe(
+    Effect.orDie,
+    Effect.map(([row]) => row?.first_comment)
+  );
+
+layer(
+  publisherFor(
+    { accountId: "102000000000001", platform: "facebook" },
+    threadedPlatformsWith(true, new Set(["facebook"])).takesParts
+  )
+)("the adapters of a platform of first comments", (it) => {
+  it.effect("mark the target before its comment goes out", () =>
+    Effect.gen(function* marks() {
+      const posts = yield* PostRepository;
+      const { channelId, postId, target } = yield* commentedPost;
+
+      yield* Effect.gen(function* checks() {
+        assert.isFalse(yield* firstCommentOf(target.id));
+
+        yield* PlatformPublisher.use((publisher) =>
+          publisher.publish({
+            channelId,
+            idempotencyKey: "a-synthetic-first-comment",
+            part: 1,
+            postId,
+            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            targetId: target.id,
+          })
+        ).pipe(Effect.ignore);
+
+        assert.isTrue(yield* firstCommentOf(target.id));
+      }).pipe(Effect.ensuring(posts.remove(postId).pipe(Effect.orDie)));
+    })
+  );
+});
+
+layer(
+  publisherFor(
+    { accountId: "102000000000001", platform: "facebook" },
+    threadedPlatformsWith(true, new Set()).takesParts
+  )
+)("the adapters where first comments were turned off since", (it) => {
+  it.effect("never receive the post, whose comment could not follow", () =>
+    Effect.gen(function* refuses() {
+      const posts = yield* PostRepository;
+      const { channelId, postId, target } = yield* commentedPost;
+      const before = (yield* Ref.get(handed)).length;
+
+      const refused = yield* PlatformPublisher.use((publisher) =>
+        publisher.publish({
+          channelId,
+          idempotencyKey: "a-synthetic-post-without-its-comment",
+          part: 0,
+          postId,
+          startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+          targetId: target.id,
+        })
+      ).pipe(
+        Effect.flip,
+        Effect.ensuring(posts.remove(postId).pipe(Effect.orDie))
+      );
+
+      assert.deepStrictEqual(
+        refused,
+        new BadRequest({ code: "firstCommentsOff" })
       );
       assert.lengthOf(yield* Ref.get(handed), before);
     })

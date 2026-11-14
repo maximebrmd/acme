@@ -69,6 +69,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "create_posts",
   "create_review_link",
   "edit_published_post",
+  "leave_out_rest",
   "mark_comment_answered",
   "moderate_comment",
   "publish_post",

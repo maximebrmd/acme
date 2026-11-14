@@ -301,6 +301,10 @@ export const PostTargetSchema = Schema.Struct({
   // at someone's request: it stays `published`, as it did go out, and its
   // permalink stays as a record. Null while it is there.
   removedAt: Schema.NullOr(Schema.DateTimeUtc),
+  // True when a member published it without the parts that did not go out
+  // after its first (a first comment, the rest of a thread): it is the
+  // parts that are live (`parts.live`); left out otherwise.
+  partsLeftOut: Schema.optionalKey(Schema.Boolean),
   // How many times it was sent: 1, and one more for each repost.
   round: Schema.Int,
   status: PostTargetStatusSchema,
@@ -1180,6 +1184,17 @@ export class PostsApi extends HttpApiGroup.make("posts")
         description:
           "Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.",
         summary: "Confirm a post on a channel",
+      })
+    ),
+    HttpApiEndpoint.post(
+      "leaveOutRest",
+      "/:postId/targets/:targetId/leave-out-rest",
+      { error: followUp, params: target, success: PostSchema }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.",
+        summary: "Publish a channel without its first comment",
       })
     ),
     HttpApiEndpoint.post(

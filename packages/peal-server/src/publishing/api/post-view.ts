@@ -103,6 +103,10 @@ const targetView = (target: PostTarget, count: number): TargetView => {
     noted = { ...noted, thumbnailNotSet: true };
   }
 
+  if (status._tag === "published" && status.partsLeftOut === true) {
+    noted = { ...noted, partsLeftOut: true };
+  }
+
   return noted;
 };
 

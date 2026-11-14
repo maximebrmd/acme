@@ -64,6 +64,7 @@ import { PostQueueLine } from "#components/posts/queue-choice.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
   confirmTarget,
+  leaveOutRest,
   postAttempts,
   postsKeys,
   repostTarget,
@@ -77,6 +78,7 @@ type Translate = ReturnType<typeof useTranslations<"PostDetail">>;
 /** What the member asks for one channel of the post. */
 export type TargetRequest =
   | { readonly _tag: "repost"; readonly targetId: string }
+  | { readonly _tag: "leaveOutRest"; readonly targetId: string }
   | {
       readonly _tag: "confirm";
       readonly confirmation: TargetConfirmation;
@@ -432,7 +434,59 @@ const PublishedNotes = ({ target }: { readonly target: PostTarget }) => {
           <AlertDescription>{t("thumbnailNotSet")}</AlertDescription>
         </Alert>
       ) : null}
+      {target.partsLeftOut === true ? (
+        <p className="text-muted-foreground text-sm">{t("partsLeftOut")}</p>
+      ) : null}
     </>
+  );
+};
+
+// Platforms whose part after the first is a first comment.
+const commentPlatforms: ReadonlySet<string> = new Set([
+  "facebook",
+  "instagram",
+  "linkedin",
+  "youtube",
+]);
+
+/**
+ * Publishing a channel without what did not go out after its first part,
+ * where that part is live and the rest failed or is unconfirmed: "without
+ * the first comment" where the rest is one.
+ */
+const LeaveOut = ({
+  busy,
+  channel,
+  onRequest,
+  target,
+}: {
+  readonly busy: boolean;
+  readonly channel: Channel | undefined;
+  readonly onRequest: (request: TargetRequest) => void;
+  readonly target: PostTarget;
+}) => {
+  const t = useTranslations("PostDetail");
+
+  if (
+    target.parts.live.length === 0 ||
+    (target.status !== "failed" && target.status !== "unconfirmed")
+  ) {
+    return null;
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={busy}
+      onClick={() => {
+        onRequest({ _tag: "leaveOutRest", targetId: target.id });
+      }}
+    >
+      {commentPlatforms.has(channel?.platform ?? "")
+        ? t("leaveOutComment")
+        : t("leaveOutRest")}
+    </Button>
   );
 };
 
@@ -535,6 +589,14 @@ export const TargetView = ({
                       targetId: target.id,
                     });
                   }}
+                />
+              ) : null}
+              {canAct ? (
+                <LeaveOut
+                  busy={busy}
+                  channel={channel}
+                  target={target}
+                  onRequest={onRequest}
                 />
               ) : null}
               {acts ? (
@@ -777,6 +839,7 @@ export const PostDetail = ({
   const refreshPost = useAtomRefresh(workspacePost(workspaceId, post.id));
   const repost = useAtomSet(repostTarget, { mode: "promiseExit" });
   const confirm = useAtomSet(confirmTarget, { mode: "promiseExit" });
+  const leaveOut = useAtomSet(leaveOutRest, { mode: "promiseExit" });
   const [busy, setBusy] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const publishing = post.status === "publishing";
@@ -862,14 +925,23 @@ export const PostDetail = ({
         workspaceId,
       };
 
-      const exit =
-        request._tag === "repost"
-          ? await repost({ params, reactivityKeys: postsKeys })
-          : await confirm({
-              params,
-              payload: request.confirmation,
-              reactivityKeys: postsKeys,
-            });
+      const sent = async () => {
+        if (request._tag === "repost") {
+          return await repost({ params, reactivityKeys: postsKeys });
+        }
+
+        if (request._tag === "leaveOutRest") {
+          return await leaveOut({ params, reactivityKeys: postsKeys });
+        }
+
+        return await confirm({
+          params,
+          payload: request.confirmation,
+          reactivityKeys: postsKeys,
+        });
+      };
+
+      const exit = await sent();
 
       setBusy(null);
 
@@ -888,6 +960,8 @@ export const PostDetail = ({
 
       if (request._tag === "repost") {
         toast.success(t("reposted", { channel }));
+      } else if (request._tag === "leaveOutRest") {
+        toast.success(t("leftOut", { channel }));
       } else {
         toast.success(
           request.confirmation._tag === "published"

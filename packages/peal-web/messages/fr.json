@@ -1774,7 +1774,11 @@
       "conflict": "La publication a changé entre-temps : rechargez-la pour voir où elle en est."
     },
     "keptPrivate": "YouTube a rendu la vidéo privée, alors qu’elle devait être vue par plus de monde : les réglages du compte, ou les restrictions de Google sur le projet d’API du serveur, la gardent ainsi. Changez sa visibilité dans YouTube Studio.",
-    "thumbnailNotSet": "La miniature n’a pas été définie : la chaîne n’a peut-être pas droit aux miniatures personnalisées, ou YouTube a refusé l’image."
+    "thumbnailNotSet": "La miniature n’a pas été définie : la chaîne n’a peut-être pas droit aux miniatures personnalisées, ou YouTube a refusé l’image.",
+    "partsLeftOut": "Publiée sans ce qui n’est pas parti après sa première partie : un membre l’a laissé de côté.",
+    "leaveOutComment": "Publier sans le premier commentaire",
+    "leaveOutRest": "Publier sans la suite",
+    "leftOut": "Publiée sur {channel} sans ce qui n’est pas parti."
   },
   "Media": {
     "page": {

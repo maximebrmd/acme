@@ -178,11 +178,17 @@ export const postTargets = publishing.table(
     failureCode: text("failure_code"),
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
+    // True once Peal sent a first comment there: the parts after its
+    // first are comments under its post, so its post counts as live once
+    // its first part is, whatever became of the comment (`listed_at`).
+    firstComment: boolean("first_comment").notNull().default(false),
     id: uuid("id").primaryKey(),
     keptPrivate: boolean("kept_private").notNull().default(false),
     // When Peal knew the target live, for the contexts that follow
     // publications in that order: when it went out, or, for one a member
-    // confirmed by hand, when they did. Null unless it is published.
+    // confirmed by hand, when they did. Null unless it is published, or
+    // its post is live with a first comment that failed or is unconfirmed
+    // (`first_comment`), which keeps its first listing.
     listedAt: instant("listed_at"),
     liveParts: jsonb("live_parts").notNull().default([]),
     options: jsonb("options"),
@@ -191,6 +197,10 @@ export const postTargets = publishing.table(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
+    // True on a target a member published without the parts that did not
+    // go out (a first comment, the rest of a thread): it is published as
+    // the parts that are live.
+    partsLeftOut: boolean("parts_left_out").notNull().default(false),
     // When Peal deleted it from the platform at a member's request, every
     // part of it (`live_post_changes`); it stays published. Null while it
     // is there.
@@ -207,10 +217,12 @@ export const postTargets = publishing.table(
     index("post_targets_channel_content")
       .on(table.channelId, table.contentDigest)
       .where(sql`${table.contentDigest} IS NOT NULL`),
-    // Targets in the order they went live, which analytics follows.
-    index("post_targets_published")
+    // Targets in the order they went live, which analytics, the inbox and
+    // ads follow: those published, and those whose post is live with a
+    // first comment that did not go out.
+    index("post_targets_listed")
       .on(table.listedAt, table.id)
-      .where(sql`${table.status} = 'published'`),
+      .where(sql`${table.listedAt} IS NOT NULL`),
   ]
 );
 

@@ -141,6 +141,7 @@ const targetStatusOf = (row: TargetRow) => {
     readonly dropped?: true;
     readonly editedAt?: DateTime.Utc;
     readonly keptPrivate?: true;
+    readonly partsLeftOut?: true;
     readonly removedAt?: DateTime.Utc;
     readonly thumbnailNotSet?: true;
   } = status;
@@ -163,6 +164,10 @@ const targetStatusOf = (row: TargetRow) => {
 
   if (row.thumbnailNotSet) {
     noted = { ...noted, thumbnailNotSet: true };
+  }
+
+  if (row.partsLeftOut) {
+    noted = { ...noted, partsLeftOut: true };
   }
 
   return noted;
@@ -295,6 +300,7 @@ const targetColumns = (status: PostTargetStatus) => {
     finishedAt: null,
     keptPrivate: false,
     listedAt: null,
+    partsLeftOut: false,
     permalink: null,
     platformPostId: null,
     removedAt: null,
@@ -320,6 +326,7 @@ const targetColumns = (status: PostTargetStatus) => {
     published: ({
       editedAt,
       keptPrivate,
+      partsLeftOut,
       permalink,
       platformPostId,
       publishedAt,
@@ -333,6 +340,7 @@ const targetColumns = (status: PostTargetStatus) => {
       // Listed for the contexts that follow publications from when it
       // went live; `listedFrom` says when a member confirmed it instead.
       listedAt: date(publishedAt),
+      partsLeftOut: partsLeftOut === true,
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
       removedAt: removedAt === undefined ? null : date(removedAt),
@@ -367,11 +375,30 @@ const listedFrom = (
     return null;
   }
 
+  // Confirmed by hand, or published by a member without its rest: it went
+  // live long before Peal knew it so.
   return date(
-    current.status._tag === "unconfirmed"
+    current.status._tag === "unconfirmed" || current.status._tag === "failed"
       ? DateTime.max(next.status.publishedAt, now)
       : next.status.publishedAt
   );
+};
+
+/**
+ * `listed_at` as a target becomes `next`: as `listedFrom` says, but a
+ * target of first comments (`first_comment`) whose first part is live
+ * keeps its first listing, whatever its comment became (failed,
+ * unconfirmed, sent again), and is listed from `now` once its post is
+ * live, so those that follow publications count and read it.
+ */
+const listedOf = (next: PostTarget, current: PostTarget, now: DateTime.Utc) => {
+  const listed = listedFrom(next, current, now);
+  const live = next.liveParts.length > 0;
+  const fallback = listed ?? date(now);
+
+  return live
+    ? sql`CASE WHEN ${postTargets.firstComment} THEN coalesce(${postTargets.listedAt}, ${fallback.toISOString()}::timestamptz) ELSE ${listed === null ? null : listed.toISOString()}::timestamptz END`
+    : listed;
 };
 
 const targetFrom = (rows: readonly TargetRow[]) => {
@@ -691,6 +718,17 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toTarget))
           ),
+      markFirstComment: (targetId) =>
+        db
+          .update(postTargets)
+          .set({ firstComment: true })
+          .where(
+            and(
+              eq(postTargets.id, targetId),
+              eq(postTargets.firstComment, false)
+            )
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       markEdited: (targetId, editedAt) =>
         db
           .update(postTargets)
@@ -870,7 +908,7 @@ export const DrizzlePostRepository = Layer.effect(
               .update(postTargets)
               .set({
                 ...targetColumns(next.status),
-                listedAt: listedFrom(next, current, now),
+                listedAt: listedOf(next, current, now),
                 liveParts: encodeLiveParts(next.liveParts),
                 round: next.round,
               })

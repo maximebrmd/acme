@@ -112,6 +112,15 @@ export class PostRepository extends Context.Service<
      * on its platform at `editedAt`, and nothing else of it: false when it
      * is not published, or was removed.
      */
+    /**
+     * Records that the target's parts after its first are first comments
+     * (`post_targets.first_comment`), before the first is sent: its post
+     * then counts as live once its first part is, whatever becomes of the
+     * comment. Safe to ask again.
+     */
+    readonly markFirstComment: (
+      targetId: PostTargetId
+    ) => Effect.Effect<void, DatabaseError>;
     readonly markEdited: (
       targetId: PostTargetId,
       editedAt: DateTime.Utc

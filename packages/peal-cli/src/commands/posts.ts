@@ -407,6 +407,49 @@ const unschedule = Command.make(
   )
 );
 
+const leaveOutRest = Command.make(
+  "leave-out-rest",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    targetId: targetArgument,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.leaveOutRest")(function* leaveOutRest({
+    json,
+    postId,
+    targetId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const post = yield* client.posts
+      .leaveOutRest({ params: { postId, targetId, workspaceId: workspace.id } })
+      .pipe(explainingPublishing(url));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    yield* Option.match(targetOf(post, targetId), {
+      onNone: () =>
+        Console.log(`Post ${postId} is published without what did not go out.`),
+      onSome: (target) =>
+        Console.log(
+          `Post ${postId} is published on ${named(names, target.channelId)} without what did not go out after its first part: nothing more is sent there.`
+        ),
+    });
+  })
+).pipe(
+  Command.withDescription(
+    "Publish a post on one channel without the parts that did not go out after its first (a first comment the platform refused, the rest of a thread): its first part is live, and nothing more is sent there."
+  )
+);
+
 const repost = Command.make(
   "repost",
   {
@@ -956,6 +999,7 @@ export const posts = Command.make("posts").pipe(
     cancel,
     removeTarget,
     repost,
+    leaveOutRest,
     confirm,
     unpublish,
     edit,

@@ -229,6 +229,19 @@ export const RepostTarget = Tool.make("repost_target", {
   )
   .annotate(Tool.Title, "Repost on a channel");
 
+export const LeaveOutRest = Tool.make("leave_out_rest", {
+  dependencies: [CurrentMember],
+  description:
+    "Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. Only a failed or unconfirmed target whose first part is live (`parts.live`) is taken; it becomes published as that part, with `partsLeftOut`. Nothing is sent. Ask the user first: the comment will not be sent from Peal any more. Needs the scope workspace:publish.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId, targetId }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: false, openWorld: false })
+  )
+  .annotate(Tool.Title, "Publish a channel without its first comment");
+
 export const ConfirmTarget = Tool.make("confirm_target", {
   dependencies: [CurrentMember],
   description:
@@ -753,6 +766,7 @@ export const PostTools = Toolkit.make(
   CancelPost,
   RemovePostTarget,
   RepostTarget,
+  LeaveOutRest,
   ConfirmTarget,
   UnpublishPost,
   EditPublishedPost,
