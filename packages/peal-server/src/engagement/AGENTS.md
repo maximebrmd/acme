@@ -407,7 +407,7 @@
   again through `start`, which asks publishing's scopes only), and the
   collection turns them off (`forgetChannelMessages`) and tells
   `MessagesTurnedOff` (the channel, to `channel:connect`, emailed under
-  `channelReconnect`): the switch never stays on unread.
+  `channelReconnect`, once a box: keyed on its `createdAt`): the switch never stays on unread.
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):

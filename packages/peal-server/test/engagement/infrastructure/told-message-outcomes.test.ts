@@ -3,6 +3,7 @@ import { DateTime, Effect, Layer, Option, Result } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { MessageOutcomes } from "#engagement/application/ports/message-outcomes.ts";
+import { followBox } from "#engagement/domain/message-box.ts";
 import {
   settleMessage,
   writeMessage,
@@ -160,24 +161,32 @@ describe("the direct messages' outcomes", () => {
   });
 
   it.effect(
-    "tell who may connect channels that a channel's messages were turned off, once a day",
+    "tell who may connect channels that a channel's messages were turned off, once each time they were on",
     () => {
       const { events, layer, notices } = told();
+      const first = messageBox();
+
+      // Turned on again an hour later the same day, and off again.
+      const again = followBox(
+        { channelId: channelId(1), workspaceId },
+        DateTime.addDuration(messagedAt, "1 hour")
+      );
 
       return Effect.gen(function* turnedOff() {
         yield* MessageOutcomes.use((outcomes) =>
-          outcomes.turnedOff(messageBox())
+          Effect.all([outcomes.turnedOff(first), outcomes.turnedOff(again)])
         );
 
-        const [notice] = notices;
-
-        assert.deepStrictEqual(notice?.event, {
+        assert.deepStrictEqual(notices[0]?.event, {
           _tag: "MessagesTurnedOff",
           channel: { handle: "@peal_example", platform: "mastodon" },
         });
-        assert.strictEqual(
-          notice?.key,
-          `messages-off:${channelId(1)}:${DateTime.formatIso(yield* DateTime.now).slice(0, 10)}`
+        assert.deepStrictEqual(
+          notices.map(({ key }) => key),
+          [
+            `messages-off:${channelId(1)}:${DateTime.formatIso(first.createdAt)}`,
+            `messages-off:${channelId(1)}:${DateTime.formatIso(again.createdAt)}`,
+          ]
         );
         assert.lengthOf(events, 0);
       }).pipe(Effect.provide(layer));

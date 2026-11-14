@@ -78,8 +78,8 @@ export const ToldMessageOutcomes = Layer.effect(
           );
       });
 
-    // Who may connect channels is told the messages went, and why, once a
-    // channel and UTC day.
+    // Who may connect channels is told the messages went, and why, once
+    // each time they were on.
     const turnedOff = (box: MessageBox) =>
       Effect.gen(function* telling() {
         const channel = yield* channels.findById(
@@ -100,7 +100,8 @@ export const ToldMessageOutcomes = Layer.effect(
                 platform: channel.value.platform,
               },
             },
-            key: `messages-off:${box.channelId}:${dayOf(yield* DateTime.now)}`,
+            // Once each time they were on: the box is made anew each time.
+            key: `messages-off:${box.channelId}:${DateTime.formatIso(box.createdAt)}`,
             workspaceId: box.workspaceId,
           })
           .pipe(
