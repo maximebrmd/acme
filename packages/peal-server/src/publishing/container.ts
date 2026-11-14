@@ -31,6 +31,7 @@ import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
+import { PostMeter } from "#publishing/application/post-meter.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostOutcomesLive } from "#publishing/application/post-outcomes.ts";
 import { PostPresets } from "#publishing/application/post-presets.ts";
@@ -291,7 +292,11 @@ export const publishingWith = <
     live,
     recycling,
     feeds
-  ).pipe(Layer.provideMerge(ApprovalGate.open));
+  ).pipe(
+    Layer.provideMerge(ApprovalGate.open),
+    // No platform's posts are billed to warn of here.
+    Layer.provide(PostMeter.unmetered)
+  );
 
 /**
  * The same behind `gate`, which says which posts wait for an approval, and
@@ -330,7 +335,7 @@ export const publishingBehind = <
     live,
     recycling,
     feeds
-  ).pipe(Layer.provideMerge(gate));
+  ).pipe(Layer.provideMerge(gate), Layer.provide(PostMeter.unmetered));
 
 /**
  * The use cases as the server runs them: channels are those the channels
@@ -420,7 +425,9 @@ export const PublishingLive = publishingOver(
     webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
       Layer.provide(DrizzlePostRepository)
     )
-  )
+  ),
+  // Scheduling warns of X's posts the billing account cannot pay for.
+  Layer.provide(MeteredXPostsLive)
 );
 
 /**

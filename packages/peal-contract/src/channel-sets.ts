@@ -15,6 +15,7 @@ import { ChannelOptionsSchema } from "./target-options.ts";
 import type { ChannelOptions } from "./target-options.ts";
 import { TooManyChannelSets } from "./too-many-channel-sets.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
+import { AllowanceReasonSchema } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /** The longest name a channel set has. */
@@ -102,6 +103,15 @@ export const PostWarningSchema = Schema.Union([
     channelIds: Schema.Array(Schema.String),
     queueId: Schema.String,
     queueName: Schema.String,
+  }),
+  // On a server that bills, its channels on X, billed at X's rates, that
+  // the billing account cannot pay for now, and why (`reason`, as
+  // UsageAllowanceReached says it): it is made all the same, and they
+  // fail when due, nothing sent, unless that changes. Only validation
+  // answers it.
+  Schema.TaggedStruct("xNotBilled", {
+    channelIds: Schema.Array(Schema.String),
+    reason: AllowanceReasonSchema,
   }),
 ]).annotate({ identifier: "PostWarning" });
 

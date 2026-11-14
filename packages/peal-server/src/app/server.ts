@@ -300,6 +300,18 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
   Layer.provide(ChannelsWithNoticesLive)
 );
 
+// The meters the assistant, the inbox and ads claim, on billing's
+// accounts, telling billing managers through the notices when one pauses.
+const MetersContextLive = BillingMetersLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PartnerOwnershipLive,
+      WorkspaceOwnersLive
+    )
+  )
+);
+
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds, once the review context's gate admits
 // them.
@@ -309,6 +321,9 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
 const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(
     Layer.mergeAll(
+      // X's posts claimed on billing's meters, which scheduling reads.
+      MetersContextLive,
+      BillingXPassThroughLive,
       ChannelsWithNoticesLive,
       MediaContextLive,
       ReviewGateContextLive,
@@ -341,18 +356,6 @@ const ReviewContextLive = ReviewLive.pipe(
       ChannelsWithNoticesLive,
       MediaContextLive,
       PublishingContextLive
-    )
-  )
-);
-
-// The meters the assistant, the inbox and ads claim, on billing's
-// accounts, telling billing managers through the notices when one pauses.
-const MetersContextLive = BillingMetersLive.pipe(
-  Layer.provide(
-    Layer.mergeAll(
-      ChannelsWithNoticesLive,
-      PartnerOwnershipLive,
-      WorkspaceOwnersLive
     )
   )
 );

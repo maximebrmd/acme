@@ -1713,7 +1713,13 @@
       "media": "Images and videos on {channel}",
       "partMedia": "Images and videos of part {position}",
       "shortLinks": "Links show as written: they are shortened when the post goes out.",
-      "waitingForOptions": "The previews wait until the options below are fixed."
+      "waitingForOptions": "The previews wait until the options below are fixed.",
+      "unbilled": {
+        "xCeiling": "X bills each post, which Peal passes on at X’s rates, and this post’s parts on X pass what the billing account’s monthly ceiling for X has left: they would fail when due, nothing sent, unless the ceiling is raised on the billing page.",
+        "xPaymentFailed": "X bills each post, which Peal passes on at X’s rates, and the billing account’s last payment failed: this post’s parts on X would fail when due, nothing sent, unless the payment method is updated on the billing page.",
+        "xPerAccountPricing": "X bills each post, which Peal passes on at X’s rates, and this workspace’s plan is one from before per-account pricing: this post’s parts on X would fail when due, nothing sent.",
+        "xPaymentMethod": "X bills each post, which Peal passes on at X’s rates, and the billing account has no payment method: this post’s parts on X would fail when due, nothing sent, unless one is added on the billing page."
+      }
     }
   },
   "Drafts": {

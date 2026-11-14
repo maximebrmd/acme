@@ -1713,7 +1713,13 @@
       "media": "Images et vidéos sur {channel}",
       "partMedia": "Images et vidéos de la partie {position}",
       "shortLinks": "Les liens apparaissent tels qu’écrits : ils sont raccourcis quand la publication part.",
-      "waitingForOptions": "Les aperçus attendent que les options plus bas soient corrigées."
+      "waitingForOptions": "Les aperçus attendent que les options plus bas soient corrigées.",
+      "unbilled": {
+        "xCeiling": "X facture chaque publication, que Peal refacture aux tarifs de X, et les parties de cette publication sur X dépassent ce qui reste du plafond mensuel du compte de facturation pour X : elles échoueraient à leur heure, sans rien envoyer, sauf si le plafond est relevé sur la page de facturation.",
+        "xPaymentFailed": "X facture chaque publication, que Peal refacture aux tarifs de X, et le dernier paiement du compte de facturation a échoué : les parties de cette publication sur X échoueraient à leur heure, sans rien envoyer, sauf si le moyen de paiement est mis à jour sur la page de facturation.",
+        "xPerAccountPricing": "X facture chaque publication, que Peal refacture aux tarifs de X, et l’abonnement de cet espace de travail est antérieur au tarif par compte : les parties de cette publication sur X échoueraient à leur heure, sans rien envoyer.",
+        "xPaymentMethod": "X facture chaque publication, que Peal refacture aux tarifs de X, et le compte de facturation n’a pas de moyen de paiement : les parties de cette publication sur X échoueraient à leur heure, sans rien envoyer, sauf s’il en ajoute un sur la page de facturation."
+      }
     }
   },
   "Drafts": {

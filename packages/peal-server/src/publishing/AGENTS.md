@@ -351,7 +351,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   the give-back met a database failure (logged): a repost claims again.
   Each retry claims again and gives back, so a meter may see pairs. On a
   server that does not bill the meters are unmetered and X goes out as
-  before. Tests provide `PostMeter.unmetered`.
+  before. Tests provide `PostMeter.unmetered`. Checking a post with a
+  time (`PostChecks`, `posts.validate`, the composer's previews) warns of
+  its channels on X the meter has no room for now (`unbilledOn`, warning
+  `xNotBilled` with the reason): a warning, never a refusal, as the
+  standing may change before it is due. `publishingWith` and
+  `publishingBehind` give scheduling `PostMeter.unmetered`; the server's
+  `PublishingLive` gives it `MeteredXPostsLive`.
 - Platform calls go through the `PlatformPublisher` port, one at a time per
   channel through `ChannelGate`, whose calls are volatile: post content never
   lands in the cluster tables. The gates run `RoutedPlatformPublisher`, which
