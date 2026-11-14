@@ -2326,6 +2326,11 @@
         "failed": "The ceiling was not saved. Try again."
       },
       "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed."
+    },
+    "move": {
+      "title": "Move to per-account pricing",
+      "description": "{plan} is priced by tiers of channels and no longer sold. Ordering per-account pricing opens its own checkout: once per-account pricing starts, the {plan} plan ends at once, and its unused time is refunded to the payment method it was paid with. The accounts are then billed by the day, at the rates below.",
+      "trial": "{plan} is priced by tiers of channels and no longer sold. Ordering per-account pricing opens its own checkout, and ends the trial once per-account pricing starts: nothing is charged for the trial."
     }
   },
   "BillingAccount": {
@@ -2444,7 +2449,7 @@
     "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
     "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
     "trial": "{workspace} is in its trial: ordering starts per-account pricing, and ends the trial once Stripe confirms it. Nothing is charged for the trial.",
-    "legacyMove": "{workspace} is on {plan}, priced by channels. Moving gives no credit for its unused time yet: it stays paid until its period ends, while the accounts are billed per account from the move.",
+    "legacyMove": "{workspace} is on {plan}, priced by channels. Once per-account pricing starts, the plan ends at once and its unused time is refunded to the payment method it was paid with; the accounts are billed per account from then.",
     "contact": "Write to us",
     "orRemove": "{limit, select, channels {Or disconnect a channel to make room.} members {Or remove a member, or revoke a pending invitation, to make room.} scheduledPosts {Or pick another month, or cancel a post of that month.} assistantRequests {Or ask again tomorrow.} mediaStorage {Or delete media to make room.} other {}}",
     "askManagers": "Owners and admins of {workspace} add its payment method: {names}.",

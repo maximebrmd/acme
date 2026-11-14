@@ -1007,6 +1007,76 @@ const AddPaymentMethod = ({
   );
 };
 
+// A legacy plan's way to per-account pricing: the same order as a
+// payment method's, which ends the plan once per-account pricing is paid
+// for, crediting its unused time.
+const MoveToPerAccount = ({
+  billing,
+  canManage,
+  consented,
+  onConsent,
+  onOrder,
+  pending,
+  refusal,
+  termsUrl,
+}: Pick<
+  BillingViewProps,
+  | "billing"
+  | "canManage"
+  | "consented"
+  | "onConsent"
+  | "onOrder"
+  | "pending"
+  | "termsUrl"
+> & {
+  /** Why the last order failed, beside the button that sent it. */
+  readonly refusal: ReactElement | null;
+}) => {
+  const t = useTranslations("Billing");
+  const plan = billing.plan ?? "free";
+  const trialing = billing.subscription?.status === "trialing";
+
+  return (
+    <section aria-labelledby="billing-move">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id="billing-move">{t("move.title")}</h2>
+          </CardTitle>
+          <CardDescription>
+            {trialing
+              ? t("move.trial", { plan: t("plan", { plan }) })
+              : t("move.description", { plan: t("plan", { plan }) })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {canManage ? (
+            <Consent
+              consented={consented}
+              onConsent={onConsent}
+              termsUrl={termsUrl}
+            />
+          ) : (
+            <p className="text-sm">{t("payment.askAdmin")}</p>
+          )}
+        </CardContent>
+        {canManage ? (
+          <CardFooter>
+            <div className="flex flex-col items-start gap-3">
+              {refusal}
+              <OrderButton
+                consented={consented}
+                ordering={pending?._tag === "order"}
+                onOrder={onOrder}
+              />
+            </div>
+          </CardFooter>
+        ) : null}
+      </Card>
+    </section>
+  );
+};
+
 const UsageMeter = ({
   allowed,
   limit,
@@ -1150,6 +1220,13 @@ export const BillingView = (props: BillingViewProps) => {
     billing.subscription === null &&
     billing.paymentFailed !== true;
 
+  // A legacy plan, on the workspace that bills, moves by the same order.
+  const offersMove =
+    billsHere &&
+    isLegacy(billing) &&
+    billing.subscription !== null &&
+    billing.paymentFailed !== true;
+
   const busy = props.pending !== null || props.step._tag !== "idle";
 
   // A refusal says why, with the way out where there is one: a contract
@@ -1186,7 +1263,7 @@ export const BillingView = (props: BillingViewProps) => {
           </AlertDescription>
         </Alert>
       ) : null}
-      {offersPaymentMethod ? null : refusal}
+      {offersPaymentMethod || offersMove ? null : refusal}
       <StepPanel {...props} />
       {billsHere ? (
         <div className="grid gap-6 md:grid-cols-2">
@@ -1199,6 +1276,7 @@ export const BillingView = (props: BillingViewProps) => {
       {offersPaymentMethod ? (
         <AddPaymentMethod {...props} refusal={refusal} />
       ) : null}
+      {offersMove ? <MoveToPerAccount {...props} refusal={refusal} /> : null}
       <Ladder billing={billing} />
       <MeterTable billing={billing} canManage={canManage} />
       <Usage billing={billing} limits={usageLimits} />

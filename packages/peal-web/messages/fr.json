@@ -2326,6 +2326,11 @@
         "failed": "Le plafond n’a pas été enregistré. Réessayez."
       },
       "assistantComing": "La quantité incluse et le prix de l’assistant de rédaction sont à venir : d’ici là, rien n’est facturé au-delà de l’inclus."
+    },
+    "move": {
+      "title": "Passer au tarif par compte",
+      "description": "{plan} est tarifé par paliers de canaux et n’est plus vendu. Commander le tarif par compte ouvre un paiement qui lui est propre : dès que le tarif par compte commence, la formule {plan} prend fin aussitôt, et sa part non utilisée est remboursée sur le moyen de paiement qui l’a réglée. Les comptes sont ensuite facturés au jour, aux tarifs ci-dessous.",
+      "trial": "{plan} est tarifé par paliers de canaux et n’est plus vendu. Commander le tarif par compte ouvre un paiement qui lui est propre, et met fin à l’essai dès que le tarif par compte commence : rien n’est facturé pour l’essai."
     }
   },
   "BillingAccount": {
@@ -2444,7 +2449,7 @@
     "reached": "{limit, select, channels {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# canal} other {# canaux}}, et il en a {used, number}.} members {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# membre} other {# membres}}, invitations en attente comprises, et il en a {used, number}.} scheduledPosts {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# publication} other {# publications}} par mois, et ce mois-là en a {used, number}.} assistantRequests {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# demande} other {# demandes}} à l’assistant d’écriture par jour, et celles d’aujourd’hui sont épuisées. Elles reprennent à minuit UTC.} other {L’abonnement {plan} de {workspace} ne permet pas d’en ajouter.}}",
     "reachedStorage": "L’abonnement {plan} de {workspace} permet {allowed} de médias, et il en stocke {used}, envois en cours compris.",
     "trial": "{workspace} est en période d’essai : commander démarre le tarif par compte, et met fin à l’essai dès que Stripe le confirme. Rien n’est facturé pour l’essai.",
-    "legacyMove": "{workspace} est sur {plan}, tarifé par paliers de canaux. Passer au tarif par compte ne donne pas encore d’avoir pour sa part non utilisée : il reste payé jusqu’à la fin de sa période, pendant que les comptes sont facturés au compte dès le passage.",
+    "legacyMove": "{workspace} est sur {plan}, tarifé par paliers de canaux. Dès que le tarif par compte commence, la formule prend fin aussitôt et sa part non utilisée est remboursée sur le moyen de paiement qui l’a réglée ; les comptes sont ensuite facturés au compte.",
     "contact": "Nous écrire",
     "orRemove": "{limit, select, channels {Ou déconnectez un canal pour faire de la place.} members {Ou retirez un membre, ou révoquez une invitation en attente, pour faire de la place.} scheduledPosts {Ou choisissez un autre mois, ou annulez une publication de ce mois-là.} assistantRequests {Ou redemandez demain.} mediaStorage {Ou supprimez des médias pour faire de la place.} other {}}",
     "askManagers": "Les propriétaires et les administrateurs de {workspace} ajoutent son moyen de paiement : {names}.",
