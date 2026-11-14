@@ -1,9 +1,12 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { Meter } from "#shared/domain/meter.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 
 /**
  * How many channels a workspace may connect: its plan's allowance, from the
@@ -42,6 +45,23 @@ export class ChannelAllowance extends Context.Service<
       workspaceId: WorkspaceId,
       pooled: Effect.Effect<number, DatabaseError>
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Why the workspace's billing account cannot pay for a platform whose
+     * calls are passed through at the platform's rates (X): the meter and
+     * its refusal; none for any other platform, for an account that pays
+     * per account, or on a server that does not bill. Connecting such an
+     * account is refused.
+     */
+    readonly passedThrough: (
+      workspaceId: WorkspaceId,
+      platform: Platform
+    ) => Effect.Effect<
+      Option.Option<{
+        readonly meter: Meter;
+        readonly reason: AllowanceReason;
+      }>,
+      DatabaseError
+    >;
     readonly sharingIn: (
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<

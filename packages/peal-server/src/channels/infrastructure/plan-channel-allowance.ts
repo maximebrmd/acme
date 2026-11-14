@@ -4,7 +4,28 @@ import { AccountDays } from "#billing/application/account-days.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
+
+// X's calls are passed through at its rates on the `xApi` meter, which
+// only per-account pricing that pays bills.
+const passedThroughBy =
+  (entitlements: WorkspaceEntitlements["Service"]) =>
+  (workspaceId: WorkspaceId, platform: Platform) =>
+    platform === "x"
+      ? entitlements
+          .of(workspaceId)
+          .pipe(
+            Effect.map((plan) =>
+              plan
+                .passThroughRefusal()
+                .pipe(
+                  Option.map((reason) => ({ meter: "xApi" as const, reason }))
+                )
+            )
+          )
+      : Effect.succeedNone;
 
 /**
  * Each workspace's channel allowance, as its plan gives it, every
@@ -22,6 +43,7 @@ export const PlanChannelAllowanceLive = Layer.effect(
           .of(workspaceId)
           .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: () => Effect.void,
+      passedThrough: passedThroughBy(entitlements),
       sharedWith: () => Effect.succeed([]),
       sharingIn: () => Effect.succeed(new Map()),
     });
@@ -45,6 +67,7 @@ export const SharedChannelAllowanceLive = Layer.effect(
           .of(workspaceId)
           .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: () => Effect.void,
+      passedThrough: passedThroughBy(entitlements),
       sharedWith: (workspaceId) =>
         ownership.poolOf(workspaceId).pipe(
           Effect.map(
@@ -86,6 +109,7 @@ export const AccountChannelAllowanceLive = Layer.effect(
           .of(workspaceId)
           .pipe(Effect.map((plan) => plan.connectableAccounts())),
       counted: days.counted,
+      passedThrough: passedThroughBy(entitlements),
       sharedWith: pools.sharedWith,
       sharingIn: pools.sharingIn,
     });

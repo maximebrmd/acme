@@ -225,7 +225,9 @@ export const BillingMetersLive = MeteredUsageLive.pipe(
  * Whether each workspace reads X at X's rates on a server that bills
  * (`XPassThrough`), for the analytics context's readers. Needs the database.
  */
-export const BillingXPassThroughLive = XPassThrough.layer.pipe(Layer.provide(RecordsLive));
+export const BillingXPassThroughLive = XPassThrough.layer.pipe(
+  Layer.provide(RecordsLive)
+);
 
 // Hands the checkout the counts of what each workspace holds, once the
 // contexts that count are built (see UsageAtCheckout).

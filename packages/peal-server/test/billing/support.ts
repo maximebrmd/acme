@@ -62,6 +62,16 @@ const entitlementsOn = (plan: Plan, freeTier = true) =>
     subscription: Option.none(),
   });
 
+// Per-account pricing, paid for: an active subscription.
+const payingIn = (workspaceId: WorkspaceId) =>
+  new Entitlements({
+    freeTier: true,
+    plan: Option.some("payAsYouGo"),
+    subscription: Option.some(
+      subscriptionOf({ plan: "payAsYouGo", status: "active", workspaceId })
+    ),
+  });
+
 /**
  * Every workspace on `plan`, without a subscription, each alone in its
  * pool, on a server that bills, without a grace.
@@ -90,6 +100,30 @@ export const everyWorkspaceOn = (plan: Plan, freeTier = true) =>
       })
     )
   );
+
+/**
+ * Every workspace on per-account pricing, its subscription active, each
+ * alone in its pool, on a server that bills.
+ */
+export const everyWorkspacePaying = Layer.mergeAll(
+  Layer.succeed(
+    WorkspaceEntitlements,
+    WorkspaceEntitlements.of({
+      of: (workspaceId) => Effect.succeed(payingIn(workspaceId)),
+      ofEach: (workspaceIds) =>
+        Effect.succeed(new Map(workspaceIds.map((id) => [id, payingIn(id)]))),
+    })
+  ),
+  PlanPools.layerAlone,
+  Layer.succeed(
+    BillingMode,
+    BillingMode.of({
+      enabled: true,
+      graceSince: Option.none(),
+      graceUntil: Option.none(),
+    })
+  )
+);
 
 /**
  * Account-days that count nothing, for tests of what adds a channel

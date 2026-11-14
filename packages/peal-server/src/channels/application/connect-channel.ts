@@ -20,6 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { roomFor, roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import {
@@ -88,10 +89,12 @@ export type ReconnectFailure =
   | PlatformNotConnectable;
 
 export type StartFailure =
+  | AllowanceReached
   | Exclude<ReconnectFailure, ChannelNotFound>
   | PlanLimitReached;
 
 export type CompleteConnectFailure =
+  | AllowanceReached
   | ChannelNotFound
   | CompleteFailure
   | DatabaseError
@@ -104,6 +107,7 @@ export type CompleteConnectFailure =
   | ReconnectAccountMismatch;
 
 export type ChooseFailure =
+  | AllowanceReached
   | AuthorizationFailed
   | ChannelNotFound
   | DatabaseError
@@ -338,6 +342,35 @@ export class ConnectChannel extends Context.Service<
         }
       );
 
+      // A platform whose calls the billing account pays at the platform's
+      // rates (X) needs per-account pricing before an account of it is
+      // connected: refused before the platform is asked.
+      const paidFor = (workspaceId: WorkspaceId, platform: Platform) =>
+        allowance.passedThrough(workspaceId, platform).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.void,
+              onSome: ({ meter, reason }) =>
+                DateTime.now.pipe(
+                  Effect.flatMap((now) =>
+                    Effect.fail(
+                      new AllowanceReached({
+                        allowed: 0,
+                        meter,
+                        reason,
+                        resetsAt: DateTime.add(DateTime.startOf(now, "month"), {
+                          months: 1,
+                        }),
+                        used: 0,
+                      })
+                    )
+                  )
+                ),
+            })
+          ),
+          Effect.withSpan("ConnectChannel.paidFor")
+        );
+
       // Room for one more channel when a connection starts, unless it may
       // move an Instagram account the workspace has the other way in: that
       // adds no channel, and a new account is still checked before it is
@@ -348,6 +381,8 @@ export class ConnectChannel extends Context.Service<
           authorizer: PlatformAuthorizer
         ) {
           const { connection, platform } = authorizer;
+
+          yield* paidFor(workspaceId, platform);
 
           if (platform === "instagram" && connection !== undefined) {
             const connected = yield* channels.list(workspaceId);
@@ -587,6 +622,8 @@ export class ConnectChannel extends Context.Service<
           // Counted and added in turn with the workspace's other additions,
           // so two at once never pass the plan's limit together; then
           // counted for billing, still under the pool's hold.
+          yield* paidFor(actor.workspaceId, platform);
+
           yield* channels.addingTo(
             actor.workspaceId,
             roomForChannel(actor.workspaceId).pipe(

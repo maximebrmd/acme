@@ -19,6 +19,7 @@ import {
   LinkedInConnectionSchema,
   PlatformSchema,
 } from "./platform.ts";
+import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /**
@@ -232,7 +233,14 @@ const reconnectErrors = [
   PlatformUnreachable,
 ] as const;
 
-const connectErrors = [...reconnectErrors, PlanLimitReached] as const;
+// Connecting a new account needs room in the plan, and, for a platform
+// whose calls the billing account pays at the platform's rates (X), a
+// payment method on per-account pricing.
+const connectErrors = [
+  ...reconnectErrors,
+  PlanLimitReached,
+  UsageAllowanceReached,
+] as const;
 
 /** The social accounts connected to a workspace. */
 export class ChannelsApi extends HttpApiGroup.make("channels")
@@ -290,7 +298,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.",
+          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached, and an X account needs a payment method on per-account pricing, as X's calls are billed at X's rates (UsageAllowanceReached `xApi`, `paymentMethodRequired` without one). Needs channel:connect.",
         summary: "Start connecting an account",
       })
     ),
@@ -302,7 +310,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.",
+          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached), and, on a server that bills, an X account a payment method (UsageAllowanceReached `xApi`). Needs channel:connect.",
         summary: "Complete connecting an account",
       })
     ),

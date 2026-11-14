@@ -17,8 +17,13 @@ import type { Channel } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import {
+  everyWorkspaceOn,
+  everyWorkspacePaying,
+} from "#test/billing/support.ts";
+import {
   authorizersOf,
   ConnectAdaptersTest,
+  connectAdaptersOn,
   connectChannelOver,
   connectedChannel,
   xAuthorizerOn,
@@ -399,5 +404,51 @@ layer(AdaptersTest)("connecting an X account", (it) => {
         // X answered none: the refresh token still works.
         assert.strictEqual(yield* refresh, "refreshed");
       }).pipe(Effect.scoped)
+  );
+});
+
+// On a server that bills, X is passed through at X's rates: an account
+// needs per-account pricing before it connects one.
+layer(
+  Layer.mergeAll(
+    connectAdaptersOn(everyWorkspaceOn("free")),
+    RecordedNotices.layer
+  )
+)("connecting an X account without a payment method", (it) => {
+  it.effect("is refused before X is asked, for a payment method", () =>
+    Effect.gen(function* refused() {
+      const on = yield* onX();
+      const workspaceId = yield* freshWorkspace;
+
+      const refusal = yield* on.connect
+        .start(manager(workspaceId), "x", {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        })
+        .pipe(Effect.flip);
+
+      assert.deepInclude(refusal, {
+        _tag: "AllowanceReached",
+        allowed: 0,
+        meter: "xApi",
+        reason: "paymentMethodRequired",
+        used: 0,
+      });
+    }).pipe(Effect.scoped)
+  );
+});
+
+layer(
+  Layer.mergeAll(connectAdaptersOn(everyWorkspacePaying), RecordedNotices.layer)
+)("connecting an X account with a payment method", (it) => {
+  it.effect("connects it", () =>
+    Effect.gen(function* paying() {
+      const on = yield* onX();
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connected(on, workspaceId);
+
+      assert.strictEqual(channel.platform, "x");
+    }).pipe(Effect.scoped)
   );
 });
