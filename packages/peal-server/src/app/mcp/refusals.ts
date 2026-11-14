@@ -159,6 +159,10 @@ const unitPrice = (meter: Meter): string => {
     return "its price past the allowance is not set yet";
   }
 
+  if (meter === "xApi") {
+    return "billed at X's published rates, with nothing added, up to the account's monthly ceiling for X";
+  }
+
   const { cents, per } = rateCard.prices.usd.meters[meter];
 
   return per === 1
@@ -177,14 +181,23 @@ export const usageRefusalText = (
 ): string => {
   const until = DateTime.formatIsoDateUtc(resetsAt);
 
-  const held = `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meterNames[meter]} it may use this month, which starts again on ${until} (UTC).`;
+  // X has no allowance: its calls are billed from the first, when the
+  // account can be billed.
+  const held =
+    meter === "xApi"
+      ? `X's API is passed through at X's published rates, and the workspace's billing account cannot be billed for it now; this month's count starts again on ${until} (UTC).`
+      : `The workspace's billing account used ${String(used)} of the ${String(allowed)} ${meterNames[meter]} it may use this month, which starts again on ${until} (UTC).`;
 
   if (reason === "ceilingReached" && unconfirmedMeters.includes(meter)) {
     return `${held} Nothing past the allowance is used until its price is set: the user waits until then.`;
   }
 
   if (reason === "ceilingReached") {
-    return `${held} An owner or an admin raises the account's monthly ceiling on its billing page, ${billingUrl} (until the account's first invoice is paid, what its meters bill a month is capped whatever the ceiling), or the user waits until then.`;
+    return `${held} An owner or an admin raises the account's monthly ceiling on its billing page, ${billingUrl}, or the user waits until then.`;
+  }
+
+  if (reason === "spendCapReached") {
+    return `${held} No invoice of the account was paid yet, and until the account's first invoice is paid, what its meters bill is capped whatever its ceilings: the cap lifts once that invoice is paid (its billing page, ${billingUrl}), or the user waits until then.`;
   }
 
   if (reason === "notEnabled") {

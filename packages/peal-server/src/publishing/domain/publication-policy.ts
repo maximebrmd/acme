@@ -260,6 +260,26 @@ const badRequestReason = (code: string): RefusalReason => {
     return "planLimit";
   }
 
+  if (code === ownRefusalCodes.paymentMethodRequired) {
+    return "paymentMethodRequired";
+  }
+
+  if (code === ownRefusalCodes.xCeilingReached) {
+    return "xCeilingReached";
+  }
+
+  if (code === ownRefusalCodes.paymentFailed) {
+    return "paymentFailed";
+  }
+
+  if (code === ownRefusalCodes.perAccountPricingRequired) {
+    return "perAccountPricingRequired";
+  }
+
+  if (code === ownRefusalCodes.xThreadCut) {
+    return "xThreadCut";
+  }
+
   if (code === platformRefusalCodes.repliesNotAllowed) {
     return "repliesNotAllowed";
   }

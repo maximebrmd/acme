@@ -795,7 +795,10 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page.",
+      "xPaymentMethod": "An X account needs a payment method on the billing account, as X’s API is billed at X’s own rates. Add one on the billing page, then connect it.",
+      "xPaymentFailed": "An X account needs a billing account that can be billed, as X’s API is billed at X’s own rates, and its last payment failed. Update the payment method from the billing page, then connect it.",
+      "xPerAccountPricing": "An X account needs per-account pricing, as X’s API is billed at X’s own rates, and this workspace’s plan is one from before it. Move to per-account pricing on the billing page, then connect it."
     }
   },
   "PlatformConnect": {
@@ -1710,7 +1713,13 @@
       "media": "Images and videos on {channel}",
       "partMedia": "Images and videos of part {position}",
       "shortLinks": "Links show as written: they are shortened when the post goes out.",
-      "waitingForOptions": "The previews wait until the options below are fixed."
+      "waitingForOptions": "The previews wait until the options below are fixed.",
+      "unbilled": {
+        "xCeiling": "X bills each post, which Peal passes on at X’s rates, and this post’s parts on X pass what the billing account’s monthly ceiling for X has left: they would fail when due, nothing sent, unless the ceiling is raised on the billing page.",
+        "xPaymentFailed": "X bills each post, which Peal passes on at X’s rates, and the billing account’s last payment failed: this post’s parts on X would fail when due, nothing sent, unless the payment method is updated on the billing page.",
+        "xPerAccountPricing": "X bills each post, which Peal passes on at X’s rates, and this workspace’s plan is one from before per-account pricing: this post’s parts on X would fail when due, nothing sent.",
+        "xPaymentMethod": "X bills each post, which Peal passes on at X’s rates, and the billing account has no payment method: this post’s parts on X would fail when due, nothing sent, unless one is added on the billing page."
+      }
     }
   },
   "Drafts": {
@@ -1758,7 +1767,7 @@
     "rounds": "Sent {count, plural, one {once} other {# times}}",
     "attemptsTitle": "Attempts",
     "attempt": "{round, plural, =1 {Attempt {attempt}} other {Send {round}, attempt {attempt}}}, {at, date, medium} at {at, time, short}: {result}",
-    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Peal to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} appBillingLimit {the platform refused this server’s app until its operator pays for it} planLimit {the workspace’s plan had no room for it} partsNotSent {the parts after it cannot be sent from Peal} repliesNotAllowed {X did not let this server’s app post the parts after it as replies} other {{result}}}",
+    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Peal to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} appBillingLimit {the platform refused this server’s app until its operator pays for it} planLimit {the workspace’s plan had no room for it} partsNotSent {the parts after it cannot be sent from Peal} repliesNotAllowed {X did not let this server’s app post the parts after it as replies} paymentMethodRequired {the billing account has no payment method for X’s posts} xCeilingReached {it would have passed the billing account’s monthly ceiling for X} paymentFailed {the billing account’s last payment failed, so X’s post was not billed} perAccountPricingRequired {the workspace’s plan bills no use of X} xThreadCut {X’s meter refused this part, and the thread was cut here} other {{result}}}",
     "retryAt": "Tried again at {at, time, short}.",
     "noAttempts": "No attempt yet.",
     "repost": "Post again",
@@ -1790,7 +1799,8 @@
     "partsLeftOut": "Published without what did not go out after its first part: a member left it out.",
     "leaveOutComment": "Publish without the first comment",
     "leaveOutRest": "Publish without the rest",
-    "leftOut": "Published on {channel} without what did not go out."
+    "leftOut": "Published on {channel} without what did not go out.",
+    "threadCutAt": "The thread was cut at part {part}."
   },
   "Media": {
     "page": {
@@ -2061,7 +2071,6 @@
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "PaymentMethodNeeded": "{workspace} holds {accounts, number} connected accounts, more than the {allowed, number} the free tier includes. It still schedules and publishes on the accounts it had before billing began until {graceUntil} UTC; after that, nothing goes out until a payment method is added or {allowed, number} accounts are kept.",
-      "PlansRetiring": "Plans priced by channels are retired: the {plan} plan of {workspace} ends on {endsAt, date, long} and is not renewed. Move to per-account pricing on the billing page before then to end it at once, its unused time refunded; otherwise the workspace is on the free tier from that day.",
       "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
       "SubscriptionRenewing": "The yearly {plan} plan of {workspace} renews on {renewsAt, date, long} for {price}, VAT included. Cancel it before then to stop it.",
       "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
@@ -2075,9 +2084,11 @@
       "AdConnectionReconnectRequired": "{network} refused the sign-in that connects ad accounts to {workspace}. Their campaigns and numbers are no longer read, and no boost can be made on them, until the person who signed in does so again. Boosts that run keep running at the network.",
       "RecyclingEnded": "A post of {workspace} no longer repeats: {reason, select, sourceGone {the post it repeats was deleted.} sourceWithdrawn {the post it repeats was cancelled or taken back to draft: schedule it again, then resume.} starterGone {whoever started it can no longer schedule posts there.} noChannels {none of its channels is connected any more.} contentRejected {a platform refuses what the next post would say.} planLimit {the plan has no room left for posts that month.} queueGone {its queue was deleted.} other {its queue has no free slot.}}",
       "FeedStopped": "A feed of {workspace} no longer makes posts: {reason, select, gone {its site says it is gone for good.} notAFeed {for seven days, its address gave something that is not a feed.} queueGone {the queue it puts posts on was deleted.} starterGone {whoever added it can no longer make posts there. Whoever resumes it takes it over.} other {it could not be read for seven days.}}",
-      "AllowanceReached": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {assistant requests} assistantImages {assistant images} other {units}} its month includes without a payment method. No more go out until {resetsAt}, unless a payment method is added; reading and publishing go on."
+      "AllowanceReached": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {assistant requests} assistantImages {assistant images} other {units}} its month includes without a payment method. No more go out until {resetsAt}, unless a payment method is added; reading and publishing go on.",
+      "XSpendCeiling": "{percent, select, 100 {{workspace}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax: posts to X fail without being sent, and X's counts are not read, until {resetsAt}, unless the ceiling is raised.} other {{workspace}'s billing account spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's rates. Past it, posts to X and the reading of X's counts stop until {resetsAt}.}}",
+      "PlansRetiring": "Plans priced by channels are retired: the {plan} plan of {workspace} ends on {endsAt, date, long} and is not renewed. Move to per-account pricing on the billing page before then to end it at once, its unused time refunded; otherwise the workspace is on the free tier from that day."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance stayed used up (its uploads, or on YouTube the quota a first comment also spends), for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance stayed used up (its uploads, or on YouTube the quota a first comment also spends), for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} paymentMethodRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.} xCeilingReached {it would have passed the billing account’s monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.} paymentFailed {X bills each post, which Peal passes on at X’s rates, and the billing account’s last payment failed. Nothing was sent. Update the payment method from the billing page, then post it again.} perAccountPricingRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s plan is one from before per-account pricing, which bills no use of X. Nothing was sent. Move to per-account pricing on the billing page, then post it again.} xThreadCut {the thread was cut: its first parts are live, and X’s meter refused the next one, as the billing account cannot be billed for it now (the billing page says why). Once it can, send the rest again, or keep the live parts as the post.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} ads {Open the ads} recycling {Open the repeating posts} feeds {Open the feeds} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
@@ -2325,7 +2336,30 @@
         "save": "Save the ceiling",
         "failed": "The ceiling was not saved. Try again."
       },
-      "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed."
+      "assistantComing": "The writing assistant's monthly allowance and price are coming: until they are set, nothing past what is included is billed.",
+      "xRates": "At X’s rates",
+      "xIncluded": "None",
+      "xPassThrough": {
+        "title": "X, at X’s rates",
+        "description": "X bills each post and each read of its API. Peal passes it on at X’s published pay-per-use rates, with nothing added, up to the billing account’s monthly ceiling for X. An X account needs a payment method.",
+        "readOn": "X’s rates as read on its developer pricing page on {day}.",
+        "caption": "X’s rates passed on, per call or per item read",
+        "item": "Call",
+        "rate": "Rate, excl. VAT",
+        "rateIncluded": "With France’s {rate}% VAT",
+        "names": {
+          "postCreate": "A post sent",
+          "postCreateWithUrl": "A post sent with a link",
+          "postRead": "A post’s counts read, once a day",
+          "userRead": "An account’s followers read, once a day"
+        },
+        "readsOn": "This workspace reads its X channels’ counts and followers: each post and account read is billed at X’s rate, once a UTC day.",
+        "readsOff": "This workspace does not read its X channels’ counts: X’s analytics stay empty, and nothing is billed for reads.",
+        "turnOn": "Turn X reads on",
+        "turnOff": "Stop reading X",
+        "failed": "The change was not saved. Try again."
+      },
+      "usedOfMoney": "{used} of {most}"
     },
     "move": {
       "title": "Move to per-account pricing",
@@ -2478,7 +2512,9 @@
     "reachedMeter": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} it may use this month without a payment method. They start again on {resetsAt}.",
     "givesMeter": "With a payment method, {included, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {writing assistant requests} assistantImages {writing assistant images} other {units}} are included each month, and those past them are billed at the rate card's price, excl. VAT, each month for the month past.",
     "givesMeterComing": "With a payment method, the writing assistant on Peal's models has a monthly allowance; its price past the allowance is coming.",
-    "orWait": "Or wait for next month: reading and publishing go on meanwhile."
+    "orWait": "Or wait for next month: reading and publishing go on meanwhile.",
+    "reachedX": "{workspace}’s billing account has no payment method, and X’s API is billed at X’s own rates: an X account is connected, and posts go out to X, only with one.",
+    "givesX": "With a payment method, X’s calls are billed at X’s own published rates, with nothing added, each month for the month past, up to a monthly ceiling of {ceiling} excl. VAT, which you can change on the billing page."
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",
@@ -3408,7 +3444,7 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} partsNotSent {Later parts not sent} repliesNotAllowed {Replies refused by X} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} stillProcessing {Still processing} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} partsNotSent {Later parts not sent} repliesNotAllowed {Replies refused by X} paymentMethodRequired {Payment method needed for X} xCeilingReached {X ceiling reached} paymentFailed {Payment failed, X not billed} perAccountPricingRequired {Per-account pricing needed for X} xThreadCut {Thread cut by X’s meter} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} stillProcessing {Still processing} other {{reason}}}",
     "requests": {
       "title": "Contract requests",
       "description": "Requests to cancel a contract or withdraw from one that the form could not apply by itself: no contract was found, or their sender has not followed the link emailed to them. Apply one to a workspace only once you know its sender holds that contract; it takes effect as of the date it was received, and the sender is told.",

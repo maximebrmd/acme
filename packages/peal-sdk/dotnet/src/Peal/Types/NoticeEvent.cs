@@ -145,6 +145,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.XSpendCeiling"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.XSpendCeiling value)
+    {
+        Type = "XSpendCeiling";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionRenewing"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.SubscriptionRenewing value)
@@ -305,6 +314,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "AllowanceReached"
     /// </summary>
     public bool IsAllowanceReached => Type == "AllowanceReached";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "XSpendCeiling"
+    /// </summary>
+    public bool IsXSpendCeiling => Type == "XSpendCeiling";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "SubscriptionRenewing"
@@ -480,6 +494,15 @@ public record NoticeEvent
             : throw new global::System.Exception("NoticeEvent.Type is not 'AllowanceReached'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventXSpendCeiling"/> if <see cref="Type"/> is 'XSpendCeiling', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'XSpendCeiling'.</exception>
+    public Peal.NoticeEventXSpendCeiling AsXSpendCeiling() =>
+        IsXSpendCeiling
+            ? (Peal.NoticeEventXSpendCeiling)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'XSpendCeiling'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionRenewing"/> if <see cref="Type"/> is 'SubscriptionRenewing', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionRenewing'.</exception>
@@ -581,6 +604,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventTrialEnding, T> onTrialEnding,
         Func<Peal.NoticeEventPaymentMethodNeeded, T> onPaymentMethodNeeded,
         Func<Peal.NoticeEventAllowanceReached, T> onAllowanceReached,
+        Func<Peal.NoticeEventXSpendCeiling, T> onXSpendCeiling,
         Func<Peal.NoticeEventSubscriptionRenewing, T> onSubscriptionRenewing,
         Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
         Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
@@ -609,6 +633,7 @@ public record NoticeEvent
             "TrialEnding" => onTrialEnding(AsTrialEnding()),
             "PaymentMethodNeeded" => onPaymentMethodNeeded(AsPaymentMethodNeeded()),
             "AllowanceReached" => onAllowanceReached(AsAllowanceReached()),
+            "XSpendCeiling" => onXSpendCeiling(AsXSpendCeiling()),
             "SubscriptionRenewing" => onSubscriptionRenewing(AsSubscriptionRenewing()),
             "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
             "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
@@ -639,6 +664,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventTrialEnding> onTrialEnding,
         Action<Peal.NoticeEventPaymentMethodNeeded> onPaymentMethodNeeded,
         Action<Peal.NoticeEventAllowanceReached> onAllowanceReached,
+        Action<Peal.NoticeEventXSpendCeiling> onXSpendCeiling,
         Action<Peal.NoticeEventSubscriptionRenewing> onSubscriptionRenewing,
         Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
         Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
@@ -694,6 +720,9 @@ public record NoticeEvent
                 break;
             case "AllowanceReached":
                 onAllowanceReached(AsAllowanceReached());
+                break;
+            case "XSpendCeiling":
+                onXSpendCeiling(AsXSpendCeiling());
                 break;
             case "SubscriptionRenewing":
                 onSubscriptionRenewing(AsSubscriptionRenewing());
@@ -925,6 +954,20 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventXSpendCeiling"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsXSpendCeiling(out Peal.NoticeEventXSpendCeiling? value)
+    {
+        if (Type == "XSpendCeiling")
+        {
+            value = (Peal.NoticeEventXSpendCeiling)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionRenewing"/> and returns true if successful.
     /// </summary>
     public bool TryAsSubscriptionRenewing(out Peal.NoticeEventSubscriptionRenewing? value)
@@ -1088,6 +1131,8 @@ public record NoticeEvent
 
     public static implicit operator NoticeEvent(NoticeEvent.AllowanceReached value) => new(value);
 
+    public static implicit operator NoticeEvent(NoticeEvent.XSpendCeiling value) => new(value);
+
     public static implicit operator NoticeEvent(NoticeEvent.SubscriptionRenewing value) =>
         new(value);
 
@@ -1231,6 +1276,11 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventAllowanceReached"
                         ),
+                "XSpendCeiling" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventXSpendCeiling?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventXSpendCeiling"
+                        ),
                 "SubscriptionRenewing" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionRenewing?>(
                         options
@@ -1317,6 +1367,7 @@ public record NoticeEvent
                     "TrialEnding" => JsonSerializer.SerializeToNode(value.Value, options),
                     "PaymentMethodNeeded" => JsonSerializer.SerializeToNode(value.Value, options),
                     "AllowanceReached" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "XSpendCeiling" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionRenewing" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
@@ -1639,6 +1690,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.AllowanceReached(
             Peal.NoticeEventAllowanceReached value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for XSpendCeiling
+    /// </summary>
+    [Serializable]
+    public struct XSpendCeiling
+    {
+        public XSpendCeiling(Peal.NoticeEventXSpendCeiling value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventXSpendCeiling Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.XSpendCeiling(
+            Peal.NoticeEventXSpendCeiling value
         ) => new(value);
     }
 

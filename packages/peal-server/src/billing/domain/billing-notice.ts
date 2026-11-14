@@ -93,6 +93,15 @@ export const BillingNoticeSchema = Schema.Union([
     meter: MeterSchema,
     resetsAt: Schema.DateTimeUtc,
   }),
+  // The billing account spent `percent` (80, then 100) of its monthly
+  // ceiling for X, `ceiling` US dollar cents, at X's rates: at 100, X's
+  // posts and reads stop until `resetsAt`, the first of next month,
+  // unless the ceiling is raised.
+  Schema.TaggedStruct("XSpendCeiling", {
+    ceiling: Schema.Int,
+    percent: Schema.Int,
+    resetsAt: Schema.DateTimeUtc,
+  }),
   // The subscription was cancelled, and ends at `endsAt`.
   Schema.TaggedStruct("SubscriptionCancelled", {
     endsAt: Schema.DateTimeUtc,

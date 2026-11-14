@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -14,6 +14,24 @@ export interface PaidReadClaim {
    */
   readonly resources: readonly string[];
   readonly workspaceId: WorkspaceId;
+}
+
+/** What a claim covers: the resources it may read now, and the new ones. */
+export interface PaidReadsCovered {
+  /** Those it may read, in the order asked. */
+  readonly resources: readonly string[];
+  /**
+   * Of them, those this claim counted for the day (not read before today):
+   * what `release` takes back when the platform did not return them.
+   */
+  readonly fresh: readonly string[];
+  /** When it was claimed: the day its rows count in, and their month. */
+  readonly at: DateTime.Utc;
+}
+
+/** Resources a claim counted fresh to take back, with that claim's instant. */
+export interface PaidReadRelease extends PaidReadClaim {
+  readonly at: DateTime.Utc;
 }
 
 /**
@@ -33,6 +51,25 @@ export class PaidReads extends Context.Service<
      */
     readonly claim: (
       claim: PaidReadClaim
-    ) => Effect.Effect<readonly string[], DatabaseError>;
+    ) => Effect.Effect<PaidReadsCovered, DatabaseError>;
+    /**
+     * Takes back resources a claim counted fresh that the platform did not
+     * return (a refusal, a failed call, a token refused, a post gone): the
+     * platform bills only what it returns, so they are neither billed nor
+     * kept as read today. Where the server does not bill, the operator's
+     * daily allowance keeps them counted, as before.
+     */
+    readonly release: (
+      released: PaidReadRelease
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Whether the workspace reads the platform at all: on a server that
+     * bills, only once it turned X's reads on; elsewhere always. A reader
+     * skips a workspace that does not, as paused, before claiming.
+     */
+    readonly reads: (
+      workspaceId: WorkspaceId,
+      platform: Platform
+    ) => Effect.Effect<boolean, DatabaseError>;
   }
 >()("peal-server/analytics/application/PaidReads") {}

@@ -24,7 +24,9 @@ const usd = (amount: number) => ({ amount, currency: "usd" });
 /**
  * What clients see of a meter this month: its money (what is billed, the
  * ceiling, the estimate) only for the workspace that bills the account;
- * every workspace reads the counts and the allowance.
+ * every workspace reads the counts and the allowance. The most it may use
+ * past the allowance is what its ceiling or the cap pays for, so another
+ * workspace reads no more than the allowance.
  */
 export const meterView = (
   month: MeterMonth,
@@ -38,7 +40,12 @@ export const meterView = (
   estimate: billing ? usd(month.charge) : null,
   group: Option.getOrNull(month.group),
   meter: month.meter,
-  most: Option.getOrNull(month.most),
+  most: billing
+    ? Option.getOrNull(month.most)
+    : Math.min(
+        month.allowance,
+        Option.getOrElse(month.most, () => month.allowance)
+      ),
   price: card.prices.usd.meters[month.meter],
   priceConfirmed: !unconfirmedMeters.includes(month.meter),
   resetsAt: month.resetsAt,
@@ -129,6 +136,7 @@ export const billingView = (
     upcomingInvoice,
     usage,
     withdrawableUntil,
+    x,
   }: Overview,
   account: Option.Option<AccountView>
 ): Billing => ({
@@ -182,4 +190,11 @@ export const billingView = (
   usage,
   vatRate: displayVatRate,
   withdrawableUntil: Option.getOrNull(withdrawableUntil),
+  x: x.pipe(
+    Option.map(({ reads, setAt }) => ({
+      reads,
+      setAt: Option.getOrNull(setAt),
+    })),
+    Option.getOrNull
+  ),
 });

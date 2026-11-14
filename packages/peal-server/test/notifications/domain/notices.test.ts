@@ -156,6 +156,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     meter: "outboundMessages",
     resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
   },
+  XSpendCeiling: {
+    _tag: "XSpendCeiling",
+    ceiling: 2500,
+    percent: 80,
+    resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+  },
   TrialEnding: {
     _tag: "TrialEnding",
     endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
@@ -191,6 +197,7 @@ describe("notice events", () => {
       events.PaymentMethodNeeded,
       events.PlansRetiring,
       events.AllowanceReached,
+      events.XSpendCeiling,
     ]) {
       expect(audienceOf(billing)).toBe("billing:manage");
       expect(pageOf(billing, workspaceId)).toBe(`/app/${workspaceId}/billing`);

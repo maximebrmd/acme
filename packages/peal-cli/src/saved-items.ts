@@ -256,5 +256,7 @@ export const warningLines = (
 
         return `The queue ${queueName} is for ${String(channelIds.length)} ${one ? "channel that is" : "channels that are"} no longer connected, which the post ${made ? "was" : "would be"} made without: ${channelIds.join(", ")}. peal queues update takes ${one ? "it" : "them"} out of the queue.`;
       },
+      xNotBilled: ({ channelIds, reason }) =>
+        `X bills each post, passed on at X's rates, and the workspace's billing account cannot pay for it now (${reason}): on ${channelIds.join(", ")} the post would fail when due, nothing sent, unless that changes on the billing page.`,
     })
   );

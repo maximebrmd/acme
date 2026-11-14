@@ -13,7 +13,9 @@ import {
   meterMonthOf,
   meterMonthsOf,
   spendCapOf,
+  spendOfMonths,
   standingOfEntitlements,
+  unpaidSinceOf,
 } from "#billing/domain/meter-claims.ts";
 import type { MeterMonth } from "#billing/domain/meter-claims.ts";
 import {
@@ -128,6 +130,14 @@ export interface Overview {
    * may (whether the customer is one is checked on withdrawing).
    */
   readonly withdrawableUntil: Option.Option<DateTime.Utc>;
+  /**
+   * The workspace's X reads at X's rates, and when they last changed;
+   * none on a server that does not bill.
+   */
+  readonly x: Option.Option<{
+    readonly reads: boolean;
+    readonly setAt: Option.Option<DateTime.Utc>;
+  }>;
 }
 
 /** The account's month, as its billing workspace's members read it. */
@@ -221,6 +231,24 @@ export class BillingOverview extends Context.Service<
 
         const standing = standingOfEntitlements(current);
 
+        const spendCap =
+          standing === "payAsYouGo"
+            ? spendCapOf(current.verified)
+            : Option.none<number>();
+
+        // What the months before billed and is unpaid, which the cap counts.
+        const since = current.subscription.pipe(
+          Option.flatMap(unpaidSinceOf),
+          Option.filter(
+            (first) =>
+              Option.isSome(spendCap) && DateTime.isLessThan(first, month)
+          )
+        );
+
+        const unpaidBefore = Option.isSome(since)
+          ? spendOfMonths(yield* meterStore.between(holder, since.value, month))
+          : 0;
+
         return {
           billing: holder === workspaceId,
           months: meterMonthsOf({
@@ -230,11 +258,9 @@ export class BillingOverview extends Context.Service<
             counts,
             freeTier,
             month,
-            spendCap:
-              standing === "payAsYouGo"
-                ? spendCapOf(current.verified)
-                : Option.none(),
+            spendCap,
             standing,
+            unpaidBefore,
           }),
         };
       });
@@ -395,6 +421,17 @@ export class BillingOverview extends Context.Service<
               Result.getSuccess(mayWithdraw(subscription, now))
             )
           ),
+          x: billing
+            ? Option.some(
+                Option.match(yield* meterStore.xUsage(actor.workspaceId), {
+                  onNone: () => ({ reads: false, setAt: Option.none() }),
+                  onSome: ({ reads, setAt }) => ({
+                    reads,
+                    setAt: Option.some(setAt),
+                  }),
+                })
+              )
+            : Option.none(),
         };
 
         return overview;

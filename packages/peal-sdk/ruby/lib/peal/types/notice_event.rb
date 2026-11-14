@@ -37,6 +37,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventAllowanceReached }, key: "ALLOWANCE_REACHED"
 
+      member -> { Peal::Types::NoticeEventXSpendCeiling }, key: "X_SPEND_CEILING"
+
       member -> { Peal::Types::NoticeEventSubscriptionRenewing }, key: "SUBSCRIPTION_RENEWING"
 
       member -> { Peal::Types::NoticeEventSubscriptionCancelled }, key: "SUBSCRIPTION_CANCELLED"

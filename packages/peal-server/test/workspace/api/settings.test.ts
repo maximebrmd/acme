@@ -300,6 +300,7 @@ const PortsLive = Layer.mergeAll(
               ],
               plan: "pro",
               spendCeilings: [],
+              xReads: null,
               subscriptions: [
                 {
                   cancelAtPeriodEnd: false,

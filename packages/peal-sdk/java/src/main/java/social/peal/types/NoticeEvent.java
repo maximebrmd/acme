@@ -82,6 +82,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new AllowanceReachedValue(value));
     }
 
+    public static NoticeEvent xSpendCeiling(NoticeEventXSpendCeiling value) {
+        return new NoticeEvent(new XSpendCeilingValue(value));
+    }
+
     public static NoticeEvent subscriptionRenewing(NoticeEventSubscriptionRenewing value) {
         return new NoticeEvent(new SubscriptionRenewingValue(value));
     }
@@ -172,6 +176,10 @@ public final class NoticeEvent {
 
     public boolean isAllowanceReached() {
         return value instanceof AllowanceReachedValue;
+    }
+
+    public boolean isXSpendCeiling() {
+        return value instanceof XSpendCeilingValue;
     }
 
     public boolean isSubscriptionRenewing() {
@@ -312,6 +320,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventXSpendCeiling> getXSpendCeiling() {
+        if (isXSpendCeiling()) {
+            return Optional.of(((XSpendCeilingValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<NoticeEventSubscriptionRenewing> getSubscriptionRenewing() {
         if (isSubscriptionRenewing()) {
             return Optional.of(((SubscriptionRenewingValue) value).value);
@@ -432,6 +447,8 @@ public final class NoticeEvent {
 
         T visitAllowanceReached(NoticeEventAllowanceReached allowanceReached);
 
+        T visitXSpendCeiling(NoticeEventXSpendCeiling xSpendCeiling);
+
         T visitSubscriptionRenewing(NoticeEventSubscriptionRenewing subscriptionRenewing);
 
         T visitSubscriptionCancelled(NoticeEventSubscriptionCancelled subscriptionCancelled);
@@ -469,6 +486,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(TrialEndingValue.class),
         @JsonSubTypes.Type(PaymentMethodNeededValue.class),
         @JsonSubTypes.Type(AllowanceReachedValue.class),
+        @JsonSubTypes.Type(XSpendCeilingValue.class),
         @JsonSubTypes.Type(SubscriptionRenewingValue.class),
         @JsonSubTypes.Type(SubscriptionCancelledValue.class),
         @JsonSubTypes.Type(SubscriptionWithdrawnValue.class),
@@ -1030,6 +1048,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(AllowanceReachedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("XSpendCeiling")
+    @JsonIgnoreProperties("_tag")
+    private static final class XSpendCeilingValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventXSpendCeiling value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private XSpendCeilingValue() {}
+
+        private XSpendCeilingValue(NoticeEventXSpendCeiling value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitXSpendCeiling(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof XSpendCeilingValue && equalTo((XSpendCeilingValue) other);
+        }
+
+        private boolean equalTo(XSpendCeilingValue other) {
             return value.equals(other.value);
         }
 

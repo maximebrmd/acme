@@ -15,6 +15,9 @@ public final class AllowanceReason {
 
     public static final AllowanceReason CEILING_REACHED = new AllowanceReason(Value.CEILING_REACHED, "ceilingReached");
 
+    public static final AllowanceReason SPEND_CAP_REACHED =
+            new AllowanceReason(Value.SPEND_CAP_REACHED, "spendCapReached");
+
     public static final AllowanceReason PAYMENT_METHOD_REQUIRED =
             new AllowanceReason(Value.PAYMENT_METHOD_REQUIRED, "paymentMethodRequired");
 
@@ -58,6 +61,8 @@ public final class AllowanceReason {
                 return visitor.visitPaymentFailed();
             case CEILING_REACHED:
                 return visitor.visitCeilingReached();
+            case SPEND_CAP_REACHED:
+                return visitor.visitSpendCapReached();
             case PAYMENT_METHOD_REQUIRED:
                 return visitor.visitPaymentMethodRequired();
             case UNKNOWN:
@@ -77,6 +82,8 @@ public final class AllowanceReason {
                 return PAYMENT_FAILED;
             case "ceilingReached":
                 return CEILING_REACHED;
+            case "spendCapReached":
+                return SPEND_CAP_REACHED;
             case "paymentMethodRequired":
                 return PAYMENT_METHOD_REQUIRED;
             default:
@@ -95,6 +102,8 @@ public final class AllowanceReason {
 
         PAYMENT_FAILED,
 
+        SPEND_CAP_REACHED,
+
         UNKNOWN
     }
 
@@ -108,6 +117,8 @@ public final class AllowanceReason {
         T visitPlanAllowance();
 
         T visitPaymentFailed();
+
+        T visitSpendCapReached();
 
         T visitUnknown(String unknownType);
     }

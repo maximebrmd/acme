@@ -10,6 +10,7 @@ import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PublishRequest } from "#publishing/application/platform-publisher.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostMeter } from "#publishing/application/post-meter.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
@@ -82,6 +83,7 @@ const publisherWith = <E, R>(
     Layer.provide(
       Layer.mergeAll(
         NoLimits,
+        PostMeter.unmetered,
         RecordingClients,
         credentialsOf({ accountId: `synthetic@${platform}.test`, platform }, [
           "token-1",

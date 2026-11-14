@@ -198,6 +198,15 @@ export const NoticeEventSchema = Schema.Union([
     meter: MeterSchema,
     resetsAt: Schema.DateTimeUtc,
   }),
+  // The billing account spent `percent` (80, then 100) of its monthly
+  // ceiling for X, `ceiling` US dollar cents excluding tax, at X's rates:
+  // at 100, X's posts and reads stop until `resetsAt`, the first of next
+  // month UTC, unless the ceiling is raised on the billing page.
+  Schema.TaggedStruct("XSpendCeiling", {
+    ceiling: Schema.Int,
+    percent: Schema.Int,
+    resetsAt: Schema.DateTimeUtc,
+  }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
   // charge, VAT included, unless it is cancelled before.
   Schema.TaggedStruct("SubscriptionRenewing", {

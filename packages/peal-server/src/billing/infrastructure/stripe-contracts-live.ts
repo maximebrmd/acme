@@ -44,6 +44,7 @@ const PeriodSchema = Schema.Struct({ end: Schema.Int, start: Schema.Int });
 
 const PaidInvoiceSchema = Schema.Struct({
   amount_paid: Schema.Int,
+  total: Schema.optionalKey(Schema.Int),
   currency: Schema.NonEmptyString,
   id: Schema.NonEmptyString,
   lines: Schema.optionalKey(
@@ -275,7 +276,11 @@ export const StripeContractsLive = Layer.effect(
         Effect.withSpan("StripeContracts.isBusiness")
       );
 
-    const paidInvoices = (workspaceId: WorkspaceId, id: string) =>
+    const paidInvoices = (
+      workspaceId: WorkspaceId,
+      id: string,
+      options?: { readonly settledByCredit?: boolean }
+    ) =>
       call(
         workspaceId,
         async (stripe) =>
@@ -287,7 +292,11 @@ export const StripeContractsLive = Layer.effect(
           found.flatMap((invoice) =>
             Option.toArray(
               decodeInvoice(invoice).pipe(
-                Option.filter(({ amount_paid: paid }) => paid > 0),
+                Option.filter(
+                  ({ amount_paid: paid, total }) =>
+                    paid > 0 ||
+                    (options?.settledByCredit === true && (total ?? 0) > 0)
+                ),
                 Option.map((paid): PaidInvoice => ({
                   invoiceId: paid.id,
                   lines: (paid.lines?.data ?? []).flatMap(

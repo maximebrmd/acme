@@ -3,6 +3,8 @@
 import typing
 
 AllowanceReason = typing.Union[
-    typing.Literal["paymentMethodRequired", "ceilingReached", "notEnabled", "planAllowance", "paymentFailed"],
+    typing.Literal[
+        "paymentMethodRequired", "ceilingReached", "notEnabled", "planAllowance", "paymentFailed", "spendCapReached"
+    ],
     typing.Any,
 ]

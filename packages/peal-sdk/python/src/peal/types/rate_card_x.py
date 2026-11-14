@@ -14,6 +14,9 @@ class RateCardX(UniversalBaseModel):
         int, FieldMetadata(alias="defaultCeiling"), pydantic.Field(alias="defaultCeiling")
     ]
     rates: RateCardXRates
+    rates_read_on: typing_extensions.Annotated[
+        str, FieldMetadata(alias="ratesReadOn"), pydantic.Field(alias="ratesReadOn")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

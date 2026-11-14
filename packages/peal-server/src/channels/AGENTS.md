@@ -22,6 +22,14 @@
   the insert: `ChannelAllowance.counted` with the pool's count, which only
   a server that bills reads (billing's account-days). A new path that adds
   a channel calls it too; moving or reconnecting one adds none.
+- On a server that bills, an account of a platform whose calls are passed
+  through at the platform's rates (X, on the `xApi` meter) is connected
+  only on per-account pricing that pays: `ChannelAllowance.passedThrough`
+  (billing's `Entitlements.passThroughRefusal`) is asked when a
+  connection starts and again before the channel is added, and refuses
+  with `AllowanceReached` (`UsageAllowanceReached`, `paymentMethodRequired`
+  on the free tier); a connect link tells its holder `planLimit`.
+  Reconnecting an X channel is never refused, and existing ones stay.
 - Channels have their own OAuth flows and token tables. Better Auth's social
   providers are for signing in only.
 - Platform sign-in goes through one `PlatformAuthorizer` per platform

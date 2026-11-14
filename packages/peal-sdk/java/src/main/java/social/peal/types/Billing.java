@@ -62,6 +62,8 @@ public final class Billing {
 
     private final Optional<String> withdrawableUntil;
 
+    private final Optional<XUsage> x;
+
     private final Map<String, Object> additionalProperties;
 
     private Billing(
@@ -83,6 +85,7 @@ public final class Billing {
             Usage usage,
             int vatRate,
             Optional<String> withdrawableUntil,
+            Optional<XUsage> x,
             Map<String, Object> additionalProperties) {
         this.account = account;
         this.accounts = accounts;
@@ -102,6 +105,7 @@ public final class Billing {
         this.usage = usage;
         this.vatRate = vatRate;
         this.withdrawableUntil = withdrawableUntil;
+        this.x = x;
         this.additionalProperties = additionalProperties;
     }
 
@@ -219,6 +223,14 @@ public final class Billing {
         return withdrawableUntil;
     }
 
+    @JsonIgnore
+    public Optional<XUsage> getX() {
+        if (x == null) {
+            return Optional.empty();
+        }
+        return x;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("estimate")
     private Optional<Money> _getEstimate() {
@@ -267,6 +279,12 @@ public final class Billing {
         return withdrawableUntil;
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("x")
+    private Optional<XUsage> _getX() {
+        return x;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -296,7 +314,8 @@ public final class Billing {
                 && upcomingInvoice.equals(other.upcomingInvoice)
                 && usage.equals(other.usage)
                 && vatRate == other.vatRate
-                && withdrawableUntil.equals(other.withdrawableUntil);
+                && withdrawableUntil.equals(other.withdrawableUntil)
+                && x.equals(other.x);
     }
 
     @java.lang.Override
@@ -319,7 +338,8 @@ public final class Billing {
                 this.upcomingInvoice,
                 this.usage,
                 this.vatRate,
-                this.withdrawableUntil);
+                this.withdrawableUntil,
+                this.x);
     }
 
     @java.lang.Override
@@ -429,6 +449,12 @@ public final class Billing {
         _FinalStage withdrawableUntil(String withdrawableUntil);
 
         _FinalStage withdrawableUntil(Nullable<String> withdrawableUntil);
+
+        _FinalStage x(Optional<XUsage> x);
+
+        _FinalStage x(XUsage x);
+
+        _FinalStage x(Nullable<XUsage> x);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -454,6 +480,8 @@ public final class Billing {
         private Usage usage;
 
         private int vatRate;
+
+        private Optional<XUsage> x = Optional.empty();
 
         private Optional<String> withdrawableUntil = Optional.empty();
 
@@ -501,6 +529,7 @@ public final class Billing {
             usage(other.getUsage());
             vatRate(other.getVatRate());
             withdrawableUntil(other.getWithdrawableUntil());
+            x(other.getX());
             return this;
         }
 
@@ -550,6 +579,31 @@ public final class Billing {
         @JsonSetter("vatRate")
         public _FinalStage vatRate(int vatRate) {
             this.vatRate = vatRate;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage x(Nullable<XUsage> x) {
+            if (x.isNull()) {
+                this.x = null;
+            } else if (x.isEmpty()) {
+                this.x = Optional.empty();
+            } else {
+                this.x = Optional.of(x.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage x(XUsage x) {
+            this.x = Optional.ofNullable(x);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "x", nulls = Nulls.SKIP)
+        public _FinalStage x(Optional<XUsage> x) {
+            this.x = x;
             return this;
         }
 
@@ -824,6 +878,7 @@ public final class Billing {
                     usage,
                     vatRate,
                     withdrawableUntil,
+                    x,
                     additionalProperties);
         }
 
@@ -846,7 +901,8 @@ public final class Billing {
                     || key.equalsIgnoreCase("upcomingInvoice")
                     || key.equalsIgnoreCase("usage")
                     || key.equalsIgnoreCase("vatRate")
-                    || key.equalsIgnoreCase("withdrawableUntil")) {
+                    || key.equalsIgnoreCase("withdrawableUntil")
+                    || key.equalsIgnoreCase("x")) {
                 return;
             }
             this.additionalProperties.put(key, value);

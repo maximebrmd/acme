@@ -6,6 +6,7 @@ import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import type { MetricsReader } from "#analytics/application/metrics-reader.ts";
 import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
 import { AccountPaceLive } from "#analytics/infrastructure/account-pace.ts";
+import { PaidReadsLive } from "#analytics/infrastructure/billed-paid-reads.ts";
 import { ChannelsConnectedChannels } from "#analytics/infrastructure/channels-connected-channels.ts";
 import { CollectionPaceLive } from "#analytics/infrastructure/collection-pace.ts";
 import {
@@ -21,7 +22,6 @@ import { SqlAnalyticsAcrossReads } from "#analytics/infrastructure/sql-analytics
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
 import { SqlBestTimesReads } from "#analytics/infrastructure/sql-best-times-reads.ts";
 import { SqlExpiredAnalytics } from "#analytics/infrastructure/sql-expired-analytics.ts";
-import { SqlPaidReads } from "#analytics/infrastructure/sql-paid-reads.ts";
 import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channels.ts";
 
 /**
@@ -92,11 +92,13 @@ export const AnalyticsCronsLive = Layer.mergeAll(
  * The platforms' readers, Mastodon, Bluesky, TikTok, YouTube, Instagram and
  * Pinterest, LinkedIn pages and, where the operator turned its reads on,
  * X, whose reads are counted against each workspace's allowance for the
- * day (PaidReads). The channels' gates run them. Need the channels
- * context's ChannelAccess, Dns and the database.
+ * day, or on a server that bills claimed on its billing account's `xApi`
+ * meter for the workspaces that turned them on (PaidReads). The channels'
+ * gates run them. Need the channels context's ChannelAccess, Dns, the
+ * database, and billing's BillingMode, XPassThrough and MeteredUsage.
  */
 export const PlatformMetricsReaderLive = PlatformReaders.pipe(
-  Layer.provide(SqlPaidReads)
+  Layer.provide(PaidReadsLive)
 );
 
 // A workspace's analytics as a whole, alone: for the channels context,

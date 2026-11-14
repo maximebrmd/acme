@@ -667,4 +667,79 @@ describe(BillingView, () => {
     expect(elsewhere).not.toContain("$1.50");
     expect(paying).not.toContain("Save the ceiling");
   });
+
+  it("shows X at X's rates, with the day they were read, its ceiling on the billing workspace, and the switch for its reads", async () => {
+    const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
+
+    const meters: NonNullable<Billing["meters"]> = [
+      {
+        allowance: 0,
+        billable: 400,
+        ceiling: { amount: 2500, currency: "usd" },
+        estimate: { amount: 40, currency: "usd" },
+        group: "x",
+        meter: "xApi",
+        most: 25_000,
+        price: { cents: 1, per: 10 },
+        priceConfirmed: true,
+        resetsAt,
+        used: 400,
+      },
+    ];
+
+    const paying = await render("en", {
+      billing: {
+        ...onPerAccount,
+        meters,
+        x: { reads: false, setAt: null },
+      },
+      xReads: { canSwitch: true, workspaceId: "studio" },
+    });
+
+    expect(
+      missing(paying, [
+        "X API usage",
+        "$0.40 of $25.00",
+        "At X’s rates",
+        "$0.015",
+        "$0.20",
+        "November 14, 2026",
+        "X’s monthly ceiling",
+        "Save the ceiling",
+        "Turn X reads on",
+      ])
+    ).toStrictEqual([]);
+
+    const french = await render("fr", {
+      billing: { ...onPerAccount, meters, x: { reads: true, setAt: null } },
+      xReads: { canSwitch: true, workspaceId: "studio" },
+    });
+
+    expect(
+      missing(french, [
+        "Aux tarifs de X",
+        "14 novembre 2026",
+        "Arrêter de lire X",
+      ])
+    ).toStrictEqual([]);
+
+    const elsewhere = await render("en", {
+      billing: {
+        ...customer,
+        meters: meters.map((meter) => ({
+          ...meter,
+          billable: null,
+          ceiling: null,
+          estimate: null,
+          most: 0,
+        })),
+        x: { reads: false, setAt: null },
+      },
+      canManage: false,
+      xReads: { canSwitch: true, workspaceId: "client" },
+    });
+
+    expect(elsewhere).not.toContain("Save the ceiling");
+    expect(elsewhere).toContain("Turn X reads on");
+  });
 });

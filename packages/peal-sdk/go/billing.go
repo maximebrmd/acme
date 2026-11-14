@@ -298,6 +298,7 @@ var (
 	billingFieldUsage             = big.NewInt(1 << 15)
 	billingFieldVatRate           = big.NewInt(1 << 16)
 	billingFieldWithdrawableUntil = big.NewInt(1 << 17)
+	billingFieldX                 = big.NewInt(1 << 18)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
@@ -310,6 +311,7 @@ var billingNullableFields = map[string]*big.Int{
 	"trial":             billingFieldTrial,
 	"upcomingInvoice":   billingFieldUpcomingInvoice,
 	"withdrawableUntil": billingFieldWithdrawableUntil,
+	"x":                 billingFieldX,
 }
 
 type Billing struct {
@@ -331,6 +333,7 @@ type Billing struct {
 	Usage             *Usage                `json:"usage" url:"usage"`
 	VatRate           int                   `json:"vatRate" url:"vatRate"`
 	WithdrawableUntil *string               `json:"withdrawableUntil,omitempty" url:"withdrawableUntil,omitempty"`
+	X                 *XUsage               `json:"x,omitempty" url:"x,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -463,6 +466,13 @@ func (b *Billing) GetWithdrawableUntil() *string {
 		return nil
 	}
 	return b.WithdrawableUntil
+}
+
+func (b *Billing) GetX() *XUsage {
+	if b == nil {
+		return nil
+	}
+	return b.X
 }
 
 func (b *Billing) GetExtraProperties() map[string]interface{} {
@@ -605,6 +615,13 @@ func (b *Billing) SetVatRate(vatRate int) {
 func (b *Billing) SetWithdrawableUntil(withdrawableUntil *string) {
 	b.WithdrawableUntil = withdrawableUntil
 	b.require(billingFieldWithdrawableUntil)
+}
+
+// SetX sets the X field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetX(x *XUsage) {
+	b.X = x
+	b.require(billingFieldX)
 }
 
 func (b *Billing) UnmarshalJSON(data []byte) error {
@@ -3099,11 +3116,13 @@ func (r *RateCardStorage) String() string {
 var (
 	rateCardXFieldDefaultCeiling = big.NewInt(1 << 0)
 	rateCardXFieldRates          = big.NewInt(1 << 1)
+	rateCardXFieldRatesReadOn    = big.NewInt(1 << 2)
 )
 
 type RateCardX struct {
 	DefaultCeiling int             `json:"defaultCeiling" url:"defaultCeiling"`
 	Rates          *RateCardXRates `json:"rates" url:"rates"`
+	RatesReadOn    string          `json:"ratesReadOn" url:"ratesReadOn"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3124,6 +3143,13 @@ func (r *RateCardX) GetRates() *RateCardXRates {
 		return nil
 	}
 	return r.Rates
+}
+
+func (r *RateCardX) GetRatesReadOn() string {
+	if r == nil {
+		return ""
+	}
+	return r.RatesReadOn
 }
 
 func (r *RateCardX) GetExtraProperties() map[string]interface{} {
@@ -3154,6 +3180,13 @@ func (r *RateCardX) SetDefaultCeiling(defaultCeiling int) {
 func (r *RateCardX) SetRates(rates *RateCardXRates) {
 	r.Rates = rates
 	r.require(rateCardXFieldRates)
+}
+
+// SetRatesReadOn sets the RatesReadOn field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RateCardX) SetRatesReadOn(ratesReadOn string) {
+	r.RatesReadOn = ratesReadOn
+	r.require(rateCardXFieldRatesReadOn)
 }
 
 func (r *RateCardX) UnmarshalJSON(data []byte) error {
@@ -3754,4 +3787,118 @@ func (t *TrialOffer) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	xUsageFieldReads = big.NewInt(1 << 0)
+	xUsageFieldSetAt = big.NewInt(1 << 1)
+)
+
+// xUsageNullableFields maps the wire names of XUsage's nullable fields (required or optional) to their field bits.
+var xUsageNullableFields = map[string]*big.Int{
+	"setAt": xUsageFieldSetAt,
+}
+
+type XUsage struct {
+	Reads bool    `json:"reads" url:"reads"`
+	SetAt *string `json:"setAt,omitempty" url:"setAt,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (x *XUsage) GetReads() bool {
+	if x == nil {
+		return false
+	}
+	return x.Reads
+}
+
+func (x *XUsage) GetSetAt() *string {
+	if x == nil {
+		return nil
+	}
+	return x.SetAt
+}
+
+func (x *XUsage) GetExtraProperties() map[string]interface{} {
+	if x == nil {
+		return nil
+	}
+	return x.extraProperties
+}
+
+func (x *XUsage) require(field *big.Int) {
+	next := new(big.Int)
+	if x.explicitFields != nil {
+		next.Set(x.explicitFields)
+	}
+	next.Or(next, field)
+	x.explicitFields = next
+}
+
+// SetReads sets the Reads field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XUsage) SetReads(reads bool) {
+	x.Reads = reads
+	x.require(xUsageFieldReads)
+}
+
+// SetSetAt sets the SetAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XUsage) SetSetAt(setAt *string) {
+	x.SetAt = setAt
+	x.require(xUsageFieldSetAt)
+}
+
+func (x *XUsage) UnmarshalJSON(data []byte) error {
+	type unmarshaler XUsage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*x = XUsage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *x)
+	if err != nil {
+		return err
+	}
+	x.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, xUsageNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		x.require(presentFields)
+	}
+	x.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (x *XUsage) MarshalJSON() ([]byte, error) {
+	type embed XUsage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*x),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, x.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (x *XUsage) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	if len(x.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(x.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(x); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", x)
 }

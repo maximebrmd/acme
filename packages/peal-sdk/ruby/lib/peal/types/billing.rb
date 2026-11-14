@@ -40,6 +40,8 @@ module Peal
       field :vat_rate, -> { Integer }, optional: false, nullable: false, api_name: "vatRate"
 
       field :withdrawable_until, -> { String }, optional: false, nullable: true, api_name: "withdrawableUntil"
+
+      field :x, -> { Peal::Types::XUsage }, optional: true, nullable: true
     end
   end
 end

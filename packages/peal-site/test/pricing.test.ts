@@ -158,15 +158,45 @@ describe("the pricing page", () => {
     }
   );
 
-  it("shows as coming what the rate card has not confirmed, and no X", () => {
+  it("shows as coming what the rate card has not confirmed", () => {
     expect(comingMeters).toStrictEqual(unconfirmedMeters);
+  });
 
-    for (const locale of locales) {
-      expect(pageOf(locale).meters.map(({ meter }) => meter)).not.toContain(
-        "xApi"
+  it.each(locales)(
+    "states X's rates from the rate card, with nothing added, the day they were read and the default ceiling, in %s",
+    (locale) => {
+      const page = pageOf(locale);
+      const row = page.meters.find((each) => each.meter === "xApi");
+
+      expect(row?.price).toBeNull();
+      expect(row?.priceText).toBe(messages(locale).pricing.meters.prices.xApi);
+
+      // A rate is in thousandths of a dollar: a tenth of a cent.
+      expect(page.x.rates.map(({ item }) => item)).toStrictEqual([
+        "postCreate",
+        "postCreateWithUrl",
+        "postRead",
+        "userRead",
+      ]);
+
+      for (const rate of page.x.rates) {
+        const cents = rateCard.x.rates[rate.item] / 10;
+
+        expect(rate.price.excluded).toBe(dollars(locale, cents));
+        expect(rate.price.included).toBe(dollars(locale, withVat(cents)));
+      }
+
+      expect(page.x.readOn).toContain(
+        new Intl.DateTimeFormat(locale, {
+          dateStyle: "long",
+          timeZone: "UTC",
+        }).format(new Date(`${rateCard.x.ratesReadOn}T00:00:00Z`))
+      );
+      expect(page.x.ceiling).toContain(
+        dollars(locale, rateCard.x.defaultCeiling)
       );
     }
-  });
+  );
 
   it.each(locales)(
     "states the API's rate limit by standing in %s",

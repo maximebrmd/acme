@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
@@ -581,6 +581,52 @@ describe("reading an account's numbers", () => {
             .map(({ path, query }) => [path, query.get("user.fields")]),
           [["/2/users/me", "public_metrics"]]
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "X: skips, as paused, a workspace that does not read X, and gives back an account X did not return",
+    () =>
+      Effect.gen(function* billed() {
+        const server = yield* serving(() => empty(402));
+        const released = yield* Ref.make<readonly string[]>([]);
+
+        const owner = accountOf("x", "1460000000000000001", [
+          "tweet.read",
+          "users.read",
+        ]);
+
+        const off = yield* reading(
+          {
+            paidReads: paidReadsOf(10, { reads: false }),
+            xApi: server.url,
+            xReads: true,
+          },
+          owner
+        );
+
+        assert.deepStrictEqual(
+          failureOf(off.found),
+          new ChannelUnreadable({ reason: "paused" })
+        );
+        assert.lengthOf(server.requests(), 0);
+
+        const refused = yield* reading(
+          {
+            paidReads: paidReadsOf(10, { released }),
+            xApi: server.url,
+            xReads: true,
+          },
+          owner
+        );
+
+        assert.deepStrictEqual(
+          failureOf(refused.found),
+          new PlatformUnavailable()
+        );
+        assert.deepStrictEqual(yield* Ref.get(released), [
+          "user:1460000000000000001",
+        ]);
       }).pipe(Effect.scoped)
   );
 

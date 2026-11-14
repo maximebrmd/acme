@@ -133,10 +133,16 @@ export class StripeContracts extends Context.Service<
       workspaceId: WorkspaceId,
       customerId: string
     ) => Effect.Effect<boolean, StripeUnreachable>;
-    /** The subscription's paid invoices that took something, newest first. */
+    /**
+     * The subscription's paid invoices that took something, newest first;
+     * with `settledByCredit`, also those settled from the customer's credit
+     * balance (paid, a total above nothing, no charge), which count as a
+     * first paid invoice but refund nothing.
+     */
     readonly paidInvoices: (
       workspaceId: WorkspaceId,
-      subscriptionId: string
+      subscriptionId: string,
+      options?: { readonly settledByCredit?: boolean }
     ) => Effect.Effect<readonly PaidInvoice[], StripeUnreachable>;
     /**
      * What the subscription's next invoice will take, taxes included, if

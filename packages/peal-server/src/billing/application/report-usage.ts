@@ -441,7 +441,11 @@ export class ReportUsage extends Context.Service<
             Option.isNone(subscription.paidInvoiceAt) &&
             entitles(subscription)
           ) {
-            const invoices = yield* stripe.paidInvoices(workspaceId, id);
+            // One settled from a credit balance counts too: the customer
+            // paid it, if not by card.
+            const invoices = yield* stripe.paidInvoices(workspaceId, id, {
+              settledByCredit: true,
+            });
 
             if (invoices.length > 0) {
               // The threshold first: once the invoice is recorded, it is

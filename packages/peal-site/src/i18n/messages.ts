@@ -115,7 +115,8 @@ const en = {
     },
     meters: {
       allowance: "{count} a month included",
-      lead: "What costs Peal by use has a monthly allowance per billing account, across all its workspaces, from the first of each month (UTC). Without a payment method, such a use pauses at its allowance until the next month; with one, each unit past it is billed. Until your first invoice is paid, what usage bills in a month is capped.",
+      xIncluded: "Nothing included",
+      lead: "What costs Peal by use has a monthly allowance per billing account, across all its workspaces, from the first of each month (UTC). Without a payment method, such a use pauses at its allowance until the next month; with one, each unit past it is billed. Until your first invoice is paid, what usage bills is capped.",
       names: {
         assistantImages: "Writing assistant images",
         assistantRequests: "Writing assistant",
@@ -143,6 +144,20 @@ const en = {
         xApi: "at X's rates",
       },
       title: "Usage",
+      x: {
+        ceiling:
+          "What X bills a month stops at a ceiling of {ceiling} excluding tax by default, which you change on your billing page.",
+        lead: "X bills each call to its API. Peal passes it on at X's published pay-per-use rates, with nothing added: here are those a scheduler uses. A post's counts and an account's followers are read only for the workspaces that turn X's reads on, and each one once a UTC day.",
+        names: {
+          postCreate: "A post sent",
+          postCreateWithUrl: "A post sent with a link",
+          postRead: "A post's counts read",
+          userRead: "An account's followers read",
+        },
+        readOn:
+          "X's rates as read on X's developer pricing page on {day}. X may change them: the billing page always shows those billed.",
+        title: "X's rates",
+      },
     },
     nav: "Pricing",
     partMonth: {
@@ -298,7 +313,8 @@ const fr: Messages = {
     },
     meters: {
       allowance: "{count} inclus par mois",
-      lead: "Ce qui coûte à Peal à l’usage a une franchise mensuelle par compte de facturation, pour tous ses espaces de travail, à partir du premier de chaque mois (UTC). Sans moyen de paiement, cet usage s’interrompt à sa franchise jusqu’au mois suivant ; avec un moyen de paiement, chaque unité au-delà est facturée. Tant que votre première facture n’est pas payée, ce que l’usage facture dans un mois est plafonné.",
+      xIncluded: "Rien d’inclus",
+      lead: "Ce qui coûte à Peal à l’usage a une franchise mensuelle par compte de facturation, pour tous ses espaces de travail, à partir du premier de chaque mois (UTC). Sans moyen de paiement, cet usage s’interrompt à sa franchise jusqu’au mois suivant ; avec un moyen de paiement, chaque unité au-delà est facturée. Tant que votre première facture n’est pas payée, ce que l’usage facture est plafonné.",
       names: {
         assistantImages: "Images de l’assistant de rédaction",
         assistantRequests: "Assistant de rédaction",
@@ -326,6 +342,20 @@ const fr: Messages = {
         xApi: "aux tarifs de X",
       },
       title: "Usage",
+      x: {
+        ceiling:
+          "Ce que X facture dans un mois s’arrête par défaut à un plafond de {ceiling} hors taxes, que vous modifiez sur votre page de facturation.",
+        lead: "X facture chaque appel à son API. Peal le refacture aux tarifs à l’usage publiés par X, sans rien ajouter : voici ceux dont se sert un outil de programmation. Les chiffres d’une publication et les abonnés d’un compte ne sont lus que pour les espaces de travail qui activent la lecture de X, et chacun une fois par jour UTC.",
+        names: {
+          postCreate: "Une publication envoyée",
+          postCreateWithUrl: "Une publication envoyée avec un lien",
+          postRead: "Les chiffres d’une publication lus",
+          userRead: "Les abonnés d’un compte lus",
+        },
+        readOn:
+          "Tarifs de X relevés sur sa page de tarifs pour développeurs le {day}. X peut les changer : la page de facturation montre toujours ceux qui sont facturés.",
+        title: "Les tarifs de X",
+      },
     },
     nav: "Tarifs",
     partMonth: {

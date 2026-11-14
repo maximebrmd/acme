@@ -19,6 +19,11 @@ import {
   storableResult,
 } from "#publishing/domain/storable-outcome.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { MeterClaim } from "#shared/application/metered-usage.ts";
+import type {
+  AllowanceReached,
+  AllowanceReason,
+} from "#shared/domain/allowance-reached.ts";
 import { withinAllowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -28,11 +33,16 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
 
 import { LinkShortener } from "./link-shortener.ts";
 import { PlatformClients } from "./platform-client.ts";
-import type { OutgoingPost, ReplyReference } from "./platform-client.ts";
+import type {
+  OutgoingPost,
+  PlatformClient,
+  ReplyReference,
+} from "./platform-client.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
 import type { PublishRequest } from "./platform-publisher.ts";
 import { PostAllowance } from "./post-allowance.ts";
+import { PostMeter } from "./post-meter.ts";
 import { PostRepository } from "./post-repository.ts";
 
 // Nothing was sent yet: the database not answering is worth trying again.
@@ -42,6 +52,26 @@ const databaseDown = (failure: DatabaseError) =>
   );
 
 const overPlan = new BadRequest({ code: ownRefusalCodes.planLimit });
+
+// Why the meter refused a part, as the target fails: each standing in
+// words of its own (no payment method, a payment failing, a plan from
+// before per-account pricing, the ceiling or the cap before a first paid
+// invoice).
+const meterCodes = {
+  ceilingReached: ownRefusalCodes.xCeilingReached,
+  notEnabled: ownRefusalCodes.paymentMethodRequired,
+  paymentFailed: ownRefusalCodes.paymentFailed,
+  paymentMethodRequired: ownRefusalCodes.paymentMethodRequired,
+  planAllowance: ownRefusalCodes.perAccountPricingRequired,
+  spendCapReached: ownRefusalCodes.xCeilingReached,
+} as const satisfies { readonly [R in AllowanceReason]: string };
+
+// The meter refused a part: in its standing's words, or, when parts of
+// the thread are live already, as the thread cut there.
+const meterRefusal = ({ reason }: AllowanceReached, live: number) =>
+  new BadRequest({
+    code: live > 0 ? ownRefusalCodes.xThreadCut : meterCodes[reason],
+  });
 
 // When the post was due: the time it was scheduled for.
 const dueAt = (post: Post) =>
@@ -104,7 +134,12 @@ const interrupted: PublishResult = {
  * allows sends nothing, and of the posts due in a month only the first its plan allows
  * go out, by their time. The others fail as `planLimit`, nothing sent. A
  * run resumed may have gone out already, and is checked no further; nor is
- * a part after the first, whose post is already out.
+ * a part after the first, whose post is already out. Every part sent to a
+ * platform that bills per post (X) is claimed on the billing account's
+ * meter first (`PostMeter`): refused, nothing is sent (`paymentMethodRequired`,
+ * `xCeilingReached`); refused by the platform, it is given back. A part
+ * whose outcome is unknown stays claimed, as the platform may have billed
+ * it.
  */
 export const RoutedPlatformPublisher = Layer.effect(
   PlatformPublisher,
@@ -115,6 +150,73 @@ export const RoutedPlatformPublisher = Layer.effect(
     const allowance = yield* PostAllowance;
     const threaded = yield* CurrentThreadedPlatforms;
     const shortener = yield* LinkShortener;
+    const meter = yield* PostMeter;
+
+    // Sends the part, claimed first where the platform bills per post.
+    // Each part sent while the parts before it are live (every part of a
+    // round, as each is saved live as it goes out) checks first that the
+    // meter has room for it and every part after it, so a thread without
+    // room from the start sends nothing; the check holds nothing, so room
+    // taken by another claim since (another post or X channel, X's reads)
+    // or a standing changed cuts it at a later part.
+    const sendMetered = Effect.fn("Publishing.sendMetered")(
+      function* sendMetered(
+        client: PlatformClient,
+        post: OutgoingPost,
+        platform: Platform,
+        thread: { readonly live: number; readonly texts: readonly string[] }
+      ) {
+        const refused = (reached: AllowanceReached) =>
+          Effect.fail(meterRefusal(reached, thread.live));
+
+        if (post.part === thread.live) {
+          const room = yield* meter
+            .fits(
+              thread.texts.slice(post.part).map((text, index) => ({
+                platform,
+                // The part sent now as the channel receives it.
+                text: index === 0 ? post.text : text,
+                workspaceId: post.workspaceId,
+              }))
+            )
+            .pipe(Effect.catchTag("DatabaseError", databaseDown));
+
+          if (Option.isSome(room)) {
+            return yield* refused(room.value);
+          }
+        }
+
+        const claim = yield* meter
+          .claim({ platform, text: post.text, workspaceId: post.workspaceId })
+          .pipe(
+            Effect.catchTags({
+              AllowanceReached: refused,
+              DatabaseError: databaseDown,
+            })
+          );
+
+        const giveBack = (given: MeterClaim) =>
+          meter
+            .giveBack(given)
+            .pipe(
+              Effect.catchTag("DatabaseError", (failure) =>
+                Effect.logWarning(
+                  "Could not give back a part the platform refused",
+                  failure
+                )
+              )
+            );
+
+        return yield* client.publish(post).pipe(
+          Effect.tapError(() =>
+            Option.match(claim, {
+              onNone: () => Effect.void,
+              onSome: giveBack,
+            })
+          )
+        );
+      }
+    );
 
     // The part's text as the channel receives it: with its links' short
     // addresses when the post asks for them and the server has some. The
@@ -299,7 +401,18 @@ export const RoutedPlatformPublisher = Layer.effect(
         workspaceId: post.workspaceId,
       };
 
-      return { client: client.value, post: sent, stored: post };
+      return {
+        client: client.value,
+        platform: account.platform,
+        post: sent,
+        stored: post,
+        thread: {
+          live: target.value.liveParts.length,
+          texts: partsOn(post.content, request.channelId).map(
+            ({ text }) => text
+          ),
+        },
+      };
     });
 
     return PlatformPublisher.of({
@@ -312,7 +425,9 @@ export const RoutedPlatformPublisher = Layer.effect(
                 )
               : Effect.void
           ),
-          Effect.flatMap(({ client, post }) => client.publish(post)),
+          Effect.flatMap(({ client, platform, post, thread }) =>
+            sendMetered(client, post, platform, thread)
+          ),
           storable
         ),
       // Without the post or its channel, the earlier run cannot be checked.

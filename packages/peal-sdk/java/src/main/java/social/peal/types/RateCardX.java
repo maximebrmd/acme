@@ -23,11 +23,15 @@ public final class RateCardX {
 
     private final RateCardXRates rates;
 
+    private final String ratesReadOn;
+
     private final Map<String, Object> additionalProperties;
 
-    private RateCardX(int defaultCeiling, RateCardXRates rates, Map<String, Object> additionalProperties) {
+    private RateCardX(
+            int defaultCeiling, RateCardXRates rates, String ratesReadOn, Map<String, Object> additionalProperties) {
         this.defaultCeiling = defaultCeiling;
         this.rates = rates;
+        this.ratesReadOn = ratesReadOn;
         this.additionalProperties = additionalProperties;
     }
 
@@ -39,6 +43,11 @@ public final class RateCardX {
     @JsonProperty("rates")
     public RateCardXRates getRates() {
         return rates;
+    }
+
+    @JsonProperty("ratesReadOn")
+    public String getRatesReadOn() {
+        return ratesReadOn;
     }
 
     @java.lang.Override
@@ -53,12 +62,14 @@ public final class RateCardX {
     }
 
     private boolean equalTo(RateCardX other) {
-        return defaultCeiling == other.defaultCeiling && rates.equals(other.rates);
+        return defaultCeiling == other.defaultCeiling
+                && rates.equals(other.rates)
+                && ratesReadOn.equals(other.ratesReadOn);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.defaultCeiling, this.rates);
+        return Objects.hash(this.defaultCeiling, this.rates, this.ratesReadOn);
     }
 
     @java.lang.Override
@@ -77,7 +88,11 @@ public final class RateCardX {
     }
 
     public interface RatesStage {
-        _FinalStage rates(@NotNull RateCardXRates rates);
+        RatesReadOnStage rates(@NotNull RateCardXRates rates);
+    }
+
+    public interface RatesReadOnStage {
+        _FinalStage ratesReadOn(@NotNull String ratesReadOn);
     }
 
     public interface _FinalStage {
@@ -89,10 +104,12 @@ public final class RateCardX {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements DefaultCeilingStage, RatesStage, _FinalStage {
+    public static final class Builder implements DefaultCeilingStage, RatesStage, RatesReadOnStage, _FinalStage {
         private int defaultCeiling;
 
         private RateCardXRates rates;
+
+        private String ratesReadOn;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -102,6 +119,7 @@ public final class RateCardX {
         public Builder from(RateCardX other) {
             defaultCeiling(other.getDefaultCeiling());
             rates(other.getRates());
+            ratesReadOn(other.getRatesReadOn());
             return this;
         }
 
@@ -114,19 +132,28 @@ public final class RateCardX {
 
         @java.lang.Override
         @JsonSetter("rates")
-        public _FinalStage rates(@NotNull RateCardXRates rates) {
+        public RatesReadOnStage rates(@NotNull RateCardXRates rates) {
             this.rates = Objects.requireNonNull(rates, "rates must not be null");
             return this;
         }
 
         @java.lang.Override
+        @JsonSetter("ratesReadOn")
+        public _FinalStage ratesReadOn(@NotNull String ratesReadOn) {
+            this.ratesReadOn = Objects.requireNonNull(ratesReadOn, "ratesReadOn must not be null");
+            return this;
+        }
+
+        @java.lang.Override
         public RateCardX build() {
-            return new RateCardX(defaultCeiling, rates, additionalProperties);
+            return new RateCardX(defaultCeiling, rates, ratesReadOn, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("defaultCeiling") || key.equalsIgnoreCase("rates")) {
+            if (key.equalsIgnoreCase("defaultCeiling")
+                    || key.equalsIgnoreCase("rates")
+                    || key.equalsIgnoreCase("ratesReadOn")) {
                 return;
             }
             this.additionalProperties.put(key, value);

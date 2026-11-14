@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Schema } from "effect";
 
+import { metersOf, SpendGroupSchema } from "#billing/domain/meter-claims.ts";
 import {
   accountsCharge,
   accountsMonthly,
@@ -13,6 +14,7 @@ import {
   storageAllowance,
   stripeTiersOf,
   stripeUnitAmountOf,
+  unconfirmedMeters,
 } from "#billing/domain/rate-card.ts";
 
 const day = (written: string) => DateTime.makeUnsafe(`${written}T00:00:00Z`);
@@ -48,6 +50,37 @@ describe("the rate card", () => {
     expect(rateCard.meters.assistantRequests.ceiling).toBe(0);
     expect(rateCard.meters.assistantImages.ceiling).toBe(0);
     expect(rateCard.meters.outboundMessages.ceiling).toBeNull();
+  });
+
+  it("keeps X's published rates with the day they were read", () => {
+    expect(rateCard.x.ratesReadOn).toBe("2026-11-14");
+    expect(rateCard.x.rates).toStrictEqual({
+      dmCreate: 15,
+      dmEventRead: 10,
+      ownedRead: 1,
+      postCreate: 15,
+      postCreateWithUrl: 200,
+      postRead: 5,
+      userRead: 10,
+    });
+  });
+
+  it("bills X's units at X's rates, a thousandth of a dollar each, with nothing added", () => {
+    expect(rateCard.prices.usd.meters.xApi).toStrictEqual({
+      cents: 1,
+      per: 10,
+    });
+    expect(meterCharge("xApi", rateCard.x.rates.postCreateWithUrl)).toBe(20);
+  });
+
+  it("confirms a group's meters together, as one ceiling bounds them", () => {
+    for (const group of SpendGroupSchema.literals) {
+      const unconfirmed = metersOf(group).filter((meter) =>
+        unconfirmedMeters.includes(meter)
+      );
+
+      expect([0, metersOf(group).length]).toContain(unconfirmed.length);
+    }
   });
 });
 

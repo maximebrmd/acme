@@ -20,9 +20,16 @@ class RateCardX extends JsonSerializableType
     public RateCardXRates $rates;
 
     /**
+     * @var string $ratesReadOn
+     */
+    #[JsonProperty('ratesReadOn')]
+    public string $ratesReadOn;
+
+    /**
      * @param array{
      *   defaultCeiling: int,
      *   rates: RateCardXRates,
+     *   ratesReadOn: string,
      * } $values
      */
     public function __construct(
@@ -30,6 +37,7 @@ class RateCardX extends JsonSerializableType
     ) {
         $this->defaultCeiling = $values['defaultCeiling'];
         $this->rates = $values['rates'];
+        $this->ratesReadOn = $values['ratesReadOn'];
     }
 
     /**

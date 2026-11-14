@@ -360,6 +360,15 @@ const contentOf = (
         ["resetsAt", instantIn(resetsAt, locale)],
       ],
     }),
+    XSpendCeiling: ({ ceiling, percent, resetsAt }): Content => ({
+      messages:
+        percent >= 100 ? catalog.xCeilingReached : catalog.xCeilingNearing,
+      values: [
+        ["ceiling", moneyIn({ amount: ceiling, currency: "usd" }, locale)],
+        ["percent", String(percent)],
+        ["resetsAt", instantIn(resetsAt, locale)],
+      ],
+    }),
     SubscriptionWithdrawn: ({ plan, refunded, withdrawnAt }): Content => ({
       messages: catalog.subscriptionWithdrawn,
       values: [

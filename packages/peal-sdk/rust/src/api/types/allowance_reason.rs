@@ -8,6 +8,7 @@ pub enum AllowanceReason {
     NotEnabled,
     PlanAllowance,
     PaymentFailed,
+    SpendCapReached,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -21,6 +22,7 @@ impl Serialize for AllowanceReason {
             Self::NotEnabled => serializer.serialize_str("notEnabled"),
             Self::PlanAllowance => serializer.serialize_str("planAllowance"),
             Self::PaymentFailed => serializer.serialize_str("paymentFailed"),
+            Self::SpendCapReached => serializer.serialize_str("spendCapReached"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -35,6 +37,7 @@ impl<'de> Deserialize<'de> for AllowanceReason {
             "notEnabled" => Ok(Self::NotEnabled),
             "planAllowance" => Ok(Self::PlanAllowance),
             "paymentFailed" => Ok(Self::PaymentFailed),
+            "spendCapReached" => Ok(Self::SpendCapReached),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -48,6 +51,7 @@ impl fmt::Display for AllowanceReason {
             Self::NotEnabled => write!(f, "notEnabled"),
             Self::PlanAllowance => write!(f, "planAllowance"),
             Self::PaymentFailed => write!(f, "paymentFailed"),
+            Self::SpendCapReached => write!(f, "spendCapReached"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

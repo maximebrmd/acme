@@ -69,6 +69,11 @@ const Reached = ({
   const size = useSize();
   const format = useFormatter();
 
+  // X is billed at X's rates, with nothing included: no count to tell.
+  if (isMeterReason(reason) && reason.meter === "xApi") {
+    return <p>{t("reachedX", { workspace: workspaceName })}</p>;
+  }
+
   if (isMeterReason(reason)) {
     return (
       <p>
@@ -134,6 +139,10 @@ const Gives = ({ card, reason }: Pick<UpgradeViewProps, "card" | "reason">) => {
   const t = useTranslations("Upgrade");
   const dollars = useMoney("usd");
   const size = useSize();
+
+  if (isMeterReason(reason) && reason.meter === "xApi") {
+    return <p>{t("givesX", { ceiling: dollars(card.x.defaultCeiling) })}</p>;
+  }
 
   if (isMeterReason(reason)) {
     return (

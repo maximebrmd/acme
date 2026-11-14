@@ -209,6 +209,12 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       meter,
       resetsAt,
     }),
+    XSpendCeiling: ({ ceiling, percent, resetsAt }): NoticeEventView => ({
+      _tag: "XSpendCeiling",
+      ceiling,
+      percent,
+      resetsAt,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventView => ({
       _tag: "TrialEnding",
       endsAt,

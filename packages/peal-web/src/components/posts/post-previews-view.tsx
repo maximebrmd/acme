@@ -2,7 +2,13 @@
 
 import { Option } from "effect";
 import { useTranslations } from "next-intl";
-import type { Channel, ChannelPreview, TextCount } from "peal-contract";
+import type {
+  AllowanceReason,
+  Channel,
+  ChannelPreview,
+  PostWarning,
+  TextCount,
+} from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
@@ -17,7 +23,22 @@ import type { PreviewState } from "#posts/post-preview.ts";
 /** What the previews hold of the check's answer: a channel each. */
 export interface PreviewAnswer {
   readonly channels: readonly ChannelPreview[];
+  readonly warnings?: readonly PostWarning[] | undefined;
 }
+
+// What the billing account lacks to pay for X's posts, by the meter's
+// reason: the words of the warning.
+const unbilledKey = (reason: AllowanceReason) => {
+  if (reason === "ceilingReached" || reason === "spendCapReached") {
+    return "xCeiling";
+  }
+
+  if (reason === "paymentFailed") {
+    return "xPaymentFailed";
+  }
+
+  return reason === "planAllowance" ? "xPerAccountPricing" : "xPaymentMethod";
+};
 
 const Counts = ({ counts }: { readonly counts: readonly TextCount[] }) => {
   const t = useTranslations("Posts.Composer");
@@ -230,6 +251,17 @@ export const PostPreviewsView = ({
           </AlertDescription>
         </Alert>
       ) : null}
+      {(state.shown?.warnings ?? []).flatMap((warning) =>
+        warning._tag === "xNotBilled"
+          ? [
+              <Alert key="xNotBilled">
+                <AlertDescription>
+                  {t(`unbilled.${unbilledKey(warning.reason)}`)}
+                </AlertDescription>
+              </Alert>,
+            ]
+          : []
+      )}
       {body()}
     </section>
   );

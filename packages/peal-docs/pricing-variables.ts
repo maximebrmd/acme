@@ -202,6 +202,23 @@ const rateCardVariables = (locale: Locale): [string, string][] => {
       count(locale, meters.managedAds.allowanceWithout),
     ],
     [`ads-price-${locale}`, amount(locale, prices.managedAds.cents)],
+    // X's rates, passed on with nothing added: thousandths of a dollar,
+    // tenths of a cent.
+    [`x-post-${locale}`, amount(locale, rateCard.x.rates.postCreate / 10)],
+    [
+      `x-post-link-${locale}`,
+      amount(locale, rateCard.x.rates.postCreateWithUrl / 10),
+    ],
+    [`x-post-read-${locale}`, amount(locale, rateCard.x.rates.postRead / 10)],
+    [`x-user-read-${locale}`, amount(locale, rateCard.x.rates.userRead / 10)],
+    [`x-ceiling-${locale}`, dollars(locale, rateCard.x.defaultCeiling)],
+    [
+      `x-rates-read-${locale}`,
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: "long",
+        timeZone: "UTC",
+      }).format(new Date(`${rateCard.x.ratesReadOn}T00:00:00Z`)),
+    ],
     [`free-storage-${locale}`, size(locale, storage.withoutPaymentMethod)],
     [`storage-per-account-${locale}`, size(locale, storage.perAccount)],
     [`storage-minimum-${locale}`, size(locale, storage.minimum)],

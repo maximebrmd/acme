@@ -22,8 +22,8 @@ import { PlanHolders } from "./ports/plan-holders.ts";
  * What a billing account spends past a group's monthly allowances at
  * most: set on its billing workspace by a member with billing:manage, in
  * person. A ceiling may always be lowered, below what the month spent
- * too: the group's next use is then refused. A group whose prices are
- * all unconfirmed takes none (`CeilingNotOffered`). The meters read it at each
+ * too: the group's next use is then refused. A group with a price not
+ * confirmed takes none (`CeilingNotOffered`). The meters read it at each
  * claim; the activity log keeps who set it.
  */
 export class SpendCeilings extends Context.Service<
@@ -64,10 +64,12 @@ export class SpendCeilings extends Context.Service<
           return yield* new BillingOff();
         }
 
-        // A price not confirmed bills nothing past the allowance: no
-        // ceiling would change anything.
+        // A price not confirmed bills nothing past the allowance, and one
+        // ceiling bounds the group's meters together: none is taken until
+        // every price of the group is confirmed, as the billing page
+        // shows its form only then (the rate card confirms them together).
         if (
-          metersOf(group).every((meter) => unconfirmedMeters.includes(meter))
+          metersOf(group).some((meter) => unconfirmedMeters.includes(meter))
         ) {
           return yield* new CeilingNotOffered({ group });
         }

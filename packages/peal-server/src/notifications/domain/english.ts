@@ -170,6 +170,8 @@ export const english: EmailCatalog = {
     missed:
       "Peal was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    paymentMethodRequired:
+      "X bills each post, which Peal passes on at X's rates, and the workspace's billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.",
     partsNotSent:
       "its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. Sending it again from Peal is not possible: post the rest on the platform, as replies to the last part that is live.",
     planLimit:
@@ -183,6 +185,14 @@ export const english: EmailCatalog = {
     tokenExpired:
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",
+    xCeilingReached:
+      "it would have passed the billing account's monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.",
+    paymentFailed:
+      "X bills each post, which Peal passes on at X's rates, and the billing account's last payment failed: nothing past what is included goes out until it is paid. Nothing was sent. Update the payment method from the billing page, then post it again.",
+    perAccountPricingRequired:
+      "X bills each post, which Peal passes on at X's rates, and the workspace's plan is one from before per-account pricing, which bills no use of X. Nothing was sent. Move to per-account pricing on the billing page, then post it again.",
+    xThreadCut:
+      "the thread was cut: its first parts are live, and X's meter refused the next one, as the billing account cannot be billed for it now (no payment method, a payment failing, a plan from before per-account pricing, or its monthly ceiling for X: the billing page says which). Once it can, send the rest again, or keep the live parts as the post.",
   },
   feedStopReasons: {
     gone: "its site says the feed is gone for good.",
@@ -422,6 +432,20 @@ export const english: EmailCatalog = {
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "{workspaceName} used this month's {meter}",
+  },
+  xCeilingNearing: {
+    action: "Open the billing page",
+    body: "{workspaceName}'s billing account has spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's own rates. Once it is reached, posts to X and the reading of X's counts stop until {resetsAt}. Raise the ceiling on the billing page if you need more.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "{workspaceName} spent {percent}% of its X ceiling",
+  },
+  xCeilingReached: {
+    action: "Raise the ceiling",
+    body: "{workspaceName}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax, at X's own rates. Until {resetsAt}, posts to X fail without being sent and X's counts are not read; every other platform goes on. Raise the ceiling on the billing page to go on now.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "{workspaceName} reached its X ceiling",
   },
   meters: {
     assistantImages: "writing assistant images",

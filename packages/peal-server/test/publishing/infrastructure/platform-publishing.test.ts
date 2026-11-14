@@ -5,6 +5,7 @@ import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { LinkShortener } from "#publishing/application/link-shortener.ts";
+import { PostMeter } from "#publishing/application/post-meter.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
@@ -82,6 +83,7 @@ const platformsOn = (instanceUrl: string) =>
         ),
         mediaOf([]),
         LinkShortener.none,
+        PostMeter.unmetered,
         DrizzlePublicationProgress,
         DrizzleUploadSessions,
         DrizzlePlatformQuota,

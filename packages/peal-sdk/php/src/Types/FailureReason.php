@@ -20,4 +20,9 @@ enum FailureReason: string
     case PlanLimit = "planLimit";
     case PartsNotSent = "partsNotSent";
     case RepliesNotAllowed = "repliesNotAllowed";
+    case PaymentMethodRequired = "paymentMethodRequired";
+    case XCeilingReached = "xCeilingReached";
+    case PaymentFailed = "paymentFailed";
+    case PerAccountPricingRequired = "perAccountPricingRequired";
+    case XThreadCut = "xThreadCut";
 }

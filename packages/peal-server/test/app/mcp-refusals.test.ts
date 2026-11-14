@@ -60,6 +60,19 @@ describe(planRefusalText, () => {
   });
 });
 
+// X's refusal for a standing, as the MCP tools tell it.
+const xRefusal = (reason: "paymentFailed" | "planAllowance") =>
+  usageRefusalText(
+    new AllowanceReached({
+      allowed: 0,
+      meter: "xApi",
+      reason,
+      resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+      used: 0,
+    }),
+    billingUrl
+  );
+
 describe(usageRefusalText, () => {
   const resetsAt = DateTime.makeUnsafe("2026-12-01T00:00:00Z");
 
@@ -118,5 +131,46 @@ describe(usageRefusalText, () => {
         billingUrl
       )
     ).not.toContain("ceiling");
+  });
+
+  it("tells the cap until a first invoice is paid in words of its own", () => {
+    const capped = usageRefusalText(
+      new AllowanceReached({
+        allowed: 0,
+        meter: "outboundMessages",
+        reason: "spendCapReached",
+        resetsAt,
+        used: 0,
+      }),
+      billingUrl
+    );
+
+    expect(capped).toContain("until the account's first invoice is paid");
+    expect(capped).not.toContain("raises the account's monthly ceiling");
+  });
+
+  it("tells X at X's rates, never a price per ten units", () => {
+    const x = usageRefusalText(
+      new AllowanceReached({
+        allowed: 0,
+        meter: "xApi",
+        reason: "paymentMethodRequired",
+        resetsAt,
+        used: 0,
+      }),
+      billingUrl
+    );
+
+    expect(x).toContain("billed at X's published rates, with nothing added");
+    expect(x).not.toContain("past the allowance 10 cost");
+  });
+
+  it("tells X's refusal in its standing's words", () => {
+    expect(xRefusal("paymentFailed")).toContain("last payment failed");
+    expect(xRefusal("paymentFailed")).not.toContain("adds one");
+    expect(xRefusal("planAllowance")).toContain(
+      "moves it to per-account pricing"
+    );
+    expect(xRefusal("planAllowance")).not.toContain("used 0 of the 0");
   });
 });

@@ -4,6 +4,7 @@ import {
   AssistantQuotaExceeded,
   Forbidden,
   PlanLimitReached,
+  UsageAllowanceReached,
 } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
@@ -23,6 +24,23 @@ const quota = (plan: "free" | null) =>
     planWithRoom: plan === null ? null : "starter",
     resetsAt: DateTime.makeUnsafe("2026-11-11T00:00:00Z"),
   });
+
+// What X's refusal for a standing opens.
+const xRefusal = (
+  reason: "paymentFailed" | "paymentMethodRequired" | "planAllowance"
+) =>
+  limitIn(
+    Exit.fail(
+      new UsageAllowanceReached({
+        allowed: 0,
+        billingUrl,
+        meter: "xApi",
+        reason,
+        resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+        used: 0,
+      })
+    )
+  );
 
 describe(limitIn, () => {
   it("finds a plan's refusal in what a request ended with", () => {
@@ -61,6 +79,13 @@ describe(limitIn, () => {
       })
     );
     expect(limitIn(Exit.fail(quota(null)))).toStrictEqual(Option.none());
+  });
+
+  it("opens the dialog for X only where a payment method is the way out", () => {
+    expect(Option.isSome(xRefusal("paymentMethodRequired"))).toBeTruthy();
+    // A failing payment or a legacy plan is told by the page's own words.
+    expect(xRefusal("paymentFailed")).toStrictEqual(Option.none());
+    expect(xRefusal("planAllowance")).toStrictEqual(Option.none());
   });
 
   it("finds none in a success or another failure", () => {

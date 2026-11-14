@@ -55,8 +55,11 @@
   given back when the provider never ran it (or the library kept
   nothing), and forgiven when it failed once the provider had it (a
   timeout, a refusal, an unusable answer, the caller gone): free up to the
-  meter's allowance a month, then counted (`MeteredUsage.forgive`). A text
-  request still counts in `assistant.daily_usage`, unbounded, for the
+  meter's allowance a month, then counted (`MeteredUsage.forgive`).
+  `suggest` claims, counts the day and installs the finalizer that takes
+  them back in one uninterruptible region (`Effect.uninterruptibleMask`,
+  the model alone restored), so an interruption never leaves a unit
+  claimed. A text request still counts in `assistant.daily_usage`, unbounded, for the
   usage ledger's snapshot; images no longer take the day's requests. The
   status answers `month` and `images.month` (included, used, the most,
   price, ceiling, `priceConfirmed`), the daily fields from the month, and

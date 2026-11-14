@@ -234,7 +234,8 @@ public class GetTest : BaseMockServerTest
                     "postCreateWithUrl": 1,
                     "postRead": 1,
                     "userRead": 1
-                  }
+                  },
+                  "ratesReadOn": "ratesReadOn"
                 }
               },
               "subscription": {
@@ -270,7 +271,11 @@ public class GetTest : BaseMockServerTest
                 }
               },
               "vatRate": 1,
-              "withdrawableUntil": "withdrawableUntil"
+              "withdrawableUntil": "withdrawableUntil",
+              "x": {
+                "reads": true,
+                "setAt": "setAt"
+              }
             }
             """;
 
@@ -463,7 +468,8 @@ public class GetTest : BaseMockServerTest
                     "postCreateWithUrl": 1,
                     "postRead": 1,
                     "userRead": 1
-                  }
+                  },
+                  "ratesReadOn": "ratesReadOn"
                 }
               },
               "subscription": {
@@ -499,7 +505,11 @@ public class GetTest : BaseMockServerTest
                 }
               },
               "vatRate": 1,
-              "withdrawableUntil": "withdrawableUntil"
+              "withdrawableUntil": "withdrawableUntil",
+              "x": {
+                "reads": true,
+                "setAt": "setAt"
+              }
             }
             """;
 

@@ -23,6 +23,11 @@ module Peal
       PLAN_LIMIT = "planLimit"
       PARTS_NOT_SENT = "partsNotSent"
       REPLIES_NOT_ALLOWED = "repliesNotAllowed"
+      PAYMENT_METHOD_REQUIRED = "paymentMethodRequired"
+      X_CEILING_REACHED = "xCeilingReached"
+      PAYMENT_FAILED = "paymentFailed"
+      PER_ACCOUNT_PRICING_REQUIRED = "perAccountPricingRequired"
+      X_THREAD_CUT = "xThreadCut"
     end
   end
 end

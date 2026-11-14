@@ -32,6 +32,15 @@ pub enum PostWarning {
         queue_name: String,
     },
 
+    #[serde(rename = "xNotBilled")]
+    #[non_exhaustive]
+    XNotBilled {
+        #[serde(rename = "channelIds")]
+        #[serde(default)]
+        channel_ids: Vec<String>,
+        reason: AllowanceReason,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -61,6 +70,13 @@ impl PostWarning {
             channel_ids,
             queue_id,
             queue_name,
+        }
+    }
+
+    pub fn x_not_billed(channel_ids: Vec<String>, reason: AllowanceReason) -> Self {
+        Self::XNotBilled {
+            channel_ids,
+            reason,
         }
     }
 
