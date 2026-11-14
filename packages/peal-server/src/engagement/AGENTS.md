@@ -469,7 +469,14 @@
   transaction. `outgoing_messages_pending` holds one message on its way
   or unconfirmed a conversation; `outgoing_messages_key` one a key
   (`messageKeyLifetime`, 24 hours). A message that ends failed, or a
-  person finds never went out (`confirm`), gives its claim back. The
+  person finds never went out (`confirm`), gives its claim back, as does
+  each that never set out (`sending`, no call begun) when its channel's
+  messages are turned off or found disconnected (`forgetChannelMessages`),
+  its channel leaves or its workspace is erased (`EngagementRecords`, on
+  the meters: `MetersContextLive` is built below the channels context in
+  `src/app/server.ts` for that). Those rows are locked (`FOR UPDATE`)
+  until the deletion commits, so a job that would begin one finds it
+  gone. The
   gate claims the call first (`claimCall`).
 - Retention: each message is deleted `conversationsKeptFor` (30 days)
   after it was sent, a settled outgoing message 30 days after it settled,

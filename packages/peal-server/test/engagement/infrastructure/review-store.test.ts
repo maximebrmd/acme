@@ -25,6 +25,7 @@ import type { ReviewReading } from "#engagement/domain/review.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleReviewStore } from "#engagement/infrastructure/drizzle-review-store.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
@@ -36,7 +37,7 @@ import { reviewReading } from "#test/engagement/support.ts";
 
 const StoreTest = Layer.mergeAll(
   DrizzleReviewStore,
-  DrizzleEngagementRecords
+  DrizzleEngagementRecords.pipe(Layer.provide(MeteredUsage.layerUnmetered))
 ).pipe(Layer.provideMerge(DatabaseTest));
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);

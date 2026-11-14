@@ -11,9 +11,9 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { forgetChannelMessages } from "./forget-channel-messages.ts";
 import { MessageAbilityUnavailable } from "./message-ability-unavailable.ts";
 import { MessagesNeedPerson } from "./messages-need-person.ts";
-import { claimOf } from "./outgoing-message-claim.ts";
 import { EngagementChannels } from "./ports/engagement-channels.ts";
 import { MessageStore } from "./ports/message-store.ts";
 import type {
@@ -109,15 +109,7 @@ export class MessageSettings extends Context.Service<
           if (!on) {
             // What was on its way and never set out is not sent: its
             // outbound message is given back as its row goes.
-            yield* transaction(
-              Effect.gen(function* off() {
-                for (const unsent of yield* store.unsentOf(channelId)) {
-                  yield* meters.giveBack(claimOf(unsent));
-                }
-
-                yield* store.channelGone(channelId);
-              })
-            );
+            yield* transaction(forgetChannelMessages(store, meters, channelId));
 
             return yield* viewOf(actor);
           }

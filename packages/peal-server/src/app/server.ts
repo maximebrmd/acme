@@ -258,22 +258,10 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 // limit it, the audit log of staff's impersonations it records and the
 // legal records of the connections that change content, the count of
 // the requests each key and application sends and the activity logs of the
-// changes they ask for, then the
-// notices, which read the workspace's members, then the webhooks, which
-// tell a workspace through them that an endpoint was turned off, then the
-// channels context, which sends notices and webhook events, as publishing
-// does.
-const ChannelsWithNoticesLive = ChannelsLive.pipe(
-  // A connect link's connections go to the workspace's activity log.
-  Layer.provide(ConnectLinkJournalLive),
-  // A channel gone or back is told to analytics, and a channel gone to
-  // engagement, in its transaction.
-  Layer.provide(AnalyticsRecordsLive),
-  Layer.provide(EngagementRecordsLive),
-  // Meta's requests about a Facebook user reach their sign-ins to its ad
-  // network too, which the ads context holds.
-  Layer.provide(AdsPlatformUserGrants),
-  Layer.provideMerge(WebhooksContextLive),
+// changes they ask for, then the notices, which read the workspace's
+// members, then the webhooks, which tell a workspace through them that an
+// endpoint was turned off.
+const NoticesContextLive = WebhooksContextLive.pipe(
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
     WorkspaceLive.pipe(
@@ -284,6 +272,42 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
       Layer.provideMerge(ActivityContextLive)
     )
   )
+);
+
+// The meters the assistant, the inbox and ads claim, on billing's
+// accounts, telling billing managers through the notices when one pauses.
+// Below the channels context, which gives back through them what a
+// channel that leaves had not sent.
+const MetersContextLive = BillingMetersLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      NoticesContextLive,
+      PartnerOwnershipLive,
+      WorkspaceOwnersLive
+    )
+  )
+);
+
+// What engagement keeps that other contexts erase or end: a channel gone
+// or a workspace erased gives back the outbound messages of what never
+// set out, on the meters.
+const EngagementRecordsContextLive = EngagementRecordsLive.pipe(
+  Layer.provide(MetersContextLive)
+);
+
+// The channels context, over those, which sends notices and webhook
+// events, as publishing does.
+const ChannelsWithNoticesLive = ChannelsLive.pipe(
+  // A connect link's connections go to the workspace's activity log.
+  Layer.provide(ConnectLinkJournalLive),
+  // A channel gone or back is told to analytics, and a channel gone to
+  // engagement, in its transaction.
+  Layer.provide(AnalyticsRecordsLive),
+  Layer.provide(EngagementRecordsContextLive),
+  // Meta's requests about a Facebook user reach their sign-ins to its ad
+  // network too, which the ads context holds.
+  Layer.provide(AdsPlatformUserGrants),
+  Layer.provideMerge(NoticesContextLive)
 );
 
 // The media context, which asks publishing which posts show an asset before
@@ -306,18 +330,6 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
   Layer.provide(ChannelsWithNoticesLive)
 );
 
-// The meters the assistant, the inbox and ads claim, on billing's
-// accounts, telling billing managers through the notices when one pauses.
-const MetersContextLive = BillingMetersLive.pipe(
-  Layer.provide(
-    Layer.mergeAll(
-      ChannelsWithNoticesLive,
-      PartnerOwnershipLive,
-      WorkspaceOwnersLive
-    )
-  )
-);
-
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds, once the review context's gate admits
 // them.
@@ -334,7 +346,7 @@ const PublishingContextLive = PublishingLive.pipe(
       MediaContextLive,
       ReviewGateContextLive,
       AnalyticsRecordsLive,
-      EngagementRecordsLive,
+      EngagementRecordsContextLive,
       PostBoostsLive,
       ShortLinkSettingsLive
     )
@@ -439,7 +451,7 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       MediaContextLive,
       AssistantContextLive,
       AnalyticsLive,
-      EngagementRecordsLive,
+      EngagementRecordsContextLive,
       StaffRecordsLive,
       ReviewGateContextLive,
       AdsRoutesContextLive,
@@ -455,7 +467,7 @@ const ErasedContextsLive = Layer.mergeAll(
   MediaContextLive,
   AssistantContextLive,
   AnalyticsLive,
-  EngagementRecordsLive,
+  EngagementRecordsContextLive,
   StaffRecordsLive,
   ReviewGateContextLive,
   AdsRoutesContextLive,
@@ -666,8 +678,12 @@ const AnalyticsContextLive = Layer.merge(
   Layer.provide(ChannelsWithNoticesLive)
 );
 
-// The contexts' use cases and adapters, which handlers and workers share.
-const ContextsLive = Layer.mergeAll(
+/**
+ * The contexts' use cases and adapters, which handlers and workers share:
+ * what `ServerLive` runs its routes and workers on. Exported for the test
+ * that builds it.
+ */
+export const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaContextLive,

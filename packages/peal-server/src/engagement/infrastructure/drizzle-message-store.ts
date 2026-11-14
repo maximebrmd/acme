@@ -896,6 +896,9 @@ export const DrizzleMessageStore = Layer.effect(
             isNull(outgoingMessages.attemptedAt)
           )
         )
+        // Locked until the transaction ends: a job that would begin one
+        // waits, then finds it gone.
+        .for("update")
         .pipe(Effect.mapError(failed));
 
       return yield* Effect.all(rows.map(outgoingOfRow));

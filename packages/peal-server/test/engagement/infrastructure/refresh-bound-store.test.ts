@@ -25,6 +25,7 @@ import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-eng
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import {
   ChannelIdSchema,
@@ -67,7 +68,10 @@ const SqlTransactions = Layer.effect(
 
 const PurgeTest = PurgeEngagement.layer.pipe(
   Layer.provideMerge(
-    Layer.merge(DrizzleEngagementStore, DrizzleEngagementRecords)
+    Layer.merge(
+      DrizzleEngagementStore,
+      DrizzleEngagementRecords.pipe(Layer.provide(MeteredUsage.layerUnmetered))
+    )
   ),
   Layer.provideMerge(SqlTransactions),
   Layer.provideMerge(DatabaseTest)

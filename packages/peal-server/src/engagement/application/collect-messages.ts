@@ -33,8 +33,10 @@ import type { MessageBox } from "#engagement/domain/message-box.ts";
 import { CurrentInboxMessages } from "#shared/application/current-inbox-messages.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
+import { forgetChannelMessages } from "./forget-channel-messages.ts";
 import { MessageOutcomes } from "./ports/message-outcomes.ts";
 import { MessageSource } from "./ports/message-source.ts";
 import type {
@@ -154,6 +156,7 @@ export class CollectMessages extends Context.Service<
       const pace = yield* MessagesPaceRef;
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
+      const meters = yield* MeteredUsage;
 
       // One conversation as the read found it: kept, its messages
       // reconciled, and the messages others sent since the channel was
@@ -321,7 +324,9 @@ export class CollectMessages extends Context.Service<
           failure._tag === "ChannelUnreadable" &&
           failure.reason === "disconnected"
         ) {
-          return store.channelGone(box.channelId).pipe(Effect.asVoid);
+          return transaction(
+            forgetChannelMessages(store, meters, box.channelId)
+          );
         }
 
         return store.saveBox(

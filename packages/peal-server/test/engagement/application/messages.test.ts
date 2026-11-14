@@ -618,6 +618,31 @@ describe("a message on a server that bills", () => {
     }
   );
 
+  it.effect(
+    "gives it back when a read finds its channel disconnected before it set out",
+    () => {
+      const { meters, world } = billed(5);
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+      );
+      world.state.read = () =>
+        Effect.fail(new ChannelUnreadable({ reason: "disconnected" }));
+
+      return at(
+        Effect.gen(function* disconnected() {
+          yield* sending("Hello");
+
+          yield* CollectMessages.use((collect) => collect.run(messagedAt));
+
+          assert.strictEqual(world.state.outgoing.size, 0);
+          assert.strictEqual((yield* ledger).used.get("outboundMessages"), 0);
+        })
+      ).pipe(Effect.provide(Layer.merge(world.layer, meters)));
+    }
+  );
+
   it.effect("gives it back when the message never went out", () => {
     const { meters, world } = billed(5);
 

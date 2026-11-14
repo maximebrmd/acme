@@ -1,4 +1,5 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -6,11 +7,13 @@ import { EngagementRecords } from "#engagement/application/engagement-records.ts
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type {
   SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
 } from "#shared/application/personal-data.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -44,6 +47,46 @@ export const DrizzleEngagementRecords = Layer.effect(
   Effect.gen(function* DrizzleEngagementRecords() {
     const db = yield* Drizzle;
     const sql = yield* SqlClient.SqlClient;
+    const meters = yield* MeteredUsage;
+
+    // The messages sent from Peal that never set out (on their way, no
+    // call begun), locked until the caller's transaction ends, so a job
+    // that would begin one waits and then finds it gone.
+    const unsentWhere = (where: SQL | undefined) =>
+      db
+        .select({
+          createdAt: outgoingMessages.createdAt,
+          workspaceId: outgoingMessages.workspaceId,
+        })
+        .from(outgoingMessages)
+        .where(
+          and(
+            where,
+            eq(outgoingMessages.status, "sending"),
+            isNull(outgoingMessages.attemptedAt)
+          )
+        )
+        .for("update");
+
+    // Their outbound messages, given back once their rows went: what
+    // never set out is not billed.
+    const giveBackUnsent = (
+      unsent: readonly {
+        readonly createdAt: Date;
+        readonly workspaceId: string;
+      }[]
+    ) =>
+      Effect.forEach(
+        unsent,
+        (message) =>
+          meters.giveBack({
+            at: DateTime.fromDateUnsafe(message.createdAt),
+            meter: "outboundMessages",
+            units: 1,
+            workspaceId: WorkspaceIdSchema.make(message.workspaceId),
+          }),
+        { discard: true }
+      );
 
     const exportUser = Effect.fn("EngagementRecords.exportUser")(
       function* exportUser(userId: string) {
@@ -124,10 +167,14 @@ export const DrizzleEngagementRecords = Layer.effect(
         const now = yield* DateTime.now;
 
         // In the caller's transaction, whose end releases the lock.
-        yield* sql
+        const unsent = yield* sql
           .withTransaction(
             Effect.gen(function* erasing() {
               yield* shareFollowingLock(sql);
+
+              const found = yield* unsentWhere(
+                eq(outgoingMessages.workspaceId, workspaceId)
+              );
 
               yield* db
                 .insert(erasedWorkspaces)
@@ -157,9 +204,14 @@ export const DrizzleEngagementRecords = Layer.effect(
               yield* db
                 .delete(conversations)
                 .where(eq(conversations.workspaceId, workspaceId));
+
+              return found;
             })
           )
           .pipe(Effect.mapError(failed));
+
+        // Before billing forgets the workspace, later in the erasure.
+        yield* giveBackUnsent(unsent);
       }
     );
 
@@ -229,9 +281,13 @@ export const DrizzleEngagementRecords = Layer.effect(
         // with their messages and those sent from Peal: correspondence is
         // kept for the channel's workspace only while it holds the
         // channel.
-        yield* sql
+        const unsent = yield* sql
           .withTransaction(
             Effect.gen(function* deleting() {
+              const found = yield* unsentWhere(
+                eq(outgoingMessages.channelId, channelId)
+              );
+
               yield* db
                 .delete(messageChannels)
                 .where(eq(messageChannels.channelId, channelId));
@@ -243,9 +299,13 @@ export const DrizzleEngagementRecords = Layer.effect(
               yield* db
                 .delete(conversations)
                 .where(eq(conversations.channelId, channelId));
+
+              return found;
             })
           )
           .pipe(Effect.mapError(failed));
+
+        yield* giveBackUnsent(unsent);
 
         // A location's reviews go at once, with their replies.
         if (platform === "googleBusiness") {

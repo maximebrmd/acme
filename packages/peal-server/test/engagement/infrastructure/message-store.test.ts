@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Layer, Option, Ref, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
@@ -35,15 +35,29 @@ import {
   conversationReading,
   messageReading,
 } from "#test/engagement/support.ts";
+import { FakeMetersLedger, fakeMeters } from "#test/shared/support.ts";
 
 // The Postgres store of direct messages, on the database DATABASE_URL
 // names. Each test writes rows of its own workspace, at instants no other
 // suite uses (2049; the retention in 1935), and deletes them after.
 
+// The records give back the outbound message of what never set out, on
+// meters that count in memory.
 const StoreTest = Layer.mergeAll(
   DrizzleMessageStore,
   DrizzleEngagementRecords
-).pipe(Layer.provideMerge(DatabaseTest));
+).pipe(
+  Layer.provideMerge(fakeMeters({ allowed: Option.none() })),
+  Layer.provideMerge(DatabaseTest)
+);
+
+// What the meters were given back for the workspace.
+const givenBackIn = (workspaceId: WorkspaceId) =>
+  FakeMetersLedger.use(Ref.get).pipe(
+    Effect.map(({ givenBack }) =>
+      givenBack.filter((claim) => claim.workspaceId === workspaceId)
+    )
+  );
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
@@ -739,5 +753,87 @@ layer(StoreTest)("the message store", (it) => {
         assert.deepStrictEqual(yield* store.box(box.channelId), Option.none());
       }).pipe(Effect.ensuring(forget(workspaceId)));
     })
+  );
+
+  // A message journalled on a conversation of the box: on its way, and
+  // begun (the call may have gone out) when `attempted`.
+  const pendingOn = Effect.fn("pendingOn")(function* pendingOn(
+    box: MessageBox,
+    n: number,
+    at: string,
+    attempted: boolean
+  ) {
+    const store = yield* MessageStore;
+    const talk = yield* conversationOn(box, n, at);
+
+    yield* store.saveConversations([talk]);
+
+    const message = writeMessage(
+      yield* newId(OutgoingMessageIdSchema),
+      talk,
+      Option.none(),
+      "Thanks!",
+      utc(at)
+    );
+
+    yield* store.journalMessage(message, Option.none());
+
+    if (attempted) {
+      yield* store.advanceMessage(
+        Result.getOrThrow(beginMessage(message, utc(at))),
+        message
+      );
+    }
+
+    return message;
+  });
+
+  it.effect(
+    "gives back the outbound message of what never set out when a channel leaves",
+    () =>
+      Effect.gen(function* givesBack() {
+        const workspaceId = yield* freshWorkspace;
+        const records = yield* EngagementRecords;
+        const box = yield* boxOf(workspaceId, "2049-02-08T10:00:00.000Z");
+        const at = "2049-02-08T09:00:00.000Z";
+
+        yield* Effect.gen(function* checks() {
+          yield* MessageStore.use((store) => store.follow([box]));
+
+          const waiting = yield* pendingOn(box, 1, at, false);
+
+          // Begun: it may be on the platform, and stays counted.
+          yield* pendingOn(box, 2, at, true);
+
+          yield* records.channelGone(box.channelId, "mastodon", utc(at));
+
+          assert.deepStrictEqual(
+            (yield* givenBackIn(workspaceId)).map((claim) => [
+              claim.meter,
+              claim.units,
+              DateTime.formatIso(claim.at),
+            ]),
+            [["outboundMessages", 1, DateTime.formatIso(waiting.createdAt)]]
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "gives back the outbound message of what never set out when its workspace is erased",
+    () =>
+      Effect.gen(function* erased() {
+        const workspaceId = yield* freshWorkspace;
+        const records = yield* EngagementRecords;
+        const box = yield* boxOf(workspaceId, "2049-02-09T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* MessageStore.use((store) => store.follow([box]));
+          yield* pendingOn(box, 1, "2049-02-09T09:00:00.000Z", false);
+          yield* records.eraseWorkspace(workspaceId);
+
+          assert.lengthOf(yield* givenBackIn(workspaceId), 1);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
   );
 });
