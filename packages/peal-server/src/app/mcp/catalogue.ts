@@ -87,9 +87,12 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "resume_recycling_rule",
   "revoke_review_link",
   "schedule_post",
+  "start_follow_up_rule",
+  "stop_follow_up_rule",
   "stop_recycling_rule",
   "unpublish_post",
   "unschedule_post",
+  "update_follow_up_rule",
   "update_recycling_rule",
   "withdraw_comment_reply",
 ]);

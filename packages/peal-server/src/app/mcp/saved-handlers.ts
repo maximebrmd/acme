@@ -7,6 +7,13 @@ import {
   maxSignaturesPerWorkspace,
 } from "peal-contract";
 
+import {
+  followUpRuleIdFrom,
+  noFollowUpRule,
+  notPossible,
+  ruleEnded,
+  ruleTaken,
+} from "#app/mcp/follow-up-refusals.ts";
 import { noRule, ruleIdFrom } from "#app/mcp/recycling-refusals.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { SavedTools } from "#app/mcp/saved-tools.ts";
@@ -15,7 +22,8 @@ import {
   channelSetDetailsFrom,
   channelSetIdFrom,
 } from "#publishing/api/channel-sets.ts";
-import { optionsFrom } from "#publishing/api/post-input.ts";
+import { followUpRuleView } from "#publishing/api/follow-up-view.ts";
+import { optionsFrom, postIdOption } from "#publishing/api/post-input.ts";
 import {
   slotView,
   previewView,
@@ -30,10 +38,16 @@ import {
 } from "#publishing/api/signatures.ts";
 import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
+import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
+import type {
+  ChangeFollowUpRequest,
+  ListedFollowUpRule,
+} from "#publishing/application/follow-up-rules.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import { Recycling } from "#publishing/application/recycling.ts";
 import type { ListedRule } from "#publishing/application/recycling.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
+import type { FollowUpScope } from "#publishing/domain/follow-up-rule.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -45,6 +59,39 @@ const encodeOptions = Schema.encodeSync(TargetOptionsSchema);
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
 // What the use cases' refusals tell the user, through their MCP client.
+
+// The post a call names, or a refusal: a malformed id names none.
+const postNamed = (raw: string) =>
+  Option.match(postIdOption(raw), {
+    onNone: () => refuse("The workspace has no post with this id."),
+    onSome: (id) => Effect.succeed(id),
+  });
+
+// What a call starts a rule on: one post or one channel.
+const scopeFrom = (given: {
+  readonly channelId?: string;
+  readonly postId?: string;
+}) =>
+  Effect.gen(function* readingScope() {
+    if ((given.postId === undefined) === (given.channelId === undefined)) {
+      return yield* refuse(
+        "Give postId or channelId, one of them: what the rule acts on."
+      );
+    }
+
+    if (given.postId !== undefined) {
+      const postId = yield* postNamed(given.postId);
+
+      const scope: FollowUpScope = { _tag: "post", postId };
+
+      return scope;
+    }
+
+    const channelId = yield* channelFrom(given.channelId ?? "");
+    const scope: FollowUpScope = { _tag: "channel", channelId };
+
+    return scope;
+  });
 
 const noSignature = () =>
   refuse(
@@ -134,9 +181,156 @@ export const SavedToolsLive = SavedTools.toLayer(
     const defaults = yield* ChannelDefaults;
     const queues = yield* Queues;
     const recycling = yield* Recycling;
+    const followUps = yield* FollowUpRules;
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
+    // Said before anything is read: what follows posts up publishes, and
+    // takes a role that schedules.
+    const publisher = actor.pipe(
+      Effect.tap((member) =>
+        Effect.fromResult(authorize(member, "post:schedule")).pipe(
+          Effect.catchTag("MissingPermission", notAllowed("follow posts up"))
+        )
+      )
+    );
+
     return SavedTools.of({
+      get_follow_up_rule: ({ ruleId }) =>
+        Effect.gen(function* get() {
+          const listed = yield* followUps
+            .get(yield* actor, yield* followUpRuleIdFrom(ruleId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                FollowUpRuleNotFound: noFollowUpRule,
+                MissingPermission: notAllowed("read follow-up rules"),
+              })
+            );
+
+          return followUpRuleView(listed);
+        }),
+      list_follow_up_rules: ({ postId, status }) =>
+        Effect.gen(function* list() {
+          const member = yield* actor;
+          const found: ListedFollowUpRule[] = [];
+
+          const post =
+            postId === undefined
+              ? Option.none()
+              : Option.some(yield* postNamed(postId));
+
+          // Every page: a workspace keeps few rules.
+          for (;;) {
+            const page = yield* followUps
+              .list(member, {
+                after: Option.fromUndefinedOr(found.at(-1)?.rule.id),
+                limit: 100,
+                postId: post,
+                status: Option.fromUndefinedOr(status),
+              })
+              .pipe(
+                Effect.catchTags({
+                  DatabaseError: Effect.die,
+                  MissingPermission: notAllowed("read follow-up rules"),
+                })
+              );
+
+            found.push(...page);
+
+            if (page.length < 100) {
+              return { rules: found.map(followUpRuleView) };
+            }
+          }
+        }),
+      start_follow_up_rule: (given) =>
+        Effect.gen(function* start() {
+          const member = yield* publisher;
+          const scope = yield* scopeFrom(given);
+
+          const listed = yield* followUps
+            .start(member, {
+              comment: Option.fromUndefinedOr(given.comment),
+              likes: given.likes,
+              repost: given.repost ?? false,
+              scope,
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                FollowUpNotPossible: notPossible,
+                FollowUpRuleTaken: ruleTaken,
+                MissingPermission: notAllowed("start follow-up rules"),
+                PostNotFound: () =>
+                  refuse("The workspace has no post with this id."),
+                TooManyFollowUpRules: ({ allowed }) =>
+                  refuse(
+                    `The workspace has ${String(allowed)} follow-up rules going, the most it may: stop one first.`
+                  ),
+              })
+            );
+
+          return followUpRuleView(listed);
+        }),
+      stop_follow_up_rule: ({ ruleId }) =>
+        Effect.gen(function* stop() {
+          const member = yield* actor;
+
+          // Said before the rule is read: it takes a role that schedules.
+          yield* Effect.fromResult(authorize(member, "post:schedule")).pipe(
+            Effect.catchTag(
+              "MissingPermission",
+              notAllowed("stop follow-up rules")
+            )
+          );
+
+          yield* followUps.stop(member, yield* followUpRuleIdFrom(ruleId)).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              FollowUpRuleNotFound: noFollowUpRule,
+              MissingPermission: notAllowed("stop follow-up rules"),
+            })
+          );
+
+          return { stopped: ruleId };
+        }),
+      update_follow_up_rule: ({ comment, likes, paused, repost, ruleId }) =>
+        Effect.gen(function* update() {
+          const change: {
+            -readonly [
+              K in keyof ChangeFollowUpRequest
+            ]: ChangeFollowUpRequest[K];
+          } = {};
+
+          if (comment !== undefined) {
+            change.comment = Option.fromNullOr(comment);
+          }
+
+          if (likes !== undefined) {
+            change.likes = likes;
+          }
+
+          if (paused !== undefined) {
+            change.paused = paused;
+          }
+
+          if (repost !== undefined) {
+            change.repost = repost;
+          }
+
+          const listed = yield* followUps
+            .change(yield* publisher, yield* followUpRuleIdFrom(ruleId), change)
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                FollowUpNotPossible: notPossible,
+                FollowUpRuleEnded: ruleEnded,
+                FollowUpRuleNotFound: noFollowUpRule,
+                MissingPermission: notAllowed("change follow-up rules"),
+              })
+            );
+
+          return followUpRuleView(listed);
+        }),
       clear_channel_defaults: ({ channelId }) =>
         Effect.gen(function* clear() {
           yield* defaults
