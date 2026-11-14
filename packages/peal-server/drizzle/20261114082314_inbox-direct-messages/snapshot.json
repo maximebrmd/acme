@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "0dec8ee2-17a9-42ee-96b4-da30162bf863",
+  "id": "0f406c84-447d-45d0-ac3f-0a9933564aba",
   "prevIds": [
     "7b424f22-c558-4926-a75d-e06eaaabb3b5"
   ],
@@ -231,6 +231,26 @@
       "statementTarget": [
         "index",
         "engagement",
+        "direct_messages",
+        "direct_messages_sent"
+      ],
+      "writes": [
+        "s|idx|engagement.direct_messages_sent",
+        "n|idx|engagement.direct_messages_sent",
+        "e|idx|engagement.direct_messages_sent",
+        "n|rel|engagement.direct_messages_sent"
+      ],
+      "reads": [
+        "n|tbl|engagement.direct_messages",
+        "n|sch|engagement",
+        "n|col|engagement.direct_messages.sent_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
         "message_boxes",
         "message_boxes_due"
       ],
@@ -388,6 +408,26 @@
         "n|tbl|engagement.outgoing_messages",
         "n|sch|engagement",
         "n|col|engagement.outgoing_messages.author_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "outgoing_messages",
+        "outgoing_messages_settled"
+      ],
+      "writes": [
+        "s|idx|engagement.outgoing_messages_settled",
+        "n|idx|engagement.outgoing_messages_settled",
+        "e|idx|engagement.outgoing_messages_settled",
+        "n|rel|engagement.outgoing_messages_settled"
+      ],
+      "reads": [
+        "n|tbl|engagement.outgoing_messages",
+        "n|sch|engagement",
+        "n|col|engagement.outgoing_messages.settled_at"
       ]
     },
     {
@@ -626,6 +666,22 @@
         "schema": "engagement",
         "table": "conversations",
         "name": "checked_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "conversations",
+        "name": "unlisted_at",
         "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": false,
@@ -1451,6 +1507,30 @@
       "op": "create",
       "row": {
         "schema": "engagement",
+        "table": "direct_messages",
+        "name": "direct_messages_sent",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sent_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
         "table": "message_boxes",
         "name": "message_boxes_due",
         "nameExplicit": true,
@@ -1661,6 +1741,30 @@
         ],
         "isUnique": false,
         "where": "\"author_id\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "outgoing_messages",
+        "name": "outgoing_messages_settled",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "settled_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"settled_at\" IS NOT NULL",
         "with": "",
         "method": "btree",
         "concurrently": false,

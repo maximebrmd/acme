@@ -150,7 +150,9 @@ export interface MessagesReconciled {
  * at once. Only a `complete` read, one that listed every message the
  * platform shows back to `readSince`, takes a message it did not see,
  * sent since then, for deleted; any read adds what is new and refreshes
- * what changed.
+ * what changed. `readSince` is also the oldest a message Peal keeps may
+ * be: one sent before it is never kept, so a thread read whole brings
+ * back nothing the retention deleted.
  */
 export const reconcileMessages = (
   kept: readonly DirectMessage[],
@@ -164,7 +166,10 @@ export const reconcileMessages = (
   for (const raw of read) {
     const reading = storableMessage(raw);
 
-    if (reading.platformMessageId !== "") {
+    if (
+      reading.platformMessageId !== "" &&
+      DateTime.isGreaterThanOrEqualTo(reading.sentAt, readSince)
+    ) {
       readings.set(reading.platformMessageId, reading);
     }
   }

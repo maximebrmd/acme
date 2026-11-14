@@ -346,6 +346,52 @@ describe("Mastodon's direct messages", () => {
       )
   );
 
+  it.effect(
+    "reads none of a thread's statuses sent before what Peal keeps",
+    () =>
+      at(
+        Effect.gen(function* old() {
+          const { account, platform } = yield* onServer((request) => {
+            if (request.path === "/api/v1/conversations") {
+              return json([
+                conversation("c1", status("3002", { in_reply_to_id: "3001" })),
+              ]);
+            }
+
+            if (request.path === "/api/v1/statuses/3002/context") {
+              return json({
+                ancestors: [
+                  status("3001", { created_at: "2026-10-03T09:00:00.000Z" }),
+                ],
+                descendants: [],
+              });
+            }
+
+            if (request.path === "/api/v1/statuses/3001/context") {
+              return json({
+                ancestors: [],
+                descendants: [status("3002", { in_reply_to_id: "3001" })],
+              });
+            }
+
+            return json({ error: "Record not found" }, 404);
+          });
+
+          const batch = yield* platform.read(account, {
+            keptSince,
+            known: new Map(),
+          });
+
+          assert.deepStrictEqual(
+            batch.conversations.flatMap(({ messages }) =>
+              messages.map(({ platformMessageId }) => platformMessageId)
+            ),
+            ["3002"]
+          );
+        })
+      )
+  );
+
   it.effect("reads a thread whose first status is gone as not whole", () =>
     at(
       Effect.gen(function* orphan() {

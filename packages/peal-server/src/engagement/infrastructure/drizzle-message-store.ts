@@ -4,6 +4,7 @@ import {
   desc,
   eq,
   inArray,
+  isNotNull,
   isNull,
   lte,
   notInArray,
@@ -826,7 +827,7 @@ export const DrizzleMessageStore = Layer.effect(
         DELETE FROM engagement.outgoing_messages
         WHERE id IN (
           SELECT id FROM engagement.outgoing_messages
-          WHERE status IN ('sent', 'failed')
+          WHERE status IN ('sent', 'failed', 'unconfirmed')
             AND settled_at < ${since}::timestamptz
           ORDER BY settled_at
           LIMIT ${limit}
@@ -1005,18 +1006,57 @@ export const DrizzleMessageStore = Layer.effect(
     });
 
     const dropUnlisted = Effect.fn("MessageStore.dropUnlisted")(
-      function* dropUnlisted(channelId: string, listed: readonly string[]) {
-        const gone = yield* db
-          .delete(conversations)
+      function* dropUnlisted(
+        channelId: string,
+        listed: readonly string[],
+        at: DateTime.Utc
+      ) {
+        const shown = [...listed];
+
+        // An empty listing says nothing of what the platform holds.
+        if (shown.length === 0) {
+          return 0;
+        }
+
+        // Shown again: no longer missed.
+        yield* db
+          .update(conversations)
+          .set({ unlistedAt: null })
           .where(
             and(
               eq(conversations.channelId, channelId),
-              listed.length === 0
-                ? undefined
-                : notInArray(conversations.platformConversationId, [...listed])
+              inArray(conversations.platformConversationId, shown),
+              isNotNull(conversations.unlistedAt)
             )
           )
-          .returning({ id: conversations.id })
+          .pipe(Effect.mapError(failed));
+
+        // Missed by the whole listing before too: gone on the platform,
+        // unless a message to it is on its way.
+        const gone = yield* sql`
+          DELETE FROM engagement.conversations AS conversation
+          WHERE conversation.channel_id = ${channelId}
+            AND conversation.unlisted_at IS NOT NULL
+            AND conversation.platform_conversation_id NOT IN ${sql.in(shown)}
+            AND NOT EXISTS (
+              SELECT 1 FROM engagement.outgoing_messages AS pending
+              WHERE pending.conversation_id = conversation.id
+                AND pending.status IN ('sending', 'unconfirmed')
+            )
+          RETURNING conversation.id
+        `.pipe(Effect.mapError(failed));
+
+        // Missed for the first time: marked, and kept.
+        yield* db
+          .update(conversations)
+          .set({ unlistedAt: DateTime.toDateUtc(at) })
+          .where(
+            and(
+              eq(conversations.channelId, channelId),
+              notInArray(conversations.platformConversationId, shown),
+              isNull(conversations.unlistedAt)
+            )
+          )
           .pipe(Effect.mapError(failed));
 
         return gone.length;

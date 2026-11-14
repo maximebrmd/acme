@@ -128,6 +128,9 @@ export const makeMessageWorld = (
     ).length,
   });
 
+  // The conversations a whole listing last missed.
+  const unlisted = new Set<string>();
+
   const pending = (conversationId: string) =>
     [...state.outgoing.values()].find(
       (message) =>
@@ -193,17 +196,25 @@ export const makeMessageWorld = (
       ),
     dropUnlisted: (channelId, listed) =>
       Effect.sync(() => {
-        const gone = [...state.conversations.values()].filter(
-          (conversation) =>
-            conversation.channelId === channelId &&
-            !listed.includes(conversation.platformConversationId)
+        const ofBox = [...state.conversations.values()].filter(
+          (conversation) => conversation.channelId === channelId
         );
 
-        for (const conversation of gone) {
-          dropConversation(conversation.id);
+        let gone = 0;
+
+        for (const conversation of ofBox) {
+          if (listed.includes(conversation.platformConversationId)) {
+            unlisted.delete(conversation.id);
+          } else if (!unlisted.has(conversation.id)) {
+            unlisted.add(conversation.id);
+          } else if (pending(conversation.id) === undefined) {
+            dropConversation(conversation.id);
+            unlisted.delete(conversation.id);
+            gone += 1;
+          }
         }
 
-        return gone.length;
+        return gone;
       }),
     pageOfMessages: (conversationId, page) =>
       Effect.sync(() =>
@@ -421,6 +432,17 @@ export const makeMessageWorld = (
 
         for (const message of old) {
           state.messages.delete(message.id);
+        }
+
+        // Settled (sent, failed or left unconfirmed) as long ago as Peal
+        // keeps a message.
+        for (const [key, message] of state.outgoing) {
+          if (
+            message.status._tag !== "sending" &&
+            millis(message.status.at) < millis(keptSince)
+          ) {
+            state.outgoing.delete(key);
+          }
         }
 
         const gone = [...state.conversations.values()]

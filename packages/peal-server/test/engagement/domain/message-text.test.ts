@@ -67,4 +67,27 @@ describe("a Mastodon message's mentions", () => {
       mentionsOutside("bluesky", [participant(1)], "cc @boss.bsky.social")
     ).toStrictEqual([]);
   });
+
+  it("read a mention after a dot or another @, as Mastodon does", () => {
+    expect(
+      mentionsOutside(
+        "mastodon",
+        [participant(1)],
+        "Thanks.@boss@other.example please look"
+      )
+    ).toStrictEqual(["@boss@other.example"]);
+    expect(
+      mentionsOutside("mastodon", [participant(1)], "cc @@journalist")
+    ).toStrictEqual(["@journalist"]);
+  });
+
+  it("read no mention in a pasted profile address", () => {
+    expect(
+      mentionsOutside(
+        "mastodon",
+        [participant(1)],
+        "see https://other.example/@someone and https://other.example/users/x?u=@me"
+      )
+    ).toStrictEqual([]);
+  });
 });

@@ -8,6 +8,7 @@ CREATE TABLE "engagement"."conversations" (
 	"platform_conversation_id" text NOT NULL,
 	"read_at" timestamp with time zone,
 	"checked_at" timestamp with time zone,
+	"unlisted_at" timestamp with time zone,
 	"request" boolean DEFAULT false NOT NULL,
 	"revision" text NOT NULL,
 	"workspace_id" uuid NOT NULL,
@@ -77,6 +78,7 @@ CREATE INDEX "conversations_workspace_listed" ON "engagement"."conversations" ("
 CREATE INDEX "conversations_last_message" ON "engagement"."conversations" ("last_message_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "direct_messages_platform_id" ON "engagement"."direct_messages" ("conversation_id","platform_message_id");--> statement-breakpoint
 CREATE INDEX "direct_messages_conversation_sent" ON "engagement"."direct_messages" ("conversation_id","sent_at");--> statement-breakpoint
+CREATE INDEX "direct_messages_sent" ON "engagement"."direct_messages" ("sent_at");--> statement-breakpoint
 CREATE INDEX "message_boxes_due" ON "engagement"."message_boxes" ("next_read_at","channel_id");--> statement-breakpoint
 CREATE INDEX "message_boxes_workspace" ON "engagement"."message_boxes" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "message_channels_workspace" ON "engagement"."message_channels" ("workspace_id");--> statement-breakpoint
@@ -85,5 +87,6 @@ CREATE UNIQUE INDEX "outgoing_messages_pending" ON "engagement"."outgoing_messag
 CREATE UNIQUE INDEX "outgoing_messages_key" ON "engagement"."outgoing_messages" ("workspace_id","key_digest") WHERE "key_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "outgoing_messages_sending" ON "engagement"."outgoing_messages" ("created_at","id") WHERE "status" = 'sending';--> statement-breakpoint
 CREATE INDEX "outgoing_messages_author" ON "engagement"."outgoing_messages" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "outgoing_messages_settled" ON "engagement"."outgoing_messages" ("settled_at") WHERE "settled_at" IS NOT NULL;--> statement-breakpoint
 ALTER TABLE "engagement"."direct_messages" ADD CONSTRAINT "direct_messages_conversation_id_conversations_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "engagement"."conversations"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "engagement"."outgoing_messages" ADD CONSTRAINT "outgoing_messages_conversation_id_conversations_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "engagement"."conversations"("id") ON DELETE CASCADE;

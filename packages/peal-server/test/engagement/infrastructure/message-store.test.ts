@@ -548,6 +548,117 @@ layer(StoreTest)("the message store", (it) => {
       })
   );
 
+  it.effect(
+    "deletes a message left unconfirmed once it settled as long ago as Peal keeps, and then its conversation",
+    () =>
+      Effect.gen(function* unconfirmed() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "1935-05-01T10:00:00.000Z");
+        const at = utc("1935-04-01T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const talk = yield* conversationOn(
+            box,
+            1,
+            "1935-04-01T09:00:00.000Z"
+          );
+
+          yield* store.saveConversations([talk]);
+
+          const message = writeMessage(
+            yield* newId(OutgoingMessageIdSchema),
+            talk,
+            Option.none(),
+            "Hello",
+            at
+          );
+
+          yield* store.journalMessage(message, Option.none());
+
+          const begun = Result.getOrThrow(beginMessage(message, at));
+
+          yield* store.advanceMessage(begun, message);
+          yield* store.advanceMessage(
+            Result.getOrThrow(
+              settleMessage(
+                begun,
+                { _tag: "unconfirmed", reason: "interrupted" },
+                at
+              )
+            ),
+            begun
+          );
+
+          yield* store.purge(utc("1935-05-02T10:00:00.000Z"), 1000);
+
+          assert.deepStrictEqual(
+            yield* store.outgoing(message.id),
+            Option.none()
+          );
+          assert.deepStrictEqual(
+            yield* store.conversation(talk.id),
+            Option.none()
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "deletes a conversation only once two whole listings in a row miss it",
+    () =>
+      Effect.gen(function* listings() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "2049-02-10T10:00:00.000Z");
+        const at = utc("2049-02-10T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const kept = yield* conversationOn(
+            box,
+            1,
+            "2049-02-10T09:00:00.000Z"
+          );
+
+          const other = yield* conversationOn(
+            box,
+            2,
+            "2049-02-10T09:00:00.000Z"
+          );
+
+          yield* store.saveConversations([kept, other]);
+
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, [], at),
+            0
+          );
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, ["c2"], at),
+            0
+          );
+          // Listed again in between: the miss is forgotten.
+          yield* store.dropUnlisted(box.channelId, ["c1", "c2"], at);
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, ["c2"], at),
+            0
+          );
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, ["c2"], at),
+            1
+          );
+          assert.deepStrictEqual(
+            yield* store.conversation(kept.id),
+            Option.none()
+          );
+          assert.isTrue(Option.isSome(yield* store.conversation(other.id)));
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
   it.effect("pages a conversation's messages, the latest first", () =>
     Effect.gen(function* pages() {
       const workspaceId = yield* freshWorkspace;
@@ -588,7 +699,7 @@ layer(StoreTest)("the message store", (it) => {
   );
 
   it.effect(
-    "turns a channel's messages on, lets applications in, and deletes what a whole listing no longer shows",
+    "turns a channel's messages on, lets applications in, and deletes what whole listings no longer show",
     () =>
       Effect.gen(function* settings() {
         const workspaceId = yield* freshWorkspace;
@@ -645,8 +756,13 @@ layer(StoreTest)("the message store", (it) => {
 
           yield* store.saveConversations([listed, gone]);
 
+          const listedAt = utc("2049-03-02T10:00:00.000Z");
+
+          // Missed by two whole listings in a row.
+          yield* store.dropUnlisted(box.channelId, ["c1"], listedAt);
+
           assert.strictEqual(
-            yield* store.dropUnlisted(box.channelId, ["c1"]),
+            yield* store.dropUnlisted(box.channelId, ["c1"], listedAt),
             1
           );
           assert.deepStrictEqual(

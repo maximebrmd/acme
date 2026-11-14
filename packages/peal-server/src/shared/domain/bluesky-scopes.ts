@@ -116,7 +116,7 @@ export type BlueskyChatMethod = (typeof blueskyChatMethods)[number];
  * turns on.
  */
 export const blueskyChatScopes = blueskyChatMethods.map(
-  (method) => `rpc:${method}?aud=${blueskyChatService.replace("#", "%23")}`
+  (method) => `rpc:${method}?aud=${blueskyChatService.replaceAll("#", "%23")}`
 );
 
 const rpcScope = /^rpc(?::(?<positional>[^?]+))?(?:\?(?<query>.*))?$/u;

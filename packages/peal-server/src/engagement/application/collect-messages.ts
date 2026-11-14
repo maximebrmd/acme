@@ -290,9 +290,10 @@ export class CollectMessages extends Context.Service<
         }
 
         // A listing that showed every conversation the platform has, back
-        // to what Peal keeps, no longer shows those deleted there.
-        if (batch.listedWhole) {
-          yield* store.dropUnlisted(box.channelId, batch.listed);
+        // to what Peal keeps, no longer shows those deleted there; an empty
+        // one says nothing, as a platform that answers none may be wrong.
+        if (batch.listedWhole && batch.listed.length > 0) {
+          yield* store.dropUnlisted(box.channelId, batch.listed, now);
         }
 
         // A read that halted is read again at the next run, from the

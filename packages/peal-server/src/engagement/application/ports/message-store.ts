@@ -247,13 +247,18 @@ export class MessageStore extends Context.Service<
       clientId: string
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
-     * Deletes the conversations of the box, kept, whose ids on the platform
-     * are not in `listed`: a complete listing no longer shows them, as the
-     * platform deleted them. Answers how many.
+     * What a whole listing of the box's conversations (`listed`, their ids
+     * on the platform) says of those Peal keeps, at `at`: one it shows is
+     * cleared of a miss; one it misses is marked, or, already marked by
+     * the whole listing before, deleted, as the platform deleted it,
+     * unless a message to it is on its way. One listing alone never
+     * deletes: a conversation that moves up while the listing pages can be
+     * on no page. Answers how many it deleted.
      */
     readonly dropUnlisted: (
       channelId: ChannelId,
-      listed: readonly string[]
+      listed: readonly string[],
+      at: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
     /**
      * Deletes the channel's switch, box, conversations and what they hold,

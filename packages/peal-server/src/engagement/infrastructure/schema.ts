@@ -419,6 +419,9 @@ export const conversations = engagement.table(
     // whose revision did not change is read back once a day all the same,
     // so a deletion there is seen.
     checkedAt: instant("checked_at"),
+    // When a whole listing of its channel last missed it, cleared when one
+    // shows it: a second whole listing in a row that misses it deletes it.
+    unlistedAt: instant("unlisted_at"),
     request: boolean("request").notNull().default(false),
     revision: text("revision").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
@@ -476,6 +479,8 @@ export const directMessages = engagement.table(
       table.conversationId,
       table.sentAt
     ),
+    // The retention, which deletes each message by when it was sent.
+    index("direct_messages_sent").on(table.sentAt),
     check("direct_messages_attachments", sql`${table.attachments} >= 0`),
     check(
       "direct_messages_sender",
@@ -532,6 +537,10 @@ export const outgoingMessages = engagement.table(
     index("outgoing_messages_author")
       .on(table.authorId)
       .where(sql`${table.authorId} IS NOT NULL`),
+    // The retention, which deletes each settled message by when it settled.
+    index("outgoing_messages_settled")
+      .on(table.settledAt)
+      .where(sql`${table.settledAt} IS NOT NULL`),
     check(
       "outgoing_messages_status",
       sql`${table.status} IN ('sending', 'sent', 'failed', 'unconfirmed')`

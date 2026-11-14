@@ -94,10 +94,14 @@ export const chatOverflow = (
     : Option.none();
 };
 
-// A mention as Mastodon reads one: `@name` or `@name@host`, not inside an
-// address such as `hello@shop.example`.
+// A mention as Mastodon reads one, its `MENTION_RE` (app/models/account.rb,
+// read 2026-11-14): `@` not after `=`, `/` or a word character (so not in
+// `hello@shop.example`, nor a profile address such as
+// `https://host/@name`), a username of `[a-z0-9_]`, with `.` and `-`
+// inside, and an optional `@host` of word characters, dots and hyphens.
+// Ruby's `[[:word:]]` is letters, marks, numbers and connectors.
 const mentionPattern =
-  /(?<![\p{L}\p{N}_@.])@[\p{L}\p{N}_]+(?:[.-][\p{L}\p{N}_]+)*(?:@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+)?/gu;
+  /(?<![=/\p{L}\p{M}\p{N}\p{Pc}])@[a-z0-9_]+(?:[a-z0-9_.-]+[a-z0-9_]+)?(?:@[\p{L}\p{M}\p{N}\p{Pc}.-]+[\p{L}\p{M}\p{N}\p{Pc}]+)?/giu;
 
 /**
  * The mentions in a Mastodon message of accounts outside the

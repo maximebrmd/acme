@@ -73,6 +73,17 @@ const at = <A, E, R>(effect: Effect.Effect<A, E, R>, when = messagedAt) =>
 
 // A world with conversation 1 on a channel of `platform`, its box
 // followed before the conversation's messages were sent.
+// A read of a box that lists `listed`, whole or cut short.
+const listing =
+  (listed: readonly string[], listedWhole = true) =>
+  () =>
+    Effect.succeed({
+      conversations: [],
+      halted: !listedWhole,
+      listed: [...listed],
+      listedWhole,
+    });
+
 const worldWith = (
   platform: "bluesky" | "mastodon" = "mastodon",
   world: MessageWorld = makeMessageWorld()
@@ -228,7 +239,7 @@ describe("the messages' collection", () => {
   );
 
   it.effect(
-    "deletes a kept conversation a whole listing no longer shows, and keeps it when the listing was not whole",
+    "deletes a kept conversation only once two whole listings in a row no longer show it, and none for an empty or partial listing",
     () => {
       const world = worldWith();
 
@@ -236,35 +247,104 @@ describe("the messages' collection", () => {
         channelId(1),
         followBox({ channelId: channelId(1), workspaceId }, messagedAt)
       );
-      world.state.read = () =>
-        Effect.succeed({
-          conversations: [],
-          halted: true,
-          listed: [],
-          listedWhole: false,
-        });
+
+      // Each run two hours after the last, so the box is due.
+      let run = messagedAt;
+
+      const collected = Effect.suspend(() => {
+        run = DateTime.addDuration(run, "2 hours");
+
+        return at(
+          CollectMessages.use((collect) => collect.run(run)),
+          run
+        );
+      });
 
       return Effect.gen(function* listings() {
-        yield* at(CollectMessages.use((collect) => collect.run(messagedAt)));
+        world.state.read = listing([], false);
+        yield* collected;
 
+        // Partial, then empty: nothing is decided from them.
+        world.state.read = listing([]);
+        yield* collected;
         assert.strictEqual(world.state.conversations.size, 1);
 
-        world.state.read = () =>
-          Effect.succeed({
-            conversations: [],
-            halted: false,
-            listed: ["c9"],
-            listedWhole: true,
-          });
+        // Missed once, it stays; listed again, it is cleared.
+        world.state.read = listing(["c9"]);
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
 
-        const later = DateTime.addDuration(messagedAt, "2 hours");
+        world.state.read = listing(["c1", "c9"]);
+        yield* collected;
 
-        yield* at(
-          CollectMessages.use((collect) => collect.run(later)),
-          later
+        world.state.read = listing(["c9"]);
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
+
+        // Missed by a second whole listing in a row, it goes.
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 0);
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "keeps no message sent before what Peal keeps, and never tells one again",
+    () => {
+      const world = makeMessageWorld();
+      const followedAt = DateTime.subtractDuration(messagedAt, "60 days");
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, followedAt)
+      );
+
+      // A Mastodon thread read whole: a message 40 days old, and today's.
+      world.state.read = () =>
+        Effect.succeed({
+          conversations: [
+            conversationReading(1, {
+              messages: [
+                messageReading(1, {
+                  sentAt: DateTime.subtractDuration(messagedAt, "40 days"),
+                }),
+                messageReading(2),
+              ],
+            }),
+          ],
+          halted: false,
+          listed: ["c1"],
+          listedWhole: true,
+        });
+
+      const nextDay = DateTime.addDuration(messagedAt, "1 day");
+
+      return Effect.gen(function* rereads() {
+        yield* at(CollectMessages.use((collect) => collect.run(messagedAt)));
+
+        assert.deepStrictEqual(
+          [...world.state.messages.values()].map(
+            ({ platformMessageId }) => platformMessageId
+          ),
+          ["m2"]
         );
 
-        assert.strictEqual(world.state.conversations.size, 0);
+        yield* at(
+          PurgeMessages.use((purging) => purging.purge),
+          nextDay
+        );
+        yield* at(
+          CollectMessages.use((collect) => collect.run(nextDay)),
+          nextDay
+        );
+
+        assert.strictEqual(world.state.messages.size, 1);
+        assert.deepStrictEqual(
+          world.state.received.flatMap(({ messages }) =>
+            messages.map(({ platformMessageId }) => platformMessageId)
+          ),
+          ["m2"]
+        );
       }).pipe(Effect.provide(world.layer));
     }
   );

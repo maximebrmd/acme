@@ -362,7 +362,8 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
       accountId: string,
       conversation: MastodonConversation,
       last: Status,
-      lastMessageAt: DateTime.Utc
+      lastMessageAt: DateTime.Utc,
+      keptSince: DateTime.Utc
     ) {
       const thread = yield* threadOf(instance, token, last);
 
@@ -391,9 +392,17 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
         complete: thread.complete,
         deleted: [],
         lastMessageAt,
+        // A status sent before what Peal keeps is none of its messages:
+        // the thread is read whole, and the retention deleted it.
         messages: [...statuses.values()].flatMap((status) =>
           exchangedWith(status, accountId) === accounts
-            ? Option.toArray(messageOf(status, accountId))
+            ? Option.toArray(
+                messageOf(status, accountId).pipe(
+                  Option.filter(({ sentAt }) =>
+                    DateTime.isGreaterThanOrEqualTo(sentAt, keptSince)
+                  )
+                )
+              )
             : []
         ),
         participants: conversation.accounts
@@ -492,7 +501,8 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
                 accountId,
                 conversation,
                 last.value,
-                lastAt.value
+                lastAt.value,
+                request.keptSince
               )
             );
           }
