@@ -32,6 +32,26 @@ describe(renderNoticeEmail, () => {
     withdrawnAt: DateTime.makeUnsafe("2026-11-04T08:15:00Z"),
   };
 
+  it("sends members whose channel's messages were turned off to the inbox's own steps", () => {
+    const bluesky = { handle: "@studio.example", platform: "bluesky" } as const;
+    const english = render(
+      { _tag: "MessagesTurnedOff", channel: bluesky },
+      "en"
+    );
+    const french = render(
+      { _tag: "MessagesTurnedOff", channel: bluesky },
+      "fr"
+    );
+
+    expect(english.text).toContain(
+      "choose Read its messages for the channel in the inbox, then Allow, on Bluesky"
+    );
+    expect(french.text).toContain(
+      "choisissez Lire ses messages pour le canal dans la boîte de réception, puis Autoriser, sur Bluesky"
+    );
+    expect(`${english.text}${french.text}`).not.toMatch(/\{\w+\}/u);
+  });
+
   it("acknowledges a withdrawal with its date, time and refund", () => {
     const english = render(withdrawn, "en");
 

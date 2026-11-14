@@ -151,7 +151,7 @@ export const NoticeEventSchema = Schema.Union([
   }),
   // The channel's direct messages were turned off, and what Peal kept of
   // them deleted: its account was signed in again without allowing them.
-  // Reconnect it allowing them, then turn them on again.
+  // In the inbox, Read its messages, then Allow, on Bluesky, to read them again.
   Schema.TaggedStruct("MessagesTurnedOff", {
     channel: NoticeChannelSchema,
   }),

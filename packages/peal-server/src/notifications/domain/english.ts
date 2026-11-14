@@ -103,7 +103,7 @@ export const english: EmailCatalog = {
   },
   messagesTurnedOff: {
     action: "Open the inbox",
-    body: "Peal turned off the direct messages of {handle} on {platform}, in {workspaceName}, and deleted the conversations it kept: the account was connected again without allowing its messages. Reconnect it from its channel, allowing its messages, then turn them on again in the inbox.",
+    body: "Peal turned off the direct messages of {handle} on {platform}, in {workspaceName}, and deleted the conversations it kept: the account was connected again without allowing its messages. To read them again, choose Read its messages for the channel in the inbox, then Allow, on Bluesky.",
     ignore:
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Direct messages of {handle} turned off",

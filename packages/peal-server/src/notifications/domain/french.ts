@@ -108,7 +108,7 @@ export const french: EmailCatalog = {
   },
   messagesTurnedOff: {
     action: "Ouvrir la boîte de réception",
-    body: "Peal a désactivé les messages privés de {handle} sur {platform}, dans {workspaceName}, et supprimé les conversations qu’il conservait : le compte a été connecté à nouveau sans autoriser ses messages. Reconnectez-le depuis son canal en autorisant ses messages, puis réactivez-les dans la boîte de réception.",
+    body: "Peal a désactivé les messages privés de {handle} sur {platform}, dans {workspaceName}, et supprimé les conversations qu’il conservait : le compte a été connecté à nouveau sans autoriser ses messages. Pour les lire à nouveau, choisissez Lire ses messages pour le canal dans la boîte de réception, puis Autoriser, sur Bluesky.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Messages privés de {handle} désactivés",
