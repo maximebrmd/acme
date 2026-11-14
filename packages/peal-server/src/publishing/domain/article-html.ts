@@ -15,10 +15,12 @@ import type {
 // stands for, every text and attribute escaped. Nothing of the document
 // is passed through as markup.
 
+// The apostrophe as WordPress keeps it: its filter pads numeric entities
+// to three digits, so a title Peal looks for later reads the same.
 const escapes = new Map([
   ['"', "&quot;"],
   ["&", "&amp;"],
-  ["'", "&#39;"],
+  ["'", "&#039;"],
   ["<", "&lt;"],
   [">", "&gt;"],
 ]);

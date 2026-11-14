@@ -316,6 +316,23 @@ describe("an article", () => {
       )
   );
 
+  it.effect("is adopted by a title with an apostrophe, as WordPress keeps it", () =>
+    onArticles(
+      Effect.gen(function* apostrophe() {
+        const { sent: article, site } = yield* sentTo(
+          {
+            drop: (request) =>
+              request.route === "/wp/v2/posts" && request.method === "POST",
+          },
+          { title: "What's new" }
+        );
+
+        assert.strictEqual(site.posts()[0]?.title, "What&#039;s new");
+        assert.strictEqual(stateOf(article), "published");
+      })
+    )
+  );
+
   it.effect(
     "takes the site's term whose name holds an ampersand, and the one it made before",
     () =>
