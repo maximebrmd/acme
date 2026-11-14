@@ -7,4 +7,5 @@ export interface PostReview {
     channels: Peal.ReviewedChannel[];
     comments: Peal.ReviewComment[];
     media: Peal.ReviewedMedia[];
+    poll?: Peal.Poll | undefined;
 }

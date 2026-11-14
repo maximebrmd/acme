@@ -1,5 +1,7 @@
 import { Option } from "effect";
 
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import type { MediaContentType } from "./media-file.ts";
@@ -62,13 +64,59 @@ export interface MediaRules {
 export type FollowUpKind = "comment" | "thread";
 
 /**
- * The parts a platform takes after a post's first. Each follows the rules
- * of a post there: its text, its media, their limits.
+ * What a comment under a post holds, where the parts after the first are
+ * comments: a comment is no post, so it follows these rules in place of
+ * the platform's. Text alone, within every limit: Peal sends no file with
+ * a comment.
+ */
+export interface CommentRules {
+  /**
+   * Who on the account may comment, where the platform restricts it: on a
+   * LinkedIn page, an administrator (the Comments API lists no content
+   * administrator among the roles that comment, while one posts).
+   */
+  readonly needs?: "pageAdministrator";
+  readonly textLimits: readonly TextLimit[];
+}
+
+/**
+ * The parts a platform takes after a post's first. In a thread each
+ * follows the rules of a post there: its text, its media, their limits; a
+ * comment follows `comment`'s.
  */
 export interface FollowUpRules {
+  /** What each part holds, where they are comments; left out on a thread. */
+  readonly comment?: CommentRules;
   readonly kind: FollowUpKind;
   /** The most parts after the first. */
   readonly maximum: number;
+}
+
+/**
+ * How long a platform keeps a poll open: any whole number of minutes
+ * between two bounds, or as long as the platform decides, whatever the
+ * post asks (Threads sets no duration).
+ */
+export type PollDuration =
+  | {
+      readonly _tag: "range";
+      readonly maximumMinutes: number;
+      readonly minimumMinutes: number;
+    }
+  | { readonly _tag: "platformDecides" };
+
+/**
+ * The poll a platform takes with a post, its first part's text as its
+ * question: how many choices, how long each is, how long it stays open,
+ * and whether readers may pick several. Peal sends a poll with no file:
+ * every such platform refuses them together.
+ */
+export interface PollRules {
+  readonly choiceLimit: TextLimit;
+  readonly duration: PollDuration;
+  readonly maxChoices: number;
+  readonly minChoices: number;
+  readonly multipleChoice: boolean;
 }
 
 /**
@@ -122,6 +170,11 @@ export interface PlatformRules {
    * `rulesFor` answers them). Left out, the text is sent.
    */
   readonly sendsText?: boolean;
+  /**
+   * The poll it takes with a post (`./poll.ts`). Left out where Peal
+   * sends none: the platform has none, or Peal does not send it yet.
+   */
+  readonly poll?: PollRules;
   /** Every limit applies: Bluesky counts graphemes and bytes. */
   readonly textLimits: readonly TextLimit[];
 }
@@ -377,8 +430,55 @@ const facebookReel: PostFormatRules = {
   sendsText: true,
 };
 
+// Polls, from the platforms' references (read 2026-11-14):
+//
+// - X (docs.x.com/x-api/posts/create-post, `CreatePostsPoll`): `poll`
+//   with `options`, 2 to 4 of "1-25 characters each", and
+//   `duration_minutes` from 5 to 10,080; no multiple choice. The page
+//   names no rule between a poll and media; X has refused them together
+//   in one post, and Peal sends neither with the other.
+// - Mastodon (docs.joinmastodon.org/methods/statuses): `poll[options][]`,
+//   `poll[expires_in]` in seconds, `poll[multiple]`; "If media_ids[] is
+//   provided, poll cannot be used". The instance's `configuration.polls`
+//   bounds it, by default 4 options of 50 characters, open from 300 to
+//   2,629,746 seconds: until channels keep their instance's settings, the
+//   defaults apply, as for the text.
+// - Threads (developers.facebook.com/documentation/threads/create-posts/
+//   polls): `poll_attachment`, `option_a` to `option_d`, 2 to 4 of 1 to 25
+//   characters, "only to text-only posts"; no duration is set.
+//
+// LinkedIn's poll (the Poll Post API) has a question of its own beside
+// the post's text and four durations, Instagram's a caption add-on through
+// Facebook Login only: neither is sent yet. Bluesky, Facebook Pages and
+// YouTube document none.
+const shortChoices = { maximum: 25, unit: "codePoints" } as const;
+
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
+
+// The platforms where the account comments under its own post once it is
+// live, a first comment, with the call the inbox answers comments with
+// (read 2026-11-14): Facebook Pages' `POST /{object-id}/comments`
+// (developers.facebook.com/docs/graph-api/reference/object/comments/),
+// Instagram's `POST /{ig-media-id}/comments` (…/instagram-graph-api/
+// reference/ig-media/comments), LinkedIn's `POST /rest/socialActions/
+// {postUrn}/comments` as the page (learn.microsoft.com/…/shares/
+// comments-api) and YouTube's `commentThreads.insert`
+// (developers.google.com/youtube/v3/docs/commentThreads/insert). None of
+// those pages states a length for a comment (YouTube names only its
+// `commentTextTooLong` error), so a comment is held to the platform's
+// limits on a post's text, which never makes a comment the platform would
+// refuse for its length shorter than what Peal lets through, as the inbox
+// holds its replies. Text alone: Instagram and YouTube document no file
+// on a comment, LinkedIn's page contradicts itself on images.
+const firstComment = (
+  textLimits: readonly TextLimit[],
+  needs?: "pageAdministrator"
+): FollowUpRules => ({
+  comment: needs === undefined ? { textLimits } : { needs, textLimits },
+  kind: "comment",
+  maximum: 1,
+});
 
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
@@ -403,6 +503,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     ],
   },
   facebook: {
+    followUps: firstComment([{ maximum: 63_206, unit: "codePoints" }]),
     media: {
       formats: {
         "image/gif": facebookImage,
@@ -432,6 +533,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 1500, unit: "codePoints" }],
   },
   instagram: {
+    followUps: firstComment([{ maximum: 2200, unit: "codePoints" }]),
     maxHashtags: 30,
     maxMedia: 20,
     maxMentions: 20,
@@ -456,6 +558,10 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
+    followUps: firstComment(
+      [{ maximum: 3000, unit: "codePoints" }],
+      "pageAdministrator"
+    ),
     maxMedia: 20,
     media: {
       formats: {
@@ -480,6 +586,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
+    poll: {
+      choiceLimit: { maximum: 50, unit: "codePoints" },
+      duration: { _tag: "range", maximumMinutes: 43_829, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: true,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -517,6 +630,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 800, unit: "codePoints" }],
   },
   threads: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "platformDecides" },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     maxLinks: 5,
     maxMedia: 20,
     media: {
@@ -550,6 +670,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "utf16Units" }],
   },
   x: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "range", maximumMinutes: 10_080, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -570,6 +697,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
   youtube: {
+    followUps: firstComment([{ maximum: 5000, unit: "utf8Bytes" }]),
     forbiddenCharacters: ["<", ">"],
     maxMedia: 1,
     media: {
@@ -635,3 +763,37 @@ export const followUpsOn = (
   platform: Platform,
   options: Option.Option<TargetOptions> = Option.none()
 ): FollowUpRules | undefined => rulesFor(platform, options).followUps;
+
+/**
+ * The parts the platform takes after a post's first on a channel that
+ * came in through `connection`: a LinkedIn profile takes none, as its
+ * comments would need a member's permission Peal does not ask for (a
+ * company page comments as the page). A channel stored without a
+ * connection came the platform's first way in (`connectionOf`).
+ */
+export const followUpsThrough = (
+  platform: Platform,
+  connection: Option.Option<ChannelConnection>,
+  options: Option.Option<TargetOptions> = Option.none()
+): FollowUpRules | undefined =>
+  platform === "linkedin" &&
+  !Option.contains(connectionOf(platform, connection), "linkedinPage")
+    ? undefined
+    : followUpsOn(platform, options);
+
+/**
+ * The rules a part after the first follows on the platform, with the
+ * options the post has there: a post's (`rulesFor`) in a thread, and a
+ * comment's where the parts are comments: its text's limits, no file.
+ */
+export const partRulesFor = (
+  platform: Platform,
+  options: Option.Option<TargetOptions> = Option.none()
+): PlatformRules => {
+  const rules = rulesFor(platform, options);
+  const comment = rules.followUps?.comment;
+
+  return comment === undefined
+    ? rules
+    : { maxMedia: 0, mediaRequired: false, textLimits: comment.textLimits };
+};

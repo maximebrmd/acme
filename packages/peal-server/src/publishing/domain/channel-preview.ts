@@ -4,7 +4,7 @@ import type { ChannelOnPlatform } from "./content-rules.ts";
 import type { ContentViolation } from "./content-violation.ts";
 import { countedText } from "./counted-text.ts";
 import { mediaLimitOf } from "./platform-capabilities.ts";
-import { rulesFor } from "./platform-rules.ts";
+import { partRulesFor, rulesFor } from "./platform-rules.ts";
 import { partsOn } from "./post-content.ts";
 import type { PartOnChannel, PostContent } from "./post-content.ts";
 import type { TargetOptions } from "./target-options.ts";
@@ -77,10 +77,17 @@ export const previewOn = (
   violations: readonly ContentViolation[],
   options: Option.Option<TargetOptions> = Option.none()
 ): ChannelPreview => {
-  const rules = rulesFor(channel.platform, options);
-  const sendsText = rules.sendsText !== false;
+  const postRules = rulesFor(channel.platform, options);
+  const sendsText = postRules.sendsText !== false;
 
-  const countsOf = ({ media, text: written }: PartOnChannel): PartCounts => {
+  // A later part is counted by its own rules: a comment's where the
+  // platform's parts are comments (`partRulesFor`), as it is checked.
+  const laterRules = partRulesFor(channel.platform, options);
+
+  const countsOf = (
+    { media, text: written }: PartOnChannel,
+    rules: typeof postRules = postRules
+  ): PartCounts => {
     const text = sendsText ? written : "";
 
     return {
@@ -115,7 +122,10 @@ export const previewOn = (
       }
     ),
     channel,
-    parts: later.map((part) => ({ ...countsOf(part), part: part.index })),
+    parts: later.map((part) => ({
+      ...countsOf(part, laterRules),
+      part: part.index,
+    })),
     violations,
   };
 

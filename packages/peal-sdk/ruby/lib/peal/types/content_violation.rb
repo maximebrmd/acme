@@ -33,6 +33,24 @@ module Peal
 
       member -> { Peal::Types::ContentViolationTooManyParts }, key: "TOO_MANY_PARTS"
 
+      member -> { Peal::Types::ContentViolationPartsNeedReconnect }, key: "PARTS_NEED_RECONNECT"
+
+      member -> { Peal::Types::ContentViolationCommentsTurnedOff }, key: "COMMENTS_TURNED_OFF"
+
+      member -> { Peal::Types::ContentViolationPollNotSupported }, key: "POLL_NOT_SUPPORTED"
+
+      member -> { Peal::Types::ContentViolationPollChoiceCount }, key: "POLL_CHOICE_COUNT"
+
+      member -> { Peal::Types::ContentViolationPollChoiceLength }, key: "POLL_CHOICE_LENGTH"
+
+      member -> { Peal::Types::ContentViolationPollChoiceRepeated }, key: "POLL_CHOICE_REPEATED"
+
+      member -> { Peal::Types::ContentViolationPollDurationOutOfRange }, key: "POLL_DURATION_OUT_OF_RANGE"
+
+      member -> { Peal::Types::ContentViolationPollMultipleChoice }, key: "POLL_MULTIPLE_CHOICE"
+
+      member -> { Peal::Types::ContentViolationPollWithMedia }, key: "POLL_WITH_MEDIA"
+
       member -> { Peal::Types::ContentViolationMediaRequired }, key: "MEDIA_REQUIRED"
 
       member -> { Peal::Types::ContentViolationTooManyHashtags }, key: "TOO_MANY_HASHTAGS"

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { partRulesFor } from "peal-contract/post-text";
 
 import { fitOn, fits } from "#posts/character-count.ts";
 
@@ -166,5 +167,23 @@ describe("the text of a story", () => {
       { _tag: "tooManyMedia", count: 2, maximum: 1 },
     ]);
     expect(fitOn("instagram", "A caption", 1).textNotSent).toBeFalsy();
+  });
+});
+
+describe("a first comment's count", () => {
+  it("follows the comment's rules: text alone, no file needed", () => {
+    const fit = fitOn(
+      "instagram",
+      "The link is here",
+      0,
+      undefined,
+      partRulesFor("instagram")
+    );
+
+    expect(fit.problems).toStrictEqual([]);
+    expect(
+      fitOn("instagram", "With a file", 1, undefined, partRulesFor("instagram"))
+        .problems
+    ).toStrictEqual([{ _tag: "tooManyMedia", count: 1, maximum: 0 }]);
   });
 });

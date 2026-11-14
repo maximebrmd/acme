@@ -2,7 +2,10 @@ import { Effect, Layer, Option, Result } from "effect";
 
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
-import { followUpsOn } from "#publishing/domain/platform-rules.ts";
+import {
+  followUpsThrough,
+  rulesFor,
+} from "#publishing/domain/platform-rules.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -47,6 +50,12 @@ const dueAt = (post: Post) =>
   post.status._tag === "scheduled"
     ? Option.some(post.status.schedule.at)
     : Option.none();
+
+// A first comment on a platform this server sends none to now.
+const firstCommentsOff = "firstCommentsOff";
+
+// The platform's own word for a poll it takes none of.
+const pollNotSupported = "pollNotSupported";
 
 const noReplyTarget = new BadRequest({
   code: ownRefusalCodes.replyTargetUnknown,
@@ -214,17 +223,66 @@ export const RoutedPlatformPublisher = Layer.effect(
         );
       }
 
-      // Scheduling refuses parts where the platform, or the format the
-      // options choose there, takes a post alone; a part that came this
+      // Scheduling refuses parts where the platform, the format the
+      // options choose there, or the channel's way in (a LinkedIn
+      // profile) takes a post alone; a part that came this
       // far all the same must never go out as a post of its own.
       if (
         part.index > 0 &&
-        (followUpsOn(account.platform, target.value.options) === undefined ||
+        (followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        ) === undefined ||
           !threaded.takesParts(account.platform))
       ) {
         return yield* new BadRequest({
           code: ownRefusalCodes.partsNotSupported,
         });
+      }
+
+      // A post with a first comment where this server no longer sends
+      // comments (its operator took the platform out of
+      // PEAL_INBOX_PLATFORMS since it was scheduled) is refused before
+      // anything goes out: never a post whose comment then cannot follow.
+      if (
+        part.index === 0 &&
+        post.content.followUps.length > 0 &&
+        followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        )?.kind === "comment" &&
+        !threaded.takesParts(account.platform)
+      ) {
+        return yield* new BadRequest({ code: firstCommentsOff });
+      }
+
+      // A post with a first comment: the target is marked so when its post
+      // goes out, so the post counts as live once it is, whatever becomes
+      // of the comment, even if the comment is never sent.
+      if (
+        (part.index > 0 || post.content.followUps.length > 0) &&
+        followUpsThrough(
+          account.platform,
+          account.connection,
+          target.value.options
+        )?.kind === "comment"
+      ) {
+        yield* posts
+          .markFirstComment(request.targetId)
+          .pipe(Effect.catchTag("DatabaseError", databaseDown));
+      }
+
+      // Scheduling refuses a poll where Peal sends none; one that came
+      // this far all the same must never go out without it.
+      const poll = part.index === 0 ? post.content.poll : Option.none();
+
+      if (
+        Option.isSome(poll) &&
+        rulesFor(account.platform, target.value.options).poll === undefined
+      ) {
+        return yield* new BadRequest({ code: pollNotSupported });
       }
 
       const sent: OutgoingPost = {
@@ -234,6 +292,7 @@ export const RoutedPlatformPublisher = Layer.effect(
         media: part.media,
         options: target.value.options,
         part: part.index,
+        poll,
         replyTo: yield* replyTargetOf(target.value, part.index),
         startedAt: request.startedAt,
         text: yield* textSent(post, request, account.platform, part.text),

@@ -9,6 +9,7 @@ import {
 import { ApprovalChanged } from "./approval-changed.ts";
 import { ApprovalNotPending } from "./approval-not-pending.ts";
 import { CommentInvalid } from "./comment-invalid.ts";
+import { PollSchema } from "./poll.ts";
 import { PostScheduleSchema } from "./posts.ts";
 import { ReviewAccessDenied } from "./review-access-denied.ts";
 import { ReviewCaptchaRequired } from "./review-captcha-required.ts";
@@ -42,6 +43,9 @@ export const ReviewPageSchema = Schema.Struct({
   comments: Schema.Array(ReviewCommentSchema),
   expiresAt: Schema.DateTimeUtc,
   media: Schema.Array(ReviewedMediaSchema),
+  // The poll the post asks with its first part: an approval covers it.
+  // Left out on a post without one.
+  poll: Schema.optionalKey(PollSchema),
   // Its time, once it has one.
   schedule: Schema.NullOr(PostScheduleSchema),
   status: Schema.Literals(["draft", "awaitingApproval", "scheduled"]),

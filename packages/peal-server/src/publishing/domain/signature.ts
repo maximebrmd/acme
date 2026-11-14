@@ -193,7 +193,12 @@ const withLastPart = (
   const last = content.followUps.at(-1);
 
   return last === undefined
-    ? new PostContent({ media: content.media, overrides, text })
+    ? new PostContent({
+        media: content.media,
+        overrides,
+        poll: content.poll,
+        text,
+      })
     : new PostContent({
         followUps: [
           ...content.followUps.slice(0, -1),
@@ -206,6 +211,7 @@ const withLastPart = (
         ],
         media: content.media,
         overrides: content.overrides,
+        poll: content.poll,
         text: content.text,
       });
 };

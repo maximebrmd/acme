@@ -299,7 +299,15 @@ public class ThreadTest : BaseMockServerTest
                   "mediaId": "mediaId",
                   "url": "url"
                 }
-              ]
+              ],
+              "poll": {
+                "choices": [
+                  "choices",
+                  "choices"
+                ],
+                "durationMinutes": 43829,
+                "multipleChoice": true
+              }
             }
             """;
 
@@ -407,7 +415,14 @@ public class ThreadTest : BaseMockServerTest
                   "mediaId": "mediaId",
                   "url": "url"
                 }
-              ]
+              ],
+              "poll": {
+                "choices": [
+                  "choices"
+                ],
+                "durationMinutes": 1,
+                "multipleChoice": true
+              }
             }
             """;
 

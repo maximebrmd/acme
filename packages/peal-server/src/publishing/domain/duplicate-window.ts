@@ -58,7 +58,18 @@ export const contentOn = (
     text: sendsText ? part.text.normalize("NFC").trim() : "",
   }));
 
-  const read = later.length === 0 ? first : { ...first, parts: later };
+  const parted = later.length === 0 ? first : { ...first, parts: later };
+
+  // A poll's choices and time, only on a post that asks one, so the
+  // digests of posts without stay as they were: the same words asking a
+  // poll and not are two posts.
+  const read = Option.match(content.poll, {
+    onNone: () => parted,
+    onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+      ...parted,
+      poll: { choices, durationMinutes, multipleChoice },
+    }),
+  });
 
   return JSON.stringify(
     Option.match(postFormatOf(options), {

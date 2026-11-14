@@ -1,7 +1,11 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { Flag } from "effect/cli";
-import { TargetOptionsSchema } from "peal-contract";
-import type { ChannelOptions, PostPart } from "peal-contract";
+import {
+  maxPollChoices,
+  maxPollDurationMinutes,
+  TargetOptionsSchema,
+} from "peal-contract";
+import type { ChannelOptions, Poll, PostPart } from "peal-contract";
 import { maxFollowUps, maxPartDelaySeconds } from "peal-contract/post-text";
 
 import { Refused } from "#refused.ts";
@@ -122,6 +126,80 @@ export const followUpsOf = (texts: readonly string[], delaySeconds: number) =>
       overrides: [],
       text,
     }));
+  });
+
+/** `--poll-choice <text>`, repeated: a poll's choices, in order. */
+export const pollChoiceFlag = Flag.String("poll-choice").pipe(
+  Flag.withMetavar("<text>"),
+  Flag.withDescription(
+    `A choice of a poll the post asks, its text being the question; repeat it for each, in order, ${String(maxPollChoices)} at most. X, Mastodon and Threads take a poll (peal channels capabilities says each one's bounds), with no media; every other platform refuses the post.`
+  ),
+  Flag.atLeast(0)
+);
+
+/** `--poll-minutes <n>`: how long the poll stays open. */
+export const pollMinutesFlag = Flag.Int("poll-minutes").pipe(
+  Flag.withMetavar("<minutes>"),
+  Flag.withDescription(
+    "How many minutes the poll stays open: 1440 (a day) unless given. Threads sets its own, whatever this says."
+  ),
+  Flag.optional
+);
+
+/** `--poll-multiple`: readers may pick several of the poll's choices. */
+export const pollMultipleFlag = Flag.Boolean("poll-multiple").pipe(
+  Flag.withDescription(
+    "Let readers pick several of the poll's choices: Mastodon only, which the others refuse."
+  ),
+  Flag.withDefault(false)
+);
+
+// How long a poll stays open when --poll-minutes is left out: a day.
+const defaultPollMinutes = 1440;
+
+/**
+ * The poll `--poll-choice`, `--poll-minutes` and `--poll-multiple` ask,
+ * none without a choice. A time or several picks without a choice would
+ * be dropped without a word: refused, as Peal's own bounds are; each
+ * platform's are checked when the post is scheduled.
+ */
+export const pollOf = (given: {
+  readonly choices: readonly string[];
+  readonly minutes: Option.Option<number>;
+  readonly multiple: boolean;
+}) =>
+  Effect.gen(function* poll() {
+    if (given.choices.length === 0) {
+      return Option.isSome(given.minutes) || given.multiple
+        ? yield* new Refused({
+            reason:
+              "--poll-minutes and --poll-multiple shape a poll, and there is none: give its choices with --poll-choice, or leave them out.",
+          })
+        : Option.none<Poll>();
+    }
+
+    if (given.choices.length > maxPollChoices) {
+      return yield* new Refused({
+        reason: `A poll has ${String(maxPollChoices)} choices at most: there are ${String(given.choices.length)} --poll-choice.`,
+      });
+    }
+
+    const durationMinutes = Option.getOrElse(
+      given.minutes,
+      () => defaultPollMinutes
+    );
+
+    if (durationMinutes < 1 || durationMinutes > maxPollDurationMinutes) {
+      return yield* new Refused({
+        reason: `--poll-minutes takes whole minutes from 1 to ${String(maxPollDurationMinutes)}, not ${String(durationMinutes)}.`,
+      });
+    }
+
+    const asked: Poll = given.multiple
+      ? { choices: given.choices, durationMinutes, multipleChoice: true }
+      : { choices: given.choices, durationMinutes };
+
+    return Option.some(asked);
   });
 
 /**

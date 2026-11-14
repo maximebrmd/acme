@@ -9,6 +9,8 @@ pub struct PostContent {
     pub media: Vec<MediaAttachment>,
     #[serde(default)]
     pub overrides: Vec<TextOverride>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub poll: Option<Poll>,
     #[serde(default)]
     pub text: String,
 }
@@ -25,6 +27,7 @@ pub struct PostContentBuilder {
     follow_ups: Option<Vec<PostPart>>,
     media: Option<Vec<MediaAttachment>>,
     overrides: Option<Vec<TextOverride>>,
+    poll: Option<Poll>,
     text: Option<String>,
 }
 
@@ -41,6 +44,11 @@ impl PostContentBuilder {
 
     pub fn overrides(mut self, value: Vec<TextOverride>) -> Self {
         self.overrides = Some(value);
+        self
+    }
+
+    pub fn poll(mut self, value: Poll) -> Self {
+        self.poll = Some(value);
         self
     }
 
@@ -63,6 +71,7 @@ impl PostContentBuilder {
             overrides: self
                 .overrides
                 .ok_or_else(|| BuildError::missing_field("overrides"))?,
+            poll: self.poll,
             text: self.text.ok_or_else(|| BuildError::missing_field("text"))?,
         })
     }

@@ -852,6 +852,18 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(removed);
         }).pipe(Effect.catchTags(malformedPost)),
+      leave_out_rest: ({ postId, targetId }) =>
+        Effect.gen(function* leaveOutRest() {
+          const settled = yield* followUp
+            .leaveOutRest(
+              yield* actor,
+              yield* postIdFrom(postId),
+              yield* targetIdFrom(targetId)
+            )
+            .pipe(Effect.catchTags(followUpFailures));
+
+          return postView(settled);
+        }).pipe(Effect.catchTags(malformedPost)),
       repost_target: ({ postId, targetId }) =>
         Effect.gen(function* repost() {
           const reposted = yield* followUp

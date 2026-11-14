@@ -188,6 +188,53 @@ describe("PublishTargetV2", () => {
   );
 
   it.effect(
+    "publishes a target without the part that failed, at a member's word, sending nothing",
+    () =>
+      onServer(
+        "2026-06-15T08:00:00Z",
+        Effect.gen(function* leavesOut() {
+          const platform = yield* FakePlatform;
+          const followUp = yield* PostFollowUp;
+          const channel = yield* newChannel;
+
+          yield* platform.script(channel, [
+            { _tag: "succeed" },
+            { _tag: "fail", failure: new BadRequest({ code: "synthetic" }) },
+          ]);
+
+          const { actor, post } = yield* scheduleThread(channel, [
+            part("A first comment, refused"),
+          ]);
+
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          const failed = yield* onlyTarget(post.id);
+
+          yield* followUp.leaveOutRest(actor, post.id, failed.id);
+
+          const settled = yield* onlyTarget(post.id);
+
+          assert(settled.status._tag === "published");
+          assert.isTrue(settled.status.partsLeftOut);
+          assert.deepStrictEqual(
+            settled.status.platformPostId,
+            Option.some("fake-1")
+          );
+          assert.deepStrictEqual(yield* partsSent(channel), [0, 1]);
+          assert.strictEqual(yield* outcomeOf(post.id), "published");
+
+          // Once published, nothing is left to leave out.
+          const again = yield* followUp
+            .leaveOutRest(actor, post.id, failed.id)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(again._tag, "InvalidTargetTransition");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "stops at a part the platform refuses, and a repost sends from that part only",
     () =>
       onServer(

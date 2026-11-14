@@ -14,6 +14,8 @@ import type { TikTokBlock } from "./tiktok-creator.ts";
  *   (photos, on a server TikTok takes none from).
  * - `optionNeedsReconnect`: the option is refused until the channel is
  *   connected again, to grant what it needs (a Bluesky gate's scope).
+ * - `partsNeedReconnect`: a first comment is refused until the channel is
+ *   connected again, to grant the scope a comment takes.
  */
 export type AccountRestriction =
   | {
@@ -31,7 +33,8 @@ export type AccountRestriction =
       readonly _tag: "mediaTypesRefused";
       readonly contentTypes: readonly MediaContentType[];
     }
-  | { readonly _tag: "optionNeedsReconnect"; readonly field: string };
+  | { readonly _tag: "optionNeedsReconnect"; readonly field: string }
+  | { readonly _tag: "partsNeedReconnect" };
 
 /** Why the platform's answer about the account could not be had. */
 export type AccountUnreadReason =

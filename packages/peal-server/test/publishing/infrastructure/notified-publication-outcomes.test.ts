@@ -35,6 +35,7 @@ import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified
 import type { Actor } from "#shared/domain/access.ts";
 import type { ChannelId, UserId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
@@ -270,6 +271,62 @@ describe("the notices of a post's outcomes", () => {
             sent[0]?.text ?? "",
             `http://localhost:3001/app/${workspaceId}/posts/${post.id}`
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "tell a post that is live when only its first comment failed",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* commentFailed() {
+          const { actor, userId, workspaceId } = yield* workspaceWithEditor;
+          const facebook = yield* connect(workspaceId, "facebook");
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const post = yield* schedule(actor, [facebook, mastodon]);
+          const targets = yield* targetsOf(post.id);
+          const now = yield* DateTime.now;
+          const outcomes = yield* PublicationOutcomes;
+
+          const failed: PostTargetStatus = {
+            _tag: "failed",
+            code: Option.none(),
+            failedAt: now,
+            reason: "contentRejected",
+          };
+
+          // Each target's post went live, and what followed did not.
+          for (const target of targets) {
+            yield* outcomes.settled(
+              new PostTarget({
+                channelId: target.channelId,
+                id: target.id,
+                options: target.options,
+                postId: target.postId,
+                round: 1,
+                status: failed,
+                liveParts: [
+                  {
+                    index: 0,
+                    permalink: Option.none(),
+                    platformPostId: Option.some(
+                      PlatformPostIdSchema.make("synthetic-live-post")
+                    ),
+                    publishedAt: now,
+                    round: 1,
+                  },
+                ],
+              })
+            );
+          }
+
+          const notSent = (yield* noticesOf(userId)).map(({ event }) =>
+            event._tag === "PostFailed" ? event.notSent : undefined
+          );
+
+          assert.sameMembers(notSent, ["firstComment", "laterParts"]);
         })
       ),
     timeout

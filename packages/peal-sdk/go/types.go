@@ -18928,6 +18928,124 @@ func (p PlatformUnreachableEncodedTag) Ptr() *PlatformUnreachableEncodedTag {
 }
 
 var (
+	pollFieldChoices         = big.NewInt(1 << 0)
+	pollFieldDurationMinutes = big.NewInt(1 << 1)
+	pollFieldMultipleChoice  = big.NewInt(1 << 2)
+)
+
+type Poll struct {
+	Choices         []string `json:"choices" url:"choices"`
+	DurationMinutes int      `json:"durationMinutes" url:"durationMinutes"`
+	MultipleChoice  *bool    `json:"multipleChoice,omitempty" url:"multipleChoice,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *Poll) GetChoices() []string {
+	if p == nil {
+		return nil
+	}
+	return p.Choices
+}
+
+func (p *Poll) GetDurationMinutes() int {
+	if p == nil {
+		return 0
+	}
+	return p.DurationMinutes
+}
+
+func (p *Poll) GetMultipleChoice() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.MultipleChoice
+}
+
+func (p *Poll) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *Poll) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChoices sets the Choices field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Poll) SetChoices(choices []string) {
+	p.Choices = choices
+	p.require(pollFieldChoices)
+}
+
+// SetDurationMinutes sets the DurationMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Poll) SetDurationMinutes(durationMinutes int) {
+	p.DurationMinutes = durationMinutes
+	p.require(pollFieldDurationMinutes)
+}
+
+// SetMultipleChoice sets the MultipleChoice field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Poll) SetMultipleChoice(multipleChoice *bool) {
+	p.MultipleChoice = multipleChoice
+	p.require(pollFieldMultipleChoice)
+}
+
+func (p *Poll) UnmarshalJSON(data []byte) error {
+	type unmarshaler Poll
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = Poll(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *Poll) MarshalJSON() ([]byte, error) {
+	type embed Poll
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *Poll) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postNotPromotableEncodedFieldCode      = big.NewInt(1 << 0)
 	postNotPromotableEncodedFieldMessage   = big.NewInt(1 << 1)
 	postNotPromotableEncodedFieldRequestID = big.NewInt(1 << 2)

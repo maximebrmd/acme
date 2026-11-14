@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Context, Duration, Effect, Layer, Option } from "effect";
 
+import { Poll } from "#publishing/domain/poll.ts";
 import { ThreadsOptions } from "#publishing/domain/threads-options.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -481,6 +482,40 @@ describe("a Threads post's options", () => {
         media_type: "IMAGE",
         reply_control: "followers_only",
         text: "With a picture",
+      });
+    }).pipe(Effect.scoped)
+  );
+});
+
+describe("a poll on Threads", () => {
+  it.live("goes with a text post, as its poll attachment", () =>
+    Effect.gen(function* poll() {
+      const { client, graph } = yield* onThreads();
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: threadsUserId,
+          poll: Option.some(
+            new Poll({
+              choices: ["Red", "Green", "Blue"],
+              durationMinutes: 1440,
+            })
+          ),
+          text: "Pick a colour",
+        })
+      );
+
+      const [container] = graph.containers();
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(container?.params, {
+        media_type: "TEXT",
+        poll_attachment: JSON.stringify({
+          option_a: "Red",
+          option_b: "Green",
+          option_c: "Blue",
+        }),
+        text: "Pick a colour",
       });
     }).pipe(Effect.scoped)
   );

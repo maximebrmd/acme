@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
 
-import { channelsView } from "#review/api/review-view.ts";
+import { channelsView, pollView } from "#review/api/review-view.ts";
 import type { ReviewedPost } from "#review/application/ports/reviewed-posts.ts";
 import {
   ChannelIdSchema,
@@ -37,6 +37,7 @@ const post: ReviewedPost = {
     channel("2", Option.none()),
   ],
   media: [],
+  poll: Option.none(),
   postId: PostIdSchema.make("00000000-0000-7000-8000-000000000010"),
   schedule: Option.none(),
   status: "awaitingApproval",
@@ -68,5 +69,20 @@ describe(channelsView, () => {
       },
     ]);
     expect(other).not.toHaveProperty("media");
+  });
+});
+
+describe(pollView, () => {
+  it("shows the poll an approval covers, and none on a post without", () => {
+    const poll = {
+      choices: ["Tea", "Coffee"],
+      durationMinutes: 60,
+      multipleChoice: false,
+    };
+
+    expect(pollView({ ...post, poll: Option.some(poll) })).toStrictEqual({
+      poll,
+    });
+    expect(pollView(post)).toStrictEqual({});
   });
 });

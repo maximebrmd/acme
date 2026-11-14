@@ -49,7 +49,8 @@ const saidBy = ({
  * What an approval of a post covers, written the same way whenever it is
  * the same: its text, its media in order with their alt text, the text
  * and the media it has instead on some channels, the channels it goes to and the options it
- * has on each, and every part that follows the first, in order, with its
+ * has on each, its poll (choices, time, several picks), and every part
+ * that follows the first (a first comment among them), in order, with its
  * text, media, texts by channel and wait. Changing any of these makes
  * another subject, so an approval given for the first no longer stands. Its
  * time is not part of it: an approved post may be moved.
@@ -70,7 +71,17 @@ export const approvalSubject = (
     )
     .toSorted((left, right) => left.channelId.localeCompare(right.channelId));
 
-  const first = { channels, ...saidBy(content) };
+  const said = { channels, ...saidBy(content) };
+
+  // A poll is written only on a post that asks one, so the subjects of
+  // posts without stay as they were.
+  const first = Option.match(content.poll, {
+    onNone: () => said,
+    onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+      ...said,
+      poll: { choices, durationMinutes, multipleChoice },
+    }),
+  });
 
   return JSON.stringify(
     content.followUps.length === 0

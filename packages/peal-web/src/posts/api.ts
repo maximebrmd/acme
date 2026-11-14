@@ -269,6 +269,12 @@ export const repostTarget = PealApi.mutation("posts", "repost");
 
 export const confirmTarget = PealApi.mutation("posts", "confirm");
 
+/**
+ * Publishes a post on one channel without the parts that did not go out
+ * after its first: its first comment, or the rest of its thread.
+ */
+export const leaveOutRest = PealApi.mutation("posts", "leaveOutRest");
+
 /** Deletes a published post from one channel's platform, for everyone. */
 export const unpublishTarget = PealApi.mutation("posts", "unpublishTarget");
 

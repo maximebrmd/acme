@@ -3,6 +3,7 @@ import { Context, Effect, Layer, Option } from "effect";
 import { gateViolationsOn } from "#publishing/domain/bluesky-gates.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { commentViolationsOn } from "#publishing/domain/first-comments.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
 import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
@@ -41,7 +42,9 @@ const photoViolations = (target: AccountTarget): readonly ContentViolation[] =>
  * interactions and longest video (`creatorViolationsOn`), and photos on a
  * server TikTok takes none from; and from what the account granted, a
  * Bluesky gate on a channel connected before Peal asked for its scope
- * (`gateViolationsOn`). When the platform cannot tell now, the post is
+ * (`gateViolationsOn`), and a first comment on a channel connected before
+ * Peal asked for the comment scope (`commentViolationsOn`). When the
+ * platform cannot tell now, the post is
  * scheduled anyway: its adapter checks again when it goes out.
  */
 export class AccountRules extends Context.Service<
@@ -132,6 +135,31 @@ export class AccountRules extends Context.Service<
           ])
         );
 
+      // A first comment the channel's scopes do not cover, where the
+      // server sends comments; unknown scopes let it through, and the
+      // platform refuses it.
+      const commenting = (target: AccountTarget) => {
+        const off = partsOff(target);
+
+        return off.length > 0 ||
+          target.followUps === 0 ||
+          followUpsOn(target.channel.platform)?.kind !== "comment"
+          ? Effect.succeed(off)
+          : grants.scopesOf(target.channel.channelId).pipe(
+              Effect.map(
+                Option.match({
+                  onNone: () => [],
+                  onSome: (granted) =>
+                    commentViolationsOn(
+                      target.channel,
+                      target.followUps,
+                      granted
+                    ),
+                })
+              )
+            );
+      };
+
       return AccountRules.of({
         violationsOn: (target) => {
           if (target.channel.platform === "tiktok") {
@@ -140,7 +168,7 @@ export class AccountRules extends Context.Service<
 
           return target.channel.platform === "bluesky"
             ? bluesky(target)
-            : Effect.succeed(partsOff(target));
+            : commenting(target);
         },
       });
     })

@@ -11,6 +11,8 @@ module Peal
 
       field :overrides, -> { Internal::Types::Array[Peal::Types::TextOverride] }, optional: false, nullable: false
 
+      field :poll, -> { Peal::Types::Poll }, optional: true, nullable: true
+
       field :text, -> { String }, optional: false, nullable: false
     end
   end

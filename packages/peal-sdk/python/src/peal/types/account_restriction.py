@@ -95,6 +95,21 @@ class AccountRestriction_OptionNeedsReconnect(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class AccountRestriction_PartsNeedReconnect(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["partsNeedReconnect"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "partsNeedReconnect"
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 AccountRestriction = typing_extensions.Annotated[
     typing.Union[
         AccountRestriction_OptionValues,
@@ -102,6 +117,7 @@ AccountRestriction = typing_extensions.Annotated[
         AccountRestriction_VideoDuration,
         AccountRestriction_MediaTypesRefused,
         AccountRestriction_OptionNeedsReconnect,
+        AccountRestriction_PartsNeedReconnect,
     ],
     pydantic.Field(discriminator="type"),
 ]

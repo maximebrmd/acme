@@ -748,7 +748,10 @@ one before misreads, run its checks in [Roll back a
 release](runbooks/roll-back.md): past per-channel posts (a channel's own
 media, a channel taken off a post), roll back only once no post still to
 go out has either, and with the recycling rules and drafts the third
-check lists dealt with.
+check lists dealt with; past first comments and polls, roll back only
+once no post still to go out asks a poll or has a first comment on
+Facebook Pages, Instagram, LinkedIn or YouTube, with the drafts and rules
+asking a poll dealt with.
 
 Every container of the stack runs on a read-only file system, writing only
 to its volumes and to small tmpfs mounts, and none gains privileges it was

@@ -107,6 +107,7 @@ const without = (post: Post, mediaId: MediaAssetId) =>
     ),
     media: remaining(post.content.media, mediaId),
     overrides: overridesWithout(post.content.overrides, mediaId),
+    poll: post.content.poll,
     text: post.content.text,
   });
 

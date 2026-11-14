@@ -121,12 +121,21 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       by,
       postId,
     }),
-    PostFailed: ({ channel, postId, reason }): NoticeEventView => ({
-      _tag: "PostFailed",
-      channel: postChannelView(channel),
-      postId,
-      reason,
-    }),
+    PostFailed: ({ channel, notSent, postId, reason }): NoticeEventView =>
+      notSent === undefined
+        ? {
+            _tag: "PostFailed",
+            channel: postChannelView(channel),
+            postId,
+            reason,
+          }
+        : {
+            _tag: "PostFailed",
+            channel: postChannelView(channel),
+            notSent,
+            postId,
+            reason,
+          },
     PostPublished: ({ channel, permalink, postId }): NoticeEventView => ({
       _tag: "PostPublished",
       channel: postChannelView(channel),

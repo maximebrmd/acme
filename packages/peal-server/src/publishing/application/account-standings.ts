@@ -6,7 +6,9 @@ import type {
 } from "#publishing/domain/account-restriction.ts";
 import { gateRestrictions } from "#publishing/domain/bluesky-gates.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
+import { commentRestrictions } from "#publishing/domain/first-comments.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import {
   creatorRestrictions,
   photosRefused,
@@ -14,6 +16,7 @@ import {
 
 import { ChannelGrants } from "./channel-grants.ts";
 import { PlatformLookups } from "./platform-lookups.ts";
+import { CurrentThreadedPlatforms } from "./threaded-platforms.ts";
 
 const unread = (reason: AccountUnreadReason): AccountStanding => ({
   _tag: "unread",
@@ -48,13 +51,15 @@ export class AccountStandings extends Context.Service<
    * the lookups as the server paces them (`pacedLookups`): describing a
    * channel again within a minute asks TikTok nothing, and past its pace
    * the standing is `unread`, never another request. A Bluesky channel's
-   * gates, from the scopes it granted (ChannelGrants).
+   * gates, and whether a first comment needs a channel connected again,
+   * from the scopes it granted (ChannelGrants).
    */
   static readonly layer = Layer.effect(
     AccountStandings,
     Effect.gen(function* AccountStandingsLive() {
       const lookups = yield* PlatformLookups;
       const grants = yield* ChannelGrants;
+      const threaded = yield* CurrentThreadedPlatforms;
 
       const tiktok = (channel: ChannelOnPlatform) =>
         lookups.run(channel.channelId, { _tag: "tiktokCreator" }).pipe(
@@ -116,6 +121,32 @@ export class AccountStandings extends Context.Service<
           )
         );
 
+      // Whether a first comment needs the channel connected again, from
+      // the scopes it granted, on the platforms where the server sends
+      // comments.
+      const commenting = (channel: ChannelOnPlatform) =>
+        followUpsOn(channel.platform)?.kind === "comment" &&
+        threaded.takesParts(channel.platform)
+          ? grants.scopesOf(channel.channelId).pipe(
+              Effect.map(
+                Option.match({
+                  onNone: () => unrestricted,
+                  onSome: (scopes): AccountStanding => {
+                    const restrictions = commentRestrictions(
+                      channel.platform,
+                      Option.fromUndefinedOr(channel.connection),
+                      scopes
+                    );
+
+                    return restrictions.length === 0
+                      ? unrestricted
+                      : { _tag: "read", blocked: undefined, restrictions };
+                  },
+                })
+              )
+            )
+          : Effect.succeed(unrestricted);
+
       return AccountStandings.of({
         read: (channel) => {
           if (channel.platform === "tiktok") {
@@ -124,7 +155,7 @@ export class AccountStandings extends Context.Service<
 
           return channel.platform === "bluesky"
             ? bluesky(channel)
-            : Effect.succeed(unrestricted);
+            : commenting(channel);
         },
       });
     })

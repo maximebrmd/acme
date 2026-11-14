@@ -127,7 +127,7 @@ A channel that would refuse the post is marked, and what to fix is shown below, 
 
 ## Threads [#threads]
 
-A post can have parts that follow it. Under **Thread**, choose **Add a part**. Each part has its own text, its own images and videos, a counter for every channel, and, if you like, a wait after the part before it, from a minute to a day. Move a part up or down, or remove it, with its buttons. A post has 24 parts after its first at most.
+A post can have parts that follow it. Under **Thread and first comment**, choose **Add a part**. Each part has its own text, its own images and videos, a counter for every channel, and, if you like, a wait after the part before it, from a minute to a day. Move a part up or down, or remove it, with its buttons. A post has 24 parts after its first at most.
 
 On the platforms with threads, each part goes out as a reply to the part before it:
 
@@ -137,7 +137,7 @@ On the platforms with threads, each part goes out as a reply to the part before 
 | Bluesky  | A thread: each part names the thread's first post and its own parent |
 | Mastodon | A thread: each part replies to the one before it                     |
 
-Each part follows the rules of a post on its platform: its length, counted as the platform counts it, and its images and videos. The other platforms take a post alone: a post with parts is refused there when you schedule it, and the composer says so as soon as you tick such a channel. Comments under a post, on the platforms that take them, are not sent yet.
+Each part follows the rules of a post on its platform: its length, counted as the platform counts it, and its images and videos. On Facebook Pages, Instagram, LinkedIn pages and YouTube, the one part after the post is a [first comment](#first-comment) instead. The other platforms take a post alone: a post with parts is refused there when you schedule it, and the composer says so as soon as you tick such a channel.
 
 <Callout type="warning" title="Threads on X">
   Whether a thread goes out on X depends on the access the server's app has. X
@@ -158,6 +158,35 @@ Parts go out in order, each as its own request to the platform:
 | You choose **Cancel**      | The parts not yet sent stop. A part that waits is not sent once its wait ends, and the parts that went out stay out.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 The post's address is its first part's, and [analytics](/guides/engage/analytics) reads the counts of the first part.
+
+## First comment [#first-comment]
+
+On some platforms, the part after the post is a comment that the account posts under its own post, once the post is live: a first comment, often used for a link or hashtags that you want to keep out of the post itself. Write it as the post's second part, under **Thread and first comment**. The composer names each channel where it goes out as a first comment.
+
+| Platform       | Where the first comment goes                                            |
+| -------------- | ----------------------------------------------------------------------- |
+| Facebook Pages | Under the Page's post, as the Page                                      |
+| Instagram      | Under the post, as the account                                          |
+| LinkedIn       | Under a company page's post, as the page; a member's profile takes none |
+| YouTube        | Under the video, as the channel                                         |
+
+A first comment is text alone, held to the length the platform allows a post's text, as none of these platforms says how long a comment may be. That limit is not verified: a platform may refuse a long comment that Peal let through, once the post is live. LinkedIn's help gives 1,250 characters for comments in groups, so keep a LinkedIn comment short. It takes no image or video, and a post has one at most there. A story or a reel takes none. YouTube turns comments off on a video made for kids, so a post with a first comment and **Made for kids** is refused there when you schedule it. On LinkedIn, the page's administrator must have connected it: LinkedIn lists no content administrator among the roles that comment, so the comment would be refused.
+
+A first comment uses the permission that answers comments in the [inbox](/guides/engage/inbox). So it is offered only where the server reads that platform's comments ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables)). Elsewhere, the platform takes a post alone. When the server stops reading a platform's comments, a post already scheduled there with a first comment is refused when its time comes, before anything goes out, with the reason that first comments are turned off. A channel connected before the server read its comments must be connected again: until then, a post with a first comment is refused there, and the channel's capabilities say so.
+
+The comment goes out after the post, through the same channel, after the part's wait. If the post is live and the comment fails, the post stays published. The channel reads **Failed**, the post is **partly published**, webhooks hear `post.finished` with that outcome, and the notice says that the post is live and only its first comment did not go out. Analytics, the inbox and ads count the post as live all the same. **Post again** sends the comment alone. **Publish without the first comment** gives the comment up: the channel reads **Published**, as its post, and nothing more is sent. None of these platforms keeps a key that would tell a comment sent twice apart. So when the platform's answer is lost, Peal looks for the comment among the post's newest comments. It takes the one written by the account since the attempt began, with the same text. When it finds none, or two, the channel reads **To check**: Peal never sends the comment again blindly. An approval covers the first comment, as it covers every part.
+
+## Poll [#polls]
+
+A post can ask a poll. Its text is the question. Under **Poll**, choose **Add a poll**, then write two to four choices. Choose how long it stays open and whether readers may pick several choices.
+
+| Platform | Choices                    | Open for                   | Several picks |
+| -------- | -------------------------- | -------------------------- | ------------- |
+| X        | 2 to 4, 25 characters each | 5 minutes to 7 days        | No            |
+| Mastodon | 2 to 4, 50 characters each | 5 minutes to about 30 days | Yes           |
+| Threads  | 2 to 4, 25 characters each | As long as Threads decides | No            |
+
+A poll goes out with the post's first part, and never with an image or a video, which these platforms refuse together. Mastodon's bounds are its defaults: a server set otherwise may refuse the poll when the post goes out. Threads sets its own time, whatever the post asks. The other platforms take no poll from Peal: a post with a poll is refused there, and the composer says so. LinkedIn's polls have a question of their own, and Instagram's go through Facebook Login only: Peal does not send either yet. An approval covers the poll: its choices, how long, and several picks.
 
 ## Platform options [#options]
 

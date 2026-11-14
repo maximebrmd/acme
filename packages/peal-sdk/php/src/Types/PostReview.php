@@ -33,11 +33,18 @@ class PostReview extends JsonSerializableType
     public array $media;
 
     /**
+     * @var ?Poll $poll
+     */
+    #[JsonProperty('poll')]
+    public ?Poll $poll;
+
+    /**
      * @param array{
      *   approvals: array<ApprovalRequest>,
      *   channels: array<ReviewedChannel>,
      *   comments: array<ReviewComment>,
      *   media: array<ReviewedMedia>,
+     *   poll?: ?Poll,
      * } $values
      */
     public function __construct(
@@ -47,6 +54,7 @@ class PostReview extends JsonSerializableType
         $this->channels = $values['channels'];
         $this->comments = $values['comments'];
         $this->media = $values['media'];
+        $this->poll = $values['poll'] ?? null;
     }
 
     /**

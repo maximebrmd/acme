@@ -19,6 +19,9 @@ pub enum NoticeEvent {
     PostFailed {
         #[serde(skip_serializing_if = "Option::is_none")]
         channel: Option<NoticeChannel>,
+        #[serde(rename = "notSent")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        not_sent: Option<PostPartsNotSent>,
         #[serde(rename = "postId")]
         #[serde(default)]
         post_id: String,
@@ -251,6 +254,7 @@ impl NoticeEvent {
     pub fn post_failed(post_id: String, reason: FailureReason) -> Self {
         Self::PostFailed {
             channel: None,
+            not_sent: None,
             post_id,
             reason,
         }
@@ -441,11 +445,27 @@ impl NoticeEvent {
 
     pub fn post_failed_with_channel(
         channel: NoticeChannel,
+        not_sent: Option<PostPartsNotSent>,
         post_id: String,
         reason: FailureReason,
     ) -> Self {
         Self::PostFailed {
             channel: Some(channel),
+            not_sent,
+            post_id,
+            reason,
+        }
+    }
+
+    pub fn post_failed_with_not_sent(
+        channel: Option<NoticeChannel>,
+        not_sent: PostPartsNotSent,
+        post_id: String,
+        reason: FailureReason,
+    ) -> Self {
+        Self::PostFailed {
+            channel,
+            not_sent: Some(not_sent),
             post_id,
             reason,
         }

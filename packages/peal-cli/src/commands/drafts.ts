@@ -12,6 +12,10 @@ import { explain } from "#explain.ts";
 import { jsonFlag, printJson, printNothing } from "#json.ts";
 import {
   followUpsOf,
+  pollChoiceFlag,
+  pollMinutesFlag,
+  pollMultipleFlag,
+  pollOf,
   optionsOf,
   thenDelayFlag,
   thenFlag,
@@ -141,9 +145,12 @@ const save = Command.make(
       Flag.atLeast(0)
     ),
     parts: thenFlag(
-      "A part that follows the post, text alone: a reply in a thread where the platform has threads. Repeat it for several, in order. A draft you change keeps its parts without it, and takes these instead with it."
+      "A part that follows the post, text alone: a reply in a thread where the platform has threads, a first comment under the post where it takes comments. Repeat it for several, in order. A draft you change keeps its parts without it, and takes these instead with it."
     ),
     partsDelay: thenDelayFlag,
+    pollChoices: pollChoiceFlag,
+    pollMinutes: pollMinutesFlag,
+    pollMultiple: pollMultipleFlag,
     postId: Flag.String("post").pipe(
       Flag.withMetavar("<post-id>"),
       Flag.withDescription("The draft to change. Without it, a new draft."),
@@ -178,6 +185,19 @@ const save = Command.make(
     const params = { workspaceId: workspace.id };
     const given = yield* Effect.all(input.options.map(optionsOf));
     const followUps = yield* followUpsOf(input.parts, input.partsDelay);
+
+    // A draft you change keeps its poll unless one is given.
+    const poll = yield* pollOf({
+      choices: input.pollChoices,
+      minutes: input.pollMinutes,
+      multiple: input.pollMultiple,
+    });
+
+    const asking = Option.match(poll, {
+      onNone: () => ({}),
+      onSome: (asked) => ({ poll: asked }),
+    });
+
     const tagIds = yield* tagIdsOf(session, input.tags);
 
     // Tags are sent only when some were given: a new draft has none
@@ -201,6 +221,7 @@ const save = Command.make(
             followUps,
             media: [],
             overrides: [],
+            ...asking,
             text: Option.getOrElse(input.text, () => ""),
           },
           options: given,
@@ -237,6 +258,7 @@ const save = Command.make(
                   followUps.length > 0
                     ? followUps
                     : (draft.content.followUps ?? []),
+                ...asking,
                 text: Option.getOrElse(input.text, () => draft.content.text),
               },
               options: withOptions(channelIds, given, kept),

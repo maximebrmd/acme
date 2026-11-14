@@ -122,6 +122,14 @@ public class SearchTest : BaseMockServerTest
                         "text": "x"
                       }
                     ],
+                    "poll": {
+                      "choices": [
+                        "choices",
+                        "choices"
+                      ],
+                      "durationMinutes": 43829,
+                      "multipleChoice": true
+                    },
                     "text": "text"
                   },
                   "createdVia": {
@@ -197,6 +205,7 @@ public class SearchTest : BaseMockServerTest
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "removedAt": "removedAt",
+                      "partsLeftOut": true,
                       "round": 1,
                       "status": "pending",
                       "thumbnailNotSet": true,
@@ -248,6 +257,7 @@ public class SearchTest : BaseMockServerTest
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "removedAt": "removedAt",
+                      "partsLeftOut": true,
                       "round": 1,
                       "status": "pending",
                       "thumbnailNotSet": true,
@@ -372,6 +382,14 @@ public class SearchTest : BaseMockServerTest
                         "text": "x"
                       }
                     ],
+                    "poll": {
+                      "choices": [
+                        "choices",
+                        "choices"
+                      ],
+                      "durationMinutes": 43829,
+                      "multipleChoice": true
+                    },
                     "text": "text"
                   },
                   "createdVia": {
@@ -447,6 +465,7 @@ public class SearchTest : BaseMockServerTest
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "removedAt": "removedAt",
+                      "partsLeftOut": true,
                       "round": 1,
                       "status": "pending",
                       "thumbnailNotSet": true,
@@ -498,6 +517,7 @@ public class SearchTest : BaseMockServerTest
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "removedAt": "removedAt",
+                      "partsLeftOut": true,
                       "round": 1,
                       "status": "pending",
                       "thumbnailNotSet": true,
